@@ -670,15 +670,19 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         public abstract Object execute(Object[] args);
 
-        @Specialization
         @TruffleBoundary
-        public Object doIt(Object[] args) {
-            PrintWriter stdout = new PrintWriter(getContext().getStandardOut());
+        public static Object tdebug(PythonContext context, Object[] args) {
+            PrintWriter stdout = new PrintWriter(context.getStandardOut());
             for (int i = 0; i < args.length; i++) {
                 stdout.println(args[i]);
             }
             stdout.flush();
             return PNone.NONE;
+        }
+
+        @Specialization
+        public Object doIt(Object[] args) {
+            return tdebug(getContext(), args);
         }
 
         @NeverDefault

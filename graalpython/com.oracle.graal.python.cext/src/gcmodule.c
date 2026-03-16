@@ -1644,7 +1644,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
     // _PyTime_t t1 = 0;   /* initialize to prevent a compiler warning */
     GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
 
-    if (GraalPyPrivate_DisableReferneceQueuePolling()) {
+    if (GraalPyPrivate_DisableReferenceQueuePolling()) {
         // reference queue polling is currently active; cannot proceed
         return m + n;
     }
@@ -1803,7 +1803,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
         PyDTrace_GC_DONE(n + m);
     }
 
-    GraalPyPrivate_EnableReferneceQueuePolling();
+    GraalPyPrivate_EnableReferenceQueuePolling();
 
     assert(!_PyErr_Occurred(tstate));
     return n + m;

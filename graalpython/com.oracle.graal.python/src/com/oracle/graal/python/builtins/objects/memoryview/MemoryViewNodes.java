@@ -115,6 +115,11 @@ public class MemoryViewNodes {
     public abstract static class InitFlagsNode extends Node {
         public abstract int execute(Node inliningTarget, int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets);
 
+        @TruffleBoundary
+        public static int executeUncached(int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets) {
+            return MemoryViewNodesFactory.InitFlagsNodeGen.getUncached().execute(null, ndim, itemsize, shape, strides, suboffsets);
+        }
+
         @Specialization
         static int compute(int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets) {
             if (ndim == 0) {

@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.CreateGetSetNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
@@ -70,10 +69,8 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextDescrBuiltins {
@@ -91,10 +88,8 @@ public final class PythonCextDescrBuiltins {
     abstract static class GraalPyPrivate_Descr_NewGetSet extends CApi6BuiltinNode {
 
         @Specialization
-        static Object doNativeCallable(TruffleString name, Object cls, long getter, long setter, Object doc, long closure,
-                        @Bind Node inliningTarget,
-                        @Cached CreateGetSetNode createGetSetNode) {
-            return createGetSetNode.execute(inliningTarget, name, cls, getter, setter, doc, closure);
+        static Object doNativeCallable(TruffleString name, Object cls, long getter, long setter, Object doc, long closure) {
+            return PythonCextTypeBuiltins.createGetSet(name, cls, getter, setter, doc, closure);
         }
     }
 

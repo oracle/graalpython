@@ -2261,6 +2261,11 @@ public abstract class CApiTransitions {
     @GenerateCached(false)
     public abstract static class GcNativePtrToPythonNode extends PNodeWithContext {
 
+        @TruffleBoundary
+        public static Object executeUncached(long pointer) {
+            return CApiTransitionsFactory.GcNativePtrToPythonNodeGen.getUncached().execute(null, pointer);
+        }
+
         public abstract Object execute(Node inliningTarget, long pointer);
 
         @Specialization
@@ -2613,6 +2618,11 @@ public abstract class CApiTransitions {
          */
         public final void clearStrongRefButKeepInGCList(Node inliningTarget, HandleContext handleContext, long pointer, int handleTableIndex) {
             execute(inliningTarget, handleContext, pointer, handleTableIndex, false, true);
+        }
+
+        @TruffleBoundary
+        public static void clearStrongRefButKeepInGCListUncached(HandleContext handleContext, long pointer, int handleTableIndex) {
+            CApiTransitionsFactory.UpdateHandleTableReferenceNodeGen.getUncached().clearStrongRefButKeepInGCList(null, handleContext, pointer, handleTableIndex);
         }
 
         protected abstract void execute(Node inliningTarget, HandleContext handleContext, long pointer, int handleTableIndex, boolean setStrong, boolean keepInGcList);

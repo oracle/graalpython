@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -68,6 +69,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class GetCurrentFrameRef extends Node {
 
     public abstract Reference execute(Frame frame, Node inliningTarget);
+
+    @TruffleBoundary
+    public static Reference executeUncached() {
+        return GetCurrentFrameRefNodeGen.getUncached().execute(null, null);
+    }
 
     @Specialization(guards = "frame != null")
     static Reference doWithFrame(Frame frame) {

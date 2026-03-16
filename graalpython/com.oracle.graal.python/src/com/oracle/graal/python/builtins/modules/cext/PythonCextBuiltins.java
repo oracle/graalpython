@@ -49,16 +49,15 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_LOGGER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.NEXT_MASK_UNREACHABLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObjectRawPointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectRawPointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
@@ -117,8 +116,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.GraalPyPrivate_Type_AddGetSet;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.GraalPyPrivate_Type_AddMember;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -127,14 +124,17 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ToNativeTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
@@ -147,7 +147,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -167,7 +166,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiType;
@@ -215,7 +213,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -226,13 +223,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextBuiltins {
@@ -922,41 +918,32 @@ public final class PythonCextBuiltins {
         String comment() default "";
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, call = Ignored)
-    abstract static class GraalPyPrivate_FileSystemDefaultEncoding extends CApiNullaryBuiltinNode {
-        @Specialization
-        static TruffleString encoding() {
-            return GetFileSystemEncodingNode.getFileSystemEncoding();
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored)
+    static long GraalPyPrivate_FileSystemDefaultEncoding() {
+        return PythonToNativeNewRefNode.executeLongUncached(GetFileSystemEncodingNode.getFileSystemEncoding());
     }
 
-    @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class GraalPyPrivate_Type extends CApiUnaryBuiltinNode {
+    private static final TruffleString[] TYPE_LOOKUP_MODULES = new TruffleString[]{
+                    T__WEAKREF,
+                    T_BUILTINS
+    };
 
-        private static final TruffleString[] LOOKUP_MODULES = new TruffleString[]{
-                        T__WEAKREF,
-                        T_BUILTINS
-        };
-
-        @Specialization
-        static Object doI(TruffleString typeName,
-                        @Bind Node inliningTarget,
-                        @Cached TruffleString.EqualNode eqNode,
-                        @Cached PRaiseNode raiseNode) {
-            Python3Core core = PythonContext.get(inliningTarget);
-            for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
-                if (eqNode.execute(type.getName(), typeName, TS_ENCODING)) {
-                    return core.lookupType(type);
-                }
+    @CApiBuiltin(ret = PyTypeObjectRawPointer, args = {ConstCharPtr}, call = Ignored)
+    static long GraalPyPrivate_Type(long typeNamePtr) {
+        TruffleString typeName = (TruffleString) CharPtrToPythonNode.getUncached().execute(typeNamePtr);
+        Python3Core core = PythonContext.get(null).getCore();
+        for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
+            if (type.getName().equalsUncached(typeName, TS_ENCODING)) {
+                return PythonToNativeNewRefNode.executeLongUncached(core.lookupType(type));
             }
-            for (TruffleString module : LOOKUP_MODULES) {
-                Object attribute = core.lookupBuiltinModule(module).getAttribute(typeName);
-                if (attribute != PNone.NO_VALUE) {
-                    return attribute;
-                }
-            }
-            throw raiseNode.raise(inliningTarget, PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
         }
+        for (TruffleString module : TYPE_LOOKUP_MODULES) {
+            Object attribute = core.lookupBuiltinModule(module).getAttribute(typeName);
+            if (attribute != PNone.NO_VALUE) {
+                return PythonToNativeNewRefNode.executeLongUncached(attribute);
+            }
+        }
+        throw PRaiseNode.raiseStatic(null, PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
     }
 
     @GenerateInline
@@ -984,20 +971,16 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_Set_Native_Slots extends CApiTernaryBuiltinNode {
-
-        @Specialization
-        static int doPythonClass(PythonManagedClass pythonClass, long nativeGetSets, long nativeMembers,
-                        @Bind Node inliningTarget,
-                        @Cached HiddenAttr.WriteNode writeAttrNode) {
-            writeAttrNode.execute(inliningTarget, pythonClass, NATIVE_SLOTS, new long[]{nativeGetSets, nativeMembers});
-            return 0;
-        }
+    @CApiBuiltin(ret = Int, args = {PyTypeObjectRawPointer, Pointer, Pointer}, call = Ignored)
+    static int GraalPyPrivate_Set_Native_Slots(long pythonClassPtr, long nativeGetSets, long nativeMembers) {
+        PythonManagedClass pythonClass = (PythonManagedClass) NativeToPythonClassInternalNode.executeUncached(pythonClassPtr);
+        HiddenAttr.WriteNode.executeUncached(pythonClass, NATIVE_SLOTS, new long[]{nativeGetSets, nativeMembers});
+        return 0;
     }
 
-    @CApiBuiltin(ret = Void, args = {PyTypeObject}, call = Ignored)
-    abstract static class GraalPyPrivate_AddInheritedSlots extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {PyTypeObjectRawPointer}, call = Ignored)
+    @TruffleBoundary
+    static void GraalPyPrivate_AddInheritedSlots(long pythonClassPtr) {
         /**
          * A native class may inherit from a managed class. However, the managed class may define
          * custom slots at a time where the C API is not yet loaded. So we need to check if any of
@@ -1008,82 +991,70 @@ public final class PythonCextBuiltins {
          * we transfer the result of that inheritance process to the slots mirror on the managed
          * side.
          */
-        @TruffleBoundary
-        @Specialization
-        static Object addInheritedSlots(PythonAbstractNativeObject pythonClass,
-                        @Bind Node inliningTarget,
-                        @Cached CStructAccess.ReadObjectNode readNativeDict,
-                        @Cached FromCharPointerNode fromCharPointer,
-                        @Cached GraalPyPrivate_Type_AddGetSet addGetSet,
-                        @Cached GraalPyPrivate_Type_AddMember addMember,
-                        @Cached GetMroStorageNode getMroStorageNode) {
-            pythonClass.setTpSlots(TpSlots.fromNative(pythonClass, getCApiContext(inliningTarget).getContext()));
+        PythonAbstractNativeObject pythonClass = (PythonAbstractNativeObject) NativeToPythonClassInternalNode.executeUncached(pythonClassPtr);
+        pythonClass.setTpSlots(TpSlots.fromNative(pythonClass, PythonContext.get(null)));
 
-            long[] getsets = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_GETSETS);
-            long[] members = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_MEMBERS);
+        long[] getsets = collect(TypeNodes.GetMroStorageNode.executeUncached(pythonClass), INDEX_GETSETS);
+        long[] members = collect(TypeNodes.GetMroStorageNode.executeUncached(pythonClass), INDEX_MEMBERS);
 
-            PDict dict = (PDict) readNativeDict.readFromObj(pythonClass, CFields.PyTypeObject__tp_dict);
+        PDict dict = (PDict) CStructAccess.ReadObjectNode.getUncached().readFromObj(pythonClass, CFields.PyTypeObject__tp_dict);
 
-            for (long getset : getsets) {
-                if (getset != NULLPTR) {
-                    for (int i = 0;; i++) {
-                        long namePtr = readStructArrayPtrField(getset, i, PyGetSetDef__name);
-                        if (namePtr == NULLPTR) {
-                            break;
-                        }
-                        TruffleString name = fromCharPointer.execute(namePtr);
-                        long getter = readStructArrayPtrField(getset, i, PyGetSetDef__get);
-                        long setter = readStructArrayPtrField(getset, i, PyGetSetDef__set);
-                        long docPtr = readStructArrayPtrField(getset, i, PyGetSetDef__doc);
-                        Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : fromCharPointer.execute(docPtr);
-                        long closure = readStructArrayPtrField(getset, i, PyGetSetDef__closure);
-
-                        addGetSet.execute(pythonClass, dict, name, getter, setter, doc, closure);
+        for (long getset : getsets) {
+            if (getset != NULLPTR) {
+                for (int i = 0;; i++) {
+                    long namePtr = readStructArrayPtrField(getset, i, PyGetSetDef__name);
+                    if (namePtr == NULLPTR) {
+                        break;
                     }
+                    long getter = readStructArrayPtrField(getset, i, PyGetSetDef__get);
+                    long setter = readStructArrayPtrField(getset, i, PyGetSetDef__set);
+                    long docPtr = readStructArrayPtrField(getset, i, PyGetSetDef__doc);
+                    Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : FromCharPointerNode.executeUncached(docPtr);
+                    long closure = readStructArrayPtrField(getset, i, PyGetSetDef__closure);
+
+                    PythonCextTypeBuiltins.addGetSet(pythonClass, dict, FromCharPointerNode.executeUncached(namePtr), getter, setter, doc, closure);
                 }
             }
-
-            for (long member : members) {
-                if (member != NULLPTR) {
-                    for (int i = 0;; i++) {
-                        long namePtr = readStructArrayPtrField(member, i, PyMemberDef__name);
-                        if (namePtr == NULLPTR) {
-                            break;
-                        }
-                        TruffleString name = fromCharPointer.execute(namePtr);
-                        int type = readStructArrayIntField(member, i, PyMemberDef__type);
-                        long offset = readStructArrayLongField(member, i, PyMemberDef__offset);
-                        int flags = readStructArrayIntField(member, i, PyMemberDef__flags);
-                        long docPtr = readStructArrayPtrField(member, i, PyMemberDef__doc);
-                        Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : fromCharPointer.execute(docPtr);
-                        boolean canSet = (flags & CConstants.READONLY.intValue()) == 0;
-                        addMember.execute(pythonClass, dict, name, type, offset, canSet ? 1 : 0, doc);
-                    }
-                }
-            }
-            return PNone.NO_VALUE;
         }
 
-        private static final int INDEX_GETSETS = 0;
-        private static final int INDEX_MEMBERS = 1;
-
-        @TruffleBoundary
-        private static long[] collect(MroSequenceStorage mro, int idx) {
-            int mroLength = mro.length();
-            long[] result = new long[mroLength];
-            int resultCount = 0;
-            for (int i = 0; i < mroLength; i++) {
-                PythonAbstractClass kls = mro.getPythonClassItemNormalized(i);
-                Object value = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) kls, NATIVE_SLOTS, null);
-                if (value != null) {
-                    long[] tuple = (long[]) value;
-                    assert tuple.length == 2;
-                    result[resultCount++] = tuple[idx];
+        for (long member : members) {
+            if (member != NULLPTR) {
+                for (int i = 0;; i++) {
+                    long namePtr = readStructArrayPtrField(member, i, PyMemberDef__name);
+                    if (namePtr == NULLPTR) {
+                        break;
+                    }
+                    int type = readStructArrayIntField(member, i, PyMemberDef__type);
+                    long offset = readStructArrayLongField(member, i, PyMemberDef__offset);
+                    int flags = readStructArrayIntField(member, i, PyMemberDef__flags);
+                    long docPtr = readStructArrayPtrField(member, i, PyMemberDef__doc);
+                    Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : FromCharPointerNode.executeUncached(docPtr);
+                    boolean canSet = (flags & CConstants.READONLY.intValue()) == 0;
+                    PythonCextTypeBuiltins.addMember(pythonClass, dict, FromCharPointerNode.executeUncached(namePtr), type, offset, canSet ? 1 : 0, doc);
                 }
             }
-            // the array may be overallocated, but the caller ignores any NULLPTR elements anyway
-            return result;
         }
+    }
+
+    private static final int INDEX_GETSETS = 0;
+    private static final int INDEX_MEMBERS = 1;
+
+    @TruffleBoundary
+    private static long[] collect(MroSequenceStorage mro, int idx) {
+        int mroLength = mro.length();
+        long[] result = new long[mroLength];
+        int resultCount = 0;
+        for (int i = 0; i < mroLength; i++) {
+            PythonAbstractClass kls = mro.getPythonClassItemNormalized(i);
+            Object value = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) kls, NATIVE_SLOTS, null);
+            if (value != null) {
+                long[] tuple = (long[]) value;
+                assert tuple.length == 2;
+                result[resultCount++] = tuple[idx];
+            }
+        }
+        // the array may be overallocated, but the caller ignores any NULLPTR elements anyway
+        return result;
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject}, call = Ignored)
@@ -1097,77 +1068,61 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = Direct)
-    abstract static class PyFrame_New extends CApiQuaternaryBuiltinNode {
-        @Specialization
-        static Object newFrame(long threadState, PCode code, PythonObject globals, Object locals,
-                        @Bind PythonLanguage language) {
-            Object frameLocals;
-            if (locals == null || PGuards.isPNone(locals)) {
-                frameLocals = PFactory.createDict(language);
-            } else {
-                frameLocals = locals;
-            }
-            return PFactory.createPFrame(language, threadState, code, globals, frameLocals);
-        }
+    @CApiBuiltin(ret = PyFrameObjectRawPointer, args = {PyThreadState, PyCodeObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    static long PyFrame_New(long threadState, long codePtr, long globalsPtr, long localsPtr) {
+        PCode code = (PCode) NativeToPythonNode.executeRawUncached(codePtr);
+        PythonObject globals = (PythonObject) NativeToPythonNode.executeRawUncached(globalsPtr);
+        Object locals = localsPtr == NULLPTR ? null : NativeToPythonNode.executeRawUncached(localsPtr);
+        PythonLanguage language = PythonLanguage.get(null);
+        Object frameLocals = locals == null || PGuards.isPNone(locals) ? PFactory.createDict(language) : locals;
+        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createPFrame(language, threadState, code, globals, frameLocals));
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, PyObject, Py_ssize_t, Int, Py_ssize_t, ConstCharPtrAsTruffleString, Int, Pointer, Pointer, Pointer, Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_MemoryViewFromBuffer extends CApi11BuiltinNode {
-
-        @Specialization
-        static Object wrap(long bufferStructPointer, Object ownerObj, long lenObj,
-                        Object readonlyObj, Object itemsizeObj, TruffleString format,
-                        Object ndimObj, long bufPointer, long shapePointer, long stridesPointer, long suboffsetsPointer,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile zeroDimProfile,
-                        @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Cached CastToJavaIntExactNode castToIntNode,
-                        @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
-                        @Bind PythonLanguage language) {
-            int ndim = castToIntNode.execute(inliningTarget, ndimObj);
-            int itemsize = castToIntNode.execute(inliningTarget, itemsizeObj);
-            int len = castToIntNode.execute(inliningTarget, lenObj);
-            boolean readonly = castToIntNode.execute(inliningTarget, readonlyObj) != 0;
-            Object owner = PGuards.isNullOrZero(ownerObj, lib) ? null : ownerObj;
-            int[] shape = null;
-            int[] strides = null;
-            int[] suboffsets = null;
-            if (zeroDimProfile.profile(inliningTarget, ndim > 0)) {
-                if (shapePointer != NULLPTR) {
-                    shape = readLongArrayElementsAsInts(shapePointer, ndim);
-                } else {
-                    assert ndim == 1;
-                    shape = new int[]{len / itemsize};
-                }
-                if (stridesPointer != NULLPTR) {
-                    strides = readLongArrayElementsAsInts(stridesPointer, ndim);
-                } else {
-                    strides = PMemoryView.initStridesFromShape(ndim, itemsize, shape);
-                }
-                if (suboffsetsPointer != NULLPTR) {
-                    suboffsets = readLongArrayElementsAsInts(suboffsetsPointer, ndim);
-                }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {Pointer, PyObjectRawPointer, Py_ssize_t, Int, Py_ssize_t, ConstCharPtr, Int, Pointer, Pointer, Pointer, Pointer}, call = Ignored)
+    static long GraalPyPrivate_MemoryViewFromBuffer(long bufferStructPointer, long ownerPtr, long lenArg, int readonlyArg, long itemsizeArg, long formatPtr, int ndim, long bufPointer,
+                    long shapePointer, long stridesPointer, long suboffsetsPointer) {
+        int itemsize = CastToJavaIntExactNode.executeUncached(itemsizeArg);
+        int len = CastToJavaIntExactNode.executeUncached(lenArg);
+        boolean readonly = readonlyArg != 0;
+        Object owner = ownerPtr == NULLPTR ? null : NativeToPythonNode.executeRawUncached(ownerPtr);
+        TruffleString format = (TruffleString) CharPtrToPythonNode.getUncached().execute(formatPtr);
+        int[] shape = null;
+        int[] strides = null;
+        int[] suboffsets = null;
+        if (ndim > 0) {
+            if (shapePointer != NULLPTR) {
+                shape = readLongArrayElementsAsInts(shapePointer, ndim);
+            } else {
+                assert ndim == 1;
+                shape = new int[]{len / itemsize};
             }
-            Object buffer = NativeByteSequenceStorage.create(bufPointer, len, len, false);
-            int flags = initFlagsNode.execute(inliningTarget, ndim, itemsize, shape, strides, suboffsets);
-            BufferLifecycleManager bufferLifecycleManager = null;
-            if (bufferStructPointer != NULLPTR) {
-                bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
+            if (stridesPointer != NULLPTR) {
+                strides = readLongArrayElementsAsInts(stridesPointer, ndim);
+            } else {
+                strides = PMemoryView.initStridesFromShape(ndim, itemsize, shape);
             }
-            return PFactory.createMemoryView(language, PythonContext.get(inliningTarget), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
-                            BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
+            if (suboffsetsPointer != NULLPTR) {
+                suboffsets = readLongArrayElementsAsInts(suboffsetsPointer, ndim);
+            }
         }
-
-        private static int[] readLongArrayElementsAsInts(long pointer, int elements) {
-            int[] result = new int[elements];
-            for (int i = 0; i < result.length; i++) {
-                result[i] = (int) readLongArrayElement(pointer, i);
-            }
-            return result;
+        Object buffer = NativeByteSequenceStorage.create(bufPointer, len, len, false);
+        int flags = MemoryViewNodes.InitFlagsNode.executeUncached(ndim, itemsize, shape, strides, suboffsets);
+        BufferLifecycleManager bufferLifecycleManager = null;
+        if (bufferStructPointer != NULLPTR) {
+            bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
         }
+        Object memoryView = PFactory.createMemoryView(PythonLanguage.get(null), PythonContext.get(null), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
+                        BufferFormat.forMemoryView(format, TruffleString.CodePointLengthNode.getUncached(), TruffleString.CodePointAtIndexUTF32Node.getUncached()), format, ndim, bufPointer, 0,
+                        shape, strides, suboffsets, flags);
+        return PythonToNativeNewRefNode.executeLongUncached(memoryView);
+    }
+
+    private static int[] readLongArrayElementsAsInts(long pointer, int elements) {
+        int[] result = new int[elements];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = (int) readLongArrayElement(pointer, i);
+        }
+        return result;
     }
 
     @GenerateInline
@@ -1211,128 +1166,79 @@ public final class PythonCextBuiltins {
     }
 
     @CApiBuiltin(ret = SIZE_T, args = {}, call = Ignored)
-    abstract static class GraalPyPrivate_GetMaxNativeMemory extends CApiNullaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        long get() {
-            return PythonOptions.MaxNativeMemory.getValue(getContext().getEnv().getOptions());
-        }
+    @TruffleBoundary
+    static long GraalPyPrivate_GetMaxNativeMemory() {
+        return PythonOptions.MaxNativeMemory.getValue(PythonContext.get(null).getEnv().getOptions());
     }
 
     @CApiBuiltin(ret = SIZE_T, args = {}, call = Ignored)
-    abstract static class GraalPyPrivate_GetInitialNativeMemory extends CApiNullaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        long get() {
-            return PythonOptions.InitialNativeMemory.getValue(getContext().getEnv().getOptions());
-        }
+    @TruffleBoundary
+    static long GraalPyPrivate_GetInitialNativeMemory() {
+        return PythonOptions.InitialNativeMemory.getValue(PythonContext.get(null).getEnv().getOptions());
     }
 
     @CApiBuiltin(ret = Void, args = {SIZE_T}, call = Ignored)
-    abstract static class GraalPyPrivate_TriggerGC extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        Object trigger(long delay) {
-            LOGGER.fine("full GC due to native memory");
-            PythonUtils.forceFullGC();
-            try {
-                Thread.sleep(delay);
-            } catch (InterruptedException x) {
-                // Restore interrupt status
-                Thread.currentThread().interrupt();
-            }
-            CApiTransitions.pollReferenceQueue();
-            PythonContext.triggerAsyncActions(this);
-            return PNone.NO_VALUE;
+    @TruffleBoundary
+    static void GraalPyPrivate_TriggerGC(long delay) {
+        LOGGER.fine("full GC due to native memory");
+        PythonUtils.forceFullGC();
+        try {
+            Thread.sleep(delay);
+        } catch (InterruptedException x) {
+            // Restore interrupt status
+            Thread.currentThread().interrupt();
         }
+        CApiTransitions.pollReferenceQueue();
+        PythonContext.triggerAsyncActions(EncapsulatingNodeReference.getCurrent().get());
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_ManagedObject_GC_Del extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static PNone doObject(long ptr,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGCDelNode pyObjectGCDelNode) {
-            pyObjectGCDelNode.execute(inliningTarget, ptr);
-            return PNone.NO_VALUE;
-        }
+    static void GraalPyPrivate_ManagedObject_GC_Del(long ptr) {
+        PyObjectGCDelNode.executeUncached(ptr);
     }
 
     @CApiBuiltin(ret = Void, args = {UNSIGNED_INT, UINTPTR_T, SIZE_T}, call = Ignored)
-    abstract static class GraalPyPrivate_TraceMalloc_Track extends CApiTernaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_TraceMalloc_Track.class);
-
-        @Specialization
-        @TruffleBoundary
-        static Object doCachedDomainIdx(int domain, long ptrVal, long size) {
-            // this will also be called if the allocation failed
-            if (ptrVal != 0) {
-                LOGGER.fine(() -> PythonUtils.formatJString("Tracking memory (domain: %d, size: %d): %s", domain, size, CApiContext.asHex(ptrVal)));
-            }
-            return PNone.NO_VALUE;
+    @TruffleBoundary
+    static void GraalPyPrivate_TraceMalloc_Track(int domain, long ptrVal, long size) {
+        // this will also be called if the allocation failed
+        if (ptrVal != 0) {
+            LOGGER.fine(() -> PythonUtils.formatJString("Tracking memory (domain: %d, size: %d): %s", domain, size, CApiContext.asHex(ptrVal)));
         }
     }
 
     @CApiBuiltin(ret = Void, args = {UNSIGNED_INT, UINTPTR_T}, call = Ignored)
-    abstract static class GraalPyPrivate_TraceMalloc_Untrack extends CApiBinaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_TraceMalloc_Untrack.class);
-
-        @Specialization
-        @TruffleBoundary
-        Object doCachedDomainIdx(int domain, long ptrVal) {
-            LOGGER.fine(() -> PythonUtils.formatJString("Untracking memory (domain: %d): %s", domain, CApiContext.asHex(ptrVal)));
-            return PNone.NO_VALUE;
-        }
-    }
-
-    @GenerateCached(false)
-    abstract static class GraalPyPrivate_GcTracingNode extends CApiUnaryBuiltinNode {
-
-        @Specialization(guards = "!traceMem(language)")
-        static Object doNothing(@SuppressWarnings("unused") Object ptr,
-                        @SuppressWarnings("unused") @Bind PythonLanguage language) {
-            // do nothing
-            return PNone.NO_VALUE;
-        }
-
-        @Fallback
-        Object doNativeWrapper(Object ptr,
-                        @Bind Node inliningTarget,
-                        @Bind PythonContext context,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef) {
-            PFrame.Reference ref = null;
-            if (context.getOption(PythonOptions.TraceNativeMemoryCalls)) {
-                ref = getCurrentFrameRef.execute(null, inliningTarget);
-            }
-            trace(context, (long) ptr, ref, null);
-            return PNone.NO_VALUE;
-        }
-
-        @Idempotent
-        boolean traceMem(PythonLanguage language) {
-            return language.getEngineOption(PythonOptions.TraceNativeMemory);
-        }
-
-        protected abstract void trace(PythonContext context, long ptr, Reference ref, TruffleString className);
+    @TruffleBoundary
+    static void GraalPyPrivate_TraceMalloc_Untrack(int domain, long ptrVal) {
+        LOGGER.fine(() -> PythonUtils.formatJString("Untracking memory (domain: %d): %s", domain, CApiContext.asHex(ptrVal)));
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_Object_GC_UnTrack extends GraalPyPrivate_GcTracingNode {
-        @Override
-        protected void trace(PythonContext context, long ptr, Reference ref, TruffleString className) {
-            GC_LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
-            context.getCApiContext().untrackObject(ptr, ref, className);
-        }
+    static void GraalPyPrivate_Object_GC_UnTrack(long ptr) {
+        traceNativeGCObject(ptr, false);
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_Object_GC_Track extends GraalPyPrivate_GcTracingNode {
-        @Override
-        protected void trace(PythonContext context, long ptr, Reference ref, TruffleString className) {
+    static void GraalPyPrivate_Object_GC_Track(long ptr) {
+        traceNativeGCObject(ptr, true);
+    }
+
+    private static void traceNativeGCObject(long ptr, boolean track) {
+        PythonLanguage language = PythonLanguage.get(null);
+        if (!language.getEngineOption(PythonOptions.TraceNativeMemory)) {
+            return;
+        }
+
+        PythonContext context = PythonContext.get(null);
+        Reference ref = null;
+        if (context.getOption(PythonOptions.TraceNativeMemoryCalls)) {
+            ref = GetCurrentFrameRef.executeUncached();
+        }
+        if (track) {
             GC_LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
-            context.getCApiContext().trackObject(ptr, ref, className);
+            context.getCApiContext().trackObject(ptr, ref, null);
+        } else {
+            GC_LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
+            context.getCApiContext().untrackObject(ptr, ref, null);
         }
     }
 
@@ -1361,101 +1267,95 @@ public final class PythonCextBuiltins {
      * object) and then stored in a Java object array which is then attached to the primary object.
      * </p>
      */
+    private static final Level REPLICATE_NATIVE_REFERENCES_LEVEL = Level.FINER;
+
     @CApiBuiltin(ret = Void, args = {Pointer, Pointer, Int}, call = Ignored)
-    abstract static class GraalPyPrivate_Object_ReplicateNativeReferences extends CApiTernaryBuiltinNode {
-        private static final Level LEVEL = Level.FINER;
+    static void GraalPyPrivate_Object_ReplicateNativeReferences(long lPointer, long listHead, int n) {
+        assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
 
-        @Specialization
-        static Object doGeneric(long lPointer, long listHead, int n,
-                        @Bind Node inliningTarget,
-                        @Cached CStructAccess.ReadObjectNode readObjectNode,
-                        @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
-            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
+        boolean loggable = GC_LOGGER.isLoggable(REPLICATE_NATIVE_REFERENCES_LEVEL);
+        assert lPointer != 0;
+        Object object = GcNativePtrToPythonNode.executeUncached(lPointer);
 
-            boolean loggable = GC_LOGGER.isLoggable(LEVEL);
-            assert lPointer != 0;
-            Object object = gcNativePtrToPythonNode.execute(inliningTarget, lPointer);
+        /*
+         * If 'object' is null, there is no 'PythonAbstractNativeObject' wrapper for the native
+         * object. This means that the native object is not referenced from managed code. So, we
+         * don't need to replicate native references.
+         */
+
+        Object repr = object;
+        Object[] referents = null;
+        if (object instanceof PythonAbstractNativeObject || object instanceof PythonModule || isTupleWithNativeStorage(object) || isListWithNativeStorage(object)) {
+            /*
+             * Note: it is important that we first collect the objects such that we have strong Java
+             * references to them on the Java stack and then we overwrite the
+             * 'replicatedNativeReferences' field. This is because the referents may already be
+             * weakly referenced from the handle table and such referents may already be in the
+             * previous array and then it could happen, that they die during list processing.
+             */
+            Object[] oldReferents;
+            referents = new Object[n];
+            if (object instanceof PythonAbstractNativeObject nativeObject) {
+                if (loggable) {
+                    repr = nativeObject.toStringWithContext();
+                }
+                oldReferents = nativeObject.getReplicatedNativeReferences();
+                nativeObject.setReplicatedNativeReferences(referents);
+            } else if (object instanceof PythonModule module) {
+                oldReferents = module.getReplicatedNativeReferences();
+                module.setReplicatedNativeReferences(referents);
+            } else {
+                assert isTupleWithNativeStorage(object) || isListWithNativeStorage(object);
+                NativeSequenceStorage nativeSequenceStorage = getNativeSequenceStorage(object);
+                oldReferents = nativeSequenceStorage.getReplicatedNativeReferences();
+                nativeSequenceStorage.setReplicatedNativeReferences(referents);
+            }
+            // Collect referents (traverse native list and resolve pointers)
+            long cur = listHead;
+            CStructAccess.ReadObjectNode readObjectNode = CStructAccess.ReadObjectNode.getUncached();
+            for (int i = 0; i < n; i++) {
+                referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
+                cur = readPtrField(cur, GraalPyGC_CycleNode__next);
+            }
 
             /*
-             * If 'object' is null, there is no 'PythonAbstractNativeObject' wrapper for the native
-             * object. This means that the native object is not referenced from managed code. So, we
-             * don't need to replicate native references.
+             * As described above: Ensure that the 'old' replicated references are strong until this
+             * point. Otherwise, weakly referenced managed objects could die.
              */
+            java.lang.ref.Reference.reachabilityFence(oldReferents);
 
-            Object repr = object;
-            Object[] referents = null;
-            if (object instanceof PythonAbstractNativeObject || object instanceof PythonModule || isTupleWithNativeStorage(object) || isListWithNativeStorage(object)) {
-                /*
-                 * Note: it is important that we first collect the objects such that we have strong
-                 * Java references to them on the Java stack and then we overwrite the
-                 * 'replicatedNativeReferences' field. This is because the referents may already be
-                 * weakly referenced from the handle table and such referents may already be in the
-                 * previous array and then it could happen, that they die during list processing.
-                 */
-                Object[] oldReferents;
-                referents = new Object[n];
-                if (object instanceof PythonAbstractNativeObject nativeObject) {
-                    if (loggable) {
-                        repr = nativeObject.toStringWithContext();
-                    }
-                    oldReferents = nativeObject.getReplicatedNativeReferences();
-                    nativeObject.setReplicatedNativeReferences(referents);
-                } else if (object instanceof PythonModule module) {
-                    oldReferents = module.getReplicatedNativeReferences();
-                    module.setReplicatedNativeReferences(referents);
-                } else {
-                    assert isTupleWithNativeStorage(object) || isListWithNativeStorage(object);
-                    NativeSequenceStorage nativeSequenceStorage = getNativeSequenceStorage(object);
-                    oldReferents = nativeSequenceStorage.getReplicatedNativeReferences();
-                    nativeSequenceStorage.setReplicatedNativeReferences(referents);
-                }
-                // Collect referents (traverse native list and resolve pointers)
-                long cur = listHead;
-                for (int i = 0; i < n; i++) {
-                    referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
-                    cur = readPtrField(cur, GraalPyGC_CycleNode__next);
-                }
-
-                /*
-                 * As described above: Ensure that the 'old' replicated references are strong until
-                 * this point. Otherwise, weakly referenced managed objects could die.
-                 */
-                java.lang.ref.Reference.reachabilityFence(oldReferents);
-
-                if (loggable) {
-                    GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, arraysToString(referents)));
-                }
-            } else if (object == null && loggable) {
-                GC_LOGGER.log(LEVEL, PythonUtils.formatJString("Did not replicate native refs of %s: no wrapper", CApiContext.asHex(lPointer)));
+            if (loggable) {
+                GC_LOGGER.log(REPLICATE_NATIVE_REFERENCES_LEVEL, PythonUtils.formatJString("Replicated native refs of %s to managed: %s", repr, arraysToString(referents)));
             }
-            return PNone.NO_VALUE;
+        } else if (object == null && loggable) {
+            GC_LOGGER.log(REPLICATE_NATIVE_REFERENCES_LEVEL, PythonUtils.formatJString("Did not replicate native refs of %s: no wrapper", CApiContext.asHex(lPointer)));
         }
+    }
 
-        private static NativeSequenceStorage getNativeSequenceStorage(Object object) {
-            NativeSequenceStorage nativeSequenceStorage;
-            if (object instanceof PTuple tuple) {
-                // cast is ensured by 'isTupleWithNativeStorage'
-                nativeSequenceStorage = (NativeSequenceStorage) tuple.getSequenceStorage();
-            } else {
-                assert object instanceof PList;
-                // casts are ensured by 'isListWithNativeStorage'
-                nativeSequenceStorage = (NativeSequenceStorage) ((PList) object).getSequenceStorage();
-            }
-            return nativeSequenceStorage;
+    private static NativeSequenceStorage getNativeSequenceStorage(Object object) {
+        NativeSequenceStorage nativeSequenceStorage;
+        if (object instanceof PTuple tuple) {
+            // cast is ensured by 'isTupleWithNativeStorage'
+            nativeSequenceStorage = (NativeSequenceStorage) tuple.getSequenceStorage();
+        } else {
+            assert object instanceof PList;
+            // casts are ensured by 'isListWithNativeStorage'
+            nativeSequenceStorage = (NativeSequenceStorage) ((PList) object).getSequenceStorage();
         }
+        return nativeSequenceStorage;
+    }
 
-        @TruffleBoundary
-        private static String arraysToString(Object[] arr) {
-            return Arrays.toString(arr);
-        }
+    @TruffleBoundary
+    private static String arraysToString(Object[] arr) {
+        return Arrays.toString(arr);
+    }
 
-        private static boolean isTupleWithNativeStorage(Object object) {
-            return object instanceof PTuple tuple && tuple.getSequenceStorage() instanceof NativeSequenceStorage;
-        }
+    private static boolean isTupleWithNativeStorage(Object object) {
+        return object instanceof PTuple tuple && tuple.getSequenceStorage() instanceof NativeSequenceStorage;
+    }
 
-        private static boolean isListWithNativeStorage(Object object) {
-            return object instanceof PList list && list.getSequenceStorage() instanceof NativeSequenceStorage;
-        }
+    private static boolean isListWithNativeStorage(Object object) {
+        return object instanceof PList list && list.getSequenceStorage() instanceof NativeSequenceStorage;
     }
 
     /**
@@ -1465,107 +1365,87 @@ public final class PythonCextBuiltins {
      * that involve managed objects.
      */
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_Object_GC_EnsureWeak extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object doNative(long head,
-                        @Bind Node inliningTarget,
-                        @Cached UpdateHandleTableReferenceNode updateRefNode) {
-            // guaranteed by the guard
-            assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
-            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
+    static void GraalPyPrivate_Object_GC_EnsureWeak(long head) {
+        assert PythonContext.get(null).isNativeAccessAllowed();
+        assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
 
-            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+        HandleContext handleContext = PythonContext.get(null).nativeContext;
 
-            /*
-             * The list's head is a dummy node that can not be a tagged pointer because it is not an
-             * object and always allocated in native.
-             */
-            assert !HandlePointerConverter.pointsToPyHandleSpace(head);
+        /*
+         * The list's head is a dummy node that can not be a tagged pointer because it is not an
+         * object and always allocated in native.
+         */
+        assert !HandlePointerConverter.pointsToPyHandleSpace(head);
 
-            // PyGC_Head *gc = GC_NEXT(head)
-            long gc = readLongField(head, CFields.PyGC_Head___gc_next);
-            /*
-             * The list's head is not polluted with NEXT_MASK_UNREACHABLE. See 'move_weak_reachable'
-             * at the end of the function.
-             */
+        // PyGC_Head *gc = GC_NEXT(head)
+        long gc = readLongField(head, CFields.PyGC_Head___gc_next);
+        /*
+         * The list's head is not polluted with NEXT_MASK_UNREACHABLE. See 'move_weak_reachable' at
+         * the end of the function.
+         */
+        assert (gc & NEXT_MASK_UNREACHABLE) == 0;
+        while (gc != head) {
             assert (gc & NEXT_MASK_UNREACHABLE) == 0;
-            while (gc != head) {
-                assert (gc & NEXT_MASK_UNREACHABLE) == 0;
 
-                // PyObject *op = FROM_GC(gc)
-                long op = gc + CStructs.PyGC_Head.size();
+            // PyObject *op = FROM_GC(gc)
+            long op = gc + CStructs.PyGC_Head.size();
 
-                if (HandlePointerConverter.pointsToPyHandleSpace(op)) {
-                    int hti = readIntField(HandlePointerConverter.pointerToStub(op), CFields.GraalPyObject__handle_table_index);
-                    updateRefNode.clearStrongRefButKeepInGCList(inliningTarget, handleContext, op, hti);
-                } else {
-                    // TODO(fa): investigate if that case is valid and necessary
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-
-                // next = GC_NEXT(gc)
-                long gcUntagged = HandlePointerConverter.pointerToStub(gc);
-                long nextTaggedWithMask = readLongField(gcUntagged, CFields.PyGC_Head___gc_next);
-                // remove NEXT_MASK_UNREACHABLE flag
-                long next = nextTaggedWithMask & ~NEXT_MASK_UNREACHABLE;
-                /*
-                 * We expect to process 'weak_candidates' which all have NEXT_MASK_UNREACHABLE set
-                 * except of the list head (which is a dummy node)
-                 */
-                assert next == head || (nextTaggedWithMask & NEXT_MASK_UNREACHABLE) != 0;
-
-                /*
-                 * This is a "dirty" untrack since we just overwrite '_gc_prev' and '_gc_next' with
-                 * zero. Here it is fine because (a) managed objects will never have flags set in
-                 * '_gc_prev' that need to be preserved, and (b) because we untrack all objects in
-                 * this list anyway.
-                 */
-                writeLongField(gcUntagged, CFields.PyGC_Head___gc_next, 0);
-                writeLongField(gcUntagged, CFields.PyGC_Head___gc_prev, 0);
-
-                gc = next;
+            if (HandlePointerConverter.pointsToPyHandleSpace(op)) {
+                int hti = readIntField(HandlePointerConverter.pointerToStub(op), CFields.GraalPyObject__handle_table_index);
+                UpdateHandleTableReferenceNode.clearStrongRefButKeepInGCListUncached(handleContext, op, hti);
+            } else {
+                // TODO(fa): investigate if that case is valid and necessary
+                throw CompilerDirectives.shouldNotReachHere();
             }
-            return PNone.NO_VALUE;
+
+            // next = GC_NEXT(gc)
+            long gcUntagged = HandlePointerConverter.pointerToStub(gc);
+            long nextTaggedWithMask = readLongField(gcUntagged, CFields.PyGC_Head___gc_next);
+            // remove NEXT_MASK_UNREACHABLE flag
+            long next = nextTaggedWithMask & ~NEXT_MASK_UNREACHABLE;
+            /*
+             * We expect to process 'weak_candidates' which all have NEXT_MASK_UNREACHABLE set
+             * except of the list head (which is a dummy node)
+             */
+            assert next == head || (nextTaggedWithMask & NEXT_MASK_UNREACHABLE) != 0;
+
+            /*
+             * This is a "dirty" untrack since we just overwrite '_gc_prev' and '_gc_next' with
+             * zero. Here it is fine because (a) managed objects will never have flags set in
+             * '_gc_prev' that need to be preserved, and (b) because we untrack all objects in this
+             * list anyway.
+             */
+            writeLongField(gcUntagged, CFields.PyGC_Head___gc_next, 0);
+            writeLongField(gcUntagged, CFields.PyGC_Head___gc_prev, 0);
+
+            gc = next;
         }
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_IsReferencedFromManaged extends CApiUnaryBuiltinNode {
-        @Specialization
-        static int doNative(long lPointer,
-                        @Bind Node inliningTarget,
-                        @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
-            // guaranteed by the guard
-            assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
-            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
+    static int GraalPyPrivate_IsReferencedFromManaged(long lPointer) {
+        assert PythonContext.get(null).isNativeAccessAllowed();
+        assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
 
-            // this upcall doesn't make sense for managed objects
-            assert !HandlePointerConverter.pointsToPyHandleSpace(lPointer);
+        // this upcall doesn't make sense for managed objects
+        assert !HandlePointerConverter.pointsToPyHandleSpace(lPointer);
 
-            Object object = gcNativePtrToPythonNode.execute(inliningTarget, lPointer);
-            return PInt.intValue(object != null);
-        }
+        Object object = GcNativePtrToPythonNode.executeUncached(lPointer);
+        return PInt.intValue(object != null);
     }
 
     @CApiBuiltin(ret = Void, call = Ignored)
-    abstract static class GraalPyPrivate_EnableReferneceQueuePolling extends CApiNullaryBuiltinNode {
-        @Specialization
-        static Object doGeneric(@Bind Node inliningTarget) {
-            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
-            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
-            CApiTransitions.enableReferenceQueuePolling(handleContext);
-            return PNone.NO_VALUE;
-        }
+    static void GraalPyPrivate_EnableReferenceQueuePolling() {
+        assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
+        HandleContext handleContext = PythonContext.get(null).nativeContext;
+        CApiTransitions.enableReferenceQueuePolling(handleContext);
     }
 
     @CApiBuiltin(ret = Int, call = Ignored)
-    abstract static class GraalPyPrivate_DisableReferneceQueuePolling extends CApiNullaryBuiltinNode {
-        @Specialization
-        static int doGeneric(@Bind Node inliningTarget) {
-            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
-            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
-            return PInt.intValue(CApiTransitions.disableReferenceQueuePolling(handleContext));
-        }
+    static int GraalPyPrivate_DisableReferenceQueuePolling() {
+        assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
+        HandleContext handleContext = PythonContext.get(null).nativeContext;
+        return PInt.intValue(CApiTransitions.disableReferenceQueuePolling(handleContext));
     }
 
     private static final int TRACE_MEM = 0x1;
@@ -1586,135 +1466,116 @@ public final class PythonCextBuiltins {
      * with @EngineOption so they are sure to be the same, or that options differing is benign.
      */
     @CApiBuiltin(ret = Int, call = Ignored)
-    abstract static class GraalPyPrivate_Native_Options extends CApiNullaryBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        int getNativeOptions() {
-            int options = 0;
-            PythonLanguage language = PythonLanguage.get(null);
-            if (language.getEngineOption(PythonOptions.TraceNativeMemory)) {
-                options |= TRACE_MEM;
-            }
-            if (LOGGER.isLoggable(Level.INFO)) {
-                options |= LOG_INFO;
-            }
-            if (LOGGER.isLoggable(Level.CONFIG)) {
-                options |= LOG_CONFIG;
-            }
-            if (LOGGER.isLoggable(Level.FINE)) {
-                options |= LOG_FINE;
-            }
-            if (LOGGER.isLoggable(Level.FINER)) {
-                options |= LOG_FINER;
-            }
-            if (LOGGER.isLoggable(Level.FINEST)) {
-                options |= LOG_FINEST;
-            }
-            if (PythonContext.DEBUG_CAPI) {
-                options |= DEBUG_CAPI;
-            }
-            if (language.getEngineOption(PythonOptions.PythonGC)) {
-                options |= PYTHON_GC;
-            }
-            if (language.getEngineOption(PythonOptions.PoisonNativeMemoryOnFree)) {
+    @TruffleBoundary
+    static int GraalPyPrivate_Native_Options() {
+        int options = 0;
+        PythonLanguage language = PythonLanguage.get(null);
+        if (language.getEngineOption(PythonOptions.TraceNativeMemory)) {
+            options |= TRACE_MEM;
+        }
+        if (LOGGER.isLoggable(Level.INFO)) {
+            options |= LOG_INFO;
+        }
+        if (LOGGER.isLoggable(Level.CONFIG)) {
+            options |= LOG_CONFIG;
+        }
+        if (LOGGER.isLoggable(Level.FINE)) {
+            options |= LOG_FINE;
+        }
+        if (LOGGER.isLoggable(Level.FINER)) {
+            options |= LOG_FINER;
+        }
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            options |= LOG_FINEST;
+        }
+        if (PythonContext.DEBUG_CAPI) {
+            options |= DEBUG_CAPI;
+        }
+        if (language.getEngineOption(PythonOptions.PythonGC)) {
+            options |= PYTHON_GC;
+        }
+        if (language.getEngineOption(PythonOptions.PoisonNativeMemoryOnFree)) {
                 options |= POISON_NATIVE_MEMORY_ON_FREE;
             }
             if (language.getEngineOption(PythonOptions.SampleNativeMemoryAllocSites)) {
                 options |= SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
-            }
-            return options;
-        }
+            }return options;
     }
 
-    @CApiBuiltin(ret = Void, args = {Int, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class GraalPyPrivate_LogString extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        static Object log(int level, TruffleString message) {
-            String msg = message.toJavaStringUncached();
-            switch (level) {
-                case LOG_INFO:
-                    LOGGER.info(msg);
-                    break;
-                case LOG_CONFIG:
-                    LOGGER.config(msg);
-                    break;
-                case LOG_FINE:
-                    LOGGER.fine(msg);
-                    break;
-                case LOG_FINER:
-                    LOGGER.finer(msg);
-                    break;
-                case LOG_FINEST:
-                    LOGGER.finest(msg);
-                    break;
-                default:
-                    throw CompilerDirectives.shouldNotReachHere("unknown log level: " + level);
-            }
-            return PNone.NO_VALUE;
+    @CApiBuiltin(ret = Void, args = {Int, ConstCharPtr}, call = Ignored)
+    @TruffleBoundary
+    static void GraalPyPrivate_LogString(int level, long messagePtr) {
+        TruffleString message = (TruffleString) CharPtrToPythonNode.getUncached().execute(messagePtr);
+        String msg = message.toJavaStringUncached();
+        switch (level) {
+            case LOG_INFO:
+                LOGGER.info(msg);
+                break;
+            case LOG_CONFIG:
+                LOGGER.config(msg);
+                break;
+            case LOG_FINE:
+                LOGGER.fine(msg);
+                break;
+            case LOG_FINER:
+                LOGGER.finer(msg);
+                break;
+            case LOG_FINEST:
+                LOGGER.finest(msg);
+                break;
+            default:
+                throw CompilerDirectives.shouldNotReachHere("unknown log level: " + level);
         }
     }
 
     @CApiBuiltin(ret = Void, args = {}, call = Direct)
-    abstract static class GraalPyPrivate_DebugTrace extends CApiNullaryBuiltinNode {
+    @TruffleBoundary
+    static void GraalPyPrivate_DebugTrace() {
+        PythonContext context = PythonContext.get(null);
+        PrintStream out = new PrintStream(context.getEnv().out());
+        if (context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
+            out.println("\n\nJava Stacktrace:");
+            new RuntimeException().printStackTrace(out);
+            out.println("\n\nTruffle Stacktrace:");
+            PNodeWithContext.printStack();
+            out.println("\n\nFrames:");
+            Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Void>() {
 
-        @Specialization
-        @TruffleBoundary
-        Object trace() {
-            PrintStream out = new PrintStream(getContext().getEnv().out());
-            if (getContext().getOption(PythonOptions.EnableDebuggingBuiltins)) {
-                out.println("\n\nJava Stacktrace:");
-                new RuntimeException().printStackTrace(out);
-                out.println("\n\nTruffle Stacktrace:");
-                printStack();
-                out.println("\n\nFrames:");
-                Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<Void>() {
-
-                    public Void visitFrame(FrameInstance frame) {
-                        out.println("  ===========================");
-                        out.println("  call: " + frame.getCallNode());
-                        out.println("  target: " + frame.getCallTarget());
-                        Frame f = frame.getFrame(FrameInstance.FrameAccess.READ_ONLY);
-                        out.println("  args: " + Arrays.asList(f.getArguments()));
-                        return null;
-                    }
-                });
-            } else {
-                out.println("\n\nDEBUG TRACE (enable details via --python.EnableDebuggingBuiltins)");
-            }
-            return PNone.NO_VALUE;
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
-    abstract static class GraalPyPrivate_Debug extends CApiUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static Object doIt(long arg,
-                        @Cached DebugNode debugNode) {
-            debugNode.execute(new Object[]{arg});
-            return 0;
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
-    abstract static class GraalPyPrivate_ToNative extends CApiUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        int doIt(@SuppressWarnings("unused") long object) {
-            if (!PythonOptions.EnableDebuggingBuiltins.getValue(getContext().getEnv().getOptions())) {
-                String message = "GraalPyPrivate_ToNative is not enabled - enable with --python.EnableDebuggingBuiltins\n";
-                try {
-                    getContext().getEnv().out().write(message.getBytes());
-                } catch (IOException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                public Void visitFrame(FrameInstance frame) {
+                    out.println("  ===========================");
+                    out.println("  call: " + frame.getCallNode());
+                    out.println("  target: " + frame.getCallTarget());
+                    Frame f = frame.getFrame(FrameInstance.FrameAccess.READ_ONLY);
+                    out.println("  args: " + Arrays.asList(f.getArguments()));
+                    return null;
                 }
-                return 1;
-            }
-            return 0;
+            });
+        } else {
+            out.println("\n\nDEBUG TRACE (enable details via --python.EnableDebuggingBuiltins)");
         }
+    }
+
+    @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
+    @TruffleBoundary
+    static int GraalPyPrivate_Debug(long arg) {
+        DebugNode.tdebug(PythonContext.get(null), new Object[]{arg});
+        return 0;
+    }
+
+    @CApiBuiltin(ret = Int, args = {Pointer}, call = Direct)
+    @TruffleBoundary
+    static int GraalPyPrivate_ToNative(@SuppressWarnings("unused") long object) {
+        PythonContext context = PythonContext.get(null);
+        if (!PythonOptions.EnableDebuggingBuiltins.getValue(context.getEnv().getOptions())) {
+            String message = "GraalPyPrivate_ToNative is not enabled - enable with --python.EnableDebuggingBuiltins\n";
+            try {
+                context.getEnv().out().write(message.getBytes());
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            return 1;
+        }
+        return 0;
     }
 
     /**
@@ -1754,114 +1615,103 @@ public final class PythonCextBuiltins {
      * </pre>
      */
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_InitBuiltinTypesAndStructs extends CApiUnaryBuiltinNode {
-
-        record ClassPtrPair(PythonManagedClass clazz, long ptr, int typeLookupTableIdx) {
-        }
-
-        @TruffleBoundary
-        @Specialization
-        Object doGeneric(long builtinTypesArrayPointer) {
-            List<ClassPtrPair> builtinTypes = new LinkedList<>();
-            PythonContext context = getContext();
-            try {
-                // first phase: lookup built-in type by name, create wrappers and set native pointer
-                for (int i = 0;; i += 2) {
-                    long typeStructPtr = readPtrArrayElement(builtinTypesArrayPointer, i);
-                    // if we reach the sentinel, stop the loop
-                    if (typeStructPtr == 0L) {
-                        break;
-                    }
-                    long namePtr = readPtrArrayElement(builtinTypesArrayPointer, i + 1);
-                    TruffleString name = FromCharPointerNodeGen.getUncached().execute(namePtr, false);
-
-                    // lookup the built-in type by name
-                    PythonManagedClass clazz = lookupBuiltinTypeWithName(context, name);
-
-                    // create the lookup table entry and sync (selected) native type fields to the
-                    // managed type
-                    LOGGER.fine(() -> "setting type store for built-in class " + name + " to " + PythonUtils.formatPointer(typeStructPtr));
-                    int typeLookupTableIdx = ToNativeTypeNode.wrapStaticTypeStructForManagedClass(clazz, typeStructPtr);
-
-                    builtinTypes.add(new ClassPtrPair(clazz, typeStructPtr, typeLookupTableIdx));
+    @TruffleBoundary
+    static void GraalPyPrivate_InitBuiltinTypesAndStructs(long builtinTypesArrayPointer) {
+        List<ClassPtrPair> builtinTypes = new LinkedList<>();
+        PythonContext context = PythonContext.get(null);
+        try {
+            // first phase: lookup built-in type by name, create wrappers and set native pointer
+            for (int i = 0;; i += 2) {
+                long typeStructPtr = readPtrArrayElement(builtinTypesArrayPointer, i);
+                // if we reach the sentinel, stop the loop
+                if (typeStructPtr == 0L) {
+                    break;
                 }
+                long namePtr = readPtrArrayElement(builtinTypesArrayPointer, i + 1);
+                TruffleString name = FromCharPointerNode.executeUncached(namePtr, false);
 
-                // second phase: initialize the native type store
-                for (ClassPtrPair pair : builtinTypes) {
-                    LOGGER.fine(() -> "initializing built-in class " + TypeNodes.GetNameNode.executeUncached(pair.clazz()));
-                    ToNativeTypeNode.initNative(pair.clazz, pair.ptr, pair.typeLookupTableIdx);
-                }
+                // lookup the built-in type by name
+                PythonManagedClass clazz = lookupBuiltinTypeWithName(context, name);
 
-                return PNone.NO_VALUE;
-            } catch (PException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
+                // create the lookup table entry and sync (selected) native type fields to the
+                // managed type
+                LOGGER.fine(() -> "setting type store for built-in class " + name + " to " + PythonUtils.formatPointer(typeStructPtr));
+                int typeLookupTableIdx = ToNativeTypeNode.wrapStaticTypeStructForManagedClass(clazz, typeStructPtr);
 
-        /**
-         * Looks up a built-in type by name. This method may throw a Python exception (i.e.
-         * {@code PException}) because if the type belongs to a built-in module, it needs to read an
-         * attribute from the module.
-         */
-        private static PythonManagedClass lookupBuiltinTypeWithName(PythonContext context, TruffleString tsName) {
-            Python3Core core = context.getCore();
-            PythonManagedClass clazz = null;
-            String name = tsName.toJavaStringUncached();
-            // see if we're dealing with a type from a specific module
-            int index = name.indexOf('.');
-            if (index == -1) {
-                for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
-                    if (type.getName().equalsUncached(tsName, TS_ENCODING)) {
-                        clazz = core.lookupType(type);
-                        break;
-                    }
-                }
-            } else {
-                String module = name.substring(0, index);
-                name = name.substring(index + 1);
-                TruffleString tsModule = toTruffleStringUncached(module);
-                Object moduleObject = core.lookupBuiltinModule(tsModule);
-                if (moduleObject == null) {
-                    moduleObject = AbstractImportNode.lookupImportedModule(context, tsModule);
-                    if (moduleObject == null) {
-                        throw CompilerDirectives.shouldNotReachHere(String.format(
-                                        "Module '%s' is needed during C API initialization, but was not imported prior to the initialization in ensureCapiWasLoaded. This is an internal error in GraalPy.",
-                                        module));
-                    }
-                }
-                // Assumption: builtin modules' tp_getattro is well-behaved and just reads the
-                // attribute, there is no locking or blocking inside
-                Object attribute = PyObjectGetAttr.getUncached().execute(null, moduleObject, toTruffleStringUncached(name));
-                if (attribute != PNone.NO_VALUE) {
-                    if (attribute instanceof PythonBuiltinClassType builtinType) {
-                        clazz = core.lookupType(builtinType);
-                    } else {
-                        clazz = (PythonManagedClass) attribute;
-                    }
-                }
-
-            }
-            if (clazz == null) {
-                throw CompilerDirectives.shouldNotReachHere("cannot find class " + name);
+                builtinTypes.add(new ClassPtrPair(clazz, typeStructPtr, typeLookupTableIdx));
             }
 
-            return clazz;
+            // second phase: initialize the native type store
+            for (ClassPtrPair pair : builtinTypes) {
+                LOGGER.fine(() -> "initializing built-in class " + TypeNodes.GetNameNode.executeUncached(pair.clazz()));
+                ToNativeTypeNode.initNative(pair.clazz, pair.ptr, pair.typeLookupTableIdx);
+            }
+        } catch (PException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_GetMMapData extends CApiUnaryBuiltinNode {
+    private record ClassPtrPair(PythonManagedClass clazz, long ptr, int typeLookupTableIdx) {
+    }
 
-        @Specialization
-        long get(PMMap object,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PConstructAndRaiseNode.Lazy raiseNode) {
-            try {
-                return posixLib.mmapGetPointer(getPosixSupport(), object.getPosixSupportHandle());
-            } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
-                throw raiseNode.get(inliningTarget).raiseOSErrorUnsupported(null, e);
+    /**
+     * Looks up a built-in type by name. This method may throw a Python exception (i.e.
+     * {@code PException}) because if the type belongs to a built-in module, it needs to read an
+     * attribute from the module.
+     */
+    private static PythonManagedClass lookupBuiltinTypeWithName(PythonContext context, TruffleString tsName) {
+        Python3Core core = context.getCore();
+        PythonManagedClass clazz = null;
+        String name = tsName.toJavaStringUncached();
+        // see if we're dealing with a type from a specific module
+        int index = name.indexOf('.');
+        if (index == -1) {
+            for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
+                if (type.getName().equalsUncached(tsName, TS_ENCODING)) {
+                    clazz = core.lookupType(type);
+                    break;
+                }
             }
+        } else {
+            String module = name.substring(0, index);
+            name = name.substring(index + 1);
+            TruffleString tsModule = toTruffleStringUncached(module);
+            Object moduleObject = core.lookupBuiltinModule(tsModule);
+            if (moduleObject == null) {
+                moduleObject = AbstractImportNode.lookupImportedModule(context, tsModule);
+                if (moduleObject == null) {
+                    throw CompilerDirectives.shouldNotReachHere(String.format(
+                                    "Module '%s' is needed during C API initialization, but was not imported prior to the initialization in ensureCapiWasLoaded. This is an internal error in GraalPy.",
+                                    module));
+                }
+            }
+            // Assumption: builtin modules' tp_getattro is well-behaved and just reads the
+            // attribute, there is no locking or blocking inside
+            Object attribute = PyObjectGetAttr.getUncached().execute(null, moduleObject, toTruffleStringUncached(name));
+            if (attribute != PNone.NO_VALUE) {
+                if (attribute instanceof PythonBuiltinClassType builtinType) {
+                    clazz = core.lookupType(builtinType);
+                } else {
+                    clazz = (PythonManagedClass) attribute;
+                }
+            }
+
+        }
+        if (clazz == null) {
+            throw CompilerDirectives.shouldNotReachHere("cannot find class " + name);
+        }
+
+        return clazz;
+    }
+
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Ignored)
+    static long GraalPyPrivate_GetMMapData(long objectPtr) {
+        PMMap object = (PMMap) NativeToPythonNode.executeRawUncached(objectPtr);
+        PythonContext context = PythonContext.get(null);
+        try {
+            return PosixSupportLibrary.getUncached().mmapGetPointer(context.getPosixSupport(), object.getPosixSupportHandle());
+        } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
+            throw PConstructAndRaiseNode.getUncached().raiseOSErrorUnsupported(null, e);
         }
     }
 }
