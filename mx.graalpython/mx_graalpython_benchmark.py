@@ -86,6 +86,17 @@ DEFAULT_ITERATIONS = 10
 
 BENCH_BGV = 'benchmarks-bgv'
 
+BENCHMARK_DEBUG_ARGS = (
+    # These first two are not /too/ bad for runtime
+    # '--python.PoisonNativeMemoryOnFree=true',
+    # '--python.SampleNativeMemoryAllocSites=true',
+
+    # These below can be *extremely* heavy
+    # '--python.TraceNativeMemory=true',
+    # '--python.TraceNativeMemoryCalls=true',
+    # '--log.python.level=FINER',
+)
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # utils
@@ -1062,7 +1073,7 @@ def register_vms(suite, sandboxed_options):
 
     def add_graalpy_vm(name, *extra_polyglot_args):
         graalpy_vms.append((name, extra_polyglot_args))
-        python_vm_registry.add_vm(GraalPythonVm(config_name=name, extra_polyglot_args=extra_polyglot_args), suite, 10)
+        python_vm_registry.add_vm(GraalPythonVm(config_name=name, extra_polyglot_args=BENCHMARK_DEBUG_ARGS + extra_polyglot_args), suite, 10)
 
     # GraalPy VMs:
     add_graalpy_vm(CONFIGURATION_DEFAULT)

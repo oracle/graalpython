@@ -287,6 +287,9 @@ mx benchmark meso:nbody3 \
     -Dgraal.MethodFilter=*measure*
 ```
 
+For debugging native problems in benchmark runs, there's `BENCHMARK_DEBUG_ARGS` in `mx_graalpython_benchmark.py` to log more stuff for debugging, at the cost of performance.
+This is intended for focused reproducer runs on a branch.
+
 ### A note on terminology
 
 Note that there may be a little confusion about the configuration names of benchmarks.
