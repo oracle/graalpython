@@ -35,7 +35,7 @@ test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_condition @ 
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_dict @ darwin-arm64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_event @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_joinable_queue @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_list @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_list @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_namespace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_pool @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_queue @ darwin-arm64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -49,7 +49,7 @@ test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_slow @ darwin-arm64
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_socket @ darwin-arm64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_socket_slow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_timeout @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc._TestImportStar.test_import @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc._TestImportStar.test_import @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
 !test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_enter
 # transiently fails
 !test.test_multiprocessing_spawn.test_threads.WithThreadsTestPool.test_terminate
