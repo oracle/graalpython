@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -426,10 +426,15 @@ _GraalPyMem_RawMalloc(void *ctx, size_t size)
        To solve these problems, allocate an extra byte. */
     if (size == 0)
         size = 1;
-    if (_GraalPyMem_PrepareAlloc((GraalPyMem_t*) ctx, size)) {
+    GraalPyMem_t *state = (GraalPyMem_t *)ctx;
+    if (_GraalPyMem_PrepareAlloc(state, size)) {
         return NULL;
     }
     mem_head_t *ptr_with_head = (mem_head_t *)malloc(size + sizeof(mem_head_t));
+    if (ptr_with_head == NULL) {
+        state->allocated_memory -= size;
+        return NULL;
+    }
     ptr_with_head->size = size;
     return FROM_MEM_HEAD(ptr_with_head);
 }
@@ -450,13 +455,18 @@ _GraalPyMem_RawCalloc(void *ctx, size_t nelem, size_t elsize)
         elsize = 1;
     }
     size_t nbytes = nelem * elsize;
-    if (_GraalPyMem_PrepareAlloc((GraalPyMem_t*) ctx, nbytes)) {
+    GraalPyMem_t *state = (GraalPyMem_t *)ctx;
+    if (_GraalPyMem_PrepareAlloc(state, nbytes)) {
         return NULL;
     }
     /* We cannot use 'calloc' because we need to allocate following layout:
        [ mem_head_t ] [ e_0 ] [ e_1 ]  [ e_2 ] ... [ n_nelem ] */
     size_t total = nbytes + sizeof(mem_head_t);
     mem_head_t *ptr_with_head = (mem_head_t *)malloc(total);
+    if (ptr_with_head == NULL) {
+        state->allocated_memory -= nbytes;
+        return NULL;
+    }
     memset(ptr_with_head, 0, total);
     ptr_with_head->size = nbytes;
     return FROM_MEM_HEAD(ptr_with_head);
@@ -481,17 +491,25 @@ _GraalPyMem_RawRealloc(void *ctx, void *ptr, size_t size)
         old_size = 0;
     }
 
-    // account for the difference in size
-    if (old_size >= size) {
-        /* In case of "shrinking", just subtract the counter but don't trigger
-         the Java GC. */
-        state->allocated_memory -= size;
-    } else if (_GraalPyMem_PrepareAlloc(state, size - old_size)) {
+    if (old_size < size && _GraalPyMem_PrepareAlloc(state, size - old_size)) {
         return NULL;
     }
 
     mem_head_t *ptr_with_head = (mem_head_t *)realloc(old,
             size + sizeof(mem_head_t));
+    if (ptr_with_head == NULL) {
+        if (old_size < size) {
+            state->allocated_memory -= size - old_size;
+        }
+        return NULL;
+    }
+
+    if (old_size > size) {
+        /* In case of "shrinking", just subtract the difference but don't
+           trigger the Java GC. */
+        state->allocated_memory -= old_size - size;
+    }
+
     ptr_with_head->size = size;
     return FROM_MEM_HEAD(ptr_with_head);
 }
