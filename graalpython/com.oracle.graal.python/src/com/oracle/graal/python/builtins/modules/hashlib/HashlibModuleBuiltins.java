@@ -57,6 +57,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -495,7 +496,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 byte[] passwordBytes = passwordLib.getInternalOrCopiedExactByteArray(password);
                 byte[] saltBytes = saltLib.getInternalOrCopiedExactByteArray(salt);
                 return PFactory.createBytes(language, generate(javaHashName, passwordBytes, saltBytes, (int) iterations, (int) dklen));
-            } catch (java.security.GeneralSecurityException e) {
+            } catch (GeneralSecurityException e) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError, UNSUPPORTED_HASH_TYPE, hashName);
             } finally {
                 passwordLib.release(password);
@@ -536,7 +537,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static byte[] generate(String hashName, byte[] password, byte[] salt, int iterations, int dklen) throws java.security.GeneralSecurityException {
+        private static byte[] generate(String hashName, byte[] password, byte[] salt, int iterations, int dklen) throws GeneralSecurityException {
             Mac mac = createPbkdf2Mac(hashName);
             try {
                 String algorithm = mac.getAlgorithm();
