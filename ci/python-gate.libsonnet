@@ -142,6 +142,7 @@
             BISECT_EMAIL_TO_PATTERN: ".*@oracle.com",
             TRUFFLE_STRICT_OPTION_DEPRECATION: "true",
             npm_config_registry: $.overlay_imports.npm_config_registry,
+            CFLAGS: "-ggdb",
         },
         linux: {
             common: ENV_POSIX + {},
@@ -241,6 +242,8 @@
         "graal_dumps/*/*",
         "bench-results.json",
         "raw-results.json",
+        "mxbuild/*/libpythonvm/libpythonvm.so.debug",
+        "mxbuild/*/GRAALPY_STANDALONE_COMMON/lib/graalpy*/libpython-native.so",
     ],
 
     //------------------------------------------------------------------------------------------------------------------
