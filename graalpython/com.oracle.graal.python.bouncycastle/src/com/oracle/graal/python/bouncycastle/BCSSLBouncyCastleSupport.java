@@ -65,7 +65,12 @@ import com.oracle.graal.python.builtins.objects.ssl.SSLBouncyCastleSupport;
 public final class BCSSLBouncyCastleSupport implements SSLBouncyCastleSupport {
     private static Provider getProvider() {
         Provider provider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
-        return provider != null ? provider : new BouncyCastleProvider();
+        if (provider != null) {
+            return provider;
+        }
+        provider = new BouncyCastleProvider();
+        Security.addProvider(provider);
+        return provider;
     }
 
     @Override

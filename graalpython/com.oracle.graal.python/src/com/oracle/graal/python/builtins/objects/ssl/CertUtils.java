@@ -747,14 +747,14 @@ public final class CertUtils {
                     }
                     privateKey = decodeEncryptedPrivateKey(algorithm, block.content(), password);
                     break;
-                } else if ("RSA PRIVATE KEY".equals(block.type())) {
-                    if (block.headers().isEmpty()) {
+                } else if (isLegacyPrivateKeyType(block.type())) {
+                    if ("RSA PRIVATE KEY".equals(block.type()) && block.headers().isEmpty()) {
                         privateKey = decodeRsaPrivateKey(block.content());
                     } else {
-                        if (password == null) {
+                        if (!block.headers().isEmpty() && password == null) {
                             throw new NeedsPasswordException();
                         }
-                        privateKey = SSLBouncyCastleSupportProvider.loadPrivateKey(password, pemText);
+                        privateKey = SSLBouncyCastleSupportProvider.loadPrivateKey(password, pemBlockToText(rawBlock));
                     }
                     break;
                 }
@@ -826,6 +826,14 @@ public final class CertUtils {
         } catch (IllegalArgumentException e) {
             throw new BadBase64Exception(e);
         }
+    }
+
+    private static boolean isLegacyPrivateKeyType(String type) {
+        return "RSA PRIVATE KEY".equals(type) || "DSA PRIVATE KEY".equals(type) || "EC PRIVATE KEY".equals(type);
+    }
+
+    private static String pemBlockToText(PemBlockWithContent block) {
+        return "-----BEGIN " + block.type() + "-----\n" + block.content() + "\n-----END " + block.type() + "-----\n";
     }
 
     private static PrivateKey decodePrivateKey(String algorithm, byte[] encoded) throws NoSuchAlgorithmException, InvalidKeySpecException {
