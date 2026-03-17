@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -81,7 +81,7 @@ def get_setuptools(setuptools='setuptools==67.6.1'):
         print('setuptools is installed in %s' % setuptools_path)
 
     pyvenv_site = str(setuptools_path)
-    if pyvenv_site not in site.getsitepackages():
+    if os.path.normcase(os.path.normpath(pyvenv_site)) not in {os.path.normcase(os.path.normpath(entry)) for entry in sys.path}:
         site.addsitedir(pyvenv_site)
 
 
