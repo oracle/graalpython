@@ -285,10 +285,16 @@ public final class TracebackBuiltins extends PythonBuiltins {
             } catch (Throwable ex) {
                 stackTrace = "Exception while getting the Python stack trace: " + ex;
             }
-            boolean isCurrentThread = frameInfo.getPyFrame().getThread() != null &&
-                            frameInfo.getPyFrame().getThread() != Thread.currentThread();
-            return String.format("%s. Frame reference: root node='%s', is current thread=%b. Current stack trace:\n%s.",
-                            prefix, frameInfo.getRootNode(), isCurrentThread, stackTrace);
+            String threadComment = "on unknown thread (frame not materialized)";
+            if (frameInfo.getPyFrame() != null) {
+                if (frameInfo.getPyFrame().getThread() == Thread.currentThread()) {
+                    threadComment = "on current thread";
+                } else {
+                    threadComment = "on thread " + frameInfo.getPyFrame().getThread().getName();
+                }
+            }
+            return String.format("%s. Frame reference: root node='%s', %s. Current stack trace:\n%s.",
+                            prefix, frameInfo.getRootNode(), threadComment, stackTrace);
         }
 
         // case 3: there is no PFrame[Ref], we need to take the top frame from the Truffle

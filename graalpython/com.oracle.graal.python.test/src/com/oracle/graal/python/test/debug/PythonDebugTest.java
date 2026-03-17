@@ -82,6 +82,7 @@ public class PythonDebugTest {
         Builder newBuilder = Context.newBuilder();
         newBuilder.allowExperimentalOptions(true);
         newBuilder.allowAllAccess(true);
+        newBuilder.option("engine.WarnInterpreterOnly", "false");
         PythonTests.closeContext();
         tester = new DebuggerTester(newBuilder);
     }

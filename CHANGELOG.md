@@ -3,6 +3,11 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 25.2.0
+* Add support for [Truffle source options](https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/source/Source.SourceBuilder.html#option(java.lang.String,java.lang.String)):
+  * The `python.Optimize` option can be used to specify the optimization level, like the `-O` (level 1) and `-OO` (level 2) commandline options.
+  * The `python.NewGlobals` option can be used to run a source with a fresh globals dictionary instead of the main module globals, which is useful for embeddings that want isolated top-level execution.
+
 ## Version 25.1.0
 * Intern string literals in source files
 * Allocation reporting via Truffle has been removed. Python object sizes were never reported correctly, so the data was misleading and there was a non-neglible overhead for object allocations even when reporting was inactive.

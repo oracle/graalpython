@@ -39,11 +39,9 @@ import java.io.InputStream;
 import java.lang.invoke.VarHandle;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -108,6 +106,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonSourceOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.Function;
@@ -155,12 +154,7 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
                 sandbox = SandboxPolicy.UNTRUSTED, //
                 implementationName = PythonLanguage.IMPLEMENTATION_NAME, //
                 version = PythonLanguage.VERSION, //
-                characterMimeTypes = {PythonLanguage.MIME_TYPE,
-                                "text/x-python-\0\u0000-eval", "text/x-python-\0\u0000-compile", "text/x-python-\1\u0000-eval", "text/x-python-\1\u0000-compile", "text/x-python-\2\u0000-eval",
-                                "text/x-python-\2\u0000-compile", "text/x-python-\0\u0100-eval", "text/x-python-\0\u0100-compile", "text/x-python-\1\u0100-eval", "text/x-python-\1\u0100-compile",
-                                "text/x-python-\2\u0100-eval", "text/x-python-\2\u0100-compile", "text/x-python-\0\u0040-eval", "text/x-python-\0\u0040-compile", "text/x-python-\1\u0040-eval",
-                                "text/x-python-\1\u0040-compile", "text/x-python-\2\u0040-eval", "text/x-python-\2\u0040-compile", "text/x-python-\0\u0140-eval", "text/x-python-\0\u0140-compile",
-                                "text/x-python-\1\u0140-eval", "text/x-python-\1\u0140-compile", "text/x-python-\2\u0140-eval", "text/x-python-\2\u0140-compile"}, //
+                characterMimeTypes = {PythonLanguage.MIME_TYPE}, //
                 defaultMimeType = PythonLanguage.MIME_TYPE, //
                 dependentLanguages = {"nfi", "llvm"}, //
                 interactive = true, internal = false, //
@@ -273,48 +267,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int API_VERSION = 1013;
 
     public static final String MIME_TYPE = "text/x-python";
-
-    // the syntax for mime types is as follows
-    // <mime> ::= "text/x-python-" <optlevel> <flags> "-" kind
-    // <kind> ::= "compile" | "eval"
-    // <optlevel> ::= "\0" | "\1" | "\2"
-    // <flags> ::= "\u0040" | "\u0100" | "\u0140" | "\u0000"
-    // where 0100 implies annotations, and 0040 implies barry_as_flufl
-    static final String MIME_PREFIX = MIME_TYPE + "-";
-    static final int OPT_FLAGS_LEN = 2; // 1 char is optlevel, 1 char is flags
-    static final String MIME_KIND_COMPILE = "compile";
-    static final String MIME_KIND_EVAL = "eval";
-    // Since flags are greater than the highest unicode codepoint, we shift them into more
-    // reasonable values in the mime type. 4 hex digits
-    static final int MIME_FLAG_SHIFTBY = 4 * 4;
-    // a dash follows after the opt flag pair
-    static final int MIME_KIND_START = MIME_PREFIX.length() + OPT_FLAGS_LEN + 1;
-
-    private static boolean mimeTypesComplete(ArrayList<String> mimeJavaStrings) {
-        ArrayList<String> mimeTypes = new ArrayList<>();
-        FutureFeature[] all = FutureFeature.values();
-        for (int flagset = 0; flagset < (1 << all.length); ++flagset) {
-            int flags = 0;
-            for (int i = 0; i < all.length; ++i) {
-                if ((flagset & (1 << i)) != 0) {
-                    flags |= all[i].flagValue;
-                }
-            }
-            for (int opt = 0; opt <= 2; opt++) {
-                for (String typ : new String[]{MIME_KIND_EVAL, MIME_KIND_COMPILE}) {
-                    mimeTypes.add(MIME_PREFIX + optFlagsToMime(opt, flags) + "-" + typ);
-                    mimeJavaStrings.add(String.format("\"%s\\%d\\u%04x-%s\"", MIME_PREFIX, opt, flags >> MIME_FLAG_SHIFTBY, typ));
-                }
-            }
-        }
-        HashSet<String> currentMimeTypes = new HashSet<>(List.of(PythonLanguage.class.getAnnotation(Registration.class).characterMimeTypes()));
-        return currentMimeTypes.containsAll(mimeTypes);
-    }
-
-    static {
-        ArrayList<String> mimeJavaStrings = new ArrayList<>();
-        assert mimeTypesComplete(mimeJavaStrings) : "Expected all of {" + String.join(", ", mimeJavaStrings) + "} in the PythonLanguage characterMimeTypes";
-    }
 
     public static final TruffleString[] T_DEFAULT_PYTHON_EXTENSIONS = new TruffleString[]{T_PY_EXTENSION, tsLiteral(".pyc")};
 
@@ -516,6 +468,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
+    protected OptionDescriptors getSourceOptionDescriptors() {
+        return PythonSourceOptions.DESCRIPTORS;
+    }
+
+    @Override
     protected void initializeContext(PythonContext context) {
         if (!isLanguageInitialized) {
             initializeLanguage();
@@ -539,64 +496,56 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private static String optFlagsToMime(int optimize, int flags) {
-        if (optimize < 0) {
-            optimize = 0;
-        } else if (optimize > 2) {
-            optimize = 2;
-        }
-        String optField = new String(new byte[]{(byte) optimize});
-        String flagField = new String(new int[]{(flags & FutureFeature.ALL_FLAGS) >> MIME_FLAG_SHIFTBY}, 0, 1);
-        assert flagField.length() == 1 : "flags in mime type ended up a surrogate";
-        return optField + flagField;
-    }
-
-    public static String getCompileMimeType(int optimize, int flags) {
-        String optFlags = optFlagsToMime(optimize, flags);
-        return MIME_PREFIX + optFlags + "-compile";
-    }
-
-    public static String getEvalMimeType(int optimize, int flags) {
-        String optFlags = optFlagsToMime(optimize, flags);
-        return MIME_PREFIX + optFlags + "-eval";
+    public static SourceBuilder setPythonOptions(SourceBuilder sourceBuilder, InputType kind, int optimize, int flags) {
+        String sourceKind = switch (kind) {
+            case FILE -> "file";
+            case EVAL -> "eval";
+            case SINGLE -> "single";
+            default -> throw CompilerDirectives.shouldNotReachHere("unsupported source kind: " + kind);
+        };
+        return sourceBuilder.mimeType(PythonLanguage.MIME_TYPE) //
+                        .option("python.Optimize", Integer.toString(optimize)) //
+                        .option("python.Flags", Integer.toString(flags & FutureFeature.ALL_FLAGS)) //
+                        .option("python.Kind", sourceKind);
     }
 
     @Override
     protected CallTarget parse(ParsingRequest request) {
         PythonContext context = PythonContext.get(null);
         Source source = request.getSource();
-        if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
-            if (!request.getArgumentNames().isEmpty() && source.isInteractive()) {
-                throw new IllegalStateException("parse with arguments not allowed for interactive sources");
-            }
-            InputType inputType = source.isInteractive() ? InputType.SINGLE : InputType.FILE;
-            return parse(context, source, inputType, true, 0, source.isInteractive(), request.getArgumentNames(), EnumSet.noneOf(FutureFeature.class));
+        if (!request.getArgumentNames().isEmpty() && source.isInteractive()) {
+            throw new IllegalStateException("parse with arguments not allowed for interactive sources");
         }
-        if (!request.getArgumentNames().isEmpty()) {
-            throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
-        }
-
-        String mime = source.getMimeType();
-        String prefix = mime.substring(0, MIME_PREFIX.length());
-        if (!prefix.equals(MIME_PREFIX)) {
-            throw CompilerDirectives.shouldNotReachHere("unknown mime type: " + mime);
-        }
-        String kind = mime.substring(MIME_KIND_START);
-        InputType type;
-        if (kind.equals(MIME_KIND_COMPILE)) {
-            type = InputType.FILE;
-        } else if (kind.equals(MIME_KIND_EVAL)) {
-            type = InputType.EVAL;
+        InputType inputType;
+        int optimize;
+        EnumSet<FutureFeature> futureFeatures;
+        boolean topLevel;
+        List<String> argumentNames;
+        boolean interactiveTerminal;
+        if (source.isInteractive()) {
+            inputType = InputType.SINGLE;
+            optimize = 0;
+            futureFeatures = EnumSet.noneOf(FutureFeature.class);
+            topLevel = true;
+            argumentNames = request.getArgumentNames();
+            interactiveTerminal = true;
         } else {
-            throw CompilerDirectives.shouldNotReachHere("unknown compilation kind: " + kind + " from mime type: " + mime);
+            var sourceOptions = source.getOptions(this);
+            String kind = sourceOptions.get(PythonSourceOptions.Kind);
+            topLevel = kind.isEmpty();
+            inputType = switch (kind) {
+                case "", "file" -> InputType.FILE;
+                case "eval" -> InputType.EVAL;
+                case "single" -> InputType.SINGLE;
+                default -> throw CompilerDirectives.shouldNotReachHere("unknown compilation kind: " + kind);
+            };
+            optimize = sourceOptions.get(PythonSourceOptions.Optimize);
+            int flags = sourceOptions.get(PythonSourceOptions.Flags);
+            futureFeatures = FutureFeature.fromFlags(flags);
+            argumentNames = request.getArgumentNames().isEmpty() ? null : request.getArgumentNames();
+            interactiveTerminal = false;
         }
-        int optimize = mime.codePointAt(MIME_PREFIX.length());
-        int flags = mime.codePointAt(MIME_PREFIX.length() + 1) << MIME_FLAG_SHIFTBY;
-        if (0 > optimize || optimize > 2 || (flags & ~FutureFeature.ALL_FLAGS) != 0) {
-            throw CompilerDirectives.shouldNotReachHere("Invalid value for optlevel or flags: " + optimize + "," + flags + " from mime type: " + mime);
-        }
-        assert !source.isInteractive();
-        return parse(context, source, type, false, optimize, false, null, FutureFeature.fromFlags(flags));
+        return parse(context, source, inputType, topLevel, optimize, interactiveTerminal, argumentNames, futureFeatures);
     }
 
     public static RootCallTarget callTargetFromBytecode(PythonContext context, Source source, CodeUnit code) {
@@ -952,7 +901,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return TruffleLogger.getLogger(ID, "compatibility." + clazz.getName());
     }
 
-    public static Source newSource(PythonContext ctxt, TruffleString tsrc, TruffleString name, boolean mayBeFile, String mime) {
+    public static Source newSource(PythonContext ctxt, TruffleString tsrc, TruffleString name, boolean mayBeFile, InputType inputType, int optimize, int flags) {
         try {
             SourceBuilder sourceBuilder = null;
             String src = tsrc.toJavaStringUncached();
@@ -977,9 +926,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (sourceBuilder == null) {
                 sourceBuilder = Source.newBuilder(ID, src, name.toJavaStringUncached());
             }
-            if (mime != null) {
-                sourceBuilder.mimeType(mime);
-            }
+            sourceBuilder = PythonLanguage.setPythonOptions(sourceBuilder, inputType, optimize, flags);
             return newSource(ctxt, sourceBuilder);
         } catch (IOException e) {
             throw new IllegalStateException(e);
