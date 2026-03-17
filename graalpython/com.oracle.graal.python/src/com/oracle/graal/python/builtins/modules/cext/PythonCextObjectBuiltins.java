@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -110,7 +110,7 @@ import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDir;
@@ -669,9 +669,9 @@ public abstract class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyObject_ASCII extends CApiUnaryBuiltinNode {
         @Specialization(guards = "!isNoValue(obj)")
-        static TruffleString ascii(Object obj,
+        static Object ascii(Object obj,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectAsciiNode asciiNode) {
+                        @Cached PyObjectAsciiAsObjectNode asciiNode) {
             return asciiNode.execute(null, inliningTarget, obj);
         }
 

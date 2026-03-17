@@ -54,6 +54,18 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(ascii(1), "1")
         self.assertEqual(ascii("錦蛇 \t \0 a \x03"), "'\\u9326\\u86c7 \\t \\x00 a \\x03'")
 
+    def test_ascii_preserves_str_subclass_for_ascii_repr(self):
+        class MyStr(str):
+            pass
+
+        class Foo:
+            def __repr__(self):
+                return MyStr("hello")
+
+        result = ascii(Foo())
+        self.assertEqual(result, "hello")
+        self.assertIs(type(result), MyStr)
+
     def test_input(self):
         import sys
         class AlwaysLine:

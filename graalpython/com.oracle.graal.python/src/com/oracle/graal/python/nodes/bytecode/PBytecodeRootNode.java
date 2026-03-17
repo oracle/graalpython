@@ -62,8 +62,8 @@ import org.graalvm.collections.Pair;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.FormatNodeFactory.FormatNodeGen;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.FormatNodeFactory.FormatNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNodeGen;
@@ -143,8 +143,8 @@ import com.oracle.graal.python.lib.PyNumberRshiftNode;
 import com.oracle.graal.python.lib.PyNumberSubtractNode;
 import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
 import com.oracle.graal.python.lib.PyNumberXorNode;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
-import com.oracle.graal.python.lib.PyObjectAsciiNodeGen;
+import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNodeGen;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDelItemNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -401,8 +401,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectStrAsObjectNode> NODE_STR = PyObjectStrAsObjectNode::create;
     private static final PyObjectReprAsObjectNode UNCACHED_REPR = PyObjectReprAsObjectNode.getUncached();
     private static final NodeSupplier<PyObjectReprAsObjectNode> NODE_REPR = PyObjectReprAsObjectNode::create;
-    private static final PyObjectAsciiNode UNCACHED_ASCII = PyObjectAsciiNode.getUncached();
-    private static final NodeSupplier<PyObjectAsciiNode> NODE_ASCII = PyObjectAsciiNode::create;
+    private static final PyObjectAsciiAsObjectNode UNCACHED_ASCII = PyObjectAsciiAsObjectNode.getUncached();
+    private static final NodeSupplier<PyObjectAsciiAsObjectNode> NODE_ASCII = PyObjectAsciiAsObjectNode::create;
     private static final NodeSupplier<FormatNode> NODE_FORMAT = FormatNode::create;
     private static final NodeSupplier<SendNode> NODE_SEND = SendNode::create;
     private static final NodeSupplier<ThrowNode> NODE_THROW = ThrowNode::create;
@@ -4989,7 +4989,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 value = insertChildNode(localNodes, bci, UNCACHED_REPR, PyObjectReprAsObjectNodeGen.class, NODE_REPR, useCachedNodes).executeCached(virtualFrame, value);
                 break;
             case FormatOptions.FVC_ASCII:
-                value = insertChildNode(localNodes, bci, UNCACHED_ASCII, PyObjectAsciiNodeGen.class, NODE_ASCII, useCachedNodes).executeCached(virtualFrame, value);
+                value = insertChildNode(localNodes, bci, UNCACHED_ASCII, PyObjectAsciiAsObjectNodeGen.class, NODE_ASCII, useCachedNodes).executeCached(virtualFrame, value);
                 break;
             default:
                 assert type == FormatOptions.FVC_NONE;

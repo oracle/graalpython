@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -16,7 +16,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectAsciiAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -102,7 +102,7 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         TruffleString result;
         switch (spec.type) {
             case 'a': // repr as ascii
-                result = PyObjectAsciiNode.executeUncached(arg);
+                result = PyObjectAsciiAsTruffleStringNode.executeUncached(arg);
                 break;
             case 's': // String: converts any object using __str__(), __unicode__() ...
                 result = PyObjectStrAsTruffleStringNode.executeUncached(arg);
