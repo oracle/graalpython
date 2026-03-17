@@ -89,7 +89,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectAsciiAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -1408,7 +1408,7 @@ public final class PatternBuiltins extends PythonBuiltins {
                         if (!isIdentifierNode.execute(inliningTarget, name) || binary && !ascii) {
                             errorProfile.enter(inliningTarget);
                             throw raiseRegexErrorNode.executeFormatted(frame, BAD_CHAR_IN_GROUP_NAME, replacement, toCodepointIndex(nameStartPos, binary),
-                                            binary ? PyObjectAsciiNode.executeUncached(name) : PyObjectReprAsTruffleStringNode.executeUncached(name));
+                                            binary ? PyObjectAsciiAsTruffleStringNode.executeUncached(name) : PyObjectReprAsTruffleStringNode.executeUncached(name));
                         }
                         Object namedCaptureGroups = TRegexUtil.TRegexCompiledRegexAccessor.namedCaptureGroups(tregexCompiledRegex, inliningTarget, readNamedGroupsNode);
                         if (!TRegexUtil.TRegexNamedCaptureGroupsAccessor.hasGroup(namedCaptureGroups, name, genericInteropLib)) {

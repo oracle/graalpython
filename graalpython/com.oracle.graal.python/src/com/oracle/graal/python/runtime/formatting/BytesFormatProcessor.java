@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectAsciiAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -208,7 +208,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
             case 'r':
             case 'a': // ascii
-                String result = PyObjectAsciiNode.executeUncached(getArg()).toJavaStringUncached();
+                String result = PyObjectAsciiAsTruffleStringNode.executeUncached(getArg()).toJavaStringUncached();
                 fb = new BytesFormatter(buffer, spec, raisingNode);
                 fb.formatAsciiString(result);
                 return fb;

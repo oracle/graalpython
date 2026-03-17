@@ -146,7 +146,7 @@ import com.oracle.graal.python.lib.PyNumberRshiftNode;
 import com.oracle.graal.python.lib.PyNumberSubtractNode;
 import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
 import com.oracle.graal.python.lib.PyNumberXorNode;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectFunctionStr;
@@ -159,13 +159,13 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsNotTrueNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare.GenericRichCompare;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -1401,30 +1401,30 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class FormatStr {
         @Specialization
-        public static TruffleString perform(VirtualFrame frame, Object object,
+        public static Object perform(VirtualFrame frame, Object object,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectStrAsTruffleStringNode asTruffleStringNode) {
-            return asTruffleStringNode.execute(frame, inliningTarget, object);
+                        @Cached PyObjectStrAsObjectNode strNode) {
+            return strNode.execute(frame, inliningTarget, object);
         }
     }
 
     @Operation(storeBytecodeIndex = true)
     public static final class FormatRepr {
         @Specialization
-        public static TruffleString perform(VirtualFrame frame, Object object,
+        public static Object perform(VirtualFrame frame, Object object,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectReprAsTruffleStringNode asTruffleStringNode) {
-            return asTruffleStringNode.execute(frame, inliningTarget, object);
+                        @Cached PyObjectReprAsObjectNode reprNode) {
+            return reprNode.execute(frame, inliningTarget, object);
         }
     }
 
     @Operation(storeBytecodeIndex = true)
     public static final class FormatAscii {
         @Specialization
-        public static TruffleString perform(VirtualFrame frame, Object object,
+        public static Object perform(VirtualFrame frame, Object object,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectAsciiNode asTruffleStringNode) {
-            return asTruffleStringNode.execute(frame, inliningTarget, object);
+                        @Cached PyObjectAsciiAsObjectNode asciiNode) {
+            return asciiNode.execute(frame, inliningTarget, object);
         }
     }
 

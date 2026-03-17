@@ -188,7 +188,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberPowerNode;
-import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -1918,9 +1918,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     abstract static class AsciiNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public static TruffleString ascii(VirtualFrame frame, Object obj,
+        public static Object ascii(VirtualFrame frame, Object obj,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectAsciiNode asciiNode) {
+                        @Cached PyObjectAsciiAsObjectNode asciiNode) {
             return asciiNode.execute(frame, inliningTarget, obj);
         }
     }

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.unicodeNonAsciiEscape;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -62,9 +61,9 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 @GenerateUncached
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
-public abstract class PyObjectAsciiNode extends PNodeWithContext {
+public abstract class PyObjectAsciiAsTruffleStringNode extends PNodeWithContext {
     public static TruffleString executeUncached(Object object) {
-        return PyObjectAsciiNodeGen.getUncached().execute(null, null, object);
+        return PyObjectAsciiAsTruffleStringNodeGen.getUncached().execute(null, null, object);
     }
 
     public final TruffleString executeCached(Frame frame, Object object) {
@@ -81,27 +80,19 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
                     @Cached TruffleStringIterator.NextNode nextNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
-        // TODO GR-37220: rewrite using TruffleStringBuilder?
         TruffleString repr = reprNode.execute(frame, inliningTarget, obj);
         if (getCodeRangeNode.execute(repr, TS_ENCODING) == TruffleString.CodeRange.ASCII) {
             return repr;
         }
-        byte[] bytes = new byte[codePointLengthNode.execute(repr, TS_ENCODING) * 10];
-        TruffleStringIterator it = createCodePointIteratorNode.execute(repr, TS_ENCODING);
-        int j = 0;
-        while (it.hasNext()) {
-            int ch = nextNode.execute(it, TS_ENCODING);
-            j = unicodeNonAsciiEscape(ch, j, bytes);
-        }
-        return fromByteArrayNode.execute(bytes, 0, j, TruffleString.CompactionLevel.S1, true);
+        return PyObjectAsciiAsObjectNode.convertToAscii(repr, createCodePointIteratorNode, nextNode, codePointLengthNode, fromByteArrayNode);
     }
 
     @NeverDefault
-    public static PyObjectAsciiNode create() {
-        return PyObjectAsciiNodeGen.create();
+    public static PyObjectAsciiAsTruffleStringNode create() {
+        return PyObjectAsciiAsTruffleStringNodeGen.create();
     }
 
-    public static PyObjectAsciiNode getUncached() {
-        return PyObjectAsciiNodeGen.getUncached();
+    public static PyObjectAsciiAsTruffleStringNode getUncached() {
+        return PyObjectAsciiAsTruffleStringNodeGen.getUncached();
     }
 }
