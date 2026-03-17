@@ -171,16 +171,7 @@ extern Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing;
 #if (__linux__ && __GNU_LIBRARY__)
 #include <stdlib.h>
 #include <string.h>
-#include <execinfo.h>
 #include <unistd.h>
-static void print_c_stacktrace() {
-    fprintf(stderr, "Native stacktrace:\n");
-    intptr_t stack[16];
-    size_t stack_size = backtrace((void *)stack, sizeof(stack) / sizeof(stack[0]));
-    backtrace_symbols_fd((void *)stack, stack_size, STDERR_FILENO);
-    fflush(stderr);
-}
-
 static void attach_gdb() {
     pid_t my_pid = getpid();
     char* pathname = "/bin/sh";
@@ -199,14 +190,19 @@ static void attach_gdb() {
     }
 }
 #else
-static void print_c_stacktrace() {
-    // not supported
-}
-
 static void attach_gdb() {
     // not supported
 }
 #endif
+
+size_t GraalPyPrivate_CaptureStacktrace(void **frames, size_t max_depth, size_t skip);
+void GraalPyPrivate_PrintCapturedStacktrace(FILE *file, const char *header, void *const *frames, size_t depth);
+void GraalPyPrivate_PrintCurrentStacktrace(FILE *file, const char *header, size_t max_depth, size_t skip);
+void GraalPyPrivate_LogCapturedStacktrace(int level, const char *prefix, void *const *frames, size_t depth);
+
+static void print_c_stacktrace() {
+    GraalPyPrivate_PrintCurrentStacktrace(stderr, "Native stacktrace:\n", 16, 0);
+}
 
 /* Flags definitions representing global (debug) options. */
 static MUST_INLINE int GraalPyPrivate_Trace_Memory() {

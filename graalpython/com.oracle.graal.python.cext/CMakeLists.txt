@@ -162,7 +162,7 @@ set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c
               ${CAPI_SRC}/fileobject.c ${CAPI_SRC}/pystrcmp.c ${CAPI_SRC}/getversion.c
               ${CAPI_SRC}/genobject.c ${CAPI_SRC}/methodobject.c ${CAPI_SRC}/boolobject.c ${CAPI_SRC}/pylifecycle.c
               ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c ${CAPI_SRC}/call.c
-              ${CAPI_SRC}/getargs.c ${CAPI_SRC}/tracemalloc.c ${CAPI_SRC}/initconfig.c
+              ${CAPI_SRC}/getargs.c ${CAPI_SRC}/tracemalloc.c ${CAPI_SRC}/initconfig.c ${CAPI_SRC}/graalpy_stacktrace.c
 )
 
 file(GLOB_RECURSE ACTUAL_SRC_FILES
@@ -454,6 +454,7 @@ if(WIN32)
     if (NOT MSVC)
         target_compile_options(${TARGET_LIBPYTHON} PRIVATE "-fmsc-version=1920")
     endif()
+    target_link_libraries(${TARGET_LIBPYTHON} dbghelp)
 else()
     # Link to math library; required for functions like 'hypot' or similar
     target_link_libraries(${TARGET_LIBPYTHON} m)

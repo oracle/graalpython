@@ -40,9 +40,6 @@
  */
 #include "capi.h"
 #include "pycore_pymem.h"
-#ifdef MS_WINDOWS
-#include <windows.h>
-#endif
 
 /*
  * This header needs to be 16 bytes long to ensure that allocations will still be aligned to 16 byte boundaries.
@@ -72,7 +69,6 @@ typedef struct {
 #define GRAALPY_MEM_HEAD_POISON ((size_t)0xDDDDBAD0DDDDBAD0ULL)
 #define GRAALPY_MEM_SAMPLE_RING_SIZE (4096)
 #define GRAALPY_MEM_SAMPLE_HISTORY (8)
-#define GRAALPY_MEM_SAMPLE_STACK_DEPTH (12)
 #define GRAALPY_MEM_SAMPLE_STACK_SKIP (2)
 #define GRAALPY_MEM_SAMPLE_USEFUL_DEPTH (10)
 #define MAX_COLLECTION_RETRIES (7)
@@ -110,21 +106,8 @@ _GraalPyMem_SampleAllocSitesEnabled(void)
 static void
 _GraalPyMem_CaptureSampleStack(GraalPyMemSample_t *sample)
 {
-#if (__linux__ && __GNU_LIBRARY__)
-    void *frames[GRAALPY_MEM_SAMPLE_STACK_DEPTH];
-    int depth = backtrace(frames, GRAALPY_MEM_SAMPLE_STACK_DEPTH);
-    size_t start = depth > GRAALPY_MEM_SAMPLE_STACK_SKIP ? GRAALPY_MEM_SAMPLE_STACK_SKIP : (size_t) depth;
-    sample->depth = (size_t) depth - start;
-    if (sample->depth > GRAALPY_MEM_SAMPLE_USEFUL_DEPTH) {
-        sample->depth = GRAALPY_MEM_SAMPLE_USEFUL_DEPTH;
-    }
-    memcpy(sample->stack, frames + start, sample->depth * sizeof(void *));
-#elif defined(MS_WINDOWS)
-    sample->depth = (size_t) CaptureStackBackTrace(GRAALPY_MEM_SAMPLE_STACK_SKIP,
-                    GRAALPY_MEM_SAMPLE_USEFUL_DEPTH, sample->stack, NULL);
-#else
-    sample->depth = 0;
-#endif
+    sample->depth = GraalPyPrivate_CaptureStacktrace(sample->stack, GRAALPY_MEM_SAMPLE_USEFUL_DEPTH,
+                    GRAALPY_MEM_SAMPLE_STACK_SKIP);
 }
 
 static void
@@ -159,14 +142,12 @@ _GraalPyMem_LogRecentSamples(const char *func, void *ptr)
         size_t index = (next_index + GRAALPY_MEM_SAMPLE_RING_SIZE - offset - 1) % GRAALPY_MEM_SAMPLE_RING_SIZE;
         const GraalPyMemSample_t *sample = &_GraalPyMem_Samples[index];
         if (sample->ptr == ptr && sample->serial != 0) {
+            char prefix[128];
             GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
                     "%s: recent raw memory sample #%llu op=%c ptr=%p size=%lu depth=%lu\n",
                     func, sample->serial, sample->operation, sample->ptr, (unsigned long) sample->size, (unsigned long) sample->depth);
-            for (size_t frame_index = 0; frame_index < sample->depth; frame_index++) {
-                GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
-                        "%s: sample #%llu frame[%lu]=%p\n",
-                        func, sample->serial, (unsigned long) frame_index, sample->stack[frame_index]);
-            }
+            snprintf(prefix, sizeof(prefix), "%s: sample #%llu ", func, sample->serial);
+            GraalPyPrivate_LogCapturedStacktrace(PY_TRUFFLE_LOG_INFO, prefix, sample->stack, sample->depth);
             printed++;
         }
     }
