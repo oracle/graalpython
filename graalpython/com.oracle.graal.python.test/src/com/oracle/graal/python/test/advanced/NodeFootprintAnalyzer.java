@@ -1,3 +1,43 @@
+/*
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.oracle.graal.python.test.advanced;
 
 import static java.lang.Math.abs;
@@ -16,6 +56,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -38,7 +79,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * It is recommended to run GraalPy with the following options when taking the heap dumps.
  *
  * <pre>
- *     --engine.Splitting=false --engine.OSR=false --python.BuiltinsInliningMaxCallerSize=0 --python.ForceInitializeSourceSections=true
+ *     --vm.Dengine.Splitting=false --vm.Dengine.OSR=false --python.BuiltinsInliningMaxCallerSize=0 --python.ForceInitializeSourceSections=true
  * </pre>
  */
 public class NodeFootprintAnalyzer {
@@ -141,9 +182,8 @@ public class NodeFootprintAnalyzer {
 
     public static final class RootInfoFactory {
         static final Map<String, Function<Instance, RootInfo>> JAVA_CLASS_FNQ_TO_FACTORY = Map.of(
-                "com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode", PBytecodeRootInfo::create,
-                "com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen", PBytecodeDSLRootInfo::create);/*,
-                "com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode", BuiltinFunctionRootInfo::create);,*/
+                        "com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode", PBytecodeRootInfo::create,
+                        "com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen", PBytecodeDSLRootInfo::create);
 
         final HashMap<JavaClass, Function<Instance, RootInfo>> factories = new HashMap<>();
 
@@ -447,16 +487,16 @@ public class NodeFootprintAnalyzer {
                 return "";
             }
             return String.format("     %10s %10s %15s %15s %s\n", "diff", "index", "id1", "id2", "class") +
-                    getAdoptedNodes().stream().//
-                            filter(x -> x.retainedDiff() != 0).//
-                            sorted(Comparator.reverseOrder()).//
-                            map(x -> String.format("     %10d %10d %15d %15d %s",
-                            x.retainedDiff(), //
-                            x.index, //
-                            x.getI1InstanceId(), //
-                            x.getI2InstanceId(), //
-                            x.getClassName())).collect(Collectors.joining("\n")) +
-                    "\n";
+                            getAdoptedNodes().stream().//
+                                            filter(x -> x.retainedDiff() != 0).//
+                                            sorted(Comparator.reverseOrder()).//
+                                            map(x -> String.format("     %10d %10d %15d %15d %s",
+                                                            x.retainedDiff(), //
+                                                            x.index, //
+                                                            x.getI1InstanceId(), //
+                                                            x.getI2InstanceId(), //
+                                                            x.getClassName())).collect(Collectors.joining("\n")) +
+                            "\n";
         }
     }
 
@@ -468,9 +508,391 @@ public class NodeFootprintAnalyzer {
         printStream.println("                    Creates 'nfa-output' directory. Default: '/tmp'");
         printStream.println("Note: Files are stored in your selected output directory (of in '/tmp' if you didn't");
         printStream.println("      specify any), in the 'nfa-output' subdirectory. Each invocation of the tool creates");
-        printStream.println("      another subdirectory in the 'nfa-output' direcotry with ISO date and time set as");
+        printStream.println("      another subdirectory in the 'nfa-output' directory with ISO date and time set as");
         printStream.println("      its name. If your platform supports it, a link called 'latest' is created that");
         printStream.println("      will always point to the directory containing the results of the latest run.");
+    }
+
+    private interface ReportRenderer {
+        String extension();
+
+        List<String> rootsDiffColumns();
+
+        List<String> rootsDiffValues(RootsPair x);
+
+        List<String> bytecodesDiffColumns();
+
+        List<String> bytecodesDiffValues(RootsPair x);
+
+        List<String> nodesDiffColumns();
+
+        List<String> nodesDiffValues(RootsPair x);
+
+        List<String> sourcesDiffColumns();
+
+        List<String> sourcesDiffValues(RootsPair x);
+
+        String rootsDiffHeader();
+
+        String formatRootsDiff(RootsPair x);
+
+        String bytecodesDiffHeader();
+
+        String formatBytecodesDiff(RootsPair x);
+
+        String nodesDiffHeader();
+
+        String formatNodesDiff(RootsPair x);
+
+        String sourcesDiffHeader();
+
+        String formatSourcesDiff(RootsPair x);
+
+        default void writeFilePreamble(Path outputFile, String fileDSL, String fileManual, String title) throws IOException {
+        }
+    }
+
+    private static final class CsvReportRenderer implements ReportRenderer {
+
+        @Override
+        public String extension() {
+            return "csv";
+        }
+
+        @Override
+        public List<String> rootsDiffColumns() {
+// return List.of("diff", "bytecodes_dsl", "bytecodes_manual", "nodes_dsl", "nodes_manual",
+// "sources_dsl", "sources_manual", "source_map_manual", "total_dsl", "total_manual", "id_dsl",
+// "id_manual", "name");
+            return List.of("diff", "bytecodes_dsl", "bytecodes_manual", "nodes_dsl", "nodes_manual", "sources_dsl", "sources_manual", "total_dsl", "total_manual", "id_dsl", "id_manual", "name");
+        }
+
+        @Override
+        public List<String> rootsDiffValues(RootsPair x) {
+            return List.of(
+                            Long.toString(x.sizeDiff()),
+                            Long.toString(x.rootInfoDSL.bytecodesSize()),
+                            Long.toString(x.rootInfoManual.bytecodesSize()),
+                            Long.toString(x.rootInfoDSL.nodesSize()),
+                            Long.toString(x.rootInfoManual.nodesSize()),
+                            Long.toString(x.rootInfoDSL.sourcesSize()),
+                            Long.toString(x.rootInfoManual.sourcesSize()),
+// Boolean.toString(x.rootInfoManual.hasSourceMap()),
+                            Long.toString(x.rootInfoDSL.totalSize()),
+                            Long.toString(x.rootInfoManual.totalSize()),
+                            Long.toString(x.rootInfoDSL.instance.getInstanceId()),
+                            Long.toString(x.rootInfoManual.instance.getInstanceId()),
+                            x.rootInfoDSL.id.toString());
+        }
+
+        @Override
+        public List<String> bytecodesDiffColumns() {
+            return List.of("diff", "size_dsl", "size_manual", "ratio", "id_dsl", "id_manual", "name");
+        }
+
+        @Override
+        public List<String> bytecodesDiffValues(RootsPair x) {
+            return List.of(
+                            Long.toString(x.bytecodesSizeDiff()),
+                            Long.toString(x.rootInfoDSL.bytecodesSize()),
+                            Long.toString(x.rootInfoManual.bytecodesSize()),
+                            String.format("%d.%02d", x.rootInfoDSL.bytecodesSize() * 100 / x.rootInfoManual.bytecodesSize(),
+                                            (x.rootInfoDSL.bytecodesSize() * 10000 / x.rootInfoManual.bytecodesSize()) % 100),
+                            Long.toString(x.rootInfoDSL.instance.getInstanceId()),
+                            Long.toString(x.rootInfoManual.instance.getInstanceId()),
+                            x.rootInfoDSL.id.toString());
+        }
+
+        @Override
+        public List<String> nodesDiffColumns() {
+            return List.of("diff", "size_dsl", "size_manual", "ratio", "id_dsl", "id_manual", "name");
+        }
+
+        @Override
+        public List<String> nodesDiffValues(RootsPair x) {
+            return List.of(
+                            Long.toString(x.nodesSizeDiff()),
+                            Long.toString(x.rootInfoDSL.nodesSize()),
+                            Long.toString(x.rootInfoManual.nodesSize()),
+                            String.format("%d.%02d", x.rootInfoDSL.nodesSize() * 100 / x.rootInfoManual.nodesSize(), (x.rootInfoDSL.nodesSize() * 10000 / x.rootInfoManual.nodesSize()) % 100),
+                            Long.toString(x.rootInfoDSL.instance.getInstanceId()),
+                            Long.toString(x.rootInfoManual.instance.getInstanceId()),
+                            x.rootInfoDSL.id.toString());
+        }
+
+        @Override
+        public List<String> sourcesDiffColumns() {
+// return List.of("diff", "size_dsl", "size_manual", "ratio", "source_map_manual", "id_dsl",
+// "id_manual", "name");
+            return List.of("diff", "size_dsl", "size_manual", "ratio", "id_dsl", "id_manual", "name");
+        }
+
+        @Override
+        public List<String> sourcesDiffValues(RootsPair x) {
+            return List.of(
+                            Long.toString(x.sourcesSizeDiff()),
+                            Long.toString(x.rootInfoDSL.sourcesSize()),
+                            Long.toString(x.rootInfoManual.sourcesSize()),
+                            String.format("%d.%02d", x.rootInfoDSL.sourcesSize() * 100 / x.rootInfoManual.sourcesSize(), (x.rootInfoDSL.sourcesSize() * 10000 / x.rootInfoManual.sourcesSize()) % 100),
+// Boolean.toString(x.rootInfoManual.hasSourceMap()),
+                            Long.toString(x.rootInfoDSL.instance.getInstanceId()),
+                            Long.toString(x.rootInfoManual.instance.getInstanceId()),
+                            x.rootInfoDSL.id.toString());
+        }
+
+        @Override
+        public String rootsDiffHeader() {
+// return
+// "diff,bytecodes_dsl,bytecodes_manual,nodes_dsl,nodes_manual,sources_dsl,sources_manual,source_map_manual,total_dsl,total_manual,id_dsl,id_manual,name\n";
+            return "diff,bytecodes_dsl,bytecodes_manual,nodes_dsl,nodes_manual,sources_dsl,sources_manual,total_dsl,total_manual,id_dsl,id_manual,name\n";
+        }
+
+        @Override
+        public String formatRootsDiff(RootsPair x) {
+// return String.format("%d,%d,%d,%d,%d,%d,%d,%b,%d,%d,%d,%d,%s",
+            return String.format("%d,%d,%d,%d,%d,%d,%d, %d,%d,%d,%d,%s",
+                            x.sizeDiff(),
+                            x.rootInfoDSL.bytecodesSize(),
+                            x.rootInfoManual.bytecodesSize(),
+                            x.rootInfoDSL.nodesSize(),
+                            x.rootInfoManual.nodesSize(),
+                            x.rootInfoDSL.sourcesSize(),
+                            x.rootInfoManual.sourcesSize(),
+// x.rootInfoManual.hasSourceMap(),
+                            x.rootInfoDSL.totalSize(),
+                            x.rootInfoManual.totalSize(),
+                            x.rootInfoDSL.instance.getInstanceId(),
+                            x.rootInfoManual.instance.getInstanceId(),
+                            x.rootInfoDSL.id);
+        }
+
+        @Override
+        public String bytecodesDiffHeader() {
+            return "diff,size_dsl,size_manual,ratio,id_dsl,id_manual,name\n";
+        }
+
+        @Override
+        public String formatBytecodesDiff(RootsPair x) {
+            return String.format("%d,%d,%d,%d.%02d,%d,%d,%s",
+                            x.bytecodesSizeDiff(),
+                            x.rootInfoDSL.bytecodesSize(),
+                            x.rootInfoManual.bytecodesSize(),
+                            x.rootInfoDSL.bytecodesSize() * 100 / x.rootInfoManual.bytecodesSize(),
+                            (x.rootInfoDSL.bytecodesSize() * 10000 / x.rootInfoManual.bytecodesSize()) % 100,
+                            x.rootInfoDSL.instance.getInstanceId(),
+                            x.rootInfoManual.instance.getInstanceId(),
+                            x.rootInfoDSL.id);
+        }
+
+        @Override
+        public String nodesDiffHeader() {
+            return "diff,size_dsl,size_manual,ratio,id_dsl,id_manual,name\n";
+        }
+
+        @Override
+        public String formatNodesDiff(RootsPair x) {
+            return String.format("%d,%d,%d,%d.%02d,%d,%d,%s",
+                            x.nodesSizeDiff(),
+                            x.rootInfoDSL.nodesSize(),
+                            x.rootInfoManual.nodesSize(),
+                            x.rootInfoDSL.nodesSize() * 100 / x.rootInfoManual.nodesSize(),
+                            (x.rootInfoDSL.nodesSize() * 10000 / x.rootInfoManual.nodesSize()) % 100,
+                            x.rootInfoDSL.instance.getInstanceId(),
+                            x.rootInfoManual.instance.getInstanceId(),
+                            x.rootInfoDSL.id);
+        }
+
+        @Override
+        public String sourcesDiffHeader() {
+// return "diff,size_dsl,size_manual,ratio,source_map_manual,id_dsl,id_manual,name\n";
+            return "diff,size_dsl,size_manual,ratio,id_dsl,id_manual,name\n";
+        }
+
+        @Override
+        public String formatSourcesDiff(RootsPair x) {
+// return String.format("%d,%d,%d,%d.%02d,%b,%d,%d,%s",
+            return String.format("%d,%d,%d,%d.%02d,%d,%d,%s",
+                            x.sourcesSizeDiff(),
+                            x.rootInfoDSL.sourcesSize(),
+                            x.rootInfoManual.sourcesSize(),
+                            x.rootInfoDSL.sourcesSize() * 100 / x.rootInfoManual.sourcesSize(),
+                            (x.rootInfoDSL.sourcesSize() * 10000 / x.rootInfoManual.sourcesSize()) % 100,
+// x.rootInfoManual.hasSourceMap(),
+                            x.rootInfoDSL.instance.getInstanceId(),
+                            x.rootInfoManual.instance.getInstanceId(),
+                            x.rootInfoDSL.id);
+        }
+    }
+
+    private static final class TxtReportRenderer implements ReportRenderer {
+
+        @Override
+        public String extension() {
+            return "txt";
+        }
+
+        @Override
+        public List<String> rootsDiffColumns() {
+            return List.of("diff", "bytecodes_size1", "bytecodes_size2", "nodes_size1", "nodes_size2", "sources_size1", "sources_size2", "source_map1", "total_size1", "total_size2", "id1", "id2",
+                            "name");
+        }
+
+        @Override
+        public List<String> rootsDiffValues(RootsPair x) {
+            return List.of(
+                            Long.toString(x.sizeDiff()),
+                            Long.toString(x.rootInfoDSL.bytecodesSize()),
+                            Long.toString(x.rootInfoManual.bytecodesSize()),
+                            Long.toString(x.rootInfoDSL.nodesSize()),
+                            Long.toString(x.rootInfoManual.nodesSize()),
+                            Long.toString(x.rootInfoDSL.sourcesSize()),
+                            Long.toString(x.rootInfoManual.sourcesSize()),
+                            Boolean.toString(x.rootInfoManual.hasSourceMap()),
+                            Long.toString(x.rootInfoDSL.totalSize()),
+                            Long.toString(x.rootInfoManual.totalSize()),
+                            Long.toString(x.rootInfoDSL.instance.getInstanceId()),
+                            Long.toString(x.rootInfoManual.instance.getInstanceId()),
+                            x.rootInfoDSL.id.toString());
+        }
+
+        @Override
+        public List<String> bytecodesDiffColumns() {
+            return List.of("diff", "size1", "size2", "ratio", "id1", "id2", "name");
+        }
+
+        @Override
+        public List<String> bytecodesDiffValues(RootsPair x) {
+            return List.of(
+                            Long.toString(x.bytecodesSizeDiff()),
+                            Long.toString(x.rootInfoDSL.bytecodesSize()),
+                            Long.toString(x.rootInfoManual.bytecodesSize()),
+                            String.format("%d.%02d", x.rootInfoDSL.bytecodesSize() * 100 / x.rootInfoManual.bytecodesSize(),
+                                            (x.rootInfoDSL.bytecodesSize() * 10000 / x.rootInfoManual.bytecodesSize()) % 100),
+                            Long.toString(x.rootInfoDSL.instance.getInstanceId()),
+                            Long.toString(x.rootInfoManual.instance.getInstanceId()),
+                            x.rootInfoDSL.id.toString());
+        }
+
+        @Override
+        public List<String> nodesDiffColumns() {
+            return List.of("diff", "size1", "size2", "ratio", "id1", "id2", "name");
+        }
+
+        @Override
+        public List<String> nodesDiffValues(RootsPair x) {
+            return List.of(
+                            Long.toString(x.nodesSizeDiff()),
+                            Long.toString(x.rootInfoDSL.nodesSize()),
+                            Long.toString(x.rootInfoManual.nodesSize()),
+                            String.format("%d.%02d", x.rootInfoDSL.nodesSize() * 100 / x.rootInfoManual.nodesSize(), (x.rootInfoDSL.nodesSize() * 10000 / x.rootInfoManual.nodesSize()) % 100),
+                            Long.toString(x.rootInfoDSL.instance.getInstanceId()),
+                            Long.toString(x.rootInfoManual.instance.getInstanceId()),
+                            x.rootInfoDSL.id.toString());
+        }
+
+        @Override
+        public List<String> sourcesDiffColumns() {
+            return List.of("diff", "size1", "size2", "ratio", "source_map1", "id1", "id2", "name");
+        }
+
+        @Override
+        public List<String> sourcesDiffValues(RootsPair x) {
+            return List.of(
+                            Long.toString(x.sourcesSizeDiff()),
+                            Long.toString(x.rootInfoDSL.sourcesSize()),
+                            Long.toString(x.rootInfoManual.sourcesSize()),
+                            String.format("%d.%02d", x.rootInfoDSL.sourcesSize() * 100 / x.rootInfoManual.sourcesSize(), (x.rootInfoDSL.sourcesSize() * 10000 / x.rootInfoManual.sourcesSize()) % 100),
+                            Boolean.toString(x.rootInfoManual.hasSourceMap()),
+                            Long.toString(x.rootInfoDSL.instance.getInstanceId()),
+                            Long.toString(x.rootInfoManual.instance.getInstanceId()),
+                            x.rootInfoDSL.id.toString());
+        }
+
+        @Override
+        public String rootsDiffHeader() {
+            return String.format("      %10s %15s %15s %12s %12s %15s %15s %11s %11s %12s %12s %15s %15s %10s\n", "diff", "bytecodes_size1", "bytecodes_size2", "nodes_size1", "nodes_size2",
+                            "sources_size1", "sources_size2", "source_map1", "source_map2", "total_size1", "total_size2", "id1", "id2", "name");
+        }
+
+        @Override
+        public String formatRootsDiff(RootsPair x) {
+            return String.format("root: %10d %15d %15d %12d %12d %15d %15d %11b %11b %12d %12d %15d %15d %s\n",
+                            x.sizeDiff(),
+                            x.rootInfoDSL.bytecodesSize(),
+                            x.rootInfoManual.bytecodesSize(),
+                            x.rootInfoDSL.nodesSize(),
+                            x.rootInfoManual.nodesSize(),
+                            x.rootInfoDSL.sourcesSize(),
+                            x.rootInfoManual.sourcesSize(),
+                            x.rootInfoManual.hasSourceMap(),
+                            x.rootInfoDSL.totalSize(),
+                            x.rootInfoManual.totalSize(),
+                            x.rootInfoDSL.instance.getInstanceId(),
+                            x.rootInfoManual.instance.getInstanceId(),
+                            x.rootInfoDSL.id);
+        }
+
+        @Override
+        public String bytecodesDiffHeader() {
+            return String.format("      %10s %15s %15s %11s %15s %15s %10s\n", "diff", "size1", "size2", "ratio", "id1", "id2", "name");
+        }
+
+        @Override
+        public String formatBytecodesDiff(RootsPair x) {
+            return String.format("root: %10d %15d %15d %7d.%02d %15d %15d %s\n",
+                            x.bytecodesSizeDiff(),
+                            x.rootInfoDSL.bytecodesSize(),
+                            x.rootInfoManual.bytecodesSize(),
+                            x.rootInfoDSL.bytecodesSize() * 100 / x.rootInfoManual.bytecodesSize(),
+                            (x.rootInfoDSL.bytecodesSize() * 10000 / x.rootInfoManual.bytecodesSize()) % 100,
+                            x.rootInfoDSL.instance.getInstanceId(),
+                            x.rootInfoManual.instance.getInstanceId(),
+                            x.rootInfoDSL.id);
+        }
+
+        @Override
+        public String nodesDiffHeader() {
+            return String.format("      %10s %15s %15s %11s %15s %15s %10s\n", "diff", "size1", "size2", "ratio", "id1", "id2", "name");
+        }
+
+        @Override
+        public String formatNodesDiff(RootsPair x) {
+            return String.format("root: %10d %15d %15d %7d.%02d %15d %15d %s\n",
+                            x.nodesSizeDiff(),
+                            x.rootInfoDSL.nodesSize(),
+                            x.rootInfoManual.nodesSize(),
+                            x.rootInfoDSL.nodesSize() * 100 / x.rootInfoManual.nodesSize(),
+                            (x.rootInfoDSL.nodesSize() * 10000 / x.rootInfoManual.nodesSize()) % 100,
+                            x.rootInfoDSL.instance.getInstanceId(),
+                            x.rootInfoManual.instance.getInstanceId(),
+                            x.rootInfoDSL.id);
+        }
+
+        @Override
+        public String sourcesDiffHeader() {
+            return String.format("      %10s %15s %15s %11s %11s %11s %15s %15s %10s\n", "diff", "size1", "size2", "ratio", "source_map1", "source_map2", "id1", "id2", "name");
+        }
+
+        @Override
+        public String formatSourcesDiff(RootsPair x) {
+            return String.format("root: %10d %15d %15d %7d.%02d %5b %5b %15d %15d %s\n",
+                            x.sourcesSizeDiff(),
+                            x.rootInfoDSL.sourcesSize(),
+                            x.rootInfoManual.sourcesSize(),
+                            x.rootInfoDSL.sourcesSize() * 100 / x.rootInfoManual.sourcesSize(),
+                            (x.rootInfoDSL.sourcesSize() * 10000 / x.rootInfoManual.sourcesSize()) % 100,
+                            x.rootInfoManual.hasSourceMap(),
+                            x.rootInfoDSL.instance.getInstanceId(),
+                            x.rootInfoManual.instance.getInstanceId(),
+                            x.rootInfoDSL.id);
+        }
+
+        @Override
+        public void writeFilePreamble(Path outputFile, String fileDSL, String fileManual, String title) throws IOException {
+            Files.writeString(outputFile, String.format("Files: %s vs %s\n", Arrays.stream(fileDSL.split("/")).toList().getLast(), Arrays.stream(fileManual.split("/")).toList().getLast()),
+                            StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            Files.writeString(outputFile, title + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -493,7 +915,7 @@ public class NodeFootprintAnalyzer {
             } else if (args[i].equals("--help")) {
                 printHelp(System.out);
                 return;
-            }else {
+            } else {
                 System.err.println(String.format("Invalid option: \"%s\"", args[i]));
                 printHelp(System.err);
                 return;
@@ -502,6 +924,7 @@ public class NodeFootprintAnalyzer {
 
         String fileDSL = args[args.length - 2];
         String fileManual = args[args.length - 1];
+        ReportRenderer renderer = getCsv ? new CsvReportRenderer() : new TxtReportRenderer();
 
         if (!Files.exists(Path.of(fileDSL))) {
             System.err.println(String.format("File \"%s\" is an invalid file name or insufficient permissions were provided.", fileDSL));
@@ -549,42 +972,14 @@ public class NodeFootprintAnalyzer {
 
         System.out.println("====================");
         System.out.println("Root nodes with the highest (approximate) total size difference: ");
-        String header;
-        if (getCsv) {
-            header = "diff,bytecodes_size_dsl,bytecodes_size_manual,nodes_size_dsl,nodes_size_manual,sources_size_dsl,sources_size_manual,source_map_manual,total_size_dsl,total_size_manual,id_dsl,id_manual,name\n";
-        } else {
-            header = String.format("      %10s %15s %15s %12s %12s %15s %15s %11s %11s %12s %12s %15s %15s %10s\n", "diff", "bytecodes_size1", "bytecodes_size2", "nodes_size1", "nodes_size2", "sources_size1", "sources_size2", "source_map1", "source_map2", "total_size1", "total_size2", "id1", "id2", "name");
-        }
-        String body;
-        if (getCsv) {
-            body = "%d,%d,%d,%d,%d,%d,%d,%b,%d,%d,%d,%d,%s";
-        } else {
-            body = "root: %10d %15d %15d %12d %12d %15d %15d %11b %11b %12d %12d %15d %15d %s\n";
-        }
-        System.out.printf(header);
+        String header = renderer.rootsDiffHeader();
         List<String> diffs = joined.values().stream().//
-                filter(x -> x.sizeDiff() != 0).//
-                sorted(Comparator.reverseOrder()).//
-                map(x -> String.format(body,
-                x.sizeDiff(), //
-                x.rootInfoDSL.bytecodesSize(), //
-                x.rootInfoManual.bytecodesSize(), //
-                x.rootInfoDSL.nodesSize(), //
-                x.rootInfoManual.nodesSize(), //
-                x.rootInfoDSL.sourcesSize(), //
-                x.rootInfoManual.sourcesSize(), //
-                x.rootInfoManual.hasSourceMap(), //
-                x.rootInfoDSL.totalSize(), //
-                x.rootInfoManual.totalSize(), //
-                x.rootInfoDSL.instance.getInstanceId(), //
-                x.rootInfoManual.instance.getInstanceId(), //
-                x.rootInfoDSL.id)).toList();
-        diffs.stream().limit(20).forEach(System.out::println);
-        Path rootsDiffFilePath = runDir.resolve(String.format("roots-diff.%s", getCsv ? "csv" : "txt"));
-        if (!getCsv) {
-            Files.writeString(rootsDiffFilePath, String.format("Files: %s vs %s\n", Arrays.stream(fileDSL.split("/")).toList().getLast(), Arrays.stream(fileManual.split("/")).toList().getLast()), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            Files.writeString(rootsDiffFilePath, "Root nodes with the highest (approximate) total size difference:\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        }
+                        filter(x -> x.sizeDiff() != 0).//
+                        sorted(Comparator.reverseOrder()).//
+                        map(renderer::formatRootsDiff).toList();
+        printTable(renderer.rootsDiffColumns(), joined.values().stream().filter(x -> x.sizeDiff() != 0).sorted(Comparator.reverseOrder()).map(renderer::rootsDiffValues).limit(20).toList());
+        Path rootsDiffFilePath = runDir.resolve(String.format("roots-diff.%s", renderer.extension()));
+        renderer.writeFilePreamble(rootsDiffFilePath, fileDSL, fileManual, "Root nodes with the highest (approximate) total size difference:");
         if (!noHeaders) {
             Files.writeString(rootsDiffFilePath, header, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         }
@@ -594,35 +989,15 @@ public class NodeFootprintAnalyzer {
         // BYTECODE sizes
         System.out.println("====================");
         System.out.println("Root nodes with the highest (approximate) bytecode size difference: ");
-        header = String.format("      %10s %15s %15s %11s %15s %15s %10s\n", "diff", "size1", "size2", "ratio", "id1", "id2", "name");
-        if (getCsv) {
-            header = "diff,size_dsl,size_manual,ratio,id_dsl,id_maunal,name\n";
-        }
-        String bytecodesBody;
-        if (getCsv) {
-            bytecodesBody = "%d,%d,%d,%d.%02d,%d,%d,%s";
-        } else {
-            bytecodesBody = "root: %10d %15d %15d %7d.%02d %15d %15d %s\n";
-        }
-        System.out.printf(header);
+        header = renderer.bytecodesDiffHeader();
         diffs = joined.values().stream().//
-                filter(x -> x.bytecodesSizeDiff() != 0).//
-                sorted(Comparator.comparingLong(RootsPair::bytecodesSizeDiff).reversed()).//
-                map(x -> String.format(bytecodesBody,
-                x.bytecodesSizeDiff(), //
-                x.rootInfoDSL.bytecodesSize(), //
-                x.rootInfoManual.bytecodesSize(), //
-                x.rootInfoDSL.bytecodesSize() * 100 / x.rootInfoManual.bytecodesSize(), //
-                (x.rootInfoDSL.bytecodesSize() * 10000 / x.rootInfoManual.bytecodesSize()) % 100, //
-                x.rootInfoDSL.instance.getInstanceId(), //
-                x.rootInfoManual.instance.getInstanceId(), //
-                x.rootInfoDSL.id)).toList();
-        diffs.stream().limit(20).forEach(System.out::println);
-        rootsDiffFilePath = runDir.resolve(String.format("roots-bytecodes-diff.%s", getCsv ? "csv" : "txt"));
-        if (!getCsv) {
-            Files.writeString(rootsDiffFilePath, String.format("Files: %s vs %s\n", Arrays.stream(fileDSL.split("/")).toList().getLast(), Arrays.stream(fileManual.split("/")).toList().getLast()), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            Files.writeString(rootsDiffFilePath, "Root nodes with the highest (approximate) bytecode size difference:\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        }
+                        filter(x -> x.bytecodesSizeDiff() != 0).//
+                        sorted(Comparator.comparingLong(RootsPair::bytecodesSizeDiff).reversed()).//
+                        map(renderer::formatBytecodesDiff).toList();
+        printTable(renderer.bytecodesDiffColumns(), joined.values().stream().filter(x -> x.bytecodesSizeDiff() != 0).sorted(Comparator.comparingLong(RootsPair::bytecodesSizeDiff).reversed()).map(
+                        renderer::bytecodesDiffValues).limit(20).toList());
+        rootsDiffFilePath = runDir.resolve(String.format("roots-bytecodes-diff.%s", renderer.extension()));
+        renderer.writeFilePreamble(rootsDiffFilePath, fileDSL, fileManual, "Root nodes with the highest (approximate) bytecode size difference:");
         if (!noHeaders) {
             Files.writeString(rootsDiffFilePath, header, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         }
@@ -632,37 +1007,16 @@ public class NodeFootprintAnalyzer {
         // NODE sizes
         System.out.println("====================");
         System.out.println("Root nodes with the highest (approximate) nodes size difference: ");
-        String nodesBody;
-        if (getCsv) {
-            header = "diff,size_dsl,size_manual,ratio,id_dsl,id_manual,name\n";
-        }
-        else {
-            header = String.format("      %10s %15s %15s %11s %15s %15s %10s\n", "diff", "size1", "size2", "ratio", "id1", "id2", "name");
-        }
-        if (getCsv) {
-            nodesBody = "%d,%d,%d,%d.%02d,%d,%d,%s";
-        } else {
-            nodesBody = "root: %10d %15d %15d %7d.%02d %15d %15d %s\n";
-        }
-        System.out.printf(header);
+        header = renderer.nodesDiffHeader();
         diffs = joined.values().stream().//
-                filter(x -> x.nodesSizeDiff() != 0).//
-                sorted(Comparator.comparingLong(RootsPair::nodesSizeDiff).reversed()).//
-                map(x -> String.format(nodesBody,
-                x.nodesSizeDiff(), //
-                x.rootInfoDSL.nodesSize(), //
-                x.rootInfoManual.nodesSize(), //
-                x.rootInfoDSL.nodesSize() * 100 / x.rootInfoManual.nodesSize(), //
-                (x.rootInfoDSL.nodesSize() * 10000 / x.rootInfoManual.nodesSize()) % 100, //
-                x.rootInfoDSL.instance.getInstanceId(), //
-                x.rootInfoManual.instance.getInstanceId(), //
-                x.rootInfoDSL.id)).toList();
-        diffs.stream().limit(20).forEach(System.out::println);
-        rootsDiffFilePath = runDir.resolve(String.format("roots-nodes-diff.%s", getCsv ? "csv" : "txt"));
-        if (!getCsv) {
-            Files.writeString(rootsDiffFilePath, String.format("Files: %s vs %s\n", Arrays.stream(fileDSL.split("/")).toList().getLast(), Arrays.stream(fileManual.split("/")).toList().getLast()), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            Files.writeString(rootsDiffFilePath, "Root nodes with the highest (approximate) nodes size difference:\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        }
+                        filter(x -> x.nodesSizeDiff() != 0).//
+                        sorted(Comparator.comparingLong(RootsPair::nodesSizeDiff).reversed()).//
+                        map(renderer::formatNodesDiff).toList();
+        printTable(renderer.nodesDiffColumns(),
+                        joined.values().stream().filter(x -> x.nodesSizeDiff() != 0).sorted(Comparator.comparingLong(RootsPair::nodesSizeDiff).reversed()).map(renderer::nodesDiffValues).limit(
+                                        20).toList());
+        rootsDiffFilePath = runDir.resolve(String.format("roots-nodes-diff.%s", renderer.extension()));
+        renderer.writeFilePreamble(rootsDiffFilePath, fileDSL, fileManual, "Root nodes with the highest (approximate) nodes size difference:");
         if (!noHeaders) {
             Files.writeString(rootsDiffFilePath, header, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         }
@@ -672,43 +1026,21 @@ public class NodeFootprintAnalyzer {
         // SOURCE size
         System.out.println("====================");
         System.out.println("Root nodes with the highest (approximate) sources size difference: ");
-        header = String.format("      %10s %15s %15s %11s %11s %11s %15s %15s %10s\n", "diff", "size1", "size2", "ratio", "source_map1", "source_map2", "id1", "id2", "name");
-        if (getCsv) {
-            header = "diff,size_dsl,size_manual,ratio,source_map_manual,id_dsl,id_manual,name\n";
-        }
-        String sourcesBody;
-        if (getCsv) {
-            sourcesBody = "%d,%d,%d,%d.%02d,%b,%d,%d,%s";
-        } else {
-            sourcesBody = "root: %10d %15d %15d %7d.%02d %5b %5b %15d %15d %s\n";
-        }
-        System.out.printf(header);
+        header = renderer.sourcesDiffHeader();
         diffs = joined.values().stream().//
-                filter(x -> x.sourcesSizeDiff() != 0).//
-                sorted(Comparator.comparingLong(RootsPair::sourcesSizeDiff).reversed()).//
-                map(x -> String.format(sourcesBody,
-                x.sourcesSizeDiff(), //
-                x.rootInfoDSL.sourcesSize(), //
-                x.rootInfoManual.sourcesSize(), //
-                x.rootInfoDSL.sourcesSize() * 100 / x.rootInfoManual.sourcesSize(), //
-                (x.rootInfoDSL.sourcesSize() * 10000 / x.rootInfoManual.sourcesSize()) % 100, //
-                x.rootInfoManual.hasSourceMap(), //
-                x.rootInfoDSL.instance.getInstanceId(), //
-                x.rootInfoManual.instance.getInstanceId(), //
-                x.rootInfoDSL.id)).toList();
-        diffs.stream().limit(20).forEach(System.out::println);
-        rootsDiffFilePath = runDir.resolve(String.format("roots-sources-diff.%s", getCsv ? "csv" : "txt"));
-        if (!getCsv) {
-            Files.writeString(rootsDiffFilePath, String.format("Files: %s vs %s\n", Arrays.stream(fileDSL.split("/")).toList().getLast(), Arrays.stream(fileManual.split("/")).toList().getLast()), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            Files.writeString(rootsDiffFilePath, "Root nodes with the highest (approximate) sources size difference:\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        }
+                        filter(x -> x.sourcesSizeDiff() != 0).//
+                        sorted(Comparator.comparingLong(RootsPair::sourcesSizeDiff).reversed()).//
+                        map(renderer::formatSourcesDiff).toList();
+        printTable(renderer.sourcesDiffColumns(),
+                        joined.values().stream().filter(x -> x.sourcesSizeDiff() != 0).sorted(Comparator.comparingLong(RootsPair::sourcesSizeDiff).reversed()).map(renderer::sourcesDiffValues).limit(
+                                        20).toList());
+        rootsDiffFilePath = runDir.resolve(String.format("roots-sources-diff.%s", renderer.extension()));
+        renderer.writeFilePreamble(rootsDiffFilePath, fileDSL, fileManual, "Root nodes with the highest (approximate) sources size difference:");
         if (!noHeaders) {
             Files.writeString(rootsDiffFilePath, header, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         }
         Files.write(rootsDiffFilePath, diffs, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         System.out.println("Full list was written to " + rootsDiffFilePath);
-
-
 
         if (!notFound.isEmpty()) {
             final String onlyOnceRootsFile = "/tmp/only-once-roots.txt";
@@ -718,32 +1050,32 @@ public class NodeFootprintAnalyzer {
         }
 
         System.out.println();
-        System.out.printf("Total retained size: %15s %15s %15s\n", "size1", "size2", "diff");
+        System.out.printf("Total retained size: %15s %15s %15s\n", "size_dsl", "size_manual", "diff");
         long totalDiff = joined.values().stream().mapToLong(RootsPair::sizeDiff).sum();
-        long size1 = joined.values().stream().mapToLong(x -> x.rootInfoDSL.totalSize()).sum();
-        long size2 = joined.values().stream().mapToLong(x -> x.rootInfoManual.totalSize()).sum();
-        System.out.printf("                     %,15d %,15d %,15d (%d%%)\n", size1, size2, totalDiff, round(totalDiff / ((double) size2 / 100)));
+        long size_dsl = joined.values().stream().mapToLong(x -> x.rootInfoDSL.totalSize()).sum();
+        long size_manual = joined.values().stream().mapToLong(x -> x.rootInfoManual.totalSize()).sum();
+        System.out.printf("                     %,15d %,15d %,15d (%d%%)\n", size_dsl, size_manual, totalDiff, round(totalDiff / ((double) size_manual / 100)));
 
         System.out.println();
-        System.out.printf("Bytecodes retained size: %15s %15s %15s\n", "size1", "size2", "diff");
+        System.out.printf("Bytecodes retained size: %15s %15s %15s\n", "size_dsl", "size_manual", "diff");
         totalDiff = joined.values().stream().mapToLong(RootsPair::bytecodesSizeDiff).sum();
-        size1 = joined.values().stream().mapToLong(x -> x.rootInfoDSL.bytecodesSize()).sum();
-        size2 = joined.values().stream().mapToLong(x -> x.rootInfoManual.bytecodesSize()).sum();
-        System.out.printf("                     %,15d %,15d %,15d (%d%%)\n", size1, size2, totalDiff, round(totalDiff / ((double) size2 / 100)));
+        size_dsl = joined.values().stream().mapToLong(x -> x.rootInfoDSL.bytecodesSize()).sum();
+        size_manual = joined.values().stream().mapToLong(x -> x.rootInfoManual.bytecodesSize()).sum();
+        System.out.printf("                     %,15d %,15d %,15d (%d%%)\n", size_dsl, size_manual, totalDiff, round(totalDiff / ((double) size_manual / 100)));
 
         System.out.println();
-        System.out.printf("Nodes retained size: %15s %15s %15s\n", "size1", "size2", "diff");
+        System.out.printf("Nodes retained size: %15s %15s %15s\n", "size_dsl", "size_manual", "diff");
         totalDiff = joined.values().stream().mapToLong(RootsPair::nodesSizeDiff).sum();
-        size1 = joined.values().stream().mapToLong(x -> x.rootInfoDSL.nodesSize()).sum();
-        size2 = joined.values().stream().mapToLong(x -> x.rootInfoManual.nodesSize()).sum();
-        System.out.printf("                     %,15d %,15d %,15d (%d%%)\n", size1, size2, totalDiff, round(totalDiff / ((double) size2 / 100)));
+        size_dsl = joined.values().stream().mapToLong(x -> x.rootInfoDSL.nodesSize()).sum();
+        size_manual = joined.values().stream().mapToLong(x -> x.rootInfoManual.nodesSize()).sum();
+        System.out.printf("                     %,15d %,15d %,15d (%d%%)\n", size_dsl, size_manual, totalDiff, round(totalDiff / ((double) size_manual / 100)));
 
         System.out.println();
-        System.out.printf("Sources retained size: %15s %15s %15s\n", "size1", "size2", "diff");
+        System.out.printf("Sources retained size: %15s %15s %15s\n", "size_dsl", "size_manual", "diff");
         totalDiff = joined.values().stream().mapToLong(RootsPair::sourcesSizeDiff).sum();
-        size1 = joined.values().stream().mapToLong(x -> x.rootInfoDSL.sourcesSize()).sum();
-        size2 = joined.values().stream().mapToLong(x -> x.rootInfoManual.sourcesSize()).sum();
-        System.out.printf("                     %,15d %,15d %,15d (%d%%)\n", size1, size2, totalDiff, round(totalDiff / ((double) size2 / 100)));
+        size_dsl = joined.values().stream().mapToLong(x -> x.rootInfoDSL.sourcesSize()).sum();
+        size_manual = joined.values().stream().mapToLong(x -> x.rootInfoManual.sourcesSize()).sum();
+        System.out.printf("                     %,15d %,15d %,15d (%d%%)\n", size_dsl, size_manual, totalDiff, round(totalDiff / ((double) size_manual / 100)));
 
         System.out.println();
         System.out.println("To explore individual objects in VisualVM use OQL query: `[heap.findObject(ID)]`");
@@ -756,9 +1088,9 @@ public class NodeFootprintAnalyzer {
 
         RootInfoFactory infoFactory = new RootInfoFactory(heap);
         Map<RootInfoID, RootInfo> roots = StreamSupport.stream(Spliterators.spliteratorUnknownSize(instancesIt, Spliterator.ORDERED), false).//
-                map(infoFactory::create).//
-                filter(Objects::nonNull).//
-                collect(Collectors.toMap(RootInfo::id, x -> x, (a, b) -> RootInfo.DUPLICATE));
+                        map(infoFactory::create).//
+                        filter(Objects::nonNull).//
+                        collect(Collectors.toMap(RootInfo::id, x -> x, (a, b) -> RootInfo.DUPLICATE));
         List<RootInfoID> duplicates = roots.entrySet().stream().filter(x -> x.getValue() == RootInfo.DUPLICATE).map(Entry::getKey).toList();
         duplicates.forEach(roots::remove);
         if (!duplicates.isEmpty()) {
@@ -773,10 +1105,10 @@ public class NodeFootprintAnalyzer {
         generateOQL(roots.values().stream().map(RootInfo::instance), dumpFileName, "ast", "selects all AST objects");
 
         String rootsCsv = "id,class,name,nodes_rsize\n" + //
-                roots.values().stream().sorted().//
-                        map(NodeFootprintAnalyzer::asCSVLine).//
-                        collect(Collectors.joining("\n")) +
-                "\n";
+                        roots.values().stream().sorted().//
+                                        map(NodeFootprintAnalyzer::asCSVLine).//
+                                        collect(Collectors.joining("\n")) +
+                        "\n";
         final String rootsFile = String.format("/tmp/%s-roots.csv", dumpFileName);
         Files.writeString(Paths.get(rootsFile), rootsCsv);
         System.out.println("Database with roots was written to " + rootsFile);
@@ -788,10 +1120,34 @@ public class NodeFootprintAnalyzer {
         return String.format("%d,%s,%s,%d", info.instance.getInstanceId(), info.instance.getJavaClass().getName(), info.id(), info.totalSize());
     }
 
+    private static void printTable(List<String> columns, List<List<String>> rows) {
+        int[] widths = new int[columns.size()];
+        for (int i = 0; i < columns.size(); i++) {
+            widths[i] = columns.get(i).length();
+        }
+        for (List<String> row : rows) {
+            for (int i = 0; i < columns.size(); i++) {
+                String value = i < row.size() ? row.get(i) : "";
+                widths[i] = Math.max(widths[i], value.length());
+            }
+        }
+
+        String sep = "+" + Arrays.stream(widths).mapToObj(w -> "-".repeat(w + 2)).collect(Collectors.joining("+")) + "+";
+        System.out.println(sep);
+        System.out.println("| " + IntStream.range(0, columns.size()).mapToObj(i -> pad(columns.get(i), widths[i])).collect(Collectors.joining(" | ")) + " |");
+        System.out.println(sep);
+        rows.forEach(row -> System.out.println("| " + IntStream.range(0, columns.size()).mapToObj(i -> pad(i < row.size() ? row.get(i) : "", widths[i])).collect(Collectors.joining(" | ")) + " |"));
+        System.out.println(sep);
+    }
+
+    private static String pad(String value, int width) {
+        return value + " ".repeat(Math.max(0, width - value.length()));
+    }
+
     private static void generateOQL(Stream<Instance> objects, Path dumpFileName, String id, String description) throws IOException {
         String oqlObjects = objects.map(x -> Long.toString(x.getInstanceId())).//
-                map(x -> String.format("heap.findObject(%s)", x)).//
-                collect(Collectors.joining(", \n"));
+                        map(x -> String.format("heap.findObject(%s)", x)).//
+                        collect(Collectors.joining(", \n"));
         String oql = String.format("""
                         [
                             %s

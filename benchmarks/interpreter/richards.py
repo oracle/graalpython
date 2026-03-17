@@ -431,5 +431,6 @@ def run():
     DeviceTask(I_DEVB, 5000, wkq, TaskState().waiting(), DeviceTaskRec())
 
     schedule()
+    __graalpython__.dump_heap()
 
     return taskWorkArea.holdCount == 9297 and taskWorkArea.qpktCount == 23246

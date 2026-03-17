@@ -55,4 +55,6 @@ def run():
     if fibo != fibo_is:
         raise AssertionError(f"Unexpected result: {fibo}")
 
+    __graalpython__.dump_heap()
+
     return fibo
