@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1643,6 +1643,8 @@ public final class PythonCextBuiltins {
     private static final int LOG_FINEST = 0x20;
     private static final int DEBUG_CAPI = 0x40;
     private static final int PYTHON_GC = 0x80;
+    private static final int POISON_NATIVE_MEMORY_ON_FREE = 0x100;
+    private static final int SAMPLE_NATIVE_MEMORY_ALLOC_SITES = 0x200;
 
     /*
      * These should be kept so they can be shared across multiple contexts in the same engine, if
@@ -1681,6 +1683,12 @@ public final class PythonCextBuiltins {
             }
             if (language.getEngineOption(PythonOptions.PythonGC)) {
                 options |= PYTHON_GC;
+            }
+            if (language.getEngineOption(PythonOptions.PoisonNativeMemoryOnFree)) {
+                options |= POISON_NATIVE_MEMORY_ON_FREE;
+            }
+            if (language.getEngineOption(PythonOptions.SampleNativeMemoryAllocSites)) {
+                options |= SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
             }
             return options;
         }
