@@ -891,7 +891,11 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
                 // GraalPy change: this branch, else branch is original CPython code
                 cycle.head = NULL;
                 cycle.n = 0;
-                // TODO: [GR-72218] assert (cycle.reachable == weak_candidates );
+                /* GraalPy change: visit_collect_managed_referents forwards to
+                 * visit_reachable(cycle->reachable), and 'cycle' is initialized
+                 * with 'young'.
+                 */
+                assert(cycle.reachable == young);
                 /* visit_collect_managed_referents is visit_reachable + capture the references into "cycle" */
                 CALL_TRAVERSE(traverse, op, visit_collect_managed_referents, (void *)&cycle);
 
@@ -979,12 +983,25 @@ move_weak_reachable(PyGC_Head *young, PyGC_Head *weak_candidates)
     while (gc != young) {
         Py_ssize_t gc_refcnt = gc_get_refs(gc);
 
-        // TODO: [GR-72218] assert(gc_is_collecting(gc));
-
+        /* GraalPy change: unlike CPython's single-phase flow, objects moved to
+         * 'weak_candidates' already had PREV_MASK_COLLECTING cleared in
+         * move_unreachable() before this phase runs. visit_weak_reachable()
+         * depends on that state so it can rescue weak candidates without
+         * moving them through visit_reachable() again, so gc_is_collecting(gc)
+         * is not a valid invariant here.
+         */
+        // assert(gc_is_collecting(gc));
         /* This phase is done after 'move_unreachable' and so all object
          * remaining in 'young' must have a non-zero gc_refcnt.
          */
-        // TODO: [GR-72218] assert(gc_refcnt);
+        /* GraalPy change: gc_refcnt is also not a stable CPython-style
+         * invariant here. During the weak-candidate flow we reuse '_gc_prev'
+         * for list linkage, so native gc_refs information for rescued objects
+         * is recovered via update_refs()/subtract_refs() and
+         * is_referenced_from_managed(), not by requiring gc_refcnt != 0 for
+         * every object we encounter in this phase.
+         */
+        // assert(gc_refcnt);
         /* If gc_refcnt s not MANAGED_REFCNT, then we know that this object is
          * referenced from native (e.g. stored in a global field). In case that
          * 'gc_refcnt == MANAGED_REFCNT' we don't know if the object is only
