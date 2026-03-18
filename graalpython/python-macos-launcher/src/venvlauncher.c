@@ -106,11 +106,11 @@ char *get_pyenvcfg_command(const char *pyenv_cfg_path) {
                 exit(1);
             }
             while (isspace((unsigned char) *p)) p++;
+            char *end = p + strlen(p);
+            while (end > p && isspace((unsigned char) end[-1])) {
+                *--end = '\0';
+            }
             if (*p == '\"') {
-                char *end = p + strlen(p);
-                while (end > p && (isspace((unsigned char) end[-1]) || end[-1] == '\n')) {
-                    *--end = '\0';
-                }
                 if (end <= p + 1 || end[-1] != '\"') {
                     fprintf(stderr, "venv command is not in correct format");
                     free(current_line);
