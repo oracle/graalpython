@@ -116,6 +116,43 @@ class VenvTest(unittest.TestCase):
             assert f"OUTER_BASE {expected_base}" in out, out
             assert f"base-executable = {expected_base}" in out, out
 
+    def test_macos_venv_launcher_with_space_in_command_path(self):
+        if sys.platform != "darwin" or sys.implementation.name != "graalpy":
+            return
+        real_executable = os.path.realpath(sys.executable)
+        real_home = os.path.dirname(os.path.dirname(real_executable))
+        extra_args = [
+            f'--vm.Dpython.EnableBytecodeDSLInterpreter={repr(__graalpython__.is_bytecode_dsl_interpreter).lower()}'
+        ]
+        with tempfile.TemporaryDirectory(prefix="graalpy launcher ") as d:
+            linked_home = os.path.join(d, "home with space")
+            os.symlink(real_home, linked_home)
+            linked_executable = os.path.join(linked_home, "bin", os.path.basename(real_executable))
+            env_dir = os.path.join(d, "venv")
+            subprocess.check_output(
+                [sys.executable] + extra_args + [f"--python.VenvlauncherCommand={linked_executable}", "-m", "venv", env_dir, "--without-pip"],
+                stderr=subprocess.STDOUT,
+            )
+            env_python = os.path.join(env_dir, BINDIR, f"python{EXESUF}")
+            with open(os.path.join(env_dir, "pyvenv.cfg"), encoding="utf-8") as cfg:
+                cfg_data = cfg.read()
+            assert f"venvlauncher_command = {linked_executable}" in cfg_data, cfg_data
+            out = subprocess.check_output(
+                [
+                    env_python,
+                    "-c",
+                    """if True:
+                    import os, sys
+                    print("Executable", os.path.realpath(sys.executable))
+                    print("Original", __graalpython__.venvlauncher_command)
+                    """,
+                ],
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            assert f"Executable {os.path.realpath(env_python)}" in out, out
+            assert f"Original {linked_executable}" in out, out
+
     def test_create_and_use_basic_venv(self):
         run = None
         run_output = ''
