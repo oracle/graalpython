@@ -159,11 +159,6 @@
         "python-unittest-arrow-storage": gpgate + require(GPY_JVM_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2,
         }),
-        "python-unittest-posix": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
-            "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE),
-            "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_JVM_STANDALONE),
-        }),
         "python-unittest-standalone": gpgate_maven + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
             "linux:aarch64:jdk21"        : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
@@ -277,9 +272,11 @@
         "style-ecj": style_gate + task_spec({ tags:: "style,ecjbuild" }) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier1,
         }),
-        // tests with sandboxed backends for various modules (posix, sha3, ctypes, ...)
+        // tests with sandboxed backends for various modules (posix, sha3, compression, pyexpat, ...)
         "python-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier3,
+            "linux:amd64:jdk-latest"     : tier2,
+            "linux:aarch64:jdk-latest"   : tier3,
+            "darwin:aarch64:jdk-latest"  : tier3,
         }),
         "python-svm-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3 + provide(GPYEE_NATIVE_STANDALONE),

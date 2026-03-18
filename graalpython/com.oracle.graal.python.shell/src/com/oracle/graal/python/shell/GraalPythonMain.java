@@ -182,6 +182,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         boolean posixBackendSpecified = false;
         boolean sha3BackendSpecified = false;
         boolean compressionBackendSpecified = false;
+        boolean pyExpatBackendSpecified = false;
         boolean installSignalHandlersSpecified = false;
         boolean isolateNativeModulesSpecified = false;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
@@ -272,7 +273,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                             matchesPythonOption(arg, "CAPI") ||
                                             matchesPythonOption(arg, "PosixModuleBackend") ||
                                             matchesPythonOption(arg, "Sha3ModuleBackend") ||
-                                            matchesPythonOption(arg, "CompressionModulesBackend")) {
+                                            matchesPythonOption(arg, "CompressionModulesBackend") ||
+                                            matchesPythonOption(arg, "PyExpatModuleBackend")) {
                                 addRelaunchArg(arg);
                             }
                             if (matchesPythonOption(arg, "PosixModuleBackend")) {
@@ -283,6 +285,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                             }
                             if (matchesPythonOption(arg, "CompressionModulesBackend")) {
                                 compressionBackendSpecified = true;
+                            }
+                            if (matchesPythonOption(arg, "PyExpatModuleBackend")) {
+                                pyExpatBackendSpecified = true;
                             }
                             if (matchesPythonOption(arg, "InstallSignalHandlers")) {
                                 installSignalHandlersSpecified = true;
@@ -450,6 +455,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
         if (!compressionBackendSpecified) {
             polyglotOptions.put("python.CompressionModulesBackend", "native");
+        }
+        if (!pyExpatBackendSpecified) {
+            polyglotOptions.put("python.PyExpatModuleBackend", "native");
         }
         if (!installSignalHandlersSpecified) {
             polyglotOptions.put("python.InstallSignalHandlers", "true");

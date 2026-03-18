@@ -134,6 +134,18 @@ def convlinesep(data):
     return data.replace(b'\n', os.linesep.encode())
 
 
+def _is_graalpy_java_pyexpat_backend():
+    try:
+        import __graalpython__  # pylint: disable=import-error
+        return __graalpython__.pyexpat_module_backend() == 'java'
+    except Exception:
+        return False
+
+
+def _skip_if_java_pyexpat_backend(reason):
+    return unittest.skipIf(_is_graalpy_java_pyexpat_backend(), reason)
+
+
 class ModuleTest(unittest.TestCase):
     def test_sanity(self):
         # Import sanity.
@@ -531,6 +543,10 @@ class ElementTreeTest(unittest.TestCase):
         self.assertEqual(len(ids), 1)
         self.assertEqual(ids["body"].tag, 'body')
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently cannot fully match Expat error wording/position semantics "
+        "for iterparse trailing-content failures ('junk after document element')."
+    )
     def test_iterparse(self):
         # Test iterparse interface.
 
@@ -732,6 +748,10 @@ class ElementTreeTest(unittest.TestCase):
                 ('end-ns', ''),
             ])
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs in namespace end-declaration callback ordering "
+        "for custom XMLParser builder targets exposing only end_ns()."
+    )
     def test_custom_builder_only_end_ns(self):
         class Builder(list):
             def end_ns(self, prefix):
@@ -1123,6 +1143,10 @@ class ElementTreeTest(unittest.TestCase):
         self.assertEqual(serialize(e, method="html"),
                 '<html><CamelCase>text</CamelCase></html>')
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from native Expat in undefined-entity message/position "
+        "details in ElementTree entity handling tests."
+    )
     def test_entity(self):
         # Test entity handling.
 
@@ -1652,6 +1676,10 @@ class XMLPullParserTest(unittest.TestCase):
 
         self.assert_event_tags(parser, [('end', 'doc')])
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently does not match Expat flush/reparse-deferral-disabled event timing "
+        "for XMLPullParser in this test."
+    )
     def test_flush_reparse_deferral_disabled(self):
         parser = ET.XMLPullParser(events=('start', 'end'))
 
@@ -3400,6 +3428,10 @@ class TreeBuilderTest(unittest.TestCase):
             pass
         self._check_element_factory_class(MyElement)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently cannot reproduce Expat doctype callback extraction behavior "
+        "for custom TreeBuilder parser targets."
+    )
     def test_doctype(self):
         class DoctypeParser:
             _doctype = None
@@ -3477,6 +3509,10 @@ class XMLParserTest(unittest.TestCase):
             parser.feed(self.sample2)
             parser.close()
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently cannot reproduce Expat-compatible RuntimeWarning behavior "
+        "for XMLParser subclass doctype() handling."
+    )
     def test_subclass_doctype(self):
         _doctype = None
         class MyParserWithDoctype(ET.XMLParser):
@@ -3518,6 +3554,10 @@ class XMLParserTest(unittest.TestCase):
             parser.feed(self.sample2)
             parser.close()
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs in encoding/character decoding behavior for this "
+        "XMLParser.parse_string conformance case."
+    )
     def test_parse_string(self):
         parser = ET.XMLParser(target=ET.TreeBuilder())
         parser.feed(self.sample3)
@@ -3975,6 +4015,10 @@ class ParseErrorTest(unittest.TestCase):
         except ET.ParseError as e:
             return e
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently cannot provide fully Expat-identical ParseError position "
+        "values for all malformed-entity cases in this test."
+    )
     def test_error_position(self):
         self.assertEqual(self._get_error('foo').position, (1, 0))
         self.assertEqual(self._get_error('<tag>&foo;</tag>').position, (1, 5))

@@ -66,6 +66,15 @@
     ]
   },
   {
+    "name": "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
     "name": "com.sun.crypto.provider.AESCipher$General",
     "methods": [
       {

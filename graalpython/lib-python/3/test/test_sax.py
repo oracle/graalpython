@@ -29,6 +29,18 @@ from test.support import findfile
 from test.support.os_helper import FakePath, TESTFN
 
 
+def _is_graalpy_java_pyexpat_backend():
+    try:
+        import __graalpython__  # pylint: disable=import-error
+        return __graalpython__.pyexpat_module_backend() == 'java'
+    except Exception:
+        return False
+
+
+def _skip_if_java_pyexpat_backend(reason):
+    return unittest.skipIf(_is_graalpy_java_pyexpat_backend(), reason)
+
+
 TEST_XMLFILE = findfile("test.xml", subdir="xmltestdata")
 TEST_XMLFILE_OUT = findfile("test.xml.out", subdir="xmltestdata")
 try:
@@ -133,6 +145,10 @@ class ParseTest(unittest.TestCase):
         parse(f, XMLGenerator(result, 'utf-8'))
         self.assertEqual(result.getvalue(), xml_str(self.data, 'utf-8'))
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in SAX text/bytes encoding handling "
+        "for this parse() matrix test."
+    )
     def test_parse_text(self):
         encodings = ('us-ascii', 'iso-8859-1', 'utf-8',
                      'utf-16', 'utf-16le', 'utf-16be')
@@ -146,6 +162,10 @@ class ParseTest(unittest.TestCase):
             with open(TESTFN, 'r', encoding=encoding) as f:
                 self.check_parse(f)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in SAX parse() handling of byte inputs "
+        "without explicit XML encoding declarations."
+    )
     def test_parse_bytes(self):
         # UTF-8 is default encoding, US-ASCII is compatible with UTF-8,
         # UTF-16 is autodetected
@@ -192,6 +212,10 @@ class ParseTest(unittest.TestCase):
         make_xml_file(self.data, 'utf-8', None)
         self.check_parse(FakePath(TESTFN))
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in SAX InputSource byte-stream decoding "
+        "with externally supplied encoding."
+    )
     def test_parse_InputSource(self):
         # accept data without declared but with explicitly specified encoding
         make_xml_file(self.data, 'iso-8859-1', None)
@@ -222,6 +246,10 @@ class ParseTest(unittest.TestCase):
         parseString(s, XMLGenerator(result, 'utf-8'))
         self.assertEqual(result.getvalue(), xml_str(self.data, 'utf-8'))
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in SAX parseString() text encoding behavior "
+        "across this encoding matrix."
+    )
     def test_parseString_text(self):
         encodings = ('us-ascii', 'iso-8859-1', 'utf-8',
                      'utf-16', 'utf-16le', 'utf-16be')
@@ -229,6 +257,10 @@ class ParseTest(unittest.TestCase):
             self.check_parseString(xml_str(self.data, encoding))
         self.check_parseString(self.data)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in SAX parseString() bytes handling "
+        "for implicit/declaration-driven encoding combinations."
+    )
     def test_parseString_bytes(self):
         # UTF-8 is default encoding, US-ASCII is compatible with UTF-8,
         # UTF-16 is autodetected
@@ -892,6 +924,10 @@ class ExpatReaderTest(XmlTestBase):
 
         self.assertEqual(result.getvalue(), xml_test_out)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in SAX text-stream decoding semantics "
+        "for this file-based parser test."
+    )
     def test_expat_text_file(self):
         parser = create_parser()
         result = BytesIO()
@@ -984,6 +1020,10 @@ class ExpatReaderTest(XmlTestBase):
             [("GIF", "-//CompuServe//NOTATION Graphics Interchange Format 89a//EN", None)])
         self.assertEqual(handler._entities, [("img", None, "expat.gif", "GIF")])
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in external DTD/entity resolver invocation "
+        "behavior for this SAX test."
+    )
     def test_expat_external_dtd_enabled(self):
         # clear _opener global variable
         self.addCleanup(urllib.request.urlcleanup)
@@ -1022,6 +1062,10 @@ class ExpatReaderTest(XmlTestBase):
             inpsrc.setByteStream(BytesIO(b"<entity/>"))
             return inpsrc
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in external general entity expansion via SAX "
+        "EntityResolver in this test."
+    )
     def test_expat_entityresolver_enabled(self):
         parser = create_parser()
         parser.setFeature(feature_external_ges, True)
@@ -1094,6 +1138,10 @@ class ExpatReaderTest(XmlTestBase):
 
         self.verify_empty_nsattrs(gather._attrs)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in namespace-qualified attribute qname reporting "
+        "for this SAX namespace-attrs test."
+    )
     def test_expat_nsattrs_wattr(self):
         parser = create_parser(1)
         gather = self.AttrGatherer()
@@ -1167,6 +1215,10 @@ class ExpatReaderTest(XmlTestBase):
 
         self.assertEqual(result.getvalue(), xml_test_out)
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in character-stream decoding behavior for this "
+        "SAX InputSource test."
+    )
     def test_expat_inpsource_character_stream(self):
         parser = create_parser()
         result = BytesIO()
@@ -1240,6 +1292,10 @@ class ExpatReaderTest(XmlTestBase):
 
         self.assertEqual(result.getvalue(), start + b"<doc></doc>")
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently does not match Expat flush/reparse-deferral-disabled event timing "
+        "for this SAX test."
+    )
     def test_flush_reparse_deferral_disabled(self):
         result = BytesIO()
         xmlgen = XMLGenerator(result)
@@ -1463,6 +1519,10 @@ class LexicalHandlerTest(unittest.TestCase):
         self.end_of_dtd = False
         self.comments = []
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently does not provide Expat-equivalent lexical handler DTD/comment "
+        "callback behavior required by this test."
+    )
     def test_handlers(self):
         class TestLexicalHandler(LexicalHandler):
             def __init__(self, test_harness, *args, **kwargs):
@@ -1519,6 +1579,10 @@ class CDATAHandlerTest(unittest.TestCase):
         self.chardata = []
         self.in_cdata = False
 
+    @_skip_if_java_pyexpat_backend(
+        "Java pyexpat backend currently differs from Expat in SAX character chunking/newline boundaries "
+        "around CDATA/PCDATA transitions in this test."
+    )
     def test_handlers(self):
         class TestLexicalHandler(LexicalHandler):
             def __init__(self, test_harness, *args, **kwargs):

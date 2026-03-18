@@ -489,6 +489,9 @@ public abstract class BuiltinNames {
     public static final String J_HASHLIB = "_hashlib";
     public static final TruffleString T_HASHLIB = tsLiteral(J_HASHLIB);
 
+    public static final String J_PYEXPAT = "pyexpat";
+    public static final TruffleString T_PYEXPAT = tsLiteral(J_PYEXPAT);
+
     public static final String J_MD5 = "_md5";
 
     public static final String J_SHA1 = "_sha1";

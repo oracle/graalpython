@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
+import com.oracle.graal.python.builtins.modules.pyexpat.XMLParserBuiltins;
 import com.oracle.graal.python.builtins.modules.re.MatchBuiltins;
 import com.oracle.graal.python.builtins.modules.re.PatternBuiltins;
 import com.oracle.graal.python.builtins.modules.weakref.ProxyTypeBuiltins;
@@ -777,6 +778,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     TimeoutError("TimeoutError", OSError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     ZLibError("error", Exception, newBuilder().publishInModule("zlib").basetype().addDict()),
     CSVError("Error", Exception, newBuilder().publishInModule("_csv").basetype().addDict()),
+    PyExpatError("error", Exception, newBuilder().publishInModule("pyexpat").basetype().addDict()),
     LZMAError("LZMAError", Exception, newBuilder().publishInModule("_lzma").basetype().addDict()),
     StructError("StructError", Exception, newBuilder().publishInModule(J__STRUCT).basetype().addDict()),
     PickleError("PickleError", Exception, newBuilder().publishInModule("_pickle").basetype().addDict()),
@@ -1171,6 +1173,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     PythonObject,
                     newBuilder().publishInModule("_json").basetype().slots(JSONEncoderBuiltins.SLOTS).doc("""
                                     _iterencode(obj, _current_indent_level) -> iterable""")),
+    XMLParser(
+                    "xmlparser",
+                    PythonObject,
+                    newBuilder().publishInModule("pyexpat").basetype().disallowInstantiation().slots(XMLParserBuiltins.SLOTS).doc("""
+                                    pyexpat XML parser object""")),
 
     // datetime
     PDate(

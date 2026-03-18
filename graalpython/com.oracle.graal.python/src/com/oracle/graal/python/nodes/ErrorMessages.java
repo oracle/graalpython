@@ -1192,6 +1192,9 @@ public abstract class ErrorMessages {
     public static final TruffleString UNABLE_TO_LOAD_LIBCRYPT = tsLiteral(
                     "Unable to load libcrypt library. Please install libxcrypt-compat (RPM-based distributions) package or libcrypt1 (DEB-based distributions).");
     public static final TruffleString FAILED_TO_REPARSE_BYTECODE_FILE = tsLiteral("Failed to reload bytecode file. Use --python.KeepBytecodeInMemory to keep serialized bytecode in memory");
+    public static final TruffleString INTERN_MUST_BE_A_DICTIONARY = tsLiteral("intern must be a dictionary");
+    public static final TruffleString PARSING_FINISHED = tsLiteral("parsing finished");
+    public static final TruffleString NAMESPACE_SEPARATOR_MUST_BE = tsLiteral("namespace_separator must be at most one character, omitted, or None");
 
     // ssl error messages
     public static final TruffleString SSL_ERR_DECODING_PEM_FILE_S = tsLiteral("Error decoding PEM-encoded file: %s");

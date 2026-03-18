@@ -36,6 +36,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
@@ -1680,6 +1681,10 @@ public final class PythonContext extends Python3Core {
         TruffleString.EqualNode eqNode = TruffleString.EqualNode.getUncached();
         if (!eqNode.execute(T_JAVA, sha3Backend, TS_ENCODING)) {
             removeBuiltinModule(T_SHA3);
+        }
+        TruffleString pyexpatBackend = getLanguage().getEngineOption(PythonOptions.PyExpatModuleBackend);
+        if (!eqNode.execute(T_JAVA, pyexpatBackend, TS_ENCODING)) {
+            removeBuiltinModule(T_PYEXPAT);
         }
     }
 

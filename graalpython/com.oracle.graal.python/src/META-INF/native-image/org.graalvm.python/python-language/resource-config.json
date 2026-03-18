@@ -1,5 +1,10 @@
 {
-  "resources":[
-    {"pattern":"org/graalvm/shadowed/org/jline.*"}
+  "resources": [
+    {
+      "pattern": "org/graalvm/shadowed/org/jline.*"
+    },
+    {
+      "pattern": "com/sun/org/apache/xerces/internal/impl/msg/XMLMessages.properties"
+    }
   ]
 }
