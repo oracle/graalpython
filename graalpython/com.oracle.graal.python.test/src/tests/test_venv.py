@@ -153,7 +153,7 @@ class VenvTest(unittest.TestCase):
                 text=True,
             )
             assert f"Executable {os.path.realpath(env_launcher)}" in out, out
-            assert f"Original {linked_executable}" in out, out
+            assert f'Original "{linked_executable}"' in out, out
 
     def test_create_and_use_basic_venv(self):
         run = None
