@@ -4350,8 +4350,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             // Register these in the Python constants list.
             addConstant(codeUnit);
+            int codeIndex = constants.get(codeUnit);
 
-            b.beginMakeFunction(functionName, qualifiedName, codeUnit);
+            b.beginMakeFunction(functionName, qualifiedName, codeIndex);
 
             if (defaultArgsLocal != null) {
                 assert argsForDefaults == null;

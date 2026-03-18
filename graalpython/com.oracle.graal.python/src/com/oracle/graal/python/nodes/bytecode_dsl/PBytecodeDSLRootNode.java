@@ -1465,19 +1465,20 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true, forceCached = true)
     @ConstantOperand(type = TruffleString.class, name = "name")
     @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
-    @ConstantOperand(type = BytecodeDSLCodeUnit.class)
+    @ConstantOperand(type = int.class)
     public static final class MakeFunction {
         @Specialization(guards = "isSingleContext(rootNode)")
         public static Object functionSingleContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        BytecodeDSLCodeUnit codeUnit,
+                        @SuppressWarnings("unused") int codeIndex,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Cached("getCode(frame,  codeUnit)") PCode cachedCode,
+                        @Bind("getCodeUnit(rootNode, codeIndex)") BytecodeDSLCodeUnit codeUnit,
+                        @Cached("getCode(frame, codeUnit)") PCode cachedCode,
                         @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
@@ -1488,7 +1489,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object functionMultiContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        BytecodeDSLCodeUnit codeUnit,
+                        int codeIndex,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
                         Object closure,
@@ -1496,6 +1497,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
+            BytecodeDSLCodeUnit codeUnit = getCodeUnit(rootNode, codeIndex);
             PCode code = getCode(frame, codeUnit);
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
                             code, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
@@ -1515,6 +1517,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         protected static PCode getCode(VirtualFrame frame, BytecodeDSLCodeUnit codeUnit) {
             PCode thisCode = PArguments.getCodeObject(frame);
             return thisCode.getOrCreateChildCode(codeUnit);
+        }
+
+        protected static BytecodeDSLCodeUnit getCodeUnit(PBytecodeDSLRootNode rootNode, int codeIndex) {
+            return (BytecodeDSLCodeUnit) rootNode.getCodeUnit().constants[codeIndex];
         }
 
         protected static PFunction createFunction(VirtualFrame frame,
