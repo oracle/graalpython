@@ -50,6 +50,8 @@ typedef struct {
 	size_t dummy;
 } mem_head_t;
 
+#define GRAALPY_MEM_SAMPLE_USEFUL_DEPTH (10)
+
 typedef struct {
     void *ptr;
     void *stack[GRAALPY_MEM_SAMPLE_USEFUL_DEPTH];
@@ -70,7 +72,6 @@ typedef struct {
 #define GRAALPY_MEM_SAMPLE_RING_SIZE (4096)
 #define GRAALPY_MEM_SAMPLE_HISTORY (8)
 #define GRAALPY_MEM_SAMPLE_STACK_SKIP (2)
-#define GRAALPY_MEM_SAMPLE_USEFUL_DEPTH (10)
 #define MAX_COLLECTION_RETRIES (7)
 #define COLLECTION_DELAY_INCREMENT (50)
 
