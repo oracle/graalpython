@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -121,7 +121,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static void dumpTraceback(PythonLanguage language, PrintWriter writer) {
+    private static synchronized void dumpTraceback(PythonLanguage language, PrintWriter writer) {
         writer.println();
         writer.println(Thread.currentThread());
         if (PythonOptions.isPExceptionWithJavaStacktrace(language)) {
@@ -262,7 +262,9 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
                 do {
                     sleepInterruptibly(inliningTarget, timeoutNs);
                     long timeoutS = timeoutNs / 1_000_000_000;
-                    newRawFdPrintWriter(fd).printf("Timeout (%d:%02d:%02d)!%n", timeoutS / 3600, timeoutS / 60, timeoutS);
+                    PrintWriter timeoutWriter = newRawFdPrintWriter(fd);
+                    timeoutWriter.printf("Timeout (%d:%02d:%02d)!%n", timeoutS / 3600, timeoutS / 60, timeoutS);
+                    timeoutWriter.flush();
                     try {
                         DumpTracebackNode.dump(context.getLanguage(), context, fd, fileObj, true);
                         if (exit) {

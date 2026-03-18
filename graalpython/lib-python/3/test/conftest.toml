@@ -33,6 +33,7 @@ partial_splits_individual_tests = true
 selector = [
     'test_multiprocessing_spawn',
     'test_multiprocessing_main_handling',
+    'test_tarfile',
 ]
 
 

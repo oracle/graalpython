@@ -469,7 +469,7 @@ public final class PythonContext extends Python3Core {
             this.contextVarsContext = contextVarsContext;
         }
 
-        public void dispose(PythonContext context, boolean canRunGuestCode) {
+        public void dispose(PythonContext context, boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer) {
             // This method may be called twice on the same object.
 
             /*
@@ -497,10 +497,10 @@ public final class PythonContext extends Python3Core {
              * precaution, we just skip this if we cannot run guest code, because it may invoke
              * LLVM.
              */
-            if (nativeThreadLocalVarPointer != null && canRunGuestCode) {
+            if (nativeThreadLocalVarPointer != null && canRunGuestCode && clearNativeThreadLocalVarPointer) {
                 CStructAccess.WritePointerNode.writeUncached(nativeThreadLocalVarPointer, 0, context.getNativeNull());
-                nativeThreadLocalVarPointer = null;
             }
+            nativeThreadLocalVarPointer = null;
         }
 
         public Object getTraceFun() {
@@ -2070,8 +2070,9 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     private void disposeThreadStates() {
-        for (PythonThreadState ts : threadStateMapping.values()) {
-            ts.dispose(this, true);
+        Thread currentThread = Thread.currentThread();
+        for (Map.Entry<Thread, PythonThreadState> entry : threadStateMapping.entrySet()) {
+            entry.getValue().dispose(this, true, entry.getKey() == currentThread);
         }
         threadStateMapping.clear();
     }
@@ -2554,7 +2555,7 @@ public final class PythonContext extends Python3Core {
         }
         ts.shutdown();
         threadStateMapping.remove(thread);
-        ts.dispose(this, canRunGuestCode);
+        ts.dispose(this, canRunGuestCode, thread == Thread.currentThread());
         releaseSentinelLock(ts.sentinelLock);
         getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }
