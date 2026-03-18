@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -98,14 +98,14 @@ static PyTypeObject NativeCustomType = {
 
 static PyModuleDef c_classmethod_module = {
     PyModuleDef_HEAD_INIT,
-    "c_classmethod_module",
+    "c_issubtype_monorphic",
     0,
     -1,
     NULL, NULL, NULL, NULL, NULL
 };
 
 PyMODINIT_FUNC
-PyInit_c_classmethod(void)
+PyInit_c_issubtype_monorphic(void)
 {
     PyObject* m;
 
@@ -130,8 +130,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from harness import ccompile
 
-ccompile("c_classmethod", code)
-from c_classmethod import NativeCustomType
+ccompile("c_issubtype_monorphic", code)
+from c_issubtype_monorphic import NativeCustomType
 
 # igv: function_root_count_at
 def count(num):
