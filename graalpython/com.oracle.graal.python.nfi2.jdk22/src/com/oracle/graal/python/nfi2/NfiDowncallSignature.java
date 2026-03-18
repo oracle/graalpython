@@ -90,6 +90,14 @@ public final class NfiDowncallSignature {
         downcallMethodHandle = methodHandle;
     }
 
+    public static boolean isAvailable() {
+        return true;
+    }
+
+    public MethodHandle getMethodHandle() {
+        return downcallMethodHandle;
+    }
+
     public NfiBoundFunction bind(@SuppressWarnings("unused") NfiContext context, long pointer) {
         // TODO(NFI2) if logging enabled, use context to lookup name
         assert !ImageInfo.inImageBuildtimeCode() : "binding native address ad image build time";

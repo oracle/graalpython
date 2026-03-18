@@ -40,9 +40,20 @@
  */
 package com.oracle.graal.python.nfi2;
 
+import java.lang.invoke.MethodHandle;
+
 public final class NfiDowncallSignature {
 
     NfiDowncallSignature() {
+    }
+
+    public static boolean isAvailable() {
+        return false;
+    }
+
+    @SuppressWarnings("static-method")
+    public MethodHandle getMethodHandle() {
+        throw new UnsupportedOperationException();
     }
 
     @SuppressWarnings({"unused", "static-method"})
