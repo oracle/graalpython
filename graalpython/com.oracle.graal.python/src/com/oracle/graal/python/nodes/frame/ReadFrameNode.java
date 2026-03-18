@@ -139,6 +139,10 @@ public abstract class ReadFrameNode extends Node {
         return ReadFrameNodeGen.create();
     }
 
+    public static ReadFrameNode getUncached() {
+        return ReadFrameNodeGen.getUncached();
+    }
+
     /**
      * Get the current python-level frame (skips builtin function roots, but not internal python
      * frames)

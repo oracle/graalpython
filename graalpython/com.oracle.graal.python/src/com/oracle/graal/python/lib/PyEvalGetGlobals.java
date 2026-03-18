@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -61,9 +62,14 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @GenerateInline
 @GenerateCached(false)
+@GenerateUncached
 @ImportStatic(PArguments.class)
 public abstract class PyEvalGetGlobals extends Node {
     public abstract PythonObject execute(VirtualFrame frame, Node inliningTarget);
+
+    public static PythonObject executeUncached(VirtualFrame frame) {
+        return PyEvalGetGlobalsNodeGen.getUncached().execute(frame, null);
+    }
 
     @Specialization(guards = {"frame != null", "globals != null"})
     static PythonObject doFromFrame(@SuppressWarnings("unused") VirtualFrame frame, Node inliningTarget,

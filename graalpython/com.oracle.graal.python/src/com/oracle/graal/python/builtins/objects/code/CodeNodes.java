@@ -82,6 +82,20 @@ public abstract class CodeNodes {
     public static class CreateCodeNode extends PNodeWithContext {
         @Child private BoundaryCallData boundaryCallData = BoundaryCallData.createFor(this);
 
+        @TruffleBoundary
+        public static PCode executeUncached(int argcount,
+                        int posonlyargcount, int kwonlyargcount,
+                        int nlocals, int stacksize, int flags,
+                        byte[] codedata, Object[] constants, TruffleString[] names,
+                        TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
+                        TruffleString filename, TruffleString name, TruffleString qualname, int firstlineno,
+                        byte[] linetable) {
+            return executeInternal(null, null, BoundaryCallData.getUncached(),
+                            argcount, posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
+                            constants, names, varnames, freevars, cellvars,
+                            filename, name, qualname, firstlineno, linetable);
+        }
+
         public PCode execute(VirtualFrame frame, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
@@ -89,9 +103,21 @@ public abstract class CodeNodes {
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
                         TruffleString filename, TruffleString name, TruffleString qualname, int firstlineno,
                         byte[] linetable) {
+            return executeInternal(frame, this, boundaryCallData,
+                            argcount, posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
+                            constants, names, varnames, freevars, cellvars,
+                            filename, name, qualname, firstlineno, linetable);
+        }
 
-            PythonContext context = PythonContext.get(this);
-            PythonLanguage language = context.getLanguage(this);
+        private static PCode executeInternal(VirtualFrame frame, Node node, BoundaryCallData boundaryCallData,
+                        int argcount, int posonlyargcount, int kwonlyargcount,
+                        int nlocals, int stacksize, int flags,
+                        byte[] codedata, Object[] constants, TruffleString[] names,
+                        TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
+                        TruffleString filename, TruffleString name, TruffleString qualname, int firstlineno,
+                        byte[] linetable) {
+            PythonContext context = PythonContext.get(node);
+            PythonLanguage language = context.getLanguage(node);
             Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 return createCode(language, argcount,
@@ -188,6 +214,11 @@ public abstract class CodeNodes {
 
         public abstract RootCallTarget execute(Node inliningTarget, PCode code);
 
+        @TruffleBoundary
+        public static RootCallTarget executeUncached(PCode code) {
+            return CodeNodesFactory.GetCodeCallTargetNodeGen.getUncached().execute(null, code);
+        }
+
         @Specialization(guards = {"cachedCode == code", "isSingleContext()"}, limit = "2")
         static RootCallTarget doCachedCode(@SuppressWarnings("unused") PCode code,
                         @Cached(value = "code", weak = true) PCode cachedCode) {
@@ -205,6 +236,11 @@ public abstract class CodeNodes {
     @GenerateCached(false)
     public abstract static class GetCodeSignatureNode extends PNodeWithContext {
         public abstract Signature execute(Node inliningTarget, PCode code);
+
+        @TruffleBoundary
+        public static Signature executeUncached(PCode code) {
+            return CodeNodesFactory.GetCodeSignatureNodeGen.getUncached().execute(null, code);
+        }
 
         @Specialization(guards = {"cachedCode == code", "isSingleContext(inliningTarget)"}, limit = "2")
         static Signature doCached(Node inliningTarget, @SuppressWarnings("unused") PCode code,

@@ -1147,10 +1147,16 @@ public final class PythonCextBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     @ReportPolymorphism
     abstract static class CastKwargsNode extends PNodeWithContext {
 
         public abstract PKeyword[] execute(Node inliningTarget, Object kwargsObj);
+
+        @TruffleBoundary
+        public static PKeyword[] executeUncached(Object kwargsObj) {
+            return PythonCextBuiltinsFactory.CastKwargsNodeGen.getUncached().execute(null, kwargsObj);
+        }
 
         @Specialization(guards = "isNoValue(kwargs)")
         @SuppressWarnings("unused")

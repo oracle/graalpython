@@ -47,8 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_CAPSULE_DESTRUCTOR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.CALLED_WITH_INCORRECT_NAME;
@@ -58,17 +57,19 @@ import static com.oracle.graal.python.nodes.ErrorMessages.PY_CAPSULE_IMPORT_S_IS
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltinsFactory.PyCapsuleNewNodeGen;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -81,21 +82,23 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCapsuleBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtr, PY_CAPSULE_DESTRUCTOR}, call = Direct)
-    abstract static class PyCapsule_New extends CApiTernaryBuiltinNode {
-        @Specialization
-        static Object doGeneric(long pointer, long namePtr, long destructor,
-                        @Bind Node inliningTarget,
-                        @Cached PyCapsuleNewNode pyCapsuleNewNode) {
-            return pyCapsuleNewNode.execute(inliningTarget, pointer, namePtr, destructor);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {Pointer, ConstCharPtr, PY_CAPSULE_DESTRUCTOR}, call = Direct)
+    static long PyCapsule_New(long pointer, long namePtr, long destructor) {
+        PyCapsule capsule = PyCapsuleNewNode.executeUncached(pointer, namePtr, destructor);
+        return PythonToNativeNewRefNode.executeLongUncached(capsule);
     }
 
     @GenerateCached(false)
     @GenerateInline
+    @GenerateUncached
     public abstract static class PyCapsuleNewNode extends Node {
 
         public abstract PyCapsule execute(Node inliningTarget, long pointer, long name, long destructor);
+
+        @TruffleBoundary
+        public static PyCapsule executeUncached(long pointer, long name, long destructor) {
+            return PyCapsuleNewNodeGen.getUncached().execute(null, pointer, name, destructor);
+        }
 
         @Specialization
         static PyCapsule doGeneric(Node inliningTarget, long pointer, long namePtr, long destructor,
@@ -112,33 +115,25 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr}, call = Direct)
-    abstract static class PyCapsule_IsValid extends CApiBinaryBuiltinNode {
-        @Specialization
-        static int doCapsule(PyCapsule o, long namePtr) {
-            if (o.getPointer() == NULLPTR) {
-                return 0;
-            }
-            if (!capsuleNameMatches(namePtr, o.getNamePtr())) {
-                return 0;
-            }
-            return 1;
-        }
-
-        @Fallback
-        static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name) {
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
+    static int PyCapsule_IsValid(long oPtr, long namePtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(oPtr);
+        if (!(obj instanceof PyCapsule capsule)) {
             return 0;
         }
+        if (capsule.getPointer() == NULLPTR) {
+            return 0;
+        }
+        if (!capsuleNameMatches(namePtr, capsule.getNamePtr())) {
+            return 0;
+        }
+        return 1;
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObject, ConstCharPtr}, call = Direct)
-    abstract static class PyCapsule_GetPointer extends CApiBinaryBuiltinNode {
-        @Specialization
-        static long doCapsule(Object o, long name,
-                        @Bind Node inliningTarget,
-                        @Cached PyCapsuleGetPointerNode pyCapsuleGetPointerNode) {
-            return pyCapsuleGetPointerNode.execute(inliningTarget, o, name);
-        }
+    @CApiBuiltin(ret = Pointer, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
+    static long PyCapsule_GetPointer(long oPtr, long namePtr) {
+        Object capsule = NativeToPythonNode.executeRawUncached(oPtr);
+        return PyCapsuleGetPointerNode.executeUncached(capsule, namePtr);
     }
 
     @GenerateCached(false)
@@ -147,6 +142,15 @@ public final class PythonCextCapsuleBuiltins {
     public abstract static class PyCapsuleGetPointerNode extends Node {
 
         public abstract long execute(Node inliningTarget, Object capsule, long name);
+
+        public static PyCapsuleGetPointerNode getUncached() {
+            return PythonCextCapsuleBuiltinsFactory.PyCapsuleGetPointerNodeGen.getUncached();
+        }
+
+        @TruffleBoundary
+        public static long executeUncached(Object capsuleObj, long name) {
+            return getUncached().execute(null, capsuleObj, name);
+        }
 
         @Specialization
         static long doCapsule(Node inliningTarget, PyCapsule o, long name,
@@ -166,188 +170,83 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct)
-    abstract static class PyCapsule_GetName extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static long get(PyCapsule o,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (o.getPointer() == NULLPTR) {
-                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
-            }
-            return o.getNamePtr();
-        }
-
-        @Fallback
-        static long doit(@SuppressWarnings("unused") Object o,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
-        }
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObjectRawPointer}, call = Direct)
+    static long PyCapsule_GetName(long oPtr) {
+        PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_GetName");
+        return capsule.getNamePtr();
     }
 
-    @CApiBuiltin(ret = PY_CAPSULE_DESTRUCTOR, args = {PyObject}, call = Direct)
-    abstract static class PyCapsule_GetDestructor extends CApiUnaryBuiltinNode {
-        @Specialization
-        long doCapsule(PyCapsule o,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (o.getPointer() == NULLPTR) {
-                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetDestructor");
-            }
-            return o.getDestructor();
-        }
-
-        @Fallback
-        static Object doError(@SuppressWarnings("unused") Object o,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
-        }
+    @CApiBuiltin(ret = PY_CAPSULE_DESTRUCTOR, args = {PyObjectRawPointer}, call = Direct)
+    static long PyCapsule_GetDestructor(long oPtr) {
+        PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_GetDestructor");
+        return capsule.getDestructor();
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
-    abstract static class PyCapsule_GetContext extends CApiUnaryBuiltinNode {
-        @Specialization
-        long doCapsule(PyCapsule o,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (o.getPointer() == NULLPTR) {
-                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetContext");
-            }
-            return o.getContext();
-        }
-
-        @Fallback
-        static Object doError(@SuppressWarnings("unused") Object o,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetPointer");
-        }
+    @CApiBuiltin(ret = Pointer, args = {PyObjectRawPointer}, call = Direct)
+    static long PyCapsule_GetContext(long oPtr) {
+        PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_GetContext");
+        return capsule.getContext();
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
-    abstract static class PyCapsule_SetPointer extends CApiBinaryBuiltinNode {
-        @Specialization
-        static int doCapsule(PyCapsule o, long pointer,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (pointer == NULLPTR) {
-                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_NULL_POINTER, "PyCapsule_SetPointer");
-            }
-
-            if (o.getPointer() == NULLPTR) {
-                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
-            }
-
-            o.setPointer(pointer);
-            return 0;
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Pointer}, call = Direct)
+    static int PyCapsule_SetPointer(long oPtr, long pointer) {
+        if (pointer == NULLPTR) {
+            throw PRaiseNode.raiseStatic(null, ValueError, CALLED_WITH_NULL_POINTER, "PyCapsule_SetPointer");
         }
-
-        @Fallback
-        static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetPointer");
-        }
+        PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_SetPointer");
+        capsule.setPointer(pointer);
+        return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr}, call = Direct)
-    abstract static class PyCapsule_SetName extends CApiBinaryBuiltinNode {
-        @Specialization
-        static int set(PyCapsule o, long namePtr,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (o.getPointer() == NULLPTR) {
-                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
-            }
-            o.setNamePtr(namePtr);
-            return 0;
-        }
-
-        @Fallback
-        static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetName");
-        }
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
+    static int PyCapsule_SetName(long oPtr, long namePtr) {
+        PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_SetName");
+        capsule.setNamePtr(namePtr);
+        return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PY_CAPSULE_DESTRUCTOR}, call = Direct)
-    abstract static class PyCapsule_SetDestructor extends CApiBinaryBuiltinNode {
-        @Specialization
-        static int doCapsule(PyCapsule o, long destructor,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (o.getPointer() == NULLPTR) {
-                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
-            }
-            o.registerDestructor(destructor);
-            return 0;
-        }
-
-        @Fallback
-        static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetDestructor");
-        }
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PY_CAPSULE_DESTRUCTOR}, call = Direct)
+    static int PyCapsule_SetDestructor(long oPtr, long destructor) {
+        PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_SetDestructor");
+        capsule.registerDestructor(destructor);
+        return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
-    abstract static class PyCapsule_SetContext extends CApiBinaryBuiltinNode {
-        @Specialization
-        static int doCapsule(PyCapsule o, long context,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            if (o.getPointer() == NULLPTR) {
-                throw raiseNode.raise(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
-            }
-            o.setContext(context);
-            return 0;
-        }
-
-        @Fallback
-        static Object doError(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") Object name,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_SetContext");
-        }
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Pointer}, call = Direct)
+    static int PyCapsule_SetContext(long oPtr, long context) {
+        PyCapsule capsule = expectCapsule(oPtr, "PyCapsule_SetContext");
+        capsule.setContext(context);
+        return 0;
     }
 
     @CApiBuiltin(ret = Pointer, args = {ConstCharPtr, Int}, call = Direct)
-    abstract static class PyCapsule_Import extends CApiBinaryBuiltinNode {
-        @Specialization
-        static long doGeneric(long namePtr, @SuppressWarnings("unused") int noBlock,
-                        @Bind Node inliningTarget,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.IndexOfStringNode indexOfStringNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached ReadAttributeFromObjectNode getAttrNode,
-                        @Cached PRaiseNode raiseNode) {
-            TruffleString name = fromCharPointerNode.execute(namePtr, true);
-            TruffleString trace = name;
-            Object object = null;
-            while (trace != null) {
-                int traceLen = codePointLengthNode.execute(trace, TS_ENCODING);
-                int dotIdx = indexOfStringNode.execute(trace, StringLiterals.T_DOT, 0, traceLen, TS_ENCODING);
-                TruffleString dot = null;
-                if (dotIdx >= 0) {
-                    dot = substringNode.execute(trace, dotIdx + 1, traceLen - dotIdx - 1, TS_ENCODING, false);
-                    trace = substringNode.execute(trace, 0, dotIdx, TS_ENCODING, false);
-                }
-                if (object == null) {
-                    // noBlock has no effect anymore since 3.3
-                    object = AbstractImportNode.importModuleBoundary(trace);
-                } else {
-                    object = getAttrNode.execute(object, trace);
-                }
-                trace = dot;
+    static long PyCapsule_Import(long namePtr, @SuppressWarnings("unused") int noBlock) {
+        TruffleString name = FromCharPointerNode.executeUncached(namePtr, true);
+        TruffleString trace = name;
+        Object object = null;
+        while (trace != null) {
+            int traceLen = trace.codePointLengthUncached(TS_ENCODING);
+            int dotIdx = trace.indexOfStringUncached(StringLiterals.T_DOT, 0, traceLen, TS_ENCODING);
+            TruffleString dot = null;
+            if (dotIdx >= 0) {
+                dot = trace.substringUncached(dotIdx + 1, traceLen - dotIdx - 1, TS_ENCODING, false);
+                trace = trace.substringUncached(0, dotIdx, TS_ENCODING, false);
             }
-
-            /* compare attribute name to module.name by hand */
-            PyCapsule capsule = object instanceof PyCapsule ? (PyCapsule) object : null;
-            if (capsule != null && PyCapsule_IsValid.doCapsule(capsule, namePtr) == 1) {
-                return capsule.getPointer();
+            if (object == null) {
+                // noBlock has no effect anymore since 3.3
+                object = AbstractImportNode.importModuleBoundary(trace);
             } else {
-                throw raiseNode.raise(inliningTarget, AttributeError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, name);
+                object = ReadAttributeFromObjectNode.getUncached().execute(object, trace);
             }
+            trace = dot;
         }
+
+        /* compare attribute name to module.name by hand */
+        PyCapsule capsule = object instanceof PyCapsule ? (PyCapsule) object : null;
+        if (capsule != null && capsule.getPointer() != NULLPTR && capsuleNameMatches(namePtr, capsule.getNamePtr())) {
+            return capsule.getPointer();
+        }
+        throw PRaiseNode.raiseStatic(null, AttributeError, PY_CAPSULE_IMPORT_S_IS_NOT_VALID, name);
     }
 
     /**
@@ -383,5 +282,13 @@ public final class PythonCextCapsuleBuiltins {
                 return true;
             }
         }
+    }
+
+    private static PyCapsule expectCapsule(long oPtr, String builtinName) {
+        Object obj = NativeToPythonNode.executeRawUncached(oPtr);
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !(obj instanceof PyCapsule capsule) || capsule.getPointer() == NULLPTR)) {
+            throw PRaiseNode.raiseStatic(null, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, builtinName);
+        }
+        return (PyCapsule) obj;
     }
 }

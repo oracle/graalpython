@@ -728,6 +728,11 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     public abstract static class PyCodecLookupNode extends PNodeWithContext {
         public abstract PTuple execute(Frame frame, Node inliningTarget, TruffleString encoding);
 
+        @TruffleBoundary
+        public static PTuple executeUncached(TruffleString encoding) {
+            return CodecsModuleBuiltinsFactory.PyCodecLookupNodeGen.getUncached().execute(null, null, encoding);
+        }
+
         @Specialization
         static PTuple lookup(VirtualFrame frame, Node inliningTarget, TruffleString encoding,
                         @Cached CodecsRegistry.EnsureRegistryInitializedNode ensureRegistryInitializedNode,

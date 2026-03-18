@@ -567,6 +567,11 @@ public abstract class SequenceStorageNodes {
             return executeInt(null, s, idx);
         }
 
+        @TruffleBoundary
+        public static int executeIntUncached(SequenceStorage s, int idx) throws UnexpectedResultException {
+            return GetItemScalarNodeGen.getUncached().executeInt(null, s, idx);
+        }
+
         public final int executeKnownInt(Node inliningTarget, SequenceStorage s, int idx) {
             try {
                 return executeInt(inliningTarget, s, idx);
