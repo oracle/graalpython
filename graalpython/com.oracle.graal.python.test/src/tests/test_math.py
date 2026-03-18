@@ -1330,6 +1330,11 @@ class MathTests(unittest.TestCase):
         self.assertTrue(math.isnan(modf_nan[0]))
         self.assertTrue(math.isnan(modf_nan[1]))
 
+        small_negative_fraction, small_negative_integral = math.modf(-4.0755017301539587e-25)
+        self.assertEqual(small_negative_fraction, -4.0755017301539587e-25)
+        self.assertEqual(math.copysign(1.0, small_negative_integral), -1.0)
+        self.assertEqual(small_negative_integral, -0.0)
+
         # test of specializations
         testmodf('modf(MyFloat())', math.modf(MyFloat()), (0.6, 0.0))
         self.assertRaises(TypeError, math.modf, 'ahoj')

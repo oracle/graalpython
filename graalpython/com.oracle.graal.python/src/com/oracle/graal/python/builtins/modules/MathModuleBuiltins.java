@@ -842,6 +842,9 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             }
             double fraction = value % 1;
             double integral = value - fraction;
+            if (integral == 0.0) {
+                integral = Math.copySign(0.0, value);
+            }
             return PFactory.createTuple(language, new Object[]{fraction, integral});
         }
 
