@@ -44,13 +44,12 @@ import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.ref.Reference;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.graalvm.nativeimage.DowncallDescriptor;
-import org.graalvm.nativeimage.ForeignFunctions;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.truffle.api.CompilerDirectives;
@@ -58,47 +57,51 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiDowncallSignature {
 
-    static final MethodType DOWNCALL_METHOD_TYPE = MethodType.methodType(Object.class, new Class<?>[]{MemorySegment.class, Object[].class});
+    static final MethodType DOWNCALL_METHOD_TYPE = MethodType.methodType(Object.class, new Class<?>[]{long.class, Object[].class});
+
+    private static final MethodHandle OF_ADDRESS;
+
+    static {
+        try {
+            OF_ADDRESS = MethodHandles.lookup().findStatic(
+                    MemorySegment.class,
+                    "ofAddress",
+                    MethodType.methodType(MemorySegment.class, long.class)
+            );
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     private final NfiType resType;
     private final NfiType[] argTypes;
     private final MethodHandle downcallMethodHandle;
-    final DowncallDescriptor downcallDescriptor;
 
     @SuppressWarnings("restricted")
     NfiDowncallSignature(NfiType resType, NfiType[] argTypes) {
         this.resType = resType;
         this.argTypes = argTypes;
         FunctionDescriptor functionDescriptor = NfiContext.createFunctionDescriptor(resType, argTypes);
-        if (ImageInfo.inImageCode()) {
-            downcallMethodHandle = null;
-            downcallDescriptor = ForeignFunctions.getDowncallDescriptor(functionDescriptor);
-        } else {
-            MethodHandle methodHandle = Linker.nativeLinker().downcallHandle(functionDescriptor);
-            methodHandle = methodHandle.asSpreader(Object[].class, argTypes.length);
-            methodHandle = methodHandle.asType(DOWNCALL_METHOD_TYPE);
-            downcallMethodHandle = methodHandle;
-            downcallDescriptor = null;
-        }
+        MethodHandle methodHandle = Linker.nativeLinker().downcallHandle(functionDescriptor);
+        methodHandle = MethodHandles.filterArguments(methodHandle, 0, OF_ADDRESS);
+        methodHandle = methodHandle.asSpreader(1, Object[].class, argTypes.length);
+        methodHandle = methodHandle.asType(DOWNCALL_METHOD_TYPE);
+        downcallMethodHandle = methodHandle;
     }
 
     public NfiBoundFunction bind(@SuppressWarnings("unused") NfiContext context, long pointer) {
         // TODO(NFI2) if logging enabled, use context to lookup name
-        if (ImageInfo.inImageCode()) {
-            return new NfiBoundFunction(pointer, null, this);
-        }
-        return new NfiBoundFunction(pointer, downcallMethodHandle.bindTo(MemorySegment.ofAddress(pointer)), this);
+        assert !ImageInfo.inImageBuildtimeCode() : "binding native address ad image build time";
+        MethodHandle boundMH = MethodHandles.insertArguments(downcallMethodHandle, 0, pointer);
+        return new NfiBoundFunction(pointer, boundMH, this);
     }
 
     @TruffleBoundary(allowInlining = true)
     public Object invoke(@SuppressWarnings("unused") NfiContext context, long function, Object... args) {
         assert checkArgTypes(args);
         try {
-            if (ImageInfo.inImageCode()) {
-                return ForeignFunctions.invoke(downcallDescriptor, function, args);
-            } else {
-                return downcallMethodHandle.invokeExact(MemorySegment.ofAddress(function), args);
-            }
+            return downcallMethodHandle.invokeExact(function, args);
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {

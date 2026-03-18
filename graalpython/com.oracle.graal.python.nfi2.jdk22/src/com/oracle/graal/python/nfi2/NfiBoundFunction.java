@@ -43,7 +43,6 @@ package com.oracle.graal.python.nfi2;
 import java.lang.invoke.MethodHandle;
 import java.lang.ref.Reference;
 
-import org.graalvm.nativeimage.ForeignFunctions;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.truffle.api.CompilerDirectives;
@@ -72,11 +71,7 @@ public final class NfiBoundFunction {
     public Object invoke(Object... args) {
         assert signature.checkArgTypes(args);
         try {
-            if (ImageInfo.inImageCode()) {
-                return ForeignFunctions.invoke(signature.downcallDescriptor, ptr, args);
-            } else {
-                return boundHandle.invokeExact(args);
-            }
+            return boundHandle.invokeExact(args);
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {

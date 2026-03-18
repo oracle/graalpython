@@ -1124,10 +1124,12 @@ public abstract class CExtCommonNodes {
      * access} is not allowed
      * </p>
      */
+    @TruffleBoundary
     public static NfiBoundFunction bindFunctionPointer(long pointer, NativeCExtSymbol descriptor) {
         return bindFunctionPointer(pointer, descriptor.getName(), descriptor.getSignature());
     }
 
+    @TruffleBoundary
     public static NfiBoundFunction bindFunctionPointer(long pointer, String name, NfiDowncallSignature signature) {
         PythonContext pythonContext = PythonContext.get(null);
         if (!pythonContext.isNativeAccessAllowed()) {
