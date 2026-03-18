@@ -42,4 +42,5 @@ repos:
   - id: check-toml
     exclude: '^graalpython/lib-python/.*'
   - id: check-added-large-files
+    exclude: '^abi/abi-.*\.xml'
   - id: check-symlinks
