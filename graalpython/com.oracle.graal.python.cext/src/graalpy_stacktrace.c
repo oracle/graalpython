@@ -55,6 +55,7 @@
 
 #define GRAALPY_NATIVE_STACK_MAX_NAME 1024
 #define GRAALPY_NATIVE_STACK_LINE_BUFFER 2048
+#define GRAALPY_NATIVE_STACK_CAPTURE_MAX 128
 
 typedef void (*GraalPyStacktraceWriter)(void *ctx, const char *line);
 
@@ -194,12 +195,17 @@ GraalPyPrivate_CaptureStacktrace(void **frames, size_t max_depth, size_t skip)
 #if defined(MS_WINDOWS)
     return (size_t) CaptureStackBackTrace((ULONG) (skip + 1), (ULONG) max_depth, frames, NULL);
 #elif (defined(__linux__) && defined(__GNU_LIBRARY__)) || defined(__APPLE__)
-    int raw_depth = backtrace(frames, (int) max_depth);
+    void *captured_frames[GRAALPY_NATIVE_STACK_CAPTURE_MAX];
+    size_t capture_depth = max_depth + skip + 1;
+    if (capture_depth > (sizeof(captured_frames) / sizeof(captured_frames[0]))) {
+        capture_depth = sizeof(captured_frames) / sizeof(captured_frames[0]);
+    }
+    int raw_depth = backtrace(captured_frames, (int) capture_depth);
     size_t depth = raw_depth > 0 ? (size_t) raw_depth : 0;
     size_t start = depth > (skip + 1) ? (skip + 1) : depth;
     size_t usable_depth = depth - start;
     if (usable_depth > 0) {
-        memmove(frames, frames + start, usable_depth * sizeof(void *));
+        memmove(frames, captured_frames + start, usable_depth * sizeof(void *));
     }
     return usable_depth;
 #else

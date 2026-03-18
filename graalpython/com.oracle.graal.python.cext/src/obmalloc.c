@@ -52,7 +52,7 @@ typedef struct {
 
 typedef struct {
     void *ptr;
-    void *stack[12];
+    void *stack[GRAALPY_MEM_SAMPLE_USEFUL_DEPTH];
     size_t size;
     size_t depth;
     unsigned long long serial;
