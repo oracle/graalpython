@@ -301,8 +301,7 @@ def test_code_identity():
     bar = foo()
     assert bar.__code__ is foo().__code__
     i = foo.__code__.co_consts.index(bar.__code__)
-    # TODO this is currently broken on the DSL interpreter because the code unit in constants is a separate copy
-    # assert bar.__code__ is foo.__code__.co_consts[i]
+    assert bar.__code__ is foo.__code__.co_consts[i]
     assert bar.__code__ is bar().f_code
 
     foo_copy = types.FunctionType(marshal.loads(marshal.dumps(foo.__code__)), globals=foo.__globals__, closure=foo.__closure__)
