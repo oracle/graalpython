@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,17 +60,24 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -87,6 +94,9 @@ import com.oracle.truffle.api.strings.TruffleString.ToJavaStringNode;
 
 @CoreFunctions(defineModule = J_UNICODEDATA)
 public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
+    private static final TruffleString T__CPYTHON_UNICODEDATA = toTruffleStringUncached("_cpython_unicodedata");
+    private static final TruffleString T_LOOKUP = toTruffleStringUncached("lookup");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return UnicodeDataModuleBuiltinsFactory.getFactories();
@@ -123,7 +133,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         self.setAttribute(toTruffleStringUncached("unidata_version"), toTruffleStringUncached(getUnicodeVersion()));
         PyObjectCallMethodObjArgs.executeUncached(core.lookupBuiltinModule(T___GRAALPYTHON__), toTruffleStringUncached("import_current_as_named_module_with_delegate"),
                         /* module_name= */ T_UNICODEDATA,
-                        /* delegate_name= */ toTruffleStringUncached("_cpython_unicodedata"),
+                        /* delegate_name= */ T__CPYTHON_UNICODEDATA,
                         /* delegate_attributes= */ PFactory.createList(core.getLanguage(), new Object[]{toTruffleStringUncached("ucd_3_2_0")}),
                         /* owner_globals= */ GetOrCreateDictNode.executeUncached(self));
     }
@@ -220,17 +230,19 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
                 throw PRaiseNode.raiseStatic(inliningTarget, KeyError, ErrorMessages.NAME_TOO_LONG);
             }
 
-            // TODO: support Unicode character named sequences (GR-68227)
-            // see test/test_ucn.py.UnicodeFunctionsTest.test_named_sequences_full
             String character = getCharacterByUnicodeName(nameString);
             if (character == null) {
                 character = getCharacterByUnicodeNameAlias(nameString);
             }
-            if (character == null) {
-                throw PRaiseNode.raiseStatic(inliningTarget, KeyError, ErrorMessages.UNDEFINED_CHARACTER_NAME, name);
+            if (character != null) {
+                return FromJavaStringNode.getUncached().execute(character, TS_ENCODING);
             }
 
-            return FromJavaStringNode.getUncached().execute(character, TS_ENCODING);
+            Object namedSequence = lookupNamedSequenceFromFallback(name);
+            if (namedSequence != null) {
+                return namedSequence;
+            }
+            throw PRaiseNode.raiseStatic(inliningTarget, KeyError, ErrorMessages.UNDEFINED_CHARACTER_NAME, name);
         }
 
         @Override
@@ -238,10 +250,6 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
             return UnicodeDataModuleBuiltinsClinicProviders.LookupNodeClinicProviderGen.INSTANCE;
         }
 
-        /**
-         * Finds a Unicode code point by its Unicode name and returns it as a single character
-         * String. Returns null if name is not found.
-         */
         @TruffleBoundary
         private static String getCharacterByUnicodeName(String unicodeName) {
             int codepoint = UCharacter.getCharFromName(unicodeName);
@@ -253,10 +261,6 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
             return UCharacter.toString(codepoint);
         }
 
-        /**
-         * Finds a Unicode code point by its Unicode name alias and returns it as a single character
-         * String. Returns null if name alias is not found.
-         */
         @TruffleBoundary
         private static String getCharacterByUnicodeNameAlias(String unicodeName) {
             int codepoint = UCharacter.getCharFromNameAlias(unicodeName);
@@ -266,6 +270,23 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
             }
 
             return UCharacter.toString(codepoint);
+        }
+
+        @TruffleBoundary
+        private static Object lookupNamedSequenceFromFallback(TruffleString name) {
+            if (!PythonContext.get(null).isNativeAccessAllowed()) {
+                return null;
+            }
+            try {
+                PythonModule cpythonUnicodeData = AbstractImportNode.importModule(T__CPYTHON_UNICODEDATA);
+                Object lookup = PyObjectGetAttr.executeUncached(cpythonUnicodeData, T_LOOKUP);
+                return CallNode.executeUncached(lookup, name);
+            } catch (PException e) {
+                if (IsBuiltinObjectProfile.profileObjectUncached(e.getUnreifiedException(), PythonBuiltinClassType.ImportError)) {
+                    return null;
+                }
+                throw e;
+            }
         }
     }
 
