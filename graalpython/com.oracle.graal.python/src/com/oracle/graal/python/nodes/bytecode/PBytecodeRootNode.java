@@ -2183,7 +2183,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.MAKE_FUNCTION: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         int flags = Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeMakeFunction(virtualFrame, globals, stackTop, localNodes, beginBci, flags, localConsts[oparg]);
+                        stackTop = bytecodeMakeFunction(virtualFrame, globals, stackTop, localNodes, beginBci, oparg, flags, localConsts[oparg]);
                         break;
                     }
                     case OpCodesConstants.SETUP_ANNOTATIONS: {
@@ -2727,9 +2727,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @BytecodeInterpreterSwitch
-    private int bytecodeMakeFunction(VirtualFrame virtualFrame, Object globals, int stackTop, Node[] localNodes, int beginBci, int flags, Object localConsts) {
+    private int bytecodeMakeFunction(VirtualFrame virtualFrame, Object globals, int stackTop, Node[] localNodes, int beginBci, int codeIndex, int flags, Object localConsts) {
         BytecodeCodeUnit codeUnit = (BytecodeCodeUnit) localConsts;
-        MakeFunctionNode makeFunctionNode = insertMakeFunctionNode(localNodes, beginBci, codeUnit);
+        MakeFunctionNode makeFunctionNode = insertMakeFunctionNode(localNodes, beginBci, codeIndex, codeUnit);
         return makeFunctionNode.execute(virtualFrame, globals, stackTop, flags);
     }
 
@@ -2910,8 +2910,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return null;
     }
 
-    private MakeFunctionNode insertMakeFunctionNode(Node[] localNodes, int beginBci, BytecodeCodeUnit codeUnit) {
-        return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(codeUnit));
+    private MakeFunctionNode insertMakeFunctionNode(Node[] localNodes, int beginBci, int codeIndex, BytecodeCodeUnit codeUnit) {
+        return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(codeIndex, codeUnit));
     }
 
     public void materializeContainedFunctionsForInstrumentation(Set<Class<? extends Tag>> materializedTags) {

@@ -1478,7 +1478,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind("getCodeUnit(rootNode, codeIndex)") BytecodeDSLCodeUnit codeUnit,
-                        @Cached("getCode(frame, codeUnit)") PCode cachedCode,
+                        @Cached("getCode(frame, codeIndex, codeUnit)") PCode cachedCode,
                         @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
@@ -1498,7 +1498,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
             BytecodeDSLCodeUnit codeUnit = getCodeUnit(rootNode, codeIndex);
-            PCode code = getCode(frame, codeUnit);
+            PCode code = getCode(frame, codeIndex, codeUnit);
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
                             code, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
         }
@@ -1514,9 +1514,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @NeverDefault
-        protected static PCode getCode(VirtualFrame frame, BytecodeDSLCodeUnit codeUnit) {
+        protected static PCode getCode(VirtualFrame frame, int codeIndex, BytecodeDSLCodeUnit codeUnit) {
             PCode thisCode = PArguments.getCodeObject(frame);
-            return thisCode.getOrCreateChildCode(codeUnit);
+            return thisCode.getOrCreateChildCode(codeIndex, codeUnit);
         }
 
         protected static BytecodeDSLCodeUnit getCodeUnit(PBytecodeDSLRootNode rootNode, int codeIndex) {

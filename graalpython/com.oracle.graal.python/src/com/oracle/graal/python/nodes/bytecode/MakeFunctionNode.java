@@ -65,6 +65,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class MakeFunctionNode extends PNodeWithContext {
+    private final int codeIndex;
     private final BytecodeCodeUnit codeUnit;
     @CompilationFinal private PCode cachedCode;
 
@@ -72,7 +73,8 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
 
     public abstract int execute(VirtualFrame frame, Object globals, int initialStackTop, int flags);
 
-    public MakeFunctionNode(BytecodeCodeUnit codeUnit) {
+    public MakeFunctionNode(int codeIndex, BytecodeCodeUnit codeUnit) {
+        this.codeIndex = codeIndex;
         this.codeUnit = codeUnit;
     }
 
@@ -84,7 +86,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
 
         PCode code = cachedCode;
         if (code == null) {
-            code = PArguments.getCodeObject(frame).getOrCreateChildCode(codeUnit);
+            code = PArguments.getCodeObject(frame).getOrCreateChildCode(codeIndex, codeUnit);
             if (PythonLanguage.get(this).isSingleContext()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 /*
@@ -130,7 +132,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
     }
 
     @NeverDefault
-    public static MakeFunctionNode create(BytecodeCodeUnit codeUnit) {
-        return MakeFunctionNodeGen.create(codeUnit);
+    public static MakeFunctionNode create(int codeIndex, BytecodeCodeUnit codeUnit) {
+        return MakeFunctionNodeGen.create(codeIndex, codeUnit);
     }
 }
