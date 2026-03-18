@@ -2035,6 +2035,9 @@ public final class PythonContext extends Python3Core {
         flushFile(sysModule.getAttribute(T_STDERR), false);
     }
 
+    private static final String SHUTDOWN_LOCK_ERROR_PREFIX = "could not acquire lock for ";
+    private static final String SHUTDOWN_LOCK_ERROR_SUFFIX = " at interpreter shutdown, possibly due to daemon threads";
+
     private static void flushFile(Object file, boolean useWriteUnraisable) {
         if (!(file instanceof PNone)) {
             boolean closed = false;
@@ -2047,12 +2050,17 @@ public final class PythonContext extends Python3Core {
                 try {
                     PyObjectCallMethodObjArgs.executeUncached(file, T_FLUSH);
                 } catch (PException e) {
-                    if (useWriteUnraisable) {
+                    if (useWriteUnraisable && !isDaemonThreadShutdownLockError(e)) {
                         WriteUnraisableNode.getUncached().execute(e.getEscapedException(), null, null);
                     }
                 }
             }
         }
+    }
+
+    private static boolean isDaemonThreadShutdownLockError(PException e) {
+        String message = ExceptionUtils.getExceptionMessage(e.getUnreifiedException());
+        return message != null && message.contains(SHUTDOWN_LOCK_ERROR_PREFIX) && message.endsWith(SHUTDOWN_LOCK_ERROR_SUFFIX);
     }
 
     @TruffleBoundary
