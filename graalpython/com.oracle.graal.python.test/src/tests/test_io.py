@@ -240,7 +240,7 @@ class StdoutAtShutdown:
 sys.stdout = StdoutAtShutdown()
 """
         proc = self.run_in_subprocess(code)
-        stderr = proc.stderr.decode("utf-8", "replace")
+        stderr = proc.stderr.decode("utf-8", "replace").replace("\r\n", "\n")
         self.assertEqual(proc.stdout, b"")
         self.assertEqual(proc.returncode, 120)
         self.assertRegex(
