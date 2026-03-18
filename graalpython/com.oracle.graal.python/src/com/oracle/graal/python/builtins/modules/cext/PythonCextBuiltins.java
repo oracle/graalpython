@@ -1495,11 +1495,12 @@ public final class PythonCextBuiltins {
             options |= PYTHON_GC;
         }
         if (language.getEngineOption(PythonOptions.PoisonNativeMemoryOnFree)) {
-                options |= POISON_NATIVE_MEMORY_ON_FREE;
-            }
-            if (language.getEngineOption(PythonOptions.SampleNativeMemoryAllocSites)) {
-                options |= SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
-            }return options;
+            options |= POISON_NATIVE_MEMORY_ON_FREE;
+        }
+        if (language.getEngineOption(PythonOptions.SampleNativeMemoryAllocSites)) {
+            options |= SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
+        }
+        return options;
     }
 
     @CApiBuiltin(ret = Void, args = {Int, ConstCharPtr}, call = Ignored)
