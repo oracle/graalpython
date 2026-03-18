@@ -42,7 +42,6 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
@@ -53,9 +52,7 @@ import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PGenerator extends PythonBuiltinObject {
@@ -280,6 +277,10 @@ public class PGenerator extends PythonBuiltinObject {
         return globals;
     }
 
+    public PFunction getGeneratorFunction() {
+        return generatorFunction;
+    }
+
     public static Object getSendValue(Object[] arguments) {
         return PArguments.getArgument(arguments, 1);
     }
@@ -385,14 +386,6 @@ public class PGenerator extends PythonBuiltinObject {
     @Override
     public final String toString() {
         return "<generator object " + name + " at " + hashCode() + ">";
-    }
-
-    public final PCode getOrCreateCode(Node inliningTarget, InlinedConditionProfile hasCodeProfile) {
-        if (hasCodeProfile.profile(inliningTarget, code == null)) {
-            RootCallTarget callTarget = getRootNode().getCallTarget();
-            code = PFactory.createCode(PythonLanguage.get(inliningTarget), callTarget);
-        }
-        return code;
     }
 
     public final boolean isRunning() {

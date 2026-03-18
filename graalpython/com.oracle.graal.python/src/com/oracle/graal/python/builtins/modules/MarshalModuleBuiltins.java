@@ -118,7 +118,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
-import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnitAndRoot;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -347,7 +346,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char TYPE_ARRAY = ']';
         // These are constants that show up in the Bytecode DSL interpreter.
         private static final char TYPE_GRAALPYTHON_DSL_CODE_UNIT = 'D';
-        private static final char TYPE_GRAALPYTHON_DSL_CODE_UNIT_AND_ROOT = 'K';
         private static final char TYPE_DSL_SOURCE = '$';
         private static final char TYPE_DSL_EMPTY_KEYWORDS = 'k';
 
@@ -804,16 +802,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } else if (v instanceof BigInteger) {
                 writeByte(TYPE_BIG_INTEGER);
                 writeBigInteger((BigInteger) v);
-            } else if (v instanceof BytecodeDSLCodeUnitAndRoot unitAndRoot) {
-                // BytecodeDSLCodeUnit data should be deserialized to BytecodeDSLCodeUnit if we are
-                // deserializing a constant in the constants array of BytecodeDSLCodeUnit, otherwise
-                // if we are deserializing a constant operand of MakeFunction operation, we should
-                // deserialize it to BytecodeDSLCodeUnitAndRoot.
-                // In the deserializer we would have to pass down some context to know whether to
-                // deserialize to one or the other. Instead, we write this extra byte that allows us
-                // to distinguish this locally during deserialization.
-                writeByte(TYPE_GRAALPYTHON_DSL_CODE_UNIT_AND_ROOT);
-                writeReferenceOrComplexObject(unitAndRoot.getCodeUnit());
             } else {
                 writeReferenceOrComplexObject(v);
             }
@@ -1187,13 +1175,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return addRef.run(readBytecodeCodeUnit());
                 case TYPE_GRAALPYTHON_DSL_CODE_UNIT:
                     return addRef.run(readBytecodeDSLCodeUnit());
-                case TYPE_GRAALPYTHON_DSL_CODE_UNIT_AND_ROOT:
-                    Object co = readObject();
-                    if (co instanceof BytecodeDSLCodeUnit dslUnit) {
-                        return new BytecodeDSLCodeUnitAndRoot(dslUnit);
-                    } else {
-                        throw new MarshalError(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
-                    }
                 case TYPE_DSL_SOURCE:
                     return getSource();
                 case TYPE_DSL_EMPTY_KEYWORDS:
@@ -1571,14 +1552,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 return PythonLanguage.callTargetFromBytecode(context, subSource, code);
             };
             CallTarget callTarget;
-            if (context.getLanguage().isSingleContext() || cacheKey == 0) {
+            if (getLanguage().isSingleContext() || cacheKey == 0) {
                 callTarget = supplier.get();
             } else {
-                // get a new ID every time we deserialize the same filename in the same context
-                long fullCacheKey = cacheKey + context.getDeserializationId(fileName);
-                callTarget = context.getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(fileName, fullCacheKey), supplier);
+                callTarget = getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(fileName, cacheKey), supplier);
             }
-            return PFactory.createCode(context.getLanguage(), (RootCallTarget) callTarget, flags, firstLineNo, lnoTab, fileName);
+            return PFactory.createCode(getLanguage(), (RootCallTarget) callTarget, flags, firstLineNo, lnoTab, fileName);
         }
     }
 

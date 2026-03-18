@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_BE_NUMBER;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_ALREADY_REGISTERED;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEROP_TYPE_NOT_MERGABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_S_NOT_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.S_CANNOT_HAVE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_DOES_NOT_TAKE_VARARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_EXACTLY_D_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
@@ -706,10 +705,6 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 // validate the function
                 if (function.getKwDefaults().length != 0) {
                     throw raiseNode.raise(this, ValueError, S_TAKES_NO_KEYWORD_ARGS, method.name);
-                } else if (function.getCode().getCellVars().length != 0) {
-                    throw raiseNode.raise(this, ValueError, S_CANNOT_HAVE_S, method.name, "cell vars");
-                } else if (function.getCode().getFreeVars().length != 0) {
-                    throw raiseNode.raise(this, ValueError, S_CANNOT_HAVE_S, method.name, "free vars");
                 } else {
                     // check signature
                     if (method.takesVarArgs != signature.takesVarArgs()) {

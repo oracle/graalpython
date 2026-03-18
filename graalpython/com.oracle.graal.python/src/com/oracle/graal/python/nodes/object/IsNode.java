@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,22 +43,16 @@ package com.oracle.graal.python.nodes.object;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.dsl.Bind;
@@ -75,7 +69,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
@@ -220,44 +213,6 @@ public abstract class IsNode extends Node implements BinaryOp {
         // interop library. We do not need two libraries, this will always specialize only to
         // PythonAbstractNativeObject
         return interop.isIdentical(left, right, interop);
-    }
-
-    // code
-    @Specialization
-    @InliningCutoff
-    public static boolean doCode(PCode left, PCode right,
-                    @Bind Node inliningTarget,
-                    @Cached CodeNodes.GetCodeCallTargetNode getCt) {
-        // Special case for code objects: Frames create them on-demand even if they refer to the
-        // same function. So we need to compare the root nodes.
-        if (left != right) {
-            RootCallTarget leftCt = getCt.execute(inliningTarget, left);
-            RootCallTarget rightCt = getCt.execute(inliningTarget, right);
-            if (leftCt != null && rightCt != null) {
-                RootNode leftRootNode = leftCt.getRootNode();
-                RootNode rightRootNode = rightCt.getRootNode();
-                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    if (leftRootNode instanceof PBytecodeDSLRootNode l && rightRootNode instanceof PBytecodeDSLRootNode r) {
-                        return l.getCodeUnit() == r.getCodeUnit();
-                    }
-                } else {
-                    if (leftRootNode instanceof PBytecodeGeneratorFunctionRootNode l) {
-                        leftRootNode = l.getBytecodeRootNode();
-                    }
-                    if (rightRootNode instanceof PBytecodeGeneratorFunctionRootNode r) {
-                        rightRootNode = r.getBytecodeRootNode();
-                    }
-
-                    if (leftRootNode instanceof PBytecodeRootNode l && rightRootNode instanceof PBytecodeRootNode r) {
-                        return l.getCodeUnit() == r.getCodeUnit();
-                    }
-                }
-                return leftRootNode == rightRootNode;
-            } else {
-                return false;
-            }
-        }
-        return true;
     }
 
     public static boolean someIsNone(Object left, Object right) {

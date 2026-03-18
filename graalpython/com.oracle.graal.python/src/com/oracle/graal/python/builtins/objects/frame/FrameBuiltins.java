@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -62,7 +62,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -253,11 +252,9 @@ public final class FrameBuiltins extends PythonBuiltins {
         public abstract PCode executeObject(VirtualFrame frame, PFrame self);
 
         @Specialization
-        static PCode get(PFrame self,
-                        @Bind PythonLanguage language) {
-            RootCallTarget ct = self.getTarget();
-            assert ct != null;
-            return PFactory.createCode(language, ct);
+        static Object get(PFrame self) {
+            PCode code = self.getCode();
+            return code != null ? code : PNone.NONE;
         }
 
         @NeverDefault

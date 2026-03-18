@@ -757,6 +757,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 PFrame pFrame = materializeFrameNode.execute(this, false, true, frame);
                 Object pLocals = getFrameLocalsNode.executeCached(frame, pFrame, true);
                 PArguments.setSpecialArgument(arguments, pLocals);
+                PArguments.setCodeObject(arguments, PFactory.createCode(getLanguage(PythonLanguage.class), callTarget));
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
                 boolean wasAcquired = gilNode.acquire();
                 try {
@@ -1131,6 +1132,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, PythonBuiltinClassType type, String name) {
         // for slot wrappers: the type is used for validation of "self" type
         return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, CodeUnit key) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, true, key);
     }
 
     /**

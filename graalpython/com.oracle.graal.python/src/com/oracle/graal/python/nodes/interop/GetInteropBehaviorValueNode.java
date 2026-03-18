@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,8 +46,10 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
@@ -60,7 +62,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -68,8 +69,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
@@ -186,16 +185,16 @@ public abstract class GetInteropBehaviorValueNode extends PNodeWithContext {
 
     @Specialization(guards = {"!behavior.isConstant(method)", "method.checkArity(extraArguments)"})
     static Object getValue(Node inliningTarget, InteropBehavior behavior, InteropBehaviorMethod method, PythonAbstractObject receiver, Object[] extraArguments,
-                    @Cached SimpleInvokeNodeDispatch invokeNode,
+                    @Cached CallDispatchers.FunctionCachedInvokeNode invokeNode,
                     @Cached ConvertJavaStringArguments convertArgs,
                     @Cached IsBuiltinObjectProfile unsupportedMessageProfile,
                     @Cached GilNode gil) throws UnsupportedMessageException {
         assert behavior.isDefined(method) : "interop behavior method is not defined!";
-        CallTarget callTarget = behavior.getCallTarget(method);
+        PFunction function = behavior.getFunction(method);
         Object[] pArguments = behavior.createArguments(method, receiver, convertArgs.execute(inliningTarget, extraArguments));
         boolean mustRelease = gil.acquire();
         try {
-            return invokeNode.execute(inliningTarget, callTarget, pArguments);
+            return invokeNode.execute(null, inliningTarget, function, pArguments);
         } catch (PException pe) {
             pe.expect(inliningTarget, PythonBuiltinClassType.UnsupportedMessage, unsupportedMessageProfile);
             throw UnsupportedMessageException.create();
@@ -219,25 +218,6 @@ public abstract class GetInteropBehaviorValueNode extends PNodeWithContext {
 
     public static GetInteropBehaviorValueNode getUncached() {
         return GetInteropBehaviorValueNodeGen.getUncached();
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    abstract static class SimpleInvokeNodeDispatch extends Node {
-        public abstract Object execute(Node inliningTarget, CallTarget callTarget, Object[] arguments);
-
-        @Specialization(guards = {"cachedCallTarget == callTarget"}, limit = "3")
-        static Object doDirectCall(CallTarget callTarget, Object[] arguments,
-                        @Cached("callTarget") CallTarget cachedCallTarget,
-                        @Cached("create(callTarget)") DirectCallNode directCallNode) {
-            return directCallNode.call(arguments);
-        }
-
-        @Specialization(replaces = "doDirectCall")
-        static Object doIndirectCall(CallTarget callTarget, Object[] arguments,
-                        @Cached IndirectCallNode indirectCallNode) {
-            return indirectCallNode.call(callTarget, arguments);
-        }
     }
 
     @GenerateUncached

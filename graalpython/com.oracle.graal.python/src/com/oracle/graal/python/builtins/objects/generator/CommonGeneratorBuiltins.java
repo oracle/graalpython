@@ -405,7 +405,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 }
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 PFrame.Reference ref = new PFrame.Reference(rootNode, PFrame.Reference.EMPTY);
-                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(inliningTarget), location, generatorFrame, self.getGlobals(), ref);
+                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(inliningTarget), location, generatorFrame, self.getGeneratorFunction(), self.getGlobals(), ref);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getFirstLineNumber());
                 Object existingTracebackObj = getTracebackNode.execute(inliningTarget, instance);

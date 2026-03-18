@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,40 +45,35 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATION
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.LazySource;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class MakeFunctionNode extends PNodeWithContext {
-    private final RootCallTarget callTarget;
-    private final BytecodeCodeUnit code;
-    private final Signature signature;
+    private final BytecodeCodeUnit codeUnit;
     @CompilationFinal private PCode cachedCode;
 
     private final Assumption codeStableAssumption = Truffle.getRuntime().createAssumption("code stable assumption");
 
     public abstract int execute(VirtualFrame frame, Object globals, int initialStackTop, int flags);
 
-    public MakeFunctionNode(RootCallTarget callTarget, BytecodeCodeUnit code, Signature signature) {
-        this.callTarget = callTarget;
-        this.code = code;
-        this.signature = signature;
+    public MakeFunctionNode(BytecodeCodeUnit codeUnit) {
+        this.codeUnit = codeUnit;
     }
 
     @Specialization
@@ -87,18 +82,18 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
                     @Cached WriteAttributeToPythonObjectNode writeAttrNode) {
         int stackTop = initialStackTop;
 
-        PCode codeObj = cachedCode;
-        if (codeObj == null) {
+        PCode code = cachedCode;
+        if (code == null) {
+            code = PArguments.getCodeObject(frame).getOrCreateChildCode(codeUnit);
             if (PythonLanguage.get(this).isSingleContext()) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 /*
                  * We cannot initialize the cached code in create, because that may be called
                  * without langauge context when materializing nodes for instrumentation
                  */
-                cachedCode = codeObj = PFactory.createCode(language, callTarget, signature, code);
+                cachedCode = code;
             } else {
                 // In multi-context mode we have to create the code for every execution
-                codeObj = PFactory.createCode(language, callTarget, signature, code);
             }
         }
 
@@ -124,7 +119,7 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
             frame.setObject(stackTop--, null);
         }
 
-        PFunction function = PFactory.createFunction(language, code.name, code.qualname, codeObj, (PythonObject) globals, defaults, kwdefaults, closure, codeStableAssumption);
+        PFunction function = PFactory.createFunction(language, codeUnit.name, codeUnit.qualname, code, (PythonObject) globals, defaults, kwdefaults, closure, codeStableAssumption);
 
         if (annotations != null) {
             writeAttrNode.execute(function, T___ANNOTATIONS__, annotations);
@@ -134,19 +129,8 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         return stackTop;
     }
 
-    public static MakeFunctionNode create(PythonLanguage language, BytecodeCodeUnit code, LazySource lazySource, boolean internal) {
-        RootCallTarget callTarget;
-        PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(language, code, lazySource, internal);
-        if (code.isGeneratorOrCoroutine()) {
-            // TODO what should the frameDescriptor be? does it matter?
-            callTarget = new PBytecodeGeneratorFunctionRootNode(language, bytecodeRootNode.getFrameDescriptor(), bytecodeRootNode, code.name).getCallTarget();
-        } else {
-            callTarget = bytecodeRootNode.getCallTarget();
-        }
-        return MakeFunctionNodeGen.create(callTarget, code, bytecodeRootNode.getSignature());
-    }
-
-    public RootCallTarget getCallTarget() {
-        return callTarget;
+    @NeverDefault
+    public static MakeFunctionNode create(BytecodeCodeUnit codeUnit) {
+        return MakeFunctionNodeGen.create(codeUnit);
     }
 }

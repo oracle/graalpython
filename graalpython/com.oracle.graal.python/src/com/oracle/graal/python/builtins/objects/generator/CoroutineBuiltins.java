@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,8 +62,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCoroutine)
@@ -80,10 +78,8 @@ public final class CoroutineBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object getCode(PGenerator self,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile hasCodeProfile) {
-            return self.getOrCreateCode(inliningTarget, hasCodeProfile);
+        static Object getCode(PGenerator self) {
+            return self.getGeneratorFunction().getCode();
         }
     }
 

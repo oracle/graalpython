@@ -476,6 +476,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static void doEnter(VirtualFrame frame,
                         @Bind PBytecodeDSLRootNode root) {
+            assert PArguments.getFunctionOrCodeObject(frame) != null;
             root.calleeContext.enter(frame, root);
         }
     }
@@ -944,7 +945,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return co.startLine;
     }
 
-    protected Source getSource() {
+    public Source getSource() {
         SourceSection section = getSourceSection();
         if (section == null) {
             return PythonUtils.createFakeSource();
@@ -1461,41 +1462,43 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation(storeBytecodeIndex = true)
+    @Operation(storeBytecodeIndex = true, forceCached = true)
     @ConstantOperand(type = TruffleString.class, name = "name")
     @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
-    @ConstantOperand(type = BytecodeDSLCodeUnitAndRoot.class)
+    @ConstantOperand(type = BytecodeDSLCodeUnit.class)
     public static final class MakeFunction {
-        @Specialization(guards = "isSingleContext(rootNode)", excludeForUncached = true)
+        @Specialization(guards = "isSingleContext(rootNode)")
         public static Object functionSingleContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        BytecodeDSLCodeUnitAndRoot codeUnit,
+                        BytecodeDSLCodeUnit codeUnit,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Cached("createCode(rootNode, codeUnit)") PCode cachedCode,
+                        @Cached("getCode(frame,  codeUnit)") PCode cachedCode,
+                        @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
-            return createFunction(frame, name, qualifiedName, codeUnit.getCodeUnit().getDocstring(),
-                            cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
+                            cachedCode, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
         }
 
         @Specialization(replaces = "functionSingleContext")
         public static Object functionMultiContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        BytecodeDSLCodeUnitAndRoot codeUnit,
+                        BytecodeDSLCodeUnit codeUnit,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
+                        @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
-            PCode code = createCode(rootNode, codeUnit);
-            return createFunction(frame, name, qualifiedName, codeUnit.getCodeUnit().getDocstring(),
-                            code, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
+            PCode code = getCode(frame, codeUnit);
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
+                            code, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
         }
 
         @Idempotent
@@ -1504,26 +1507,28 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @NeverDefault
-        protected static PCode createCode(PBytecodeDSLRootNode outerRootNode, BytecodeDSLCodeUnitAndRoot codeUnit) {
-            PBytecodeDSLRootNode rootNode = codeUnit.getRootNode(outerRootNode);
-            return PFactory.createCode(
-                            PythonLanguage.get(outerRootNode),
-                            rootNode.getCallTarget(),
-                            rootNode.getSignature(),
-                            codeUnit.getCodeUnit());
+        static Assumption createCodeStableAssumption() {
+            return Truffle.getRuntime().createAssumption("code stable assumption");
+        }
+
+        @NeverDefault
+        protected static PCode getCode(VirtualFrame frame, BytecodeDSLCodeUnit codeUnit) {
+            PCode thisCode = PArguments.getCodeObject(frame);
+            return thisCode.getOrCreateChildCode(codeUnit);
         }
 
         protected static PFunction createFunction(VirtualFrame frame,
                         TruffleString name, TruffleString qualifiedName, TruffleString doc,
                         PCode code, Object[] defaults,
                         Object[] kwDefaultsObject, Object closure, Object annotations,
-                        PBytecodeDSLRootNode node,
+                        Assumption codeStableAssumption, PBytecodeDSLRootNode node,
                         DynamicObject.PutNode putNode) {
             PKeyword[] kwDefaults = new PKeyword[kwDefaultsObject.length];
             // Note: kwDefaultsObject should be a result of operation MakeKeywords, which produces
             // PKeyword[]
             PythonUtils.arraycopy(kwDefaultsObject, 0, kwDefaults, 0, kwDefaults.length);
-            PFunction function = PFactory.createFunction(PythonLanguage.get(node), name, qualifiedName, code, PArguments.getGlobals(frame), defaults, kwDefaults, (PCell[]) closure);
+            PFunction function = PFactory.createFunction(PythonLanguage.get(node), name, qualifiedName, code, PArguments.getGlobals(frame), defaults, kwDefaults, (PCell[]) closure,
+                            codeStableAssumption);
 
             if (annotations != null) {
                 putNode.execute(function, T___ANNOTATIONS__, annotations);
