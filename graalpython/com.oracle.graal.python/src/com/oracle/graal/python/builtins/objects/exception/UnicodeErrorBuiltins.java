@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -102,6 +103,14 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
     }
 
     public static int getArgAsInt(Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, CastToJavaIntExactNode castNode) {
+        if (args.length < index + 1 || !(PGuards.isInteger(args[index]) || PGuards.isPInt(args[index]))) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
+        } else {
+            return castNode.execute(inliningTarget, args[index]);
+        }
+    }
+
+    public static long getArgAsLong(Node inliningTarget, Object[] args, int index, PRaiseNode raiseNode, CastToJavaLongExactNode castNode) {
         if (args.length < index + 1 || !(PGuards.isInteger(args[index]) || PGuards.isPInt(args[index]))) {
             throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
         } else {
@@ -194,17 +203,17 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object setInt(PBaseException self, long value,
+        static Object setLong(PBaseException self, long value,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, (int) value, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
+            return attrNode.execute(self, value, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization
         static Object setPInt(PBaseException self, PInt value,
                         @Bind Node inliningTarget,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached CastToJavaLongExactNode castToJavaLongExactNode,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, castToJavaIntExactNode.execute(inliningTarget, value), IDX_START, UNICODE_ERROR_ATTR_FACTORY);
+            return attrNode.execute(self, castToJavaLongExactNode.execute(inliningTarget, value), IDX_START, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})
@@ -237,11 +246,17 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        static Object setLong(PBaseException self, long value,
+                        @Shared @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
+        }
+
+        @Specialization
         static Object setPInt(PBaseException self, PInt value,
                         @Bind Node inliningTarget,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached CastToJavaLongExactNode castToJavaLongExactNode,
                         @Shared @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, castToJavaIntExactNode.execute(inliningTarget, value), IDX_END, UNICODE_ERROR_ATTR_FACTORY);
+            return attrNode.execute(self, castToJavaLongExactNode.execute(inliningTarget, value), IDX_END, UNICODE_ERROR_ATTR_FACTORY);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!canBeInteger(value)"})

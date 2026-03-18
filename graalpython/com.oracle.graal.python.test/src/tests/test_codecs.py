@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -74,6 +74,23 @@ def test_encode():
     assert codecs.encode(obj='\xe4\xf6\xfc', encoding='latin-1') == b'\xe4\xf6\xfc'
     assert codecs.encode('[\xff]', 'ascii', errors='ignore') == b'[]'
     assert codecs.encode('[]', 'ascii') == b'[]'
+
+
+def test_unicode_error_large_positions():
+    large = 18977273910
+    negative = -58
+
+    translate = UnicodeTranslateError('worl', large, negative, 'worldworldworldworldworldworldworldworldworldworldworld')
+    assert translate.args == ('worl', large, negative, 'worldworldworldworldworldworldworldworldworldworldworld')
+    assert str(translate) == "can't translate characters in position 18977273910--59: worldworldworldworldworldworldworldworldworldworldworld"
+
+    encode = UnicodeEncodeError('utf-8', 'worl', large, negative, 'boom')
+    assert encode.args == ('utf-8', 'worl', large, negative, 'boom')
+    assert str(encode) == "'utf-8' codec can't encode characters in position 18977273910--59: boom"
+
+    decode = UnicodeDecodeError('utf-8', b'worl', large, negative, 'boom')
+    assert decode.args == ('utf-8', b'worl', large, negative, 'boom')
+    assert str(decode) == "'utf-8' codec can't decode bytes in position 18977273910--59: boom"
 
 
 import codecs
