@@ -45,6 +45,9 @@ import unittest
 
 
 class IOBaseTests(unittest.TestCase):
+    @staticmethod
+    def run_in_subprocess(code):
+        return subprocess.run([sys.executable, "-c", code], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def test_iobase_ctor_accepts_anything(self):
         _io._IOBase()
@@ -236,9 +239,51 @@ class StdoutAtShutdown:
 
 sys.stdout = StdoutAtShutdown()
 """
-        proc = subprocess.run([sys.executable, "-c", code], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.assertEqual(proc.returncode, 0)
-        self.assertEqual(proc.stderr, b"")
+        proc = self.run_in_subprocess(code)
+        stderr = proc.stderr.decode("utf-8", "replace")
+        self.assertEqual(proc.stdout, b"")
+        self.assertEqual(proc.returncode, 120)
+        self.assertRegex(
+            stderr,
+            r"Exception ignored in: <__main__\.StdoutAtShutdown object at 0x[0-9a-fA-F]+>\n"
+            r"Traceback \(most recent call last\):\n"
+            r'  File "<string>", line 10, in flush\n'
+            r"SystemError: could not acquire lock for <_io\.BufferedWriter name='<stdout>'> "
+            r"at interpreter shutdown, possibly due to daemon threads\n?$",
+        )
+
+    def test_shutdown_stdout_deadlock_matches_cpython(self):
+        code = """if 1:
+            import sys
+            import time
+            import threading
+
+            file = sys.stdout
+
+            def run():
+                while True:
+                    file.write('.')
+                    file.flush()
+
+            thread = threading.Thread(target=run)
+            thread.daemon = True
+            thread.start()
+
+            time.sleep(0.5)
+            file.write('!')
+            file.flush()
+"""
+        proc = self.run_in_subprocess(code)
+        stderr = proc.stderr.decode("utf-8", "replace")
+        if proc.returncode != 0:
+            self.assertRegex(
+                stderr,
+                r"Fatal Python error: _enter_buffered_busy: could not acquire lock "
+                r"for <(_io\.)?BufferedWriter name='<stdout>'> at interpreter shutdown, "
+                r"possibly due to daemon threads",
+            )
+        else:
+            self.assertEqual(stderr, "")
 
     def test_isatty(self):
         x = _io._IOBase()

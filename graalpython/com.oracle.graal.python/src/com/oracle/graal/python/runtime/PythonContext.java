@@ -39,6 +39,7 @@ import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHO
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___STDOUT__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_THREADING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
@@ -160,6 +161,7 @@ import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGe
 import com.oracle.graal.python.runtime.arrow.ArrowSupport;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.locale.PythonLocale;
 import com.oracle.graal.python.runtime.object.IDUtils;
@@ -1998,6 +2000,7 @@ public final class PythonContext extends Python3Core {
     @SuppressWarnings("try")
     public void finalizeContext() {
         boolean cancelling = env.getContext().isCancelling();
+        boolean stdioFlushFailed = false;
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             if (!cancelling) {
                 // this uses the threading module and runs python code to join the threads
@@ -2010,7 +2013,7 @@ public final class PythonContext extends Python3Core {
             finalizing = true;
             // interrupt and join or kill python threads
             joinPythonThreads();
-            flushStdFiles();
+            stdioFlushFailed = flushStdFiles();
             if (cApiContext != null) {
                 cApiContext.finalizeCApi();
             }
@@ -2025,20 +2028,24 @@ public final class PythonContext extends Python3Core {
             }
         }
         mainThread = null;
+        if (stdioFlushFailed) {
+            throw new PythonExitException(null, 120);
+        }
     }
 
     // Equivalent of CPython's flush_std_files
     @TruffleBoundary
-    public void flushStdFiles() {
+    public boolean flushStdFiles() {
         PythonModule sysModule = getSysModule();
-        flushFile(sysModule.getAttribute(T_STDOUT), true);
-        flushFile(sysModule.getAttribute(T_STDERR), false);
+        Object stdout = sysModule.getAttribute(T_STDOUT);
+        return flushFile(stdout, sysModule.getAttribute(T___STDOUT__), true) |
+                        flushFile(sysModule.getAttribute(T_STDERR), null, false);
     }
 
     private static final String SHUTDOWN_LOCK_ERROR_PREFIX = "could not acquire lock for ";
     private static final String SHUTDOWN_LOCK_ERROR_SUFFIX = " at interpreter shutdown, possibly due to daemon threads";
 
-    private static void flushFile(Object file, boolean useWriteUnraisable) {
+    private static boolean flushFile(Object file, Object originalStdout, boolean useWriteUnraisable) {
         if (!(file instanceof PNone)) {
             boolean closed = false;
             try {
@@ -2050,17 +2057,21 @@ public final class PythonContext extends Python3Core {
                 try {
                     PyObjectCallMethodObjArgs.executeUncached(file, T_FLUSH);
                 } catch (PException e) {
-                    if (useWriteUnraisable && !isDaemonThreadShutdownLockError(e)) {
-                        WriteUnraisableNode.getUncached().execute(e.getEscapedException(), null, null);
+                    if (useWriteUnraisable) {
+                        if (!isDaemonThreadShutdownLockError(file, originalStdout, e)) {
+                            WriteUnraisableNode.getUncached().execute(e.getEscapedException(), null, file);
+                            return true;
+                        }
                     }
                 }
             }
         }
+        return false;
     }
 
-    private static boolean isDaemonThreadShutdownLockError(PException e) {
+    private static boolean isDaemonThreadShutdownLockError(Object file, Object originalStdout, PException e) {
         String message = ExceptionUtils.getExceptionMessage(e.getUnreifiedException());
-        return message != null && message.contains(SHUTDOWN_LOCK_ERROR_PREFIX) && message.endsWith(SHUTDOWN_LOCK_ERROR_SUFFIX);
+        return file == originalStdout && message != null && message.contains(SHUTDOWN_LOCK_ERROR_PREFIX) && message.endsWith(SHUTDOWN_LOCK_ERROR_SUFFIX);
     }
 
     @TruffleBoundary
