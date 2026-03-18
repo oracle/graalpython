@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBui
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_REASON;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_START;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.UNICODE_ERROR_ATTR_FACTORY;
-import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsInt;
+import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsLong;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.getArgAsString;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -72,7 +72,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
@@ -106,7 +106,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         static Object initNoArgs(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode toStringNode,
-                        @Cached CastToJavaIntExactNode toJavaIntExactNode,
+                        @Cached CastToJavaLongExactNode toJavaLongExactNode,
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseInitNode,
                         @Cached PRaiseNode raiseNode) {
             baseInitNode.execute(frame, self, args, keywords);
@@ -114,8 +114,8 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
             self.setExceptionAttributes(new Object[]{
                             getArgAsString(inliningTarget, args, 0, raiseNode, toStringNode),
                             getArgAsString(inliningTarget, args, 1, raiseNode, toStringNode),
-                            getArgAsInt(inliningTarget, args, 2, raiseNode, toJavaIntExactNode),
-                            getArgAsInt(inliningTarget, args, 3, raiseNode, toJavaIntExactNode),
+                            getArgAsLong(inliningTarget, args, 2, raiseNode, toJavaLongExactNode),
+                            getArgAsLong(inliningTarget, args, 3, raiseNode, toJavaLongExactNode),
                             getArgAsString(inliningTarget, args, 4, raiseNode, toStringNode)
             });
             return PNone.NONE;
@@ -142,12 +142,12 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
             // Get reason and encoding as strings, which they might not be if they've been
             // modified after we were constructed.
             final TruffleString object = toTruffleStringNode.execute(inliningTarget, attrNode.get(self, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY));
-            final int start = attrNode.getInt(self, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
-            final int end = attrNode.getInt(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
+            final long start = attrNode.getLong(self, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
+            final long end = attrNode.getLong(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
             final TruffleString encoding = strNode.execute(frame, inliningTarget, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
             final TruffleString reason = strNode.execute(frame, inliningTarget, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
             if (start < codePointLengthNode.execute(object, TS_ENCODING) && end == start + 1) {
-                final int badChar = codePointAtIndexNode.execute(object, start);
+                final int badChar = codePointAtIndexNode.execute(object, (int) start);
                 String badCharStr;
                 if (badChar <= 0xFF) {
                     badCharStr = PythonUtils.formatJString("\\x%02x", badChar);
@@ -247,14 +247,14 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             TruffleString ts = getObjectNode.execute(inliningTarget, exceptionObject);
             int size = codePointLengthNode.execute(ts, TS_ENCODING);
-            int start = attrNode.getInt(exceptionObject, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
+            long start = attrNode.getLong(exceptionObject, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
             if (start < 0) {
                 start = 0;
             }
             if (start >= size) {
                 start = size - 1;
             }
-            return start;
+            return (int) start;
         }
     }
 
@@ -275,14 +275,14 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             TruffleString ts = getObjectNode.execute(inliningTarget, exceptionObject);
             int size = codePointLengthNode.execute(ts, TS_ENCODING);
-            int end = attrNode.getInt(exceptionObject, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
+            long end = attrNode.getLong(exceptionObject, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
             if (end < 1) {
                 end = 1;
             }
             if (end > size) {
                 end = size;
             }
-            return end;
+            return (int) end;
         }
     }
 
