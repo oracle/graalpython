@@ -836,7 +836,8 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         Object create(PXMLParser self, @SuppressWarnings("unused") Object context, @SuppressWarnings("unused") Object encoding,
                         @Bind Node inliningTarget,
                         @Cached CreateParserNode createParserNode) {
-            return createParserNode.execute(inliningTarget, encoding == PNone.NO_VALUE ? PNone.NONE : encoding, self.getNamespaceSeparator() == null ? PNone.NONE : self.getNamespaceSeparator(), self.getIntern());
+            return createParserNode.execute(inliningTarget, encoding == PNone.NO_VALUE ? PNone.NONE : encoding, self.getNamespaceSeparator() == null ? PNone.NONE : self.getNamespaceSeparator(),
+                            self.getIntern());
         }
     }
 
@@ -1362,13 +1363,14 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     @TruffleBoundary
     private static boolean detectDoctypeHasInternalSubset(byte[] data) {
         String text = new String(data, java.nio.charset.StandardCharsets.ISO_8859_1);
-        int idx = text.indexOf("<!DOCTYPE");
+        String doctypeStart = "<!DOCTYPE ";
+        int idx = text.indexOf(doctypeStart);
         if (idx < 0) {
             return false;
         }
         boolean inSingleQuote = false;
         boolean inDoubleQuote = false;
-        for (int i = idx + 9; i < text.length(); i++) {
+        for (int i = idx + doctypeStart.length(); i < text.length(); i++) {
             char ch = text.charAt(i);
             if (ch == '\'' && !inDoubleQuote) {
                 inSingleQuote = !inSingleQuote;
