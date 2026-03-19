@@ -274,7 +274,7 @@
         }),
         // tests with sandboxed backends for various modules (posix, sha3, compression, pyexpat, ...)
         "python-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier2,
+            "linux:amd64:jdk-latest"     : tier2 + batches(2),
             "linux:aarch64:jdk-latest"   : tier3,
             "darwin:aarch64:jdk-latest"  : tier3,
         }),
