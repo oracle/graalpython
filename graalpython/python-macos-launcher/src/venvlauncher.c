@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@
 #include <string.h>
 #include <limits.h>
 #include <stdarg.h>
+#include <wordexp.h>
 #include <mach-o/dyld.h>
 
 #define GRAAL_PYTHON_EXE_ARG "--python.Executable="
@@ -105,11 +106,11 @@ char *get_pyenvcfg_command(const char *pyenv_cfg_path) {
                 exit(1);
             }
             while (isspace((unsigned char) *p)) p++;
+            char *end = p + strlen(p);
+            while (end > p && isspace((unsigned char) end[-1])) {
+                *--end = '\0';
+            }
             if (*p == '\"') {
-                char *end = p + strlen(p);
-                while (end > p && (isspace((unsigned char) end[-1]) || end[-1] == '\n')) {
-                    *--end = '\0';
-                }
                 if (end <= p + 1 || end[-1] != '\"') {
                     fprintf(stderr, "venv command is not in correct format");
                     free(current_line);
@@ -140,38 +141,56 @@ char *get_pyenvcfg_command(const char *pyenv_cfg_path) {
     exit(1);
 }
 
-int count_args(const char *cmd) {
-    char *copy = strdup(cmd);
-    int count = 0;
-    char *token = strtok(copy, " ");
-    while (token) {
-        count++;
-        token = strtok(NULL, " ");
+char **split_venv_command_into_args(const char *venv_command, int *argc_out) {
+    if (access(venv_command, X_OK) == 0) {
+        char **args = malloc(sizeof(char *));
+        if (!args) {
+            fprintf(stderr, "allocation failed\n");
+            exit(1);
+        }
+        args[0] = strdup(venv_command);
+        if (!args[0]) {
+            fprintf(stderr, "allocation failed\n");
+            free(args);
+            exit(1);
+        }
+        *argc_out = 1;
+        return args;
     }
 
-    free(copy);
-    return count;
-}
+    wordexp_t expanded;
+    int rc = wordexp(venv_command, &expanded, WRDE_NOCMD);
+    if (rc != 0 || expanded.we_wordc == 0) {
+        fprintf(stderr, "Failed to parse venvlauncher_command\n");
+        if (rc == 0) {
+            wordfree(&expanded);
+        }
+        exit(1);
+    }
 
-char **split_venv_command_into_args(const char *venv_command, int *argc_out) {
-
-    char *copy = strdup(venv_command);
-    const int capacity = count_args(copy);
+    const int capacity = (int) expanded.we_wordc;
     char **args = malloc(capacity * sizeof(char *));
     if (!args) {
         fprintf(stderr, "allocation failed\n");
-        free(copy);
+        wordfree(&expanded);
         exit(1);
     }
 
     int count = 0;
-    char *current_token = strtok(copy, " ");
-    while (current_token) {
-        args[count++] = strdup(current_token);
-        current_token = strtok(NULL, " ");
+    for (size_t i = 0; i < expanded.we_wordc; i++) {
+        args[count] = strdup(expanded.we_wordv[i]);
+        if (!args[count]) {
+            fprintf(stderr, "allocation failed\n");
+            for (int j = 0; j < count; j++) {
+                free(args[j]);
+            }
+            free(args);
+            wordfree(&expanded);
+            exit(1);
+        }
+        count++;
     }
-
-    free(copy);
+    wordfree(&expanded);
     assert(capacity == count);
     *argc_out = count;
     return args;
