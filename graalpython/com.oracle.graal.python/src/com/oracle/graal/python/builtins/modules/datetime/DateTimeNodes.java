@@ -47,26 +47,28 @@ import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBu
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readByteField;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
 import java.time.YearMonth;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyTZInfoCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyTZInfoCheckNode;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -211,6 +213,7 @@ public class DateTimeNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class NewUnsafeNode extends Node {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW);
 
         public abstract Object execute(Node inliningTarget, Object cls, int year, int month, int day, int hour, int minute, int second, int microsecond, Object tzInfoObject, int fold);
 
@@ -224,7 +227,6 @@ public class DateTimeNodes {
                         @Cached PyTZInfoCheckNode tzInfoCheckNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
                         @Cached ExternalFunctionNodes.PyObjectCheckFunctionResultNode checkFunctionResultNode,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached CApiTransitions.NativeToPythonTransferNode fromNativeNode) {
@@ -246,9 +248,20 @@ public class DateTimeNodes {
                 Shape shape = getInstanceShape.execute(cls);
                 return new PDateTime(cls, shape, year, month, day, hour, minute, second, microsecond, tzInfo, fold);
             } else {
-                Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW,
-                                toNativeNode.execute(cls), year, month, day, hour, minute, second, microsecond, toNativeNode.execute(tzInfo != null ? tzInfo : PNone.NO_VALUE), fold);
-                return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW.getTsName(), fromNativeNode.execute(nativeResult));
+                long clsPointer = toNativeNode.executeLong(cls);
+                Object effectiveTzInfo = tzInfo != null ? tzInfo : PNone.NO_VALUE;
+                long tzInfoPointer = toNativeNode.executeLong(effectiveTzInfo);
+                try {
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW);
+                    long nativeResult = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeDATETIME_SUBTYPE_NEW(null, C_API_TIMING,
+                                    context.ensureNfiContext(), BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer,
+                                    year, month, day, hour, minute, second, microsecond, tzInfoPointer, fold);
+                    return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW.getTsName(), fromNativeNode.execute(nativeResult));
+                } finally {
+                    Reference.reachabilityFence(cls);
+                    Reference.reachabilityFence(effectiveTzInfo);
+                }
             }
         }
     }

@@ -46,7 +46,6 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
@@ -153,23 +152,18 @@ public class CStructAccess {
         return arrayPtr + index * struct.size();
     }
 
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class AllocatePyMemNode extends Node {
-
-        abstract long execute(long count, long elsize);
-
-        // TODO(NFi2) review usages
-        public long alloc(int size) {
-            return execute(1, size);
+    public static long allocatePyMem(long count, long elsize) {
+        assert elsize >= 0;
+        try {
+            return com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePYMEM_ALLOC(
+                            com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYMEM_ALLOC).getAddress(), count, elsize);
+        } catch (Throwable t) {
+            throw com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere(t);
         }
+    }
 
-        @Specialization
-        static long allocLongPyMem(long count, long elsize,
-                        @Cached PCallCapiFunction call) {
-            assert elsize >= 0;
-            return (long) call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, count, elsize);
-        }
+    public static long allocatePyMem(int size) {
+        return allocatePyMem(1, size);
     }
 
     @ImportStatic(PGuards.class)

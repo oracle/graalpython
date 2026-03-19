@@ -118,9 +118,10 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
@@ -2747,13 +2748,16 @@ public final class PythonContext extends Python3Core {
         initializeNativeThreadState(getThreadState(getLanguage()));
     }
 
+    private static final CApiTiming TIMING_INIT_THREAD_STATE_CURRENT = CApiTiming.create(true, NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT);
+
     @SuppressWarnings("try")
     public void initializeNativeThreadState(PythonThreadState pythonThreadState) {
         CompilerAsserts.neverPartOfCompilation();
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             assert getCApiContext() != null;
-            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(pythonThreadState);
-            Object nativeThreadLocalVarPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT, nativeThreadState);
+            long nativeThreadState = PThreadState.getOrCreateNativeThreadState(pythonThreadState);
+            var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT);
+            long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeINIT_THREAD_STATE_CURRENT(TIMING_INIT_THREAD_STATE_CURRENT, callable, nativeThreadState);
             pythonThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
         }
     }

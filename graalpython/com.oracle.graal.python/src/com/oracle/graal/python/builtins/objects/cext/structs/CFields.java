@@ -104,7 +104,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElements;
 
 import com.oracle.graal.python.annotations.CApiFields;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -415,7 +414,13 @@ public enum CFields {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        long offsetsPointer = (long) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS);
+        long offsetsPointer;
+        try {
+            offsetsPointer = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePYTRUFFLE_STRUCT_OFFSETS(
+                            com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS).getAddress());
+        } catch (Throwable t) {
+            throw CompilerDirectives.shouldNotReachHere(t);
+        }
         long[] offsets = readLongArrayElements(offsetsPointer, 0L, VALUES.length);
         for (CFields field : VALUES) {
             field.offset = offsets[field.ordinal()];

@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETINITARGS__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -59,9 +60,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -103,6 +104,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
     @SlotSignature(name = "datetime.tzinfo", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonBuiltinNode {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW);
 
         @Specialization
         static Object newTzInfo(Object cls, Object[] arguments, PKeyword[] keywords,
@@ -113,8 +115,17 @@ public final class TzInfoBuiltins extends PythonBuiltins {
                 return new PTzInfo(cls, getInstanceShape.execute(cls));
             } else {
                 CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
-                long nativeResult = (long) CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW, toNative.execute(cls), NULLPTR, NULLPTR);
-                return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
+                long clsPointer = toNative.executeLong(cls);
+                try {
+                    com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(inliningTarget);
+                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW);
+                    long nativeResult = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePY_TYPE_GENERIC_NEW(null, C_API_TIMING,
+                                    context.ensureNfiContext(), com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData.getUncached(),
+                                    context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), callable, clsPointer, NULLPTR, NULLPTR);
+                    return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
+                } finally {
+                    Reference.reachabilityFence(cls);
+                }
             }
         }
     }

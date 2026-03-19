@@ -54,8 +54,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -138,6 +138,7 @@ public abstract class StringNodes {
     @ImportStatic(StringNodes.class)
     @GenerateInline(false)       // footprint reduction 40 -> 21
     public abstract static class StringLenNode extends PNodeWithContext {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH);
 
         public abstract int execute(Object str);
 
@@ -177,15 +178,17 @@ public abstract class StringNodes {
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                         @Cached PythonToNativeNode toNativeNode,
                         @Cached PRaiseNode raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PString)) {
                 // read the native data
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(x);
-                Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH, toNativeNode.executeLong(x));
-                assert result instanceof Number;
-                return intValue((Number) result);
+                com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(inliningTarget);
+                var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH);
+                return intValue(com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNfiContext(),
+                                com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData.getUncached(),
+                                context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), callable,
+                                toNativeNode.executeLong(x)));
             }
             // the object's type is not a subclass of 'str'
             throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);

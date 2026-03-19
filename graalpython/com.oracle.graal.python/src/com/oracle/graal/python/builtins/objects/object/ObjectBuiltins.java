@@ -55,6 +55,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SINGLE_QUOTE_COMMA_SPACE;
 
+import java.lang.ref.Reference;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -70,8 +71,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -347,15 +348,26 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @GenerateInline
         @GenerateCached(false)
         protected abstract static class CallNativeGenericNewNode extends Node {
+            private static final CApiTiming C_API_TIMING = CApiTiming.create(true, FUN_PY_OBJECT_NEW);
+
             abstract Object execute(Node inliningTarget, Object cls);
 
             @Specialization
             static Object call(Object cls,
+                            @Bind Node inliningTarget,
                             @Cached(inline = false) CApiTransitions.PythonToNativeNode toNativeNode,
-                            @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPythonNode,
-                            @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
+                            @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPythonNode) {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
-                return toPythonNode.execute(callCapiFunction.call(FUN_PY_OBJECT_NEW, toNativeNode.executeLong(cls)));
+                long clsPointer = toNativeNode.executeLong(cls);
+                try {
+                    com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(inliningTarget);
+                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_NEW);
+                    return toPythonNode.execute(com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePY_OBJECT_NEW(null, C_API_TIMING,
+                                    context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                                    context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), callable, clsPointer));
+                } finally {
+                    Reference.reachabilityFence(cls);
+                }
             }
         }
 

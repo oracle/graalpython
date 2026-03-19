@@ -49,8 +49,8 @@ import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -86,6 +86,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateCached(false)
 @GenerateInline
 public abstract class PyObjectHashNode extends PNodeWithContext {
+    private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_PY_TYPE_READY);
+
     public static long executeUncached(Object value) {
         return PyObjectHashNodeGen.getUncached().execute(null, null, value);
     }
@@ -214,7 +216,11 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     @TruffleBoundary
     private static TpSlots callTypeReady(Node inliningTarget, Object object, PythonAbstractNativeObject klass) {
         assert EnsurePythonObjectNode.doesNotNeedPromotion(klass);
-        int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNode.executeLongUncached(klass));
+        com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(null);
+        var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_TYPE_READY);
+        int res = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNfiContext(),
+                        BoundaryCallData.getUncached(), context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), callable,
+                        PythonToNativeNode.executeLongUncached(klass));
         if (res < 0) {
             throw raiseSystemError(inliningTarget, klass);
         }

@@ -117,8 +117,8 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -557,6 +557,7 @@ public abstract class TypeNodes {
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
     public abstract static class GetMroStorageNode extends PNodeWithContext {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_PY_TYPE_READY);
 
         public abstract MroSequenceStorage execute(Node inliningTarget, Object obj);
 
@@ -629,7 +630,10 @@ public abstract class TypeNodes {
 
             // call 'PyType_Ready' on the type
             assert EnsurePythonObjectNode.doesNotNeedPromotion(obj);
-            int res = (int) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNode.executeLongUncached(obj));
+            PythonContext context = PythonContext.get(null);
+            var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_TYPE_READY);
+            int res = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNfiContext(),
+                            BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, PythonToNativeNode.executeLongUncached(obj));
             if (res < 0) {
                 throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, obj);
             }

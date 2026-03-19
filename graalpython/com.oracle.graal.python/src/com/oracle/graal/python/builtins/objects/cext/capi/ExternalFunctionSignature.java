@@ -42,6 +42,8 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Double;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult64;
@@ -49,6 +51,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectReturn;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -106,6 +110,10 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     TRAVERSEPROC(false, Int, PyObject, Pointer, Pointer),
     // PyObject *PyType_GenericAlloc(PyTypeObject *, Py_ssize_t);
     TYPE_GENERIC_ALLOC(false, PyObjectReturn, PyTypeObject, Py_ssize_t),
+    // PyObject *PyType_GenericNew(PyTypeObject *, PyObject *, PyObject *);
+    PY_TYPE_GENERIC_NEW(false, PyObjectReturn, PyTypeObject, PyObject, PyObject),
+    // uintptr_t PyType_GenericNew(PyTypeObject *, uintptr_t, uintptr_t);
+    PY_TYPE_GENERIC_NEW_RAW(true, UINTPTR_T, PyTypeObject, UINTPTR_T, UINTPTR_T),
 
     // typedef void (*freefunc)(void *);
     FREEFUNC(false, Void, Pointer),
@@ -154,6 +162,58 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     CAPIINIT(false, Pointer, Pointer, Pointer, Pointer, Pointer),
     // typedef void *(*GraalPyPrivate_GetFinalizeCApiPointer)(void);
     GETFINALIZECAPIPOINTER(false, Pointer),
+    // int PyType_Ready(PyTypeObject *);
+    PY_TYPE_READY(false, Int, PyTypeObject),
+    // void GraalPyPrivate_CheckTypeReady(PyTypeObject *);
+    TRUFFLE_CHECK_TYPE_READY(true, Void, PyTypeObject),
+    // Py_ssize_t PyUnicode_GetLength(PyObject *);
+    PY_UNICODE_GET_LENGTH(false, PrimitiveResult64, PyObject),
+    // void GraalPyPrivate_InitNativeDateTime(void);
+    INIT_NATIVE_DATETIME(true, Void),
+    // intptr_t* GraalPyPrivate_Constants(void);
+    PYTRUFFLE_CONSTANTS(true, Pointer),
+    // intptr_t* GraalPyPrivate_StructOffsets(void);
+    PYTRUFFLE_STRUCT_OFFSETS(true, Pointer),
+    // intptr_t* GraalPyPrivate_StructSizes(void);
+    PYTRUFFLE_STRUCT_SIZES(true, Pointer),
+    // void* PyMem_Calloc(size_t, size_t);
+    PYMEM_ALLOC(true, Pointer, SIZE_T, SIZE_T),
+    // int PyObject_GenericSetDict(PyObject *, PyObject *, void *);
+    PY_OBJECT_GENERIC_SET_DICT(false, Int, PyObject, PyObject, Pointer),
+    // PyObject *GraalPyPrivate_ObjectNew(PyTypeObject *);
+    PY_OBJECT_NEW(false, PyObjectReturn, PyTypeObject),
+    // void GraalPyPrivate_ObjectArrayRelease(void *, int);
+    OBJECT_ARRAY_RELEASE(true, Void, Pointer, Int),
+    // void GraalPyPrivate_Capsule_CallDestructor(PyObject *, PyCapsule_Destructor);
+    GRAALPY_CAPSULE_CALL_DESTRUCTOR(true, Void, PyObject, Pointer),
+    // Py_ssize_t GraalPyPrivate_BulkDealloc(uintptr_t, int64_t);
+    BULK_DEALLOC(true, Py_ssize_t, UINTPTR_T, INT64_T),
+    // Py_ssize_t GraalPyPrivate_BulkDeallocOnShutdown(void *, int64_t);
+    SHUTDOWN_BULK_DEALLOC(true, Py_ssize_t, Pointer, INT64_T),
+    // void GraalPyPrivate_ReleaseBuffer(void *);
+    GRAALPY_RELEASE_BUFFER(true, Void, Pointer),
+    // void GraalPyPrivate_MMap_InitBufferProtocol(PyTypeObject *);
+    MMAP_INIT_BUFFERPROTOCOL(true, Void, PyTypeObject),
+    // void *GraalPyPrivate_AddSuboffset(void *, Py_ssize_t, Py_ssize_t);
+    ADD_SUBOFFSET(true, Pointer, Pointer, Py_ssize_t, Py_ssize_t),
+    // PyObject *GraalPyPrivate_Exception_SubtypeNew(PyTypeObject *, PyObject *);
+    EXCEPTION_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, PyObject),
+    // PyObject *GraalPyPrivate_Bytes_SubtypeNew(PyTypeObject *, void *, Py_ssize_t);
+    BYTES_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Pointer, Py_ssize_t),
+    // PyObject *GraalPyPrivate_Complex_SubtypeFromDoubles(PyTypeObject *, double, double);
+    COMPLEX_SUBTYPE_FROM_DOUBLES(false, PyObjectReturn, PyTypeObject, Double, Double),
+    // int GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject *, int);
+    CHECK_BASICSIZE_FOR_GETSTATE(true, Int, PyTypeObject, Int),
+    // PyObject *GraalPyPrivate_Date_SubtypeNew(PyTypeObject *, int, int, int);
+    DATE_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int),
+    // PyObject *GraalPyPrivate_Time_SubtypeNew(PyTypeObject *, int, int, int, int, PyObject *, int);
+    TIME_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int, Int, PyObject, Int),
+    // PyObject *GraalPyPrivate_TimeDelta_SubtypeNew(PyTypeObject *, int, int, int);
+    TIMEDELTA_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int),
+    // PyObject *GraalPyPrivate_DateTime_SubtypeNew(PyTypeObject *, int, int, int, int, int, int, int, PyObject *, int);
+    DATETIME_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int, Int, Int, Int, Int, PyObject, Int),
+    // PyObject *GraalPyPrivate_MemoryViewFromObject(PyObject *, int);
+    GRAALPY_MEMORYVIEW_FROM_OBJECT(false, PyObjectReturn, PyObject, Int),
 
     // TODO(fa): should be an implicit signature
     GCCOLLECT(false, Py_ssize_t, Int),

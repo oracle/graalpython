@@ -45,12 +45,14 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readByteField;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -146,6 +148,8 @@ public class TimeNodes {
             return newTimeUnchecked(cls, hour, minute, second, microsecond, tzInfo, fold);
         }
 
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW);
+
         @TruffleBoundary
         public static Object newTimeUnchecked(Object cls, int hour, int minute, int second, int microsecond, Object tzInfoObject, int fold) {
             final Object tzInfo;
@@ -160,9 +164,20 @@ public class TimeNodes {
                 return new PTime(cls, shape, hour, minute, second, microsecond, tzInfo, fold);
             } else {
                 CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
-                long nativeResult = (long) CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW,
-                                toNative.executeLong(cls), hour, minute, second, microsecond, toNative.executeLong(tzInfo != null ? tzInfo : PNone.NO_VALUE), fold);
-                return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
+                long clsPointer = toNative.executeLong(cls);
+                Object effectiveTzInfo = tzInfo != null ? tzInfo : PNone.NO_VALUE;
+                long tzInfoPointer = toNative.executeLong(effectiveTzInfo);
+                try {
+                    com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(null);
+                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW);
+                    long nativeResult = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeTIME_SUBTYPE_NEW(null, C_API_TIMING,
+                                    context.ensureNfiContext(), com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData.getUncached(),
+                                    context.getThreadState(context.getLanguage()), callable, clsPointer, hour, minute, second, microsecond, tzInfoPointer, fold);
+                    return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
+                } finally {
+                    Reference.reachabilityFence(cls);
+                    Reference.reachabilityFence(effectiveTzInfo);
+                }
             }
         }
 

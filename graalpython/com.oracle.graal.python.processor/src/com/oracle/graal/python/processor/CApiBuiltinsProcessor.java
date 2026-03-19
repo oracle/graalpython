@@ -1126,7 +1126,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return switch (argDescriptor) {
             case "Void" -> "void";
             case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "int";
-            case "Py_ssize_t", "PrimitiveResult64", "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyTypeObject", "CharPtrAsTruffleString", "IterResult", "Pointer",
+            case "Double" -> "double";
+            case "Float" -> "float";
+            case "Py_hash_t", "Py_ssize_t", "PrimitiveResult64", "INT64_T", "SIZE_T", "UINTPTR_T", "Long", "UNSIGNED_LONG", "UINT64_T",
+                            "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyTypeObject", "CharPtrAsTruffleString", "IterResult", "Pointer",
                             "CHAR_PTR" ->
                 "long";
             default -> {
@@ -1178,8 +1181,18 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             case "void" -> "void.class";
             case "int" -> "int.class";
             case "long" -> "long.class";
+            case "float" -> "float.class";
+            case "double" -> "double.class";
             default -> throw new IllegalArgumentException("Unexpected Java type: " + javaType);
         };
+    }
+
+    private boolean isCannotRaise(VariableElement signature) {
+        String externalFunctionSignatureInitializer = getExternalFunctionSignatureInitializer(signature);
+        int start = externalFunctionSignatureInitializer.indexOf('(');
+        int end = externalFunctionSignatureInitializer.lastIndexOf(')');
+        String[] initArgs = externalFunctionSignatureInitializer.substring(start + 1, end).split(",");
+        return Boolean.parseBoolean(initArgs[0].strip());
     }
 
     private boolean isWrapperRootInvoke(InvokeExternalFunctionDesc wrapper) {
@@ -1219,6 +1232,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;");
         lines.add("import com.oracle.graal.python.runtime.GilNode;");
         lines.add("import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;");
+        lines.add("import com.oracle.graal.python.runtime.PythonContext;");
         lines.add("import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;");
         lines.add("import com.oracle.truffle.api.CompilerDirectives;");
         lines.add("import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;");
@@ -1312,12 +1326,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             boolean isVoidReturn = "void".equals(returnType);
 
             List<String> invokeArgs = new LinkedList<>();
-            invokeArgs.add("VirtualFrame frame");
-            invokeArgs.add("CApiTiming timing");
-            invokeArgs.add("NfiContext nfiContext");
-            invokeArgs.add("BoundaryCallData boundaryCallData");
-            invokeArgs.add("PythonThreadState threadState");
-            invokeArgs.add("NfiBoundFunction nfiFunction");
+            if (sig.cannotRaise) {
+                invokeArgs.add("CApiTiming timing");
+                invokeArgs.add("NfiBoundFunction nfiFunction");
+            } else {
+                invokeArgs.add("VirtualFrame frame");
+                invokeArgs.add("CApiTiming timing");
+                invokeArgs.add("NfiContext nfiContext");
+                invokeArgs.add("BoundaryCallData boundaryCallData");
+                invokeArgs.add("PythonThreadState threadState");
+                invokeArgs.add("NfiBoundFunction nfiFunction");
+            }
             int i = 0;
             for (String argType : argTypes) {
                 invokeArgs.add(argType + " " + argName(i++));
@@ -1327,6 +1346,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             i = 0;
             for (String ignored : argTypes) {
                 cArgs.add(argName(i++));
+            }
+
+            List<String> typedArgs = new LinkedList<>();
+            i = 0;
+            for (String argType : argTypes) {
+                typedArgs.add(argType + " " + argName(i++));
             }
 
             if (hasFfmDowncalls) {
@@ -1340,15 +1365,44 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
 
             lines.add("");
-            if (!sig.cannotRaise) {
+            if (sig.cannotRaise) {
+                lines.add("    public static " + returnType + " invoke" + sig.name + "(" + String.join(", ", invokeArgs) + ") {");
+                String returnStmt = isVoidReturn ? "" : "return ";
+                lines.add("        CApiTiming.enter();");
+                lines.add("        try {");
+                lines.add("            " + returnStmt + "invoke" + sig.name + "(" +
+                                "nfiFunction.getAddress()" +
+                                (cArgs.isEmpty() ? "" : ", " + String.join(", ", cArgs)) + ");");
+                lines.add("        } catch (Throwable exception) {");
+                lines.add("            throw CompilerDirectives.shouldNotReachHere(exception);");
+                lines.add("        } finally {");
+                lines.add("            CApiTiming.exit(timing);");
+                lines.add("        }");
+                lines.add("    }");
+                lines.add("");
+            } else {
+                List<String> contextInvokeArgs = new LinkedList<>();
+                contextInvokeArgs.add("VirtualFrame frame");
+                contextInvokeArgs.add("CApiTiming timing");
+                contextInvokeArgs.add("PythonContext context");
+                contextInvokeArgs.add("NfiBoundFunction nfiFunction");
+                contextInvokeArgs.addAll(typedArgs);
+
+                String returnStmt = isVoidReturn ? "" : "return ";
+
+                List<String> nullFrameInvokeArgs = new LinkedList<>();
+                nullFrameInvokeArgs.add("CApiTiming timing");
+                nullFrameInvokeArgs.add("PythonContext context");
+                nullFrameInvokeArgs.add("NfiBoundFunction nfiFunction");
+                nullFrameInvokeArgs.addAll(typedArgs);
+                lines.add("");
+
                 lines.add("    public static " + returnType + " invoke" + sig.name + "(" + String.join(", ", invokeArgs) + ") {");
                 for (int j = 0; j < argTypes.size(); j++) {
                     if (argTypes.get(j).contains("PyObject")) {
                         lines.add("    assert EnsurePythonObjectNode.doesNotNeedPromotion(" + argName(j) + ");");
                     }
                 }
-                String returnStmt = isVoidReturn ? "" : "return ";
-
                 lines.add("        // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store;");
                 lines.add("        // it to the context since we cannot propagate it through the native frames.");
                 lines.add("");
@@ -1528,6 +1582,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             for (InvokeExternalFunctionDesc helper : entry.getValue()) {
                 List<? extends VariableElement> formalParameters = helper.origin.getParameters();
                 boolean isVoidReturn = helper.origin.getReturnType().getKind() == TypeKind.VOID;
+                boolean cannotRaise = isCannotRaise(helper.signature);
 
                 if (!verifyArguments(helper.origin, TRUFFLE_VIRTUAL_FRAME, PYTHON_CONTEXT, NFI_BOUND_FUNCTION)) {
                     return;
@@ -1543,12 +1598,15 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
                 List<String> methodInvokeFormalArgs = new ArrayList<>(formalParameters.size());
                 List<String> cArgs = new ArrayList<>();
-                cArgs.add(formalParameters.get(0).getSimpleName().toString()); // frame
-                cArgs.add("TIMING_" + helper.origin.getSimpleName());
-                cArgs.add(formalParameters.get(1).getSimpleName().toString() + ".ensureNfiContext()");
-                cArgs.add("BoundaryCallData.getUncached()");
-                cArgs.add(formalParameters.get(1).getSimpleName().toString() + ".getThreadState(" + formalParameters.get(1).getSimpleName().toString() + ".getLanguage())");
-                cArgs.add(formalParameters.get(2).getSimpleName().toString()); // boundFunction
+                if (cannotRaise) {
+                    cArgs.add("TIMING_" + helper.origin.getSimpleName());
+                    cArgs.add(formalParameters.get(2).getSimpleName().toString()); // boundFunction
+                } else {
+                    cArgs.add(formalParameters.get(0).getSimpleName().toString()); // frame
+                    cArgs.add("TIMING_" + helper.origin.getSimpleName());
+                    cArgs.add(formalParameters.get(1).getSimpleName().toString()); // context
+                    cArgs.add(formalParameters.get(2).getSimpleName().toString()); // boundFunction
+                }
 
                 for (VariableElement formalParameter : formalParameters) {
                     TypeMirror type = formalParameter.asType();
@@ -1629,6 +1687,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         // declare downcall signature variables and resolve return and argument types
         for (InvokeExternalFunctionDesc wrapper : wrapperInvokeDescs) {
             boolean errorOccurred = false;
+            boolean cannotRaise = isCannotRaise(wrapper.signature);
 
             assert wrapper.returnType != null;
             assert wrapper.argumentTypes != null;
@@ -1667,12 +1726,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
             // list of arguments passed to 'ExternalFunctionInvoker.invoke*' method
             List<String> cArgs = new LinkedList<>();
-            cArgs.add(formalParameters.getFirst().getSimpleName().toString()); // frame
-            cArgs.add("timing");
-            cArgs.add("context.ensureNfiContext()");
-            cArgs.add("boundaryCallData"); // boundaryCallData
-            cArgs.add("getThreadStateNode.executeCached(context)"); // threadState
-            cArgs.add(formalParameters.get(1).getSimpleName().toString()); // boundFunction
+            if (cannotRaise) {
+                cArgs.add("timing");
+                cArgs.add(formalParameters.get(1).getSimpleName().toString()); // boundFunction
+            } else {
+                cArgs.add(formalParameters.getFirst().getSimpleName().toString()); // frame
+                cArgs.add("timing");
+                cArgs.add("context.ensureNfiContext()");
+                cArgs.add("boundaryCallData"); // boundaryCallData
+                cArgs.add("getThreadStateNode.executeCached(context)"); // threadState
+                cArgs.add(formalParameters.get(1).getSimpleName().toString()); // boundFunction
+            }
 
             Element clazz = wrapper.origin.getEnclosingElement();
             String genClassName = clazz.getSimpleName() + "Gen";

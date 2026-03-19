@@ -54,6 +54,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
 import static com.oracle.graal.python.runtime.formatting.FormattingUtils.validateForFloat;
 
+import java.lang.ref.Reference;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -71,10 +72,10 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicProviders.FormatNodeClinicProviderGen;
@@ -113,6 +114,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerAndFloatTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -236,6 +238,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
         @GenerateCached(false)
         @GenerateUncached
         abstract static class CreateComplexNode extends Node {
+            private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_COMPLEX_SUBTYPE_FROM_DOUBLES);
+
             public abstract Object execute(Node inliningTarget, Object cls, double real, double imaginary);
 
             public static Object executeUncached(Object cls, double real, double imaginary) {
@@ -251,15 +255,23 @@ public final class ComplexBuiltins extends PythonBuiltins {
 
             @Fallback
             static Object doNative(Node inliningTarget, Object cls, double real, double imaginary,
-                            @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
                             @Cached(inline = false) CApiTransitions.PythonToNativeNode toNativeNode,
                             @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPythonNode,
                             @Cached(inline = false) PyObjectCheckFunctionResultNode checkFunctionResultNode) {
                 NativeCAPISymbol symbol = NativeCAPISymbol.FUN_COMPLEX_SUBTYPE_FROM_DOUBLES;
                 // classes are always Python objects
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
-                long nativeResult = (long) callCapiFunction.call(symbol, toNativeNode.executeLong(cls), real, imaginary);
-                return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), symbol.getTsName(), toPythonNode.execute(nativeResult));
+                long clsPointer = toNativeNode.executeLong(cls);
+                try {
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, symbol);
+                    long nativeResult = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeCOMPLEX_SUBTYPE_FROM_DOUBLES(null, C_API_TIMING,
+                                    context.ensureNfiContext(), BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable,
+                                    clsPointer, real, imaginary);
+                    return checkFunctionResultNode.execute(context, symbol.getTsName(), toPythonNode.execute(nativeResult));
+                } finally {
+                    Reference.reachabilityFence(cls);
+                }
             }
         }
 

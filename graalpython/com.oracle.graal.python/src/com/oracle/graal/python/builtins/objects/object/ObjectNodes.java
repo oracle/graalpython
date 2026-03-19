@@ -72,6 +72,8 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
+
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -83,7 +85,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -625,11 +626,19 @@ public abstract class ObjectNodes {
 
         @Specialization
         static boolean doNative(@SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
+                        @Bind Node inliningTarget,
+                        @Cached(inline = false) PythonToNativeNode toNativeNode) {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(type);
-            Object result = callCapiFunction.call(FUN_CHECK_BASICSIZE_FOR_GETSTATE, toNativeNode.executeLong(type), slotNum);
-            return (int) result == 0;
+            long typePointer = toNativeNode.executeLong(type);
+            try {
+                return com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeCHECK_BASICSIZE_FOR_GETSTATE(
+                                com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, FUN_CHECK_BASICSIZE_FOR_GETSTATE).getAddress(), typePointer,
+                                slotNum) == 0;
+            } catch (Throwable t) {
+                throw com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere(t);
+            } finally {
+                Reference.reachabilityFence(type);
+            }
         }
 
         @Fallback

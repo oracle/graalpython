@@ -138,6 +138,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.lang.ref.Reference;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -990,7 +991,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 return PythonObject.IMMORTAL_REFCNT;
             }
             long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointsToPyHandleSpace(pointer) ? HandlePointerConverter.pointerToStub(pointer) : pointer);
-            java.lang.ref.Reference.reachabilityFence(promotedObject);
+            Reference.reachabilityFence(promotedObject);
             return refCount;
         }
     }

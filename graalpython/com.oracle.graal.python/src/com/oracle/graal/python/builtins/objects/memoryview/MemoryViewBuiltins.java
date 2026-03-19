@@ -368,8 +368,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         private static boolean eq(VirtualFrame frame, Node inliningTarget, PMemoryView self, PMemoryView other,
                         PyObjectRichCompareBool eqNode,
                         MemoryViewNodes.ReadItemAtNode readSelf,
-                        MemoryViewNodes.ReadItemAtNode readOther,
-                        CExtNodes.PCallCapiFunction callCapiFunction) {
+                        MemoryViewNodes.ReadItemAtNode readOther) {
             if (self.isReleased() || other.isReleased()) {
                 return self == other;
             }
@@ -397,7 +396,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 return eqNode.executeEq(frame, inliningTarget, selfItem, otherItem);
             }
 
-            return recursive(frame, inliningTarget, eqNode, callCapiFunction, self, other, readSelf, readOther, 0, ndim,
+            return recursive(frame, inliningTarget, eqNode, self, other, readSelf, readOther, 0, ndim,
                             self.getBufferPointer(), self.getOffset(), other.getBufferPointer(), other.getOffset());
         }
 
@@ -408,8 +407,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached MemoryViewNodes.ReleaseNode releaseNode,
                         @Cached PyObjectRichCompareBool eqNode,
                         @Cached MemoryViewNodes.ReadItemAtNode readSelf,
-                        @Cached MemoryViewNodes.ReadItemAtNode readOther,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
+                        @Cached MemoryViewNodes.ReadItemAtNode readOther) {
             PMemoryView memoryView;
             boolean otherIsMemoryView = otherIsMemoryViewProfile.profile(inliningTarget, other instanceof PMemoryView);
             if (otherIsMemoryView) {
@@ -422,7 +420,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 }
             }
             try {
-                return eq(frame, inliningTarget, self, memoryView, eqNode, readSelf, readOther, callCapiFunction);
+                return eq(frame, inliningTarget, self, memoryView, eqNode, readSelf, readOther);
             } finally {
                 if (!otherIsMemoryView) {
                     releaseNode.execute(frame, memoryView);
@@ -438,7 +436,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
 
         // TODO: recursion in PE
         @InliningCutoff
-        private static boolean recursive(VirtualFrame frame, Node inliningTarget, PyObjectRichCompareBool eqNode, CExtNodes.PCallCapiFunction callCapiFunction,
+        private static boolean recursive(VirtualFrame frame, Node inliningTarget, PyObjectRichCompareBool eqNode,
                         PMemoryView self, PMemoryView other,
                         ReadItemAtNode readSelf, ReadItemAtNode readOther,
                         int dim, int ndim, long selfPtr, int initialSelfOffset, long otherPtr, int initialOtherOffset) {
@@ -450,11 +448,11 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 long otherXPtr = otherPtr;
                 int otherXOffset = otherOffset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    selfXPtr = (long) callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, selfPtr, (long) selfOffset, (long) self.getBufferSuboffsets()[dim]);
+                    selfXPtr = MemoryViewNodes.addSuboffset(inliningTarget, selfPtr, selfOffset, self.getBufferSuboffsets()[dim]);
                     selfXOffset = 0;
                 }
                 if (other.getBufferSuboffsets() != null && other.getBufferSuboffsets()[dim] >= 0) {
-                    otherXPtr = (long) callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, otherPtr, (long) otherOffset, (long) other.getBufferSuboffsets()[dim]);
+                    otherXPtr = MemoryViewNodes.addSuboffset(inliningTarget, otherPtr, otherOffset, other.getBufferSuboffsets()[dim]);
                     otherXOffset = 0;
                 }
                 if (dim == ndim - 1) {
@@ -464,7 +462,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         return false;
                     }
                 } else {
-                    if (!recursive(frame, inliningTarget, eqNode, callCapiFunction, self, other, readSelf, readOther, dim + 1, ndim, selfXPtr, selfXOffset, otherXPtr, otherXOffset)) {
+                    if (!recursive(frame, inliningTarget, eqNode, self, other, readSelf, readOther, dim + 1, ndim, selfXPtr, selfXOffset, otherXPtr, otherXOffset)) {
                         return false;
                     }
                 }
@@ -478,8 +476,6 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "tolist", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ToListNode extends PythonUnaryBuiltinNode {
-        @Child private CExtNodes.PCallCapiFunction callCapiFunction;
-
         @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"}, limit = "3")
         Object tolistCached(VirtualFrame frame, PMemoryView self,
                         @Bind Node inliningTarget,
@@ -521,7 +517,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 long xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = (long) getCallCapiFunction().call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, ptr, (long) offset, (long) self.getBufferSuboffsets()[dim]);
+                    xptr = MemoryViewNodes.addSuboffset(this, ptr, offset, self.getBufferSuboffsets()[dim]);
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
@@ -534,13 +530,6 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             return PFactory.createList(language, objects);
         }
 
-        private CExtNodes.PCallCapiFunction getCallCapiFunction() {
-            if (callCapiFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
-            }
-            return callCapiFunction;
-        }
     }
 
     @Builtin(name = "tobytes", minNumOfPositionalArgs = 1, parameterNames = {"$self", "order"})

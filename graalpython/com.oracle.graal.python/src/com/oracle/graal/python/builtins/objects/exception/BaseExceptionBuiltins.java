@@ -55,10 +55,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -137,6 +138,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
     @SlotSignature(name = "BaseException", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonVarargsBuiltinNode {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW);
 
         @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
         static Object doManaged(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
@@ -159,17 +161,24 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached.Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Bind PythonLanguage language,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached CApiTransitions.NativeToPythonTransferNode toPythonNode,
                         @Cached PyObjectCheckFunctionResultNode checkFunctionResultNode) {
             Object argsTuple = args.length > 0 ? PFactory.createTuple(language, args) : PFactory.createEmptyTuple(language);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
-            long nativeResult = (long) callCapiFunction.call(NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW, toNativeNode.executeLong(cls), toNativeNode.executeLong(argsTuple));
-            Reference.reachabilityFence(cls);
-            Reference.reachabilityFence(argsTuple);
-            return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), toPythonNode.execute(nativeResult));
+            long clsPointer = toNativeNode.executeLong(cls);
+            long argsTuplePointer = toNativeNode.executeLong(argsTuple);
+            try {
+                PythonContext context = PythonContext.get(inliningTarget);
+                var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW);
+                long nativeResult = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeEXCEPTION_SUBTYPE_NEW(null, C_API_TIMING, context.ensureNfiContext(),
+                                BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, clsPointer, argsTuplePointer);
+                return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), toPythonNode.execute(nativeResult));
+            } finally {
+                Reference.reachabilityFence(cls);
+                Reference.reachabilityFence(argsTuple);
+            }
         }
     }
 

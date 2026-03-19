@@ -32,7 +32,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -285,7 +284,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             if (base != null) {
                 if (PGuards.isNativeClass(base)) {
                     assert EnsurePythonObjectNode.doesNotNeedPromotion(base);
-                    PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY, PythonToNativeNode.executeLongUncached(base));
+                    try {
+                        com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeTRUFFLE_CHECK_TYPE_READY(
+                                        com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY).getAddress(),
+                                        PythonToNativeNode.executeLongUncached(base));
+                    } catch (Throwable t) {
+                        throw CompilerDirectives.shouldNotReachHere(t);
+                    }
                 }
                 GetSubclassesNode.addSubclass(base, this);
             }

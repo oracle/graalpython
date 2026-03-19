@@ -52,7 +52,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -123,8 +122,11 @@ public abstract class PyDateTimeCAPIWrapper {
     public static PyCapsule initWrapper(PythonContext context, CApiContext capiContext) {
         CompilerAsserts.neverPartOfCompilation();
 
-        PCallCapiFunction callCapiFunction = PCallCapiFunction.getUncached();
-        callCapiFunction.call(FUN_INIT_NATIVE_DATETIME);
+        try {
+            com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeINIT_NATIVE_DATETIME(CApiContext.getNativeSymbol(null, FUN_INIT_NATIVE_DATETIME).getAddress());
+        } catch (Throwable t) {
+            throw com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere(t);
+        }
 
         Object datetimeModule = AbstractImportNode.importModule(T_DATETIME);
         capiContext.timezoneType = PyObjectGetAttr.executeUncached(datetimeModule, T_TIMEZONE);

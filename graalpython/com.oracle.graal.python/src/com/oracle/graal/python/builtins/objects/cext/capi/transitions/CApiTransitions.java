@@ -84,10 +84,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.GCListRemoveNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.AllocateNativeObjectStubNodeGen;
@@ -629,7 +627,13 @@ public abstract class CApiTransitions {
          * GC.
          */
         if (reference.type == StorageType.Generic && reference.size > 0) {
-            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_OBJECT_ARRAY_RELEASE, reference.ptr, reference.size);
+            try {
+                com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeOBJECT_ARRAY_RELEASE(
+                                CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_OBJECT_ARRAY_RELEASE).getAddress(), reference.ptr,
+                                reference.size);
+            } catch (Throwable t) {
+                throw CompilerDirectives.shouldNotReachHere(t);
+            }
         }
         assert !InteropLibrary.getUncached().isNull(reference.ptr);
         freeNativeStorage(reference);
@@ -641,7 +645,16 @@ public abstract class CApiTransitions {
             // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
             PyCapsule capsule = PFactory.createCapsule(PythonLanguage.get(null), reference.data);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(capsule);
-            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR, PythonToNativeNode.executeLongUncached(capsule), capsule.getDestructor());
+            long capsulePointer = PythonToNativeNode.executeLongUncached(capsule);
+            try {
+                com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeGRAALPY_CAPSULE_CALL_DESTRUCTOR(
+                                CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR).getAddress(),
+                                capsulePointer, capsule.getDestructor());
+            } catch (Throwable t) {
+                throw CompilerDirectives.shouldNotReachHere(t);
+            } finally {
+                Reference.reachabilityFence(capsule);
+            }
         }
     }
 
@@ -672,7 +685,12 @@ public abstract class CApiTransitions {
                 for (int i = 0; i < size; i++) {
                     NativeMemory.writeLongArrayElement(pointer, i, referencesToBeFreed.get(i));
                 }
-                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, pointer, (long) size);
+                try {
+                    com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeBULK_DEALLOC(
+                                    CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_BULK_DEALLOC).getAddress(), pointer, size);
+                } catch (Throwable t) {
+                    throw CompilerDirectives.shouldNotReachHere(t);
+                }
                 free(pointer);
                 referencesToBeFreed.clear();
             } finally {
@@ -928,7 +946,12 @@ public abstract class CApiTransitions {
             long array = mallocPtrArray(len);
             try {
                 writePtrArrayElements(array, 0, ptrArray, 0, len);
-                CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, array, len);
+                try {
+                    com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeSHUTDOWN_BULK_DEALLOC(
+                                    CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC).getAddress(), array, len);
+                } catch (Throwable t) {
+                    throw CompilerDirectives.shouldNotReachHere(t);
+                }
             } finally {
                 free(array);
                 context.nativeWeakRef.clear();

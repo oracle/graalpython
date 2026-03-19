@@ -105,7 +105,13 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         core.getContext().registerCApiHook(() -> {
             PythonAbstractObject promoted = EnsurePythonObjectNode.executeUncached(core.getContext(), PythonBuiltinClassType.PMMap);
-            CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL, PythonToNativeNode.executeLongUncached(promoted));
+            try {
+                com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeMMAP_INIT_BUFFERPROTOCOL(
+                                com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL).getAddress(),
+                                PythonToNativeNode.executeLongUncached(promoted));
+            } catch (Throwable t) {
+                throw com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere(t);
+            }
         });
     }
 }

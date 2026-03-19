@@ -95,9 +95,9 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -107,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -297,11 +296,20 @@ public abstract class CExtNodes {
 
         @Specialization
         static PDict allocateNativePart(Object cls, PDict managedSide,
-                        @Cached PythonToNativeNode toNative,
-                        @Cached PCallCapiFunction call) {
+                        @Bind Node inliningTarget,
+                        @Cached PythonToNativeNode toNative) {
             assert !managedSide.isNative();
             assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
-            long nativeObject = (long) call.call(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW, toNative.executeLong(cls), 0L, 0L);
+            long clsPointer = toNative.executeLong(cls);
+            long nativeObject;
+            try {
+                nativeObject = ExternalFunctionInvoker.invokePY_TYPE_GENERIC_NEW_RAW(CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW).getAddress(),
+                                clsPointer, 0L, 0L);
+            } catch (Throwable t) {
+                throw CompilerDirectives.shouldNotReachHere(t);
+            } finally {
+                Reference.reachabilityFence(cls);
+            }
             CApiTransitions.writeNativeRefCount(nativeObject, MANAGED_REFCNT);
             CApiTransitions.createReference(managedSide, nativeObject);
             assert managedSide.isNative();
@@ -605,48 +613,6 @@ public abstract class CExtNodes {
         }
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    @GenerateUncached
-    @GenerateInline(false) // footprint reduction 40 -> 21
-    public abstract static class PCallCapiFunction extends Node {
-
-        public static Object callUncached(NativeCAPISymbol symbol, Object... args) {
-            return PCallCapiFunction.getUncached().execute(symbol, args);
-        }
-
-        public final Object call(NativeCAPISymbol symbol, Object... args) {
-            return execute(symbol, args);
-        }
-
-        protected abstract Object execute(NativeCAPISymbol symbol, Object[] args);
-
-        @Specialization
-        static Object doWithoutContext(NativeCAPISymbol symbol, Object[] args,
-                        @Bind Node inliningTarget,
-                        @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
-            PythonContext pythonContext = PythonContext.get(inliningTarget);
-                PythonContext.CApiState capiState = pythonContext.getCApiState();
-                if (capiState != PythonContext.CApiState.INITIALIZING && capiState != PythonContext.CApiState.INITIALIZED) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                CApiContext.ensureCapiWasLoaded("call internal native GraalPy function");
-            }
-            // TODO review EnsureTruffleStringNode with GR-37896
-            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
-            return ensureTruffleStringNode.execute(inliningTarget, callable.invoke(args));
-        }
-
-        @NeverDefault
-        public static PCallCapiFunction create() {
-            return CExtNodesFactory.PCallCapiFunctionNodeGen.create();
-        }
-
-        public static PCallCapiFunction getUncached() {
-            return CExtNodesFactory.PCallCapiFunctionNodeGen.getUncached();
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-
     /**
      * Use this method to lookup a native type member like {@code tp_alloc}.<br>
      * <p>
@@ -891,6 +857,7 @@ public abstract class CExtNodes {
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class XDecRefPointerNode extends PNodeWithContext {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, FUN_PY_DEALLOC);
 
         public static void executeUncached(long pointer) {
             CExtNodesFactory.XDecRefPointerNodeGen.getUncached().execute(null, pointer);
@@ -902,8 +869,7 @@ public abstract class CExtNodes {
         static void doDecref(Node inliningTarget, long pointer,
                         @Cached CApiTransitions.NativeToPythonInternalNode toPythonNode,
                         @Cached InlinedBranchProfile isWrapperProfile,
-                        @Cached UpdateStrongRefNode updateRefNode,
-                        @Cached(inline = false) PCallCapiFunction callDealloc) {
+                        @Cached UpdateStrongRefNode updateRefNode) {
             if (pointer == NULLPTR) {
                 return;
             }
@@ -917,7 +883,10 @@ public abstract class CExtNodes {
             } else {
                 assert object instanceof PythonAbstractNativeObject;
                 if (CApiTransitions.subNativeRefCount(pointer, 1) == 0) {
-                    callDealloc.call(FUN_PY_DEALLOC, pointer);
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_DEALLOC);
+                    ExternalFunctionInvoker.invokePY_DEALLOC(null, C_API_TIMING, context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                                    context.getThreadState(PythonLanguage.get(inliningTarget)), callable, pointer);
                 }
             }
         }
@@ -1265,16 +1234,26 @@ public abstract class CExtNodes {
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class CreateMemoryViewFromNativeNode extends PNodeWithContext {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT);
+
         public abstract PMemoryView execute(Node inliningTarget, PythonNativeObject object, int flags);
 
         @Specialization
         static PMemoryView fromNative(PythonNativeObject buf, int flags,
+                        @Bind Node inliningTarget,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached(inline = false) NativeToPythonTransferNode asPythonObjectNode,
-                        @Cached(inline = false) PCallCapiFunction callCapiFunction,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkFunctionResultNode) {
-            long result = (long) callCapiFunction.call(FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT, toNativeNode.executeLong(buf), flags);
-            return (PMemoryView) checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), asPythonObjectNode.executeRaw(result));
+            long bufPointer = toNativeNode.executeLong(buf);
+            try {
+                PythonContext context = PythonContext.get(inliningTarget);
+                var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT);
+                long result = ExternalFunctionInvoker.invokeGRAALPY_MEMORYVIEW_FROM_OBJECT(null, C_API_TIMING, context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                                context.getThreadState(PythonLanguage.get(inliningTarget)), callable, bufPointer, flags);
+                return (PMemoryView) checkFunctionResultNode.execute(context, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), asPythonObjectNode.executeRaw(result));
+            } finally {
+                Reference.reachabilityFence(buf);
+            }
         }
     }
 

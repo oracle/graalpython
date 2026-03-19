@@ -84,7 +84,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InvokeExternalFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
@@ -118,6 +118,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.CApiState;
@@ -141,7 +142,6 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -159,18 +159,9 @@ public final class CApiContext extends CExtContext {
 
     public static final String LOGGER_CAPI_NAME = "capi";
 
-    private static final ContextInvokeNodes CONTEXT_INVOKE_NODES = ContextInvokeNodesGen.getUncached();
-
-    abstract static class ContextInvokeNodes extends Node {
-        @InvokeExternalFunction(value = ExternalFunctionSignature.MODINIT, argConversions = {})
-        protected abstract long invokeModuleInit(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction);
-
-        @InvokeExternalFunction(value = ExternalFunctionSignature.CAPIINIT, argConversions = {long.class, long.class, long.class, long.class})
-        protected abstract void invokeCApiInit(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction, long env, long builtinArrayPtr, long gcState, long nativeThreadState);
-
-        @InvokeExternalFunction(value = ExternalFunctionSignature.GETFINALIZECAPIPOINTER, argConversions = {})
-        protected abstract long invokeGetFinalizeCApiPointer(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction);
-    }
+    private static final CApiTiming TIMING_INVOKE_MODULE_INIT = CApiTiming.create(true, "invokeModuleInit");
+    private static final CApiTiming TIMING_INVOKE_CAPI_INIT = CApiTiming.create(true, "invokeCApiInit");
+    private static final CApiTiming TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER = CApiTiming.create(true, "invokeGetFinalizeCApiPointer");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
@@ -938,7 +929,8 @@ public final class CApiContext extends CExtContext {
                     NativeMemory.writePtrArrayElement(builtinArrayPtr, id, builtin.getNativePointer());
                 }
                 // TODO(NFI2) ENV parameter
-                long nativeThreadLocalVarPointer = CONTEXT_INVOKE_NODES.invokeCApiInit(null, context, ExternalFunctionSignature.CAPIINIT.bind(nfiContext, initFunction), 0L, builtinArrayPtr, gcState, nativeThreadState);
+                long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeCAPIINIT(null, TIMING_INVOKE_CAPI_INIT, nfiContext, BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage()),
+                                ExternalFunctionSignature.CAPIINIT.bind(nfiContext, initFunction), 0L, builtinArrayPtr, gcState, nativeThreadState);
                 assert nativeThreadLocalVarPointer != NULLPTR;
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
             } finally {
@@ -957,7 +949,8 @@ public final class CApiContext extends CExtContext {
              * is skipped. For that case we set up the shutdown hook.
              */
             long finalizeFunction = capiLibrary.lookupSymbol("GraalPyPrivate_GetFinalizeCApiPointer");
-            long finalizingPointer = CONTEXT_INVOKE_NODES.invokeGetFinalizeCApiPointer(null, context, ExternalFunctionSignature.GETFINALIZECAPIPOINTER.bind(nfiContext, finalizeFunction));
+            long finalizingPointer = ExternalFunctionInvoker.invokeGETFINALIZECAPIPOINTER(null, TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER, nfiContext, BoundaryCallData.getUncached(),
+                    context.getThreadState(context.getLanguage()), ExternalFunctionSignature.GETFINALIZECAPIPOINTER.bind(nfiContext, finalizeFunction));
             try {
                 cApiContext.addNativeFinalizer(context, finalizingPointer);
             } catch (RuntimeException e) {
@@ -1206,7 +1199,9 @@ public final class CApiContext extends CExtContext {
         if (pyinitFunc == 0L) {
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
-        long nativeResult = CONTEXT_INVOKE_NODES.invokeModuleInit(null, context, ExternalFunctionSignature.MODINIT.bind(context.ensureNfiContext(), pyinitFunc));
+        NfiContext nfiContext = context.ensureNfiContext();
+        long nativeResult = ExternalFunctionInvoker.invokeMODINIT(null, TIMING_INVOKE_MODULE_INIT, nfiContext, BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage()),
+                        ExternalFunctionSignature.MODINIT.bind(nfiContext, pyinitFunc));
 
         Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonNode.executeUncached(nativeResult));
         if (!(result instanceof PythonModule)) {

@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.lang.ref.Reference;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -48,8 +49,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsClinicProviders.BytesNewNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
@@ -172,6 +173,8 @@ public class BytesBuiltins extends PythonBuiltins {
         @GenerateInline
         @GenerateCached(false)
         abstract static class CreateBytes extends PNodeWithContext {
+            private static final CApiTiming C_API_TIMING = CApiTiming.create(true, FUN_BYTES_SUBTYPE_NEW);
+
             abstract Object execute(Node inliningTarget, Object cls, byte[] bytes);
 
             @Specialization(guards = "isBuiltinBytes(cls)")
@@ -192,12 +195,17 @@ public class BytesBuiltins extends PythonBuiltins {
                             @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                             @Cached AsCharPointerNode asCharPointerNode,
                             @Cached(inline = false) CApiTransitions.PythonToNativeNode toNative,
-                            @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPython,
-                            @Cached(inline = false) CExtNodes.PCallCapiFunction call) {
+                            @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPython) {
                 long dataPointer = asCharPointerNode.execute(bytes);
+                long clsPointer = toNative.executeLong(cls);
                 try {
-                    return toPython.execute(call.call(FUN_BYTES_SUBTYPE_NEW, toNative.execute(cls), dataPointer, (long) bytes.length));
+                    com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(inliningTarget);
+                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, FUN_BYTES_SUBTYPE_NEW);
+                    return toPython.execute(com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeBYTES_SUBTYPE_NEW(null, C_API_TIMING,
+                                    context.ensureNfiContext(), com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData.getUncached(),
+                                    context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), callable, clsPointer, dataPointer, bytes.length));
                 } finally {
+                    Reference.reachabilityFence(cls);
                     NativeMemory.free(dataPointer);
                 }
             }

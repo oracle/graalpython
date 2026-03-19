@@ -1151,11 +1151,10 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization
         static Object doNative(PythonAbstractNativeObject s,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached CStructAccess.AllocatePyMemNode allocateNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
             TruffleString utf8Str = encodeNativeStringNode.execute(UTF_8, s, T_STRICT);
             int len = utf8Str.byteLength(UTF_8);
-            long mem = allocateNode.alloc(len + 1);
+            long mem = CStructAccess.allocatePyMem(len + 1);
             writeTruffleStringNode.write(mem, utf8Str, UTF_8);
             writePtrField(s.getPtr(), CFields.PyCompactUnicodeObject__utf8, mem);
             writeLongField(s.getPtr(), CFields.PyCompactUnicodeObject__utf8_length, len);
@@ -1219,11 +1218,10 @@ public final class PythonCextUnicodeBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached CStructAccess.AllocatePyMemNode allocateNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
             TruffleString str = switchEncodingNode.execute(cast.castKnownString(inliningTarget, s), WCHAR_T_ENCODING);
             int len = str.byteLength(WCHAR_T_ENCODING);
-            long mem = allocateNode.alloc(len + WCHAR_T_SIZE);
+            long mem = CStructAccess.allocatePyMem(len + WCHAR_T_SIZE);
             writeTruffleStringNode.write(mem, str, WCHAR_T_ENCODING);
             // writePtrField(s.getPtr(), CFields.PyASCIIObject__wstr, mem);
             return 0;
