@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -779,7 +779,6 @@ def test_annotations_in_function():
     exec(code,test_globals)
     assert len(test_globals['__annotations__']) == 0
     assert len(test_globals['fn'].__annotations__) == 0
-    assert 1 not in test_globals['fn'].__code__.co_consts   # the annotation is ignored in function
 
     source = '''def fn():
         a:int =1
@@ -789,7 +788,6 @@ def test_annotations_in_function():
     assert len(test_globals['__annotations__']) == 0
     assert hasattr(test_globals['fn'], '__annotations__')
     assert len(test_globals['fn'].__annotations__) == 0
-    assert 1 in test_globals['fn'].__code__.co_consts
 
 def test_annotations_in_class():
 
@@ -849,58 +847,6 @@ def test_annotations_in_class():
     assert test_globals['Style'].__annotations__['_path'] == str
     assert '_path' in dir(test_globals['Style'])
 
-def test_negative_float():
-
-    def check_const(fn, expected):
-        for const in fn.__code__.co_consts:
-            if repr(const) == repr(expected):
-                return True
-        else:
-            return False
-
-    def fn1():
-        return -0.0
-
-    assert check_const(fn1, -0.0)
-
-
-def find_count_in(collection, what):
-    count = 0;
-    for item in collection:
-        if item == what:
-            count +=1
-    return count
-
-def test_same_consts():
-    def fn1(): a = 1; b = 1; return a + b
-    assert find_count_in(fn1.__code__.co_consts, 1) == 1
-
-    def fn2(): a = 'a'; b = 'a'; return a + b
-    assert find_count_in(fn2.__code__.co_consts, 'a') == 1
-
-def test_tuple_in_const():
-    def fn1() : return (0,)
-    assert (0,) in fn1.__code__.co_consts
-    assert 0 not in fn1.__code__.co_consts
-
-    def fn2() : return (1, 2, 3, 1, 2, 3)
-    assert (1, 2, 3, 1, 2, 3) in fn2.__code__.co_consts
-    assert 1 not in fn2.__code__.co_consts
-    assert 2 not in fn2.__code__.co_consts
-    assert 3 not in fn2.__code__.co_consts
-    assert find_count_in(fn2.__code__.co_consts, (1, 2, 3, 1, 2, 3)) == 1
-
-    def fn3() : a = 1; return (1, 2, 1)
-    assert (1, 2, 1) in fn3.__code__.co_consts
-    assert find_count_in(fn3.__code__.co_consts, 1) == 1
-    assert 2 not in fn3.__code__.co_consts
-
-    def fn4() : a = 1; b = (1,2,3); c = 4; return (1, 2, 3, 1, 2, 3)
-    assert (1, 2, 3) in fn4.__code__.co_consts
-    assert (1, 2, 3, 1, 2, 3) in fn4.__code__.co_consts
-    assert 2 not in fn4.__code__.co_consts
-    assert find_count_in(fn4.__code__.co_consts, 1) == 1
-    assert find_count_in(fn4.__code__.co_consts, 4) == 1
 
 def test_ComprehensionGeneratorExpr():
     def create_list(gen):

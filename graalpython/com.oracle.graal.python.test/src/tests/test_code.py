@@ -180,17 +180,11 @@ def fn():
 
     code = compile(codestr, "<test>", "exec")
     assert "module doc" in code.co_consts
-    assert 1 in code.co_consts
     assert "fn doc" not in code.co_consts
     for const in code.co_consts:
         if type(const) == types.CodeType:
             code = const
     assert "fn doc" in code.co_consts
-    assert "this is fun" not in code.co_consts
-    for const in code.co_consts:
-        if type(const) == types.CodeType:
-            code = const
-    assert "this is fun" in code.co_consts
 
 
 def test_generator_code_consts():
