@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -204,7 +204,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
         @CompilerDirectives.ValueType
         protected static final class NSReprState {
             private final HashingStorage dictStorage;
-            private final List<Pair<TruffleString, TruffleString>> items;
+            private final ArrayList<Pair<TruffleString, TruffleString>> items;
 
             @CompilerDirectives.TruffleBoundary
             NSReprState(HashingStorage dictStorage) {
