@@ -177,7 +177,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -989,15 +988,19 @@ public abstract class CExtNodes {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 44 -> 26
     public abstract static class LookupNativeI64MemberFromBaseNode extends Node {
+        @FunctionalInterface
+        public interface BuiltinCallback {
+            int apply(PythonBuiltinClassType t);
+        }
 
         public final long execute(Object cls, CFields nativeMemberName, HiddenAttr managedMemberName) {
             return execute(cls, nativeMemberName, managedMemberName, null);
         }
 
-        public abstract long execute(Object cls, CFields nativeMemberName, HiddenAttr managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback);
+        public abstract long execute(Object cls, CFields nativeMemberName, HiddenAttr managedMemberName, BuiltinCallback builtinCallback);
 
         @Specialization
-        static long doSingleContext(Object cls, CFields nativeMember, HiddenAttr managedMemberName, Function<PythonBuiltinClassType, Integer> builtinCallback,
+        static long doSingleContext(Object cls, CFields nativeMember, HiddenAttr managedMemberName, BuiltinCallback builtinCallback,
                         @Bind Node inliningTarget,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached HiddenAttr.ReadNode readAttrNode,
