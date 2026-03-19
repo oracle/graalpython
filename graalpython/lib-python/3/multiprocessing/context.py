@@ -23,6 +23,24 @@ class TimeoutError(ProcessError):
 class AuthenticationError(ProcessError):
     pass
 
+
+# Begin Truffle change
+_graalpy_backend_futurewarned = False
+
+
+def _warn_graalpy_backend_futurewarning_once(stacklevel):
+    import warnings
+    global _graalpy_backend_futurewarned
+    if not _graalpy_backend_futurewarned:
+        warnings.warn(
+            "The 'graalpy' multiprocessing backend is deprecated and will be removed in a future "
+            "GraalPy release. Use the 'spawn' start method where available.",
+            FutureWarning,
+            stacklevel=stacklevel,
+        )
+        _graalpy_backend_futurewarned = True
+# End Truffle change
+
 #
 # Base type for contexts. Bound methods of an instance of this type are included in __all__ of __init__.py
 #
@@ -215,7 +233,10 @@ class BaseContext(object):
 
     # Begin Truffle change
     def _is_graalpy(self):
-        return isinstance(self.get_context(), GraalPyContext)
+        is_graalpy = isinstance(self.get_context(), GraalPyContext)
+        if is_graalpy:
+            _warn_graalpy_backend_futurewarning_once(stacklevel=3)
+        return is_graalpy
 
     def _get_id(self):
         if self._is_graalpy():
@@ -321,6 +342,7 @@ class GraalPyProcess(process.BaseProcess):
     _start_method = 'graalpy'
     @staticmethod
     def _Popen(process_obj):
+        _warn_graalpy_backend_futurewarning_once(stacklevel=3)
         from multiprocessing.popen_truffleprocess import Popen
         return Popen(process_obj)
 
