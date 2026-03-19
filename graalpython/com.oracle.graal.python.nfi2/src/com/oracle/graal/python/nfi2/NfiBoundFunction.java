@@ -46,13 +46,13 @@ public final class NfiBoundFunction {
     private NfiBoundFunction() {
     }
 
-    @SuppressWarnings("static-method")
-    public long getAddress() {
+    @SuppressWarnings("unused")
+    public static NfiBoundFunction create(NfiContext context, long pointer, NfiType resType, NfiType... argTypes) {
         throw new UnsupportedOperationException();
     }
 
     @SuppressWarnings("static-method")
-    public NfiDowncallSignature getSignature() {
+    public long getAddress() {
         throw new UnsupportedOperationException();
     }
 

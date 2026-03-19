@@ -113,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToPythonStringNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -145,7 +146,6 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
-import com.oracle.graal.python.nfi2.NfiDowncallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -533,8 +533,13 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        public NfiDowncallSignature getSignature() {
-            return signature.nfiSignature;
+        public ArgDescriptor getReturnValue() {
+            return signature.returnValue;
+        }
+
+        @Override
+        public ArgDescriptor[] getArguments() {
+            return signature.arguments;
         }
     }
 
@@ -2330,9 +2335,9 @@ public abstract class ExternalFunctionNodes {
     @GenerateInline(false)
     @GenerateUncached
     public abstract static class CreateNativeArgsTupleNode extends Node {
-        static final TruffleLogger LOGGER = CApiContext.getLogger(CreateNativeArgsTupleNode.class);
+        private static final CApiTiming TIMING_invokeTypeGenericAlloc = CApiTiming.create(true, "PyType_GenericAlloc");
 
-        private static final NfiDowncallSignature TYPE_GENERIC_ALLOC = FUN_PY_TYPE_GENERIC_ALLOC.getSignature();
+        static final TruffleLogger LOGGER = CApiContext.getLogger(CreateNativeArgsTupleNode.class);
 
         public abstract long execute(PythonContext context, Object[] args);
 
@@ -2351,9 +2356,9 @@ public abstract class ExternalFunctionNodes {
 
             PythonBuiltinClass argsTupleClass = context.lookupType(PythonBuiltinClassType.PTuple);
             NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_TYPE_GENERIC_ALLOC);
-            long op = (long) TYPE_GENERIC_ALLOC.invoke(context.ensureNfiContext(), callable.getAddress(),
-                            pythonToNativeNode.execute(inliningTarget, argsTupleClass, false),
-                            (long) n);
+            long op = ExternalFunctionInvoker.invokeTYPE_GENERIC_ALLOC(null, TIMING_invokeTypeGenericAlloc, context.ensureNfiContext(),
+                            BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
+                            pythonToNativeNode.execute(inliningTarget, argsTupleClass, false), n);
 
             long obItem = CStructAccess.getFieldPtr(op, CFields.PyTupleObject__ob_item);
 
@@ -2380,7 +2385,7 @@ public abstract class ExternalFunctionNodes {
     @GenerateInline(false)
     @GenerateUncached
     public abstract static class ReleaseNativeArgsTupleNode extends Node {
-        private static final NfiDowncallSignature PY_DEALLOC = FUN_PY_DEALLOC.getSignature();
+        private static final CApiTiming TIMING_invokePyDealloc = CApiTiming.create(true, "_Py_Dealloc");
 
         public abstract void execute(long argsTuplePtr, Object[] managedArgs);
 
@@ -2407,7 +2412,9 @@ public abstract class ExternalFunctionNodes {
             CApiTransitions.subNativeRefCount(argsTuplePtr, 1);
             PythonContext context = PythonContext.get(inliningTarget);
             NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_DEALLOC);
-            PY_DEALLOC.invoke(context.ensureNfiContext(), callable.getAddress(), argsTuplePtr);
+            ExternalFunctionInvoker.invokePY_DEALLOC(null, TIMING_invokePyDealloc, context.ensureNfiContext(),
+                            BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
+                            argsTuplePtr);
         }
 
         private static boolean verifyElements(long op, Object[] managedArgs) {

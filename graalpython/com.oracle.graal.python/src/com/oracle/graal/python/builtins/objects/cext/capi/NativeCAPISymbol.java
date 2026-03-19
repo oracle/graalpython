@@ -55,9 +55,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
-import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiDowncallSignature;
-import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -121,25 +118,23 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     private final String name;
     private final TruffleString tsName;
 
-    private final NfiDowncallSignature signature;
+    private final ArgDescriptor returnValue;
+    private final ArgDescriptor[] arguments;
 
     @CompilationFinal(dimensions = 1) private static final NativeCAPISymbol[] VALUES = values();
 
     NativeCAPISymbol(String name, ArgDescriptor returnValue, ArgDescriptor... arguments) {
         this.name = name;
         this.tsName = toTruffleStringUncached(name);
-
-        NfiType[] nfiTypes = new NfiType[arguments.length];
-        for (int i = 0; i < arguments.length; i++) {
-            nfiTypes[i] = arguments[i].getNFI2Type();
-        }
-        this.signature = Nfi.createDowncallSignature(returnValue.getNFI2Type(), nfiTypes);
+        this.returnValue = returnValue;
+        this.arguments = arguments;
     }
 
     NativeCAPISymbol(String name) {
         this.name = name;
         this.tsName = toTruffleStringUncached(name);
-        this.signature = null;
+        this.returnValue = null;
+        this.arguments = null;
     }
 
     @Override
@@ -156,8 +151,13 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
         return VALUES;
     }
 
-    public NfiDowncallSignature getSignature() {
-        assert signature != null : "no signature for " + this;
-        return signature;
+    public ArgDescriptor getReturnValue() {
+        return returnValue;
+    }
+
+    @Override
+    public ArgDescriptor[] getArguments() {
+        assert arguments != null : "no signature for " + this;
+        return arguments;
     }
 }

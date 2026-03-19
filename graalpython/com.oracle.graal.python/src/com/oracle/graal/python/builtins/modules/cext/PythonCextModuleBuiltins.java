@@ -76,11 +76,10 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InvokeExternalFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionSignature;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -101,10 +100,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -113,6 +109,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -305,15 +302,21 @@ public final class PythonCextModuleBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Module_Traverse extends CApiTernaryBuiltinNode {
-        private static final CApiTiming TIMING = CApiTiming.create(true, "m_traverse");
+        abstract static class TraverseProcInvokeNode extends Node {
+            @InvokeExternalFunction(value = ExternalFunctionSignature.TRAVERSEPROC, retConversion = int.class, argConversions = {long.class, long.class, long.class})
+            protected abstract int invokeTraverseProc(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction, long self, long visitFun, long arg);
+        }
+
+        static TraverseProcInvokeNode createTraverseProcInvokeNode() {
+            return TraverseProcInvokeNodeGen.create();
+        }
 
         @Specialization
         static int doGeneric(PythonModule self, long visitFun, long arg,
                         @Bind Node inliningTarget,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
-                        @Cached PythonToNativeNode toNativeNode) {
+                        @Cached PythonToNativeNode toNativeNode,
+                        @Cached(value = "createTraverseProcInvokeNode()", neverDefault = true) TraverseProcInvokeNode traverseProcInvokeNode) {
 
             /*
              * As in 'moduleobject.c: module_traverse': 'if (m->md_def && m->md_def->m_traverse &&
@@ -327,11 +330,10 @@ public final class PythonCextModuleBuiltins {
                     long mdState = self.getNativeModuleState();
                     if (mSize <= 0 || mdState != NULLPTR) {
                         PythonContext ctx = PythonContext.get(inliningTarget);
-                        PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-                        NfiBoundFunction traverseExecutable = bindFunctionPointer(mTraverse, "m_traverse", ExternalFunctionSignature.TRAVERSEPROC.nfiSignature);
-                        int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, traverseExecutable,
+                        NfiBoundFunction traverseExecutable = bindFunctionPointer(mTraverse, ExternalFunctionSignature.TRAVERSEPROC);
+                        int ires = traverseProcInvokeNode.invokeTraverseProc(null, ctx, traverseExecutable,
                                         toNativeNode.executeLong(self), visitFun, arg);
-                        checkPrimitiveFunctionResultNode.executeLong(inliningTarget, threadState, StringLiterals.T_VISIT, ires);
+                        checkPrimitiveFunctionResultNode.executeLong(inliningTarget, ctx.getThreadState(ctx.getLanguage()), StringLiterals.T_VISIT, ires);
                         return ires;
                     }
                 }

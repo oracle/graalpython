@@ -41,35 +41,69 @@
 package com.oracle.graal.python.nfi2;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.ref.Reference;
+import java.util.Arrays;
+import java.util.Objects;
 
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemorySegment;
+
 public final class NfiBoundFunction {
+    static final MethodType DOWNCALL_METHOD_TYPE = MethodType.methodType(Object.class, new Class<?>[]{long.class, Object[].class});
+
+    private static final MethodHandle OF_ADDRESS;
+
+    static {
+        try {
+            OF_ADDRESS = MethodHandles.lookup().findStatic(
+                            MemorySegment.class,
+                            "ofAddress",
+                            MethodType.methodType(MemorySegment.class, long.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private final long ptr;
     private final MethodHandle boundHandle;
-    private final NfiDowncallSignature signature;
+    private final NfiType resType;
+    private final NfiType[] argTypes;
 
-    NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiDowncallSignature signature) {
+    private NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiType resType, NfiType[] argTypes) {
         this.ptr = ptr;
         this.boundHandle = boundHandle;
-        this.signature = signature;
+        this.resType = resType;
+        this.argTypes = argTypes;
+    }
+
+    @SuppressWarnings("restricted")
+    public static NfiBoundFunction create(@SuppressWarnings("unused") NfiContext context, long pointer, NfiType resType, NfiType... argTypes) {
+        // TODO(NFI2) if logging enabled, use context to lookup name
+        assert !ImageInfo.inImageBuildtimeCode() : "binding native address at image build time";
+        FunctionDescriptor functionDescriptor = NfiContext.createFunctionDescriptor(resType, argTypes);
+        MethodHandle methodHandle = Linker.nativeLinker().downcallHandle(functionDescriptor);
+        methodHandle = MethodHandles.filterArguments(methodHandle, 0, OF_ADDRESS);
+        methodHandle = methodHandle.asSpreader(1, Object[].class, argTypes.length);
+        methodHandle = methodHandle.asType(DOWNCALL_METHOD_TYPE);
+        MethodHandle boundHandle = MethodHandles.insertArguments(methodHandle, 0, pointer);
+        return new NfiBoundFunction(pointer, boundHandle, resType, argTypes.clone());
     }
 
     public long getAddress() {
         return ptr;
     }
 
-    public NfiDowncallSignature getSignature() {
-        return signature;
-    }
-
     @TruffleBoundary(allowInlining = true)
     public Object invoke(Object... args) {
-        assert signature.checkArgTypes(args);
+        assert checkArgTypes(args);
         try {
             return boundHandle.invokeExact(args);
         } catch (Throwable e) {
@@ -79,9 +113,22 @@ public final class NfiBoundFunction {
         }
     }
 
+    boolean checkArgTypes(Object[] args) {
+        if (args.length != argTypes.length) {
+            return false;
+        }
+        for (int i = 0; i < args.length; i++) {
+            if (!argTypes[i].checkType(args[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     @TruffleBoundary
     public String toString() {
+        String signature = toSignatureString();
         if (ImageInfo.inImageCode()) {
             return "NfiBoundFunction[" +
                             "ptr=" + ptr + ", " +
@@ -92,5 +139,19 @@ public final class NfiBoundFunction {
                             "boundHandle=" + boundHandle + ", " +
                             "signature=" + signature + ']';
         }
+    }
+
+    @TruffleBoundary
+    private String toSignatureString() {
+        StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < argTypes.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(argTypes[i]);
+        }
+        sb.append("): ");
+        sb.append(resType);
+        return sb.toString();
     }
 }

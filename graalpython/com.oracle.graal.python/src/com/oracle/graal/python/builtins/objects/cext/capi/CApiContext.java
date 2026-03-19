@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InvokeExternalFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
@@ -108,12 +109,9 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nfi2.NativeMemory;
-import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
 import com.oracle.graal.python.nfi2.NfiContext;
-import com.oracle.graal.python.nfi2.NfiDowncallSignature;
 import com.oracle.graal.python.nfi2.NfiLibrary;
-import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nfi2.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -143,6 +141,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -160,10 +159,18 @@ public final class CApiContext extends CExtContext {
 
     public static final String LOGGER_CAPI_NAME = "capi";
 
-    /**
-     * NFI signature for Python module init functions (i.e. {@code "PyInit_modname"}).
-     */
-    private static final NfiDowncallSignature MODINIT_SIGNATURE = Nfi.createDowncallSignature(NfiType.RAW_POINTER);
+    private static final ContextInvokeNodes CONTEXT_INVOKE_NODES = ContextInvokeNodesGen.getUncached();
+
+    abstract static class ContextInvokeNodes extends Node {
+        @InvokeExternalFunction(value = ExternalFunctionSignature.MODINIT, argConversions = {})
+        protected abstract long invokeModuleInit(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction);
+
+        @InvokeExternalFunction(value = ExternalFunctionSignature.CAPIINIT, argConversions = {long.class, long.class, long.class, long.class})
+        protected abstract void invokeCApiInit(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction, long env, long builtinArrayPtr, long gcState, long nativeThreadState);
+
+        @InvokeExternalFunction(value = ExternalFunctionSignature.GETFINALIZECAPIPOINTER, argConversions = {})
+        protected abstract long invokeGetFinalizeCApiPointer(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction);
+    }
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
@@ -587,7 +594,7 @@ public final class CApiContext extends CExtContext {
         String name = symbol.getName();
         PythonContext pythonContext = PythonContext.get(null);
         long nativeSymbolPtr = pythonContext.getCApiContext().getLibrary().lookupSymbol(name);
-        NfiBoundFunction nativeSymbol = symbol.getSignature().bind(pythonContext.ensureNfiContext(), nativeSymbolPtr);
+        NfiBoundFunction nativeSymbol = symbol.bind(pythonContext.ensureNfiContext(), nativeSymbolPtr);
         VarHandle.storeStoreFence();
         return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
     }
@@ -930,11 +937,9 @@ public final class CApiContext extends CExtContext {
                     CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
                     NativeMemory.writePtrArrayElement(builtinArrayPtr, id, builtin.getNativePointer());
                 }
-                NfiDowncallSignature initSignature = Nfi.createDowncallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
                 // TODO(NFI2) ENV parameter
-                Object nativeThreadLocalVarPointer = initSignature.invoke(nfiContext, initFunction, 0L, builtinArrayPtr, gcState, nativeThreadState);
-                assert InteropLibrary.getUncached().isPointer(nativeThreadLocalVarPointer);
-                assert !InteropLibrary.getUncached().isNull(nativeThreadLocalVarPointer);
+                long nativeThreadLocalVarPointer = CONTEXT_INVOKE_NODES.invokeCApiInit(null, context, ExternalFunctionSignature.CAPIINIT.bind(nfiContext, initFunction), 0L, builtinArrayPtr, gcState, nativeThreadState);
+                assert nativeThreadLocalVarPointer != NULLPTR;
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
             } finally {
                 NativeMemory.free(builtinArrayPtr);
@@ -952,7 +957,7 @@ public final class CApiContext extends CExtContext {
              * is skipped. For that case we set up the shutdown hook.
              */
             long finalizeFunction = capiLibrary.lookupSymbol("GraalPyPrivate_GetFinalizeCApiPointer");
-            long finalizingPointer = (long) Nfi.createDowncallSignature(NfiType.RAW_POINTER).invoke(nfiContext, finalizeFunction);
+            long finalizingPointer = CONTEXT_INVOKE_NODES.invokeGetFinalizeCApiPointer(null, context, ExternalFunctionSignature.GETFINALIZECAPIPOINTER.bind(nfiContext, finalizeFunction));
             try {
                 cApiContext.addNativeFinalizer(context, finalizingPointer);
             } catch (RuntimeException e) {
@@ -1201,7 +1206,7 @@ public final class CApiContext extends CExtContext {
         if (pyinitFunc == 0L) {
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
-        long nativeResult = (long) MODINIT_SIGNATURE.invoke(context.ensureNfiContext(), pyinitFunc);
+        long nativeResult = CONTEXT_INVOKE_NODES.invokeModuleInit(null, context, ExternalFunctionSignature.MODINIT.bind(context.ensureNfiContext(), pyinitFunc));
 
         Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonNode.executeUncached(nativeResult));
         if (!(result instanceof PythonModule)) {

@@ -61,9 +61,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiDowncallSignature;
-import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.Function;
@@ -99,16 +96,9 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
 
     public final ArgDescriptor returnValue;
     public final ArgDescriptor[] arguments;
-    public final NfiDowncallSignature signature;
-
     MethodDescriptorWrapper(ArgDescriptor returnValue, ArgDescriptor... arguments) {
         this.returnValue = returnValue;
         this.arguments = arguments;
-        NfiType[] nfiTypes = new NfiType[arguments.length];
-        for (int i = 0; i < arguments.length; i++) {
-            nfiTypes[i] = arguments[i].getNFI2Type();
-        }
-        this.signature = Nfi.createDowncallSignature(returnValue.getNFI2Type(), nfiTypes);
     }
 
     @Override
@@ -122,8 +112,13 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
     }
 
     @Override
-    public NfiDowncallSignature getSignature() {
-        return signature;
+    public ArgDescriptor getReturnValue() {
+        return returnValue;
+    }
+
+    @Override
+    public ArgDescriptor[] getArguments() {
+        return arguments;
     }
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(MethodDescriptorWrapper.class);
@@ -186,10 +181,6 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
 
         RootCallTarget callTarget = getOrCreateCallTarget(language, methodDescriptorWrapper, name, CExtContext.isMethStatic(flags));
 
-        NfiType[] nfiTypes = new NfiType[methodDescriptorWrapper.arguments.length];
-        for (int i = 0; i < nfiTypes.length; i++) {
-            nfiTypes[i] = methodDescriptorWrapper.arguments[i].getNFI2Type();
-        }
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(CExtCommonNodes.bindFunctionPointer(callable, methodDescriptorWrapper));
 
         // generate default values for positional args (if necessary)

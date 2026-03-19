@@ -40,7 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import com.oracle.graal.python.nfi2.NfiDowncallSignature;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.nfi2.NfiContext;
+import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public interface NativeCExtSymbol {
@@ -48,8 +51,20 @@ public interface NativeCExtSymbol {
 
     TruffleString getTsName();
 
-    /**
-     * Returns the NFI signature.
-     */
-    NfiDowncallSignature getSignature();
+    ArgDescriptor getReturnValue();
+
+    ArgDescriptor[] getArguments();
+
+    default NfiBoundFunction bind(NfiContext context, long pointer) {
+        ArgDescriptor returnValue = getReturnValue();
+        if (returnValue == null) {
+            throw new UnsupportedOperationException("No signature for " + getName());
+        }
+        ArgDescriptor[] arguments = getArguments();
+        NfiType[] argTypes = new NfiType[arguments.length];
+        for (int i = 0; i < arguments.length; i++) {
+            argTypes[i] = arguments[i].getNFI2Type();
+        }
+        return NfiBoundFunction.create(context, pointer, returnValue.getNFI2Type(), argTypes);
+    }
 }

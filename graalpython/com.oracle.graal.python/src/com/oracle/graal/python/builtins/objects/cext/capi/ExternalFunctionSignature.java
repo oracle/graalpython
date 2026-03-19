@@ -50,19 +50,19 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.annotations.CApiExternalFunctionSignatures;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiDowncallSignature;
-import com.oracle.graal.python.nfi2.NfiType;
+import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Enum of well-known function and slot signatures. The integer values must stay in sync with the
  * definition in {code capi.h}.
  */
 @CApiExternalFunctionSignatures
-public enum ExternalFunctionSignature {
+public enum ExternalFunctionSignature implements NativeCExtSymbol {
     // typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
     PYCFUNCTION(PyObjectReturn, PyObject, PyObject),
     // typedef PyObject *(*PyCFunctionWithKeywords)(PyObject *, PyObject *, PyObject *);
@@ -104,11 +104,15 @@ public enum ExternalFunctionSignature {
     VISITPROC(Int, PyObject, Pointer),
     // typedef int (*traverseproc)(PyObject *, visitproc, void *);
     TRAVERSEPROC(Int, PyObject, Pointer, Pointer),
+    // PyObject *PyType_GenericAlloc(PyTypeObject *, Py_ssize_t);
+    TYPE_GENERIC_ALLOC(PyObjectReturn, PyTypeObject, Py_ssize_t),
 
     // typedef void (*freefunc)(void *);
     FREEFUNC(Void, Pointer),
     // typedef void (*destructor)(PyObject *);
     DESTRUCTOR(Void, PyObject),
+    // void _Py_Dealloc(PyObject *);
+    PY_DEALLOC(Void, PyObject),
     // typedef PyObject *(*getattrfunc)(PyObject *, char *);
     GETATTRFUNC(PyObjectReturn, PyObject, CharPtrAsTruffleString),
     // typedef PyObject *(*getattrofunc)(PyObject *, PyObject *);
@@ -140,21 +144,45 @@ public enum ExternalFunctionSignature {
     GETTER(PyObjectReturn, PyObject, Pointer),
     // typedef int (*setter)(PyObject *, PyObject *, void *);
     SETTER(Int, PyObject, PyObject, Pointer),
+    // typedef PyObject *(*Py_mod_create)(PyObject *, PyModuleDef *);
+    MODCREATE(PyObjectReturn, Pointer, Pointer),
+    // typedef int (*Py_mod_exec)(PyObject *);
+    MODEXEC(Int, Pointer),
+    // typedef PyObject *(*PyInit_mod)(void);
+    MODINIT(Pointer),
+    // typedef void (*initialize_graal_capi)(void *, void *, void *, void *);
+    CAPIINIT(Void, Pointer, Pointer, Pointer, Pointer),
+    // typedef void *(*GraalPyPrivate_GetFinalizeCApiPointer)(void);
+    GETFINALIZECAPIPOINTER(Pointer),
 
     // TODO(fa): should be an implicit signature
     GCCOLLECT(Py_ssize_t, Int);
 
-    public final NfiDowncallSignature nfiSignature;
     public final ArgDescriptor returnValue;
     public final ArgDescriptor[] arguments;
 
     ExternalFunctionSignature(ArgDescriptor returnValue, ArgDescriptor... arguments) {
         this.returnValue = returnValue;
         this.arguments = arguments;
-        NfiType[] nfiTypes = new NfiType[arguments.length];
-        for (int i = 0; i < nfiTypes.length; i++) {
-            nfiTypes[i] = arguments[i].getNFI2Type();
-        }
-        this.nfiSignature = Nfi.createDowncallSignature(returnValue.getNFI2Type(), nfiTypes);
+    }
+
+    @Override
+    public String getName() {
+        return name();
+    }
+
+    @Override
+    public TruffleString getTsName() {
+        return toTruffleStringUncached(name());
+    }
+
+    @Override
+    public ArgDescriptor getReturnValue() {
+        return returnValue;
+    }
+
+    @Override
+    public ArgDescriptor[] getArguments() {
+        return arguments;
     }
 }

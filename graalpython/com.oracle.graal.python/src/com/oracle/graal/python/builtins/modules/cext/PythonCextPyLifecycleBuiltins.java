@@ -46,9 +46,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiDowncallSignature;
-import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -56,8 +53,6 @@ public final class PythonCextPyLifecycleBuiltins {
 
     @CApiBuiltin(ret = Int, args = {func_voidvoid}, call = Direct)
     abstract static class Py_AtExit extends CApiUnaryBuiltinNode {
-
-        public static final NfiDowncallSignature CALLBACK_SIGNATURE = Nfi.createDowncallSignature(NfiType.VOID);
 
         @Specialization
         @TruffleBoundary

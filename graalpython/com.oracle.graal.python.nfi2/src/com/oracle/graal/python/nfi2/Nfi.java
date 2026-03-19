@@ -47,11 +47,6 @@ public final class Nfi {
     }
 
     @SuppressWarnings("unused")
-    public static NfiDowncallSignature createDowncallSignature(NfiType resType, NfiType... argTypes) {
-        return new NfiDowncallSignature();
-    }
-
-    @SuppressWarnings("unused")
     public static NfiUpcallSignature createUpcallSignature(NfiType resType, NfiType... argTypes) {
         return new NfiUpcallSignature();
     }

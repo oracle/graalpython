@@ -85,7 +85,6 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
-import com.oracle.graal.python.nfi2.NfiDowncallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1126,18 +1125,13 @@ public abstract class CExtCommonNodes {
      */
     @TruffleBoundary
     public static NfiBoundFunction bindFunctionPointer(long pointer, NativeCExtSymbol descriptor) {
-        return bindFunctionPointer(pointer, descriptor.getName(), descriptor.getSignature());
-    }
-
-    @TruffleBoundary
-    public static NfiBoundFunction bindFunctionPointer(long pointer, String name, NfiDowncallSignature signature) {
         PythonContext pythonContext = PythonContext.get(null);
         if (!pythonContext.isNativeAccessAllowed()) {
             LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", pointer));
         }
         if (LOGGER.isLoggable(Level.FINER)) {
-            LOGGER.finer(PythonUtils.formatJString("Binding %s (signature: %s) to NFI signature %s", pointer, name, signature));
+            LOGGER.finer(PythonUtils.formatJString("Binding %s to native callable %s", pointer, descriptor.getName()));
         }
-        return signature.bind(pythonContext.ensureNfiContext(), pointer);
+        return descriptor.bind(pythonContext.ensureNfiContext(), pointer);
     }
 }

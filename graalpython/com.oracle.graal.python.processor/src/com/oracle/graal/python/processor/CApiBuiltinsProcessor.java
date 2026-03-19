@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +90,9 @@ import com.sun.source.util.Trees;
 
 public class CApiBuiltinsProcessor extends AbstractProcessor {
     private static final String TRUFFLE_VIRTUAL_FRAME = "com.oracle.truffle.api.frame.VirtualFrame";
+    private static final String TRUFFLE_NODE = "com.oracle.truffle.api.nodes.Node";
     private static final String NFI_BOUND_FUNCTION = "com.oracle.graal.python.nfi2.NfiBoundFunction";
+    private static final String PYTHON_CONTEXT = "com.oracle.graal.python.runtime.PythonContext";
     private static final String TARGET_PACKAGE = "com.oracle.graal.python.builtins.modules.cext";
 
     private static class ArgDescriptorsTreeScanner extends TreePathScanner<Object, Trees> {
@@ -1073,7 +1076,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     private static final String NFI2_PACKAGE = "com.oracle.graal.python.nfi2";
-    private static final String JAVA_TYPE_NFI_DOWNCALL_SIGNATURE = "NfiDowncallSignature";
     private static final String EXFUNC_INVOKER_PACKAGE = "com.oracle.graal.python.builtins.objects.cext.capi";
     private static final String EXFUNC_INVOKER_CLASS_NAME = "ExternalFunctionInvoker";
 
@@ -1088,26 +1090,30 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         // TODO: remove this as soon as the annotation 'INVOKE_EXTERNAL_FUNCTION' is accessible by
         // this processor
         for (var rootElement : re.getRootElements()) {
-            // find all elements annotated with 'INVOKE_EXTERNAL_FUNCTION'
-            for (var innerElements : rootElement.getEnclosedElements()) {
-                for (var methodElement : innerElements.getEnclosedElements()) {
-                    AnnotationMirror annot = findAnnotationMirror(methodElement, INVOKE_EXTERNAL_FUNCTION);
-                    if (annot != null) {
-                        assert methodElement.getKind() == ElementKind.METHOD;
-                        VariableElement signatureElement = findValue(annot, "value", VariableElement.class);
-                        TypeMirror retConversion = findValue(annot, "retConversion", TypeMirror.class);
-                        List<TypeMirror> argConversion = findValues(annot, "argConversions", TypeMirror.class);
-                        wrapperDescs.add(new InvokeExternalFunctionDesc((ExecutableElement) methodElement, signatureElement, retConversion, argConversion));
-                    }
-                }
-                AnnotationMirror annot = findAnnotationMirror(innerElements, CAPI_WRAPPER_DESCRIPTOR);
-                if (annot != null) {
-                    List<VariableElement> wrapperNames = findValues(annot, "value", VariableElement.class);
-                    wrappers.add(new CApiExternalFunctionWrapperDesc(innerElements, wrapperNames));
-                }
-            }
+            collectExternalFunctionAndWrapperDescs(rootElement, wrapperDescs, wrappers);
         }
         return wrapperDescs;
+    }
+
+    private void collectExternalFunctionAndWrapperDescs(Element element, List<InvokeExternalFunctionDesc> wrapperDescs, List<CApiExternalFunctionWrapperDesc> wrappers) {
+        AnnotationMirror invokeAnnot = findAnnotationMirror(element, INVOKE_EXTERNAL_FUNCTION);
+        if (invokeAnnot != null) {
+            assert element.getKind() == ElementKind.METHOD;
+            VariableElement signatureElement = findValue(invokeAnnot, "value", VariableElement.class);
+            TypeMirror retConversion = findValue(invokeAnnot, "retConversion", TypeMirror.class);
+            List<TypeMirror> argConversion = findValues(invokeAnnot, "argConversions", TypeMirror.class);
+            wrapperDescs.add(new InvokeExternalFunctionDesc((ExecutableElement) element, signatureElement, retConversion, argConversion));
+        }
+
+        AnnotationMirror wrapperAnnot = findAnnotationMirror(element, CAPI_WRAPPER_DESCRIPTOR);
+        if (wrapperAnnot != null) {
+            List<VariableElement> wrapperNames = findValues(wrapperAnnot, "value", VariableElement.class);
+            wrappers.add(new CApiExternalFunctionWrapperDesc(element, wrapperNames));
+        }
+
+        for (Element enclosedElement : element.getEnclosedElements()) {
+            collectExternalFunctionAndWrapperDescs(enclosedElement, wrapperDescs, wrappers);
+        }
     }
 
     /**
@@ -1175,6 +1181,15 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         };
     }
 
+    private boolean isWrapperRootInvoke(InvokeExternalFunctionDesc wrapper) {
+        TypeMirror wrapperBaseRoot = processingEnv.getElementUtils().getTypeElement(EXFUNC_INVOKER_PACKAGE + ".ExternalFunctionNodes.WrapperBaseRoot").asType();
+        return processingEnv.getTypeUtils().isSubtype(wrapper.origin.getEnclosingElement().asType(), wrapperBaseRoot);
+    }
+
+    private static String getGeneratedExternalInvokeHelperClassName(Element clazz) {
+        return clazz.getSimpleName() + "Gen";
+    }
+
     private void generateExternalFunctionInvoker(List<CApiExternalFunctionSignatureDesc> signatures) throws IOException {
         boolean hasFfmDowncalls = Runtime.version().feature() >= 22;
         ArrayList<String> lines = new ArrayList<>();
@@ -1205,6 +1220,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;");
         lines.add("import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;");
         lines.add("import com.oracle.truffle.api.CompilerDirectives;");
+        lines.add("import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;");
         if (hasFfmDowncalls) {
             lines.add("import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;");
         }
@@ -1327,8 +1343,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     lines.add("    assert EnsurePythonObjectNode.doesNotNeedPromotion(" + argName(j) + ");");
                 }
             }
-            String returnStmt = isVoidReturn ? "" : "return (" + returnType + ") ";
-            String argExpr = String.join(", ", cArgs);
+            String returnStmt = isVoidReturn ? "" : "return ";
 
             lines.add("        // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store;");
             lines.add("        // it to the context since we cannot propagate it through the native frames.");
@@ -1336,16 +1351,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("        Object state = BoundaryCallContext.enter(frame, threadState, boundaryCallData);");
             lines.add("        CApiTiming.enter();");
             lines.add("        try {");
-            if (hasFfmDowncalls) {
-                String directArgExpr = cArgs.isEmpty() ? "nfiFunction.getAddress()" : "nfiFunction.getAddress(), " + argExpr;
-                if (isVoidReturn) {
-                    lines.add("            Object unused = " + getNfiMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
-                } else {
-                    lines.add("            " + returnStmt + getNfiMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
-                }
-            } else {
-                lines.add("            throw CompilerDirectives.shouldNotReachHere(NFI_UNAVAILABLE_MESSAGE);");
-            }
+            lines.add("            " + returnStmt + "invoke" + sig.name + "(" +
+                            "nfiFunction.getAddress()" +
+                            (cArgs.isEmpty() ? "" : ", " + String.join(", ", cArgs)) + ");");
             lines.add("        } catch (Throwable exception) {");
             lines.add("            CompilerDirectives.transferToInterpreterAndInvalidate();");
             lines.add("            GilNode.uncachedAcquire();");
@@ -1353,10 +1361,32 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("        } finally {");
             lines.add("            CApiTiming.exit(timing);");
             lines.add("            if (frame != null && threadState.getCaughtException() != null) {");
-                lines.add("                PArguments.setException(frame, threadState.getCaughtException());");
+            lines.add("                PArguments.setException(frame, threadState.getCaughtException());");
             lines.add("            }");
             lines.add("            BoundaryCallContext.exit(frame, threadState, state);");
             lines.add("        }");
+            lines.add("    }");
+            lines.add("");
+
+            List<String> rawInvokeArgs = new LinkedList<>();
+            rawInvokeArgs.add("long function");
+            i = 0;
+            for (String argType : argTypes) {
+                rawInvokeArgs.add(argType + " " + argName(i++));
+            }
+
+            lines.add("    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)");
+            lines.add("    public static " + returnType + " invoke" + sig.name + "(" + String.join(", ", rawInvokeArgs) + ") throws Throwable {");
+            if (hasFfmDowncalls) {
+                String directArgExpr = cArgs.isEmpty() ? "function" : "function, " + String.join(", ", cArgs);
+                if (isVoidReturn) {
+                    lines.add("        " + getNfiMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
+                } else {
+                    lines.add("        return (" + returnType + ") " + getNfiMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
+                }
+            } else {
+                lines.add("        throw CompilerDirectives.shouldNotReachHere(NFI_UNAVAILABLE_MESSAGE);");
+            }
             lines.add("    }");
         }
         lines.add("}");
@@ -1434,9 +1464,122 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     private static final String WRAPPER_DESCRIPTOR_GEN_CLASS_NAME = "WrapperDescriptorRootNodesGen";
 
+    private void generateExternalFunctionHelperNodes(List<InvokeExternalFunctionDesc> externalFunctionDescs) throws IOException {
+        final Types typeUtils = processingEnv.getTypeUtils();
+        final Elements elementUtils = processingEnv.getElementUtils();
+        TypeMirror nodeType = elementUtils.getTypeElement(TRUFFLE_NODE).asType();
+        Map<TypeElement, List<InvokeExternalFunctionDesc>> helperInvokeDescsByClass = new LinkedHashMap<>();
+
+        for (InvokeExternalFunctionDesc desc : externalFunctionDescs) {
+            if (!isWrapperRootInvoke(desc)) {
+                TypeElement clazz = (TypeElement) desc.origin.getEnclosingElement();
+                helperInvokeDescsByClass.computeIfAbsent(clazz, k -> new ArrayList<>()).add(desc);
+            }
+        }
+
+        for (Map.Entry<TypeElement, List<InvokeExternalFunctionDesc>> entry : helperInvokeDescsByClass.entrySet()) {
+            TypeElement clazz = entry.getKey();
+            if (!typeUtils.isSubtype(clazz.asType(), nodeType)) {
+                processingEnv.getMessager().printError(String.format("Type %s must extend %s.", clazz, TRUFFLE_NODE), clazz);
+                return;
+            }
+
+            String packageName = elementUtils.getPackageOf(clazz).getQualifiedName().toString();
+            String genClassName = getGeneratedExternalInvokeHelperClassName(clazz);
+            ArrayList<String> lines = new ArrayList<>();
+
+            lines.add("// @formatter:off");
+            lines.add("// Checkstyle: stop");
+            lines.add("// Generated by annotation processor: " + getClass().getName());
+            lines.add("package " + packageName + ";");
+            lines.add("");
+            lines.add("import " + clazz.getQualifiedName() + ";");
+            lines.add("import " + EXFUNC_INVOKER_PACKAGE + "." + EXFUNC_INVOKER_CLASS_NAME + ";");
+            lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;");
+            lines.add("import " + NFI_BOUND_FUNCTION + ";");
+            lines.add("import " + PYTHON_CONTEXT + ";");
+            lines.add("import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;");
+            lines.add("import " + TRUFFLE_VIRTUAL_FRAME + ";");
+            lines.add("");
+            lines.add("public final class " + genClassName + " extends " + clazz.getSimpleName() + " {");
+            lines.add("");
+            lines.add("    private static final " + genClassName + " UNCACHED = new " + genClassName + "();");
+            lines.add("");
+            for (InvokeExternalFunctionDesc helper : entry.getValue()) {
+                lines.add("    private static final CApiTiming TIMING_" + helper.origin.getSimpleName() + " = CApiTiming.create(true, \"" + helper.origin.getSimpleName() + "\");");
+            }
+            lines.add("");
+            lines.add("    private " + genClassName + "() {");
+            lines.add("    }");
+            lines.add("");
+            lines.add("    public static " + clazz.getSimpleName() + " create() {");
+            lines.add("        return new " + genClassName + "();");
+            lines.add("    }");
+            lines.add("");
+            lines.add("    public static " + clazz.getSimpleName() + " getUncached() {");
+            lines.add("        return UNCACHED;");
+            lines.add("    }");
+
+            for (InvokeExternalFunctionDesc helper : entry.getValue()) {
+                List<? extends VariableElement> formalParameters = helper.origin.getParameters();
+                boolean isVoidReturn = helper.origin.getReturnType().getKind() == TypeKind.VOID;
+
+                if (!verifyArguments(helper.origin, TRUFFLE_VIRTUAL_FRAME, PYTHON_CONTEXT, NFI_BOUND_FUNCTION)) {
+                    return;
+                }
+
+                int actualArgConversionClasses = helper.argumentTypes.size();
+                int expectedArgConversionClasses = formalParameters.size() - 3;
+                if (actualArgConversionClasses != expectedArgConversionClasses) {
+                    processingEnv.getMessager().printError(String.format("You need to specify exactly %d argument conversion classes but there were %d.",
+                                    expectedArgConversionClasses, actualArgConversionClasses), helper.origin);
+                    return;
+                }
+
+                List<String> methodInvokeFormalArgs = new ArrayList<>(formalParameters.size());
+                List<String> cArgs = new ArrayList<>();
+                cArgs.add(formalParameters.get(0).getSimpleName().toString()); // frame
+                cArgs.add("TIMING_" + helper.origin.getSimpleName());
+                cArgs.add(formalParameters.get(1).getSimpleName().toString() + ".ensureNfiContext()");
+                cArgs.add("BoundaryCallData.getUncached()");
+                cArgs.add(formalParameters.get(1).getSimpleName().toString() + ".getThreadState(" + formalParameters.get(1).getSimpleName().toString() + ".getLanguage())");
+                cArgs.add(formalParameters.get(2).getSimpleName().toString()); // boundFunction
+
+                for (VariableElement formalParameter : formalParameters) {
+                    TypeMirror type = formalParameter.asType();
+                    Element element = typeUtils.asElement(type);
+                    String typeString = element != null ? element.getSimpleName().toString() : type.toString();
+                    methodInvokeFormalArgs.add(typeString + " " + formalParameter.getSimpleName());
+                }
+                for (int i = 3; i < formalParameters.size(); i++) {
+                    cArgs.add(formalParameters.get(i).getSimpleName().toString());
+                }
+
+                lines.add("");
+                lines.add("    @Override");
+                lines.add("    protected " + getSimpleName(helper.origin.getReturnType()) + " " + helper.origin.getSimpleName() + "(" + String.join(", ", methodInvokeFormalArgs) + ") {");
+                if (isVoidReturn) {
+                    lines.add("        " + EXFUNC_INVOKER_CLASS_NAME + ".invoke" + helper.signature + "(" + String.join(", ", cArgs) + ");");
+                } else {
+                    lines.add("        return " + EXFUNC_INVOKER_CLASS_NAME + ".invoke" + helper.signature + "(" + String.join(", ", cArgs) + ");");
+                }
+                lines.add("    }");
+            }
+
+            lines.add("}");
+
+            var origins = entry.getValue().stream().map((desc) -> desc.origin).toArray(Element[]::new);
+            var file = processingEnv.getFiler().createSourceFile(packageName + "." + genClassName, origins);
+            try (var w = file.openWriter()) {
+                w.append(String.join(System.lineSeparator(), lines));
+            }
+        }
+    }
+
     private void generateExternalFunctionRootNodes(List<InvokeExternalFunctionDesc> externalFunctionDescs, List<CApiExternalFunctionWrapperDesc> wrappers,
                     @SuppressWarnings("unused") Map<String, CApiExternalFunctionSignatureDesc> externalFunctionSignatures) throws IOException {
         final Types typeUtils = processingEnv.getTypeUtils();
+        List<InvokeExternalFunctionDesc> wrapperInvokeDescs = externalFunctionDescs.stream().filter(this::isWrapperRootInvoke).toList();
         ArrayList<String> lines = new ArrayList<>();
 
         lines.add("// @formatter:off");
@@ -1447,7 +1590,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         lines.add("import com.oracle.graal.python.PythonLanguage;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;");
-        for (InvokeExternalFunctionDesc wrapper : externalFunctionDescs) {
+        for (InvokeExternalFunctionDesc wrapper : wrapperInvokeDescs) {
             Element clazz = wrapper.origin.getEnclosingElement();
             lines.add("import " + EXFUNC_INVOKER_PACKAGE + "." + clazz.getEnclosingElement().getSimpleName() + "." + clazz.getSimpleName() + ";");
         }
@@ -1479,7 +1622,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         Set<Name> classesToImport = new HashSet<>();
 
         // declare downcall signature variables and resolve return and argument types
-        for (InvokeExternalFunctionDesc wrapper : externalFunctionDescs) {
+        for (InvokeExternalFunctionDesc wrapper : wrapperInvokeDescs) {
             boolean errorOccurred = false;
 
             assert wrapper.returnType != null;
@@ -1632,7 +1775,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         // closing brace for WRAPPER_DESCRIPTOR_GEN_CLASS_NAME
         lines.add("}");
 
-        var origins = externalFunctionDescs.stream().map((desc) -> desc.origin).toArray(Element[]::new);
+        var origins = wrapperInvokeDescs.stream().map((desc) -> desc.origin).toArray(Element[]::new);
         var file = processingEnv.getFiler().createSourceFile(EXFUNC_INVOKER_PACKAGE + "." + WRAPPER_DESCRIPTOR_GEN_CLASS_NAME, origins);
         try (var w = file.openWriter()) {
             w.append(String.join(System.lineSeparator(), lines));
@@ -1724,6 +1867,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 generateCApiSource(allBuiltins, constants, fields, structs);
                 generateCApiHeader(javaBuiltins);
                 generateExternalFunctionInvoker(new ArrayList<>(sigs.values()));
+                generateExternalFunctionHelperNodes(externalFunctionDescs);
                 generateExternalFunctionRootNodes(externalFunctionDescs, cApiExternalFunctionWrapperDescs, sigs);
             }
             generateBuiltinRegistry(javaBuiltins);

@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCha
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
@@ -138,10 +139,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
-import com.oracle.graal.python.nfi2.NfiDowncallSignature;
-import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
@@ -157,6 +155,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -181,8 +180,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -1017,7 +1014,8 @@ public abstract class CExtNodes {
     private static final int SLOT_PY_MOD_EXEC = 2;
     private static final int SLOT_PY_MOD_MULTIPLE_INTERPRETERS = 3;
 
-    private static final NfiDowncallSignature CREATE_SIGNATURE = Nfi.createDowncallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
+    private static final CApiTiming TIMING_MOD_CREATE = CApiTiming.create(true, "Py_mod_create");
+    private static final CApiTiming TIMING_MOD_EXEC = CApiTiming.create(true, "Py_mod_exec");
 
     /**
      * Equivalent of {@code PyModule_FromDefAndSpec}. Creates a Python module from a module
@@ -1092,8 +1090,11 @@ public abstract class CExtNodes {
         PythonContext context = capiContext.getContext();
         Object module;
         if (createFunction != NULLPTR) {
-            long result = (long) CREATE_SIGNATURE.invoke(context.ensureNfiContext(), createFunction, PythonToNativeNode.executeLongUncached(moduleSpec.originalModuleSpec), moduleDefPtr);
             PythonThreadState threadState = context.getThreadState(context.getLanguage());
+            NfiBoundFunction modCreate = ExternalFunctionSignature.MODCREATE.bind(context.ensureNfiContext(), createFunction);
+            long result = ExternalFunctionInvoker.invokeMODCREATE(null, TIMING_MOD_CREATE, context.ensureNfiContext(),
+                            BoundaryCallData.getUncached(), threadState, modCreate,
+                            PythonToNativeInternalNode.executeUncached(moduleSpec.originalModuleSpec, false), moduleDefPtr);
             TransformExceptionFromNativeNode.getUncached().execute(null, threadState, mName, result == NULLPTR, true,
                             ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
             module = NativeToPythonTransferNode.executeRawUncached(result);
@@ -1138,71 +1139,64 @@ public abstract class CExtNodes {
         return module;
     }
 
-    private static final NfiDowncallSignature EXEC_SIGNATURE = Nfi.createDowncallSignature(NfiType.SINT32, NfiType.RAW_POINTER);
-
     /**
      * Equivalent of {@code PyModule_ExecDef}.
      */
     @TruffleBoundary
     public static int execModule(Node node, CApiContext capiContext, PythonModule module, long moduleDef) {
-        InteropLibrary interopLib = InteropLibrary.getUncached();
-        // call to type the pointer
-
         TruffleString mName = ModuleGetNameNode.executeUncached(module);
         long mSize = readLongField(moduleDef, PyModuleDef__m_size);
 
-        try {
-            // allocate md_state if necessary
-            if (mSize >= 0) {
-                /*
-                 * TODO(fa): We currently leak 'md_state' and need to use a shared finalizer or
-                 * similar. We ignore that for now since the size will usually be very small and/or
-                 * we could also use a Truffle buffer object.
-                 */
-                long mdState = calloc(mSize == 0 ? 1 : mSize); // ensure non-null value
-                assert mdState != NULLPTR;
-                module.setNativeModuleState(mdState);
-            }
+        // allocate md_state if necessary
+        if (mSize >= 0) {
+            /*
+             * TODO(fa): We currently leak 'md_state' and need to use a shared finalizer or similar.
+             * We ignore that for now since the size will usually be very small and/or we could also
+             * use a Truffle buffer object.
+             */
+            long mdState = calloc(mSize == 0 ? 1 : mSize); // ensure non-null value
+            assert mdState != NULLPTR;
+            module.setNativeModuleState(mdState);
+        }
 
-            // parse slot definitions
-            long slotDefinitions = readPtrField(moduleDef, PyModuleDef__m_slots);
-            if (slotDefinitions == NULLPTR) {
-                return 0;
+        // parse slot definitions
+        long slotDefinitions = readPtrField(moduleDef, PyModuleDef__m_slots);
+        if (slotDefinitions == NULLPTR) {
+            return 0;
+        }
+        loop: for (int i = 0;; i++) {
+            int slotId = readStructArrayIntField(slotDefinitions, i, PyModuleDef_Slot__slot);
+            switch (slotId) {
+                case 0:
+                    break loop;
+                case SLOT_PY_MOD_CREATE:
+                    // handled in CreateModuleNode
+                    break;
+                case SLOT_PY_MOD_EXEC:
+                    long execFunction = readStructArrayPtrField(slotDefinitions, i, PyModuleDef_Slot__value);
+                    PythonContext context = capiContext.getContext();
+                    PythonThreadState threadState = context.getThreadState(context.getLanguage());
+                    NfiBoundFunction boundFunction = ExternalFunctionSignature.MODEXEC.bind(context.ensureNfiContext(), execFunction);
+                    int iResult = ExternalFunctionInvoker.invokeMODEXEC(null, TIMING_MOD_EXEC, context.ensureNfiContext(),
+                                    BoundaryCallData.getUncached(), threadState, boundFunction,
+                                    PythonToNativeInternalNode.executeUncached(module, false));
+                    /*
+                     * It's a bit counterintuitive that we use 'isPrimitiveValue = false' but the
+                     * function's return value is actually not a result but a status code. So, if
+                     * the status code is '!=0' we know that an error occurred and won't ignore this
+                     * if no error is set. This is then the same behaviour if we would have a
+                     * pointer return type and got 'NULL'.
+                     */
+                    TransformExceptionFromNativeNode.getUncached().execute(node, threadState, mName, iResult != 0, true,
+                                    ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
+                    break;
+                case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
+                    // ignored
+                    // (mq) TODO: handle multiple interpreter cases
+                    break;
+                default:
+                    throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
             }
-            loop: for (int i = 0;; i++) {
-                int slotId = readStructArrayIntField(slotDefinitions, i, PyModuleDef_Slot__slot);
-                switch (slotId) {
-                    case 0:
-                        break loop;
-                    case SLOT_PY_MOD_CREATE:
-                        // handled in CreateModuleNode
-                        break;
-                    case SLOT_PY_MOD_EXEC:
-                        long execFunction = readStructArrayPtrField(slotDefinitions, i, PyModuleDef_Slot__value);
-                        PythonContext context = capiContext.getContext();
-                        Object result = EXEC_SIGNATURE.invoke(context.ensureNfiContext(), execFunction, PythonToNativeNode.executeLongUncached(module));
-                        int iResult = interopLib.asInt(result);
-                        /*
-                         * It's a bit counterintuitive that we use 'isPrimitiveValue = false' but
-                         * the function's return value is actually not a result but a status code.
-                         * So, if the status code is '!=0' we know that an error occurred and won't
-                         * ignore this if no error is set. This is then the same behaviour if we
-                         * would have a pointer return type and got 'NULL'.
-                         */
-                        PythonThreadState threadState = context.getThreadState(context.getLanguage());
-                        TransformExceptionFromNativeNode.getUncached().execute(node, threadState, mName, iResult != 0, true,
-                                        ErrorMessages.EXECUTION_FAILED_WITHOUT_EXCEPTION, ErrorMessages.EXECUTION_RAISED_EXCEPTION);
-                        break;
-                    case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
-                        // ignored
-                        // (mq) TODO: handle multiple interpreter cases
-                        break;
-                    default:
-                        throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
-                }
-            }
-        } catch (UnsupportedMessageException e) {
-            throw shouldNotReachHere();
         }
 
         return 0;

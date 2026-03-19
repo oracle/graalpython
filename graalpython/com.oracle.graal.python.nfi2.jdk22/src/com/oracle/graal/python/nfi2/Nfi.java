@@ -47,12 +47,6 @@ public final class Nfi {
         return new NfiContext();
     }
 
-    // note: this must stay independent of the context, signatures are created in static
-    // initializers and shared between contexts
-    public static NfiDowncallSignature createDowncallSignature(NfiType resType, NfiType... argTypes) {
-        return new NfiDowncallSignature(resType, argTypes);
-    }
-
     public static NfiUpcallSignature createUpcallSignature(NfiType resType, NfiType... argTypes) {
         return new NfiUpcallSignature(resType, argTypes);
     }
