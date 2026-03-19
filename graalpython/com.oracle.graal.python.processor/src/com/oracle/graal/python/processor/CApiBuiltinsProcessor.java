@@ -1065,6 +1065,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         String returnType;
         String[] argumentTypes;
+        public boolean cannotRaise;
 
         public CApiExternalFunctionSignatureDesc(VariableElement origin, String name) {
             this.origin = origin;
@@ -1246,8 +1247,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("    }");
             lines.add("");
             lines.add("    @SuppressWarnings(\"restricted\")");
-            lines.add("    private static MethodHandle createDowncallHandle(MethodType methodType) {");
+            lines.add("    private static MethodHandle createDowncallHandle(MethodType methodType, boolean critical) {");
             lines.add("        FunctionDescriptor functionDescriptor = createFunctionDescriptor(methodType);");
+            lines.add("        Linker.Option[] options = critical ? new Linker.Option[] { Linker.Option.critical(false) } : new Linker.Option[0];");
             lines.add("        MethodHandle methodHandle = Linker.nativeLinker().downcallHandle(functionDescriptor);");
             lines.add("        methodHandle = MethodHandles.filterArguments(methodHandle, 0, OF_ADDRESS);");
             lines.add("        return methodHandle.asType(methodType);");
@@ -1292,11 +1294,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             int end = externalFunctionSignatureInitializer.lastIndexOf(')');
             String[] initArgs = externalFunctionSignatureInitializer.substring(start + 1, end).split(",");
 
+            assert !sig.cannotRaise;
+            sig.cannotRaise = Boolean.valueOf(initArgs[0].strip());
             assert sig.returnType == null;
-            sig.returnType = initArgs[0].strip();
+            sig.returnType = initArgs[1].strip();
             assert sig.argumentTypes == null;
-            sig.argumentTypes = Arrays.stream(initArgs).skip(1).map(String::strip).toArray(String[]::new);
-
+            sig.argumentTypes = Arrays.stream(initArgs).skip(2).map(String::strip).toArray(String[]::new);
         }
 
         for (CApiExternalFunctionSignatureDesc sig : signatures) {
@@ -1333,40 +1336,42 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     methodTypeArgs.add(toClassLiteral(argType));
                 }
                 lines.add("    private static final MethodHandle " + getNfiMethodHandleVarName(sig.name) + " = createDowncallHandle(" +
-                                "MethodType.methodType(" + returnTypeLiteral + ", " + String.join(", ", methodTypeArgs) + "));");
+                                "MethodType.methodType(" + returnTypeLiteral + ", " + String.join(", ", methodTypeArgs) + "), false);");
             }
 
             lines.add("");
-            lines.add("    public static " + returnType + " invoke" + sig.name + "(" + String.join(", ", invokeArgs) + ") {");
-            for (int j = 0; j < argTypes.size(); j++) {
-                if (argTypes.get(j).contains("PyObject")) {
-                    lines.add("    assert EnsurePythonObjectNode.doesNotNeedPromotion(" + argName(j) + ");");
+            if (!sig.cannotRaise) {
+                lines.add("    public static " + returnType + " invoke" + sig.name + "(" + String.join(", ", invokeArgs) + ") {");
+                for (int j = 0; j < argTypes.size(); j++) {
+                    if (argTypes.get(j).contains("PyObject")) {
+                        lines.add("    assert EnsurePythonObjectNode.doesNotNeedPromotion(" + argName(j) + ");");
+                    }
                 }
-            }
-            String returnStmt = isVoidReturn ? "" : "return ";
+                String returnStmt = isVoidReturn ? "" : "return ";
 
-            lines.add("        // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store;");
-            lines.add("        // it to the context since we cannot propagate it through the native frames.");
-            lines.add("");
-            lines.add("        Object state = BoundaryCallContext.enter(frame, threadState, boundaryCallData);");
-            lines.add("        CApiTiming.enter();");
-            lines.add("        try {");
-            lines.add("            " + returnStmt + "invoke" + sig.name + "(" +
-                            "nfiFunction.getAddress()" +
-                            (cArgs.isEmpty() ? "" : ", " + String.join(", ", cArgs)) + ");");
-            lines.add("        } catch (Throwable exception) {");
-            lines.add("            CompilerDirectives.transferToInterpreterAndInvalidate();");
-            lines.add("            GilNode.uncachedAcquire();");
-            lines.add("            throw CompilerDirectives.shouldNotReachHere(exception);");
-            lines.add("        } finally {");
-            lines.add("            CApiTiming.exit(timing);");
-            lines.add("            if (frame != null && threadState.getCaughtException() != null) {");
-            lines.add("                PArguments.setException(frame, threadState.getCaughtException());");
-            lines.add("            }");
-            lines.add("            BoundaryCallContext.exit(frame, threadState, state);");
-            lines.add("        }");
-            lines.add("    }");
-            lines.add("");
+                lines.add("        // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store;");
+                lines.add("        // it to the context since we cannot propagate it through the native frames.");
+                lines.add("");
+                lines.add("        Object state = BoundaryCallContext.enter(frame, threadState, boundaryCallData);");
+                lines.add("        CApiTiming.enter();");
+                lines.add("        try {");
+                lines.add("            " + returnStmt + "invoke" + sig.name + "(" +
+                                "nfiFunction.getAddress()" +
+                                (cArgs.isEmpty() ? "" : ", " + String.join(", ", cArgs)) + ");");
+                lines.add("        } catch (Throwable exception) {");
+                lines.add("            CompilerDirectives.transferToInterpreterAndInvalidate();");
+                lines.add("            GilNode.uncachedAcquire();");
+                lines.add("            throw CompilerDirectives.shouldNotReachHere(exception);");
+                lines.add("        } finally {");
+                lines.add("            CApiTiming.exit(timing);");
+                lines.add("            if (frame != null && threadState.getCaughtException() != null) {");
+                lines.add("                PArguments.setException(frame, threadState.getCaughtException());");
+                lines.add("            }");
+                lines.add("            BoundaryCallContext.exit(frame, threadState, state);");
+                lines.add("        }");
+                lines.add("    }");
+                lines.add("");
+            }
 
             List<String> rawInvokeArgs = new LinkedList<>();
             rawInvokeArgs.add("long function");

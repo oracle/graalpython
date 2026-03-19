@@ -64,104 +64,113 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CApiExternalFunctionSignatures
 public enum ExternalFunctionSignature implements NativeCExtSymbol {
     // typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
-    PYCFUNCTION(PyObjectReturn, PyObject, PyObject),
+    PYCFUNCTION(false, PyObjectReturn, PyObject, PyObject),
     // typedef PyObject *(*PyCFunctionWithKeywords)(PyObject *, PyObject *, PyObject *);
-    PYCFUNCTION_WITH_KEYWORDS(PyObjectReturn, PyObject, PyObject, PyObject),
+    PYCFUNCTION_WITH_KEYWORDS(false, PyObjectReturn, PyObject, PyObject, PyObject),
     // typedef PyObject *(*_PyCFunctionFast) (PyObject *, PyObject *const *, Py_ssize_t);
-    PYCFUNCTION_FAST(PyObjectReturn, PyObject, Pointer, Py_ssize_t),
+    PYCFUNCTION_FAST(false, PyObjectReturn, PyObject, Pointer, Py_ssize_t),
     // typedef PyObject *(*_PyCFunctionFastWithKeywords) (PyObject *, PyObject *const *, Py_ssize_t,
     // PyObject *);
-    PYCFUNCTION_FAST_WITH_KEYWORDS(PyObjectReturn, PyObject, Pointer, Py_ssize_t, PyObject),
+    PYCFUNCTION_FAST_WITH_KEYWORDS(false, PyObjectReturn, PyObject, Pointer, Py_ssize_t, PyObject),
     // typedef PyObject *(*PyCMethod)(PyObject *, PyTypeObject *, PyObject *const *, size_t,
     // PyObject *);
-    PYCMETHOD(PyObjectReturn, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),
+    PYCMETHOD(false, PyObjectReturn, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),
 
     // typedef PyObject * (*unaryfunc)(PyObject *);
-    UNARYFUNC(PyObjectReturn, PyObject),
+    UNARYFUNC(false, PyObjectReturn, PyObject),
     // typedef PyObject * (*binaryfunc)(PyObject *, PyObject *);
-    BINARYFUNC(PyObjectReturn, PyObject, PyObject),
+    BINARYFUNC(false, PyObjectReturn, PyObject, PyObject),
     // typedef PyObject * (*ternaryfunc)(PyObject *, PyObject *, PyObject *);
-    TERNARYFUNC(PyObjectReturn, PyObject, PyObject, PyObject),
+    TERNARYFUNC(false, PyObjectReturn, PyObject, PyObject, PyObject),
     // typedef int (*inquiry)(PyObject *);
-    INQUIRY(Int, PyObject),
+    INQUIRY(false, Int, PyObject),
     // typedef Py_ssize_t (*lenfunc)(PyObject *);
-    LENFUNC(PrimitiveResult64, PyObject),
+    LENFUNC(false, PrimitiveResult64, PyObject),
     // typedef PyObject *(*ssizeargfunc)(PyObject *, Py_ssize_t);
-    SSIZEARGFUNC(PyObjectReturn, PyObject, Py_ssize_t),
+    SSIZEARGFUNC(false, PyObjectReturn, PyObject, Py_ssize_t),
 
     // typedef PyObject *(*ssizessizeargfunc)(PyObject *, Py_ssize_t, Py_ssize_t);
-    SSIZESSIZEARGFUNC(PyObjectReturn, PyObject, Py_ssize_t, Py_ssize_t),
+    SSIZESSIZEARGFUNC(false, PyObjectReturn, PyObject, Py_ssize_t, Py_ssize_t),
     // typedef int(*ssizeobjargproc)(PyObject *, Py_ssize_t, PyObject *);
-    SSIZEOBJARGPROC(Int, PyObject, Py_ssize_t, PyObject),
+    SSIZEOBJARGPROC(false, Int, PyObject, Py_ssize_t, PyObject),
     // typedef int(*ssizessizeobjargproc)(PyObject *, Py_ssize_t, Py_ssize_t, PyObject *);
-    SSIZESSIZEOBJARGPROC(Int, PyObject, Py_ssize_t, Py_ssize_t, PyObject),
+    SSIZESSIZEOBJARGPROC(false, Int, PyObject, Py_ssize_t, Py_ssize_t, PyObject),
     // typedef int(*objobjargproc)(PyObject *, PyObject *, PyObject *);
-    OBJOBJARGPROC(Int, PyObject, PyObject, PyObject),
+    OBJOBJARGPROC(false, Int, PyObject, PyObject, PyObject),
 
     // typedef int (*objobjproc)(PyObject *, PyObject *);
-    OBJOBJPROC(Int, PyObject, PyObject),
+    OBJOBJPROC(false, Int, PyObject, PyObject),
     // typedef int (*visitproc)(PyObject *, void *);
-    VISITPROC(Int, PyObject, Pointer),
+    VISITPROC(false, Int, PyObject, Pointer),
     // typedef int (*traverseproc)(PyObject *, visitproc, void *);
-    TRAVERSEPROC(Int, PyObject, Pointer, Pointer),
+    TRAVERSEPROC(false, Int, PyObject, Pointer, Pointer),
     // PyObject *PyType_GenericAlloc(PyTypeObject *, Py_ssize_t);
-    TYPE_GENERIC_ALLOC(PyObjectReturn, PyTypeObject, Py_ssize_t),
+    TYPE_GENERIC_ALLOC(false, PyObjectReturn, PyTypeObject, Py_ssize_t),
 
     // typedef void (*freefunc)(void *);
-    FREEFUNC(Void, Pointer),
+    FREEFUNC(false, Void, Pointer),
     // typedef void (*destructor)(PyObject *);
-    DESTRUCTOR(Void, PyObject),
+    DESTRUCTOR(false, Void, PyObject),
     // void _Py_Dealloc(PyObject *);
-    PY_DEALLOC(Void, PyObject),
+    PY_DEALLOC(false, Void, PyObject),
     // typedef PyObject *(*getattrfunc)(PyObject *, char *);
-    GETATTRFUNC(PyObjectReturn, PyObject, CharPtrAsTruffleString),
+    GETATTRFUNC(false, PyObjectReturn, PyObject, CharPtrAsTruffleString),
     // typedef PyObject *(*getattrofunc)(PyObject *, PyObject *);
-    GETATTROFUNC(PyObjectReturn, PyObject, PyObject),
+    GETATTROFUNC(false, PyObjectReturn, PyObject, PyObject),
     // typedef int (*setattrfunc)(PyObject *, char *, PyObject *);
-    SETATTRFUNC(Int, PyObject, CharPtrAsTruffleString, PyObject),
+    SETATTRFUNC(false, Int, PyObject, CharPtrAsTruffleString, PyObject),
     // typedef int (*setattrofunc)(PyObject *, PyObject *, PyObject *);
-    SETATTROFUNC(Int, PyObject, PyObject, PyObject),
+    SETATTROFUNC(false, Int, PyObject, PyObject, PyObject),
     // typedef PyObject *(*reprfunc)(PyObject *);
-    REPRFUNC(PyObjectReturn, PyObject),
+    REPRFUNC(false, PyObjectReturn, PyObject),
     // typedef Py_hash_t (*hashfunc)(PyObject *);
-    HASHFUNC(Py_ssize_t, PyObject),
+    HASHFUNC(false, Py_ssize_t, PyObject),
     // typedef PyObject *(*richcmpfunc) (PyObject *, PyObject *, int);
-    RICHCMPFUNC(PyObjectReturn, PyObject, PyObject, Int),
+    RICHCMPFUNC(false, PyObjectReturn, PyObject, PyObject, Int),
     // typedef PyObject *(*getiterfunc) (PyObject *);
-    GETITERFUNC(PyObjectReturn, PyObject),
+    GETITERFUNC(false, PyObjectReturn, PyObject),
     // typedef PyObject *(*iternextfunc) (PyObject *);
-    ITERNEXTFUNC(PyObjectReturn, PyObject),
+    ITERNEXTFUNC(false, PyObjectReturn, PyObject),
     // typedef PyObject *(*descrgetfunc) (PyObject *, PyObject *, PyObject *);
-    DESCRGETFUNC(PyObjectReturn, PyObject, PyObject, PyObject),
+    DESCRGETFUNC(false, PyObjectReturn, PyObject, PyObject, PyObject),
     // typedef int (*descrsetfunc) (PyObject *, PyObject *, PyObject *);
-    DESCRSETFUNC(Int, PyObject, PyObject, PyObject),
+    DESCRSETFUNC(false, Int, PyObject, PyObject, PyObject),
     // typedef int (*initproc)(PyObject *, PyObject *, PyObject *);
-    INITPROC(Int, PyObject, PyObject, PyObject),
+    INITPROC(false, Int, PyObject, PyObject, PyObject),
     // typedef PyObject *(*newfunc)(PyTypeObject *, PyObject *, PyObject *);
-    NEWFUNC(PyObjectReturn, PyTypeObject, PyObject, PyObject),
+    NEWFUNC(false, PyObjectReturn, PyTypeObject, PyObject, PyObject),
 
     // typedef PyObject *(*getter)(PyObject *, void *);
-    GETTER(PyObjectReturn, PyObject, Pointer),
+    GETTER(false, PyObjectReturn, PyObject, Pointer),
     // typedef int (*setter)(PyObject *, PyObject *, void *);
-    SETTER(Int, PyObject, PyObject, Pointer),
+    SETTER(false, Int, PyObject, PyObject, Pointer),
     // typedef PyObject *(*Py_mod_create)(PyObject *, PyModuleDef *);
-    MODCREATE(PyObjectReturn, Pointer, Pointer),
+    MODCREATE(false, PyObjectReturn, Pointer, Pointer),
     // typedef int (*Py_mod_exec)(PyObject *);
-    MODEXEC(Int, Pointer),
+    MODEXEC(false, Int, Pointer),
     // typedef PyObject *(*PyInit_mod)(void);
-    MODINIT(Pointer),
-    // typedef void (*initialize_graal_capi)(void *, void *, void *, void *);
-    CAPIINIT(Void, Pointer, Pointer, Pointer, Pointer),
+    MODINIT(false, Pointer),
+    // typedef PThreadState** (*initialize_graal_capi)(void *, void *, void *, void *);
+    CAPIINIT(false, Pointer, Pointer, Pointer, Pointer, Pointer),
     // typedef void *(*GraalPyPrivate_GetFinalizeCApiPointer)(void);
-    GETFINALIZECAPIPOINTER(Pointer),
+    GETFINALIZECAPIPOINTER(false, Pointer),
 
     // TODO(fa): should be an implicit signature
-    GCCOLLECT(Py_ssize_t, Int);
+    GCCOLLECT(false, Py_ssize_t, Int),
+    GETDICTPTRFUN(true, Pointer, PyObject);
 
     public final ArgDescriptor returnValue;
     public final ArgDescriptor[] arguments;
 
-    ExternalFunctionSignature(ArgDescriptor returnValue, ArgDescriptor... arguments) {
+    /**
+     * If {@code true}, the function will be called without a call boundary (see
+     * {@link com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext}). Hence, the
+     * native function must not raise Python exception.
+     */
+    public final boolean cannotRaise;
+
+    ExternalFunctionSignature(boolean cannotRaise, ArgDescriptor returnValue, ArgDescriptor... arguments) {
+        this.cannotRaise = cannotRaise;
         this.returnValue = returnValue;
         this.arguments = arguments;
     }
