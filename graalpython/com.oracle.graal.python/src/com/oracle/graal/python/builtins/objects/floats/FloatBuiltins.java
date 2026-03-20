@@ -296,7 +296,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             static Object floatFromObjectManagedSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") boolean needsNativeAllocation,
                             @Bind Node inliningTarget,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                            @Shared @Cached PrimitiveFloatNode recursiveCallNode) {
+                            @Exclusive @Cached PrimitiveFloatNode recursiveCallNode) {
                 Shape shape = getInstanceShape.execute(cls);
                 return PFactory.createFloat(cls, shape, recursiveCallNode.execute(frame, inliningTarget, obj));
             }
@@ -309,9 +309,9 @@ public final class FloatBuiltins extends PythonBuiltins {
             @InliningCutoff
             static Object floatFromObjectNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") boolean needsNativeAllocation,
                             @Bind Node inliningTarget,
-                            @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
-                            @Cached CExtNodes.FloatSubtypeNew subtypeNew,
-                            @Shared @Cached PrimitiveFloatNode recursiveCallNode) {
+                            @Exclusive @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                            @Exclusive @Cached CExtNodes.FloatSubtypeNew subtypeNew,
+                            @Exclusive @Cached PrimitiveFloatNode recursiveCallNode) {
                 return subtypeNew.execute(inliningTarget, cls, recursiveCallNode.execute(frame, inliningTarget, obj));
             }
 

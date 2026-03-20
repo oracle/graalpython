@@ -319,9 +319,9 @@ public final class StringBuiltins extends PythonBuiltins {
         static Object doNativeSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Shared @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Exclusive @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Exclusive @Cached PyObjectStrAsObjectNode strNode,
-                        @Shared @Cached CExtNodes.StringSubtypeNew subtypeNew) {
+                        @Exclusive @Cached CExtNodes.StringSubtypeNew subtypeNew) {
             if (obj == PNone.NO_VALUE) {
                 return subtypeNew.execute(inliningTarget, cls, T_EMPTY_STRING);
             } else {
@@ -335,15 +335,15 @@ public final class StringBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Exclusive @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Shared @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
+                        @Exclusive @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Exclusive @Cached InlinedConditionProfile isStringProfile,
                         @Exclusive @Cached InlinedConditionProfile isPStringProfile,
                         @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
                         @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
-                        @Shared @Cached CExtNodes.StringSubtypeNew subtypeNew,
-                        @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Exclusive @Cached CExtNodes.StringSubtypeNew subtypeNew,
+                        @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object buffer;
             try {
