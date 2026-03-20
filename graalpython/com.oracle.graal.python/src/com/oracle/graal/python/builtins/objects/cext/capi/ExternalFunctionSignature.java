@@ -226,11 +226,13 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     CHECK_BASICSIZE_FOR_GETSTATE(true, Int, PyTypeObject, Int),
     // PyObject *GraalPyPrivate_Date_SubtypeNew(PyTypeObject *, int, int, int);
     DATE_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int),
-    // PyObject *GraalPyPrivate_Time_SubtypeNew(PyTypeObject *, int, int, int, int, PyObject *, int);
+    // PyObject *GraalPyPrivate_Time_SubtypeNew(PyTypeObject *, int, int, int, int, PyObject *,
+    // int);
     TIME_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int, Int, PyObject, Int),
     // PyObject *GraalPyPrivate_TimeDelta_SubtypeNew(PyTypeObject *, int, int, int);
     TIMEDELTA_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int),
-    // PyObject *GraalPyPrivate_DateTime_SubtypeNew(PyTypeObject *, int, int, int, int, int, int, int, PyObject *, int);
+    // PyObject *GraalPyPrivate_DateTime_SubtypeNew(PyTypeObject *, int, int, int, int, int, int,
+    // int, PyObject *, int);
     DATETIME_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, Int, Int, Int, Int, Int, Int, Int, PyObject, Int),
     // PyObject *GraalPyPrivate_MemoryViewFromObject(PyObject *, int);
     GRAALPY_MEMORYVIEW_FROM_OBJECT(false, PyObjectReturn, PyObject, Int),

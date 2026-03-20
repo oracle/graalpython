@@ -96,6 +96,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
 
     public final ArgDescriptor returnValue;
     public final ArgDescriptor[] arguments;
+
     MethodDescriptorWrapper(ArgDescriptor returnValue, ArgDescriptor... arguments) {
         this.returnValue = returnValue;
         this.arguments = arguments;
