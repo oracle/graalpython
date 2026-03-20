@@ -1129,7 +1129,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             case "Double" -> "double";
             case "Float" -> "float";
             case "Py_hash_t", "Py_ssize_t", "PrimitiveResult64", "INT64_T", "SIZE_T", "UINTPTR_T", "Long", "UNSIGNED_LONG", "UINT64_T",
-                            "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyTypeObject", "CharPtrAsTruffleString", "IterResult", "Pointer",
+                            "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyTypeObject", "PyThreadState", "CharPtrAsTruffleString", "IterResult", "Pointer",
                             "CHAR_PTR" ->
                 "long";
             default -> {
@@ -1163,7 +1163,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             case "Void" -> "NfiType.VOID";
             case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "NfiType.SINT32";
             case "Py_ssize_t", "PrimitiveResult64" -> "NfiType.SINT64";
-            case "PyObjectReturn", "PyObject", "PyObjectTransfer", "Pointer", "PyObjectConstArray", "PyTypeObject", "CharPtrAsTruffleString", "IterResult", "CHAR_PTR" ->
+            case "PyObjectReturn", "PyObject", "PyObjectTransfer", "Pointer", "PyObjectConstArray", "PyTypeObject", "PyThreadState", "CharPtrAsTruffleString", "IterResult", "CHAR_PTR" ->
                 "NfiType.RAW_POINTER";
             default -> {
                 processingEnv.getMessager().printError(String.format("Unexpected ArgDescriptor: '%s'", argDescriptor));
