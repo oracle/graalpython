@@ -1512,6 +1512,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private void writeBytecodeDSLCodeUnit(BytecodeDSLCodeUnit code) throws IOException {
+            /*
+             * Nested code units referenced by MakeFunction are stored in co_consts; the
+             * MakeFunction instruction itself carries only the integer index into this constants
+             * array.
+             */
             byte[] serialized = code.getSerialized(context);
             writeBytes(serialized);
             writeString(code.name);

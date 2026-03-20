@@ -408,7 +408,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return name;
     }
 
-    private BytecodeDSLCompilerResult compileRootNode(String name, ArgumentInfo argumentInfo, SourceRange sourceRange, BytecodeParser<Builder> parser) {
+    private record CodeUnitKey(SSTNode node, CompilationScope scope) {
+    }
+
+    private BytecodeDSLCompilerResult compileRootNode(String name, ArgumentInfo argumentInfo, SSTNode node, BytecodeParser<Builder> parser) {
         qualName = getNewScopeQualName(name, scopeType);
 
         BytecodeRootNodes<PBytecodeDSLRootNode> nodes = PBytecodeDSLRootNodeGen.create(ctx.language, BytecodeConfig.WITH_SOURCE, parser);
@@ -416,56 +419,61 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         assert nodeList.size() == 1;
         PBytecodeDSLRootNode rootNode = nodeList.get(0);
 
-        int flags = PCode.CO_OPTIMIZED | PCode.CO_NEWLOCALS;
-        flags |= argumentInfo.takesVarArgs ? PCode.CO_VARARGS : 0;
-        flags |= argumentInfo.takesVarKeywordArgs ? PCode.CO_VARKEYWORDS : 0;
-        if (scope.isNested()) {
-            flags |= PCode.CO_NESTED;
-        }
-        if (scope.isModule()) {
-            flags |= PCode.CO_GRAALPYHON_MODULE;
-        }
-        if (scope.isGenerator() && scope.isCoroutine()) {
-            flags |= PCode.CO_ASYNC_GENERATOR;
-        } else if (scope.isGenerator()) {
-            flags |= PCode.CO_GENERATOR;
-        } else if (scope.isCoroutine()) {
-            flags |= PCode.CO_COROUTINE;
-        }
-        for (FutureFeature flag : futureFeatures) {
-            flags |= flag.flagValue;
-        }
-
-        int classcellIndex = -1;
-        if (freeLocals.containsKey(J___CLASS__)) {
-            classcellIndex = freeLocals.get(J___CLASS__).getLocalOffset();
-        }
-
-        int selfIndex = -1;
-        if (argumentInfo.nonEmpty()) {
-            selfIndex = 0;
-            if (selfCellName != null) {
-                selfIndex = cellLocals.get(selfCellName).getLocalOffset();
+        CodeUnitKey key = new CodeUnitKey(node, scopeType);
+        BytecodeDSLCodeUnit codeUnit = ctx.codeUnits.get(key);
+        if (codeUnit == null) {
+            int flags = PCode.CO_OPTIMIZED | PCode.CO_NEWLOCALS;
+            flags |= argumentInfo.takesVarArgs ? PCode.CO_VARARGS : 0;
+            flags |= argumentInfo.takesVarKeywordArgs ? PCode.CO_VARKEYWORDS : 0;
+            if (scope.isNested()) {
+                flags |= PCode.CO_NESTED;
             }
-        }
+            if (scope.isModule()) {
+                flags |= PCode.CO_GRAALPYHON_MODULE;
+            }
+            if (scope.isGenerator() && scope.isCoroutine()) {
+                flags |= PCode.CO_ASYNC_GENERATOR;
+            } else if (scope.isGenerator()) {
+                flags |= PCode.CO_GENERATOR;
+            } else if (scope.isCoroutine()) {
+                flags |= PCode.CO_COROUTINE;
+            }
+            for (FutureFeature flag : futureFeatures) {
+                flags |= flag.flagValue;
+            }
 
-        BytecodeDSLCodeUnit codeUnit = new BytecodeDSLCodeUnit(toInternedTruffleStringUncached(name), toInternedTruffleStringUncached(qualName),
-                        argumentInfo.argCount, argumentInfo.kwOnlyArgCount, argumentInfo.positionalOnlyArgCount,
-                        flags, orderedTruffleStringArray(names),
-                        orderedTruffleStringArray(varnames),
-                        orderedTruffleStringArray(cellvars),
-                        orderedTruffleStringArray(freevars),
-                        cell2arg,
-                        orderedKeys(constants, new Object[0]),
-                        sourceRange.startLine,
-                        sourceRange.startColumn,
-                        sourceRange.endLine,
-                        sourceRange.endColumn,
-                        classcellIndex,
-                        selfIndex,
-                        yieldFromGenerator != null ? yieldFromGenerator.getLocalIndex() : -1,
-                        instrumentationDataLocal.getLocalIndex(),
-                        new BytecodeSupplier(nodes));
+            int classcellIndex = -1;
+            if (freeLocals.containsKey(J___CLASS__)) {
+                classcellIndex = freeLocals.get(J___CLASS__).getLocalOffset();
+            }
+
+            int selfIndex = -1;
+            if (argumentInfo.nonEmpty()) {
+                selfIndex = 0;
+                if (selfCellName != null) {
+                    selfIndex = cellLocals.get(selfCellName).getLocalOffset();
+                }
+            }
+            SourceRange sourceRange = node.getSourceRange();
+            codeUnit = new BytecodeDSLCodeUnit(toInternedTruffleStringUncached(name), toInternedTruffleStringUncached(qualName),
+                            argumentInfo.argCount, argumentInfo.kwOnlyArgCount, argumentInfo.positionalOnlyArgCount,
+                            flags, orderedTruffleStringArray(names),
+                            orderedTruffleStringArray(varnames),
+                            orderedTruffleStringArray(cellvars),
+                            orderedTruffleStringArray(freevars),
+                            cell2arg,
+                            orderedKeys(constants, new Object[0]),
+                            sourceRange.startLine,
+                            sourceRange.startColumn,
+                            sourceRange.endLine,
+                            sourceRange.endColumn,
+                            classcellIndex,
+                            selfIndex,
+                            yieldFromGenerator != null ? yieldFromGenerator.getLocalIndex() : -1,
+                            instrumentationDataLocal.getLocalIndex(),
+                            new BytecodeSupplier(nodes));
+            ctx.codeUnits.put(key, codeUnit);
+        }
         rootNode.setMetadata(codeUnit, ctx.errorCallback);
         return new BytecodeDSLCompilerResult(rootNode, codeUnit);
     }
@@ -784,7 +792,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return beginSourceSection(node.getSourceRange(), b);
     }
 
-    /** {@link #beginSourceSection(SSTNode, Builder)} */
+    /**
+     * {@link #beginSourceSection(SSTNode, Builder)}
+     */
     boolean beginSourceSection(SourceRange sourceRange, Builder b) {
         SourceRange oldSourceRange = this.currentLocation;
         this.currentLocation = sourceRange;
@@ -873,7 +883,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ModTy.Module node) {
-        return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+        return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node, b -> {
             beginRootNode(node, null, b);
             visitModuleBody(node.body, b, true);
             endRootNode(b);
@@ -882,7 +892,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ModTy.Expression node) {
-        return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+        return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node, b -> {
             beginRootNode(node, null, b);
             beginReturn(b);
             new StatementCompiler(b).visitNode(node.body);
@@ -893,7 +903,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ModTy.Interactive node) {
-        return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+        return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node, b -> {
             beginRootNode(node, null, b);
             visitModuleBody(node.body, b, false);
             endRootNode(b);
@@ -985,8 +995,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     public BytecodeDSLCompilerResult compileFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body) {
-        return compileRootNode(name, ArgumentInfo.fromArguments(args), node.getSourceRange(),
-                        b -> emitFunctionDefBody(node, args, body, b, getDocstring(body), false));
+        return compileRootNode(name, ArgumentInfo.fromArguments(args),
+                        node, b -> emitFunctionDefBody(node, args, body, b, getDocstring(body), false));
     }
 
     /**
@@ -1013,7 +1023,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             typeParamsUnitArgs = NO_ARGS;
         }
         ArgumentInfo argInfo = ArgumentInfo.fromArguments(typeParamsUnitArgs);
-        return compileRootNode(name, argInfo, node.getSourceRange(), b -> {
+        return compileRootNode(name, argInfo, node, b -> {
             beginRootNode(node, typeParamsUnitArgs, b);
             StatementCompiler statementCompiler = new StatementCompiler(b);
 
@@ -1057,7 +1067,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     private BytecodeDSLCompilerResult compileBoundTypeVar(TypeVar node) {
         assert node.bound != null;
-        return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+        return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node, b -> {
             beginRootNode(node, null, b);
             b.beginReturn();
             node.bound.accept(new StatementCompiler(b));
@@ -1068,7 +1078,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     private BytecodeDSLCompilerResult compileTypeAliasBody(TypeAlias node) {
         String name = ((ExprTy.Name) node.name).id;
-        return compileRootNode(name, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+        return compileRootNode(name, ArgumentInfo.NO_ARGS, node, b -> {
             // Make None the first constant, so the evaluate function can't have a docstring.
             addObject(constants, PNone.NONE);
             beginRootNode(node, null, b);
@@ -1082,7 +1092,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private BytecodeDSLCompilerResult compileTypeAliasTypeParameters(String name, BytecodeDSLCodeUnit codeUnit, TypeAlias node) {
         assert this.scopeType == CompilationScope.TypeParams;
         String typeParamsName = "<generic parameters of " + name + ">";
-        return compileRootNode(typeParamsName, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+        return compileRootNode(typeParamsName, ArgumentInfo.NO_ARGS, node, b -> {
             beginRootNode(node, null, b);
             StatementCompiler statementCompiler = new StatementCompiler(b);
             statementCompiler.emitBuildTypeAlias(codeUnit, node);
@@ -1092,8 +1102,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.Lambda node) {
-        return compileRootNode("<lambda>", ArgumentInfo.fromArguments(node.args), node.getSourceRange(),
-                        b -> emitFunctionDefBody(node, node.args, new SSTNode[]{node.body}, b, null, true));
+        return compileRootNode("<lambda>", ArgumentInfo.fromArguments(node.args),
+                        node, b -> emitFunctionDefBody(node, node.args, new SSTNode[]{node.body}, b, null, true));
     }
 
     private void emitFunctionDefBody(SSTNode node, ArgumentsTy args, SSTNode[] body, Builder b, Object docstring, boolean isLambda) {
@@ -1138,7 +1148,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     public BytecodeDSLCompilerResult compileClassDefBody(StmtTy.ClassDef node) {
-        return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+        return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node, b -> {
             beginRootNode(node, null, b);
 
             beginStoreLocal("__module__", b);
@@ -1210,7 +1220,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     public BytecodeDSLCompilerResult compileClassTypeParams(StmtTy.ClassDef node, BytecodeDSLCodeUnit classBody) {
         assert this.scopeType == CompilationScope.TypeParams;
-        return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
+        return compileRootNode(node.name, ArgumentInfo.NO_ARGS, node, b -> {
             beginRootNode(node, null, b);
             StatementCompiler statementCompiler = new StatementCompiler(b);
             statementCompiler.emitBuildClass(classBody, node);
@@ -1317,7 +1327,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         if (scope.isCoroutine() && type != ComprehensionType.GENEXPR && scopeType != CompilationScope.AsyncFunction && scopeType != CompilationScope.Comprehension) {
             throw ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "asynchronous comprehension outside of an asynchronous function");
         }
-        return compileRootNode(type.name, new ArgumentInfo(1, 0, 0, false, false), node.getSourceRange(), b -> {
+        return compileRootNode(type.name, new ArgumentInfo(1, 0, 0, false, false), node, b -> {
             beginRootNode(node, null, b);
 
             assert scope.isGenerator() == (type == ComprehensionType.GENEXPR);
@@ -4350,8 +4360,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             // Register these in the Python constants list.
             addConstant(codeUnit);
+            int codeIndex = constants.get(codeUnit);
 
-            b.beginMakeFunction(functionName, qualifiedName, codeUnit);
+            b.beginMakeFunction(functionName, qualifiedName, codeIndex);
 
             if (defaultArgsLocal != null) {
                 assert argsForDefaults == null;
