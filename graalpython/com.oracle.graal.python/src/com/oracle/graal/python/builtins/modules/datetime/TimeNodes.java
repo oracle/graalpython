@@ -50,6 +50,8 @@ import java.lang.ref.Reference;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -67,6 +69,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -168,10 +172,10 @@ public class TimeNodes {
                 Object effectiveTzInfo = tzInfo != null ? tzInfo : PNone.NO_VALUE;
                 long tzInfoPointer = toNative.executeLong(effectiveTzInfo);
                 try {
-                    com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(null);
-                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW);
-                    long nativeResult = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeTIME_SUBTYPE_NEW(null, C_API_TIMING,
-                                    context.ensureNfiContext(), com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData.getUncached(),
+                    PythonContext context = PythonContext.get(null);
+                    var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW);
+                    long nativeResult = ExternalFunctionInvoker.invokeTIME_SUBTYPE_NEW(null, C_API_TIMING,
+                                    context.ensureNfiContext(), BoundaryCallData.getUncached(),
                                     context.getThreadState(context.getLanguage()), callable, clsPointer, hour, minute, second, microsecond, tzInfoPointer, fold);
                     return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
                 } finally {

@@ -46,6 +46,8 @@ import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import java.lang.ref.Reference;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
@@ -54,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -98,11 +101,11 @@ public abstract class SetDictNode extends Node {
         long objectPointer = objectToNative.execute(inliningTarget, object, false);
         long dictPointer = dictToNative.execute(inliningTarget, dict, false);
         PythonContext context = PythonContext.get(inliningTarget);
-        var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_GENERIC_SET_DICT);
-        int result = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePY_OBJECT_GENERIC_SET_DICT(null, C_API_TIMING, context.ensureNfiContext(),
-                        com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData.getUncached(),
-                        context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), callable, objectPointer, dictPointer, NULLPTR);
-        checkResult.executeLong(inliningTarget, context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
+        var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_GENERIC_SET_DICT);
+        int result = ExternalFunctionInvoker.invokePY_OBJECT_GENERIC_SET_DICT(null, C_API_TIMING, context.ensureNfiContext(),
+                        BoundaryCallData.getUncached(),
+                        context.getThreadState(context.getLanguage(inliningTarget)), callable, objectPointer, dictPointer, NULLPTR);
+        checkResult.executeLong(inliningTarget, context.getThreadState(context.getLanguage(inliningTarget)), FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
         Reference.reachabilityFence(object);
         Reference.reachabilityFence(dict);
     }

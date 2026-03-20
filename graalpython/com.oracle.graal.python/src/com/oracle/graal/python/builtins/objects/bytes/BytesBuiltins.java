@@ -49,7 +49,9 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsClinicProviders.BytesNewNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -80,7 +82,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -199,11 +203,11 @@ public class BytesBuiltins extends PythonBuiltins {
                 long dataPointer = asCharPointerNode.execute(bytes);
                 long clsPointer = toNative.executeLong(cls);
                 try {
-                    com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(inliningTarget);
-                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, FUN_BYTES_SUBTYPE_NEW);
-                    return toPython.execute(com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeBYTES_SUBTYPE_NEW(null, C_API_TIMING,
-                                    context.ensureNfiContext(), com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData.getUncached(),
-                                    context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), callable, clsPointer, dataPointer, bytes.length));
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_BYTES_SUBTYPE_NEW);
+                    return toPython.execute(ExternalFunctionInvoker.invokeBYTES_SUBTYPE_NEW(null, C_API_TIMING,
+                                    context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                                    context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer, dataPointer, bytes.length));
                 } finally {
                     Reference.reachabilityFence(cls);
                     NativeMemory.free(dataPointer);

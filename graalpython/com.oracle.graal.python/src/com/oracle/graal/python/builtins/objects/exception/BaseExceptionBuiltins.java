@@ -55,7 +55,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -171,8 +173,8 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             long argsTuplePointer = toNativeNode.executeLong(argsTuple);
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
-                var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW);
-                long nativeResult = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeEXCEPTION_SUBTYPE_NEW(null, C_API_TIMING, context.ensureNfiContext(),
+                var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW);
+                long nativeResult = ExternalFunctionInvoker.invokeEXCEPTION_SUBTYPE_NEW(null, C_API_TIMING, context.ensureNfiContext(),
                                 BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, clsPointer, argsTuplePointer);
                 return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), toPythonNode.execute(nativeResult));
             } finally {

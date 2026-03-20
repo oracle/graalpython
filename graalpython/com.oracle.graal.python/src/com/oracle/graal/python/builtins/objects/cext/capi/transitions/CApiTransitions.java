@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObject
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.AllocateNativeObjectStubNodeGen;
@@ -628,7 +629,7 @@ public abstract class CApiTransitions {
          */
         if (reference.type == StorageType.Generic && reference.size > 0) {
             try {
-                com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeOBJECT_ARRAY_RELEASE(
+                ExternalFunctionInvoker.invokeOBJECT_ARRAY_RELEASE(
                                 CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_OBJECT_ARRAY_RELEASE).getAddress(), reference.ptr,
                                 reference.size);
             } catch (Throwable t) {
@@ -647,7 +648,7 @@ public abstract class CApiTransitions {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(capsule);
             long capsulePointer = PythonToNativeNode.executeLongUncached(capsule);
             try {
-                com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeGRAALPY_CAPSULE_CALL_DESTRUCTOR(
+                ExternalFunctionInvoker.invokeGRAALPY_CAPSULE_CALL_DESTRUCTOR(
                                 CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR).getAddress(),
                                 capsulePointer, capsule.getDestructor());
             } catch (Throwable t) {
@@ -686,7 +687,7 @@ public abstract class CApiTransitions {
                     NativeMemory.writeLongArrayElement(pointer, i, referencesToBeFreed.get(i));
                 }
                 try {
-                    com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeBULK_DEALLOC(
+                    ExternalFunctionInvoker.invokeBULK_DEALLOC(
                                     CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_BULK_DEALLOC).getAddress(), pointer, size);
                 } catch (Throwable t) {
                     throw CompilerDirectives.shouldNotReachHere(t);
@@ -947,7 +948,7 @@ public abstract class CApiTransitions {
             try {
                 writePtrArrayElements(array, 0, ptrArray, 0, len);
                 try {
-                    com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeSHUTDOWN_BULK_DEALLOC(
+                    ExternalFunctionInvoker.invokeSHUTDOWN_BULK_DEALLOC(
                                     CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC).getAddress(), array, len);
                 } catch (Throwable t) {
                     throw CompilerDirectives.shouldNotReachHere(t);

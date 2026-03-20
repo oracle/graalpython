@@ -71,7 +71,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -146,6 +148,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -360,11 +363,11 @@ public final class ObjectBuiltins extends PythonBuiltins {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
                 long clsPointer = toNativeNode.executeLong(cls);
                 try {
-                    com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(inliningTarget);
-                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_NEW);
-                    return toPythonNode.execute(com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePY_OBJECT_NEW(null, C_API_TIMING,
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_NEW);
+                    return toPythonNode.execute(ExternalFunctionInvoker.invokePY_OBJECT_NEW(null, C_API_TIMING,
                                     context.ensureNfiContext(), BoundaryCallData.getUncached(),
-                                    context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), callable, clsPointer));
+                                    context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer));
                 } finally {
                     Reference.reachabilityFence(cls);
                 }

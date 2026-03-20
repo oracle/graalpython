@@ -72,7 +72,9 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -264,8 +266,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
                 long clsPointer = toNativeNode.executeLong(cls);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
-                    var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, symbol);
-                    long nativeResult = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeCOMPLEX_SUBTYPE_FROM_DOUBLES(null, C_API_TIMING,
+                    var callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
+                    long nativeResult = ExternalFunctionInvoker.invokeCOMPLEX_SUBTYPE_FROM_DOUBLES(null, C_API_TIMING,
                                     context.ensureNfiContext(), BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable,
                                     clsPointer, real, imaginary);
                     return checkFunctionResultNode.execute(context, symbol.getTsName(), toPythonNode.execute(nativeResult));

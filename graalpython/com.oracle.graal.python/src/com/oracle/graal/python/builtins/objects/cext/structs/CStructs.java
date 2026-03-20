@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.cext.structs;
 import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElements;
 
 import com.oracle.graal.python.annotations.CApiStructs;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -116,8 +118,8 @@ public enum CStructs {
         CompilerAsserts.neverPartOfCompilation();
         long sizesPointer;
         try {
-            sizesPointer = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePYTRUFFLE_STRUCT_SIZES(
-                            com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES).getAddress());
+            sizesPointer = ExternalFunctionInvoker.invokePYTRUFFLE_STRUCT_SIZES(
+                            CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES).getAddress());
         } catch (Throwable t) {
             throw CompilerDirectives.shouldNotReachHere(t);
         }

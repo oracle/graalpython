@@ -104,6 +104,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElements;
 
 import com.oracle.graal.python.annotations.CApiFields;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -416,8 +418,8 @@ public enum CFields {
         CompilerAsserts.neverPartOfCompilation();
         long offsetsPointer;
         try {
-            offsetsPointer = com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePYTRUFFLE_STRUCT_OFFSETS(
-                            com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS).getAddress());
+            offsetsPointer = ExternalFunctionInvoker.invokePYTRUFFLE_STRUCT_OFFSETS(
+                            CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS).getAddress());
         } catch (Throwable t) {
             throw CompilerDirectives.shouldNotReachHere(t);
         }

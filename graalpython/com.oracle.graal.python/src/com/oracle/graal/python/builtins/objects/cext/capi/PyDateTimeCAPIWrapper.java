@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -123,9 +124,9 @@ public abstract class PyDateTimeCAPIWrapper {
         CompilerAsserts.neverPartOfCompilation();
 
         try {
-            com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeINIT_NATIVE_DATETIME(CApiContext.getNativeSymbol(null, FUN_INIT_NATIVE_DATETIME).getAddress());
+            ExternalFunctionInvoker.invokeINIT_NATIVE_DATETIME(CApiContext.getNativeSymbol(null, FUN_INIT_NATIVE_DATETIME).getAddress());
         } catch (Throwable t) {
-            throw com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere(t);
+            throw CompilerDirectives.shouldNotReachHere(t);
         }
 
         Object datetimeModule = AbstractImportNode.importModule(T_DATETIME);

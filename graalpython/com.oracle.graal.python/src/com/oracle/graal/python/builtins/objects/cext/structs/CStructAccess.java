@@ -45,7 +45,9 @@ import static com.oracle.graal.python.nfi2.NativeMemory.POINTER_SIZE;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
@@ -54,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteTruffleStringNodeGen;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -155,10 +158,10 @@ public class CStructAccess {
     public static long allocatePyMem(long count, long elsize) {
         assert elsize >= 0;
         try {
-            return com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePYMEM_ALLOC(
-                            com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYMEM_ALLOC).getAddress(), count, elsize);
+            return ExternalFunctionInvoker.invokePYMEM_ALLOC(
+                            CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYMEM_ALLOC).getAddress(), count, elsize);
         } catch (Throwable t) {
-            throw com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere(t);
+            throw CompilerDirectives.shouldNotReachHere(t);
         }
     }
 

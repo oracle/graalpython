@@ -85,7 +85,9 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -631,8 +633,8 @@ public abstract class ObjectNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(type);
             long typePointer = toNativeNode.executeLong(type);
             try {
-                return com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeCHECK_BASICSIZE_FOR_GETSTATE(
-                                com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, FUN_CHECK_BASICSIZE_FOR_GETSTATE).getAddress(), typePointer,
+                return ExternalFunctionInvoker.invokeCHECK_BASICSIZE_FOR_GETSTATE(
+                                CApiContext.getNativeSymbol(inliningTarget, FUN_CHECK_BASICSIZE_FOR_GETSTATE).getAddress(), typePointer,
                                 slotNum) == 0;
             } catch (Throwable t) {
                 throw com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere(t);

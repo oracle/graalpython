@@ -53,7 +53,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -77,6 +79,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -183,11 +187,11 @@ public abstract class StringNodes {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PString)) {
                 // read the native data
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(x);
-                com.oracle.graal.python.runtime.PythonContext context = com.oracle.graal.python.runtime.PythonContext.get(inliningTarget);
-                var callable = com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH);
-                return intValue(com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNfiContext(),
-                                com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData.getUncached(),
-                                context.getThreadState(com.oracle.graal.python.PythonLanguage.get(inliningTarget)), callable,
+                PythonContext context = PythonContext.get(inliningTarget);
+                var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH);
+                return intValue(ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNfiContext(),
+                                BoundaryCallData.getUncached(),
+                                context.getThreadState(context.getLanguage(inliningTarget)), callable,
                                 toNativeNode.executeLong(x)));
             }
             // the object's type is not a subclass of 'str'

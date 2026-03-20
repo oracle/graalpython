@@ -48,9 +48,11 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -100,18 +102,17 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    private static final CApiTiming TIMING_MMAP_INIT_BUFFERPROTOCOL = CApiTiming.create(true, NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL);
+
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         core.getContext().registerCApiHook(() -> {
             PythonAbstractObject promoted = EnsurePythonObjectNode.executeUncached(core.getContext(), PythonBuiltinClassType.PMMap);
-            try {
-                com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker.invokeMMAP_INIT_BUFFERPROTOCOL(
-                                com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL).getAddress(),
-                                PythonToNativeNode.executeLongUncached(promoted));
-            } catch (Throwable t) {
-                throw com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere(t);
-            }
+            ExternalFunctionInvoker.invokeMMAP_INIT_BUFFERPROTOCOL(
+                            TIMING_MMAP_INIT_BUFFERPROTOCOL,
+                            CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL),
+                            PythonToNativeNode.executeLongUncached(promoted));
         });
     }
 }
