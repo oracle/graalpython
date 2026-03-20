@@ -244,6 +244,9 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the pyexpat module.", usageSyntax = "java|native", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> PyExpatModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
 
+    @EngineOption @Option(category = OptionCategory.USER, help = "Allow the unicodedata module to fall back from the ICU database to CPython's native UCD for unsupported features.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
+    public static final OptionKey<Boolean> UnicodeCharacterDatabaseNativeFallback = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "Install default signal handlers on startup", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> InstallSignalHandlers = new OptionKey<>(false);
 

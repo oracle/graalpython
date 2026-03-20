@@ -816,9 +816,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("python.PosixModuleBackend", "java");
         }
 
-        if (!hasContextOptionSetViaCommandLine("WarnExperimentalFeatures")) {
-            contextBuilder.option("python.WarnExperimentalFeatures", "false");
-        }
+        setOptionIfNotSetViaCommandLine(contextBuilder, "WarnExperimentalFeatures", "false");
+        setOptionIfNotSetViaCommandLine(contextBuilder, "UnicodeCharacterDatabaseNativeFallback", "true");
 
         if (multiContext) {
             contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());
@@ -1009,19 +1008,13 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         }
                         break;
                     case "venvlauncher_command":
-                        if (!hasContextOptionSetViaCommandLine("VenvlauncherCommand")) {
-                            contextBuilder.option("python.VenvlauncherCommand", parts[1].trim());
-                        }
+                        setOptionIfNotSetViaCommandLine(contextBuilder, "VenvlauncherCommand", parts[1].trim());
                         break;
                     case "base-prefix":
-                        if (!hasContextOptionSetViaCommandLine("SysBasePrefix")) {
-                            contextBuilder.option("python.SysBasePrefix", parts[1].trim());
-                        }
+                        setOptionIfNotSetViaCommandLine(contextBuilder, "SysBasePrefix", parts[1].trim());
                         break;
                     case "base-executable":
-                        if (!hasContextOptionSetViaCommandLine("BaseExecutable")) {
-                            contextBuilder.option("python.BaseExecutable", parts[1].trim());
-                        }
+                        setOptionIfNotSetViaCommandLine(contextBuilder, "BaseExecutable", parts[1].trim());
                         break;
                 }
             }
@@ -1050,6 +1043,12 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
         return null;
+    }
+
+    private void setOptionIfNotSetViaCommandLine(Context.Builder builder, String key, String value) {
+        if (!hasContextOptionSetViaCommandLine(key)) {
+            builder.option("python." + key, value);
+        }
     }
 
     private boolean hasContextOptionSetViaCommandLine(String key) {
