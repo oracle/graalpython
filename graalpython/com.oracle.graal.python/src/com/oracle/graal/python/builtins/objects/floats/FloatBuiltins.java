@@ -312,7 +312,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                             @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                             @Cached CExtNodes.FloatSubtypeNew subtypeNew,
                             @Shared @Cached PrimitiveFloatNode recursiveCallNode) {
-                return subtypeNew.call(cls, recursiveCallNode.execute(frame, inliningTarget, obj));
+                return subtypeNew.execute(inliningTarget, cls, recursiveCallNode.execute(frame, inliningTarget, obj));
             }
 
             protected static boolean isSubtypeOfFloat(IsSubtypeNode isSubtypeNode, Object cls) {

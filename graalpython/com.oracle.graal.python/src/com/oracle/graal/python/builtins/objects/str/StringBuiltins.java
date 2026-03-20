@@ -321,11 +321,11 @@ public final class StringBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Shared @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Exclusive @Cached PyObjectStrAsObjectNode strNode,
-                        @Shared @Cached(neverDefault = true) CExtNodes.StringSubtypeNew subtypeNew) {
+                        @Shared @Cached CExtNodes.StringSubtypeNew subtypeNew) {
             if (obj == PNone.NO_VALUE) {
-                return subtypeNew.call(cls, T_EMPTY_STRING);
+                return subtypeNew.execute(inliningTarget, cls, T_EMPTY_STRING);
             } else {
-                return subtypeNew.call(cls, strNode.execute(frame, inliningTarget, obj));
+                return subtypeNew.execute(inliningTarget, cls, strNode.execute(frame, inliningTarget, obj));
             }
         }
 
@@ -342,7 +342,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Exclusive @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
                         @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
-                        @Shared @Cached(neverDefault = true) CExtNodes.StringSubtypeNew subtypeNew,
+                        @Shared @Cached CExtNodes.StringSubtypeNew subtypeNew,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object buffer;
@@ -356,9 +356,9 @@ public final class StringBuiltins extends PythonBuiltins {
                 Object en = encoding == PNone.NO_VALUE ? T_UTF8 : encoding;
                 Object result = assertNoJavaString(decodeNode.execute(frame, bytesObj, en, errors));
                 if (isStringProfile.profile(inliningTarget, result instanceof TruffleString)) {
-                    return subtypeNew.call(cls, asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, getInstanceShape));
+                    return subtypeNew.execute(inliningTarget, cls, asPString(cls, (TruffleString) result, inliningTarget, isPrimitiveProfile, getInstanceShape));
                 } else if (isPStringProfile.profile(inliningTarget, result instanceof PString)) {
-                    return subtypeNew.call(cls, result);
+                    return subtypeNew.execute(inliningTarget, cls, result);
                 }
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
             } finally {

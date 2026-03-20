@@ -79,7 +79,6 @@ import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.ref.Reference;
 import java.util.logging.Level;
@@ -102,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -196,95 +196,75 @@ public abstract class CExtNodes {
      * will call that subtype C function with two arguments, the C type object and an object
      * argument to fill in from.
      */
-    @ImportStatic({PGuards.class})
-    @GenerateInline(false) // footprint reduction 44 -> 25
-    public abstract static class SubtypeNew extends Node {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class FloatSubtypeNew extends Node {
 
-        /**
-         * tget the <code>typename_subtype_new</code> function
-         */
-        protected NativeCAPISymbol getFunction() {
-            throw shouldNotReachHere();
-        }
-
-        protected abstract Object execute(Object object, Object arg);
+        public abstract Object execute(Node inliningTarget, Object object, double arg);
 
         @Specialization
-        Object callNativeConstructor(Object object, Object arg,
+        static Object doGeneric(Object object, double arg,
                         @Bind Node inliningTarget,
                         @Cached PythonToNativeNode toNativeNode,
                         @Cached NativeToPythonTransferNode toJavaNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
-            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, getFunction());
-            Object result = callable.invoke(toNativeNode.executeLong(object), arg);
-            return toJavaNode.execute(result);
-        }
-    }
-
-    @GenerateInline(false) // footprint reduction 44 -> 25
-    public abstract static class FloatSubtypeNew extends SubtypeNew {
-
-        @Override
-        protected final NativeCAPISymbol getFunction() {
-            return NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW;
-        }
-
-        public final Object call(Object object, double arg) {
-            return execute(object, arg);
-        }
-
-        public static FloatSubtypeNew create() {
-            return CExtNodesFactory.FloatSubtypeNewNodeGen.create();
-        }
-    }
-
-    public abstract static class TupleSubtypeNew extends SubtypeNew {
-
-        @Child private PythonToNativeNode toNativeNode;
-
-        @Override
-        protected final NativeCAPISymbol getFunction() {
-            return NativeCAPISymbol.FUN_TUPLE_SUBTYPE_NEW;
-        }
-
-        public final Object call(Object object, Object arg) {
-            if (toNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toNativeNode = insert(PythonToNativeNode.create());
+            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW);
+            try {
+                long result = ExternalFunctionInvoker.invokeFLOAT_SUBTYPE_NEW(callable.getAddress(), toNativeNode.executeLong(object), arg);
+                return toJavaNode.execute(result);
+            } catch (Throwable e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
-            return execute(object, toNativeNode.executeLong(arg));
-        }
-
-        @NeverDefault
-        public static TupleSubtypeNew create() {
-            return CExtNodesFactory.TupleSubtypeNewNodeGen.create();
         }
     }
 
-    public abstract static class StringSubtypeNew extends SubtypeNew {
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class TupleSubtypeNew extends Node {
 
-        @Child private EnsurePythonObjectNode ensurePythonObjectNode;
-        @Child private PythonToNativeNode toNativeNode;
+        public abstract Object execute(Node inliningTarget, Object object, Object arg);
 
-        @Override
-        protected final NativeCAPISymbol getFunction() {
-            return NativeCAPISymbol.FUN_UNICODE_SUBTYPE_NEW;
-        }
-
-        public final Object call(Object object, Object arg) {
-            if (ensurePythonObjectNode == null || toNativeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                ensurePythonObjectNode = insert(EnsurePythonObjectNode.create());
-                toNativeNode = insert(PythonToNativeNode.create());
+        @Specialization
+        static Object doGeneric(Node inliningTarget, Object object, Object arg,
+                        @Cached PythonToNativeInternalNode toNativeNode,
+                        @Cached NativeToPythonInternalNode toJavaNode) {
+            assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(arg);
+            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_TUPLE_SUBTYPE_NEW);
+            try {
+                long result = ExternalFunctionInvoker.invokeTUPLE_SUBTYPE_NEW(callable.getAddress(),
+                                toNativeNode.execute(inliningTarget, object, false),
+                                toNativeNode.execute(inliningTarget, arg, false));
+                return toJavaNode.execute(inliningTarget, result, true);
+            } catch (Throwable e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
-            Object promotedArg = ensurePythonObjectNode.execute(PythonContext.get(this), arg, false);
-            Object result = execute(object, toNativeNode.executeLong(promotedArg));
-            Reference.reachabilityFence(promotedArg);
-            return result;
         }
+    }
 
-        public static StringSubtypeNew create() {
-            return CExtNodesFactory.StringSubtypeNewNodeGen.create();
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class StringSubtypeNew extends Node {
+
+        public abstract Object execute(Node inliningTarget, Object object, Object arg);
+
+        @Specialization
+        static Object doGeneric(Node inliningTarget, Object object, Object arg,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
+                        @Cached NativeToPythonInternalNode toJavaNode) {
+            assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
+            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_UNICODE_SUBTYPE_NEW);
+            try {
+                Object promotedArg = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), arg, false);
+                long result = ExternalFunctionInvoker.invokeUNICODE_SUBTYPE_NEW(callable.getAddress(),
+                                toNativeNode.execute(inliningTarget, object, false),
+                                toNativeNode.execute(inliningTarget, promotedArg, false));
+                Reference.reachabilityFence(promotedArg);
+                return toJavaNode.execute(inliningTarget, result, true);
+            } catch (Throwable e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 
