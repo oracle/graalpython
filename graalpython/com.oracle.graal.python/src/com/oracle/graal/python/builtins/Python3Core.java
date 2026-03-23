@@ -264,6 +264,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignAbstractClassBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignDateBuiltins;
+import com.oracle.graal.python.builtins.objects.foreign.ForeignDateTimeBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignExecutableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignInstantiableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
@@ -503,6 +504,7 @@ public abstract class Python3Core {
                         new ForeignNumberBuiltins(),
                         new ForeignBooleanBuiltins(),
                         new ForeignDateBuiltins(),
+                        new ForeignDateTimeBuiltins(),
                         new ForeignTimeBuiltins(),
                         new ForeignAbstractClassBuiltins(),
                         new ForeignExecutableBuiltins(),

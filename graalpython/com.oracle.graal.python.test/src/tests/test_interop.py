@@ -267,6 +267,39 @@ class InteropTests(unittest.TestCase):
         self.assertIsNone(t.dst())
         self.assertIsNone(t.tzname())
 
+    def test_foreign_datetime_behavior(self):
+        import datetime
+        import java
+
+        LocalDateTime = java.type("java.time.LocalDateTime")
+
+        dt = LocalDateTime.of(2025, 3, 23, 7, 8, 9)
+        self.assertEqual(dt.year, 2025)
+        self.assertEqual(dt.month, 3)
+        self.assertEqual(dt.day, 23)
+        self.assertEqual(dt.hour, 7)
+        self.assertEqual(dt.minute, 8)
+        self.assertEqual(dt.second, 9)
+        self.assertEqual(dt.microsecond, 0)
+        self.assertEqual(str(dt), "2025-03-23 07:08:09")
+        self.assertEqual(dt.isoformat(), "2025-03-23T07:08:09")
+        self.assertEqual(dt.date(), datetime.date(2025, 3, 23))
+        self.assertEqual(dt.time(), datetime.time(7, 8, 9))
+        self.assertEqual(dt.timetz(), datetime.time(7, 8, 9))
+        self.assertEqual(dt.timetuple(), datetime.datetime(2025, 3, 23, 7, 8, 9).timetuple())
+        self.assertEqual(hash(dt), hash(datetime.datetime(2025, 3, 23, 7, 8, 9)))
+        self.assertEqual(dt, datetime.datetime(2025, 3, 23, 7, 8, 9))
+        self.assertEqual(dt, LocalDateTime.of(2025, 3, 23, 7, 8, 9))
+        self.assertEqual(dt.replace(minute=9), datetime.datetime(2025, 3, 23, 7, 9, 9))
+        self.assertEqual(dt + datetime.timedelta(days=1), datetime.datetime(2025, 3, 24, 7, 8, 9))
+        self.assertEqual(dt - datetime.timedelta(days=1), datetime.datetime(2025, 3, 22, 7, 8, 9))
+        self.assertEqual(dt - datetime.datetime(2025, 3, 20, 7, 8, 9), datetime.timedelta(days=3))
+        self.assertLess(dt, datetime.datetime(2025, 3, 23, 7, 8, 10))
+        self.assertIsNone(dt.tzinfo)
+        self.assertIsNone(dt.utcoffset())
+        self.assertIsNone(dt.dst())
+        self.assertIsNone(dt.tzname())
+
     def test_read(self):
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field

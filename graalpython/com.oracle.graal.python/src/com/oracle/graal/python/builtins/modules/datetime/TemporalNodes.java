@@ -42,16 +42,21 @@ package com.oracle.graal.python.builtins.modules.datetime;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
@@ -149,6 +154,25 @@ public final class TemporalNodes {
         public LocalDateTime toLocalDateTime() {
             return LocalDateTime.of(year, month, day, hour, minute, second, microsecond * 1_000);
         }
+    }
+
+    public static Object toPythonTzInfo(Object tzInfo, ZoneId zoneId, Node inliningTarget) {
+        if (tzInfo != null) {
+            return tzInfo;
+        }
+        if (zoneId == null) {
+            return null;
+        }
+        final ZoneOffset offset;
+        if (zoneId instanceof ZoneOffset zoneOffset) {
+            offset = zoneOffset;
+        } else if (zoneId.getRules().isFixedOffset()) {
+            offset = zoneId.getRules().getOffset(Instant.EPOCH);
+        } else {
+            return null;
+        }
+        PTimeDelta delta = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget, 0, offset.getTotalSeconds(), 0, 0, 0, 0, 0);
+        return TimeZoneNodes.NewNode.getUncached().execute(inliningTarget, PythonContext.get(inliningTarget), PythonBuiltinClassType.PTimezone, delta, PNone.NO_VALUE);
     }
 
     @GenerateUncached

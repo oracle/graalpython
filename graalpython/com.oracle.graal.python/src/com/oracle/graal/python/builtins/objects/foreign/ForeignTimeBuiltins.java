@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -59,9 +58,7 @@ import com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.datetime.PTime;
 import com.oracle.graal.python.builtins.modules.datetime.PTimeDelta;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes;
-import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaNodes;
 import com.oracle.graal.python.builtins.modules.datetime.TimeNodes;
-import com.oracle.graal.python.builtins.modules.datetime.TimeZoneNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -81,7 +78,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -383,18 +379,6 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
     }
 
     private static Object toPythonTzInfo(TemporalNodes.TimeValue time, Node inliningTarget) {
-        if (time.tzInfo != null) {
-            return time.tzInfo;
-        }
-        if (time.zoneId instanceof ZoneOffset zoneOffset) {
-            PTimeDelta offset = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget, 0, zoneOffset.getTotalSeconds(), 0, 0, 0, 0, 0);
-            return TimeZoneNodes.NewNode.getUncached().execute(inliningTarget, PythonContext.get(inliningTarget), PythonBuiltinClassType.PTimezone, offset, PNone.NO_VALUE);
-        }
-        if (time.zoneId != null && time.zoneId.getRules().isFixedOffset()) {
-            ZoneOffset offset = time.zoneId.getRules().getOffset(java.time.Instant.EPOCH);
-            PTimeDelta delta = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget, 0, offset.getTotalSeconds(), 0, 0, 0, 0, 0);
-            return TimeZoneNodes.NewNode.getUncached().execute(inliningTarget, PythonContext.get(inliningTarget), PythonBuiltinClassType.PTimezone, delta, PNone.NO_VALUE);
-        }
-        return null;
+        return TemporalNodes.toPythonTzInfo(time.tzInfo, time.zoneId, inliningTarget);
     }
 }
