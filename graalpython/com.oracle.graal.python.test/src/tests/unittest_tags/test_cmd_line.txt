@@ -22,5 +22,5 @@ test.test_cmd_line.CmdLineTest.test_unbuffered_output @ darwin-arm64,linux-aarch
 test.test_cmd_line.CmdLineTest.test_unmached_quote @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmd_line.CmdLineTest.test_verbose @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_cmd_line.IgnoreEnvironmentTest.test_ignore_PYTHONPATH @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_cmd_line.SyntaxErrorTests.test_decoding_error_at_the_end_of_the_line @ linux-aarch64-github,linux-x86_64-github
-test.test_cmd_line.SyntaxErrorTests.test_tokenizer_error_with_stdin @ linux-aarch64-github,linux-x86_64-github
+test.test_cmd_line.SyntaxErrorTests.test_decoding_error_at_the_end_of_the_line @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_cmd_line.SyntaxErrorTests.test_tokenizer_error_with_stdin @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
