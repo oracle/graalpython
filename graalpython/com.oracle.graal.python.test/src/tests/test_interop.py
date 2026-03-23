@@ -242,6 +242,31 @@ class InteropTests(unittest.TestCase):
         self.assertEqual(d - datetime.date(2025, 3, 20), datetime.timedelta(days=3))
         self.assertEqual(d - LocalDate.of(2025, 3, 20), datetime.timedelta(days=3))
 
+    def test_foreign_time_behavior(self):
+        import datetime
+        import java
+
+        LocalTime = java.type("java.time.LocalTime")
+
+        t = LocalTime.of(7, 8, 9)
+        self.assertEqual(t.hour, 7)
+        self.assertEqual(t.minute, 8)
+        self.assertEqual(t.second, 9)
+        self.assertEqual(t.microsecond, 0)
+        self.assertEqual(str(t), "07:08:09")
+        self.assertEqual(t.isoformat(), "07:08:09")
+        self.assertEqual(t.strftime("%H:%M:%S"), "07:08:09")
+        self.assertEqual(format(t, "%H:%M:%S"), "07:08:09")
+        self.assertEqual(hash(t), hash(datetime.time(7, 8, 9)))
+        self.assertEqual(t, datetime.time(7, 8, 9))
+        self.assertEqual(t, LocalTime.of(7, 8, 9))
+        self.assertEqual(t.replace(second=10), datetime.time(7, 8, 10))
+        self.assertLess(t, datetime.time(7, 8, 10))
+        self.assertIsNone(t.tzinfo)
+        self.assertIsNone(t.utcoffset())
+        self.assertIsNone(t.dst())
+        self.assertIsNone(t.tzname())
+
     def test_read(self):
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field
