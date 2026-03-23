@@ -92,7 +92,7 @@ public final class MemoryViewIteratorBuiltins extends PythonBuiltins {
                 long ptr = seq.getBufferPointer();
                 int offset = seq.getOffset() + seq.getBufferStrides()[0] * self.index++;
                 if (seq.getBufferSuboffsets() != null && seq.getBufferSuboffsets()[0] >= 0) {
-                    ptr = MemoryViewNodes.addSuboffset(inliningTarget, ptr, offset, seq.getBufferSuboffsets()[0]);
+                    ptr = MemoryViewNodes.addSuboffset(ptr, offset, seq.getBufferSuboffsets()[0]);
                     offset = 0;
                 }
                 return readItemAtNode.execute(frame, seq, ptr, offset);

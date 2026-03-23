@@ -208,8 +208,6 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     GRAALPY_RELEASE_BUFFER(true, Void, Pointer),
     // void GraalPyPrivate_MMap_InitBufferProtocol(PyTypeObject *);
     MMAP_INIT_BUFFERPROTOCOL(true, Void, PyTypeObject),
-    // void *GraalPyPrivate_AddSuboffset(void *, Py_ssize_t, Py_ssize_t);
-    ADD_SUBOFFSET(true, Pointer, Pointer, Py_ssize_t, Py_ssize_t),
     // PyObject *GraalPyPrivate_Exception_SubtypeNew(PyTypeObject *, PyObject *);
     EXCEPTION_SUBTYPE_NEW(false, PyObjectReturn, PyTypeObject, PyObject),
     // PyObject *GraalPyPrivate_Bytes_SubtypeNew(PyTypeObject *, void *, Py_ssize_t);

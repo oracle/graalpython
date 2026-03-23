@@ -446,11 +446,11 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 long otherXPtr = otherPtr;
                 int otherXOffset = otherOffset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    selfXPtr = MemoryViewNodes.addSuboffset(inliningTarget, selfPtr, selfOffset, self.getBufferSuboffsets()[dim]);
+                    selfXPtr = MemoryViewNodes.addSuboffset(selfPtr, selfOffset, self.getBufferSuboffsets()[dim]);
                     selfXOffset = 0;
                 }
                 if (other.getBufferSuboffsets() != null && other.getBufferSuboffsets()[dim] >= 0) {
-                    otherXPtr = MemoryViewNodes.addSuboffset(inliningTarget, otherPtr, otherOffset, other.getBufferSuboffsets()[dim]);
+                    otherXPtr = MemoryViewNodes.addSuboffset(otherPtr, otherOffset, other.getBufferSuboffsets()[dim]);
                     otherXOffset = 0;
                 }
                 if (dim == ndim - 1) {
@@ -515,7 +515,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 long xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = MemoryViewNodes.addSuboffset(this, ptr, offset, self.getBufferSuboffsets()[dim]);
+                    xptr = MemoryViewNodes.addSuboffset(ptr, offset, self.getBufferSuboffsets()[dim]);
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {

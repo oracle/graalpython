@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -93,12 +94,10 @@ import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class MemoryViewNodes {
-    static long addSuboffset(Node inliningTarget, long ptr, int offset, int suboffset) {
-        try {
-            return ExternalFunctionInvoker.invokeADD_SUBOFFSET(CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_ADD_SUBOFFSET).getAddress(), ptr, offset, suboffset);
-        } catch (Throwable t) {
-            throw CompilerDirectives.shouldNotReachHere(t);
-        }
+    /** {@code *(int8_t**)(ptr + offset) + suboffset} */
+    static long addSuboffset(long ptr, int offset, int suboffset) {
+        assert PythonContext.get(null).isNativeAccessAllowed();
+        return NativeMemory.readPtr(ptr + offset) + suboffset;
     }
 
     static boolean isByteFormat(BufferFormat format) {
@@ -346,7 +345,7 @@ public class MemoryViewNodes {
             if (hasSuboffsetsProfile.profile(inliningTarget, suboffsets != null) && suboffsets[dim] >= 0) {
                 // The length may be out of bounds, but sulong shouldn't care if we don't
                 // access the out-of-bound part
-                ptr.ptr = addSuboffset(inliningTarget, ptr.ptr, ptr.offset, suboffsets[dim]);
+                ptr.ptr = addSuboffset(ptr.ptr, ptr.offset, suboffsets[dim]);
                 ptr.offset = 0;
             }
         }
@@ -510,7 +509,7 @@ public class MemoryViewNodes {
                 long xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = addSuboffset(inliningTarget, ptr, offset, self.getBufferSuboffsets()[dim]);
+                    xptr = addSuboffset(ptr, offset, self.getBufferSuboffsets()[dim]);
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
@@ -546,7 +545,7 @@ public class MemoryViewNodes {
                 long xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = addSuboffset(inliningTarget, ptr, offset, self.getBufferSuboffsets()[dim]);
+                    xptr = addSuboffset(ptr, offset, self.getBufferSuboffsets()[dim]);
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {

@@ -79,7 +79,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_BULK_DEALLOC("GraalPyPrivate_BulkDealloc", ExternalFunctionSignature.BULK_DEALLOC),
     FUN_SHUTDOWN_BULK_DEALLOC("GraalPyPrivate_BulkDeallocOnShutdown", ExternalFunctionSignature.SHUTDOWN_BULK_DEALLOC),
     FUN_GET_CURRENT_RSS("GraalPyPrivate_GetCurrentRSS", ExternalFunctionSignature.GET_CURRENT_RSS),
-    FUN_ADD_SUBOFFSET("GraalPyPrivate_AddSuboffset", ExternalFunctionSignature.ADD_SUBOFFSET),
     FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT("GraalPyPrivate_MemoryViewFromObject", ExternalFunctionSignature.GRAALPY_MEMORYVIEW_FROM_OBJECT),
     FUN_GRAALPY_RELEASE_BUFFER("GraalPyPrivate_ReleaseBuffer", ExternalFunctionSignature.GRAALPY_RELEASE_BUFFER),
     FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR("GraalPyPrivate_Capsule_CallDestructor", ExternalFunctionSignature.GRAALPY_CAPSULE_CALL_DESTRUCTOR),
