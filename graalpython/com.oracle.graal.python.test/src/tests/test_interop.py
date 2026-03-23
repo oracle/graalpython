@@ -114,6 +114,8 @@ class InteropTests(unittest.TestCase):
             polyglot.ForeignObject,
             polyglot.ForeignList,
             polyglot.ForeignBoolean,
+            polyglot.ForeignDate,
+            polyglot.ForeignDateTime,
             polyglot.ForeignException,
             polyglot.ForeignExecutable,
             polyglot.ForeignDict,
@@ -124,6 +126,8 @@ class InteropTests(unittest.TestCase):
             polyglot.ForeignNone,
             polyglot.ForeignNumber,
             polyglot.ForeignString,
+            polyglot.ForeignTime,
+            polyglot.ForeignTimeZone,
         ]
 
         for c in classes:
@@ -131,7 +135,16 @@ class InteropTests(unittest.TestCase):
             if c is polyglot.ForeignBoolean:
                 self.assertIs(c.__base__, polyglot.ForeignNumber)
             elif c is not polyglot.ForeignObject:
-                self.assertIs(c.__base__, polyglot.ForeignObject)
+                if c is polyglot.ForeignDate:
+                    self.assertIs(c.__base__, __import__("datetime").date)
+                elif c is polyglot.ForeignTime:
+                    self.assertIs(c.__base__, __import__("datetime").time)
+                elif c is polyglot.ForeignDateTime:
+                    self.assertIs(c.__base__, __import__("datetime").datetime)
+                elif c is polyglot.ForeignTimeZone:
+                    self.assertIs(c.__base__, __import__("datetime").tzinfo)
+                else:
+                    self.assertIs(c.__base__, polyglot.ForeignObject)
 
     def test_get_class(self):
         def wrap(obj):
@@ -155,6 +168,7 @@ class InteropTests(unittest.TestCase):
         self.assertEqual(t("abc"), polyglot.ForeignString)
 
         from java.lang import Object, Boolean, Integer, Throwable, Thread, Number, String
+        from java.time import LocalDate, LocalDateTime, LocalTime, ZoneId
         from java.util import ArrayList, HashMap, ArrayDeque
         from java.math import BigInteger
         null = Integer.getInteger("something_that_does_not_exists")
@@ -172,6 +186,19 @@ class InteropTests(unittest.TestCase):
         self.assertEqual(type(null), polyglot.ForeignNone)
         self.assertEqual(type(BigInteger.valueOf(42)), polyglot.ForeignNumber)
         self.assertEqual(type(wrap(String("abc"))), polyglot.ForeignString)
+        local_date = LocalDate.of(2025, 3, 23)
+        self.assertIsInstance(local_date, polyglot.ForeignDate)
+        self.assertIsInstance(local_date, __import__("datetime").date)
+
+        local_time = LocalTime.of(7, 8, 9)
+        self.assertIsInstance(local_time, polyglot.ForeignTime)
+        self.assertIsInstance(local_time, __import__("datetime").time)
+
+        local_date_time = LocalDateTime.of(2025, 3, 23, 7, 8, 9)
+        self.assertIsInstance(local_date_time, polyglot.ForeignDateTime)
+        self.assertIsInstance(local_date_time, __import__("datetime").datetime)
+
+        self.assertEqual(type(ZoneId.of("UTC")), polyglot.ForeignTimeZone)
 
     def test_import(self):
         def some_function():

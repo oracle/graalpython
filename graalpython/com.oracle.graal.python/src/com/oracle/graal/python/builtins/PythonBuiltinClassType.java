@@ -842,6 +842,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ForeignExecutable("ForeignExecutable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignExecutableBuiltins.SLOTS)),
     ForeignInstantiable("ForeignInstantiable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignInstantiableBuiltins.SLOTS)),
     ForeignIterable("ForeignIterable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignIterableBuiltins.SLOTS)),
+    ForeignDate("ForeignDate", PDate, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
+    ForeignTime("ForeignTime", PTime, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
+    ForeignDateTime("ForeignDateTime", PDateTime, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
+    ForeignTimeZone("ForeignTimeZone", PTzInfo, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
 
     // bz2
     BZ2Compressor("BZ2Compressor", PythonObject, newBuilder().publishInModule("_bz2").basetype().slots(BZ2CompressorBuiltins.SLOTS)),
