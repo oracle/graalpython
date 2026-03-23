@@ -117,9 +117,13 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBui
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
+import com.oracle.graal.python.lib.PyDateCheckNode;
+import com.oracle.graal.python.lib.PyDateTimeCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyTZInfoCheckNode;
+import com.oracle.graal.python.lib.PyTimeCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -247,7 +251,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             }
 
             if (naiveBytesCheck(bytes)) {
-                if (tzInfo != PNone.NO_VALUE && !TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
+                if (tzInfo != PNone.NO_VALUE && !PyTZInfoCheckNode.executeUncached(tzInfo)) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BAD_TZINFO_STATE_ARG);
                 }
 
@@ -366,7 +370,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object nowInTimeZoneBoundary(Object cls, Object tzInfo, Node inliningTarget) {
-            if (!TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
+            if (!PyTZInfoCheckNode.executeUncached(tzInfo)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
             }
             // convert current time in UTC to the given time zone with tzinfo.fromutc()
@@ -554,7 +558,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object richCmpBoundary(Object selfObj, Object otherObj, RichCmpOp op, Node inliningTarget) {
-            if (!DateTimeNodes.DateTimeCheckNode.executeUncached(otherObj)) {
+            if (!PyDateTimeCheckNode.executeUncached(otherObj)) {
                 /*
                  * Prevent invocation of date_richcompare. We want to return NotImplemented here to
                  * give the other object a chance. But since DateTime is a subclass of Date, if the
@@ -562,7 +566,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                  * alone, and we don't want that. So force unequal or uncomparable here in that
                  * case.
                  */
-                if (DateNodes.DateCheckNode.executeUncached(otherObj)) {
+                if (PyDateCheckNode.executeUncached(otherObj)) {
                     if (op == RichCmpOp.Py_EQ) {
                         return false;
                     } else if (op == RichCmpOp.Py_NE) {
@@ -727,7 +731,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object addBoundary(Object left, Object right, Node inliningTarget) {
             Object dateTimeObj, deltaObj;
-            if (DateTimeNodes.DateTimeCheckNode.executeUncached(left)) {
+            if (PyDateTimeCheckNode.executeUncached(left)) {
                 if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
                     dateTimeObj = left;
                     deltaObj = right;
@@ -774,11 +778,11 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object subBoundary(Object left, Object right, Node inliningTarget) {
-            if (!DateTimeNodes.DateTimeCheckNode.executeUncached(left)) {
+            if (!PyDateTimeCheckNode.executeUncached(left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(left);
-            if (DateTimeNodes.DateTimeCheckNode.executeUncached(right)) {
+            if (PyDateTimeCheckNode.executeUncached(right)) {
                 PDateTime other = DateTimeNodes.AsManagedDateTimeNode.executeUncached(right);
 
                 final PTimeDelta selfOffset;
@@ -974,7 +978,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             if (tzInfoObject instanceof PNone) {
                 tzInfo = null;
             } else {
-                if (!TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfoObject)) {
+                if (!PyTZInfoCheckNode.executeUncached(tzInfoObject)) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfoObject);
                 }
 
@@ -1148,7 +1152,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached DateTimeNodes.SubclassNewNode newNode) {
-            if (!DateNodes.DateCheckNode.executeUncached(dateObject)) {
+            if (!PyDateCheckNode.executeUncached(dateObject)) {
                 throw raiseNode.raise(inliningTarget,
                                 TypeError,
                                 ErrorMessages.ARG_D_MUST_BE_S_NOT_P,
@@ -1158,7 +1162,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                                 dateObject);
             }
 
-            if (!TimeNodes.TimeCheckNode.executeUncached(timeObject)) {
+            if (!PyTimeCheckNode.executeUncached(timeObject)) {
                 throw raiseNode.raise(inliningTarget,
                                 TypeError,
                                 ErrorMessages.ARG_D_MUST_BE_S_NOT_P,
@@ -1178,7 +1182,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                 tzInfo = tzInfoObject;
             }
 
-            if (tzInfo != null && !TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
+            if (tzInfo != null && !PyTZInfoCheckNode.executeUncached(tzInfo)) {
                 throw raiseNode.raise(inliningTarget,
                                 TypeError,
                                 ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P,
@@ -2699,7 +2703,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             final Object targetTimeZone;
             if (tzInfo instanceof PNone) {
                 targetTimeZone = getSystemTimeZoneAt(toLocalDateTime(self), self.fold, inliningTarget);
-            } else if (!TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
+            } else if (!PyTZInfoCheckNode.executeUncached(tzInfo)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
             } else {
                 targetTimeZone = tzInfo;

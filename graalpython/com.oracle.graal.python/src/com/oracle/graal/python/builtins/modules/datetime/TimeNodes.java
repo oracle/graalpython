@@ -57,12 +57,13 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
+import com.oracle.graal.python.lib.PyTZInfoCheckNode;
+import com.oracle.graal.python.lib.PyTimeCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -185,7 +186,7 @@ public class TimeNodes {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.MICROSECOND_MUST_BE_IN);
             }
 
-            if (tzInfo != null && !TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
+            if (tzInfo != null && !PyTZInfoCheckNode.executeUncached(tzInfo)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
             }
 
@@ -248,7 +249,7 @@ public class TimeNodes {
         @Specialization(guards = "checkNode.execute(inliningTarget, nativeTime)", limit = "1")
         static PTime doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject nativeTime,
                         @Bind PythonLanguage language,
-                        @SuppressWarnings("unused") @Cached TimeCheckNode checkNode,
+                        @SuppressWarnings("unused") @Cached PyTimeCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
             int hour = getHour(nativeTime, readByteNode);
@@ -301,33 +302,6 @@ public class TimeNodes {
         static PTime error(Object obj,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_GOT_P, "time", obj);
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class TimeCheckNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object obj);
-
-        public static boolean executeUncached(Object obj) {
-            return TimeNodesFactory.TimeCheckNodeGen.getUncached().execute(null, obj);
-        }
-
-        @Specialization
-        static boolean doManaged(@SuppressWarnings("unused") PTime value) {
-            return true;
-        }
-
-        @Specialization
-        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
-            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PTime);
-        }
-
-        @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object value) {
-            return false;
         }
     }
 

@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes;
 import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.lib.PyDateTimeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -124,7 +125,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
         static Object utcoffset(Object self, Object dateTime,
                         @Bind Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary interop,
-                        @Cached TemporalNodes.DateTimeLikeCheckNode dateTimeLikeCheckNode,
+                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
                         @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
             ZoneId zoneId = asZoneId(self, interop);
             if (dateTime == PNone.NONE) {
@@ -151,7 +152,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
         static Object dst(Object self, Object dateTime,
                         @Bind Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary interop,
-                        @Cached TemporalNodes.DateTimeLikeCheckNode dateTimeLikeCheckNode,
+                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
                         @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
             ZoneId zoneId = asZoneId(self, interop);
             if (dateTime == PNone.NONE) {
@@ -175,7 +176,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
         static Object tzname(Object self, Object dateTime,
                         @Bind Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary interop,
-                        @Cached TemporalNodes.DateTimeLikeCheckNode dateTimeLikeCheckNode,
+                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
                         @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
             ZoneId zoneId = asZoneId(self, interop);
             if (dateTime == PNone.NONE) {
@@ -198,7 +199,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
         static Object fromutc(Object self, Object dateTime,
                         @Bind Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary interop,
-                        @Cached TemporalNodes.DateTimeLikeCheckNode dateTimeLikeCheckNode,
+                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
                         @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
             if (!dateTimeLikeCheckNode.execute(inliningTarget, dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);

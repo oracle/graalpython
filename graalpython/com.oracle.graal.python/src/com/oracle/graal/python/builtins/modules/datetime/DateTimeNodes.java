@@ -60,12 +60,13 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyDateTimeCheckNode;
+import com.oracle.graal.python.lib.PyTZInfoCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -96,7 +97,7 @@ public class DateTimeNodes {
                         Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached DateTimeNodes.NewUnsafeNode newUnsafeNode,
-                        @Cached TzInfoNodes.TzInfoCheckNode tzInfoCheckNode,
+                        @Cached PyTZInfoCheckNode tzInfoCheckNode,
                         @Cached PRaiseNode raiseNode) {
             int year = asIntNode.execute(frame, inliningTarget, yearObject);
             int month = asIntNode.execute(frame, inliningTarget, monthObject);
@@ -174,7 +175,7 @@ public class DateTimeNodes {
         }
 
         private static void validateTimeComponents(Node inliningTarget, PRaiseNode raiseNode, long hour, long minute, long second, long microsecond, Object tzInfo, long fold,
-                        TzInfoNodes.TzInfoCheckNode tzInfoCheckNode) {
+                        PyTZInfoCheckNode tzInfoCheckNode) {
             if (hour < 0 || hour >= 24) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.HOUR_MUST_BE_IN);
             }
@@ -221,7 +222,7 @@ public class DateTimeNodes {
         @Specialization
         static Object newDateTime(Node inliningTarget, Object cls, int year, int month, int day, int hour, int minute, int second, int microsecond, Object tzInfoObject, int fold,
                         @Cached PRaiseNode raiseNode,
-                        @Cached TzInfoNodes.TzInfoCheckNode tzInfoCheckNode,
+                        @Cached PyTZInfoCheckNode tzInfoCheckNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
@@ -311,7 +312,7 @@ public class DateTimeNodes {
         @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
         static PDateTime asManagedNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject obj,
                         @Bind PythonLanguage language,
-                        @SuppressWarnings("unused") @Cached DateTimeCheckNode checkNode,
+                        @SuppressWarnings("unused") @Cached PyDateTimeCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
             int year = getYear(obj, readByteNode);
@@ -405,30 +406,4 @@ public class DateTimeNodes {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class DateTimeCheckNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object obj);
-
-        public static boolean executeUncached(Object obj) {
-            return DateTimeNodesFactory.DateTimeCheckNodeGen.getUncached().execute(null, obj);
-        }
-
-        @Specialization
-        static boolean doManaged(@SuppressWarnings("unused") PDateTime value) {
-            return true;
-        }
-
-        @Specialization
-        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
-            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PDateTime);
-        }
-
-        @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object value) {
-            return false;
-        }
-    }
 }

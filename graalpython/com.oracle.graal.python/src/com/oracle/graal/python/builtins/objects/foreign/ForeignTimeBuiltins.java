@@ -69,6 +69,7 @@ import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTimeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -138,7 +139,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object richCmp(VirtualFrame frame, Object selfObj, Object otherObj, RichCmpOp op,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.TimeLikeCheckNode timeLikeCheckNode,
+                        @Cached PyTimeCheckNode timeLikeCheckNode,
                         @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode) {

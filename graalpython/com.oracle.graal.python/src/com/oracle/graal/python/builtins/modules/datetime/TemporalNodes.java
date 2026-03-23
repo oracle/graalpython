@@ -53,6 +53,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.lib.PyDateCheckNode;
+import com.oracle.graal.python.lib.PyDateTimeCheckNode;
+import com.oracle.graal.python.lib.PyTimeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
@@ -185,96 +188,6 @@ public final class TemporalNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class DateLikeCheckNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object obj);
-
-        @Specialization
-        static boolean doManaged(@SuppressWarnings("unused") PDate value) {
-            return true;
-        }
-
-        @Specialization
-        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
-                        @Cached DateNodes.DateCheckNode checkNode) {
-            return checkNode.execute(inliningTarget, value);
-        }
-
-        @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, value)", limit = "1")
-        static boolean doForeign(Node inliningTarget, Object value,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary("value") InteropLibrary interop) {
-            return interop.isDate(value);
-        }
-
-        @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object value) {
-            return false;
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class TimeLikeCheckNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object obj);
-
-        @Specialization
-        static boolean doManaged(@SuppressWarnings("unused") PTime value) {
-            return true;
-        }
-
-        @Specialization
-        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
-                        @Cached TimeNodes.TimeCheckNode checkNode) {
-            return checkNode.execute(inliningTarget, value);
-        }
-
-        @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, value)", limit = "1")
-        static boolean doForeign(Node inliningTarget, Object value,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary("value") InteropLibrary interop) {
-            return interop.isTime(value);
-        }
-
-        @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object value) {
-            return false;
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class DateTimeLikeCheckNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object obj);
-
-        @Specialization
-        static boolean doManaged(@SuppressWarnings("unused") PDateTime value) {
-            return true;
-        }
-
-        @Specialization
-        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
-                        @Cached DateTimeNodes.DateTimeCheckNode checkNode) {
-            return checkNode.execute(inliningTarget, value);
-        }
-
-        @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, value)", limit = "1")
-        static boolean doForeign(Node inliningTarget, Object value,
-                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary("value") InteropLibrary interop) {
-            return interop.isDate(value) && interop.isTime(value);
-        }
-
-        @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object value) {
-            return false;
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
     public abstract static class ReadDateValueNode extends Node {
         public abstract DateValue execute(Node inliningTarget, Object obj);
 
@@ -285,7 +198,7 @@ public final class TemporalNodes {
 
         @Specialization(guards = "checkNode.execute(inliningTarget, value)", limit = "1")
         static DateValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
-                        @SuppressWarnings("unused") @Cached DateNodes.DateCheckNode checkNode,
+                        @SuppressWarnings("unused") @Cached PyDateCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readNode) {
             return new DateValue(DateNodes.AsManagedDateNode.getYear(value, readNode), DateNodes.AsManagedDateNode.getMonth(value, readNode), DateNodes.AsManagedDateNode.getDay(value, readNode));
         }
@@ -322,7 +235,7 @@ public final class TemporalNodes {
 
         @Specialization(guards = "checkNode.execute(inliningTarget, value)", limit = "1")
         static TimeValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
-                        @SuppressWarnings("unused") @Cached TimeNodes.TimeCheckNode checkNode,
+                        @SuppressWarnings("unused") @Cached PyTimeCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
             return new TimeValue(TimeNodes.AsManagedTimeNode.getHour(value, readByteNode), TimeNodes.AsManagedTimeNode.getMinute(value, readByteNode),
@@ -363,7 +276,7 @@ public final class TemporalNodes {
 
         @Specialization(guards = "checkNode.execute(inliningTarget, value)", limit = "1")
         static DateTimeValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
-                        @SuppressWarnings("unused") @Cached DateTimeNodes.DateTimeCheckNode checkNode,
+                        @SuppressWarnings("unused") @Cached PyDateTimeCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
             return new DateTimeValue(DateTimeNodes.AsManagedDateTimeNode.getYear(value, readByteNode), DateTimeNodes.AsManagedDateTimeNode.getMonth(value, readByteNode),

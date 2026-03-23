@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.PyDateTimeCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -350,7 +351,7 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
         @Specialization
         static Object fromUtc(PTimeZone self, Object dateTime,
                         @Bind Node inliningTarget,
-                        @Cached DateTimeNodes.DateTimeCheckNode dateTimeCheckNode,
+                        @Cached PyDateTimeCheckNode dateTimeCheckNode,
                         @Cached DateTimeNodes.TzInfoNode tzInfoNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {

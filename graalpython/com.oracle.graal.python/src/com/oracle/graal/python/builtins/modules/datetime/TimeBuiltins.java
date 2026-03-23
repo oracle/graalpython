@@ -88,6 +88,8 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.PyTZInfoCheckNode;
+import com.oracle.graal.python.lib.PyTimeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -200,7 +202,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
             if (naiveBytesCheck(bytes)) {
                 // slightly different error message
-                if (tzInfo != PNone.NO_VALUE && !TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
+                if (tzInfo != PNone.NO_VALUE && !PyTZInfoCheckNode.executeUncached(tzInfo)) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BAD_TZINFO_STATE_ARG);
                 }
 
@@ -395,7 +397,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object richCmpBoundary(Object selfObj, Object otherObj, RichCmpOp op, Node inliningTarget) {
-            if (!TimeNodes.TimeCheckNode.executeUncached(selfObj) || !TimeNodes.TimeCheckNode.executeUncached(otherObj)) {
+            if (!PyTimeCheckNode.executeUncached(selfObj) || !PyTimeCheckNode.executeUncached(otherObj)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);

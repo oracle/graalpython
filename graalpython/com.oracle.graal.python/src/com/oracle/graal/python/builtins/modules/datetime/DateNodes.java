@@ -57,12 +57,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyDateCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -203,7 +203,7 @@ public class DateNodes {
         @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
         static PDate asManagedNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject obj,
                         @Bind PythonLanguage language,
-                        @SuppressWarnings("unused") @Cached DateCheckNode checkNode,
+                        @SuppressWarnings("unused") @Cached PyDateCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode) {
             int year = getYear(obj, readByteNode);
             int month = getMonth(obj, readByteNode);
@@ -233,30 +233,4 @@ public class DateNodes {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class DateCheckNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object obj);
-
-        public static boolean executeUncached(Object obj) {
-            return DateNodesFactory.DateCheckNodeGen.getUncached().execute(null, obj);
-        }
-
-        @Specialization
-        static boolean doManaged(@SuppressWarnings("unused") PDate value) {
-            return true;
-        }
-
-        @Specialization
-        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
-            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PDate);
-        }
-
-        @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object value) {
-            return false;
-        }
-    }
 }

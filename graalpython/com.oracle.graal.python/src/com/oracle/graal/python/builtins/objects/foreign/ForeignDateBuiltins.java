@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.PyDateCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -139,7 +140,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static Object richCmp(Object selfObj, Object otherObj, RichCmpOp op,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.DateLikeCheckNode dateLikeCheckNode,
+                        @Cached PyDateCheckNode dateLikeCheckNode,
                         @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
             if (!dateLikeCheckNode.execute(inliningTarget, otherObj)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -169,7 +170,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object add(Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.DateLikeCheckNode dateLikeCheckNode,
+                        @Cached PyDateCheckNode dateLikeCheckNode,
                         @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
             Object dateObj;
             Object deltaObj;
@@ -200,7 +201,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object sub(Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.DateLikeCheckNode dateLikeCheckNode,
+                        @Cached PyDateCheckNode dateLikeCheckNode,
                         @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
             if (!dateLikeCheckNode.execute(inliningTarget, left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;

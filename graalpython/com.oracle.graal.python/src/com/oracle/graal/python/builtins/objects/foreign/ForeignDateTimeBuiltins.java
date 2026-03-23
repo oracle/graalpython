@@ -68,6 +68,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.lib.PyDateCheckNode;
+import com.oracle.graal.python.lib.PyDateTimeCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -146,8 +148,8 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object richCmp(VirtualFrame frame, Object selfObj, Object otherObj, RichCmpOp op,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.DateTimeLikeCheckNode dateTimeLikeCheckNode,
-                        @Cached TemporalNodes.DateLikeCheckNode dateLikeCheckNode,
+                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
+                        @Cached PyDateCheckNode dateLikeCheckNode,
                         @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode) {
@@ -209,7 +211,7 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object add(Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.DateTimeLikeCheckNode dateTimeLikeCheckNode,
+                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
                         @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
             Object dateTimeObj;
             Object deltaObj;
@@ -235,7 +237,7 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object sub(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.DateTimeLikeCheckNode dateTimeLikeCheckNode,
+                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
                         @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode) {
