@@ -663,8 +663,11 @@ def test_faulthandler_many_threads():
 def test_faulthandler_sigsegv_builtin():
     import faulthandler
 
-    if __graalpython__.posix_module_backend() == "java":
-        return
+    try:
+        if __graalpython__.posix_module_backend() == "java":
+            return
+    except NameError:
+        pass # CPython
 
     def assert_fatal_faulthandler_call(name, *args):
         assert hasattr(faulthandler, name)
