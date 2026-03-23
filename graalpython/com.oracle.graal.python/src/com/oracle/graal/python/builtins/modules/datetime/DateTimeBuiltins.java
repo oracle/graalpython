@@ -3267,7 +3267,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static LocalDateTime toLocalDateTime(PDateTime dateTime) {
-        return LocalDateTime.of(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second, dateTime.microsecond * 1_000);
+        return TemporalNodes.DateTimeValue.of(dateTime).toLocalDateTime();
     }
 
     private static Object toPDateTime(LocalDateTime local, Object tzInfo, int fold, Node inliningTarget, Object cls) {

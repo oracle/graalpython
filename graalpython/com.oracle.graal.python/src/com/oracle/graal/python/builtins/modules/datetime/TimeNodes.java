@@ -282,7 +282,7 @@ public class TimeNodes {
             return (b3 << 16) | (b4 << 8) | b5;
         }
 
-        private static Object getTzInfo(PythonAbstractNativeObject nativeTime, CStructAccess.ReadByteNode readByteNode, CStructAccess.ReadObjectNode readObjectNode) {
+        static Object getTzInfo(PythonAbstractNativeObject nativeTime, CStructAccess.ReadByteNode readByteNode, CStructAccess.ReadObjectNode readObjectNode) {
             Object tzinfo = null;
             if (readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__hastzinfo) != 0) {
                 Object tzinfoObj = readObjectNode.readFromObj(nativeTime, CFields.PyDateTime_Time__tzinfo);
