@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -89,3 +89,21 @@ def test_make_method():
 
     assert isinstance(method1(), A)
     assert method2(1) == "A is 1", method2(1)
+
+
+def test_method_qualname_uses_wrapped_callable():
+    import types
+
+    def f():
+        pass
+
+    class A:
+        def g(self):
+            pass
+
+        m = classmethod(f)
+
+    assert A().g.__qualname__ == "test_method_qualname_uses_wrapped_callable.<locals>.A.g"
+    assert types.MethodType(f, A).__qualname__ == "test_method_qualname_uses_wrapped_callable.<locals>.f"
+    assert A.m.__qualname__ == "test_method_qualname_uses_wrapped_callable.<locals>.f"
+    assert A.__dict__["m"].__qualname__ == "test_method_qualname_uses_wrapped_callable.<locals>.f"
