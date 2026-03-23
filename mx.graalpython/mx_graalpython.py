@@ -115,6 +115,7 @@ SANDBOXED_OPTIONS = [
     '--python.Sha3ModuleBackend=java',
     '--python.CompressionModulesBackend=java',
     '--python.PyExpatModuleBackend=java',
+    '--python.UnicodeCharacterDatabaseNativeFallback=false',
 ]
 
 
