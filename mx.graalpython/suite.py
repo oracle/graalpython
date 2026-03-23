@@ -889,11 +889,12 @@ suite = {
                 # GraalPy standalone specific flags
                 # uncomment to disable JLine FFM provider at native image build time
                 #'-Dorg.graalvm.shadowed.org.jline.terminal.ffm.disable=true',
-                 '--enable-native-access=org.graalvm.shadowed.jline',
+                '--enable-native-access=org.graalvm.shadowed.jline',
                 "-Dpolyglot.python.PosixModuleBackend=native",
                 "-Dpolyglot.python.Sha3ModuleBackend=native",
                 "-Dpolyglot.python.CompressionModulesBackend=native",
                 "-Dpolyglot.python.PyExpatModuleBackend=native",
+                "-Dpolyglot.python.UnicodeCharacterDatabaseNativeFallback=true",
             ],
             "dynamicBuildArgs": "libpythonvm_build_args",
         },

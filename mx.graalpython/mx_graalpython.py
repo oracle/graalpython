@@ -2254,6 +2254,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
                 '-Dpolyglot.python.PosixModuleBackend=native',
                 '-Dpolyglot.python.Sha3ModuleBackend=native',
                 '-Dpolyglot.python.CompressionModulesBackend=native',
+                '-Dpolyglot.python.UnicodeCharacterDatabaseNativeFallback=true',
             ] + bytecode_dsl_build_args(),
             language='python',
             default_vm_args=[

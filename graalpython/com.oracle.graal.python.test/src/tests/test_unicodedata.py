@@ -76,6 +76,9 @@ class TestUnicodedata(unittest.TestCase):
             unicodedata.lookup("a" * 257)
 
     def test_lookup_named_sequence(self):
+        if unicodedata.ucd_3_2_0.bidirectional == unicodedata.bidirectional:
+            raise unittest.SkipTest("Only supported with CPython's unicodedata.ucd_3_2_0")
+
         unicode_name = "LATIN SMALL LETTER R WITH TILDE"
         self.assertEqual(unicodedata.lookup(unicode_name), "\u0072\u0303")
 

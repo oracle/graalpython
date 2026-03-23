@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_UNICODEDATA;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_UNICODEDATA;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -65,6 +67,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -97,6 +102,8 @@ import com.oracle.truffle.api.strings.TruffleString.ToJavaStringNode;
 public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T__CPYTHON_UNICODEDATA = toTruffleStringUncached("_cpython_unicodedata");
     private static final TruffleString T_LOOKUP = toTruffleStringUncached("lookup");
+    private static final TruffleString T_UCD_3_2_0 = toTruffleStringUncached("ucd_3_2_0");
+    private static final TruffleString T_UNIDATA_VERSION = toTruffleStringUncached("unidata_version");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -131,14 +138,31 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule self = core.lookupBuiltinModule(T_UNICODEDATA);
-        self.setAttribute(toTruffleStringUncached("unidata_version"), toTruffleStringUncached(getUnicodeVersion()));
+        self.setAttribute(T_UNIDATA_VERSION, toTruffleStringUncached(getUnicodeVersion()));
         if (core.getLanguage().getEngineOption(PythonOptions.UnicodeCharacterDatabaseNativeFallback)) {
             PyObjectCallMethodObjArgs.executeUncached(core.lookupBuiltinModule(T___GRAALPYTHON__), toTruffleStringUncached("import_current_as_named_module_with_delegate"),
                             /* module_name= */ T_UNICODEDATA,
                             /* delegate_name= */ T__CPYTHON_UNICODEDATA,
-                            /* delegate_attributes= */ PFactory.createList(core.getLanguage(), new Object[]{toTruffleStringUncached("ucd_3_2_0")}),
+                            /* delegate_attributes= */ PFactory.createList(core.getLanguage(), new Object[]{T_UCD_3_2_0}),
                             /* owner_globals= */ GetOrCreateDictNode.executeUncached(self));
+        } else {
+            self.setAttribute(T_UCD_3_2_0, createUCDCompatibilityObject(core, self));
         }
+    }
+
+    private PythonObject createUCDCompatibilityObject(Python3Core core, PythonModule self) {
+        TruffleString t_ucd = toTruffleStringUncached("UCD");
+        PythonClass clazz = PFactory.createPythonClassAndFixupSlots(null, core.getLanguage(), t_ucd, PythonBuiltinClassType.PythonObject,
+                        new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
+        for (String s : new String[]{"normalize", "is_normalized", "lookup", "name", "bidirectional", "category", "combining", "east_asian_width", "decomposition", "digit", "decimal"}) {
+            TruffleString ts = toTruffleStringUncached(s);
+            clazz.setAttribute(ts, PFactory.createStaticmethodFromCallableObj(core.getLanguage(), self.getAttribute(ts)));
+        }
+        clazz.setAttribute(T___MODULE__, T_UNICODEDATA);
+        clazz.setAttribute(T___QUALNAME__, t_ucd);
+        PythonObject obj = PFactory.createPythonObject(clazz, clazz.getInstanceShape());
+        obj.setAttribute(T_UNIDATA_VERSION, toTruffleStringUncached("3.2.0"));
+        return obj;
     }
 
     static final int NORMALIZER_FORM_COUNT = 4;
