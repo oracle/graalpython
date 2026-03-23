@@ -300,6 +300,39 @@ class InteropTests(unittest.TestCase):
         self.assertIsNone(dt.dst())
         self.assertIsNone(dt.tzname())
 
+    def test_foreign_timezone_behavior(self):
+        import datetime
+        import java
+
+        ZoneId = java.type("java.time.ZoneId")
+
+        utc = ZoneId.of("UTC")
+        self.assertIsInstance(utc, datetime.tzinfo)
+        self.assertEqual(str(utc), "UTC")
+        self.assertEqual(utc.tzname(None), "UTC")
+        self.assertEqual(utc.utcoffset(None), datetime.timedelta())
+        self.assertIsNone(utc.dst(None))
+
+        aware = datetime.datetime(2025, 3, 23, 7, 8, 9, tzinfo=utc)
+        self.assertIs(aware.tzinfo, utc)
+        self.assertEqual(aware.utcoffset(), datetime.timedelta())
+        self.assertEqual(aware.tzname(), "UTC")
+        self.assertEqual(aware.isoformat(), "2025-03-23T07:08:09+00:00")
+
+        berlin = ZoneId.of("Europe/Berlin")
+        self.assertIsInstance(berlin, datetime.tzinfo)
+        self.assertIsNone(berlin.utcoffset(None))
+        self.assertIsNone(berlin.dst(None))
+        self.assertIsNone(berlin.tzname(None))
+
+        local = datetime.datetime(2025, 3, 23, 7, 8, 9, tzinfo=berlin)
+        self.assertIs(local.tzinfo, berlin)
+        self.assertEqual(local.utcoffset(), datetime.timedelta(hours=1))
+        self.assertEqual(local.dst(), datetime.timedelta())
+        self.assertEqual(local.tzname(), "CET")
+        self.assertEqual(berlin.fromutc(datetime.datetime(2025, 3, 23, 6, 8, 9, tzinfo=berlin)),
+                         datetime.datetime(2025, 3, 23, 7, 8, 9, tzinfo=berlin))
+
     def test_read(self):
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field

@@ -43,12 +43,15 @@ package com.oracle.graal.python.builtins.modules.datetime;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public class TzInfoNodes {
@@ -71,6 +74,13 @@ public class TzInfoNodes {
         static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
                         @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
             return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PTzInfo);
+        }
+
+        @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, value)", limit = "1")
+        static boolean doForeign(Node inliningTarget, Object value,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary("value") InteropLibrary interop) {
+            return interop.isTimeZone(value);
         }
 
         @Fallback

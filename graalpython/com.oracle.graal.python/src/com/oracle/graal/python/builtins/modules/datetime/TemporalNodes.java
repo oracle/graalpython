@@ -163,6 +163,13 @@ public final class TemporalNodes {
         if (zoneId == null) {
             return null;
         }
+        return zoneId;
+    }
+
+    public static Object toFixedOffsetTimeZone(ZoneId zoneId, Node inliningTarget) {
+        if (zoneId == null) {
+            return null;
+        }
         final ZoneOffset offset;
         if (zoneId instanceof ZoneOffset zoneOffset) {
             offset = zoneOffset;
