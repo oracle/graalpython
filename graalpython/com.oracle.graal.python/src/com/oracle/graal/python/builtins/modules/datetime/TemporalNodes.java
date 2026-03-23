@@ -154,6 +154,96 @@ public final class TemporalNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    public abstract static class DateLikeCheckNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        @Specialization
+        static boolean doManaged(@SuppressWarnings("unused") PDate value) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                        @Cached DateNodes.DateCheckNode checkNode) {
+            return checkNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, value)", limit = "1")
+        static boolean doForeign(Node inliningTarget, Object value,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary("value") InteropLibrary interop) {
+            return interop.isDate(value);
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object value) {
+            return false;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class TimeLikeCheckNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        @Specialization
+        static boolean doManaged(@SuppressWarnings("unused") PTime value) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                        @Cached TimeNodes.TimeCheckNode checkNode) {
+            return checkNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, value)", limit = "1")
+        static boolean doForeign(Node inliningTarget, Object value,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary("value") InteropLibrary interop) {
+            return interop.isTime(value);
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object value) {
+            return false;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class DateTimeLikeCheckNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        @Specialization
+        static boolean doManaged(@SuppressWarnings("unused") PDateTime value) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                        @Cached DateTimeNodes.DateTimeCheckNode checkNode) {
+            return checkNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, value)", limit = "1")
+        static boolean doForeign(Node inliningTarget, Object value,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary("value") InteropLibrary interop) {
+            return interop.isDate(value) && interop.isTime(value);
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object value) {
+            return false;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class ReadDateValueNode extends Node {
         public abstract DateValue execute(Node inliningTarget, Object obj);
 

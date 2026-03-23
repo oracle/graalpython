@@ -213,6 +213,35 @@ class InteropTests(unittest.TestCase):
         assert imported_fun1 is some_function
         assert imported_fun1() == "hello, polyglot world!"
 
+    def test_foreign_date_behavior(self):
+        import datetime
+        import java
+
+        LocalDate = java.type("java.time.LocalDate")
+
+        d = LocalDate.of(2025, 3, 23)
+        self.assertEqual(d.year, 2025)
+        self.assertEqual(d.month, 3)
+        self.assertEqual(d.day, 23)
+        self.assertEqual(str(d), "2025-03-23")
+        self.assertEqual(d.isoformat(), "2025-03-23")
+        self.assertEqual(d.ctime(), datetime.date(2025, 3, 23).ctime())
+        self.assertEqual(d.strftime("%Y-%m-%d"), "2025-03-23")
+        self.assertEqual(format(d, "%Y-%m-%d"), "2025-03-23")
+        self.assertEqual(d.toordinal(), datetime.date(2025, 3, 23).toordinal())
+        self.assertEqual(d.weekday(), datetime.date(2025, 3, 23).weekday())
+        self.assertEqual(d.isoweekday(), datetime.date(2025, 3, 23).isoweekday())
+        self.assertEqual(d.isocalendar(), datetime.date(2025, 3, 23).isocalendar())
+        self.assertEqual(d.timetuple(), datetime.date(2025, 3, 23).timetuple())
+        self.assertEqual(hash(d), hash(datetime.date(2025, 3, 23)))
+        self.assertEqual(d, datetime.date(2025, 3, 23))
+        self.assertEqual(d, LocalDate.of(2025, 3, 23))
+        self.assertEqual(d.replace(day=24), datetime.date(2025, 3, 24))
+        self.assertEqual(d + datetime.timedelta(days=1), datetime.date(2025, 3, 24))
+        self.assertEqual(d - datetime.timedelta(days=1), datetime.date(2025, 3, 22))
+        self.assertEqual(d - datetime.date(2025, 3, 20), datetime.timedelta(days=3))
+        self.assertEqual(d - LocalDate.of(2025, 3, 20), datetime.timedelta(days=3))
+
     def test_read(self):
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field
