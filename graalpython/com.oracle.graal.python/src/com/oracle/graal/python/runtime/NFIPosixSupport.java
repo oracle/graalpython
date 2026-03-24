@@ -89,6 +89,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
+import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -229,6 +230,7 @@ public final class NFIPosixSupport extends PosixSupport {
         get_blocking("(sint32):sint32"),
         set_blocking("(sint32, sint32):sint32"),
         get_terminal_size("(sint32, [sint32]):sint32"),
+        signal_self("(sint32):sint32"),
         call_kill("(sint64, sint32):sint32"),
         call_killpg("(sint64, sint32):sint32"),
         call_waitpid("(sint64, [sint32], sint32):sint64"),
@@ -1159,6 +1161,18 @@ public final class NFIPosixSupport extends PosixSupport {
     public void kill(long pid, int signal,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int res = invokeNode.callInt(this, PosixNativeFunction.call_kill, pid, signal);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public void signalSelf(int signal,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        if (!ImageInfo.inImageRuntimeCode()) {
+            throw new UnsupportedPosixFeatureException("faulthandler self-signals are only supported in native standalone");
+        }
+        int res = invokeNode.callInt(this, PosixNativeFunction.signal_self, signal);
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }

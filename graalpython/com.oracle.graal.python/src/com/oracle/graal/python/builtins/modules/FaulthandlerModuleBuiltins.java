@@ -83,6 +83,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -274,20 +275,6 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_sigfpe", minNumOfPositionalArgs = 0)
-    @GenerateNodeFactory
-    abstract static class SigFpeNode extends PythonBuiltinNode {
-        @Specialization
-        static PNone doIt(VirtualFrame frame,
-                        @Bind PythonContext context,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached GilNode gil,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            return raiseFatalSignal(frame, context, inliningTarget, posixLib, gil, constructAndRaiseNode, "FPE", false);
-        }
-    }
-
     private static PNone raiseFatalSignal(VirtualFrame frame, PythonContext context, Node inliningTarget, PosixSupportLibrary posixLib, GilNode gil,
                     PConstructAndRaiseNode.Lazy constructAndRaiseNode, String signalName, boolean releaseGil) {
         try {
@@ -296,7 +283,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
                 gil.release(true);
             }
             try {
-                posixLib.kill(context.getPosixSupport(), posixLib.getpid(context.getPosixSupport()), signum);
+                posixLib.signalSelf(context.getPosixSupport(), signum);
             } finally {
                 if (releaseGil) {
                     gil.acquire();
@@ -304,6 +291,8 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
             }
         } catch (PosixException e) {
             throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+        } catch (UnsupportedPosixFeatureException e) {
+            throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
         }
         return PNone.NONE;
     }
