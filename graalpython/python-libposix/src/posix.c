@@ -77,6 +77,8 @@
 #include <unistd.h>
 #include <pwd.h>
 
+int32_t signal_self_segv(void);
+
 #ifdef __APPLE__
 #include <util.h>
 #else
@@ -608,8 +610,7 @@ int32_t signal_self(int32_t signal) {
             abort();
             break;
         case SIGSEGV:
-            *((volatile int *)0) = 1;
-            break;
+            return signal_self_segv();
         default:
             errno = EINVAL;
             return -1;

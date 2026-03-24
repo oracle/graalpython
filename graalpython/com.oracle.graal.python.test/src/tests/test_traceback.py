@@ -664,7 +664,7 @@ def test_faulthandler_sigsegv_builtin():
     import faulthandler
 
     try:
-        if not __graalpython__.is_native:
+        if not __graalpython__.is_native or __graalpython__.posix_module_backend() == "java":
             return
     except NameError:
         pass # CPython

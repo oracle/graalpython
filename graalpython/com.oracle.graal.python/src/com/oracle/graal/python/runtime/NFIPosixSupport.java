@@ -1170,7 +1170,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public void signalSelf(int signal,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         if (!ImageInfo.inImageRuntimeCode()) {
-            throw new UnsupportedPosixFeatureException("faulthandler self-signals are only supported in native standalone");
+            throw new UnsupportedPosixFeatureException("self-signals are only supported in native standalone");
         }
         int res = invokeNode.callInt(this, PosixNativeFunction.signal_self, signal);
         if (res == -1) {
