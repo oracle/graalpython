@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -749,6 +749,17 @@ public class LoggingPosixSupport extends PosixSupport {
             lib.kill(delegate, pid, signal);
         } catch (PosixException e) {
             throw logException("kill", e);
+        }
+    }
+
+    @ExportMessage
+    final void signalSelf(int signal,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("signalSelf", "%d", signal);
+        try {
+            lib.signalSelf(delegate, signal);
+        } catch (PosixException e) {
+            throw logException("signalSelf", e);
         }
     }
 

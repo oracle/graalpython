@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import ast
+import subprocess
 import sys
 
 
@@ -657,6 +658,34 @@ def test_faulthandler_many_threads():
         if ids:
             ids_per_block.append(ids)
             assert len(ids) == 1, f"Interleaved output detected in block {header!r} with multiple thread func ids: {ids}"
+
+
+def test_faulthandler_sigsegv_builtin():
+    import faulthandler
+
+    try:
+        if not __graalpython__.is_native or __graalpython__.posix_module_backend() == "java":
+            return
+    except NameError:
+        pass # CPython
+
+    def assert_fatal_faulthandler_call(name, *args):
+        assert hasattr(faulthandler, name)
+        code = f"import faulthandler; faulthandler.{name}({', '.join(map(repr, args))})"
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        assert proc.returncode != 0
+        assert proc.returncode != 1, (
+            f"expected fatal signal path for faulthandler.{name}{args}, "
+            f"got regular Python error exit {proc.returncode}"
+        )
+
+    for release_gil in (False, True):
+        assert_fatal_faulthandler_call("_sigsegv", release_gil)
+    assert_fatal_faulthandler_call("_sigabrt")
 
 
 def test_location_from_ast():

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,6 +76,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <pwd.h>
+
+int32_t signal_self_segv(void);
 
 #ifdef __APPLE__
 #include <util.h>
@@ -600,6 +602,20 @@ int32_t call_wstopsig(int32_t status) {
 
 int32_t call_kill(int64_t pid, int32_t signal) {
     return kill(pid, signal);
+}
+
+int32_t signal_self(int32_t signal) {
+    switch (signal) {
+        case SIGABRT:
+            abort();
+            break;
+        case SIGSEGV:
+            return signal_self_segv();
+        default:
+            errno = EINVAL;
+            return -1;
+    }
+    _exit(128 + signal);
 }
 
 int32_t call_killpg(int64_t pgid, int32_t signal) {

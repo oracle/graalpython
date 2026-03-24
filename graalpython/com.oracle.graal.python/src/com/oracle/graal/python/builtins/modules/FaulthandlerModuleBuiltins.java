@@ -69,16 +69,21 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -95,6 +100,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -233,6 +239,62 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
                 return fd;
             }
         }
+    }
+
+    @Builtin(name = "_sigsegv", minNumOfPositionalArgs = 0, parameterNames = {"release_gil"})
+    @ArgumentClinic(name = "release_gil", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
+    @GenerateNodeFactory
+    abstract static class SigSegvNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        static PNone doIt(VirtualFrame frame, boolean releaseGil,
+                        @Bind PythonContext context,
+                        @Bind Node inliningTarget,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            return raiseFatalSignal(frame, context, inliningTarget, posixLib, gil, constructAndRaiseNode, "SEGV", releaseGil);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FaulthandlerModuleBuiltinsClinicProviders.SigSegvNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "_sigabrt", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class SigAbrtNode extends PythonBuiltinNode {
+        @Specialization
+        static PNone doIt(VirtualFrame frame,
+                        @Bind PythonContext context,
+                        @Bind Node inliningTarget,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            return raiseFatalSignal(frame, context, inliningTarget, posixLib, gil, constructAndRaiseNode, "ABRT", false);
+        }
+    }
+
+    private static PNone raiseFatalSignal(VirtualFrame frame, PythonContext context, Node inliningTarget, PosixSupportLibrary posixLib, GilNode gil,
+                    PConstructAndRaiseNode.Lazy constructAndRaiseNode, String signalName, boolean releaseGil) {
+        try {
+            int signum = SignalModuleBuiltins.signalFromName(context, signalName);
+            if (releaseGil) {
+                gil.release(true);
+            }
+            try {
+                posixLib.signalSelf(context.getPosixSupport(), signum);
+            } finally {
+                if (releaseGil) {
+                    gil.acquire();
+                }
+            }
+        } catch (PosixException e) {
+            throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+        } catch (UnsupportedPosixFeatureException e) {
+            throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
+        }
+        return PNone.NONE;
     }
 
     @Builtin(name = "dump_traceback_later", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$mod", "timeout", "repeat", "file", "exit"})
