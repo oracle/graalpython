@@ -12,6 +12,14 @@ update, reproduce, potentially fix and/or close them. Go on with this workflow
 to the end unless you are actually blocked or get to one of the points where
 the workflow tells you to wait for confirmation or ask something.
 
+### General Notes
+
+Typical fields you need to know:
+* "components" is typically one of "Python", "Mx", "Infra", "Compiler", "Truffle"
+* "issuetype" is typically "Task", "Bug (non BugDB)", "Testing", "Build Failure"
+* "project" is typically "GR"
+* "labels" is typically left empty when creating new issues
+
 ### 1. Getting context
 
 To get the issue data, start with `ol-cli`, for example:
@@ -20,12 +28,16 @@ To get the issue data, start with `ol-cli`, for example:
 
 Read the description and follow any links that seem relevant.
 
+Run this in a subagent if possible and let it give you a summary.
+
 ### 2. Check if there is work to do
 
 Issues may be stale, already solved, or no longer apply. Search the context and
 logs for other potentially relevant keywords, use `ol-cli jira search` to find
 out if there are potentially other related issues, query the codebase and git
 history and look for reproducers.
+
+Run this in a subagent if possible and let it give you a summary.
 
 ### 3. Reproduce the issue
 
@@ -63,6 +75,9 @@ DO NOT STOP POLLING AND RETRYING UNTIL EITHER YOU REPRODUCE THE ISSUE, MORE
 THAN 8 HOURS HAVE ELAPSED WHILE YOU TRIED, OR YOU HAVE USED AT LEAST AROUND 2
 MILLION TOKENS (you may estimate from the conversation history) WHILE TRYING!
 
+Make sure to decline the temporary reproducer PR once you are done with it
+using `ol-cli bitbucket`.
+
 ### 4a. Fixing a reproducible issue.
 
 Once you have a reproducer (even if it may mean running something in a loop for
@@ -87,7 +102,13 @@ by approval of the human user), it needs to be prepared for inclusion.
 Transition the Jira issue to be "In Progress" using `ol-cli jira transition`.
 
 Make sure your changes are committed in reviewable, focused, incremental
-commits. Create a bitbucket PR
+commits.
+
+Run a subagent to REVIEW the code changes. Give it enough context to understand
+why specific implementation decisions were made. Consider the subagent's
+comments carefully, change the code where the subagent's comments make sense.
+
+Create a bitbucket PR
 
   1. Push your branch.
   2. Open a PR using ol-cli bitbucket with a title including the Jira issue ID, like "[GR-XXXXX] Short description of overall fix."
@@ -110,7 +131,8 @@ You can do this in parallel while watching the Bitbucket PR from step 5.
 Add a comment using `ol-cli jira comment` to the Jira issue, summarizing your
 findings and any work you may have done. Do NOT use Attlassian markup, the
 comment just ONLY be PLAIN TEXT. For paragraphs, just use double '\n'. You can
-make plaintext lists by making lines begin with '* '.
+make plaintext lists by making lines begin with '* '. Do NOT use ADF, use raw
+text, regardless of what the tool's help message says.
 
 Also decide yourself or confer with the human about whether this change needs
 to be backported, and what the "fix version" assignment for the Jira label

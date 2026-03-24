@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -74,6 +74,16 @@ class TestUnicodedata(unittest.TestCase):
 
         with self.assertRaisesRegex(KeyError, "name too long"):
             unicodedata.lookup("a" * 257)
+
+    def test_lookup_named_sequence(self):
+        if unicodedata.ucd_3_2_0.bidirectional == unicodedata.bidirectional:
+            raise unittest.SkipTest("Only supported with CPython's unicodedata.ucd_3_2_0")
+
+        unicode_name = "LATIN SMALL LETTER R WITH TILDE"
+        self.assertEqual(unicodedata.lookup(unicode_name), "\u0072\u0303")
+
+        with self.assertRaisesRegex(KeyError, "undefined character name 'LATIN SMALL LETTER R WITH TILDE'"):
+            unicodedata.ucd_3_2_0.lookup(unicode_name)
 
 
     def test_east_asian_width(self):
