@@ -846,10 +846,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ForeignExecutable("ForeignExecutable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignExecutableBuiltins.SLOTS)),
     ForeignInstantiable("ForeignInstantiable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().slots(ForeignInstantiableBuiltins.SLOTS)),
     ForeignIterable("ForeignIterable", ForeignObject, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignIterableBuiltins.SLOTS)),
-    ForeignDate("ForeignDate", PDate, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignDateBuiltins.SLOTS)),
-    ForeignTime("ForeignTime", PTime, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignTimeBuiltins.SLOTS)),
-    ForeignDateTime("ForeignDateTime", PDateTime, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignDateTimeBuiltins.SLOTS)),
-    ForeignTimeZone("ForeignTimeZone", PTzInfo, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignTimeZoneBuiltins.SLOTS)),
 
     // bz2
     BZ2Compressor("BZ2Compressor", PythonObject, newBuilder().publishInModule("_bz2").basetype().slots(BZ2CompressorBuiltins.SLOTS)),
@@ -1237,6 +1233,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     "timezone",
                     PTzInfo,
                     newBuilder().moduleName("datetime").publishInModule("_datetime").slots(TimeZoneBuiltins.SLOTS).doc("Fixed offset from UTC implementation of tzinfo.")),
+
+    // foreign datetime
+    ForeignDate("ForeignDate", PDate, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignDateBuiltins.SLOTS)),
+    ForeignTime("ForeignTime", PTime, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignTimeBuiltins.SLOTS)),
+    ForeignDateTime("ForeignDateTime", PDateTime, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignDateTimeBuiltins.SLOTS)),
+    ForeignTimeZone("ForeignTimeZone", PTzInfo, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignTimeZoneBuiltins.SLOTS)),
 
     // re
     PPattern(
