@@ -476,6 +476,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         int depth = 0;
         long cacheKey;
         TruffleFile bytecodeFile;
+        TruffleFile sourceFile;
         // Offset of the buffer in parent buffer in nested deserializations
         int baseOffset;
 
@@ -1552,23 +1553,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int firstLineNo = readInt();
             byte[] lnoTab = readBytes();
             com.oracle.graal.python.util.Supplier<CallTarget> supplier = () -> {
-                String jFilename = fileName.toJavaStringUncached();
                 String jName = code.qualname.toJavaStringUncached();
-                Source.LiteralBuilder builder = null;
-                try {
-                    TruffleFile file = context.getEnv().getPublicTruffleFile(jFilename);
-                    if (file.isReadable()) {
-                        builder = Source.newBuilder(PythonLanguage.ID, file).content(Source.CONTENT_NONE).name(jName);
-                    }
-                } catch (UnsupportedOperationException | IllegalArgumentException | SecurityException e) {
-                    // Fallthrough
+                Source source = Source.newBuilder(PythonLanguage.ID, "", jName).content(Source.CONTENT_NONE).build();
+                PythonLanguage language = getLanguage();
+                if (sourceFile != null) {
+                    language.registerOriginalFile(source, sourceFile);
                 }
-                if (builder == null) {
-                    builder = Source.newBuilder(PythonLanguage.ID, "", jName).content(Source.CONTENT_NONE);
-                }
-                builder.internal(PythonLanguage.shouldMarkSourceInternal(context));
-                builder.mimeType(PythonLanguage.MIME_TYPE);
-                return PythonLanguage.callTargetFromBytecode(context, builder.build(), code);
+                return language.callTargetFromBytecode(source, code);
             };
             CallTarget callTarget;
             if (getLanguage().isSingleContext() || cacheKey == 0) {
@@ -1716,8 +1707,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static Object fromBytecodeFile(PythonContext context, TruffleFile file, byte[] bytes, int offset, int length, long cacheKey) throws IOException {
-        MarshalModuleBuiltins.Marshal marshal = new MarshalModuleBuiltins.Marshal(context, bytes, length + offset, cacheKey, file, 0);
+    public static Object fromBytecodeFile(PythonContext context, TruffleFile bytecodeFile, TruffleFile sourceFile, byte[] bytes, int offset, int length, long cacheKey) throws IOException {
+        MarshalModuleBuiltins.Marshal marshal = new MarshalModuleBuiltins.Marshal(context, bytes, length + offset, cacheKey, bytecodeFile, 0);
+        marshal.sourceFile = sourceFile;
         marshal.in.skipBytes(offset);
         return marshal.readObject();
     }

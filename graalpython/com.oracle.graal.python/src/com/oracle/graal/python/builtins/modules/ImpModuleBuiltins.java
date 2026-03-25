@@ -644,28 +644,29 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     private static RootCallTarget createCallTarget(PythonContext context, FrozenInfo info) {
         return (RootCallTarget) context.getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(info.origName, System.identityHashCode(info.code)), () -> {
             String name = PythonLanguage.FROZEN_FILENAME_PREFIX + info.name + PythonLanguage.FROZEN_FILENAME_SUFFIX;
-            Source.LiteralBuilder builder = null;
+            TruffleFile originalFile = null;
             try {
                 String fs = context.getEnv().getFileNameSeparator();
                 String basename = context.getStdlibHome() + fs + info.name.toJavaStringUncached().replace(".", fs);
-                String originalPath = basename + J_PY_EXTENSION;
-                TruffleFile originalFile = context.getEnv().getInternalTruffleFile(originalPath);
-                if (!originalFile.isReadable()) {
-                    originalPath = basename + fs + "__init__.py";
-                    originalFile = context.getEnv().getInternalTruffleFile(originalPath);
+                TruffleFile file = context.getEnv().getInternalTruffleFile(basename + J_PY_EXTENSION);
+                if (!file.isReadable()) {
+                    file = context.getEnv().getInternalTruffleFile(basename + fs + "__init__.py");
                 }
-                if (originalFile.isReadable()) {
-                    builder = Source.newBuilder(PythonLanguage.ID, originalFile).content(Source.CONTENT_NONE).name(name);
+                if (file.isReadable()) {
+                    originalFile = file;
                 }
             } catch (UnsupportedOperationException | IllegalArgumentException | SecurityException e) {
                 // Fallthrough
             }
-            if (builder == null) {
-                builder = Source.newBuilder(PythonLanguage.ID, "", name).content(Source.CONTENT_NONE);
+            Source source = Source.newBuilder(PythonLanguage.ID, "", name) //
+                            .content(Source.CONTENT_NONE) //
+                            .internal(PythonLanguage.shouldMarkSourceInternal(context)) //
+                            .mimeType(PythonLanguage.MIME_TYPE).build();
+            PythonLanguage language = context.getLanguage();
+            if (originalFile != null) {
+                language.registerOriginalFile(source, originalFile);
             }
-            builder.internal(PythonLanguage.shouldMarkSourceInternal(context));
-            builder.mimeType(PythonLanguage.MIME_TYPE);
-            return context.getLanguage().callTargetFromBytecode(builder.build(), info.code);
+            return language.callTargetFromBytecode(source, info.code);
         });
     }
 

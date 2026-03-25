@@ -560,7 +560,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     Object message = PyObjectCallMethodObjArgs.executeUncached(MESSAGE, T_FORMAT, bytecodePath, sourcePath);
                     CallNode.executeUncached(context.lookupBuiltinModule(T__BOOTSTRAP).getAttribute(T__VERBOSE_MESSAGE), message);
                 }
-                return MarshalModuleBuiltins.fromBytecodeFile(context, bytecodeFile, bytes, 16, bytes.length - 16, cacheKey);
+                TruffleFile sourceFile = null;
+                if (sourcePath != PNone.NONE) {
+                    try {
+                        TruffleString strSourcePath = PyObjectStrAsTruffleStringNode.executeUncached(sourcePath);
+                        sourceFile = context.getPublicTruffleFileRelaxed(strSourcePath);
+                    } catch (SecurityException | UnsupportedOperationException | IllegalArgumentException ignored) {
+                        // Fall back to Marshal's empty source.
+                    }
+                }
+                return MarshalModuleBuiltins.fromBytecodeFile(context, bytecodeFile, sourceFile, bytes, 16, bytes.length - 16, cacheKey);
             } catch (MarshalModuleBuiltins.Marshal.MarshalError me) {
                 throw PRaiseNode.raiseStatic(inliningTarget, me.type, me.message, me.arguments);
             } catch (IOException | SecurityException | UnsupportedOperationException | IllegalArgumentException e) {
