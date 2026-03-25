@@ -97,6 +97,49 @@ public final class TemporalNodes {
         public LocalDate toLocalDate() {
             return LocalDate.of(year, month, day);
         }
+
+        public int compareTo(DateValue other) {
+            if (year < other.year) {
+                return -1;
+            }
+            if (year > other.year) {
+                return 1;
+            }
+            if (month < other.month) {
+                return -1;
+            }
+            if (month > other.month) {
+                return 1;
+            }
+            if (day < other.day) {
+                return -1;
+            }
+            if (day > other.day) {
+                return 1;
+            }
+            return 0;
+        }
+    }
+
+    @ValueType
+    public static final class TimeDeltaValue {
+        public final int days;
+        public final int seconds;
+        public final int microseconds;
+
+        public TimeDeltaValue(int days, int seconds, int microseconds) {
+            this.days = days;
+            this.seconds = seconds;
+            this.microseconds = microseconds;
+        }
+
+        public static TimeDeltaValue of(PTimeDelta delta) {
+            return new TimeDeltaValue(delta.days, delta.seconds, delta.microseconds);
+        }
+
+        public boolean isZero() {
+            return days == 0 && seconds == 0 && microseconds == 0;
+        }
     }
 
     @ValueType
@@ -183,6 +226,36 @@ public final class TemporalNodes {
         }
         PTimeDelta delta = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget, 0, offset.getTotalSeconds(), 0, 0, 0, 0, 0);
         return TimeZoneNodes.NewNode.getUncached().execute(inliningTarget, PythonContext.get(inliningTarget), PythonBuiltinClassType.PTimezone, delta, PNone.NO_VALUE);
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(alwaysInlineCached = true)
+    public abstract static class ReadTimeDeltaValueNode extends Node {
+        public abstract TimeDeltaValue execute(Node inliningTarget, Object obj);
+
+        public static TimeDeltaValue executeUncached(Node inliningTarget, Object obj) {
+            return TemporalNodesFactory.ReadTimeDeltaValueNodeGen.executeUncached(inliningTarget, obj);
+        }
+
+        @Specialization
+        static TimeDeltaValue doManaged(PTimeDelta value) {
+            return TimeDeltaValue.of(value);
+        }
+
+        @Specialization(guards = "checkNode.execute(inliningTarget, value)", limit = "1")
+        static TimeDeltaValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
+                        @SuppressWarnings("unused") @Cached TimeDeltaNodes.TimeDeltaCheckNode checkNode,
+                        @Cached CStructAccess.ReadI32Node readIntNode) {
+            return new TimeDeltaValue(TimeDeltaNodes.AsManagedTimeDeltaNode.getDays(value, readIntNode), TimeDeltaNodes.AsManagedTimeDeltaNode.getSeconds(value, readIntNode),
+                            TimeDeltaNodes.AsManagedTimeDeltaNode.getMicroseconds(value, readIntNode));
+        }
+
+        @Fallback
+        static TimeDeltaValue error(Object obj,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_GOT_P, "timedelta", obj);
+        }
     }
 
     @GenerateUncached
