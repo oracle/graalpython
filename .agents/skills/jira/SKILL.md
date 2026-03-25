@@ -22,9 +22,9 @@ Typical fields you need to know:
 
 ### 1. Getting context
 
-To get the issue data, start with `ol-cli`, for example:
+To get the issue data, start with `gdev-cli`, for example:
 
-    ol-cli jira get-issue --json -id GR-72840
+    gdev-cli jira get-issue --json -id GR-72840
 
 Read the description and follow any links that seem relevant.
 
@@ -33,7 +33,7 @@ Run this in a subagent if possible and let it give you a summary.
 ### 2. Check if there is work to do
 
 Issues may be stale, already solved, or no longer apply. Search the context and
-logs for other potentially relevant keywords, use `ol-cli jira search` to find
+logs for other potentially relevant keywords, use `gdev-cli jira search` to find
 out if there are potentially other related issues, query the codebase and git
 history and look for reproducers.
 
@@ -56,19 +56,19 @@ just a script to reproduce it. Do NOT write new tests in
 using `mx graalpytest`.
 
 Reproducing something that fails rarely or only on another architecture or in
-the CI may be tough, but can be achieved using `ol-cli bitbucket` and running
+the CI may be tough, but can be achieved using `gdev-cli bitbucket` and running
 in the gate, stress testing there.
 
   1. Create a temporary branch.
   2. Potentially add a new CI job to run just the reproducer.
   3. Push to Bitbucket.
-  4. Open a PR using ol-cli bitbucket.
+  4. Open a PR using gdev-cli bitbucket.
   5. Use the bitbucket buildbot REST API to request a merge commit `/rest/ci/1.0/base/projects/G/repos/<REPO>/pullRequest/<PRID>/mergeCommit`. You need a `Authorizatin: Bearer <TOKEN>` header.
-     Make sure to disable any proxy environment variables for the API call. You should be able to find the token by decoding the base64 token from the ol-cli config.
+     Make sure to disable any proxy environment variables for the API call. You should be able to find the token by decoding the base64 token from the gdev-cli config.
   6. Wait a bit, the CI will create a new commit on a branch. The name of that branch is `<BRANCHNAME_YOU_PUSHED>_gate`. Use `git fetch` to see the branch update come in.
   7. Use the bitbucket buildbot REST API to request CI job enumeration for the HEAD commit of that `<BRANCHNAME_YOU_PUSHED>_gate` branch: `/rest/ci/1.0/base/projects/G/repos/<REPO>/enumerate/<COMMIT>?branch=<URL_ENCODED_BRANCH_NAME>&force=false&toBranch=master`
   8. Wait a bit, the CI will enumerate the available CI jobs on that commit.
-  9. Use ol-cli bitbucket to start your reproducer job on that commit.
+  9. Use gdev-cli bitbucket to start your reproducer job on that commit.
   10. Repeat steps 3 through 9 until you are satisfied with the reproducer.
 
 DO NOT STOP POLLING AND RETRYING UNTIL EITHER YOU REPRODUCE THE ISSUE, MORE
@@ -76,7 +76,7 @@ THAN 8 HOURS HAVE ELAPSED WHILE YOU TRIED, OR YOU HAVE USED AT LEAST AROUND 2
 MILLION TOKENS (you may estimate from the conversation history) WHILE TRYING!
 
 Make sure to decline the temporary reproducer PR once you are done with it
-using `ol-cli bitbucket`.
+using `gdev-cli bitbucket`.
 
 ### 4a. Fixing a reproducible issue.
 
@@ -99,7 +99,7 @@ issue. Then STOP AND ASK for guidance.
 Once a code change has been implemented and verified (either with reproducer or
 by approval of the human user), it needs to be prepared for inclusion.
 
-Transition the Jira issue to be "In Progress" using `ol-cli jira transition`.
+Transition the Jira issue to be "In Progress" using `gdev-cli jira transition`.
 
 Make sure your changes are committed in reviewable, focused, incremental
 commits.
@@ -111,13 +111,13 @@ comments carefully, change the code where the subagent's comments make sense.
 Create a bitbucket PR
 
   1. Push your branch.
-  2. Open a PR using ol-cli bitbucket with a title including the Jira issue ID, like "[GR-XXXXX] Short description of overall fix."
+  2. Open a PR using gdev-cli bitbucket with a title including the Jira issue ID, like "[GR-XXXXX] Short description of overall fix."
   3. Use the bitbucket buildbot REST API to request a merge commit `/rest/ci/1.0/base/projects/G/repos/<REPO>/pullRequest/<PRID>/mergeCommit`. You need a `Authorizatin: Bearer <TOKEN>` header.
-     Make sure to disable any proxy environment variables for the API call. You should be able to find the token by decoding the base64 token from the ol-cli config.
+     Make sure to disable any proxy environment variables for the API call. You should be able to find the token by decoding the base64 token from the gdev-cli config.
   4. Wait a bit, the CI will create a new commit on a branch. The name of that branch is `<BRANCHNAME_YOU_PUSHED>_gate`. Use `git fetch` to see the branch update come in.
   5. Use the bitbucket buildbot REST API to request CI job enumeration for the HEAD commit of that `<BRANCHNAME_YOU_PUSHED>_gate` branch: `/rest/ci/1.0/base/projects/G/repos/<REPO>/enumerate/<COMMIT>?branch=<URL_ENCODED_BRANCH_NAME>&force=false&toBranch=master`
   6. Wait a bit, the CI will enumerate the available CI jobs on that commit.
-  7. Use ol-cli bitbucket to start and watch the gate jobs on the HEAD commit of that `<BRANCHNAME_YOU_PUSHED>_gate` branch. They may take a few hours to finish, so poll sparingly.
+  7. Use gdev-cli bitbucket to start and watch the gate jobs on the HEAD commit of that `<BRANCHNAME_YOU_PUSHED>_gate` branch. They may take a few hours to finish, so poll sparingly.
   8. If there are failures, investigate them and try to fix them yourself on top of the PR.
   9. Repeat steps 1 through 8 until the gates pass or you need help from the human.
 
@@ -128,7 +128,7 @@ been implemented and the PR created, the Jira issue needs to be updated.
 
 You can do this in parallel while watching the Bitbucket PR from step 5.
 
-Add a comment using `ol-cli jira comment` to the Jira issue, summarizing your
+Add a comment using `gdev-cli jira comment` to the Jira issue, summarizing your
 findings and any work you may have done. Do NOT use Attlassian markup, the
 comment just ONLY be PLAIN TEXT. For paragraphs, just use double '\n'. You can
 make plaintext lists by making lines begin with '* '. Do NOT use ADF, use raw

@@ -77,5 +77,5 @@ It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib
 
 We use Jira and Bitbucket, and each PR should reference a Jira ticket with the form [GR-XXXX] where XXXX is the ticket number.
 When asked to open pull requests, agents should ask for the Jira ticket number.
-When asked to create a ticket, the `ol-cli jira` tool can be used to create a ticket for the "Python" component.
-When asked to create, run gates on, or check on the builds previously run on a pull request, use the `ol-cli bitbucket` tool.
+When asked to create a ticket, the `gdev-cli jira` tool can be used to create a ticket for the "Python" component.
+When asked to create, run gates on, or check on the builds previously run on a pull request, use the `gdev-cli bitbucket` tool.
