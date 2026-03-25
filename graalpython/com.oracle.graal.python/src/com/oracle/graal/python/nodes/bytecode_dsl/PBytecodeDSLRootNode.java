@@ -1037,7 +1037,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Override
     protected byte[] extractCode(Node node) {
-        return MarshalModuleBuiltins.serializeCodeUnit(node, PythonContext.get(node), co);
+        return MarshalModuleBuiltins.serializeCodeUnit(node, getLanguage(), co);
     }
 
     private static Object checkUnboundCell(PCell cell, int index, BytecodeNode bytecodeNode) {

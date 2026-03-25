@@ -475,7 +475,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 Object code = null;
 
                 try {
-                    code = MarshalModuleBuiltins.Marshal.load(context, bytes, size, 0);
+                    code = MarshalModuleBuiltins.Marshal.load(context.getLanguage(), bytes, size, 0);
                 } catch (MarshalError | NumberFormatException e) {
                     raiseFrozenError(inliningTarget, raiseNode, FROZEN_INVALID, name);
                 }
@@ -542,9 +542,10 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
             PMemoryView data = null;
 
+            PythonLanguage language = context.getLanguage();
             if (withData) {
-                byte[] bytes = MarshalModuleBuiltins.serializeCodeUnit(inliningTarget, context, info.code);
-                data = PyMemoryViewFromObject.getUncached().execute(null, PFactory.createBytes(context.getLanguage(inliningTarget), bytes));
+                byte[] bytes = MarshalModuleBuiltins.serializeCodeUnit(inliningTarget, language, info.code);
+                data = PyMemoryViewFromObject.getUncached().execute(null, PFactory.createBytes(language, bytes));
             }
 
             Object[] returnValues = new Object[]{
@@ -553,7 +554,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                             info.origName == null ? PNone.NONE : info.origName
             };
 
-            return PFactory.createTuple(context.getLanguage(inliningTarget), returnValues);
+            return PFactory.createTuple(language, returnValues);
         }
     }
 

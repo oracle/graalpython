@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.bytecode_dsl;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -70,7 +69,7 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
     public abstract static class BytecodeSupplier {
         public abstract PBytecodeDSLRootNode createRootNode(PythonLanguage language, Source source);
 
-        public abstract byte[] createSerializedBytecode(PythonContext context);
+        public abstract byte[] createSerializedBytecode(PythonLanguage language);
     }
 
     public BytecodeDSLCodeUnit withFlags(int flags) {
@@ -89,9 +88,9 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
         return rootNode;
     }
 
-    public byte[] getSerialized(PythonContext context) {
+    public byte[] getSerialized(PythonLanguage language) {
         CompilerAsserts.neverPartOfCompilation();
-        return supplier.createSerializedBytecode(context);
+        return supplier.createSerializedBytecode(language);
     }
 
     public TruffleString getDocstring() {

@@ -6230,7 +6230,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
          *
          * TODO We should revisit this when the AST interpreter is removed.
          */
-        return MarshalModuleBuiltins.serializeCodeUnit(null, PythonContext.get(this), co);
+        return MarshalModuleBuiltins.serializeCodeUnit(null, getLanguage(), co);
     }
 
     @Override
