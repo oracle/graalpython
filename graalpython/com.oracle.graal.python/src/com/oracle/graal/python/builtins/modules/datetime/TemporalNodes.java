@@ -187,9 +187,13 @@ public final class TemporalNodes {
 
     @GenerateUncached
     @GenerateInline
-    @GenerateCached(false)
+    @GenerateCached(alwaysInlineCached = true)
     public abstract static class ReadDateValueNode extends Node {
         public abstract DateValue execute(Node inliningTarget, Object obj);
+
+        public static DateValue executeUncached(Node inliningTarget, Object obj) {
+            return TemporalNodesFactory.ReadDateValueNodeGen.executeUncached(inliningTarget, obj);
+        }
 
         @Specialization
         static DateValue doManaged(PDate value) {
@@ -224,9 +228,13 @@ public final class TemporalNodes {
 
     @GenerateUncached
     @GenerateInline
-    @GenerateCached(false)
+    @GenerateCached(alwaysInlineCached = true)
     public abstract static class ReadTimeValueNode extends Node {
         public abstract TimeValue execute(Node inliningTarget, Object obj);
+
+        public static TimeValue executeUncached(Node inliningTarget, Object obj) {
+            return TemporalNodesFactory.ReadTimeValueNodeGen.executeUncached(inliningTarget, obj);
+        }
 
         @Specialization
         static TimeValue doManaged(PTime value) {
@@ -265,9 +273,13 @@ public final class TemporalNodes {
 
     @GenerateUncached
     @GenerateInline
-    @GenerateCached(false)
+    @GenerateCached(alwaysInlineCached = true)
     public abstract static class ReadDateTimeValueNode extends Node {
         public abstract DateTimeValue execute(Node inliningTarget, Object obj);
+
+        public static DateTimeValue executeUncached(Node inliningTarget, Object obj) {
+            return TemporalNodesFactory.ReadDateTimeValueNodeGen.executeUncached(inliningTarget, obj);
+        }
 
         @Specialization
         static DateTimeValue doManaged(PDateTime value) {

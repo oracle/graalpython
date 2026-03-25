@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -58,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
 import com.oracle.graal.python.lib.PyTZInfoCheckNode;
-import com.oracle.graal.python.lib.PyTimeCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -66,7 +64,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -231,39 +228,7 @@ public class TimeNodes {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class AsManagedTimeNode extends Node {
-        public abstract PTime execute(Node inliningTarget, Object obj);
-
-        public static PTime executeUncached(Object obj) {
-            return TimeNodesFactory.AsManagedTimeNodeGen.getUncached().execute(null, obj);
-        }
-
-        @Specialization
-        static PTime doPTime(PTime value) {
-            return value;
-        }
-
-        @Specialization(guards = "checkNode.execute(inliningTarget, nativeTime)", limit = "1")
-        static PTime doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject nativeTime,
-                        @Bind PythonLanguage language,
-                        @SuppressWarnings("unused") @Cached PyTimeCheckNode checkNode,
-                        @Cached CStructAccess.ReadByteNode readByteNode,
-                        @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            int hour = getHour(nativeTime, readByteNode);
-            int minute = getMinute(nativeTime, readByteNode);
-            int second = getSecond(nativeTime, readByteNode);
-            int microsecond = getMicrosecond(nativeTime, readByteNode);
-
-            Object tzinfo = getTzInfo(nativeTime, readByteNode, readObjectNode);
-            int fold = getFold(nativeTime, readByteNode);
-
-            PythonBuiltinClassType cls = PythonBuiltinClassType.PTime;
-            return new PTime(cls, cls.getInstanceShape(language), hour, minute, second, microsecond, tzinfo, fold);
-        }
-
+    public static final class AsManagedTimeNode {
         static int getHour(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
             return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 0);
         }
@@ -296,12 +261,6 @@ public class TimeNodes {
 
         static int getFold(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
             return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__fold);
-        }
-
-        @Fallback
-        static PTime error(Object obj,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_GOT_P, "time", obj);
         }
     }
 

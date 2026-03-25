@@ -100,6 +100,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.DateValue;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.TimeValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -1172,8 +1174,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                                 timeObject);
             }
 
-            PDate date = DateNodes.AsManagedDateNode.executeUncached(dateObject);
-            PTime time = TimeNodes.AsManagedTimeNode.executeUncached(timeObject);
+            DateValue date = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, dateObject);
+            TimeValue time = TemporalNodes.ReadTimeValueNode.executeUncached(inliningTarget, timeObject);
 
             final Object tzInfo;
             if (tzInfoObject instanceof PNone) {

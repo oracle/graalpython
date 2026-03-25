@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.TimeValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -257,10 +258,11 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString repr(VirtualFrame frame, Object self,
+                        @Bind Node inliningTarget,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return reprBoundary(self);
+                return reprBoundary(inliningTarget, self);
             } finally {
                 // A Python method call (using PyObjectReprAsObjectNode) should be
                 // connected to a current node.
@@ -269,8 +271,8 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static TruffleString reprBoundary(Object selfObj) {
-            PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);
+        private static TruffleString reprBoundary(Node inliningTarget, Object selfObj) {
+            TimeValue self = TemporalNodes.ReadTimeValueNode.executeUncached(null, selfObj);
             var builder = new StringBuilder();
 
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
@@ -308,9 +310,9 @@ public final class TimeBuiltins extends PythonBuiltins {
         static Object reduce(Object self,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TimeNodes.AsManagedTimeNode asManagedTimeNode,
+                        @Cached TemporalNodes.ReadTimeValueNode asManagedTimeNode,
                         @Cached GetClassNode getClassNode) {
-            PTime time = asManagedTimeNode.execute(inliningTarget, self);
+            TimeValue time = asManagedTimeNode.execute(inliningTarget, self);
             // Time is serialized in the following format:
             // (
             // bytes(hours, minutes, seconds, microseconds 1st byte, microseconds 2nd byte,
@@ -348,9 +350,9 @@ public final class TimeBuiltins extends PythonBuiltins {
         static Object reduceEx(Object self, int protocol,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TimeNodes.AsManagedTimeNode asManagedTimeNode,
+                        @Cached TemporalNodes.ReadTimeValueNode asManagedTimeNode,
                         @Cached GetClassNode getClassNode) {
-            PTime time = asManagedTimeNode.execute(inliningTarget, self);
+            TimeValue time = asManagedTimeNode.execute(inliningTarget, self);
             byte[] baseStateBytes = new byte[6];
             baseStateBytes[0] = (byte) time.hour;
             baseStateBytes[1] = (byte) time.minute;
@@ -400,8 +402,8 @@ public final class TimeBuiltins extends PythonBuiltins {
             if (!PyTimeCheckNode.executeUncached(selfObj) || !PyTimeCheckNode.executeUncached(otherObj)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);
-            PTime other = TimeNodes.AsManagedTimeNode.executeUncached(otherObj);
+            TimeValue self = TemporalNodes.ReadTimeValueNode.executeUncached(inliningTarget, selfObj);
+            TimeValue other = TemporalNodes.ReadTimeValueNode.executeUncached(inliningTarget, otherObj);
             // either naive times (without timezone) or timezones are exactly the same objects
             if (self.tzInfo == other.tzInfo) {
                 return compareTimeComponents(self, other, op);
@@ -434,7 +436,7 @@ public final class TimeBuiltins extends PythonBuiltins {
             return op.compareResultToBool(result);
         }
 
-        private static boolean compareTimeComponents(PTime self, PTime other, RichCmpOp op) {
+        private static boolean compareTimeComponents(TimeValue self, TimeValue other, RichCmpOp op) {
             // compare only hours, minutes, ... and ignore fold
             int[] selfComponents = new int[]{self.hour, self.minute, self.second, self.microsecond};
             int[] otherComponents = new int[]{other.hour, other.minute, other.second, other.microsecond};
@@ -453,11 +455,11 @@ public final class TimeBuiltins extends PythonBuiltins {
         static long hash(VirtualFrame frame, Object selfObj,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TimeNodes.AsManagedTimeNode asManagedTimeNode,
+                        @Cached TemporalNodes.ReadTimeValueNode asManagedTimeNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectHashNode hashNode) {
-            PTime self = asManagedTimeNode.execute(inliningTarget, selfObj);
+            TimeValue self = asManagedTimeNode.execute(inliningTarget, selfObj);
             PTimeDelta utcOffset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, PNone.NONE, frame, inliningTarget, callMethodObjArgs, raiseNode);
 
             if (utcOffset == null) {
@@ -948,11 +950,11 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object replace(VirtualFrame frame, Object self, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject,
                         @Bind Node inliningTarget,
-                        @Cached TimeNodes.AsManagedTimeNode asManagedTimeNode,
+                        @Cached TemporalNodes.ReadTimeValueNode asManagedTimeNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached GetClassNode getClassNode,
                         @Cached TimeNodes.NewNode newTimeNode) {
-            PTime time = asManagedTimeNode.execute(inliningTarget, self);
+            TimeValue time = asManagedTimeNode.execute(inliningTarget, self);
             final long hour, minute, second, microsecond, fold;
             final Object tzInfo;
 
@@ -1020,7 +1022,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static TruffleString isoFormatBoundary(Object selfObj, Object timespecObject, Node inliningTarget) {
-            PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);
+            TimeValue self = TemporalNodes.ReadTimeValueNode.executeUncached(inliningTarget, selfObj);
             var builder = new StringBuilder();
 
             final String timespec;
@@ -1186,7 +1188,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static TruffleString strftimeBoundary(Object selfObj, TruffleString format, Node inliningTarget) {
-            PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);
+            TimeValue self = TemporalNodes.ReadTimeValueNode.executeUncached(inliningTarget, selfObj);
             // Reuse time.strftime(format, time_tuple) method.
             int[] timeTuple = new int[]{1900, 1, 1, self.hour, self.minute, self.second, 0, 1, -1};
             String formatPreprocessed = preprocessFormat(format, self, inliningTarget);
@@ -1197,7 +1199,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         // %Z so handle them here.
         // CPython: wrap_strftime()
         @TruffleBoundary
-        private static String preprocessFormat(TruffleString tsformat, PTime self, Node inliningTarget) {
+        private static String preprocessFormat(TruffleString tsformat, TimeValue self, Node inliningTarget) {
             String format = tsformat.toString();
             StringBuilder builder = new StringBuilder();
             int i = 0;
@@ -1297,7 +1299,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
     }
 
-    private static long toMicroseconds(PTime self, PTimeDelta utcOffset) {
+    private static long toMicroseconds(TimeValue self, PTimeDelta utcOffset) {
         return (long) self.hour * 3600 * 1_000_000 +
                         (long) self.minute * 60 * 1_000_000 +
                         (long) self.second * 1_000_000 +
