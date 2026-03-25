@@ -365,7 +365,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     private final ConcurrentHashMap<Object, Source> sourceCache = new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<Source, TruffleFile> originalFiles = new ConcurrentHashMap<>();
+    /*
+     * A map from sources without content to either a Source object with content or a TruffleFile
+     * that can be used to construct such object.
+     */
+    private final WeakHashMap<Source, Object> originalSources = new WeakHashMap<>();
 
     @Idempotent
     public static PythonLanguage get(Node node) {
@@ -1226,23 +1230,30 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (sourceWithoutContent.hasCharacters()) {
             return sourceWithoutContent;
         }
-        TruffleFile originalFile = originalFiles.get(sourceWithoutContent);
-        if (originalFile == null) {
-            return sourceWithoutContent;
-        }
-        return getOrCreateSource(ignored -> loadSourceWithContent(sourceWithoutContent, originalFile), sourceWithoutContent);
-    }
-
-    private Source loadSourceWithContent(Source sourceWithoutContent, TruffleFile originalFile) {
-        try {
-            return Source.newBuilder(ID, originalFile).name(sourceWithoutContent.getName()).internal(sourceWithoutContent.isInternal()).mimeType(MIME_TYPE).build();
-        } catch (IOException | SecurityException | UnsupportedOperationException | IllegalArgumentException e) {
+        synchronized (originalSources) {
+            Object original = originalSources.get(sourceWithoutContent);
+            if (original instanceof Source originalSource) {
+                return originalSource;
+            }
+            if (original instanceof TruffleFile originalFile) {
+                Source source;
+                try {
+                    source = Source.newBuilder(ID, originalFile).name(sourceWithoutContent.getName()).internal(sourceWithoutContent.isInternal()).mimeType(MIME_TYPE).build();
+                } catch (IOException | SecurityException | UnsupportedOperationException | IllegalArgumentException e) {
+                    source = sourceWithoutContent;
+                }
+                originalSources.put(sourceWithoutContent, source);
+                return source;
+            }
+            assert original == null;
             return sourceWithoutContent;
         }
     }
 
     public void registerOriginalFile(Source sourceWithoutContent, TruffleFile originalFile) {
-        originalFiles.put(sourceWithoutContent, originalFile);
+        synchronized (originalSources) {
+            originalSources.put(sourceWithoutContent, originalFile);
+        }
     }
 
     public static PythonOS getPythonOS() {
