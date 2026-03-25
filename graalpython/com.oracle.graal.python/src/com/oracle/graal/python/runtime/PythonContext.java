@@ -725,13 +725,15 @@ public final class PythonContext extends Python3Core {
     private OutputStream err;
     private InputStream in;
 
-    private static final int CAPI_UNINITIALIZED = 0;
-    private static final int CAPI_INITIALIZING = 1;
-    private static final int CAPI_INITIALIZED = 2;
-    private static final int CAPI_FAILED = 3;
+    public enum CApiState {
+        UNINITIALIZED,
+        INITIALIZING,
+        INITIALIZED,
+        FAILED
+    }
 
     /** Initialization state of the C API context. */
-    private volatile int cApiState;
+    private volatile CApiState cApiState = CApiState.UNINITIALIZED;
     private final ReentrantLock cApiInitializationLock = new ReentrantLock(false);
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private boolean nativeAccessAllowed;
@@ -1976,7 +1978,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public void registerCApiHook(Runnable hook) {
-        if (isCApiInitialized()) {
+        if (getCApiState() == CApiState.INITIALIZED) {
             hook.run();
         } else {
             capiHooks.add(hook);
@@ -2576,7 +2578,8 @@ public final class PythonContext extends Python3Core {
     public synchronized void attachThread(Thread thread, ContextThreadLocal<PythonThreadState> threadState) {
         CompilerAsserts.neverPartOfCompilation();
         threadStateMapping.put(thread, threadState.get(thread));
-        if (isCapiInitializing() || isCApiInitialized()) {
+        CApiState state = getCApiState();
+        if (state == CApiState.INITIALIZING || state == CApiState.INITIALIZED) {
             // initialize this thread's native TLS slot eagerly instead of on first use
             PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT);
         }
@@ -2607,54 +2610,28 @@ public final class PythonContext extends Python3Core {
         }
     }
 
-    public boolean hasCApiContext() {
-        /*
-         * This may be called during C API initialization, we have a context so that we can finish
-         * the initialization, but the C API is not fully initialized yet
-         */
-        assert (cApiContext != null) || cApiState != CAPI_INITIALIZED;
-        return cApiContext != null;
+    public CApiState getCApiState() {
+        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED : cApiState;
+        return cApiState;
     }
 
-    public boolean isCApiInitialized() {
-        assert cApiContext != null || cApiState != CAPI_INITIALIZED;
-        return cApiState == CAPI_INITIALIZED;
-    }
-
-    public boolean isCapiInitializing() {
-        assert cApiContext != null || cApiState != CAPI_INITIALIZING;
-        return cApiState == CAPI_INITIALIZING;
-    }
-
-    public void startCApiThreadStateInit() {
-        assert cApiContext != null;
-        assert cApiState == CAPI_UNINITIALIZED;
-        cApiState = CAPI_INITIALIZING;
-    }
-
-    private void setCapiState(int state) {
+    public void setCApiState(CApiState state) {
         /*- Allowed transitions:
          * UNINITIALIZED -> INITIALIZING
          * INITIALIZING -> INITIALIZED, FAILED
          */
-        assert state != CAPI_UNINITIALIZED;
-        assert cApiState != CAPI_UNINITIALIZED || state == CAPI_INITIALIZING;
-        assert cApiState != CAPI_INITIALIZING || state == CAPI_INITIALIZED || state == CAPI_FAILED;
+        assert state != CApiState.UNINITIALIZED;
+        assert cApiInitializationLock.isHeldByCurrentThread();
+        assert cApiContext != null;
+        assert cApiState != CApiState.UNINITIALIZED || state == CApiState.INITIALIZING;
+        assert cApiState != CApiState.INITIALIZING || state == CApiState.INITIALIZED || state == CApiState.FAILED;
+        assert cApiState != CApiState.INITIALIZED;
+        assert cApiState != CApiState.FAILED;
         cApiState = state;
     }
 
-    public void finishCApiThreadStateInit() {
-        cApiState = CAPI_INITIALIZED;
-    }
-
-    public void setCApiInitialized() {
-        assert cApiContext != null;
-        assert cApiState != CAPI_INITIALIZED;
-        cApiState = CAPI_INITIALIZED;
-    }
-
     public CApiContext getCApiContext() {
-        assert (cApiContext != null) || cApiState == CAPI_UNINITIALIZED;
+        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED;
         return cApiContext;
     }
 
@@ -2664,6 +2641,7 @@ public final class PythonContext extends Python3Core {
 
     public void setCApiContext(CApiContext capiContext) {
         assert this.cApiContext == null : "tried to create new C API context but it was already created";
+        assert getCApiState() == CApiState.UNINITIALIZED;
         this.cApiContext = capiContext;
     }
 

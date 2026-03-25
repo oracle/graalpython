@@ -800,7 +800,7 @@ public final class CApiContext extends CExtContext {
         assert PythonContext.get(null).ownsGil(); // unsafe lazy initialization
         // The initialization may run Python code (e.g., module import in
         // GraalPyPrivate_InitBuiltinTypesAndStructs), so just holding the GIL is not enough
-        if (!context.isCApiInitialized()) {
+        if (context.getCApiState() != PythonContext.CApiState.INITIALIZED) {
 
             // We import those modules ahead of the initialization without the initialization lock
             // to avoid deadlocks. We would have imported them in the initialization anyway, this
@@ -814,30 +814,39 @@ public final class CApiContext extends CExtContext {
                 TruffleSafepoint.setBlockedThreadInterruptible(node, ReentrantLock::lockInterruptibly, initLock);
             }
             try {
-                if (!context.isCApiInitialized()) {
-                    // loadCApi must set C API context half-way through its execution so that it can
-                    // run internal Java code that needs C API context
-                    TruffleSafepoint safepoint = TruffleSafepoint.getCurrent();
-                    boolean prevAllowSideEffects = safepoint.setAllowSideEffects(false);
+                PythonContext.CApiState state = context.getCApiState();
+                if (state == PythonContext.CApiState.INITIALIZED || state == PythonContext.CApiState.INITIALIZING) {
+                    return context.getCApiContext();
+                }
+                if (state == PythonContext.CApiState.FAILED) {
+                    throw new ApiInitException(toTruffleStringUncached("The C API initialization has previously failed."));
+                }
+
+                assert state == PythonContext.CApiState.UNINITIALIZED : state;
+                // loadCApi must set C API context half-way through its execution so that it can
+                // run internal Java code that needs C API context
+                TruffleSafepoint safepoint = TruffleSafepoint.getCurrent();
+                boolean prevAllowSideEffects = safepoint.setAllowSideEffects(false);
+                try {
+                    CApiContext cApiContext = loadCApi(node, context, name, path, reason);
+                    assert context.getCApiState() == PythonContext.CApiState.INITIALIZING;
+                    initializeThreadStateCurrentForAttachedThreads(node, context);
+                    CApiTransitions.initializeReferenceQueuePolling(context.nativeContext);
+                    context.runCApiHooks();
+                    context.setCApiState(PythonContext.CApiState.INITIALIZED); // volatile write
                     try {
-                        CApiContext cApiContext = loadCApi(node, context, name, path, reason);
-                        initializeThreadStateCurrentForAttachedThreads(node, context);
-                        CApiTransitions.initializeReferenceQueuePolling(context.nativeContext);
-                        context.runCApiHooks();
-                        context.setCApiInitialized(); // volatile write
-                        context.finishCApiThreadStateInit();
-                        try {
-                            cApiContext.runBackgroundGCTask(context);
-                        } catch (RuntimeException e) {
-                            // This can happen when other languages restrict multithreading
-                            LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
-                        }
-                    } catch (Throwable t) {
-                        context.finishCApiThreadStateInit();
-                        throw t;
-                    } finally {
-                        safepoint.setAllowSideEffects(prevAllowSideEffects);
+                        cApiContext.runBackgroundGCTask(context);
+                    } catch (RuntimeException e) {
+                        // This can happen when other languages restrict multithreading
+                        LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
                     }
+                } catch (Throwable t) {
+                    if (context.getCApiState() == PythonContext.CApiState.INITIALIZING) {
+                        context.setCApiState(PythonContext.CApiState.FAILED);
+                    }
+                    throw t;
+                } finally {
+                    safepoint.setAllowSideEffects(prevAllowSideEffects);
                 }
             } finally {
                 initLock.unlock();
@@ -952,6 +961,7 @@ public final class CApiContext extends CExtContext {
             Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
             context.setCApiContext(cApiContext);
+            context.setCApiState(PythonContext.CApiState.INITIALIZING);
 
             try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
                 /*
@@ -965,7 +975,6 @@ public final class CApiContext extends CExtContext {
                 U.execute(initFunction, builtinArrayWrapper, gcState);
             }
 
-            context.startCApiThreadStateInit();
             assert PythonCApiAssertions.assertBuiltins(capiLibrary);
             cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
 
