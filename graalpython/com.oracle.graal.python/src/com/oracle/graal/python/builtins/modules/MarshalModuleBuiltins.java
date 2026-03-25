@@ -393,7 +393,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         static byte[] dump(PythonContext context, Object value, int version) throws IOException, MarshalError {
-            Marshal outMarshal = new Marshal(context, version, context.getTrue(), context.getFalse());
+            Marshal outMarshal = new Marshal(context, version);
             outMarshal.writeObject(value);
             return outMarshal.outData.toByteArray();
         }
@@ -471,8 +471,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         final DataOutput out;
         final DataInput in;
         final int version;
-        final PInt pyTrue;
-        final PInt pyFalse;
         int depth = 0;
         long cacheKey;
         TruffleFile bytecodeFile;
@@ -487,11 +485,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
          */
         Source source = null;
 
-        Marshal(PythonContext context, int version, PInt pyTrue, PInt pyFalse) {
+        Marshal(PythonContext context, int version) {
             this.context = context;
             this.version = version;
-            this.pyTrue = pyTrue;
-            this.pyFalse = pyFalse;
             this.outData = new ByteArrayOutputStream();
             this.out = new DataOutputStream(outData);
             this.refMap = new HashMap<>();
@@ -499,11 +495,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             this.refList = null;
         }
 
-        Marshal(PythonContext context, int version, PInt pyTrue, PInt pyFalse, DataOutput out) {
+        Marshal(PythonContext context, int version, DataOutput out) {
             this.context = context;
             this.version = version;
-            this.pyTrue = pyTrue;
-            this.pyFalse = pyFalse;
             this.outData = null;
             this.out = out;
             this.refMap = new HashMap<>();
@@ -531,8 +525,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             this.source = source;
             this.refList = new ArrayList<>();
             this.version = -1;
-            this.pyTrue = null;
-            this.pyFalse = null;
             this.outData = null;
             this.out = null;
             this.refMap = null;
@@ -782,9 +774,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 writeByte(TYPE_STOPITER);
             } else if (v == PEllipsis.INSTANCE) {
                 writeByte(TYPE_ELLIPSIS);
-            } else if (v == Boolean.TRUE || v == pyTrue) {
+            } else if (v == Boolean.TRUE || v instanceof PInt i && i.getPythonClass() == PythonBuiltinClassType.Boolean && i.isOne()) {
                 writeByte(TYPE_TRUE);
-            } else if (v == Boolean.FALSE || v == pyFalse) {
+            } else if (v == Boolean.FALSE || v instanceof PInt i && i.getPythonClass() == PythonBuiltinClassType.Boolean && i.isZero()) {
                 writeByte(TYPE_FALSE);
             } else if (v instanceof Integer) {
                 writeByte(TYPE_INT);
@@ -1574,7 +1566,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @TruffleBoundary
     public static byte[] serializeCodeUnit(Node locationForRaise, PythonContext context, CodeUnit code) {
         try {
-            Marshal marshal = new Marshal(context, CURRENT_VERSION, null, null);
+            Marshal marshal = new Marshal(context, CURRENT_VERSION);
             marshal.writeCodeUnit(code);
             return marshal.outData.toByteArray();
         } catch (IOException e) {
@@ -1694,7 +1686,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
              * we must also do the same here. Otherwise, the encoding may be different (e.g., a
              * reference for an already-emitted object).
              */
-            new Marshal(pythonContext, CURRENT_VERSION, pythonContext.getTrue(), pythonContext.getFalse(), buffer).writeObject(object);
+            new Marshal(pythonContext, CURRENT_VERSION, buffer).writeObject(object);
         }
     }
 
