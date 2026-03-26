@@ -841,9 +841,7 @@ public final class CApiContext extends CExtContext {
                         LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
                     }
                 } catch (Throwable t) {
-                    if (context.getCApiState() == PythonContext.CApiState.INITIALIZING) {
-                        context.setCApiState(PythonContext.CApiState.FAILED);
-                    }
+                    context.setCApiState(PythonContext.CApiState.FAILED);
                     throw t;
                 } finally {
                     safepoint.setAllowSideEffects(prevAllowSideEffects);
@@ -864,7 +862,7 @@ public final class CApiContext extends CExtContext {
         ThreadLocalAction action = new ThreadLocalAction(true, false) {
             @Override
             protected void perform(ThreadLocalAction.Access access) {
-                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT);
+                context.initializeNativeThreadState();
             }
         };
         waitForThreadLocalActions(node, context, submitThreadLocalActions(context, threads, action));

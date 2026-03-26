@@ -272,13 +272,13 @@ PyObject* _Py_NotImplementedStructReference;
  */
 THREAD_LOCAL PyThreadState *tstate_current = NULL;
 
-PyAPI_FUNC(void) GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate) {
+PyAPI_FUNC(PyThreadState **) GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate) {
     tstate_current = tstate;
+    return &tstate_current;
 }
 
 static void initialize_globals() {
-    // initialize the current thread's TLS slot for PyThreadState_Get()
-    GraalPyPrivate_InitThreadStateCurrent();
+    GraalPyPrivate_InitThreadStateCurrent(GraalPyPrivate_ThreadState_Get(&tstate_current));
     _Py_NoneStructReference = GraalPyPrivate_None();
     _Py_NotImplementedStructReference = GraalPyPrivate_NotImplemented();
     _Py_EllipsisObjectReference = GraalPyPrivate_Ellipsis();

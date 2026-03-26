@@ -2577,11 +2577,40 @@ public final class PythonContext extends Python3Core {
 
     public synchronized void attachThread(Thread thread, ContextThreadLocal<PythonThreadState> threadState) {
         CompilerAsserts.neverPartOfCompilation();
-        threadStateMapping.put(thread, threadState.get(thread));
-        CApiState state = getCApiState();
-        if (state == CApiState.INITIALIZING || state == CApiState.INITIALIZED) {
-            // initialize this thread's native TLS slot eagerly instead of on first use
-            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT);
+        PythonThreadState pythonThreadState = threadState.get(thread);
+        threadStateMapping.put(thread, pythonThreadState);
+        ReentrantLock initLock = getcApiInitializationLock();
+        /*
+         * Synchronize with C API initialization so that we do not miss eager initialization of this
+         * thread's 'tstate_current'. Otherwise, a thread could attach while another thread is
+         * sweeping all already-attached threads during C API initialization, observe
+         * 'INITIALIZING', skip eager initialization here, and then also miss the initialization
+         * sweep because it was not yet part of the thread snapshot.
+         */
+        initLock.lock();
+        try {
+            if (getCApiState() == CApiState.INITIALIZED) {
+                // initialize this thread's native TLS slot eagerly instead of on first use
+                initializeNativeThreadState(pythonThreadState);
+            }
+        } finally {
+            initLock.unlock();
+        }
+    }
+
+    @TruffleBoundary
+    public void initializeNativeThreadState() {
+        initializeNativeThreadState(getThreadState(getLanguage()));
+    }
+
+    @SuppressWarnings("try")
+    public void initializeNativeThreadState(PythonThreadState pythonThreadState) {
+        CompilerAsserts.neverPartOfCompilation();
+        try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+            assert getCApiContext() != null;
+            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(pythonThreadState);
+            Object nativeThreadLocalVarPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT, nativeThreadState);
+            pythonThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
         }
     }
 
@@ -2611,19 +2640,20 @@ public final class PythonContext extends Python3Core {
     }
 
     public CApiState getCApiState() {
-        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED : cApiState;
+        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED : cApiState;
         return cApiState;
     }
 
     public void setCApiState(CApiState state) {
         /*- Allowed transitions:
-         * UNINITIALIZED -> INITIALIZING
+         * UNINITIALIZED -> INITIALIZING, FAILED
          * INITIALIZING -> INITIALIZED, FAILED
          */
         assert state != CApiState.UNINITIALIZED;
         assert cApiInitializationLock.isHeldByCurrentThread();
-        assert cApiContext != null;
-        assert cApiState != CApiState.UNINITIALIZED || state == CApiState.INITIALIZING;
+        assert state != CApiState.INITIALIZING || cApiContext != null;
+        assert state != CApiState.INITIALIZED || cApiContext != null;
+        assert cApiState != CApiState.UNINITIALIZED || state == CApiState.INITIALIZING || state == CApiState.FAILED;
         assert cApiState != CApiState.INITIALIZING || state == CApiState.INITIALIZED || state == CApiState.FAILED;
         assert cApiState != CApiState.INITIALIZED;
         assert cApiState != CApiState.FAILED;
@@ -2631,7 +2661,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public CApiContext getCApiContext() {
-        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED;
+        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED;
         return cApiContext;
     }
 
