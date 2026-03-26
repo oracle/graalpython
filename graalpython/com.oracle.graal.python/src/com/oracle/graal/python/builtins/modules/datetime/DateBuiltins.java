@@ -99,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyDateCheckNode;
+import com.oracle.graal.python.lib.PyDeltaCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -347,13 +348,13 @@ public final class DateBuiltins extends PythonBuiltins {
         private static Object addBoundary(Object left, Object right, Node inliningTarget) {
             Object dateObj, deltaObj;
             if (PyDateCheckNode.executeUncached(left)) {
-                if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+                if (PyDeltaCheckNode.executeUncached(right)) {
                     dateObj = left;
                     deltaObj = right;
                 } else {
                     return PNotImplemented.NOT_IMPLEMENTED;
                 }
-            } else if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(left)) {
+            } else if (PyDeltaCheckNode.executeUncached(left)) {
                 dateObj = right;
                 deltaObj = left;
             } else {
@@ -425,7 +426,7 @@ public final class DateBuiltins extends PythonBuiltins {
                                 0,
                                 0);
             }
-            if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+            if (PyDeltaCheckNode.executeUncached(right)) {
                 TimeDeltaValue timeDelta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
                 LocalDate from = LocalDate.of(1, 1, 1);
                 LocalDate to = LocalDate.of(date.year, date.month, date.day);

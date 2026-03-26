@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBui
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyDateCheckNode;
 import com.oracle.graal.python.lib.PyDateTimeCheckNode;
+import com.oracle.graal.python.lib.PyDeltaCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -215,10 +216,10 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
                         @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
             Object dateTimeObj;
             Object deltaObj;
-            if (dateTimeLikeCheckNode.execute(inliningTarget, left) && TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+            if (dateTimeLikeCheckNode.execute(inliningTarget, left) && PyDeltaCheckNode.executeUncached(right)) {
                 dateTimeObj = left;
                 deltaObj = right;
-            } else if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(left) && dateTimeLikeCheckNode.execute(inliningTarget, right)) {
+            } else if (PyDeltaCheckNode.executeUncached(left) && dateTimeLikeCheckNode.execute(inliningTarget, right)) {
                 dateTimeObj = right;
                 deltaObj = left;
             } else {
@@ -259,7 +260,7 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
                 return TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PTimeDelta, 0, selfSeconds - otherSeconds, self.microsecond - other.microsecond, 0,
                                 0, 0, 0);
             }
-            if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+            if (PyDeltaCheckNode.executeUncached(right)) {
                 TemporalNodes.TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
                 LocalDateTime adjusted = toLocalDateTime(self).minusDays(delta.days).minusSeconds(delta.seconds).minusNanos(delta.microseconds * 1_000L);
                 return toPythonDateTime(adjusted, self.tzInfo, self.fold, inliningTarget);

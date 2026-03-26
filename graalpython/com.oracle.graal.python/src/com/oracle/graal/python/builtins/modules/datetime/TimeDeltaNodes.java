@@ -58,13 +58,13 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
+import com.oracle.graal.python.lib.PyDeltaCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -242,33 +242,6 @@ public class TimeDeltaNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class TimeDeltaCheckNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object obj);
-
-        public static boolean executeUncached(Object obj) {
-            return TimeDeltaNodesFactory.TimeDeltaCheckNodeGen.getUncached().execute(null, obj);
-        }
-
-        @Specialization
-        static boolean doManaged(@SuppressWarnings("unused") PTimeDelta value) {
-            return true;
-        }
-
-        @Specialization
-        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
-            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PTimeDelta);
-        }
-
-        @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object value) {
-            return false;
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
     public abstract static class AsManagedTimeDeltaNode extends Node {
         public abstract PTimeDelta execute(Node inliningTarget, Object obj);
 
@@ -284,7 +257,7 @@ public class TimeDeltaNodes {
         @Specialization(guards = "checkNode.execute(inliningTarget, nativeDelta)", limit = "1")
         static PTimeDelta doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject nativeDelta,
                         @Bind PythonLanguage language,
-                        @SuppressWarnings("unused") @Cached TimeDeltaCheckNode checkNode,
+                        @SuppressWarnings("unused") @Cached PyDeltaCheckNode checkNode,
                         @Cached CStructAccess.ReadI32Node readIntNode) {
             int days = getDays(nativeDelta, readIntNode);
             int seconds = getSeconds(nativeDelta, readIntNode);

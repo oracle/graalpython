@@ -76,7 +76,9 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.TimeDeltaValue;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
+import com.oracle.graal.python.lib.PyDeltaCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
@@ -285,7 +287,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @Specialization
         static Object richCmp(Object left, Object right, RichCmpOp op,
                         @Bind Node inliningTarget,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode checkNode,
+                        @Cached PyDeltaCheckNode checkNode,
                         @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
             if (!checkNode.execute(inliningTarget, left) || !checkNode.execute(inliningTarget, right)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -322,7 +324,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         static Object add(Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached TimeDeltaNodes.NewNode newNode,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode checkNode,
+                        @Cached PyDeltaCheckNode checkNode,
                         @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
             if (!checkNode.execute(inliningTarget, left) || !checkNode.execute(inliningTarget, right)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -342,7 +344,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         static Object sub(Object left, Object rigth,
                         @Bind Node inliningTarget,
                         @Cached TimeDeltaNodes.NewNode newNode,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode checkNode,
+                        @Cached PyDeltaCheckNode checkNode,
                         @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
             if (!checkNode.execute(inliningTarget, left) || !checkNode.execute(inliningTarget, rigth)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -414,7 +416,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
                         @Cached PyNumberAddNode addNode,
                         @Cached PyNumberMultiplyNode multiplyNode,
                         @Cached TimeDeltaNodes.NewNode newNode,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode checkNode,
+                        @Cached PyDeltaCheckNode checkNode,
                         @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
             TimeDeltaValue date;
             Object other;
@@ -466,8 +468,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
                         @Cached PyNumberMultiplyNode multiplyNode,
                         @Cached PyNumberTrueDivideNode trueDivideNode,
                         @Cached TimeDeltaNodes.NewNode newNode,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode checkLeft,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode checkRight,
+                        @Cached PyDeltaCheckNode checkLeft,
+                        @Cached PyDeltaCheckNode checkRight,
                         @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
             if (!checkLeft.execute(inliningTarget, left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -514,8 +516,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
                         @Cached PyNumberAddNode addNode,
                         @Cached PyNumberMultiplyNode multiplyNode,
                         @Cached PyNumberFloorDivideNode floorDivideNode,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode checkLeft,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode checkRight,
+                        @Cached PyDeltaCheckNode checkLeft,
+                        @Cached PyDeltaCheckNode checkRight,
                         @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
             if (!checkLeft.execute(inliningTarget, left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -545,7 +547,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         static Object divmod(Object left, Object right,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language) {
-            if (!TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(left) || !TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+            if (!PyDeltaCheckNode.executeUncached(left) || !PyDeltaCheckNode.executeUncached(right)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             TimeDeltaValue self = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, left);
@@ -577,7 +579,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object mod(Object left, Object right,
                         @Bind Node inliningTarget) {
-            if (!TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(left) || !TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+            if (!PyDeltaCheckNode.executeUncached(left) || !PyDeltaCheckNode.executeUncached(right)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();

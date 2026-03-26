@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.lib.PyDateCheckNode;
 import com.oracle.graal.python.lib.PyDateTimeCheckNode;
+import com.oracle.graal.python.lib.PyDeltaCheckNode;
 import com.oracle.graal.python.lib.PyTimeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -267,7 +268,7 @@ public final class TemporalNodes {
 
         @Specialization(guards = "checkNode.execute(inliningTarget, value)", limit = "1")
         static TimeDeltaValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
-                        @SuppressWarnings("unused") @Cached TimeDeltaNodes.TimeDeltaCheckNode checkNode,
+                        @SuppressWarnings("unused") @Cached PyDeltaCheckNode checkNode,
                         @Cached CStructAccess.ReadI32Node readIntNode) {
             return new TimeDeltaValue(TimeDeltaNodes.AsManagedTimeDeltaNode.getDays(value, readIntNode), TimeDeltaNodes.AsManagedTimeDeltaNode.getSeconds(value, readIntNode),
                             TimeDeltaNodes.AsManagedTimeDeltaNode.getMicroseconds(value, readIntNode));

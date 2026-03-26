@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyDeltaCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -72,7 +73,7 @@ public class TimeZoneNodes {
 
         @Specialization
         static PTimeZone newTimezone(Node inliningTarget, PythonContext context, Object cls, Object offsetObj, Object nameObject,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode timeDeltaCheckNode,
+                        @Cached PyDeltaCheckNode timeDeltaCheckNode,
                         @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PRaiseNode raiseNode,

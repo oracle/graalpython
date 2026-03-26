@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.modules.datetime.DateNodes;
 import com.oracle.graal.python.builtins.modules.datetime.PDate;
 import com.oracle.graal.python.builtins.modules.datetime.PTimeDelta;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes;
-import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyDateCheckNode;
+import com.oracle.graal.python.lib.PyDeltaCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -174,10 +174,10 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
                         @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
             Object dateObj;
             Object deltaObj;
-            if (dateLikeCheckNode.execute(inliningTarget, left) && TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+            if (dateLikeCheckNode.execute(inliningTarget, left) && PyDeltaCheckNode.executeUncached(right)) {
                 dateObj = left;
                 deltaObj = right;
-            } else if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(left) && dateLikeCheckNode.execute(inliningTarget, right)) {
+            } else if (PyDeltaCheckNode.executeUncached(left) && dateLikeCheckNode.execute(inliningTarget, right)) {
                 dateObj = right;
                 deltaObj = left;
             } else {
@@ -215,7 +215,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
                 long rightDays = ChronoUnit.DAYS.between(from, rightDate) + 1;
                 return new PTimeDelta(PythonBuiltinClassType.PTimeDelta, PythonBuiltinClassType.PTimeDelta.getInstanceShape(PythonLanguage.get(null)), (int) (leftDays - rightDays), 0, 0);
             }
-            if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+            if (PyDeltaCheckNode.executeUncached(right)) {
                 TemporalNodes.TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
                 long days = leftDays - delta.days;
                 if (days <= 0 || days >= MAX_ORDINAL) {
