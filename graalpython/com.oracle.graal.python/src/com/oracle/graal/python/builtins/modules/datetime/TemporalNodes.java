@@ -140,6 +140,28 @@ public final class TemporalNodes {
         public boolean isZero() {
             return days == 0 && seconds == 0 && microseconds == 0;
         }
+
+        public int compareTo(TimeDeltaValue other) {
+            if (days < other.days) {
+                return -1;
+            }
+            if (days > other.days) {
+                return 1;
+            }
+            if (seconds < other.seconds) {
+                return -1;
+            }
+            if (seconds > other.seconds) {
+                return 1;
+            }
+            if (microseconds < other.microseconds) {
+                return -1;
+            }
+            if (microseconds > other.microseconds) {
+                return 1;
+            }
+            return 0;
+        }
     }
 
     @ValueType
