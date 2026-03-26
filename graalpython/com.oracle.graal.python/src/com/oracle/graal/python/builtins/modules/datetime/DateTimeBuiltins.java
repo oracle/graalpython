@@ -582,8 +582,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                 }
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
-            PDateTime other = DateTimeNodes.AsManagedDateTimeNode.executeUncached(otherObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
+            DateTimeValue other = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, otherObj);
             // either naive datetimes (without timezone) or timezones are exactly the same objects
             if (self.tzInfo == other.tzInfo) {
                 int result = compareDateTimeComponents(self, other);
@@ -636,7 +636,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static int compareDateTimeComponents(PDateTime self, PDateTime other) {
+        private static int compareDateTimeComponents(DateTimeValue self, DateTimeValue other) {
             // compare only year, month, day, hours, minutes, ... and ignore fold
             int[] selfComponents = new int[]{self.year, self.month, self.day, self.hour, self.minute, self.second, self.microsecond};
             int[] otherComponents = new int[]{other.year, other.month, other.day, other.hour, other.minute, other.second, other.microsecond};
@@ -649,12 +649,12 @@ public final class DateTimeBuiltins extends PythonBuiltins {
          * 495 – Local Time Disambiguation". See <a href="https://peps.python.org/pep-0495/">PEP 495
          * – Local Time Disambiguation</a>
          */
-        private static boolean isExceptionInPep495(Object selfObj, PDateTime self, PTimeDelta selfUtcOffset, PDateTime other, PTimeDelta otherUtcOffset, Node inliningTarget) {
+        private static boolean isExceptionInPep495(Object selfObj, DateTimeValue self, PTimeDelta selfUtcOffset, DateTimeValue other, PTimeDelta otherUtcOffset, Node inliningTarget) {
             return isExceptionInPep495(selfObj, self, selfUtcOffset, inliningTarget) || isExceptionInPep495(selfObj, other, otherUtcOffset, inliningTarget);
         }
 
         @TruffleBoundary
-        private static boolean isExceptionInPep495(Object dateTimeObj, PDateTime dateTime, PTimeDelta utcOffset, Node inliningTarget) {
+        private static boolean isExceptionInPep495(Object dateTimeObj, DateTimeValue dateTime, PTimeDelta utcOffset, Node inliningTarget) {
             Object cls = GetClassNode.executeUncached(dateTimeObj);
             Shape shape = TypeNodes.GetInstanceShape.getUncached().execute(cls);
             int fold = dateTime.fold == 1 ? 0 : 1;
@@ -677,20 +677,20 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             final PTimeDelta offset;
             if (self.tzInfo == null) {
                 offset = null;
             } else {
                 // ignore fold in calculating utc offset
-                final PDateTime getUtcOffsetFrom;
+                final Object getUtcOffsetFrom;
                 if (self.fold == 1) {
                     // reset fold
                     Object cls = GetClassNode.executeUncached(selfObj);
                     Shape shape = getInstanceShape.execute(cls);
                     getUtcOffsetFrom = new PDateTime(cls, shape, self.year, self.month, self.day, self.hour, self.minute, self.second, self.microsecond, self.tzInfo, 0);
                 } else {
-                    getUtcOffsetFrom = self;
+                    getUtcOffsetFrom = selfObj;
                 }
 
                 offset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, getUtcOffsetFrom, frame, inliningTarget, callMethodObjArgs, raiseNode);
@@ -704,12 +704,12 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static long getHashForDateTime(PDateTime self) {
+        private static long getHashForDateTime(DateTimeValue self) {
             return Objects.hash(self.year, self.month, self.day, self.hour, self.minute, self.second, self.microsecond);
         }
 
         @TruffleBoundary
-        private static long getHashForDateTimeWithOffset(PDateTime self, PTimeDelta offset) {
+        private static long getHashForDateTimeWithOffset(DateTimeValue self, PTimeDelta offset) {
             LocalDateTime utc = subtractOffsetFromDateTime(self, offset);
             return Objects.hash(utc.getYear(), utc.getMonthValue(), utc.getDayOfMonth(), utc.getHour(), utc.getMinute(), utc.getSecond(), utc.getNano() / 1_000);
         }
@@ -786,15 +786,12 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             if (!PyDateTimeCheckNode.executeUncached(left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(left);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, left);
             if (PyDateTimeCheckNode.executeUncached(right)) {
-                PDateTime other = DateTimeNodes.AsManagedDateTimeNode.executeUncached(right);
+                DateTimeValue other = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, right);
 
-                final PTimeDelta selfOffset;
-                final PTimeDelta otherOffset;
-
-                selfOffset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, self, inliningTarget);
-                otherOffset = DatetimeModuleBuiltins.callUtcOffset(other.tzInfo, other, inliningTarget);
+                final PTimeDelta selfOffset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, left, inliningTarget);
+                final PTimeDelta otherOffset = DatetimeModuleBuiltins.callUtcOffset(other.tzInfo, right, inliningTarget);
 
                 if ((selfOffset == null) != (otherOffset == null)) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_SUBTRACT_OFFSET_NAIVE_AND_OFFSET_AWARE_DATETIMES);
@@ -807,8 +804,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                     selfToCompare = subtractOffsetFromDateTime(self, selfOffset);
                     otherToCompare = subtractOffsetFromDateTime(other, otherOffset);
                 } else {
-                    selfToCompare = toLocalDateTime(self);
-                    otherToCompare = toLocalDateTime(other);
+                    selfToCompare = self.toLocalDateTime();
+                    otherToCompare = other.toLocalDateTime();
                 }
 
                 long selfSeconds = selfToCompare.toEpochSecond(ZoneOffset.UTC);
@@ -824,8 +821,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                                 0,
                                 0);
             } else if (PyDeltaCheckNode.executeUncached(right)) {
-                PTimeDelta timeDelta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(right);
-                LocalDateTime local = toLocalDateTime(self);
+                TimeDeltaValue timeDelta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
+                LocalDateTime local = self.toLocalDateTime();
                 LocalDateTime localAdjusted = local.minusDays(timeDelta.days).minusSeconds(timeDelta.seconds).minusNanos(timeDelta.microseconds * 1_000L);
 
                 if (localAdjusted.getYear() < MIN_YEAR || localAdjusted.getYear() > MAX_YEAR) {
@@ -2681,23 +2678,23 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object inTimeZoneBoundary(Object selfObj, Object tzInfo, Node inliningTarget) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             if (tzInfo == self.tzInfo) {
-                return self;
+                return selfObj;
             }
 
             Object sourceTimeZone;
             if (self.tzInfo != null) {
                 sourceTimeZone = self.tzInfo;
             } else {
-                sourceTimeZone = getSystemTimeZoneAt(toLocalDateTime(self), self.fold, inliningTarget);
+                sourceTimeZone = getSystemTimeZoneAt(self.toLocalDateTime(), self.fold, inliningTarget);
             }
 
-            PTimeDelta sourceOffset = DatetimeModuleBuiltins.callUtcOffset(sourceTimeZone, self, inliningTarget);
+            PTimeDelta sourceOffset = DatetimeModuleBuiltins.callUtcOffset(sourceTimeZone, selfObj, inliningTarget);
 
             if (sourceOffset == null) {
-                sourceTimeZone = getSystemTimeZoneAt(toLocalDateTime(self), self.fold, inliningTarget);
-                sourceOffset = DatetimeModuleBuiltins.callUtcOffset(sourceTimeZone, self, inliningTarget);
+                sourceTimeZone = getSystemTimeZoneAt(self.toLocalDateTime(), self.fold, inliningTarget);
+                sourceOffset = DatetimeModuleBuiltins.callUtcOffset(sourceTimeZone, selfObj, inliningTarget);
             }
 
             LocalDateTime selfAsLocalDateTimeInUtc = subtractOffsetFromDateTime(self, sourceOffset);
@@ -2707,7 +2704,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
             final Object targetTimeZone;
             if (tzInfo instanceof PNone) {
-                targetTimeZone = getSystemTimeZoneAt(toLocalDateTime(self), self.fold, inliningTarget);
+                targetTimeZone = getSystemTimeZoneAt(self.toLocalDateTime(), self.fold, inliningTarget);
             } else if (!PyTZInfoCheckNode.executeUncached(tzInfo)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
             } else {
@@ -2858,20 +2855,20 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static PTuple composeTimeTupleBoundary(Object selfObj, Node inliningTarget, PythonLanguage language) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
             int dayOfWeek = localDate.getDayOfWeek().getValue() - 1; // Python's day of week range
                                                                      // is 0-6
             int dayOfYear = localDate.getDayOfYear();
-            int isDst = getIsDst(self, inliningTarget);
+            int isDst = getIsDst(self.tzInfo, selfObj, inliningTarget);
 
             Object[] fields = new Object[]{self.year, self.month, self.day, self.hour, self.minute, self.second, dayOfWeek, dayOfYear, isDst};
             return PFactory.createStructSeq(language, TimeModuleBuiltins.STRUCT_TIME_DESC, fields);
         }
 
-        private static int getIsDst(PDateTime self, Node inliningTarget) {
+        private static int getIsDst(Object tzInfo, Object selfObj, Node inliningTarget) {
             int isDst;
-            PTimeDelta offset = DatetimeModuleBuiltins.callDst(self.tzInfo, self, inliningTarget);
+            PTimeDelta offset = DatetimeModuleBuiltins.callDst(tzInfo, selfObj, inliningTarget);
 
             if (offset == null) {
                 isDst = -1;
@@ -2908,12 +2905,12 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static PTuple composeTimeTupleBoundary(Object selfObj, Node inliningTarget, PythonLanguage language) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             final LocalDateTime localDateTime;
-            PTimeDelta offset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, self, inliningTarget);
+            PTimeDelta offset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, selfObj, inliningTarget);
 
             if (offset == null) {
-                localDateTime = toLocalDateTime(self);
+                localDateTime = self.toLocalDateTime();
             } else {
                 // convert self to UTC
                 localDateTime = subtractOffsetFromDateTime(self, offset);
@@ -2968,13 +2965,13 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static double toTimestampBoundary(Object selfObj, Node inliningTarget) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             if (self.tzInfo == null) {
                 // CPython: local_to_seconds()
                 TimeZone timeZone = TimeModuleBuiltins.getGlobalTimeZone(getContext(inliningTarget));
                 ZoneId zoneId = timeZone.toZoneId();
 
-                LocalDateTime localDateTime = toLocalDateTime(self);
+                LocalDateTime localDateTime = self.toLocalDateTime();
                 ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, zoneId);
 
                 if (localDateTime.equals(zonedDateTime.toLocalDateTime())) {
@@ -3001,10 +2998,10 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                 }
             } else {
                 final LocalDateTime localDateTime;
-                PTimeDelta offset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, self, inliningTarget);
+                PTimeDelta offset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, selfObj, inliningTarget);
 
                 if (offset == null) {
-                    localDateTime = toLocalDateTime(self);
+                    localDateTime = self.toLocalDateTime();
                 } else {
                     // convert self to UTC
                     localDateTime = subtractOffsetFromDateTime(self, offset);
@@ -3038,7 +3035,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static TruffleString isoFormatBoundary(Object selfObj, Object separatorObject, Object timespecObject, Node inliningTarget) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             var builder = new StringBuilder();
 
             String dateSection = PythonUtils.formatJString("%04d-%02d-%02d", self.year, self.month, self.day);
@@ -3128,7 +3125,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                                     ErrorMessages.UNKNOWN_TIMESPEC_VALUE);
             }
 
-            Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(self.tzInfo, self, true, inliningTarget);
+            Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(self.tzInfo, selfObj, true, inliningTarget);
             builder.append(utcOffsetString);
 
             return TruffleString.FromJavaStringNode.getUncached().execute(builder.toString(), TS_ENCODING);
@@ -3177,7 +3174,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static TruffleString strftimeBoundary(Object selfObj, TruffleString format, Node inliningTarget) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             // Reuse time.strftime(format, time_tuple) method.
 
             // construct time_tuple
@@ -3186,7 +3183,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             int dayOfYear = localDate.getDayOfYear();
             int[] timeTuple = new int[]{self.year, self.month, self.day, self.hour, self.minute, self.second, dayOfWeek, dayOfYear, -1};
 
-            String formatPreprocessed = preprocessFormat(format, self, inliningTarget);
+            String formatPreprocessed = preprocessFormat(format, self, selfObj, inliningTarget);
 
             return TimeModuleBuiltins.StrfTimeNode.format(formatPreprocessed, timeTuple, TruffleString.FromJavaStringNode.getUncached());
         }
@@ -3194,7 +3191,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         // The datetime.datetime.strftime() method supports some extra formatters - %f, %z, %:z,
         // and %Z so handle them here.
         // CPython: wrap_strftime()
-        private static String preprocessFormat(TruffleString tsformat, PDateTime self, Node inliningTarget) {
+        private static String preprocessFormat(TruffleString tsformat, DateTimeValue self, Object selfObj, Node inliningTarget) {
             String format = tsformat.toString();
             StringBuilder builder = new StringBuilder();
             int i = 0;
@@ -3217,13 +3214,13 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                 char c = format.charAt(p + 1);
 
                 if (c == 'z') {
-                    Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(self.tzInfo, self, false, inliningTarget);
+                    Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(self.tzInfo, selfObj, false, inliningTarget);
                     builder.append(utcOffsetString);
                     i = p + 2;
                 } else if (c == 'Z') {
                     if (self.tzInfo != null) {
                         // call tzname()
-                        Object tzNameObject = PyObjectCallMethodObjArgs.executeUncached(self.tzInfo, T_TZNAME, self);
+                        Object tzNameObject = PyObjectCallMethodObjArgs.executeUncached(self.tzInfo, T_TZNAME, selfObj);
 
                         // ignore None value
                         if (tzNameObject != PNone.NONE) {
@@ -3254,7 +3251,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
                     char d = format.charAt(p + 2);
                     if (d == 'z') {
-                        Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(self.tzInfo, self, true, inliningTarget);
+                        Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(self.tzInfo, selfObj, true, inliningTarget);
                         builder.append(utcOffsetString);
 
                         i = p + 3;
@@ -3270,8 +3267,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static LocalDateTime subtractOffsetFromDateTime(PDateTime self, PTimeDelta offset) {
-        return toLocalDateTime(self).minusDays(offset.days).minusSeconds(offset.seconds).minusNanos(offset.microseconds * 1_000L);
+    private static LocalDateTime subtractOffsetFromDateTime(DateTimeValue self, PTimeDelta offset) {
+        return self.toLocalDateTime().minusDays(offset.days).minusSeconds(offset.seconds).minusNanos(offset.microseconds * 1_000L);
     }
 
     @TruffleBoundary

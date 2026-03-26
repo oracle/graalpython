@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import java.math.BigInteger;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -58,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
-import com.oracle.graal.python.lib.PyDeltaCheckNode;
 import com.oracle.graal.python.lib.PyLongAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
@@ -68,9 +66,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -239,34 +235,7 @@ public class TimeDeltaNodes {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class AsManagedTimeDeltaNode extends Node {
-        public abstract PTimeDelta execute(Node inliningTarget, Object obj);
-
-        public static PTimeDelta executeUncached(Object obj) {
-            return TimeDeltaNodesFactory.AsManagedTimeDeltaNodeGen.getUncached().execute(null, obj);
-        }
-
-        @Specialization
-        static PTimeDelta doPTimeDelta(PTimeDelta value) {
-            return value;
-        }
-
-        @Specialization(guards = "checkNode.execute(inliningTarget, nativeDelta)", limit = "1")
-        static PTimeDelta doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject nativeDelta,
-                        @Bind PythonLanguage language,
-                        @SuppressWarnings("unused") @Cached PyDeltaCheckNode checkNode,
-                        @Cached CStructAccess.ReadI32Node readIntNode) {
-            int days = getDays(nativeDelta, readIntNode);
-            int seconds = getSeconds(nativeDelta, readIntNode);
-            int microseconds = getMicroseconds(nativeDelta, readIntNode);
-
-            PythonBuiltinClassType cls = PythonBuiltinClassType.PTimeDelta;
-            return new PTimeDelta(cls, cls.getInstanceShape(language), days, seconds, microseconds);
-        }
-
+    public static final class AsManagedTimeDeltaNode {
         static int getDays(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
             return readNode.readFromObj(self, CFields.PyDateTime_Delta__days);
         }
@@ -277,12 +246,6 @@ public class TimeDeltaNodes {
 
         static int getMicroseconds(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
             return readNode.readFromObj(self, CFields.PyDateTime_Delta__microseconds);
-        }
-
-        @Fallback
-        static PTimeDelta error(Object obj,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_GOT_P, "timedelta", obj);
         }
     }
 }

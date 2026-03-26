@@ -58,9 +58,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.datetime.DateTimeNodes;
 import com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.datetime.PDateTime;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes;
 import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaNodes;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.DateTimeValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyDateTimeCheckNode;
@@ -204,12 +204,12 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
             if (!dateTimeLikeCheckNode.execute(inliningTarget, dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
-            PDateTime asDateTime = (PDateTime) DateTimeNodes.AsManagedDateTimeNode.executeUncached(dateTime);
+            DateTimeValue asDateTime = readDateTimeValueNode.execute(inliningTarget, dateTime);
             if (asDateTime.tzInfo != self) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.FROMUTC_DT_TZINFO_IS_NOT_SELF);
             }
             ZoneId zoneId = asZoneId(self, interop);
-            LocalDateTime utcDateTime = readDateTimeValueNode.execute(inliningTarget, dateTime).toLocalDateTime();
+            LocalDateTime utcDateTime = asDateTime.toLocalDateTime();
             ZonedDateTime zonedDateTime = utcDateTime.atOffset(java.time.ZoneOffset.UTC).atZoneSameInstant(zoneId);
             return DateTimeNodes.NewUnsafeNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PDateTime, zonedDateTime.getYear(), zonedDateTime.getMonthValue(),
                             zonedDateTime.getDayOfMonth(), zonedDateTime.getHour(), zonedDateTime.getMinute(), zonedDateTime.getSecond(), zonedDateTime.getNano() / 1_000, self, 0);

@@ -48,7 +48,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.time.YearMonth;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -60,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyDateTimeCheckNode;
 import com.oracle.graal.python.lib.PyTZInfoCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -69,7 +67,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -293,50 +290,7 @@ public class DateTimeNodes {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class AsManagedDateTimeNode extends Node {
-
-        public abstract PDateTime execute(Node inliningTarget, Object obj);
-
-        public static PDateTime executeUncached(Object obj) {
-            return DateTimeNodesFactory.AsManagedDateTimeNodeGen.getUncached().execute(null, obj);
-        }
-
-        @Specialization
-        static PDateTime asManaged(PDateTime obj) {
-            return obj;
-        }
-
-        @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
-        static PDateTime asManagedNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject obj,
-                        @Bind PythonLanguage language,
-                        @SuppressWarnings("unused") @Cached PyDateTimeCheckNode checkNode,
-                        @Cached CStructAccess.ReadByteNode readByteNode,
-                        @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            int year = getYear(obj, readByteNode);
-            int month = getMonth(obj, readByteNode);
-            int day = getDay(obj, readByteNode);
-
-            int hour = getHour(obj, readByteNode);
-            int minute = getMinute(obj, readByteNode);
-            int second = getSecond(obj, readByteNode);
-            int microsecond = getMicrosecond(obj, readByteNode);
-
-            Object tzInfo = getTzInfo(obj, readByteNode, readObjectNode);
-            int fold = getFold(obj, readByteNode);
-
-            PythonBuiltinClassType cls = PythonBuiltinClassType.PDateTime;
-            return new PDateTime(cls, cls.getInstanceShape(language), year, month, day, hour, minute, second, microsecond, tzInfo, fold);
-        }
-
-        @Fallback
-        static PDateTime error(Object obj,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_GOT_P, "datetime", obj);
-        }
-
+    public static final class AsManagedDateTimeNode {
         static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
             int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 0);
             int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 1);

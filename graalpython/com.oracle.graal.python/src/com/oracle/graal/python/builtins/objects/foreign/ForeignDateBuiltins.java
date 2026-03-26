@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.modules.datetime.DateNodes;
 import com.oracle.graal.python.builtins.modules.datetime.PDate;
 import com.oracle.graal.python.builtins.modules.datetime.PTimeDelta;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.TimeDeltaValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -185,7 +186,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
             }
 
             LocalDate date = readDateValueNode.execute(inliningTarget, dateObj).toLocalDate();
-            TemporalNodes.TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, deltaObj);
+            TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, deltaObj);
             long days = ChronoUnit.DAYS.between(LocalDate.of(1, 1, 1), date) + 1 + delta.days;
             if (days <= 0 || days > MAX_ORDINAL) {
                 throw com.oracle.graal.python.nodes.PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
@@ -216,7 +217,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
                 return new PTimeDelta(PythonBuiltinClassType.PTimeDelta, PythonBuiltinClassType.PTimeDelta.getInstanceShape(PythonLanguage.get(null)), (int) (leftDays - rightDays), 0, 0);
             }
             if (PyDeltaCheckNode.executeUncached(right)) {
-                TemporalNodes.TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
+                TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
                 long days = leftDays - delta.days;
                 if (days <= 0 || days >= MAX_ORDINAL) {
                     throw com.oracle.graal.python.nodes.PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
