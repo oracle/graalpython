@@ -42,6 +42,11 @@ package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_DISABLED_PERMANENT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_DISABLED_TEMP;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_POLLING;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_READY;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_UNINITIALIZED;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -149,6 +154,23 @@ public abstract class CApiTransitions {
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CApiTransitions.class);
 
+    enum PollingState {
+        /** startup barrier not finished yet, polling must not run */
+        RQ_UNINITIALIZED,
+
+        /** normal steady state, polling allowed */
+        RQ_READY,
+
+        /** one thread is currently polling */
+        RQ_POLLING,
+
+        /** temporarily disabled by GraalPyPrivate_DisableReferneceQueuePolling */
+        RQ_DISABLED_TEMP,
+
+        /** shutdown/finalization, end state */
+        RQ_DISABLED_PERMANENT
+    }
+
     private CApiTransitions() {
     }
 
@@ -183,7 +205,7 @@ public abstract class CApiTransitions {
 
         public final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
 
-        volatile boolean referenceQueuePollActive = false;
+        volatile PollingState referenceQueuePollingState = RQ_UNINITIALIZED;
 
         @TruffleBoundary
         public static <T> T putShadowTable(HashMap<Long, T> table, long pointer, T ref) {
@@ -429,29 +451,36 @@ public abstract class CApiTransitions {
         PythonContext context = PythonContext.get(null);
         HandleContext handleContext = context.nativeContext;
         int manuallyCollected = 0;
-        if (!handleContext.referenceQueuePollActive) {
-            try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
-                ReferenceQueue<Object> queue = handleContext.referenceQueue;
-                int count = 0;
-                long start = 0;
-                ArrayList<Long> referencesToBeFreed = handleContext.referencesToBeFreed;
+        if (handleContext.referenceQueuePollingState != RQ_READY) {
+            return manuallyCollected;
+        }
+        try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+            if (handleContext.referenceQueuePollingState != RQ_READY) {
+                return manuallyCollected;
+            }
+            ReferenceQueue<Object> queue = handleContext.referenceQueue;
+            int count = 0;
+            long start = 0;
+            boolean polling = false;
+            ArrayList<Long> referencesToBeFreed = handleContext.referencesToBeFreed;
+            try {
                 while (true) {
                     Object entry = queue.poll();
                     if (entry == null) {
                         if (count > 0) {
-                            assert handleContext.referenceQueuePollActive;
+                            assert handleContext.referenceQueuePollingState == RQ_POLLING || handleContext.referenceQueuePollingState == RQ_DISABLED_PERMANENT;
                             releaseNativeObjects(context, referencesToBeFreed);
-                            handleContext.referenceQueuePollActive = false;
                             LOGGER.fine("collected " + count + " references from native reference queue in " + ((System.nanoTime() - start) / 1000000) + "ms");
                         }
                         return manuallyCollected;
                     }
                     if (count == 0) {
-                        assert !handleContext.referenceQueuePollActive;
-                        handleContext.referenceQueuePollActive = true;
+                        assert handleContext.referenceQueuePollingState == RQ_READY;
+                        handleContext.referenceQueuePollingState = RQ_POLLING;
+                        polling = true;
                         start = System.nanoTime();
                     } else {
-                        assert handleContext.referenceQueuePollActive;
+                        assert handleContext.referenceQueuePollingState == RQ_POLLING;
                     }
                     count++;
                     LOGGER.fine(() -> PythonUtils.formatJString("releasing %s, no remaining managed references", entry));
@@ -529,9 +558,12 @@ public abstract class CApiTransitions {
                         processPyCapsuleReference(reference);
                     }
                 }
+            } finally {
+                if (polling && handleContext.referenceQueuePollingState == RQ_POLLING) {
+                    handleContext.referenceQueuePollingState = RQ_READY;
+                }
             }
         }
-        return manuallyCollected;
     }
 
     /**
@@ -698,15 +730,26 @@ public abstract class CApiTransitions {
     }
 
     public static boolean disableReferenceQueuePolling(HandleContext handleContext) {
-        if (!handleContext.referenceQueuePollActive) {
-            handleContext.referenceQueuePollActive = true;
+        if (handleContext.referenceQueuePollingState == RQ_READY) {
+            handleContext.referenceQueuePollingState = RQ_DISABLED_TEMP;
             return false;
         }
         return true;
     }
 
     public static void enableReferenceQueuePolling(HandleContext handleContext) {
-        handleContext.referenceQueuePollActive = false;
+        if (handleContext.referenceQueuePollingState == RQ_DISABLED_TEMP) {
+            handleContext.referenceQueuePollingState = RQ_READY;
+        }
+    }
+
+    public static void initializeReferenceQueuePolling(HandleContext handleContext) {
+        assert handleContext.referenceQueuePollingState == RQ_UNINITIALIZED : handleContext.referenceQueuePollingState;
+        handleContext.referenceQueuePollingState = RQ_READY;
+    }
+
+    public static void disableReferenceQueuePollingPermanently(HandleContext handleContext) {
+        handleContext.referenceQueuePollingState = RQ_DISABLED_PERMANENT;
     }
 
     private static void freeNativeStub(PythonObjectReference ref) {
