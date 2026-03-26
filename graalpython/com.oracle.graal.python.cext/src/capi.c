@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -272,9 +272,13 @@ PyObject* _Py_NotImplementedStructReference;
  */
 THREAD_LOCAL PyThreadState *tstate_current = NULL;
 
+PyAPI_FUNC(void) GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate) {
+    tstate_current = tstate;
+}
+
 static void initialize_globals() {
-    // store the thread state into a thread local variable
-    tstate_current = GraalPyPrivate_ThreadState_Get(&tstate_current);
+    // initialize the current thread's TLS slot for PyThreadState_Get()
+    GraalPyPrivate_InitThreadStateCurrent();
     _Py_NoneStructReference = GraalPyPrivate_None();
     _Py_NotImplementedStructReference = GraalPyPrivate_NotImplemented();
     _Py_EllipsisObjectReference = GraalPyPrivate_Ellipsis();

@@ -62,7 +62,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -127,6 +132,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -814,8 +820,21 @@ public final class CApiContext extends CExtContext {
                     TruffleSafepoint safepoint = TruffleSafepoint.getCurrent();
                     boolean prevAllowSideEffects = safepoint.setAllowSideEffects(false);
                     try {
-                        loadCApi(node, context, name, path, reason);
+                        CApiContext cApiContext = loadCApi(node, context, name, path, reason);
+                        initializeThreadStateCurrentForAttachedThreads(node, context);
+                        CApiTransitions.initializeReferenceQueuePolling(context.nativeContext);
+                        context.runCApiHooks();
                         context.setCApiInitialized(); // volatile write
+                        context.finishCApiThreadStateInit();
+                        try {
+                            cApiContext.runBackgroundGCTask(context);
+                        } catch (RuntimeException e) {
+                            // This can happen when other languages restrict multithreading
+                            LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
+                        }
+                    } catch (Throwable t) {
+                        context.finishCApiThreadStateInit();
+                        throw t;
                     } finally {
                         safepoint.setAllowSideEffects(prevAllowSideEffects);
                     }
@@ -825,6 +844,67 @@ public final class CApiContext extends CExtContext {
             }
         }
         return context.getCApiContext();
+    }
+
+    @SuppressWarnings("try")
+    private static void initializeThreadStateCurrentForAttachedThreads(Node node, PythonContext context) throws ApiInitException {
+        Thread[] threads = getOtherAliveAttachedThreads(context);
+        if (threads.length == 0) {
+            return;
+        }
+        ThreadLocalAction action = new ThreadLocalAction(true, false) {
+            @Override
+            protected void perform(ThreadLocalAction.Access access) {
+                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT);
+            }
+        };
+        waitForThreadLocalActions(node, context, submitThreadLocalActions(context, threads, action));
+    }
+
+    private static Thread[] getOtherAliveAttachedThreads(PythonContext context) {
+        Thread currentThread = Thread.currentThread();
+        ArrayList<Thread> threads = new ArrayList<>();
+        for (Thread thread : context.getThreads()) {
+            if (thread != currentThread && thread.isAlive()) {
+                threads.add(thread);
+            }
+        }
+        return threads.toArray(Thread[]::new);
+    }
+
+    private static ArrayList<Future<Void>> submitThreadLocalActions(PythonContext context, Thread[] threads, ThreadLocalAction action) {
+        ArrayList<Future<Void>> futures = new ArrayList<>(threads.length);
+        for (Thread thread : threads) {
+            futures.add(context.getEnv().submitThreadLocal(new Thread[]{thread}, action));
+        }
+        return futures;
+    }
+
+    @SuppressWarnings("try")
+    private static void waitForThreadLocalActions(Node node, PythonContext context, ArrayList<Future<Void>> futures) throws ApiInitException {
+        Node waitLocation = node != null ? node : context.getLanguage().unavailableSafepointLocation;
+        try (GilNode.UncachedRelease ignored = GilNode.uncachedRelease()) {
+            for (Future<Void> future : futures) {
+                TruffleSafepoint.setBlockedThreadInterruptible(waitLocation, voidFuture -> {
+                    try {
+                        voidFuture.get(10, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    } catch (TimeoutException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    } catch (CancellationException e) {
+                        // Ignore threads that went away while initialization was in progress.
+                    }
+                }, future);
+            }
+        } catch (RuntimeException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof TimeoutException) {
+                throw new ApiInitException(toTruffleStringUncached("Timed out while initializing native thread state on an attached thread."));
+            }
+            throw e;
+        }
     }
 
     private static CApiContext loadCApi(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
@@ -885,9 +965,9 @@ public final class CApiContext extends CExtContext {
                 U.execute(initFunction, builtinArrayWrapper, gcState);
             }
 
+            context.startCApiThreadStateInit();
             assert PythonCApiAssertions.assertBuiltins(capiLibrary);
             cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
-            context.runCApiHooks();
 
             /*
              * C++ libraries sometimes declare global objects that have destructors that call
@@ -902,7 +982,6 @@ public final class CApiContext extends CExtContext {
             Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
             try {
                 cApiContext.addNativeFinalizer(context, finalizingPointer);
-                cApiContext.runBackgroundGCTask(context);
             } catch (RuntimeException e) {
                 // This can happen when other languages restrict multithreading
                 LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
@@ -1106,7 +1185,7 @@ public final class CApiContext extends CExtContext {
          * allocated resources (e.g. native object stubs). Calling
          * 'CApiTransitions.pollReferenceQueue' could then lead to a double-free.
          */
-        CApiTransitions.disableReferenceQueuePolling(handleContext);
+        CApiTransitions.disableReferenceQueuePollingPermanently(handleContext);
 
         TruffleSafepoint sp = TruffleSafepoint.getCurrent();
         boolean prev = sp.setAllowActions(false);

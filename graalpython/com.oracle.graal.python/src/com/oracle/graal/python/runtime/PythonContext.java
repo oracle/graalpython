@@ -40,11 +40,11 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
-import static com.oracle.graal.python.nodes.BuiltinNames.T___STDOUT__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_THREADING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___STDOUT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_INSERT;
@@ -112,6 +112,8 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -722,12 +724,19 @@ public final class PythonContext extends Python3Core {
     private OutputStream out;
     private OutputStream err;
     private InputStream in;
+
+    private static final int CAPI_UNINITIALIZED = 0;
+    private static final int CAPI_INITIALIZING = 1;
+    private static final int CAPI_INITIALIZED = 2;
+    private static final int CAPI_FAILED = 3;
+
+    /** Initialization state of the C API context. */
+    private volatile int cApiState;
     private final ReentrantLock cApiInitializationLock = new ReentrantLock(false);
-    private volatile boolean cApiWasInitialized = false;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private boolean nativeAccessAllowed;
 
-    private TruffleString soABI; // cache for soAPI
+    private TruffleString soABI;
 
     private static final class GlobalInterpreterLock extends ReentrantLock {
         private static final long serialVersionUID = 1L;
@@ -1967,7 +1976,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public void registerCApiHook(Runnable hook) {
-        if (hasCApiContext()) {
+        if (isCApiInitialized()) {
             hook.run();
         } else {
             capiHooks.add(hook);
@@ -2567,6 +2576,10 @@ public final class PythonContext extends Python3Core {
     public synchronized void attachThread(Thread thread, ContextThreadLocal<PythonThreadState> threadState) {
         CompilerAsserts.neverPartOfCompilation();
         threadStateMapping.put(thread, threadState.get(thread));
+        if (isCapiInitializing() || isCApiInitialized()) {
+            // initialize this thread's native TLS slot eagerly instead of on first use
+            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT);
+        }
     }
 
     public synchronized void disposeThread(Thread thread, boolean canRunGuestCode) {
@@ -2595,24 +2608,53 @@ public final class PythonContext extends Python3Core {
     }
 
     public boolean hasCApiContext() {
-        // This may be called during C API initialization, we have a context so that we can finish
-        // the initialization, but the C API is not fully initialized yet
-        assert (cApiContext != null) || !cApiWasInitialized;
+        /*
+         * This may be called during C API initialization, we have a context so that we can finish
+         * the initialization, but the C API is not fully initialized yet
+         */
+        assert (cApiContext != null) || cApiState != CAPI_INITIALIZED;
         return cApiContext != null;
     }
 
     public boolean isCApiInitialized() {
-        assert (cApiContext != null) || !cApiWasInitialized;
-        return cApiWasInitialized;
+        assert cApiContext != null || cApiState != CAPI_INITIALIZED;
+        return cApiState == CAPI_INITIALIZED;
+    }
+
+    public boolean isCapiInitializing() {
+        assert cApiContext != null || cApiState != CAPI_INITIALIZING;
+        return cApiState == CAPI_INITIALIZING;
+    }
+
+    public void startCApiThreadStateInit() {
+        assert cApiContext != null;
+        assert cApiState == CAPI_UNINITIALIZED;
+        cApiState = CAPI_INITIALIZING;
+    }
+
+    private void setCapiState(int state) {
+        /*- Allowed transitions:
+         * UNINITIALIZED -> INITIALIZING
+         * INITIALIZING -> INITIALIZED, FAILED
+         */
+        assert state != CAPI_UNINITIALIZED;
+        assert cApiState != CAPI_UNINITIALIZED || state == CAPI_INITIALIZING;
+        assert cApiState != CAPI_INITIALIZING || state == CAPI_INITIALIZED || state == CAPI_FAILED;
+        cApiState = state;
+    }
+
+    public void finishCApiThreadStateInit() {
+        cApiState = CAPI_INITIALIZED;
     }
 
     public void setCApiInitialized() {
         assert cApiContext != null;
-        cApiWasInitialized = true;
+        assert cApiState != CAPI_INITIALIZED;
+        cApiState = CAPI_INITIALIZED;
     }
 
     public CApiContext getCApiContext() {
-        assert (cApiContext != null) || !cApiWasInitialized;
+        assert (cApiContext != null) || cApiState == CAPI_UNINITIALIZED;
         return cApiContext;
     }
 
