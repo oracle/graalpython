@@ -163,8 +163,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @Specialization
         static boolean bool(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode) {
-            PTimeDelta self = asManagedTimeDeltaNode.execute(inliningTarget, selfObj);
+                        @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
+            TemporalNodes.TimeDeltaValue self = readTimeDeltaValueNode.execute(inliningTarget, selfObj);
             return self.days != 0 || self.seconds != 0 || self.microseconds != 0;
         }
     }
@@ -176,10 +176,10 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static TruffleString repr(Object selfObj) {
-            PTimeDelta self = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(selfObj);
+            TemporalNodes.TimeDeltaValue self = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(null, selfObj);
             var builder = new StringBuilder();
 
-            builder.append(TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(self)));
+            builder.append(TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj)));
 
             builder.append("(");
 
@@ -223,8 +223,9 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static TruffleString str(Object selfObj) {
-            PTimeDelta self = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(selfObj);
+        static TruffleString str(Object selfObj,
+                        @Bind Node inliningTarget) {
+            TemporalNodes.TimeDeltaValue self = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, selfObj);
             var builder = new StringBuilder();
 
             // optional prefix with days, e.g. '1 day' or '5 days'
@@ -269,8 +270,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached GetClassNode getClassNode,
-                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode) {
-            PTimeDelta self = asManagedTimeDeltaNode.execute(inliningTarget, selfObj);
+                        @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
+            TemporalNodes.TimeDeltaValue self = readTimeDeltaValueNode.execute(inliningTarget, selfObj);
             Object type = getClassNode.execute(inliningTarget, selfObj);
             PTuple arguments = PFactory.createTuple(language, new Object[]{self.days, self.seconds, self.microseconds});
             return PFactory.createTuple(language, new Object[]{type, arguments});
@@ -305,8 +306,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode) {
-            PTimeDelta self = asManagedTimeDeltaNode.execute(inliningTarget, selfObj);
+                        @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
+            TemporalNodes.TimeDeltaValue self = readTimeDeltaValueNode.execute(inliningTarget, selfObj);
             var content = new int[]{self.days, self.seconds, self.microseconds};
             return hashNode.execute(frame, inliningTarget, PFactory.createTuple(language, content));
         }
@@ -322,12 +323,12 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TimeDeltaNodes.NewNode newNode,
                         @Cached TimeDeltaNodes.TimeDeltaCheckNode checkNode,
-                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode) {
+                        @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
             if (!checkNode.execute(inliningTarget, left) || !checkNode.execute(inliningTarget, right)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PTimeDelta self = asManagedTimeDeltaNode.execute(inliningTarget, left);
-            PTimeDelta other = asManagedTimeDeltaNode.execute(inliningTarget, right);
+            TemporalNodes.TimeDeltaValue self = readTimeDeltaValueNode.execute(inliningTarget, left);
+            TemporalNodes.TimeDeltaValue other = readTimeDeltaValueNode.execute(inliningTarget, right);
             return newNode.executeBuiltin(inliningTarget, self.days + other.days, self.seconds + other.seconds, self.microseconds + other.microseconds, 0, 0, 0, 0);
         }
     }
@@ -342,12 +343,12 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TimeDeltaNodes.NewNode newNode,
                         @Cached TimeDeltaNodes.TimeDeltaCheckNode checkNode,
-                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode) {
+                        @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
             if (!checkNode.execute(inliningTarget, left) || !checkNode.execute(inliningTarget, rigth)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PTimeDelta self = asManagedTimeDeltaNode.execute(inliningTarget, left);
-            PTimeDelta other = asManagedTimeDeltaNode.execute(inliningTarget, rigth);
+            TemporalNodes.TimeDeltaValue self = readTimeDeltaValueNode.execute(inliningTarget, left);
+            TemporalNodes.TimeDeltaValue other = readTimeDeltaValueNode.execute(inliningTarget, rigth);
             return newNode.executeBuiltin(inliningTarget, self.days - other.days, self.seconds - other.seconds, self.microseconds - other.microseconds, 0, 0, 0, 0);
         }
     }
@@ -603,8 +604,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         static PTimeDelta abs(PTimeDelta selfObj,
                         @Bind Node inliningTarget,
                         @Cached TimeDeltaNodes.NewNode newNode,
-                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode) {
-            PTimeDelta self = asManagedTimeDeltaNode.execute(inliningTarget, selfObj);
+                        @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
+            TemporalNodes.TimeDeltaValue self = readTimeDeltaValueNode.execute(inliningTarget, selfObj);
             if (self.days >= 0) {
                 return newNode.executeBuiltin(inliningTarget, self.days, self.seconds, self.microseconds, 0, 0, 0, 0);
             } else {
@@ -621,8 +622,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         static PTimeDelta pos(PTimeDelta selfObj,
                         @Bind Node inliningTarget,
                         @Cached TimeDeltaNodes.NewNode newNode,
-                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode) {
-            PTimeDelta self = asManagedTimeDeltaNode.execute(inliningTarget, selfObj);
+                        @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
+            TemporalNodes.TimeDeltaValue self = readTimeDeltaValueNode.execute(inliningTarget, selfObj);
             return newNode.executeBuiltin(inliningTarget, self.days, self.seconds, self.microseconds, 0, 0, 0, 0);
         }
     }
@@ -635,8 +636,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         static PTimeDelta neg(Object selfObj,
                         @Bind Node inliningTarget,
                         @Cached TimeDeltaNodes.NewNode newNode,
-                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode) {
-            PTimeDelta self = asManagedTimeDeltaNode.execute(inliningTarget, selfObj);
+                        @Cached TemporalNodes.ReadTimeDeltaValueNode readTimeDeltaValueNode) {
+            TemporalNodes.TimeDeltaValue self = readTimeDeltaValueNode.execute(inliningTarget, selfObj);
             return newNode.executeBuiltin(inliningTarget, -self.days, -self.seconds, -self.microseconds, 0, 0, 0, 0);
         }
     }

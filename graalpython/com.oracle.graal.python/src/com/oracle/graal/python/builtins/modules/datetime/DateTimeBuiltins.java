@@ -101,6 +101,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.DateValue;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.DateTimeValue;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.TimeDeltaValue;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.TimeValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -417,7 +419,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
             Node encapsulatingNode = encapsulating.set(inliningTarget);
             try {
-                return reprBoundary(selfObj);
+                return reprBoundary(inliningTarget, selfObj);
             } finally {
                 // Some uncached nodes (e.g. PyFloatAsDoubleNode, PyLongAsLongNode,
                 // PyObjectReprAsObjectNode) may raise exceptions that are not
@@ -427,8 +429,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static TruffleString reprBoundary(Object selfObj) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+        private static TruffleString reprBoundary(Node inliningTarget, Object selfObj) {
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             var builder = new StringBuilder();
 
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
@@ -466,7 +468,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached GetClassNode getClassNode) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             // DateTime is serialized in the following format:
             // (
             // bytes(year 1st byte, year 2nd byte, month, day, hours, minutes, seconds, microseconds
@@ -509,7 +511,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached GetClassNode getClassNode) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             byte[] baseStateBytes = new byte[10];
             baseStateBytes[0] = (byte) (self.year / 256);
             baseStateBytes[1] = (byte) (self.year % 256);
@@ -746,10 +748,10 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PDateTime date = DateTimeNodes.AsManagedDateTimeNode.executeUncached(dateTimeObj);
-            PTimeDelta delta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(deltaObj);
+            DateTimeValue date = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, dateTimeObj);
+            TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, deltaObj);
 
-            LocalDateTime local = toLocalDateTime(date);
+            LocalDateTime local = date.toLocalDateTime();
             LocalDateTime localAdjusted = local.plusDays(delta.days).plusSeconds(delta.seconds).plusNanos(delta.microseconds * 1_000L);
 
             if (localAdjusted.getYear() < MIN_YEAR || localAdjusted.getYear() > MAX_YEAR) {
@@ -2531,7 +2533,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         static Object getDate(Object selfObj,
                         @Bind Node inliningTarget,
                         @Cached DateNodes.NewNode newDateNode) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             return newDateNode.execute(inliningTarget,
                             PythonBuiltinClassType.PDate,
                             self.year,
@@ -2548,7 +2550,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         static Object getTime(Object selfObj,
                         @Bind Node inliningTarget,
                         @Cached TimeNodes.NewNode newTimeNode) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             return newTimeNode.execute(inliningTarget,
                             PythonBuiltinClassType.PTime,
                             self.hour,
@@ -2568,7 +2570,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         static Object getTime(Object selfObj,
                         @Bind Node inliningTarget,
                         @Cached TimeNodes.NewNode newTimeNode) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             return newTimeNode.execute(inliningTarget,
                             PythonBuiltinClassType.PTime,
                             self.hour,
@@ -2591,7 +2593,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached GetClassNode getClassNode,
                         @Cached DateTimeNodes.NewNode newDateTimeNode) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, selfObj);
             final long year, month, day;
 
             if (yearObject instanceof PNone) {
@@ -2938,7 +2940,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static long toOrdinal(Object selfObj) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(null, selfObj);
             LocalDate from = LocalDate.of(1, 1, 1);
             LocalDate to = LocalDate.of(self.year, self.month, self.day);
             return ChronoUnit.DAYS.between(from, to) + 1;
@@ -3139,8 +3141,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static TruffleString cTime(Object selfObj) {
-            PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(selfObj);
-            LocalDateTime localDateTime = LocalDateTime.of(self.year, self.month, self.day, self.hour, self.minute, self.second);
+            DateTimeValue self = TemporalNodes.ReadDateTimeValueNode.executeUncached(null, selfObj);
+            LocalDateTime localDateTime = self.toLocalDateTime();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE LLL ppd HH:mm:ss yyyy");
             String ctime = localDateTime.format(formatter);
             return TruffleString.FromJavaStringNode.getUncached().execute(ctime, TS_ENCODING);
@@ -3273,7 +3275,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static LocalDateTime toLocalDateTime(PDateTime dateTime) {
-        return TemporalNodes.DateTimeValue.of(dateTime).toLocalDateTime();
+        return DateTimeValue.of(dateTime).toLocalDateTime();
     }
 
     private static Object toPDateTime(LocalDateTime local, Object tzInfo, int fold, Node inliningTarget, Object cls) {

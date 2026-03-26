@@ -235,7 +235,7 @@ public final class TemporalNodes {
         public abstract TimeDeltaValue execute(Node inliningTarget, Object obj);
 
         public static TimeDeltaValue executeUncached(Node inliningTarget, Object obj) {
-            return TemporalNodesFactory.ReadTimeDeltaValueNodeGen.executeUncached(inliningTarget, obj);
+            return TemporalNodesFactory.ReadTimeDeltaValueNodeGen.getUncached().execute(inliningTarget, obj);
         }
 
         @Specialization
@@ -265,7 +265,7 @@ public final class TemporalNodes {
         public abstract DateValue execute(Node inliningTarget, Object obj);
 
         public static DateValue executeUncached(Node inliningTarget, Object obj) {
-            return TemporalNodesFactory.ReadDateValueNodeGen.executeUncached(inliningTarget, obj);
+            return TemporalNodesFactory.ReadDateValueNodeGen.getUncached().execute(inliningTarget, obj);
         }
 
         @Specialization
@@ -306,7 +306,7 @@ public final class TemporalNodes {
         public abstract TimeValue execute(Node inliningTarget, Object obj);
 
         public static TimeValue executeUncached(Node inliningTarget, Object obj) {
-            return TemporalNodesFactory.ReadTimeValueNodeGen.executeUncached(inliningTarget, obj);
+            return TemporalNodesFactory.ReadTimeValueNodeGen.getUncached().execute(inliningTarget, obj);
         }
 
         @Specialization
@@ -351,7 +351,7 @@ public final class TemporalNodes {
         public abstract DateTimeValue execute(Node inliningTarget, Object obj);
 
         public static DateTimeValue executeUncached(Node inliningTarget, Object obj) {
-            return TemporalNodesFactory.ReadDateTimeValueNodeGen.executeUncached(inliningTarget, obj);
+            return TemporalNodesFactory.ReadDateTimeValueNodeGen.getUncached().execute(inliningTarget, obj);
         }
 
         @Specialization

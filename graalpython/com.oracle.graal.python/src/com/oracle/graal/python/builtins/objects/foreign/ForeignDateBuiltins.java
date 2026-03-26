@@ -185,7 +185,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
             }
 
             LocalDate date = readDateValueNode.execute(inliningTarget, dateObj).toLocalDate();
-            PTimeDelta delta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(deltaObj);
+            TemporalNodes.TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, deltaObj);
             long days = ChronoUnit.DAYS.between(LocalDate.of(1, 1, 1), date) + 1 + delta.days;
             if (days <= 0 || days > MAX_ORDINAL) {
                 throw com.oracle.graal.python.nodes.PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
@@ -216,7 +216,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
                 return new PTimeDelta(PythonBuiltinClassType.PTimeDelta, PythonBuiltinClassType.PTimeDelta.getInstanceShape(PythonLanguage.get(null)), (int) (leftDays - rightDays), 0, 0);
             }
             if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
-                PTimeDelta delta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(right);
+                TemporalNodes.TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
                 long days = leftDays - delta.days;
                 if (days <= 0 || days >= MAX_ORDINAL) {
                     throw com.oracle.graal.python.nodes.PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);

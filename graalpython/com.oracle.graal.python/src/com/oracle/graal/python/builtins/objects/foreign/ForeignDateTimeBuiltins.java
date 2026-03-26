@@ -225,7 +225,7 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             PDateTime date = toPythonDateTime(readDateTimeValueNode.execute(inliningTarget, dateTimeObj), inliningTarget);
-            PTimeDelta delta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(deltaObj);
+            TemporalNodes.TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, deltaObj);
             LocalDateTime adjusted = toLocalDateTime(date).plusDays(delta.days).plusSeconds(delta.seconds).plusNanos(delta.microseconds * 1_000L);
             return toPythonDateTime(adjusted, date.tzInfo, date.fold, inliningTarget);
         }
@@ -260,7 +260,7 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
                                 0, 0, 0);
             }
             if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
-                PTimeDelta delta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(right);
+                TemporalNodes.TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
                 LocalDateTime adjusted = toLocalDateTime(self).minusDays(delta.days).minusSeconds(delta.seconds).minusNanos(delta.microseconds * 1_000L);
                 return toPythonDateTime(adjusted, self.tzInfo, self.fold, inliningTarget);
             }
