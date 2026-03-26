@@ -277,8 +277,8 @@ PyAPI_FUNC(PyThreadState **) GraalPyPrivate_InitThreadStateCurrent(PyThreadState
     return &tstate_current;
 }
 
-static void initialize_globals() {
-    GraalPyPrivate_InitThreadStateCurrent(GraalPyPrivate_ThreadState_Get(&tstate_current));
+static void initialize_globals(PyThreadState *tstate) {
+    GraalPyPrivate_InitThreadStateCurrent(tstate);
     _Py_NoneStructReference = GraalPyPrivate_None();
     _Py_NotImplementedStructReference = GraalPyPrivate_NotImplemented();
     _Py_EllipsisObjectReference = GraalPyPrivate_Ellipsis();
@@ -671,7 +671,7 @@ Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
  */
 Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing = NULL;
 
-PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures, GCState *gc) {
+PyAPI_FUNC(PyThreadState **) initialize_graal_capi(TruffleEnv* env, void **builtin_closures, GCState *gc, PyThreadState *tstate) {
     clock_t t = clock();
 
     if (env) {
@@ -710,7 +710,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
 
     initialize_builtin_types_and_structs();
     // initialize global variables like '_Py_NoneStruct', etc.
-    initialize_globals();
+    initialize_globals(tstate);
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
@@ -721,6 +721,7 @@ PyAPI_FUNC(void) initialize_graal_capi(TruffleEnv* env, void **builtin_closures,
     Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyPrivate_FileSystemDefaultEncoding()));
 
     GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    return &tstate_current;
 }
 
 /*

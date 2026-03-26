@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -71,7 +70,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ThreadLocalAction;
@@ -79,8 +77,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -116,22 +112,6 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyThreadState, args = {Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_ThreadState_Get extends CApiUnaryBuiltinNode {
-
-        @Specialization(limit = "1")
-        static Object get(Object tstateCurrentPtr,
-                        @Bind Node inliningTarget,
-                        @Bind PythonContext context,
-                        @CachedLibrary("tstateCurrentPtr") InteropLibrary lib) {
-            PythonThreadState pythonThreadState = context.getThreadState(context.getLanguage(inliningTarget));
-            if (!lib.isNull(tstateCurrentPtr)) {
-                pythonThreadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
-            }
-            return PThreadState.getOrCreateNativeThreadState(pythonThreadState);
-        }
-    }
-
     @CApiBuiltin(ret = Void, args = {}, call = Ignored)
     abstract static class GraalPyPrivate_BeforeThreadDetach extends CApiNullaryBuiltinNode {
         @Specialization
@@ -151,12 +131,7 @@ public final class PythonCextPyStateBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-            PDict threadStateDict = threadState.getDict();
-            if (threadStateDict == null) {
-                threadStateDict = PFactory.createDict(context.getLanguage());
-                threadState.setDict(threadStateDict);
-            }
-            return threadStateDict;
+            return PThreadState.getOrCreateThreadStateDict(context, threadState);
         }
     }
 

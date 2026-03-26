@@ -968,9 +968,14 @@ public final class CApiContext extends CExtContext {
                  * then already require the GC state.
                  */
                 Object gcState = cApiContext.createGCState();
-                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
+                PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
+                Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
+                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER,POINTER):POINTER", "exec").build()).call();
                 initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                U.execute(initFunction, builtinArrayWrapper, gcState);
+                Object nativeThreadLocalVarPointer = U.execute(initFunction, builtinArrayWrapper, gcState, nativeThreadState);
+                assert U.isPointer(nativeThreadLocalVarPointer);
+                assert !U.isNull(nativeThreadLocalVarPointer);
+                currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
             }
 
             assert PythonCApiAssertions.assertBuiltins(capiLibrary);

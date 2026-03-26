@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,16 +41,18 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -78,7 +80,7 @@ public final class PThreadState extends PythonStructNativeWrapper {
     @TruffleBoundary
     private PThreadState(PythonThreadState threadState) {
         super(threadState);
-        long ptr = allocateCLayout(threadState);
+        long ptr = allocateCLayout();
         CApiTransitions.createReference(this, ptr, true);
         // TODO: wrap in NativePointer for NFI
         replacement = new NativePointer(ptr);
@@ -110,18 +112,41 @@ public final class PThreadState extends PythonStructNativeWrapper {
     }
 
     @TruffleBoundary
-    private static long allocateCLayout(PythonThreadState threadState) {
-        PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
+    public static PDict getOrCreateThreadStateDict(PythonContext context, PythonThreadState threadState) {
+        /*
+         * C API initialization must be finished at that time. This implies that there is already a
+         * native thread state.
+         */
+        assert context.getCApiState() == CApiState.INITIALIZED;
 
+        Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
+        assert nativeThreadState != null;
+
+        PDict threadStateDict = threadState.getDict();
+        if (threadStateDict != null) {
+            assert threadStateDict == ReadObjectNode.getUncached().read(nativeThreadState, CFields.PyThreadState__dict);
+            return threadStateDict;
+        }
+
+        threadStateDict = PFactory.createDict(context.getLanguage());
+        threadState.setDict(threadStateDict);
+        assert ReadObjectNode.getUncached().read(nativeThreadState, CFields.PyThreadState__dict) == PNone.NO_VALUE;
+        CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__dict, PythonToNativeNode.executeUncached(threadStateDict));
+
+        return threadStateDict;
+    }
+
+    @TruffleBoundary
+    private static long allocateCLayout() {
         long ptr = CStructAccess.AllocateNode.allocUncachedPointer(CStructs.PyThreadState.size());
         CStructAccess.WritePointerNode writePtrNode = CStructAccess.WritePointerNode.getUncached();
         PythonContext pythonContext = PythonContext.get(null);
-        PDict threadStateDict = threadState.getDict();
-        if (threadStateDict == null) {
-            threadStateDict = PFactory.createDict(pythonContext.getLanguage());
-            threadState.setDict(threadStateDict);
-        }
-        writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
+        /*
+         * As in CPython, the thread state dict is initialized lazily. This is necessary to avoid
+         * cycles in the bootstrapping process because creating the dict will need the GC state
+         * which needs the thread state.
+         */
+        writePtrNode.write(ptr, CFields.PyThreadState__dict, pythonContext.getNativeNull());
         CApiContext cApiContext = pythonContext.getCApiContext();
         Object smallInts = CStructAccess.AllocateNode.allocUncached((PY_NSMALLNEGINTS + PY_NSMALLPOSINTS) * CStructAccess.POINTER_SIZE);
         writePtrNode.write(ptr, CFields.PyThreadState__small_ints, smallInts);
