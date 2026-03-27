@@ -311,6 +311,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static RootNode rootNodeForExtraction(RootNode rootNode) {
+        rootNode = PythonLanguage.unwrapRootNode(rootNode);
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             return PGenerator.unwrapContinuationRoot(rootNode);
         } else {
@@ -503,7 +504,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private PCode createCode(BytecodeDSLCodeUnit codeUnit) {
-        PBytecodeDSLRootNode outerRootNode = (PBytecodeDSLRootNode) getRootNode();
+        PBytecodeDSLRootNode outerRootNode = (PBytecodeDSLRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
         RootCallTarget callTarget = language.createCachedCallTarget(l -> codeUnit.createRootNode(PythonContext.get(null), outerRootNode.getSource()), codeUnit);
         PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) callTarget.getRootNode();
