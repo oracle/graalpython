@@ -66,12 +66,19 @@ def _venv_site_packages(venv_dir: Path) -> Path:
     return venv_dir / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages'
 
 
+def _package_present(site_packages_dir: Path, package: str, version: str) -> bool:
+    if os.path.isdir(site_packages_dir / f'{package}-{version}.dist-info'):
+        return True
+    normalized = package.replace('-', '_')
+    return os.path.isdir(site_packages_dir / normalized)
+
+
 def ensure_packages(**package_specs):
     import site
     package_names = "-".join(package_specs.keys())
     venv_dir = find_rootdir() / f'{sys.implementation.name}-{package_names}-venv'
     site_packages_dir = _venv_site_packages(venv_dir)
-    if any(not os.path.isdir(site_packages_dir / f'{p}-{v}.dist-info') for p, v in package_specs.items()):
+    if any(not _package_present(site_packages_dir, p, v) for p, v in package_specs.items()):
         import subprocess
         package_specs = [f'{p}=={v}' for p, v in package_specs.items()]
         print(f'installing {package_specs} in {venv_dir}')
