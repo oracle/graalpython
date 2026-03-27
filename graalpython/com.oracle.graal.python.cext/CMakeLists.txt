@@ -370,6 +370,9 @@ target_compile_definitions(${TARGET_PYEXPAT} PRIVATE
 
 ###################### CTYPES ######################
 native_module("_ctypes_test" TRUE "${SRC_DIR}/modules/_ctypes/_ctypes_test.c")
+if(WIN32)
+    target_compile_definitions("_ctypes_test" PRIVATE MS_WIN32 MS_WINDOWS)
+endif()
 set(CTYPES_SRC
     "${SRC_DIR}/modules/_ctypes/_ctypes.c"
     "${SRC_DIR}/modules/_ctypes/callbacks.c"
@@ -382,6 +385,9 @@ if(APPLE)
     set(CTYPES_SRC ${CTYPES_SRC} "${SRC_DIR}/modules/_ctypes/malloc_closure.c")
 endif()
 native_module("_ctypes" TRUE "${CTYPES_SRC}")
+if(WIN32)
+    target_compile_definitions("_ctypes" PRIVATE MS_WIN32 MS_WINDOWS)
+endif()
 target_include_directories("_ctypes" PUBLIC "${SRC_DIR}/modules/_ctypes")
 find_library(FFI_LIBRARY
   NAMES "ffi.lib" "libffi.a"
