@@ -592,6 +592,10 @@ public final class PythonContext extends Python3Core {
                             String.format("ptr = %s; nativeThreadLocalVarPointer = %s", ptr, nativeThreadLocalVarPointer);
             this.nativeThreadLocalVarPointer = ptr;
         }
+
+        public boolean isNativeThreadStateInitialized() {
+            return nativeThreadLocalVarPointer != null;
+        }
     }
 
     private static final class AtExitHook {

@@ -454,8 +454,20 @@ public abstract class CApiTransitions {
         if (handleContext.referenceQueuePollingState != RQ_READY) {
             return manuallyCollected;
         }
+        /*
+         * Polling the reference queue may deallocate native GC objects and therefore re-enter
+         * native code paths that use '_PyThreadState_GET()' to obtain the current thread's GC
+         * state. So, we may only poll once the current thread has installed its native
+         * 'tstate_current' pointer.
+         */
+        if (!context.getThreadState(context.getLanguage()).isNativeThreadStateInitialized()) {
+            return manuallyCollected;
+        }
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             if (handleContext.referenceQueuePollingState != RQ_READY) {
+                return manuallyCollected;
+            }
+            if (!context.getThreadState(context.getLanguage()).isNativeThreadStateInitialized()) {
                 return manuallyCollected;
             }
             ReferenceQueue<Object> queue = handleContext.referenceQueue;
