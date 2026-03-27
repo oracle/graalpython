@@ -62,8 +62,8 @@ import com.oracle.graal.python.builtins.modules.datetime.PDateTime;
 import com.oracle.graal.python.builtins.modules.datetime.PTimeDelta;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.DateTimeValue;
-import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaNodes;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.TimeDeltaValue;
+import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -127,7 +127,7 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString repr(Object selfObj,
                         @Bind Node inliningTarget) {
-            TemporalValueNodes.DateTimeValue self = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, selfObj);
+            DateTimeValue self = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, selfObj);
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
             String string = String.format("%s(%d, %d, %d, %d, %d, %d, %d)", typeName, self.year, self.month, self.day, self.hour, self.minute, self.second, self.microsecond);
             return toTruffleStringUncached(string);
@@ -277,14 +277,14 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
                 return op(inliningTarget, self, other, selfOffset, otherOffset);
             }
             if (deltaCheckNode.execute(inliningTarget, right)) {
-                TemporalValueNodes.TimeDeltaValue delta = readTimeDeltaValueNode.execute(inliningTarget, right);
+                TimeDeltaValue delta = readTimeDeltaValueNode.execute(inliningTarget, right);
                 return getAdjusted(lang, self, delta);
             }
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
         @TruffleBoundary
-        private static Object getAdjusted(PythonLanguage lang, PDateTime self, TemporalValueNodes.TimeDeltaValue delta) {
+        private static Object getAdjusted(PythonLanguage lang, PDateTime self, TimeDeltaValue delta) {
             LocalDateTime adjusted = toLocalDateTime(self).minusDays(delta.days).minusSeconds(delta.seconds).minusNanos(delta.microseconds * 1_000L);
             return toPythonDateTime(lang, adjusted, self.tzInfo, self.fold);
         }
@@ -384,7 +384,7 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
         static Object tzinfo(Object selfObj,
                         @Bind Node inliningTarget,
                         @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode) {
-            TemporalValueNodes.DateTimeValue self = readDateTimeValueNode.execute(inliningTarget, selfObj);
+            DateTimeValue self = readDateTimeValueNode.execute(inliningTarget, selfObj);
             Object tzInfo = TemporalValueNodes.toPythonTzInfo(self.tzInfo, self.zoneId, inliningTarget);
             return tzInfo != null ? tzInfo : PNone.NONE;
         }
@@ -450,7 +450,7 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
                         @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached DateTimeNodes.NewNode newDateTimeNode) {
-            TemporalValueNodes.DateTimeValue self = readDateTimeValueNode.execute(inliningTarget, selfObj);
+            DateTimeValue self = readDateTimeValueNode.execute(inliningTarget, selfObj);
             long year = yearObject == PNone.NO_VALUE ? self.year : asLongNode.execute(frame, inliningTarget, yearObject);
             long month = monthObject == PNone.NO_VALUE ? self.month : asLongNode.execute(frame, inliningTarget, monthObject);
             long day = dayObject == PNone.NO_VALUE ? self.day : asLongNode.execute(frame, inliningTarget, dayObject);

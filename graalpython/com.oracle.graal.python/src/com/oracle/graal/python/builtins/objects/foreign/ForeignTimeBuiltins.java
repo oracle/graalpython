@@ -114,7 +114,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString repr(Object selfObj,
                         @Bind Node inliningTarget) {
-            TemporalValueNodes.TimeValue self = TemporalValueNodes.GetTimeValue.executeUncached(inliningTarget, selfObj);
+            TimeValue self = TemporalValueNodes.GetTimeValue.executeUncached(inliningTarget, selfObj);
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
             String value = self.microsecond == 0
                             ? String.format("%s(%d, %d, %d)", typeName, self.hour, self.minute, self.second)
@@ -389,13 +389,13 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
                         utcOffset.microseconds;
     }
 
-    private static PTime toPythonTime(PythonLanguage lang, TemporalValueNodes.TimeValue time, Node inliningTarget) {
+    private static PTime toPythonTime(PythonLanguage lang, TimeValue time, Node inliningTarget) {
         Object tzInfo = toPythonTzInfo(time, inliningTarget);
         Shape shape = PythonBuiltinClassType.PTime.getInstanceShape(lang);
         return new PTime(PythonBuiltinClassType.PTime, shape, time.hour, time.minute, time.second, time.microsecond, tzInfo, time.fold);
     }
 
-    private static Object toPythonTzInfo(TemporalValueNodes.TimeValue time, Node inliningTarget) {
+    private static Object toPythonTzInfo(TimeValue time, Node inliningTarget) {
         return TemporalValueNodes.toPythonTzInfo(time.tzInfo, time.zoneId, inliningTarget);
     }
 }

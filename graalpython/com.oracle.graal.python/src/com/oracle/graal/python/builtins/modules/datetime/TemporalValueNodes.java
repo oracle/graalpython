@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -239,6 +240,7 @@ public final class TemporalValueNodes {
         return PythonContext.get(inliningTarget).getEnv().asGuestValue(zoneId);
     }
 
+    @TruffleBoundary
     public static Object toFixedOffsetTimeZone(ZoneId zoneId, Node inliningTarget) {
         if (zoneId == null) {
             return null;

@@ -119,7 +119,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString repr(Object selfObj,
                         @Bind Node inliningTarget) {
-            TemporalValueNodes.DateValue self = TemporalValueNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
+            DateValue self = TemporalValueNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
             String string = String.format("%s(%d, %d, %d)", typeName, self.year, self.month, self.day);
             return toTruffleStringUncached(string);
@@ -298,7 +298,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
                         @Cached TemporalValueNodes.GetDateValue readDateValueNode,
                         @Cached PyLongAsLongNode longAsLongNode,
                         @Cached DateNodes.NewNode newNode) {
-            TemporalValueNodes.DateValue self = readDateValueNode.execute(inliningTarget, selfObj);
+            DateValue self = readDateValueNode.execute(inliningTarget, selfObj);
             int year = yearObject instanceof PNone ? self.year : (int) longAsLongNode.execute(frame, inliningTarget, yearObject);
             int month = monthObject instanceof PNone ? self.month : (int) longAsLongNode.execute(frame, inliningTarget, monthObject);
             int day = dayObject instanceof PNone ? self.day : (int) longAsLongNode.execute(frame, inliningTarget, dayObject);
@@ -388,7 +388,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TemporalValueNodes.GetDateValue readDateValueNode) {
-            TemporalValueNodes.DateValue self = readDateValueNode.execute(inliningTarget, selfObj);
+            DateValue self = readDateValueNode.execute(inliningTarget, selfObj);
             LocalDate localDate = self.toLocalDate();
             Object[] fields = new Object[]{self.year, self.month, self.day, 0, 0, 0, localDate.getDayOfWeek().getValue() - 1, localDate.getDayOfYear(), -1};
             return PFactory.createStructSeq(language, TimeModuleBuiltins.STRUCT_TIME_DESC, fields);
@@ -427,7 +427,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         }
     }
 
-    private static PDate toPythonDate(PythonLanguage lang, TemporalValueNodes.DateValue date) {
+    private static PDate toPythonDate(PythonLanguage lang, DateValue date) {
         return toPythonDate(lang, date.year, date.month, date.day);
     }
 
@@ -437,7 +437,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static TruffleString toIsoFormat(TemporalValueNodes.DateValue date) {
+    private static TruffleString toIsoFormat(DateValue date) {
         return toTruffleStringUncached(date.toLocalDate().toString());
     }
 }
