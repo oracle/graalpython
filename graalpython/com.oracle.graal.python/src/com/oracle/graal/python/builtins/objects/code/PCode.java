@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
@@ -282,7 +283,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private Object[] ensureConstants() {
-        if (constants == null) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, constants == null)) {
             CodeUnit codeUnit = getCodeUnit(getRootNode());
             constants = codeUnit != null ? new Object[codeUnit.constants.length] : PythonUtils.EMPTY_OBJECT_ARRAY;
         }
@@ -493,7 +494,7 @@ public final class PCode extends PythonBuiltinObject {
     public PCode getOrCreateChildCode(int index, BytecodeDSLCodeUnit codeUnit) {
         Object[] cachedConstants = ensureConstants();
         PCode code = (PCode) cachedConstants[index];
-        if (code == null) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, code == null)) {
             code = createCode(codeUnit);
             cachedConstants[index] = code;
         }
