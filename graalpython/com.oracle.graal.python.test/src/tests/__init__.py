@@ -60,11 +60,18 @@ def find_rootdir():
 DIR = find_rootdir()
 
 
+def _venv_site_packages(venv_dir: Path) -> Path:
+    if sys.platform.startswith('win32'):
+        return venv_dir / 'Lib' / 'site-packages'
+    return venv_dir / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages'
+
+
 def ensure_packages(**package_specs):
     import site
     package_names = "-".join(package_specs.keys())
     venv_dir = find_rootdir() / f'{sys.implementation.name}-{package_names}-venv'
-    if any(not os.path.isdir(venv_dir / f'{p}-{v}.dist-info') for p, v in package_specs.items()):
+    site_packages_dir = _venv_site_packages(venv_dir)
+    if any(not os.path.isdir(site_packages_dir / f'{p}-{v}.dist-info') for p, v in package_specs.items()):
         import subprocess
         package_specs = [f'{p}=={v}' for p, v in package_specs.items()]
         print(f'installing {package_specs} in {venv_dir}')
@@ -80,10 +87,10 @@ def ensure_packages(**package_specs):
             extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
         else:
             extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=false']
-        subprocess.run([py_executable, *extra_args, "-m", "pip", "install", "--target", str(venv_dir), *package_specs], check=True)
+        subprocess.run([py_executable, *extra_args, "-m", "pip", "install", *package_specs], check=True)
         print(f'{package_specs} installed in {venv_dir}')
 
-    pyvenv_site = str(venv_dir)
+    pyvenv_site = str(site_packages_dir)
     if os.path.normcase(os.path.normpath(pyvenv_site)) not in {os.path.normcase(os.path.normpath(entry)) for entry in sys.path}:
         site.addsitedir(pyvenv_site)
 
@@ -99,7 +106,7 @@ def get_setuptools(setuptools='67.6.1'):
 
 def install_venv(venv_path: Path) -> bool:
     """Installs a virtual environment at the given path."""
-    if not sys.executable:
+    if not sys.executable or (sys.platform.startswith('win32') and sys.implementation.name == "graalpy"):
         # When running in a PolyBench benchmark context sys.executable is unset
         # And thus we must defer to the system's python
         # Deferring to the system's python is fine as it will only be used to install setuptools
