@@ -49,6 +49,7 @@ import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -57,6 +58,9 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiContext {
+    private static final boolean IS_WINDOWS = System.getProperty("os.name", "").startsWith("Windows");
+    private static final Arena WINDOWS_LOOKUP_ARENA = IS_WINDOWS ? Arena.ofShared() : null;
+    private static final SymbolLookup WINDOWS_LOOKUP = IS_WINDOWS ? SymbolLookup.libraryLookup("kernel32", WINDOWS_LOOKUP_ARENA) : null;
 
     private final ConcurrentLinkedQueue<NfiLibrary> libraries = new ConcurrentLinkedQueue<>();
     final Arena arena;
@@ -70,7 +74,7 @@ public final class NfiContext {
         for (NfiLibrary library : libraries) {
             int result;
             try {
-                result = (int) DLCLOSE.invokeExact(dlclosePtr, library.ptr);
+                result = IS_WINDOWS ? (int) FREE_LIBRARY.invokeExact(freeLibraryPtr, library.ptr) : (int) DLCLOSE.invokeExact(dlclosePtr, library.ptr);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -83,14 +87,18 @@ public final class NfiContext {
 
     public NfiLibrary loadLibrary(String name, int flags) {
         long lib;
-        long nativeName = NativeMemory.javaStringToNativeUtf8(name);
+        long nativeName = IS_WINDOWS ? NativeMemory.javaStringToNativeUtf16(name) : NativeMemory.javaStringToNativeUtf8(name);
         try {
-            ensureDlopenDlsym();
-            int callFlags = flags;
-            if ((callFlags & (RTLD_LAZY | RTLD_NOW)) == 0) {
-                callFlags |= RTLD_NOW;
+            ensureLoader();
+            if (IS_WINDOWS) {
+                lib = (long) LOAD_LIBRARY_EX.invokeExact(loadLibraryExPtr, nativeName, MemorySegment.NULL, 0);
+            } else {
+                int callFlags = flags;
+                if ((callFlags & (RTLD_LAZY | RTLD_NOW)) == 0) {
+                    callFlags |= RTLD_NOW;
+                }
+                lib = (long) DLOPEN.invokeExact(dlopenPtr, nativeName, callFlags);
             }
-            lib = (long) DLOPEN.invokeExact(dlopenPtr, nativeName, callFlags);
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
@@ -109,7 +117,7 @@ public final class NfiContext {
         // TODO(NFI2) if logging enabled, keep track of ptr->name mappings
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
-            return (long) DLSYM.invokeExact(dlsymPtr, library, nativeName);
+            return IS_WINDOWS ? (long) GET_PROC_ADDRESS.invokeExact(getProcAddressPtr, library, nativeName) : (long) DLSYM.invokeExact(dlsymPtr, library, nativeName);
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
@@ -127,18 +135,32 @@ public final class NfiContext {
     private static final MethodHandle DLCLOSE = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_INT, JAVA_LONG));
     @SuppressWarnings("restricted") //
     private static final MethodHandle DLSYM = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG));
+    @SuppressWarnings("restricted") //
+    private static final MethodHandle LOAD_LIBRARY_EX = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, ValueLayout.ADDRESS, JAVA_INT));
+    @SuppressWarnings("restricted") //
+    private static final MethodHandle FREE_LIBRARY = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_INT, JAVA_LONG));
+    @SuppressWarnings("restricted") //
+    private static final MethodHandle GET_PROC_ADDRESS = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG));
 
     private static MemorySegment dlopenPtr;
     private static MemorySegment dlclosePtr;
     private static MemorySegment dlsymPtr;
+    private static MemorySegment loadLibraryExPtr;
+    private static MemorySegment freeLibraryPtr;
+    private static MemorySegment getProcAddressPtr;
 
     // TODO(NFI2) error handling
-    // TODO(NFI2) Windows LoadLibrary/GetProcAddress
     @SuppressWarnings("restricted")
-    private static void ensureDlopenDlsym() {
-        if (dlopenPtr != null) {
-            assert dlclosePtr != null;
-            assert dlsymPtr != null;
+    private static void ensureLoader() {
+        if (IS_WINDOWS) {
+            if (loadLibraryExPtr != null) {
+                assert freeLibraryPtr != null;
+                assert getProcAddressPtr != null;
+                return;
+            }
+            loadLibraryExPtr = WINDOWS_LOOKUP.find("LoadLibraryExW").orElseThrow();
+            freeLibraryPtr = WINDOWS_LOOKUP.find("FreeLibrary").orElseThrow();
+            getProcAddressPtr = WINDOWS_LOOKUP.find("GetProcAddress").orElseThrow();
             return;
         }
         dlopenPtr = Linker.nativeLinker().defaultLookup().find("dlopen").orElseThrow();

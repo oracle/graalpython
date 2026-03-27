@@ -314,6 +314,14 @@ public final class NativeMemory {
         return ptr;
     }
 
+    static long javaStringToNativeUtf16(String s) {
+        byte[] utf16 = s.getBytes(StandardCharsets.UTF_16LE);
+        long ptr = NativeMemory.malloc(utf16.length + Short.BYTES);
+        UNSAFE.copyMemory(utf16, UNSAFE.arrayBaseOffset(byte[].class), null, ptr, utf16.length);
+        UNSAFE.putShort(ptr + utf16.length, (short) 0);
+        return ptr;
+    }
+
     private static boolean canMultiplyWithoutOverflow(long value, int stride) {
         assert value >= 0 : "Value must be non-negative";
         assert stride > 0 && (stride & (stride - 1)) == 0 : "Stride must be a power of two";
