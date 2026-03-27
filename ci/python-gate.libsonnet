@@ -376,17 +376,6 @@
     packages(os, arch)::
         get(PACKAGES, os, arch),
 
-    local eclipse = task_spec(evaluate_late({
-        // late evaluation of the eclipse mixin, conditional import based on platform
-        // eclipse downloads are not provided for aarch64
-        "eclipse": function(builder)
-            local arch = builder.arch;
-            if arch == "aarch64" then
-                {}
-            else
-                common.deps.eclipse
-    })),
-
     logs(os, arch):: LOGS,
 
     //------------------------------------------------------------------------------------------------------------------
@@ -501,7 +490,7 @@
         dynamic_imports+:: ["/graalpython"],
     }),
 
-    graalpy_eclipse_gate:: $.graalpy_gate + eclipse + jdt,
+    graalpy_eclipse_gate:: $.graalpy_gate + jdt,
 
     unittest_retagger_gate:: $.graalpy_gate + task_spec({
         environment+: {

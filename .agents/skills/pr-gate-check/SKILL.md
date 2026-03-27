@@ -9,9 +9,9 @@ description: Check gate status for a Bitbucket PR by resolving the PR head commi
 Use this workflow when asked for gate status of a PR. Usually the builds are tied to a merge commit generated on Bitbucket, so this skill goes through finding the remote merge commit.
 
 ## Workflow
-1. Get PR commits and identify PR head commit (first commit in `ol-cli bitbucket commits` output):
+1. Get PR commits and identify PR head commit (first commit in `gdev-cli bitbucket commits` output):
 ```bash
-ol-cli bitbucket commits --project=G --repo=graalpython --pullrequest=<PR_ID> --all --json
+gdev-cli bitbucket commits --project=G --repo=graalpython --pullrequest=<PR_ID> --all --json
 ```
 
 2. Fetch refs and locate merge commit whose parent includes PR head:
@@ -24,7 +24,7 @@ Pick the merge commit where one parent is `<PR_HEAD_SHA>` and the other is the t
 
 3. Check builds on that merge commit:
 ```bash
-ol-cli bitbucket get-builds --commit=<MERGE_SHA> --all --format=key,state,url
+gdev-cli bitbucket get-builds --commit=<MERGE_SHA> --all --format=key,state,url
 ```
 
 4. Separate root failures from fan-out failures:

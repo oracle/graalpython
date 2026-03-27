@@ -1,6 +1,6 @@
 ---
 name: graalpython-rota
-description: Run GraalPy ROTA maintenance workflows for (1) import update pull requests and (2) triage of recent periodic job failures in Jira. Use when asked to perform or guide recurring ROTA tasks from `docs/contributor/ROTA.md`, including branch setup, `mx` update commands, PR creation with reviewers/gates via `ol-cli bitbucket`, and date-bounded periodic-failure issue triage via `ol-cli jira`.
+description: Run GraalPy ROTA maintenance workflows for (1) import update pull requests and (2) triage of recent periodic job failures in Jira. Use when asked to perform or guide recurring ROTA tasks from `docs/contributor/ROTA.md`, including branch setup, `mx` update commands, PR creation with reviewers/gates via `gdev-cli bitbucket`, and date-bounded periodic-failure issue triage via `gdev-cli jira`.
 ---
 
 # GraalPy ROTA
@@ -32,7 +32,7 @@ mx python-update-import
 mx --dy /graalpython-enterprise python-update-unittest-tags
 ```
 4. Create PR with description `[GR-21590] Import update`.
-5. Use `ol-cli bitbucket` to create PR, start gates, and set reviewers:
+5. Use `gdev-cli bitbucket` to create PR, start gates, and set reviewers:
 - `tim.felgentreff@oracle.com`
 - `michael.simacek@oracle.com`
 - `stepan.sindelar@oracle.com`
@@ -47,14 +47,14 @@ mx --dy /graalpython-enterprise python-update-unittest-tags
 - Default to the last 14 days unless user specifies otherwise.
 - Always state concrete start/end calendar dates in the response.
 ```bash
-ol-cli jira search --json --max 100 \
+gdev-cli jira search --json --max 100 \
   -f key,summary,creator,created,status,labels,components,assignee \
   -jql "project = GR AND component = Python AND creator = olauto AND labels = periodic-job-failures AND created >= -14d AND status != Closed AND status != 'In Progress' ORDER BY created DESC"
 ```
 
 3. Fetch shortlisted issue details with `get-issue`:
 ```bash
-ol-cli jira get-issue --json -id GR-XXXX \
+gdev-cli jira get-issue --json -id GR-XXXX \
   | jq '{key, summary:.fields.summary, status:.fields.status.name, created:.fields.created, labels:.fields.labels, assignee:(.fields.assignee.name // null), description:.fields.description, comments:(.fields.comment.comments | map({author:.author.name, created, body}))}'
 ```
 
