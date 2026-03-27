@@ -399,10 +399,12 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         return (PDate) DateNodes.NewUnsafeNode.executeUncached(PythonBuiltinClassType.PDate, date.year, date.month, date.day);
     }
 
+    @TruffleBoundary
     private static Object toPythonDate(LocalDate date) {
         return DateNodes.NewUnsafeNode.executeUncached(PythonBuiltinClassType.PDate, date.getYear(), date.getMonthValue(), date.getDayOfMonth());
     }
 
+    @TruffleBoundary
     private static TruffleString toIsoFormat(TemporalNodes.DateValue date) {
         return TruffleString.FromJavaStringNode.getUncached().execute(date.toLocalDate().toString(), TS_ENCODING);
     }
