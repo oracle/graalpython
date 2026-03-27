@@ -95,7 +95,7 @@ public class TimeZoneNodes {
             if (offsetObj instanceof PTimeDelta value) {
                 offset = value;
             } else {
-                TimeDeltaValue offsetValue = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, offsetObj);
+                TimeDeltaValue offsetValue = TemporalNodes.GetTimeDeltaValue.executeUncached(inliningTarget, offsetObj);
                 PythonBuiltinClassType tdcls = PythonBuiltinClassType.PTimeDelta;
                 offset = new PTimeDelta(tdcls, tdcls.getInstanceShape(language), offsetValue.days, offsetValue.seconds, offsetValue.microseconds);
             }

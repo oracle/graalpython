@@ -116,7 +116,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString repr(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             TemporalNodes.DateValue self = readDateValueNode.execute(inliningTarget, selfObj);
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
             String string = String.format("%s(%d, %d, %d)", typeName, self.year, self.month, self.day);
@@ -130,7 +130,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString str(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             return toIsoFormat(readDateValueNode.execute(inliningTarget, selfObj));
         }
     }
@@ -142,7 +142,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         static Object richCmp(Object selfObj, Object otherObj, RichCmpOp op,
                         @Bind Node inliningTarget,
                         @Cached PyDateCheckNode dateLikeCheckNode,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             if (!dateLikeCheckNode.execute(inliningTarget, otherObj)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -158,7 +158,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static long hash(VirtualFrame frame, Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode,
+                        @Cached TemporalNodes.GetDateValue readDateValueNode,
                         @Cached PyObjectHashNode hashNode) {
             return hashNode.execute(frame, inliningTarget, toPythonDate(readDateValueNode.execute(inliningTarget, selfObj)));
         }
@@ -172,7 +172,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         static Object add(Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached PyDateCheckNode dateLikeCheckNode,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             Object dateObj;
             Object deltaObj;
             if (dateLikeCheckNode.execute(inliningTarget, left) && PyDeltaCheckNode.executeUncached(right)) {
@@ -186,7 +186,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
             }
 
             LocalDate date = readDateValueNode.execute(inliningTarget, dateObj).toLocalDate();
-            TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, deltaObj);
+            TimeDeltaValue delta = TemporalNodes.GetTimeDeltaValue.executeUncached(inliningTarget, deltaObj);
             long days = ChronoUnit.DAYS.between(LocalDate.of(1, 1, 1), date) + 1 + delta.days;
             if (days <= 0 || days > MAX_ORDINAL) {
                 throw com.oracle.graal.python.nodes.PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
@@ -203,7 +203,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         static Object sub(Object left, Object right,
                         @Bind Node inliningTarget,
                         @Cached PyDateCheckNode dateLikeCheckNode,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             if (!dateLikeCheckNode.execute(inliningTarget, left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -217,7 +217,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
                 return new PTimeDelta(PythonBuiltinClassType.PTimeDelta, PythonBuiltinClassType.PTimeDelta.getInstanceShape(PythonLanguage.get(null)), (int) (leftDays - rightDays), 0, 0);
             }
             if (PyDeltaCheckNode.executeUncached(right)) {
-                TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
+                TimeDeltaValue delta = TemporalNodes.GetTimeDeltaValue.executeUncached(inliningTarget, right);
                 long days = leftDays - delta.days;
                 if (days <= 0 || days >= MAX_ORDINAL) {
                     throw com.oracle.graal.python.nodes.PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
@@ -234,7 +234,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static int year(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             return readDateValueNode.execute(inliningTarget, selfObj).year;
         }
     }
@@ -245,7 +245,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static int month(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             return readDateValueNode.execute(inliningTarget, selfObj).month;
         }
     }
@@ -256,7 +256,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static int day(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             return readDateValueNode.execute(inliningTarget, selfObj).day;
         }
     }
@@ -267,7 +267,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static Object replace(VirtualFrame frame, Object selfObj, Object yearObject, Object monthObject, Object dayObject,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode,
+                        @Cached TemporalNodes.GetDateValue readDateValueNode,
                         @Cached PyLongAsLongNode longAsLongNode,
                         @Cached DateNodes.NewNode newNode) {
             TemporalNodes.DateValue self = readDateValueNode.execute(inliningTarget, selfObj);
@@ -285,7 +285,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static long toOrdinal(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             return ChronoUnit.DAYS.between(LocalDate.of(1, 1, 1), readDateValueNode.execute(inliningTarget, selfObj).toLocalDate()) + 1;
         }
     }
@@ -297,7 +297,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static int weekDay(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             return readDateValueNode.execute(inliningTarget, selfObj).toLocalDate().getDayOfWeek().getValue() - 1;
         }
     }
@@ -309,7 +309,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static int isoWeekDay(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             return readDateValueNode.execute(inliningTarget, selfObj).toLocalDate().getDayOfWeek().getValue();
         }
     }
@@ -320,7 +320,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static Object isoCalendar(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             return PyObjectCallMethodObjArgs.executeUncached(toPythonDate(readDateValueNode.execute(inliningTarget, selfObj)), T_ISOCALENDAR);
         }
     }
@@ -331,7 +331,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString isoFormat(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             return toIsoFormat(readDateValueNode.execute(inliningTarget, selfObj));
         }
     }
@@ -343,7 +343,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString ctime(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             String ctime = readDateValueNode.execute(inliningTarget, selfObj).toLocalDate().format(DateTimeFormatter.ofPattern("EEE LLL ppd 00:00:00 yyyy"));
             return TruffleString.FromJavaStringNode.getUncached().execute(ctime, TS_ENCODING);
         }
@@ -357,7 +357,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         static PTuple timeTuple(Object selfObj,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             TemporalNodes.DateValue self = readDateValueNode.execute(inliningTarget, selfObj);
             LocalDate localDate = self.toLocalDate();
             Object[] fields = new Object[]{self.year, self.month, self.day, 0, 0, 0, localDate.getDayOfWeek().getValue() - 1, localDate.getDayOfYear(), -1};
@@ -371,7 +371,7 @@ public final class ForeignDateBuiltins extends PythonBuiltins {
         @Specialization
         static Object strftime(Object selfObj, Object formatObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode,
+                        @Cached TemporalNodes.GetDateValue readDateValueNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             TruffleString format = castToTruffleStringNode.execute(inliningTarget, formatObj);
             return PyObjectCallMethodObjArgs.executeUncached(toPythonDate(readDateValueNode.execute(inliningTarget, selfObj)), T_STRFTIME, format);

@@ -328,7 +328,7 @@ public class DatetimeModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     public static Object addOffsetToDateTime(Object dateTimeObj, PTimeDelta offset, DateTimeNodes.SubclassNewNode subclassNewNode, Node inliningTarget) {
-        TemporalNodes.DateTimeValue dateTime = TemporalNodes.ReadDateTimeValueNode.executeUncached(inliningTarget, dateTimeObj);
+        TemporalNodes.DateTimeValue dateTime = TemporalNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTimeObj);
         LocalDateTime utc = dateTime.toLocalDateTime().plusDays(
                         offset.days).plusSeconds(offset.seconds).plusNanos(offset.microseconds * 1_000L);
 

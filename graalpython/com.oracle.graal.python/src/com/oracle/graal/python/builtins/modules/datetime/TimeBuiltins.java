@@ -272,7 +272,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static TruffleString reprBoundary(Node inliningTarget, Object selfObj) {
-            TimeValue self = TemporalNodes.ReadTimeValueNode.executeUncached(null, selfObj);
+            TimeValue self = TemporalNodes.GetTimeValue.executeUncached(null, selfObj);
             var builder = new StringBuilder();
 
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
@@ -310,7 +310,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         static Object reduce(Object self,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TemporalNodes.ReadTimeValueNode asManagedTimeNode,
+                        @Cached TemporalNodes.GetTimeValue asManagedTimeNode,
                         @Cached GetClassNode getClassNode) {
             TimeValue time = asManagedTimeNode.execute(inliningTarget, self);
             // Time is serialized in the following format:
@@ -350,7 +350,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         static Object reduceEx(Object self, int protocol,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TemporalNodes.ReadTimeValueNode asManagedTimeNode,
+                        @Cached TemporalNodes.GetTimeValue asManagedTimeNode,
                         @Cached GetClassNode getClassNode) {
             TimeValue time = asManagedTimeNode.execute(inliningTarget, self);
             byte[] baseStateBytes = new byte[6];
@@ -402,8 +402,8 @@ public final class TimeBuiltins extends PythonBuiltins {
             if (!PyTimeCheckNode.executeUncached(selfObj) || !PyTimeCheckNode.executeUncached(otherObj)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            TimeValue self = TemporalNodes.ReadTimeValueNode.executeUncached(inliningTarget, selfObj);
-            TimeValue other = TemporalNodes.ReadTimeValueNode.executeUncached(inliningTarget, otherObj);
+            TimeValue self = TemporalNodes.GetTimeValue.executeUncached(inliningTarget, selfObj);
+            TimeValue other = TemporalNodes.GetTimeValue.executeUncached(inliningTarget, otherObj);
             // either naive times (without timezone) or timezones are exactly the same objects
             if (self.tzInfo == other.tzInfo) {
                 return compareTimeComponents(self, other, op);
@@ -455,7 +455,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         static long hash(VirtualFrame frame, Object selfObj,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TemporalNodes.ReadTimeValueNode asManagedTimeNode,
+                        @Cached TemporalNodes.GetTimeValue asManagedTimeNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectHashNode hashNode) {
@@ -950,7 +950,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object replace(VirtualFrame frame, Object self, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode asManagedTimeNode,
+                        @Cached TemporalNodes.GetTimeValue asManagedTimeNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached GetClassNode getClassNode,
                         @Cached TimeNodes.NewNode newTimeNode) {
@@ -1022,7 +1022,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static TruffleString isoFormatBoundary(Object selfObj, Object timespecObject, Node inliningTarget) {
-            TimeValue self = TemporalNodes.ReadTimeValueNode.executeUncached(inliningTarget, selfObj);
+            TimeValue self = TemporalNodes.GetTimeValue.executeUncached(inliningTarget, selfObj);
             var builder = new StringBuilder();
 
             final String timespec;
@@ -1188,7 +1188,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static TruffleString strftimeBoundary(Object selfObj, TruffleString format, Node inliningTarget) {
-            TimeValue self = TemporalNodes.ReadTimeValueNode.executeUncached(inliningTarget, selfObj);
+            TimeValue self = TemporalNodes.GetTimeValue.executeUncached(inliningTarget, selfObj);
             // Reuse time.strftime(format, time_tuple) method.
             int[] timeTuple = new int[]{1900, 1, 1, self.hour, self.minute, self.second, 0, 1, -1};
             String formatPreprocessed = preprocessFormat(format, self, inliningTarget);

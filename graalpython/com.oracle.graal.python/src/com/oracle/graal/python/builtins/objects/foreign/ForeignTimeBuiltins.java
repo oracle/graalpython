@@ -111,7 +111,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString repr(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             TemporalNodes.TimeValue self = readTimeValueNode.execute(inliningTarget, selfObj);
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
             String value = self.microsecond == 0
@@ -127,7 +127,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object str(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode,
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode,
                         @Cached PyObjectStrAsObjectNode strAsObjectNode) {
             return strAsObjectNode.execute(inliningTarget, toPythonTime(readTimeValueNode.execute(inliningTarget, selfObj), inliningTarget));
         }
@@ -140,7 +140,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         static Object richCmp(VirtualFrame frame, Object selfObj, Object otherObj, RichCmpOp op,
                         @Bind Node inliningTarget,
                         @Cached PyTimeCheckNode timeLikeCheckNode,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode,
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode) {
             if (!timeLikeCheckNode.execute(inliningTarget, otherObj)) {
@@ -182,7 +182,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static long hash(VirtualFrame frame, Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode,
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectHashNode hashNode) {
@@ -201,7 +201,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int hour(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             return readTimeValueNode.execute(inliningTarget, selfObj).hour;
         }
     }
@@ -212,7 +212,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int minute(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             return readTimeValueNode.execute(inliningTarget, selfObj).minute;
         }
     }
@@ -223,7 +223,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int second(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             return readTimeValueNode.execute(inliningTarget, selfObj).second;
         }
     }
@@ -234,7 +234,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int microsecond(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             return readTimeValueNode.execute(inliningTarget, selfObj).microsecond;
         }
     }
@@ -245,7 +245,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object tzinfo(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             Object tzInfo = toPythonTzInfo(readTimeValueNode.execute(inliningTarget, selfObj), inliningTarget);
             return tzInfo != null ? tzInfo : PNone.NONE;
         }
@@ -257,7 +257,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int fold(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             return readTimeValueNode.execute(inliningTarget, selfObj).fold;
         }
     }
@@ -268,7 +268,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object replace(VirtualFrame frame, Object selfObj, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode,
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached TimeNodes.NewNode newTimeNode) {
             TemporalNodes.TimeValue self = readTimeValueNode.execute(inliningTarget, selfObj);
@@ -295,7 +295,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object isoformat(Object selfObj, Object timespecObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             Object timespec = timespecObj == PNone.NO_VALUE ? PNone.NO_VALUE : timespecObj;
             return PyObjectCallMethodObjArgs.executeUncached(toPythonTime(readTimeValueNode.execute(inliningTarget, selfObj), inliningTarget), T_ISOFORMAT, timespec);
         }
@@ -307,7 +307,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object utcoffset(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             return PyObjectCallMethodObjArgs.executeUncached(toPythonTime(readTimeValueNode.execute(inliningTarget, selfObj), inliningTarget), T_UTCOFFSET);
         }
     }
@@ -318,7 +318,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object dst(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             return PyObjectCallMethodObjArgs.executeUncached(toPythonTime(readTimeValueNode.execute(inliningTarget, selfObj), inliningTarget), T_DST);
         }
     }
@@ -329,7 +329,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object tzname(Object selfObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode) {
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode) {
             return PyObjectCallMethodObjArgs.executeUncached(toPythonTime(readTimeValueNode.execute(inliningTarget, selfObj), inliningTarget), T_TZNAME);
         }
     }
@@ -340,7 +340,7 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object strftime(Object selfObj, Object formatObj,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadTimeValueNode readTimeValueNode,
+                        @Cached TemporalNodes.GetTimeValue readTimeValueNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             TruffleString format = castToTruffleStringNode.execute(inliningTarget, formatObj);
             return PyObjectCallMethodObjArgs.executeUncached(toPythonTime(readTimeValueNode.execute(inliningTarget, selfObj), inliningTarget), T_STRFTIME, format);

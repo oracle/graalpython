@@ -126,7 +126,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary interop,
                         @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
-                        @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
+                        @Cached TemporalNodes.GetDateTimeValue readDateTimeValueNode) {
             ZoneId zoneId = asZoneId(self, interop);
             if (dateTime == PNone.NONE) {
                 Object fixed = TemporalNodes.toFixedOffsetTimeZone(zoneId, inliningTarget);
@@ -153,7 +153,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary interop,
                         @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
-                        @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
+                        @Cached TemporalNodes.GetDateTimeValue readDateTimeValueNode) {
             ZoneId zoneId = asZoneId(self, interop);
             if (dateTime == PNone.NONE) {
                 return PNone.NONE;
@@ -177,7 +177,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary interop,
                         @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
-                        @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
+                        @Cached TemporalNodes.GetDateTimeValue readDateTimeValueNode) {
             ZoneId zoneId = asZoneId(self, interop);
             if (dateTime == PNone.NONE) {
                 return zoneId.getRules().isFixedOffset() ? TruffleString.FromJavaStringNode.getUncached().execute(zoneId.getId(), TS_ENCODING) : PNone.NONE;
@@ -200,7 +200,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary interop,
                         @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
-                        @Cached TemporalNodes.ReadDateTimeValueNode readDateTimeValueNode) {
+                        @Cached TemporalNodes.GetDateTimeValue readDateTimeValueNode) {
             if (!dateTimeLikeCheckNode.execute(inliningTarget, dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }

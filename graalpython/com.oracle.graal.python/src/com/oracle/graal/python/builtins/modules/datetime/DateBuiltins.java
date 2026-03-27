@@ -251,7 +251,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString repr(Object self,
                         @Bind Node inliningTarget) {
-            DateValue date = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, self);
+            DateValue date = TemporalNodes.GetDateValue.executeUncached(inliningTarget, self);
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(self));
             var string = String.format("%s(%d, %d, %d)", typeName, date.year, date.month, date.day);
             return TruffleString.FromJavaStringNode.getUncached().execute(string, TS_ENCODING);
@@ -266,7 +266,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString str(Object self,
                         @Bind Node inliningTarget) {
-            DateValue date = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, self);
+            DateValue date = TemporalNodes.GetDateValue.executeUncached(inliningTarget, self);
             var string = String.format("%04d-%02d-%02d", date.year, date.month, date.day);
             return TruffleString.FromJavaStringNode.getUncached().execute(string, TS_ENCODING);
         }
@@ -280,7 +280,7 @@ public final class DateBuiltins extends PythonBuiltins {
         static Object reduce(Object self,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode,
+                        @Cached TemporalNodes.GetDateValue readDateValueNode,
                         @Cached GetClassNode getClassNode) {
             DateValue date = readDateValueNode.execute(inliningTarget, self);
             byte[] bytes = new byte[]{(byte) (date.year / 256), (byte) (date.year % 256), (byte) date.month, (byte) date.day};
@@ -299,7 +299,7 @@ public final class DateBuiltins extends PythonBuiltins {
         static Object richCmp(Object selfObj, Object otherObj, RichCmpOp op,
                         @Bind Node inliningTarget,
                         @Cached PyDateCheckNode dateCheckNode,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             if (dateCheckNode.execute(inliningTarget, selfObj) && dateCheckNode.execute(inliningTarget, otherObj)) {
                 DateValue self = readDateValueNode.execute(inliningTarget, selfObj);
                 DateValue other = readDateValueNode.execute(inliningTarget, otherObj);
@@ -319,7 +319,7 @@ public final class DateBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyObjectHashNode hashNode,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode) {
+                        @Cached TemporalNodes.GetDateValue readDateValueNode) {
             DateValue d = readDateValueNode.execute(inliningTarget, self);
             var content = new int[]{d.year, d.month, d.day};
             return hashNode.execute(frame, inliningTarget, PFactory.createTuple(language, content));
@@ -360,8 +360,8 @@ public final class DateBuiltins extends PythonBuiltins {
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            DateValue date = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, dateObj);
-            TimeDeltaValue delta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, deltaObj);
+            DateValue date = TemporalNodes.GetDateValue.executeUncached(inliningTarget, dateObj);
+            TimeDeltaValue delta = TemporalNodes.GetTimeDeltaValue.executeUncached(inliningTarget, deltaObj);
 
             LocalDate from = LocalDate.of(1, 1, 1);
             LocalDate to = LocalDate.of(date.year, date.month, date.day);
@@ -408,13 +408,13 @@ public final class DateBuiltins extends PythonBuiltins {
             if (!PyDateCheckNode.executeUncached(left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            DateValue date = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, left);
+            DateValue date = TemporalNodes.GetDateValue.executeUncached(inliningTarget, left);
             if (PyDateCheckNode.executeUncached(right)) {
                 LocalDate from = LocalDate.of(1, 1, 1);
                 LocalDate toSelf = LocalDate.of(date.year, date.month, date.day);
                 long daysSelf = ChronoUnit.DAYS.between(from, toSelf) + 1;
 
-                DateValue other = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, right);
+                DateValue other = TemporalNodes.GetDateValue.executeUncached(inliningTarget, right);
                 LocalDate toOther = LocalDate.of(other.year, other.month, other.day);
                 long daysOther = ChronoUnit.DAYS.between(from, toOther) + 1;
 
@@ -427,7 +427,7 @@ public final class DateBuiltins extends PythonBuiltins {
                                 0);
             }
             if (PyDeltaCheckNode.executeUncached(right)) {
-                TimeDeltaValue timeDelta = TemporalNodes.ReadTimeDeltaValueNode.executeUncached(inliningTarget, right);
+                TimeDeltaValue timeDelta = TemporalNodes.GetTimeDeltaValue.executeUncached(inliningTarget, right);
                 LocalDate from = LocalDate.of(1, 1, 1);
                 LocalDate to = LocalDate.of(date.year, date.month, date.day);
                 long days = ChronoUnit.DAYS.between(from, to) + 1;
@@ -744,7 +744,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @Specialization
         static Object replace(VirtualFrame frame, Object self, Object yearObject, Object monthObject, Object dayObject,
                         @Bind Node inliningTarget,
-                        @Cached TemporalNodes.ReadDateValueNode readDateValueNode,
+                        @Cached TemporalNodes.GetDateValue readDateValueNode,
                         @Cached PyLongAsLongNode longAsLongNode,
                         @Cached GetClassNode getClassNode,
                         @Cached DateNodes.NewNode newNode) {
@@ -781,7 +781,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static long toOrdinal(Object selfObj,
                         @Bind Node inliningTarget) {
-            DateValue self = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, selfObj);
+            DateValue self = TemporalNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
             LocalDate from = LocalDate.of(1, 1, 1);
             LocalDate to = LocalDate.of(self.year, self.month, self.day);
             return ChronoUnit.DAYS.between(from, to) + 1;
@@ -833,7 +833,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static int weekDay(Object selfObj,
                         @Bind Node inliningTarget) {
-            DateValue self = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, selfObj);
+            DateValue self = TemporalNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
             DayOfWeek dayOfWeek = localDate.getDayOfWeek();
 
@@ -850,7 +850,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static int weekDay(Object selfObj,
                         @Bind Node inliningTarget) {
-            DateValue self = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, selfObj);
+            DateValue self = TemporalNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
             DayOfWeek dayOfWeek = localDate.getDayOfWeek();
             return dayOfWeek.getValue();
@@ -866,7 +866,7 @@ public final class DateBuiltins extends PythonBuiltins {
         static PTuple isoCalendar(Object selfObj,
                         @Bind PythonLanguage language,
                         @Bind Node inliningTarget) {
-            DateValue self = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, selfObj);
+            DateValue self = TemporalNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
 
             // use week based year ISO-8601 calendar
@@ -886,7 +886,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString isoFormat(Object selfObj,
                         @Bind Node inliningTarget) {
-            DateValue self = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, selfObj);
+            DateValue self = TemporalNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
             LocalDate locaDate = LocalDate.of(self.year, self.month, self.day);
             var isoString = locaDate.toString();
             return TruffleString.FromJavaStringNode.getUncached().execute(isoString, TS_ENCODING);
@@ -901,7 +901,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString cTime(Object selfObj,
                         @Bind Node inliningTarget) {
-            DateValue self = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, selfObj);
+            DateValue self = TemporalNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE LLL ppd 00:00:00 yyyy");
             String ctime = localDate.format(formatter);
@@ -918,7 +918,7 @@ public final class DateBuiltins extends PythonBuiltins {
         static PTuple timeTuple(Object selfObj,
                         @Bind PythonLanguage language,
                         @Bind Node inliningTarget) {
-            DateValue self = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, selfObj);
+            DateValue self = TemporalNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
 
             // Python's day of week is in range 0-6
@@ -944,7 +944,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static TruffleString strftime(Object selfObj, TruffleString format,
                         @Bind Node inliningTarget) {
-            DateValue self = TemporalNodes.ReadDateValueNode.executeUncached(inliningTarget, selfObj);
+            DateValue self = TemporalNodes.GetDateValue.executeUncached(inliningTarget, selfObj);
             // Reuse time.strftime(format, time_tuple) method.
 
             // construct time_tuple
