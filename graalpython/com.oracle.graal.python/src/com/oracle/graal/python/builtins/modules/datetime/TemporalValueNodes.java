@@ -75,8 +75,8 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
-public final class TemporalNodes {
-    private TemporalNodes() {
+public final class TemporalValueNodes {
+    private TemporalValueNodes() {
     }
 
     @ValueType
@@ -253,12 +253,12 @@ public final class TemporalNodes {
 
     @GenerateUncached
     @GenerateInline
-    @GenerateCached(alwaysInlineCached = true)
+    @GenerateCached(false)
     public abstract static class GetTimeDeltaValue extends Node {
         public abstract TimeDeltaValue execute(Node inliningTarget, Object obj);
 
         public static TimeDeltaValue executeUncached(Node inliningTarget, Object obj) {
-            return TemporalNodesFactory.GetTimeDeltaValueNodeGen.getUncached().execute(inliningTarget, obj);
+            return TemporalValueNodesFactory.GetTimeDeltaValueNodeGen.getUncached().execute(inliningTarget, obj);
         }
 
         @Specialization
@@ -283,12 +283,12 @@ public final class TemporalNodes {
 
     @GenerateUncached
     @GenerateInline
-    @GenerateCached(alwaysInlineCached = true)
+    @GenerateCached(false)
     public abstract static class GetDateValue extends Node {
         public abstract DateValue execute(Node inliningTarget, Object obj);
 
         public static DateValue executeUncached(Node inliningTarget, Object obj) {
-            return TemporalNodesFactory.GetDateValueNodeGen.getUncached().execute(inliningTarget, obj);
+            return TemporalValueNodesFactory.GetDateValueNodeGen.getUncached().execute(inliningTarget, obj);
         }
 
         @Specialization
@@ -324,12 +324,12 @@ public final class TemporalNodes {
 
     @GenerateUncached
     @GenerateInline
-    @GenerateCached(alwaysInlineCached = true)
+    @GenerateCached(false)
     public abstract static class GetTimeValue extends Node {
         public abstract TimeValue execute(Node inliningTarget, Object obj);
 
         public static TimeValue executeUncached(Node inliningTarget, Object obj) {
-            return TemporalNodesFactory.GetTimeValueNodeGen.getUncached().execute(inliningTarget, obj);
+            return TemporalValueNodesFactory.GetTimeValueNodeGen.getUncached().execute(inliningTarget, obj);
         }
 
         @Specialization
@@ -369,12 +369,12 @@ public final class TemporalNodes {
 
     @GenerateUncached
     @GenerateInline
-    @GenerateCached(alwaysInlineCached = true)
+    @GenerateCached(false)
     public abstract static class GetDateTimeValue extends Node {
         public abstract DateTimeValue execute(Node inliningTarget, Object obj);
 
         public static DateTimeValue executeUncached(Node inliningTarget, Object obj) {
-            return TemporalNodesFactory.GetDateTimeValueNodeGen.getUncached().execute(inliningTarget, obj);
+            return TemporalValueNodesFactory.GetDateTimeValueNodeGen.getUncached().execute(inliningTarget, obj);
         }
 
         @Specialization

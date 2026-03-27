@@ -44,7 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.datetime.TemporalNodes.TimeDeltaValue;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.TimeDeltaValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDeltaCheckNode;
@@ -95,7 +95,7 @@ public class TimeZoneNodes {
             if (offsetObj instanceof PTimeDelta value) {
                 offset = value;
             } else {
-                TimeDeltaValue offsetValue = TemporalNodes.GetTimeDeltaValue.executeUncached(inliningTarget, offsetObj);
+                TimeDeltaValue offsetValue = TemporalValueNodes.GetTimeDeltaValue.executeUncached(inliningTarget, offsetObj);
                 PythonBuiltinClassType tdcls = PythonBuiltinClassType.PTimeDelta;
                 offset = new PTimeDelta(tdcls, tdcls.getInstanceShape(language), offsetValue.days, offsetValue.seconds, offsetValue.microseconds);
             }
