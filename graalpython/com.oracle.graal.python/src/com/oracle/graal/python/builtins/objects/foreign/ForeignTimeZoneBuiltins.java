@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaNodes;
 import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.DateTimeValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDateTimeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -73,13 +74,11 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -95,39 +94,35 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         @TruffleBoundary
         static TruffleString repr(Object self,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary("self") InteropLibrary interop) {
-            ZoneId zoneId = asZoneId(self, interop);
-            TruffleString typeName = com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(self));
+                        @Bind Node inliningTarget) {
+            ZoneId zoneId = asZoneId(self);
+            TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(self));
             String value = String.format("%s('%s')", typeName, zoneId.getId());
-            return TruffleString.FromJavaStringNode.getUncached().execute(value, TS_ENCODING);
+            return toTruffleStringUncached(value);
         }
     }
 
     @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static TruffleString str(Object self,
-                        @CachedLibrary("self") InteropLibrary interop) {
-            return TruffleString.FromJavaStringNode.getUncached().execute(asZoneId(self, interop).getId(), TS_ENCODING);
+        @Specialization
+        @TruffleBoundary
+        static TruffleString str(Object self) {
+            return toTruffleStringUncached(asZoneId(self).getId());
         }
     }
 
     @Builtin(name = "utcoffset", minNumOfPositionalArgs = 1, parameterNames = {"$self", "dt"})
     @GenerateNodeFactory
     abstract static class UtcOffsetNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         @TruffleBoundary
         static Object utcoffset(Object self, Object dateTime,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary("self") InteropLibrary interop,
-                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
-                        @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode) {
-            ZoneId zoneId = asZoneId(self, interop);
+                        @Bind Node inliningTarget) {
+            ZoneId zoneId = asZoneId(self);
             if (dateTime == PNone.NONE) {
                 Object fixed = TemporalValueNodes.toFixedOffsetTimeZone(zoneId, inliningTarget);
                 if (fixed == null) {
@@ -135,10 +130,10 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
                 }
                 return DatetimeModuleBuiltins.callUtcOffset(fixed, PNone.NONE, inliningTarget);
             }
-            if (!dateTimeLikeCheckNode.execute(inliningTarget, dateTime)) {
+            if (!PyDateTimeCheckNode.executeUncached(dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
-            LocalDateTime localDateTime = readDateTimeValueNode.execute(inliningTarget, dateTime).toLocalDateTime();
+            LocalDateTime localDateTime = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime).toLocalDateTime();
             ZonedDateTime zonedDateTime = localDateTime.atZone(zoneId);
             return TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PTimeDelta, 0, zonedDateTime.getOffset().getTotalSeconds(), 0, 0, 0, 0, 0);
         }
@@ -147,21 +142,18 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
     @Builtin(name = "dst", minNumOfPositionalArgs = 1, parameterNames = {"$self", "dt"})
     @GenerateNodeFactory
     abstract static class DstNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         @TruffleBoundary
         static Object dst(Object self, Object dateTime,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary("self") InteropLibrary interop,
-                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
-                        @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode) {
-            ZoneId zoneId = asZoneId(self, interop);
+                        @Bind Node inliningTarget) {
+            ZoneId zoneId = asZoneId(self);
             if (dateTime == PNone.NONE) {
                 return PNone.NONE;
             }
-            if (!dateTimeLikeCheckNode.execute(inliningTarget, dateTime)) {
+            if (!PyDateTimeCheckNode.executeUncached(dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
-            LocalDateTime localDateTime = readDateTimeValueNode.execute(inliningTarget, dateTime).toLocalDateTime();
+            LocalDateTime localDateTime = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime).toLocalDateTime();
             ZonedDateTime zonedDateTime = localDateTime.atZone(zoneId);
             int dstSeconds = (int) zoneId.getRules().getDaylightSavings(zonedDateTime.toInstant()).getSeconds();
             return TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PTimeDelta, 0, dstSeconds, 0, 0, 0, 0, 0);
@@ -171,44 +163,38 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
     @Builtin(name = "tzname", minNumOfPositionalArgs = 1, parameterNames = {"$self", "dt"})
     @GenerateNodeFactory
     abstract static class TzNameNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         @TruffleBoundary
         static Object tzname(Object self, Object dateTime,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary("self") InteropLibrary interop,
-                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
-                        @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode) {
-            ZoneId zoneId = asZoneId(self, interop);
+                        @Bind Node inliningTarget) {
+            ZoneId zoneId = asZoneId(self);
             if (dateTime == PNone.NONE) {
-                return zoneId.getRules().isFixedOffset() ? TruffleString.FromJavaStringNode.getUncached().execute(zoneId.getId(), TS_ENCODING) : PNone.NONE;
+                return zoneId.getRules().isFixedOffset() ? toTruffleStringUncached(zoneId.getId()) : PNone.NONE;
             }
-            if (!dateTimeLikeCheckNode.execute(inliningTarget, dateTime)) {
+            if (!PyDateTimeCheckNode.executeUncached(dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
-            LocalDateTime localDateTime = readDateTimeValueNode.execute(inliningTarget, dateTime).toLocalDateTime();
+            LocalDateTime localDateTime = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime).toLocalDateTime();
             String name = DateTimeFormatter.ofPattern("z", Locale.ENGLISH).format(localDateTime.atZone(zoneId));
-            return TruffleString.FromJavaStringNode.getUncached().execute(name, TS_ENCODING);
+            return toTruffleStringUncached(name);
         }
     }
 
     @Builtin(name = "fromutc", minNumOfPositionalArgs = 1, parameterNames = {"$self", "dt"})
     @GenerateNodeFactory
     abstract static class FromUtcNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         @TruffleBoundary
         static Object fromutc(Object self, Object dateTime,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary("self") InteropLibrary interop,
-                        @Cached PyDateTimeCheckNode dateTimeLikeCheckNode,
-                        @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode) {
-            if (!dateTimeLikeCheckNode.execute(inliningTarget, dateTime)) {
+                        @Bind Node inliningTarget) {
+            if (!PyDateTimeCheckNode.executeUncached(dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
-            DateTimeValue asDateTime = readDateTimeValueNode.execute(inliningTarget, dateTime);
+            DateTimeValue asDateTime = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime);
             if (asDateTime.tzInfo != self) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.FROMUTC_DT_TZINFO_IS_NOT_SELF);
             }
-            ZoneId zoneId = asZoneId(self, interop);
+            ZoneId zoneId = asZoneId(self);
             LocalDateTime utcDateTime = asDateTime.toLocalDateTime();
             ZonedDateTime zonedDateTime = utcDateTime.atOffset(java.time.ZoneOffset.UTC).atZoneSameInstant(zoneId);
             return DateTimeNodes.NewUnsafeNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PDateTime, zonedDateTime.getYear(), zonedDateTime.getMonthValue(),
@@ -219,16 +205,16 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static Object reduce(Object self,
-                        @CachedLibrary("self") InteropLibrary interop) {
-            return TruffleString.FromJavaStringNode.getUncached().execute(asZoneId(self, interop).getId(), TS_ENCODING);
+        @Specialization
+        @TruffleBoundary
+        static Object reduce(Object self) {
+            return toTruffleStringUncached(asZoneId(self).getId());
         }
     }
 
-    private static ZoneId asZoneId(Object self, InteropLibrary interop) {
+    private static ZoneId asZoneId(Object self) {
         try {
-            return interop.asTimeZone(self);
+            return InteropLibrary.getUncached(self).asTimeZone(self);
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
