@@ -741,6 +741,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
+    public static RootNode unwrapRootNode(RootNode rootNode) {
+        if (rootNode instanceof RootNodeWithArguments rootNodeWithArguments) {
+            return rootNodeWithArguments.innerRootNode;
+        }
+        return rootNode;
+    }
+
     @Override
     public ExecutableNode parse(InlineParsingRequest request) {
         PythonContext context = PythonContext.get(null);
