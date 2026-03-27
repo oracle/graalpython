@@ -248,25 +248,18 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class UtcOffsetNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        static PTimeDelta utcOffset(PTimeZone self, PDateTime dt) {
-            return self.offset;
-        }
-
         @Specialization(guards = {"isNone(dt)"})
         static PTimeDelta utcOffsetForNone(PTimeZone self, PNone dt) {
             return self.offset;
         }
 
-        @Fallback
-        static void doGeneric(Object self, Object dt,
+        @Specialization(guards = {"!isNone(dt)"})
+        static PTimeDelta utcOffset(PTimeZone self, Object dt,
                         @Bind Node inliningTarget,
+                        @Cached PyDateTimeCheckNode dateTimeCheckNode,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, TypeError,
-                            ErrorMessages.S_ARGUMENT_MUST_BE_A_S_INSTANCE_OR_NONE_NOT_P,
-                            "utcoffset(dt)",
-                            "datetime",
-                            dt);
+            validateDateTimeOrNone(dt, "utcoffset(dt)", inliningTarget, dateTimeCheckNode, raiseNode);
+            return self.offset;
         }
     }
 
@@ -274,26 +267,18 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DstNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        static Object dst(PTimeZone self, PDateTime dt) {
-            return PNone.NONE;
-        }
-
         @Specialization(guards = {"isNone(dt)"})
         static Object dst(PTimeZone self, PNone dt) {
             return PNone.NONE;
         }
 
-        @Fallback
-        static void doGeneric(Object self, Object dt,
+        @Specialization(guards = {"!isNone(dt)"})
+        static Object dst(PTimeZone self, Object dt,
                         @Bind Node inliningTarget,
+                        @Cached PyDateTimeCheckNode dateTimeCheckNode,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget,
-                            TypeError,
-                            ErrorMessages.S_ARGUMENT_MUST_BE_A_S_INSTANCE_OR_NONE_NOT_P,
-                            "dst(dt)",
-                            "datetime",
-                            dt);
+            validateDateTimeOrNone(dt, "dst(dt)", inliningTarget, dateTimeCheckNode, raiseNode);
+            return PNone.NONE;
         }
     }
 
@@ -301,26 +286,18 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TzNameNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        static TruffleString tzName(PTimeZone self, PDateTime dt) {
-            return getTzName(self);
-        }
-
         @Specialization(guards = {"isNone(dt)"})
         static TruffleString tzName(PTimeZone self, PNone dt) {
             return getTzName(self);
         }
 
-        @Fallback
-        static void doGeneric(Object self, Object dt,
+        @Specialization(guards = {"!isNone(dt)"})
+        static TruffleString tzName(PTimeZone self, Object dt,
                         @Bind Node inliningTarget,
+                        @Cached PyDateTimeCheckNode dateTimeCheckNode,
                         @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget,
-                            TypeError,
-                            ErrorMessages.S_ARGUMENT_MUST_BE_A_S_INSTANCE_OR_NONE_NOT_P,
-                            "tzname(dt)",
-                            "datetime",
-                            dt);
+            validateDateTimeOrNone(dt, "tzname(dt)", inliningTarget, dateTimeCheckNode, raiseNode);
+            return getTzName(self);
         }
     }
 
@@ -400,5 +377,16 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
         }
 
         return TruffleString.FromJavaStringNode.getUncached().execute(builder.toString(), TS_ENCODING);
+    }
+
+    private static void validateDateTimeOrNone(Object dt, String methodName, Node inliningTarget, PyDateTimeCheckNode dateTimeCheckNode, PRaiseNode raiseNode) {
+        if (!dateTimeCheckNode.execute(inliningTarget, dt)) {
+            throw raiseNode.raise(inliningTarget,
+                            TypeError,
+                            ErrorMessages.S_ARGUMENT_MUST_BE_A_S_INSTANCE_OR_NONE_NOT_P,
+                            methodName,
+                            "datetime",
+                            dt);
+        }
     }
 }

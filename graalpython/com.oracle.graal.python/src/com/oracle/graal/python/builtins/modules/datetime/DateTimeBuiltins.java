@@ -590,8 +590,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                 return op.compareResultToBool(result);
             }
 
-            PTimeDelta selfUtcOffset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, self, inliningTarget);
-            PTimeDelta otherUtcOffset = DatetimeModuleBuiltins.callUtcOffset(other.tzInfo, other, inliningTarget);
+            PTimeDelta selfUtcOffset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, selfObj, inliningTarget);
+            PTimeDelta otherUtcOffset = DatetimeModuleBuiltins.callUtcOffset(other.tzInfo, otherObj, inliningTarget);
 
             if (Objects.equals(selfUtcOffset, otherUtcOffset)) {
                 int result = compareDateTimeComponents(self, other);
