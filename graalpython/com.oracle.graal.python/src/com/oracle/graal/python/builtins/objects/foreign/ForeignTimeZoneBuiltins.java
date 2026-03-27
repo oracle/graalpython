@@ -45,6 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -133,8 +134,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
             if (!PyDateTimeCheckNode.executeUncached(dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
-            LocalDateTime localDateTime = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime).toLocalDateTime();
-            ZonedDateTime zonedDateTime = localDateTime.atZone(zoneId);
+            ZonedDateTime zonedDateTime = resolveDateTimeAtZone(TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime), zoneId);
             return TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PTimeDelta, 0, zonedDateTime.getOffset().getTotalSeconds(), 0, 0, 0, 0, 0);
         }
     }
@@ -153,8 +153,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
             if (!PyDateTimeCheckNode.executeUncached(dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
-            LocalDateTime localDateTime = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime).toLocalDateTime();
-            ZonedDateTime zonedDateTime = localDateTime.atZone(zoneId);
+            ZonedDateTime zonedDateTime = resolveDateTimeAtZone(TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime), zoneId);
             int dstSeconds = (int) zoneId.getRules().getDaylightSavings(zonedDateTime.toInstant()).getSeconds();
             return TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PTimeDelta, 0, dstSeconds, 0, 0, 0, 0, 0);
         }
@@ -174,8 +173,7 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
             if (!PyDateTimeCheckNode.executeUncached(dateTime)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
-            LocalDateTime localDateTime = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime).toLocalDateTime();
-            String name = DateTimeFormatter.ofPattern("z", Locale.ENGLISH).format(localDateTime.atZone(zoneId));
+            String name = DateTimeFormatter.ofPattern("z", Locale.ENGLISH).format(resolveDateTimeAtZone(TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime), zoneId));
             return toTruffleStringUncached(name);
         }
     }
@@ -191,14 +189,15 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
             DateTimeValue asDateTime = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, dateTime);
-            if (asDateTime.tzInfo != self) {
+            if (!hasMatchingTimeZone(asDateTime, self)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.FROMUTC_DT_TZINFO_IS_NOT_SELF);
             }
             ZoneId zoneId = asZoneId(self);
             LocalDateTime utcDateTime = asDateTime.toLocalDateTime();
             ZonedDateTime zonedDateTime = utcDateTime.atOffset(java.time.ZoneOffset.UTC).atZoneSameInstant(zoneId);
+            int fold = getFold(zonedDateTime);
             return DateTimeNodes.NewUnsafeNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PDateTime, zonedDateTime.getYear(), zonedDateTime.getMonthValue(),
-                            zonedDateTime.getDayOfMonth(), zonedDateTime.getHour(), zonedDateTime.getMinute(), zonedDateTime.getSecond(), zonedDateTime.getNano() / 1_000, self, 0);
+                            zonedDateTime.getDayOfMonth(), zonedDateTime.getHour(), zonedDateTime.getMinute(), zonedDateTime.getSecond(), zonedDateTime.getNano() / 1_000, self, fold);
         }
     }
 
@@ -218,5 +217,45 @@ public final class ForeignTimeZoneBuiltins extends PythonBuiltins {
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
+    }
+
+    private static boolean hasMatchingTimeZone(DateTimeValue dateTime, Object self) {
+        if (dateTime.tzInfo == self) {
+            return true;
+        }
+        if (dateTime.zoneId != null) {
+            return asZoneId(self).equals(dateTime.zoneId);
+        }
+        if (dateTime.tzInfo == null) {
+            return false;
+        }
+        InteropLibrary interop = InteropLibrary.getUncached(dateTime.tzInfo);
+        if (!interop.isTimeZone(dateTime.tzInfo)) {
+            return false;
+        }
+        try {
+            return asZoneId(self).equals(interop.asTimeZone(dateTime.tzInfo));
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    private static int getFold(ZonedDateTime zonedDateTime) {
+        List<ZoneOffset> validOffsets = zonedDateTime.getZone().getRules().getValidOffsets(zonedDateTime.toLocalDateTime());
+        if (validOffsets.size() < 2) {
+            return 0;
+        }
+        return zonedDateTime.getOffset().equals(validOffsets.get(validOffsets.size() - 1)) ? 1 : 0;
+    }
+
+    @TruffleBoundary
+    private static ZonedDateTime resolveDateTimeAtZone(DateTimeValue dateTime, ZoneId zoneId) {
+        LocalDateTime localDateTime = dateTime.toLocalDateTime();
+        ZonedDateTime zonedDateTime = localDateTime.atZone(zoneId);
+        List<ZoneOffset> validOffsets = zoneId.getRules().getValidOffsets(localDateTime);
+        if (validOffsets.size() < 2) {
+            return zonedDateTime;
+        }
+        return dateTime.fold == 1 ? zonedDateTime.withLaterOffsetAtOverlap() : zonedDateTime.withEarlierOffsetAtOverlap();
     }
 }

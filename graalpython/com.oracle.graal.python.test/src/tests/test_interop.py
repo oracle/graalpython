@@ -272,6 +272,8 @@ class InteropTests(unittest.TestCase):
         import java
 
         LocalDateTime = java.type("java.time.LocalDateTime")
+        ZonedDateTime = java.type("java.time.ZonedDateTime")
+        ZoneId = java.type("java.time.ZoneId")
 
         dt = LocalDateTime.of(2025, 3, 23, 7, 8, 9)
         self.assertEqual(dt.year, 2025)
@@ -300,11 +302,20 @@ class InteropTests(unittest.TestCase):
         self.assertIsNone(dt.dst())
         self.assertIsNone(dt.tzname())
 
+        berlin = ZoneId.of("Europe/Berlin")
+        zoned_dt = ZonedDateTime.of(2025, 3, 23, 7, 8, 9, 0, berlin)
+        self.assertIsInstance(zoned_dt.tzinfo, datetime.tzinfo)
+        self.assertEqual(zoned_dt.utcoffset(), datetime.timedelta(hours=1))
+        self.assertEqual(zoned_dt.dst(), datetime.timedelta())
+        self.assertEqual(zoned_dt.tzname(), "CET")
+        self.assertEqual(zoned_dt.isoformat(), "2025-03-23T07:08:09+01:00")
+
     def test_foreign_timezone_behavior(self):
         import datetime
         import java
 
         ZoneId = java.type("java.time.ZoneId")
+        ZonedDateTime = java.type("java.time.ZonedDateTime")
 
         utc = ZoneId.of("UTC")
         self.assertIsInstance(utc, datetime.tzinfo)
@@ -332,6 +343,15 @@ class InteropTests(unittest.TestCase):
         self.assertEqual(local.tzname(), "CET")
         self.assertEqual(berlin.fromutc(datetime.datetime(2025, 3, 23, 6, 8, 9, tzinfo=berlin)),
                          datetime.datetime(2025, 3, 23, 7, 8, 9, tzinfo=berlin))
+
+        foreign_aware = ZonedDateTime.of(2025, 3, 23, 6, 8, 9, 0, berlin)
+        self.assertEqual(berlin.fromutc(foreign_aware),
+                         datetime.datetime(2025, 3, 23, 7, 8, 9, tzinfo=berlin))
+
+        overlap = berlin.fromutc(datetime.datetime(2025, 10, 26, 1, 30, tzinfo=berlin))
+        self.assertEqual(overlap, datetime.datetime(2025, 10, 26, 2, 30, tzinfo=berlin, fold=1))
+        self.assertEqual(overlap.fold, 1)
+        self.assertEqual(overlap.utcoffset(), datetime.timedelta(hours=1))
 
     def test_read(self):
         o = CustomObject()

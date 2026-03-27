@@ -232,7 +232,11 @@ public final class TemporalValueNodes {
         if (zoneId == null) {
             return null;
         }
-        return zoneId;
+        Object fixedOffsetTimeZone = toFixedOffsetTimeZone(zoneId, inliningTarget);
+        if (fixedOffsetTimeZone != null) {
+            return fixedOffsetTimeZone;
+        }
+        return PythonContext.get(inliningTarget).getEnv().asGuestValue(zoneId);
     }
 
     public static Object toFixedOffsetTimeZone(ZoneId zoneId, Node inliningTarget) {
