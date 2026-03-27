@@ -656,7 +656,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @Specialization
         static int getDays(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadI32Node readNode) {
-            return TimeDeltaNodes.AsManagedTimeDeltaNode.getDays(self, readNode);
+            return TimeDeltaNodes.FromNative.getDays(self, readNode);
         }
     }
 
@@ -672,7 +672,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @Specialization
         static int getSeconds(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadI32Node readNode) {
-            return TimeDeltaNodes.AsManagedTimeDeltaNode.getSeconds(self, readNode);
+            return TimeDeltaNodes.FromNative.getSeconds(self, readNode);
         }
     }
 
@@ -688,7 +688,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @Specialization
         static int getMicroseconds(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadI32Node readNode) {
-            return TimeDeltaNodes.AsManagedTimeDeltaNode.getMicroseconds(self, readNode);
+            return TimeDeltaNodes.FromNative.getMicroseconds(self, readNode);
         }
     }
 

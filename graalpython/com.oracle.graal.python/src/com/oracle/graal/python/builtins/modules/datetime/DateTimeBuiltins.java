@@ -847,7 +847,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getHour(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readByteNode) {
-            return DateTimeNodes.AsManagedDateTimeNode.getHour(self, readByteNode);
+            return DateTimeNodes.FromNative.getHour(self, readByteNode);
         }
     }
 
@@ -863,7 +863,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getMinute(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return DateTimeNodes.AsManagedDateTimeNode.getMinute(self, readNode);
+            return DateTimeNodes.FromNative.getMinute(self, readNode);
         }
     }
 
@@ -879,7 +879,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getSecond(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return DateTimeNodes.AsManagedDateTimeNode.getSecond(self, readNode);
+            return DateTimeNodes.FromNative.getSecond(self, readNode);
         }
     }
 
@@ -895,7 +895,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getMicrosecond(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return DateTimeNodes.AsManagedDateTimeNode.getMicrosecond(self, readNode);
+            return DateTimeNodes.FromNative.getMicrosecond(self, readNode);
         }
     }
 
@@ -924,7 +924,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getFold(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return DateTimeNodes.AsManagedDateTimeNode.getFold(self, readNode);
+            return DateTimeNodes.FromNative.getFold(self, readNode);
         }
     }
 

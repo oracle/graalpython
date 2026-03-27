@@ -464,7 +464,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @Specialization
         static int getYear(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return DateNodes.AsManagedDateNode.getYear(self, readNode);
+            return DateNodes.FromNative.getYear(self, readNode);
         }
     }
 
@@ -480,7 +480,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @Specialization
         static int getMonth(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return DateNodes.AsManagedDateNode.getMonth(self, readNode);
+            return DateNodes.FromNative.getMonth(self, readNode);
         }
     }
 
@@ -496,7 +496,7 @@ public final class DateBuiltins extends PythonBuiltins {
         @Specialization
         static int getDay(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return DateNodes.AsManagedDateNode.getDay(self, readNode);
+            return DateNodes.FromNative.getDay(self, readNode);
         }
     }
 

@@ -235,7 +235,7 @@ public class TimeDeltaNodes {
         }
     }
 
-    public static final class AsManagedTimeDeltaNode {
+    public static final class FromNative {
         static int getDays(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
             return readNode.readFromObj(self, CFields.PyDateTime_Delta__days);
         }

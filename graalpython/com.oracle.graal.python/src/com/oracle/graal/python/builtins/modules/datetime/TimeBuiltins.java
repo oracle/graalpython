@@ -486,7 +486,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getHour(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getHour(self, readNode);
+            return TimeNodes.FromNative.getHour(self, readNode);
         }
     }
 
@@ -502,7 +502,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getMinute(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getMinute(self, readNode);
+            return TimeNodes.FromNative.getMinute(self, readNode);
         }
     }
 
@@ -518,7 +518,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getSecond(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getSecond(self, readNode);
+            return TimeNodes.FromNative.getSecond(self, readNode);
         }
     }
 
@@ -534,7 +534,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getMicrosecond(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getMicrosecond(self, readNode);
+            return TimeNodes.FromNative.getMicrosecond(self, readNode);
         }
     }
 
@@ -563,7 +563,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getFold(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getFold(self, readNode);
+            return TimeNodes.FromNative.getFold(self, readNode);
         }
     }
 

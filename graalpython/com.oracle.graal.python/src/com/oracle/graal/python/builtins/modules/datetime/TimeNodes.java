@@ -228,7 +228,7 @@ public class TimeNodes {
         }
     }
 
-    public static final class AsManagedTimeNode {
+    public static final class FromNative {
         static int getHour(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
             return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 0);
         }
@@ -280,7 +280,7 @@ public class TimeNodes {
         static Object getTzInfo(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            return AsManagedTimeNode.getTzInfo(self, readByteNode, readObjectNode);
+            return FromNative.getTzInfo(self, readByteNode, readObjectNode);
         }
     }
 }

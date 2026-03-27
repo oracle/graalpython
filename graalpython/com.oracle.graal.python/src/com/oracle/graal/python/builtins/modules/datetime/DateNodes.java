@@ -181,7 +181,7 @@ public class DateNodes {
         }
     }
 
-    public static final class AsManagedDateNode {
+    public static final class FromNative {
         static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
             int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 0);
             int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 1);

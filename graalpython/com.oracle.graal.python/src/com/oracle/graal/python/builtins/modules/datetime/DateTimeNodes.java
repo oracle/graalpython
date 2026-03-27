@@ -290,7 +290,7 @@ public class DateTimeNodes {
         }
     }
 
-    public static final class AsManagedDateTimeNode {
+    public static final class FromNative {
         static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
             int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 0);
             int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 1);
@@ -356,7 +356,7 @@ public class DateTimeNodes {
         static Object getTzInfo(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            return AsManagedDateTimeNode.getTzInfo(self, readByteNode, readObjectNode);
+            return FromNative.getTzInfo(self, readByteNode, readObjectNode);
         }
     }
 

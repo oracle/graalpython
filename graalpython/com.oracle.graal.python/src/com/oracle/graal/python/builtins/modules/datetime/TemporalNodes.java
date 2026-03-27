@@ -270,8 +270,8 @@ public final class TemporalNodes {
         static TimeDeltaValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
                         @SuppressWarnings("unused") @Cached PyDeltaCheckNode checkNode,
                         @Cached CStructAccess.ReadI32Node readIntNode) {
-            return new TimeDeltaValue(TimeDeltaNodes.AsManagedTimeDeltaNode.getDays(value, readIntNode), TimeDeltaNodes.AsManagedTimeDeltaNode.getSeconds(value, readIntNode),
-                            TimeDeltaNodes.AsManagedTimeDeltaNode.getMicroseconds(value, readIntNode));
+            return new TimeDeltaValue(TimeDeltaNodes.FromNative.getDays(value, readIntNode), TimeDeltaNodes.FromNative.getSeconds(value, readIntNode),
+                            TimeDeltaNodes.FromNative.getMicroseconds(value, readIntNode));
         }
 
         @Fallback
@@ -300,7 +300,7 @@ public final class TemporalNodes {
         static DateValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
                         @SuppressWarnings("unused") @Cached PyDateCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return new DateValue(DateNodes.AsManagedDateNode.getYear(value, readNode), DateNodes.AsManagedDateNode.getMonth(value, readNode), DateNodes.AsManagedDateNode.getDay(value, readNode));
+            return new DateValue(DateNodes.FromNative.getYear(value, readNode), DateNodes.FromNative.getMonth(value, readNode), DateNodes.FromNative.getDay(value, readNode));
         }
 
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, value)", "interop.isDate(value)"}, limit = "1")
@@ -342,9 +342,9 @@ public final class TemporalNodes {
                         @SuppressWarnings("unused") @Cached PyTimeCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            return new TimeValue(TimeNodes.AsManagedTimeNode.getHour(value, readByteNode), TimeNodes.AsManagedTimeNode.getMinute(value, readByteNode),
-                            TimeNodes.AsManagedTimeNode.getSecond(value, readByteNode), TimeNodes.AsManagedTimeNode.getMicrosecond(value, readByteNode),
-                            TimeNodes.AsManagedTimeNode.getTzInfo(value, readByteNode, readObjectNode), null, TimeNodes.AsManagedTimeNode.getFold(value, readByteNode));
+            return new TimeValue(TimeNodes.FromNative.getHour(value, readByteNode), TimeNodes.FromNative.getMinute(value, readByteNode),
+                            TimeNodes.FromNative.getSecond(value, readByteNode), TimeNodes.FromNative.getMicrosecond(value, readByteNode),
+                            TimeNodes.FromNative.getTzInfo(value, readByteNode, readObjectNode), null, TimeNodes.FromNative.getFold(value, readByteNode));
         }
 
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, value)", "interop.isTime(value)"}, limit = "1")
@@ -387,11 +387,11 @@ public final class TemporalNodes {
                         @SuppressWarnings("unused") @Cached PyDateTimeCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            return new DateTimeValue(DateTimeNodes.AsManagedDateTimeNode.getYear(value, readByteNode), DateTimeNodes.AsManagedDateTimeNode.getMonth(value, readByteNode),
-                            DateTimeNodes.AsManagedDateTimeNode.getDay(value, readByteNode), DateTimeNodes.AsManagedDateTimeNode.getHour(value, readByteNode),
-                            DateTimeNodes.AsManagedDateTimeNode.getMinute(value, readByteNode), DateTimeNodes.AsManagedDateTimeNode.getSecond(value, readByteNode),
-                            DateTimeNodes.AsManagedDateTimeNode.getMicrosecond(value, readByteNode), DateTimeNodes.AsManagedDateTimeNode.getTzInfo(value, readByteNode, readObjectNode), null,
-                            DateTimeNodes.AsManagedDateTimeNode.getFold(value, readByteNode));
+            return new DateTimeValue(DateTimeNodes.FromNative.getYear(value, readByteNode), DateTimeNodes.FromNative.getMonth(value, readByteNode),
+                            DateTimeNodes.FromNative.getDay(value, readByteNode), DateTimeNodes.FromNative.getHour(value, readByteNode),
+                            DateTimeNodes.FromNative.getMinute(value, readByteNode), DateTimeNodes.FromNative.getSecond(value, readByteNode),
+                            DateTimeNodes.FromNative.getMicrosecond(value, readByteNode), DateTimeNodes.FromNative.getTzInfo(value, readByteNode, readObjectNode), null,
+                            DateTimeNodes.FromNative.getFold(value, readByteNode));
         }
 
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, value)", "interop.isDate(value)", "interop.isTime(value)"}, limit = "1")
