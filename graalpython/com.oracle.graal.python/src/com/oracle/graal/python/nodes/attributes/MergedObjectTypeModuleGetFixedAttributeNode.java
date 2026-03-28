@@ -47,9 +47,7 @@ import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
@@ -65,7 +63,6 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -79,32 +76,14 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@link com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode},
  * {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode} and
  * {@link com.oracle.graal.python.builtins.objects.module.ModuleBuiltins.ModuleGetattributeNode} to
- * reduce code size by about 3x for host inlining
+ * reduce code size for host inlining.
+ *
+ * Fixed-key version used by {@link GetFixedAttributeNode}. The key is passed via execute for
+ * inlining, but the caller is expected to keep its identity stable for the lifetime of the node.
  */
-@GenerateUncached
 @GenerateInline
 @GenerateCached(false)
-public abstract class MergedObjectTypeModuleGetAttributeNode extends PNodeWithContext {
-
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object object, Object keyObj);
-
-    @Specialization
-    static Object doIt(VirtualFrame frame, Node inliningTarget, Object object, Object keyObj,
-                    @Cached CastToTruffleStringChecked1Node castToString,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetCachedTpSlotsNode getSlotsNode,
-                    @Cached MergedObjectTypeModuleGetAttributeInnerNode innerNode) {
-        TruffleString key = castToString.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
-        Object type = getClassNode.execute(inliningTarget, object);
-        TpSlots slots = getSlotsNode.execute(inliningTarget, type);
-        return innerNode.execute(frame, inliningTarget, object, key, type, slots);
-    }
-}
-
-@GenerateUncached
-@GenerateInline
-@GenerateCached(false)
-abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithContext {
+public abstract class MergedObjectTypeModuleGetFixedAttributeNode extends PNodeWithContext {
 
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, TpSlots slots);
 
@@ -121,7 +100,7 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
                     @Cached("slots.tp_getattro()") TpSlot cachedSlot,
                     // Common
                     @Cached GetObjectSlotsNode getDescrSlotsNode,
-                    @Cached LookupAttributeInMRONode.Dynamic lookup,
+                    @Cached("create(key)") LookupAttributeInMRONode lookup,
                     @Cached InlinedConditionProfile hasDescProfile,
                     @Cached InlinedConditionProfile hasDescrGetProfile,
                     @Cached InlinedConditionProfile hasValueProfile,
@@ -129,14 +108,14 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
                     @Cached CallSlotDescrGet.Lazy callSlotDescrGet,
                     // Specific to a given tp_getattro, some should probably be lazy
                     @Cached ReadAttributeFromObjectNode readAttributeOfObjectNode,
-                    @Cached LookupAttributeInMRONode.Dynamic readAttributeOfClassNode,
+                    @Cached("create(key)") LookupAttributeInMRONode readAttributeOfClassNode,
                     @Cached GetObjectSlotsNode getValueSlotsNode,
                     @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
                     @Cached CallSlotDescrGet.Lazy callSlotValueGet,
                     @Cached ModuleBuiltins.LazyHandleGetattrExceptionNode handleException) {
         assert hasNoGetAttr(type);
         try {
-            Object descr = lookup.execute(type, key);
+            Object descr = lookup.execute(type);
             boolean hasDescr = hasDescProfile.profile(inliningTarget, descr != PNone.NO_VALUE);
 
             TpSlot get = null;
@@ -162,7 +141,7 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
                     }
                 } else {
                     // TypeBuiltins.SLOTS.tp_getattro()
-                    Object value = readAttributeOfClassNode.execute(object, key);
+                    Object value = readAttributeOfClassNode.execute(object);
                     if (hasValueProfile.profile(inliningTarget, value != PNone.NO_VALUE)) {
                         var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
                         if (valueGet == null) {
