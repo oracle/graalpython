@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -120,7 +119,6 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     }
 
     // foreign object or primitive
-    @InliningCutoff
     @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)"})
     static Object readForeignOrPrimitive(Object object, TruffleString key) {
         // Foreign members are tried after the regular attribute lookup, see
