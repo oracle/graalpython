@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemStringKey;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -90,7 +90,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
                     @Cached InlinedConditionProfile profileHasDict,
                     @Exclusive @Cached GetDictIfExistsNode getDict,
                     @Cached ReadAttributeFromPythonObjectNode readAttributeFromPythonObjectNode,
-                    @Exclusive @Cached HashingStorageGetItem getItem) {
+                    @Exclusive @Cached HashingStorageGetItemStringKey getItem) {
         var dict = getDict.execute(object);
         if (profileHasDict.profile(inliningTarget, dict == null)) {
             return readAttributeFromPythonObjectNode.execute(object, key);
@@ -108,10 +108,10 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     static Object readNativeObject(PythonAbstractNativeObject object, TruffleString key,
                     @Bind Node inliningTarget,
                     @Exclusive @Cached GetDictIfExistsNode getDict,
-                    @Exclusive @Cached HashingStorageGetItem getItem) {
+                    @Exclusive @Cached HashingStorageGetItemStringKey getItem) {
         PDict dict = getDict.execute(object);
         if (dict != null) {
-            Object result = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
+            Object result = getItem.execute(inliningTarget, dict.getDictStorage(), key);
             if (result != null) {
                 return result;
             }
