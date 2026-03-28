@@ -49,7 +49,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -86,10 +86,10 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @Specialization
     static Object readObjectAttribute(PythonObject object, TruffleString key,
                     @Bind Node inliningTarget,
-                    @Cached InlinedConditionProfile profileHasDict,
-                    @Exclusive @Cached GetDictIfExistsNode getDict,
+                    @Shared @Cached InlinedConditionProfile profileHasDict,
+                    @Shared @Cached GetDictIfExistsNode getDict,
                     @Cached ReadAttributeFromPythonObjectNode readAttributeFromPythonObjectNode,
-                    @Exclusive @Cached HashingStorageGetItemStringKey getItem) {
+                    @Shared @Cached HashingStorageGetItemStringKey getItem) {
         var dict = getDict.execute(object);
         if (profileHasDict.profile(inliningTarget, dict == null)) {
             return readAttributeFromPythonObjectNode.execute(object, key);
@@ -106,8 +106,8 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     @Specialization
     static Object readNativeObject(PythonAbstractNativeObject object, TruffleString key,
                     @Bind Node inliningTarget,
-                    @Exclusive @Cached GetDictIfExistsNode getDict,
-                    @Exclusive @Cached HashingStorageGetItemStringKey getItem) {
+                    @Shared @Cached GetDictIfExistsNode getDict,
+                    @Shared @Cached HashingStorageGetItemStringKey getItem) {
         PDict dict = getDict.execute(object);
         if (dict != null) {
             Object result = getItem.execute(inliningTarget, dict.getDictStorage(), key);
