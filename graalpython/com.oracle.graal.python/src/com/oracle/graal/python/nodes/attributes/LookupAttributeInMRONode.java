@@ -114,7 +114,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         static Object lookupGeneric(Object klass, TruffleString key,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile pbctProfile,
-                        @Cached ReadAttributeFromPythonObjectNode readPBCTAttrNode,
+                        @Cached(inline = false) ReadAttributeFromPythonObjectNode readPBCTAttrNode,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached ReadAttributeFromObjectNode readAttrNode) {
             if (pbctProfile.profile(inliningTarget, klass instanceof PythonBuiltinClassType)) {
@@ -287,7 +287,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         Object lookupPBCTCachedOwner(PythonBuiltinClassType klass, TruffleString key, boolean skipNonStaticBases,
                         @Cached("klass") PythonBuiltinClassType cachedKlass,
                         @Cached("findOwnerInMro(getContext(), cachedKlass, key)") PythonBuiltinClassType ownerKlass,
-                        @Shared @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
+                        @Shared @Cached(inline = false) ReadAttributeFromPythonObjectNode readAttrNode) {
             if (ownerKlass == null) {
                 return PNone.NO_VALUE;
             } else {
@@ -297,7 +297,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
         @Specialization(replaces = "lookupPBCTCachedOwner")
         Object lookupPBCTGeneric(PythonBuiltinClassType klass, TruffleString key, boolean skipNonStaticBases,
-                        @Shared @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
+                        @Shared @Cached(inline = false) ReadAttributeFromPythonObjectNode readAttrNode) {
             return findAttr(PythonContext.get(this), klass, key, readAttrNode);
         }
 

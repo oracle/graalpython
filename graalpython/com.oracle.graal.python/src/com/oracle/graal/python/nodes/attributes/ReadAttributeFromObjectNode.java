@@ -64,7 +64,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @ReportPolymorphism
 @GenerateUncached
-@GenerateInline(false) // footprint reduction 64 -> 47
+@GenerateInline(false)
 public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
 
     @NeverDefault
@@ -88,11 +88,11 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Shared @Cached InlinedConditionProfile profileHasDict,
                     @Shared @Cached GetDictIfExistsNode getDict,
-                    @Cached ReadAttributeFromPythonObjectNode readAttributeFromPythonObjectNode,
+                    @Shared @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttributeFromPythonObjectNode,
                     @Shared @Cached HashingStorageGetItemStringKey getItem) {
         var dict = getDict.execute(object);
         if (profileHasDict.profile(inliningTarget, dict == null)) {
-            return readAttributeFromPythonObjectNode.execute(object, key);
+            return readAttributeFromPythonObjectNode.execute(inliningTarget, object, key);
         } else {
             Object value = getItem.execute(inliningTarget, dict.getDictStorage(), key);
             if (value == null) {

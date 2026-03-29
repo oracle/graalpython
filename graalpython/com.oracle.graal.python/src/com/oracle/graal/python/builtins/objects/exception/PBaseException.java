@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -360,7 +360,7 @@ public class PBaseException extends PythonObject {
                     @Cached CastToJavaIntExactNode castToInt,
                     @Bind Node inliningTarget,
                     @Exclusive @Cached GetClassNode getClassNode,
-                    @Cached ReadAttributeFromPythonObjectNode readNode,
+                    @Cached(inline = true) ReadAttributeFromPythonObjectNode readNode,
                     @Exclusive @Cached InlinedBranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
@@ -368,7 +368,7 @@ public class PBaseException extends PythonObject {
             if (getExceptionType(inliningTarget, getClassNode, gil) == ExceptionType.EXIT) {
                 try {
                     // Avoiding getattr because this message shouldn't have side-effects
-                    Object code = readNode.execute(this, T_CODE);
+                    Object code = readNode.execute(inliningTarget, this, T_CODE);
                     if (code == PNone.NO_VALUE) {
                         return 1;
                     }

@@ -1259,7 +1259,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @ForceQuickening
         @Specialization(guards = "!isNoValue(result)", limit = "1")
         public static Object doLocalFastPath(VirtualFrame frame, TruffleString name,
-                        @Cached ReadAttributeFromPythonObjectNode readAttrNode,
+                        @Cached(inline = false) ReadAttributeFromPythonObjectNode readAttrNode,
                         @Bind("readFromLocalsFastPath(frame, name, readAttrNode)") Object result) {
             return result;
         }

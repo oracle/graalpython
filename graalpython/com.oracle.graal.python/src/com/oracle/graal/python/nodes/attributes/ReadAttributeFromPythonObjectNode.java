@@ -61,7 +61,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * object has dict, also bypasses any other additional logic in {@link ReadAttributeFromObjectNode}.
  */
 @GenerateUncached
-@GenerateInline(false) // footprint reduction 44 -> 25
+@GenerateInline
 public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext {
     @NeverDefault
     public static ReadAttributeFromPythonObjectNode create() {
@@ -73,24 +73,36 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
     }
 
     public static Object executeUncached(PythonObject object, TruffleString key, Object defaultValue) {
-        return getUncached().execute(object, key, defaultValue);
+        return getUncached().execute(getUncached(), object, key, defaultValue);
     }
 
-    public abstract Object execute(PythonObject object, TruffleString key, Object defaultValue);
+    public final Object execute(PythonObject object, TruffleString key, Object defaultValue) {
+        return execute(this, object, key, defaultValue);
+    }
 
     public final Object execute(PythonObject object, TruffleString key) {
-        return execute(object, key, PNone.NO_VALUE);
+        return execute(this, object, key, PNone.NO_VALUE);
     }
 
     // used only by DynamicObjectStorage, which will be removed during the transition from
     // DynamicObject to ObjectHashMap
-    public abstract Object execute(DynamicObject object, TruffleString key, Object defaultValue);
+    public final Object execute(DynamicObject object, TruffleString key, Object defaultValue) {
+        return execute(this, object, key, defaultValue);
+    }
+
+    public abstract Object execute(Node inliningTarget, PythonObject object, TruffleString key, Object defaultValue);
+
+    public final Object execute(Node inliningTarget, PythonObject object, TruffleString key) {
+        return execute(inliningTarget, object, key, PNone.NO_VALUE);
+    }
+
+    public abstract Object execute(Node inliningTarget, DynamicObject object, TruffleString key, Object defaultValue);
 
     @Specialization
-    protected final Object read(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
+    protected static Object read(Node inliningTarget, DynamicObject dynamicObject, TruffleString key, Object defaultValue,
                     @Cached ReceiverCast receiverCast,
                     @Cached DynamicObject.GetNode getNode) {
-        return getNode.execute(receiverCast.execute(this, dynamicObject), key, defaultValue);
+        return getNode.execute(receiverCast.execute(inliningTarget, dynamicObject), key, defaultValue);
     }
 
     @GenerateCached(false)

@@ -100,7 +100,7 @@ public abstract class MergedObjectTypeModuleGetFixedAttributeNode extends PNodeW
                     @Cached("slots.tp_getattro()") TpSlot cachedSlot,
                     // Common
                     @Cached GetObjectSlotsNode getDescrSlotsNode,
-                    @Cached("create(key)") LookupAttributeInMRONode lookup,
+                    @Cached(value = "create(key)", inline = false) LookupAttributeInMRONode lookup,
                     @Cached InlinedConditionProfile hasDescProfile,
                     @Cached InlinedConditionProfile hasDescrGetProfile,
                     @Cached InlinedConditionProfile hasValueProfile,
@@ -108,7 +108,7 @@ public abstract class MergedObjectTypeModuleGetFixedAttributeNode extends PNodeW
                     @Cached CallSlotDescrGet.Lazy callSlotDescrGet,
                     // Specific to a given tp_getattro, some should probably be lazy
                     @Cached ReadAttributeFromObjectNode readAttributeOfObjectNode,
-                    @Cached("create(key)") LookupAttributeInMRONode readAttributeOfClassNode,
+                    @Cached(value = "create(key)", inline = false) LookupAttributeInMRONode readAttributeOfClassNode,
                     @Cached GetObjectSlotsNode getValueSlotsNode,
                     @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
                     @Cached CallSlotDescrGet.Lazy callSlotValueGet,

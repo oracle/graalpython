@@ -162,7 +162,7 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object dom(Node inliningTarget, DynamicObjectStorage self, TruffleString key,
-                        @Cached(inline = false) ReadAttributeFromPythonObjectNode readKey,
+                        @Cached ReadAttributeFromPythonObjectNode readKey,
                         @Cached InlinedConditionProfile noValueProfile) {
             return DynamicObjectStorage.GetItemNode.string(inliningTarget, self, key, -1, readKey, noValueProfile);
         }

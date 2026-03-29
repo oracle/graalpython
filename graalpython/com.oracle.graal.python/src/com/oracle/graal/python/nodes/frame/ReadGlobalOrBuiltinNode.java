@@ -126,7 +126,7 @@ public abstract class ReadGlobalOrBuiltinNode extends Node {
     @ForceQuickening
     @Specialization(guards = "!isNoValue(result)", replaces = "readBuiltinFastPath", excludeForUncached = true, limit = "1")
     public static Object readGlobalFastPath(VirtualFrame frame, TruffleString attributeId,
-                    @Cached ReadAttributeFromPythonObjectNode readNode,
+                    @Cached(inline = false) ReadAttributeFromPythonObjectNode readNode,
                     @Bind("readFastFromGlobalStore(frame, attributeId, readNode)") Object result) {
         return result;
     }
