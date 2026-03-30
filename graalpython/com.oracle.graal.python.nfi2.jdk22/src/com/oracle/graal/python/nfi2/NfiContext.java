@@ -59,8 +59,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiContext {
     private static final boolean IS_WINDOWS = System.getProperty("os.name", "").startsWith("Windows");
-    private static final Arena WINDOWS_LOOKUP_ARENA = IS_WINDOWS ? Arena.ofShared() : null;
-    private static final SymbolLookup WINDOWS_LOOKUP = IS_WINDOWS ? SymbolLookup.libraryLookup("kernel32", WINDOWS_LOOKUP_ARENA) : null;
 
     private final ConcurrentLinkedQueue<NfiLibrary> libraries = new ConcurrentLinkedQueue<>();
     final Arena arena;
@@ -148,6 +146,8 @@ public final class NfiContext {
     private static MemorySegment loadLibraryExPtr;
     private static MemorySegment freeLibraryPtr;
     private static MemorySegment getProcAddressPtr;
+    private static Arena windowsLookupArena;
+    private static SymbolLookup windowsLookup;
 
     // TODO(NFI2) error handling
     @SuppressWarnings("restricted")
@@ -158,9 +158,13 @@ public final class NfiContext {
                 assert getProcAddressPtr != null;
                 return;
             }
-            loadLibraryExPtr = WINDOWS_LOOKUP.find("LoadLibraryExW").orElseThrow();
-            freeLibraryPtr = WINDOWS_LOOKUP.find("FreeLibrary").orElseThrow();
-            getProcAddressPtr = WINDOWS_LOOKUP.find("GetProcAddress").orElseThrow();
+            if (windowsLookup == null) {
+                windowsLookupArena = Arena.ofShared();
+                windowsLookup = SymbolLookup.libraryLookup("kernel32", windowsLookupArena);
+            }
+            loadLibraryExPtr = windowsLookup.find("LoadLibraryExW").orElseThrow();
+            freeLibraryPtr = windowsLookup.find("FreeLibrary").orElseThrow();
+            getProcAddressPtr = windowsLookup.find("GetProcAddress").orElseThrow();
             return;
         }
         dlopenPtr = Linker.nativeLinker().defaultLookup().find("dlopen").orElseThrow();
