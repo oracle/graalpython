@@ -112,6 +112,7 @@ import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
 import com.oracle.graal.python.nfi2.NfiContext;
 import com.oracle.graal.python.nfi2.NfiLibrary;
+import com.oracle.graal.python.nfi2.NfiLoadException;
 import com.oracle.graal.python.nfi2.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -964,6 +965,11 @@ public final class CApiContext extends CExtContext {
              * Python exceptions that occur during the C API initialization are just passed through
              */
             throw e;
+        } catch (NfiLoadException e) {
+            if (!context.isNativeAccessAllowed()) {
+                throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+            }
+            throw new ApiInitException(ErrorMessages.CANNOT_LOAD, libName, e.getMessage());
         } catch (RuntimeException e) {
             // we cannot really check if we truly need native access, so
             // when the abi contains "managed" we assume we do not
@@ -1047,6 +1053,13 @@ public final class CApiContext extends CExtContext {
             library = context.ensureNfiContext().loadLibrary(loadPath, dlopenFlags);
         } catch (PException e) {
             throw e;
+        } catch (NfiLoadException e) {
+            if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
+                getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
+                                "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n" +
+                                "See also: https://www.graalvm.org/python/docs/#graalpy-troubleshooting", spec.path, realPath));
+            }
+            throw new ImportException(null, spec.name, spec.path, ErrorMessages.CANNOT_LOAD, spec.path, e.getMessage());
         } catch (AbstractTruffleException e) {
             if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
                 // file does not exist and it is from VirtualFileSystem

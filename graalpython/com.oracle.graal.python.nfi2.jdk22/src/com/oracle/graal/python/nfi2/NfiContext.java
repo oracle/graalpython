@@ -59,6 +59,17 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiContext {
     private static final boolean IS_WINDOWS = System.getProperty("os.name", "").startsWith("Windows");
+    private static final int LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100;
+    private static final int LOAD_LIBRARY_SEARCH_APPLICATION_DIR = 0x00000200;
+    private static final int LOAD_LIBRARY_SEARCH_USER_DIRS = 0x00000400;
+    private static final int LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
+    private static final int LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
+    private static final int WINDOWS_LOAD_LIBRARY_SEARCH_MASK = LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_USER_DIRS |
+                    LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
+    private static final int WINDOWS_DEFAULT_LOAD_LIBRARY_FLAGS = LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
+    private static final int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
+    private static final int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
+    private static final int FORMAT_MESSAGE_BUFFER_CHARS = 2048;
 
     private final ConcurrentLinkedQueue<NfiLibrary> libraries = new ConcurrentLinkedQueue<>();
     final Arena arena;
@@ -83,13 +94,14 @@ public final class NfiContext {
         arena.close();
     }
 
-    public NfiLibrary loadLibrary(String name, int flags) {
+    public NfiLibrary loadLibrary(String name, int flags) throws NfiLoadException {
         long lib;
         long nativeName = IS_WINDOWS ? NativeMemory.javaStringToNativeUtf16(name) : NativeMemory.javaStringToNativeUtf8(name);
         try {
             ensureLoader();
             if (IS_WINDOWS) {
-                lib = (long) LOAD_LIBRARY_EX.invokeExact(loadLibraryExPtr, nativeName, MemorySegment.NULL, 0);
+                int callFlags = sanitizeWindowsLoadLibraryFlags(flags) | WINDOWS_DEFAULT_LOAD_LIBRARY_FLAGS;
+                lib = (long) LOAD_LIBRARY_EX.invokeExact(loadLibraryExPtr, nativeName, MemorySegment.NULL, callFlags);
             } else {
                 int callFlags = flags;
                 if ((callFlags & (RTLD_LAZY | RTLD_NOW)) == 0) {
@@ -103,7 +115,7 @@ public final class NfiContext {
             NativeMemory.free(nativeName);
         }
         if (lib == 0) {
-            throw CompilerDirectives.shouldNotReachHere("Failed to load library " + name);
+            throw createLoadLibraryException();
         }
         NfiLibrary library = new NfiLibrary(this, lib);
         libraries.add(library);
@@ -139,13 +151,22 @@ public final class NfiContext {
     private static final MethodHandle FREE_LIBRARY = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_INT, JAVA_LONG));
     @SuppressWarnings("restricted") //
     private static final MethodHandle GET_PROC_ADDRESS = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG));
+    @SuppressWarnings("restricted") //
+    private static final MethodHandle GET_LAST_ERROR = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_INT));
+    @SuppressWarnings("restricted") //
+    private static final MethodHandle FORMAT_MESSAGE = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_LONG, JAVA_INT, JAVA_INT, JAVA_LONG, JAVA_INT, JAVA_LONG));
+    @SuppressWarnings("restricted") //
+    private static final MethodHandle DLERROR = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG));
 
     private static MemorySegment dlopenPtr;
     private static MemorySegment dlclosePtr;
     private static MemorySegment dlsymPtr;
+    private static MemorySegment dlerrorPtr;
     private static MemorySegment loadLibraryExPtr;
     private static MemorySegment freeLibraryPtr;
     private static MemorySegment getProcAddressPtr;
+    private static MemorySegment getLastErrorPtr;
+    private static MemorySegment formatMessagePtr;
     private static Arena windowsLookupArena;
     private static SymbolLookup windowsLookup;
 
@@ -156,6 +177,8 @@ public final class NfiContext {
             if (loadLibraryExPtr != null) {
                 assert freeLibraryPtr != null;
                 assert getProcAddressPtr != null;
+                assert getLastErrorPtr != null;
+                assert formatMessagePtr != null;
                 return;
             }
             if (windowsLookup == null) {
@@ -165,11 +188,74 @@ public final class NfiContext {
             loadLibraryExPtr = windowsLookup.find("LoadLibraryExW").orElseThrow();
             freeLibraryPtr = windowsLookup.find("FreeLibrary").orElseThrow();
             getProcAddressPtr = windowsLookup.find("GetProcAddress").orElseThrow();
+            getLastErrorPtr = windowsLookup.find("GetLastError").orElseThrow();
+            formatMessagePtr = windowsLookup.find("FormatMessageW").orElseThrow();
             return;
         }
         dlopenPtr = Linker.nativeLinker().defaultLookup().find("dlopen").orElseThrow();
         dlclosePtr = Linker.nativeLinker().defaultLookup().find("dlclose").orElseThrow();
         dlsymPtr = Linker.nativeLinker().defaultLookup().find("dlsym").orElseThrow();
+        dlerrorPtr = Linker.nativeLinker().defaultLookup().find("dlerror").orElseThrow();
+    }
+
+    private static int sanitizeWindowsLoadLibraryFlags(int flags) {
+        return flags & WINDOWS_LOAD_LIBRARY_SEARCH_MASK;
+    }
+
+    @TruffleBoundary
+    private static NfiLoadException createLoadLibraryException() {
+        if (IS_WINDOWS) {
+            int errorCode = getLastError();
+            String detail = formatWindowsError(errorCode);
+            if (detail == null || detail.isBlank()) {
+                return new NfiLoadException("Windows error " + errorCode);
+            }
+            return new NfiLoadException("Windows error " + errorCode + ": " + detail);
+        }
+        String detail = getDlError();
+        if (detail == null || detail.isBlank()) {
+            return new NfiLoadException("dlopen failed");
+        }
+        return new NfiLoadException(detail);
+    }
+
+    private static int getLastError() {
+        try {
+            return (int) GET_LAST_ERROR.invokeExact(getLastErrorPtr);
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    private static String getDlError() {
+        try {
+            long ptr = (long) DLERROR.invokeExact(dlerrorPtr);
+            if (ptr == 0) {
+                return null;
+            }
+            return NativeMemory.zeroTerminatedUtf8ToJavaString(ptr);
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
+
+    private static String formatWindowsError(int errorCode) {
+        long buffer = NativeMemory.callocShortArray(FORMAT_MESSAGE_BUFFER_CHARS);
+        try {
+            int result;
+            try {
+                result = (int) FORMAT_MESSAGE.invokeExact(formatMessagePtr, FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0L, errorCode, 0, buffer,
+                                FORMAT_MESSAGE_BUFFER_CHARS, 0L);
+            } catch (Throwable e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            if (result == 0) {
+                return null;
+            }
+            return NativeMemory.zeroTerminatedUtf16ToJavaString(buffer).stripTrailing();
+        } finally {
+            NativeMemory.free(buffer);
+        }
     }
 
     static FunctionDescriptor createFunctionDescriptor(NfiType resType, NfiType[] argTypes) {

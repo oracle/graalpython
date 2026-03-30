@@ -322,6 +322,26 @@ public final class NativeMemory {
         return ptr;
     }
 
+    static String zeroTerminatedUtf8ToJavaString(long ptr) {
+        int len = 0;
+        while (UNSAFE.getByte(ptr + len) != 0) {
+            len++;
+        }
+        byte[] bytes = new byte[len];
+        UNSAFE.copyMemory(null, ptr, bytes, UNSAFE.arrayBaseOffset(byte[].class), len);
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    static String zeroTerminatedUtf16ToJavaString(long ptr) {
+        int len = 0;
+        while (UNSAFE.getShort(ptr + len) != 0) {
+            len += Short.BYTES;
+        }
+        byte[] bytes = new byte[len];
+        UNSAFE.copyMemory(null, ptr, bytes, UNSAFE.arrayBaseOffset(byte[].class), len);
+        return new String(bytes, StandardCharsets.UTF_16LE);
+    }
+
     private static boolean canMultiplyWithoutOverflow(long value, int stride) {
         assert value >= 0 : "Value must be non-negative";
         assert stride > 0 && (stride & (stride - 1)) == 0 : "Stride must be a power of two";

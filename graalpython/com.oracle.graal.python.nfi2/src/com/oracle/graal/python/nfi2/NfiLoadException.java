@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,19 +40,10 @@
  */
 package com.oracle.graal.python.nfi2;
 
-public final class NfiContext {
+public final class NfiLoadException extends Exception {
+    private static final long serialVersionUID = 8768143107513538801L;
 
-    // never instantiated on JDK <= 21
-    private NfiContext() {
-    }
-
-    @SuppressWarnings("static-method")
-    public void close() {
-        throw new UnsupportedOperationException();
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    public NfiLibrary loadLibrary(String name, int flags) throws NfiLoadException {
-        throw new UnsupportedOperationException();
+    public NfiLoadException(String message) {
+        super(message);
     }
 }
