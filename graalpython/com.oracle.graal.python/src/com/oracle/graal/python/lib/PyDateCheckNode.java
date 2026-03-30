@@ -38,44 +38,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules.datetime;
+package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.datetime.PDate;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
-public class TzInfoNodes {
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class TzInfoCheckNode extends Node {
-        public abstract boolean execute(Node inliningTarget, Object obj);
+/** Equivalent of CPython's {@code PyDate_Check}. */
+@GenerateUncached
+@GenerateInline
+@GenerateCached(false)
+public abstract class PyDateCheckNode extends Node {
+    public static boolean executeUncached(Object object) {
+        return PyDateCheckNodeGen.getUncached().execute(null, object);
+    }
 
-        public static boolean executeUncached(Object obj) {
-            return TzInfoNodesFactory.TzInfoCheckNodeGen.getUncached().execute(null, obj);
-        }
+    public abstract boolean execute(Node inliningTarget, Object object);
 
-        @Specialization
-        static boolean doManaged(@SuppressWarnings("unused") PTzInfo value) {
-            return true;
-        }
+    @Specialization
+    static boolean doManaged(@SuppressWarnings("unused") PDate value) {
+        return true;
+    }
 
-        @Specialization
-        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
-            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PTzInfo);
-        }
+    @Specialization
+    static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                    @Cached IsBuiltinObjectProfile profile) {
+        return profile.profileObject(inliningTarget, value, com.oracle.graal.python.builtins.PythonBuiltinClassType.PDate);
+    }
 
-        @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object value) {
-            return false;
-        }
+    @Specialization(guards = "isForeignObjectNode.execute(inliningTarget, value)", limit = "1")
+    static boolean doForeign(Node inliningTarget, Object value,
+                    @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                    @CachedLibrary("value") InteropLibrary interop) {
+        return interop.isDate(value);
+    }
+
+    @Fallback
+    static boolean doOther(@SuppressWarnings("unused") Object value) {
+        return false;
     }
 }

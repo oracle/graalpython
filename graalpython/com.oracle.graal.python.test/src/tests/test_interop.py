@@ -114,6 +114,8 @@ class InteropTests(unittest.TestCase):
             polyglot.ForeignObject,
             polyglot.ForeignList,
             polyglot.ForeignBoolean,
+            polyglot.ForeignDate,
+            polyglot.ForeignDateTime,
             polyglot.ForeignException,
             polyglot.ForeignExecutable,
             polyglot.ForeignDict,
@@ -124,6 +126,8 @@ class InteropTests(unittest.TestCase):
             polyglot.ForeignNone,
             polyglot.ForeignNumber,
             polyglot.ForeignString,
+            polyglot.ForeignTime,
+            polyglot.ForeignTimeZone,
         ]
 
         for c in classes:
@@ -131,7 +135,16 @@ class InteropTests(unittest.TestCase):
             if c is polyglot.ForeignBoolean:
                 self.assertIs(c.__base__, polyglot.ForeignNumber)
             elif c is not polyglot.ForeignObject:
-                self.assertIs(c.__base__, polyglot.ForeignObject)
+                if c is polyglot.ForeignDate:
+                    self.assertIs(c.__base__, __import__("datetime").date)
+                elif c is polyglot.ForeignTime:
+                    self.assertIs(c.__base__, __import__("datetime").time)
+                elif c is polyglot.ForeignDateTime:
+                    self.assertIs(c.__base__, __import__("datetime").datetime)
+                elif c is polyglot.ForeignTimeZone:
+                    self.assertIs(c.__base__, __import__("datetime").tzinfo)
+                else:
+                    self.assertIs(c.__base__, polyglot.ForeignObject)
 
     def test_get_class(self):
         def wrap(obj):
@@ -155,6 +168,7 @@ class InteropTests(unittest.TestCase):
         self.assertEqual(t("abc"), polyglot.ForeignString)
 
         from java.lang import Object, Boolean, Integer, Throwable, Thread, Number, String
+        from java.time import LocalDate, LocalDateTime, LocalTime, ZoneId
         from java.util import ArrayList, HashMap, ArrayDeque
         from java.math import BigInteger
         null = Integer.getInteger("something_that_does_not_exists")
@@ -172,6 +186,19 @@ class InteropTests(unittest.TestCase):
         self.assertEqual(type(null), polyglot.ForeignNone)
         self.assertEqual(type(BigInteger.valueOf(42)), polyglot.ForeignNumber)
         self.assertEqual(type(wrap(String("abc"))), polyglot.ForeignString)
+        local_date = LocalDate.of(2025, 3, 23)
+        self.assertIsInstance(local_date, polyglot.ForeignDate)
+        self.assertIsInstance(local_date, __import__("datetime").date)
+
+        local_time = LocalTime.of(7, 8, 9)
+        self.assertIsInstance(local_time, polyglot.ForeignTime)
+        self.assertIsInstance(local_time, __import__("datetime").time)
+
+        local_date_time = LocalDateTime.of(2025, 3, 23, 7, 8, 9)
+        self.assertIsInstance(local_date_time, polyglot.ForeignDateTime)
+        self.assertIsInstance(local_date_time, __import__("datetime").datetime)
+
+        self.assertEqual(type(ZoneId.of("UTC")), polyglot.ForeignTimeZone)
 
     def test_import(self):
         def some_function():
@@ -185,6 +212,146 @@ class InteropTests(unittest.TestCase):
         imported_fun1 = polyglot.import_value("same_function")
         assert imported_fun1 is some_function
         assert imported_fun1() == "hello, polyglot world!"
+
+    def test_foreign_date_behavior(self):
+        import datetime
+        import java
+
+        LocalDate = java.type("java.time.LocalDate")
+
+        d = LocalDate.of(2025, 3, 23)
+        self.assertEqual(d.year, 2025)
+        self.assertEqual(d.month, 3)
+        self.assertEqual(d.day, 23)
+        self.assertEqual(str(d), "2025-03-23")
+        self.assertEqual(d.isoformat(), "2025-03-23")
+        self.assertEqual(d.ctime(), datetime.date(2025, 3, 23).ctime())
+        self.assertEqual(d.strftime("%Y-%m-%d"), "2025-03-23")
+        self.assertEqual(format(d, "%Y-%m-%d"), "2025-03-23")
+        self.assertEqual(d.toordinal(), datetime.date(2025, 3, 23).toordinal())
+        self.assertEqual(d.weekday(), datetime.date(2025, 3, 23).weekday())
+        self.assertEqual(d.isoweekday(), datetime.date(2025, 3, 23).isoweekday())
+        self.assertEqual(d.isocalendar(), datetime.date(2025, 3, 23).isocalendar())
+        self.assertEqual(d.timetuple(), datetime.date(2025, 3, 23).timetuple())
+        self.assertEqual(hash(d), hash(datetime.date(2025, 3, 23)))
+        self.assertEqual(d, datetime.date(2025, 3, 23))
+        self.assertEqual(d, LocalDate.of(2025, 3, 23))
+        self.assertEqual(d.replace(day=24), datetime.date(2025, 3, 24))
+        self.assertEqual(d + datetime.timedelta(days=1), datetime.date(2025, 3, 24))
+        self.assertEqual(d - datetime.timedelta(days=1), datetime.date(2025, 3, 22))
+        self.assertEqual(d - datetime.date(2025, 3, 20), datetime.timedelta(days=3))
+        self.assertEqual(d - LocalDate.of(2025, 3, 20), datetime.timedelta(days=3))
+
+    def test_foreign_time_behavior(self):
+        import datetime
+        import java
+
+        LocalTime = java.type("java.time.LocalTime")
+
+        t = LocalTime.of(7, 8, 9)
+        self.assertEqual(t.hour, 7)
+        self.assertEqual(t.minute, 8)
+        self.assertEqual(t.second, 9)
+        self.assertEqual(t.microsecond, 0)
+        self.assertEqual(str(t), "07:08:09")
+        self.assertEqual(t.isoformat(), "07:08:09")
+        self.assertEqual(t.strftime("%H:%M:%S"), "07:08:09")
+        self.assertEqual(format(t, "%H:%M:%S"), "07:08:09")
+        self.assertEqual(hash(t), hash(datetime.time(7, 8, 9)))
+        self.assertEqual(t, datetime.time(7, 8, 9))
+        self.assertEqual(t, LocalTime.of(7, 8, 9))
+        self.assertEqual(t.replace(second=10), datetime.time(7, 8, 10))
+        self.assertLess(t, datetime.time(7, 8, 10))
+        self.assertIsNone(t.tzinfo)
+        self.assertIsNone(t.utcoffset())
+        self.assertIsNone(t.dst())
+        self.assertIsNone(t.tzname())
+
+    def test_foreign_datetime_behavior(self):
+        import datetime
+        import java
+
+        LocalDateTime = java.type("java.time.LocalDateTime")
+        ZonedDateTime = java.type("java.time.ZonedDateTime")
+        ZoneId = java.type("java.time.ZoneId")
+
+        dt = LocalDateTime.of(2025, 3, 23, 7, 8, 9)
+        self.assertEqual(dt.year, 2025)
+        self.assertEqual(dt.month, 3)
+        self.assertEqual(dt.day, 23)
+        self.assertEqual(dt.hour, 7)
+        self.assertEqual(dt.minute, 8)
+        self.assertEqual(dt.second, 9)
+        self.assertEqual(dt.microsecond, 0)
+        self.assertEqual(str(dt), "2025-03-23 07:08:09")
+        self.assertEqual(dt.isoformat(), "2025-03-23T07:08:09")
+        self.assertEqual(dt.date(), datetime.date(2025, 3, 23))
+        self.assertEqual(dt.time(), datetime.time(7, 8, 9))
+        self.assertEqual(dt.timetz(), datetime.time(7, 8, 9))
+        self.assertEqual(dt.timetuple(), datetime.datetime(2025, 3, 23, 7, 8, 9).timetuple())
+        self.assertEqual(hash(dt), hash(datetime.datetime(2025, 3, 23, 7, 8, 9)))
+        self.assertEqual(dt, datetime.datetime(2025, 3, 23, 7, 8, 9))
+        self.assertEqual(dt, LocalDateTime.of(2025, 3, 23, 7, 8, 9))
+        self.assertEqual(dt.replace(minute=9), datetime.datetime(2025, 3, 23, 7, 9, 9))
+        self.assertEqual(dt + datetime.timedelta(days=1), datetime.datetime(2025, 3, 24, 7, 8, 9))
+        self.assertEqual(dt - datetime.timedelta(days=1), datetime.datetime(2025, 3, 22, 7, 8, 9))
+        self.assertEqual(dt - datetime.datetime(2025, 3, 20, 7, 8, 9), datetime.timedelta(days=3))
+        self.assertLess(dt, datetime.datetime(2025, 3, 23, 7, 8, 10))
+        self.assertIsNone(dt.tzinfo)
+        self.assertIsNone(dt.utcoffset())
+        self.assertIsNone(dt.dst())
+        self.assertIsNone(dt.tzname())
+
+        berlin = ZoneId.of("Europe/Berlin")
+        zoned_dt = ZonedDateTime.of(2025, 3, 23, 7, 8, 9, 0, berlin)
+        self.assertIsInstance(zoned_dt.tzinfo, datetime.tzinfo)
+        self.assertEqual(zoned_dt.utcoffset(), datetime.timedelta(hours=1))
+        self.assertEqual(zoned_dt.dst(), datetime.timedelta())
+        self.assertEqual(zoned_dt.tzname(), "CET")
+        self.assertEqual(zoned_dt.isoformat(), "2025-03-23T07:08:09+01:00")
+
+    def test_foreign_timezone_behavior(self):
+        import datetime
+        import java
+
+        ZoneId = java.type("java.time.ZoneId")
+        ZonedDateTime = java.type("java.time.ZonedDateTime")
+
+        utc = ZoneId.of("UTC")
+        self.assertIsInstance(utc, datetime.tzinfo)
+        self.assertEqual(str(utc), "UTC")
+        self.assertEqual(utc.tzname(None), "UTC")
+        self.assertEqual(utc.utcoffset(None), datetime.timedelta())
+        self.assertIsNone(utc.dst(None))
+
+        aware = datetime.datetime(2025, 3, 23, 7, 8, 9, tzinfo=utc)
+        self.assertIs(aware.tzinfo, utc)
+        self.assertEqual(aware.utcoffset(), datetime.timedelta())
+        self.assertEqual(aware.tzname(), "UTC")
+        self.assertEqual(aware.isoformat(), "2025-03-23T07:08:09+00:00")
+
+        berlin = ZoneId.of("Europe/Berlin")
+        self.assertIsInstance(berlin, datetime.tzinfo)
+        self.assertIsNone(berlin.utcoffset(None))
+        self.assertIsNone(berlin.dst(None))
+        self.assertIsNone(berlin.tzname(None))
+
+        local = datetime.datetime(2025, 3, 23, 7, 8, 9, tzinfo=berlin)
+        self.assertIs(local.tzinfo, berlin)
+        self.assertEqual(local.utcoffset(), datetime.timedelta(hours=1))
+        self.assertEqual(local.dst(), datetime.timedelta())
+        self.assertEqual(local.tzname(), "CET")
+        self.assertEqual(berlin.fromutc(datetime.datetime(2025, 3, 23, 6, 8, 9, tzinfo=berlin)),
+                         datetime.datetime(2025, 3, 23, 7, 8, 9, tzinfo=berlin))
+
+        foreign_aware = ZonedDateTime.of(2025, 3, 23, 6, 8, 9, 0, berlin)
+        self.assertEqual(berlin.fromutc(foreign_aware),
+                         datetime.datetime(2025, 3, 23, 7, 8, 9, tzinfo=berlin))
+
+        overlap = berlin.fromutc(datetime.datetime(2025, 10, 26, 1, 30, tzinfo=berlin))
+        self.assertEqual(overlap, datetime.datetime(2025, 10, 26, 2, 30, tzinfo=berlin, fold=1))
+        self.assertEqual(overlap.fold, 1)
+        self.assertEqual(overlap.utcoffset(), datetime.timedelta(hours=1))
 
     def test_read(self):
         o = CustomObject()

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,13 +42,18 @@ package com.oracle.graal.python.builtins.modules.datetime;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.TimeDeltaValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyDeltaCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -72,8 +77,8 @@ public class TimeZoneNodes {
 
         @Specialization
         static PTimeZone newTimezone(Node inliningTarget, PythonContext context, Object cls, Object offsetObj, Object nameObject,
-                        @Cached TimeDeltaNodes.TimeDeltaCheckNode timeDeltaCheckNode,
-                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode,
+                        @Bind PythonLanguage language,
+                        @Cached PyDeltaCheckNode timeDeltaCheckNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -86,7 +91,14 @@ public class TimeZoneNodes {
                                 "datetime.timedelta",
                                 offsetObj);
             }
-            PTimeDelta offset = asManagedTimeDeltaNode.execute(inliningTarget, offsetObj);
+            PTimeDelta offset;
+            if (offsetObj instanceof PTimeDelta value) {
+                offset = value;
+            } else {
+                TimeDeltaValue offsetValue = TemporalValueNodes.GetTimeDeltaValue.executeUncached(inliningTarget, offsetObj);
+                PythonBuiltinClassType tdcls = PythonBuiltinClassType.PTimeDelta;
+                offset = new PTimeDelta(tdcls, tdcls.getInstanceShape(language), offsetValue.days, offsetValue.seconds, offsetValue.microseconds);
+            }
             final TruffleString name;
             if (nameObject == PNone.NO_VALUE) {
                 name = null;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,8 +95,12 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
         // Interop types first as they are the most concrete/specific types
         NULL("None", PythonBuiltinClassType.PNone),
         BOOLEAN("Boolean", PythonBuiltinClassType.ForeignBoolean),
+        DATE("Date", PythonBuiltinClassType.ForeignDate),
+        DATETIME("DateTime", PythonBuiltinClassType.ForeignDateTime),
         NUMBER("Number", PythonBuiltinClassType.ForeignNumber), // int, float, complex
         STRING("String", PythonBuiltinClassType.PString),
+        TIME("Time", PythonBuiltinClassType.ForeignTime),
+        TIME_ZONE("TimeZone", PythonBuiltinClassType.ForeignTimeZone),
         EXCEPTION("Exception", PythonBuiltinClassType.PBaseException),
         META_OBJECT("AbstractClass", PythonBuiltinClassType.ForeignAbstractClass),
 
@@ -154,9 +158,16 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     }
 
     protected static int getTraits(Object object, InteropLibrary interop) {
+        // Temporal types are a bit special since some traits should exclude each other to match
+        // the split in Python's datetime module
+        boolean isDate = interop.isDate(object);
+        boolean isTime = interop.isTime(object);
+        boolean isTimeZone = interop.isTimeZone(object);
         // Alphabetic order here as it does not matter
         return (interop.hasArrayElements(object) ? Trait.ARRAY.bit : 0) +
                         (interop.isBoolean(object) ? Trait.BOOLEAN.bit : 0) +
+                        (isDate && isTime ? Trait.DATETIME.bit : 0) +
+                        (isDate && !isTime ? Trait.DATE.bit : 0) +
                         (interop.isException(object) ? Trait.EXCEPTION.bit : 0) +
                         (interop.isExecutable(object) ? Trait.EXECUTABLE.bit : 0) +
                         (interop.hasHashEntries(object) ? Trait.HASH.bit : 0) +
@@ -166,7 +177,9 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
                         (interop.isMetaObject(object) ? Trait.META_OBJECT.bit : 0) +
                         (interop.isNull(object) ? Trait.NULL.bit : 0) +
                         (interop.isNumber(object) ? Trait.NUMBER.bit : 0) +
-                        (interop.isString(object) ? Trait.STRING.bit : 0);
+                        (interop.isString(object) ? Trait.STRING.bit : 0) +
+                        (!isDate && isTime ? Trait.TIME.bit : 0) +
+                        (!isDate && !isTime && isTimeZone ? Trait.TIME_ZONE.bit : 0);
     }
 
     private PythonManagedClass classForTraits(PythonContext context, int traits) {

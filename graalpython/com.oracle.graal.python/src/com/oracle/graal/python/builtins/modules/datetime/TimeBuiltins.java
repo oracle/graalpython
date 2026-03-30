@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.TimeValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -88,6 +89,8 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.PyTZInfoCheckNode;
+import com.oracle.graal.python.lib.PyTimeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -98,6 +101,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -200,7 +204,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
             if (naiveBytesCheck(bytes)) {
                 // slightly different error message
-                if (tzInfo != PNone.NO_VALUE && !TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
+                if (tzInfo != PNone.NO_VALUE && !PyTZInfoCheckNode.executeUncached(tzInfo)) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BAD_TZINFO_STATE_ARG);
                 }
 
@@ -255,10 +259,12 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         @Specialization
         static TruffleString repr(VirtualFrame frame, Object self,
+                        @Bind Node inliningTarget,
+                        @Cached TimeNodes.TzInfoNode tzInfoNode,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return reprBoundary(self);
+                return reprBoundary(inliningTarget, self, tzInfoNode.execute(inliningTarget, self));
             } finally {
                 // A Python method call (using PyObjectReprAsObjectNode) should be
                 // connected to a current node.
@@ -267,8 +273,8 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static TruffleString reprBoundary(Object selfObj) {
-            PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);
+        private static TruffleString reprBoundary(Node inliningTarget, Object selfObj, Object tzInfo) {
+            TimeValue self = TemporalValueNodes.GetTimeValue.executeUncached(null, selfObj);
             var builder = new StringBuilder();
 
             TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
@@ -280,10 +286,10 @@ public final class TimeBuiltins extends PythonBuiltins {
                 builder.append(PythonUtils.formatJString(", %d", self.second));
             }
 
-            if (self.tzInfo != null) {
+            if (tzInfo != null) {
                 builder.append(", tzinfo=");
 
-                Object tzinfoReprObject = PyObjectReprAsObjectNode.executeUncached(self.tzInfo);
+                Object tzinfoReprObject = PyObjectReprAsObjectNode.executeUncached(tzInfo);
                 String tzinfoRepr = CastToJavaStringNode.getUncached().execute(tzinfoReprObject);
                 builder.append(tzinfoRepr);
             }
@@ -306,9 +312,11 @@ public final class TimeBuiltins extends PythonBuiltins {
         static Object reduce(Object self,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TimeNodes.AsManagedTimeNode asManagedTimeNode,
+                        @Cached TemporalValueNodes.GetTimeValue asManagedTimeNode,
+                        @Cached TimeNodes.TzInfoNode tzInfoNode,
                         @Cached GetClassNode getClassNode) {
-            PTime time = asManagedTimeNode.execute(inliningTarget, self);
+            TimeValue time = asManagedTimeNode.execute(inliningTarget, self);
+            Object tzInfo = tzInfoNode.execute(inliningTarget, self);
             // Time is serialized in the following format:
             // (
             // bytes(hours, minutes, seconds, microseconds 1st byte, microseconds 2nd byte,
@@ -327,8 +335,8 @@ public final class TimeBuiltins extends PythonBuiltins {
             PBytes baseState = PFactory.createBytes(language, baseStateBytes);
 
             final PTuple arguments;
-            if (time.tzInfo != null) {
-                arguments = PFactory.createTuple(language, new Object[]{baseState, time.tzInfo});
+            if (tzInfo != null) {
+                arguments = PFactory.createTuple(language, new Object[]{baseState, tzInfo});
             } else {
                 arguments = PFactory.createTuple(language, new Object[]{baseState});
             }
@@ -346,9 +354,11 @@ public final class TimeBuiltins extends PythonBuiltins {
         static Object reduceEx(Object self, int protocol,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TimeNodes.AsManagedTimeNode asManagedTimeNode,
+                        @Cached TemporalValueNodes.GetTimeValue asManagedTimeNode,
+                        @Cached TimeNodes.TzInfoNode tzInfoNode,
                         @Cached GetClassNode getClassNode) {
-            PTime time = asManagedTimeNode.execute(inliningTarget, self);
+            TimeValue time = asManagedTimeNode.execute(inliningTarget, self);
+            Object tzInfo = tzInfoNode.execute(inliningTarget, self);
             byte[] baseStateBytes = new byte[6];
             baseStateBytes[0] = (byte) time.hour;
             baseStateBytes[1] = (byte) time.minute;
@@ -364,8 +374,8 @@ public final class TimeBuiltins extends PythonBuiltins {
             PBytes baseState = PFactory.createBytes(language, baseStateBytes);
 
             final PTuple arguments;
-            if (time.tzInfo != null) {
-                arguments = PFactory.createTuple(language, new Object[]{baseState, time.tzInfo});
+            if (tzInfo != null) {
+                arguments = PFactory.createTuple(language, new Object[]{baseState, tzInfo});
             } else {
                 arguments = PFactory.createTuple(language, new Object[]{baseState});
             }
@@ -382,10 +392,11 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object richCmp(VirtualFrame frame, Object self, Object other, RichCmpOp op,
                         @Bind Node inliningTarget,
+                        @Cached TimeNodes.TzInfoNode tzInfoNode,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return richCmpBoundary(self, other, op, inliningTarget);
+                return richCmpBoundary(self, other, op, inliningTarget, tzInfoNode);
             } finally {
                 // A Python method call (using DatetimeModuleBuiltins.callUtcOffset)
                 // should be connected to a current node.
@@ -394,19 +405,21 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object richCmpBoundary(Object selfObj, Object otherObj, RichCmpOp op, Node inliningTarget) {
-            if (!TimeNodes.TimeCheckNode.executeUncached(selfObj) || !TimeNodes.TimeCheckNode.executeUncached(otherObj)) {
+        private static Object richCmpBoundary(Object selfObj, Object otherObj, RichCmpOp op, Node inliningTarget, TimeNodes.TzInfoNode tzInfoNode) {
+            if (!PyTimeCheckNode.executeUncached(selfObj) || !PyTimeCheckNode.executeUncached(otherObj)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);
-            PTime other = TimeNodes.AsManagedTimeNode.executeUncached(otherObj);
+            TimeValue self = TemporalValueNodes.GetTimeValue.executeUncached(inliningTarget, selfObj);
+            TimeValue other = TemporalValueNodes.GetTimeValue.executeUncached(inliningTarget, otherObj);
+            Object selfTzInfo = tzInfoNode.execute(inliningTarget, selfObj);
+            Object otherTzInfo = tzInfoNode.execute(inliningTarget, otherObj);
             // either naive times (without timezone) or timezones are exactly the same objects
-            if (self.tzInfo == other.tzInfo) {
+            if (selfTzInfo == otherTzInfo) {
                 return compareTimeComponents(self, other, op);
             }
 
-            PTimeDelta selfUtcOffset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, PNone.NONE, inliningTarget);
-            PTimeDelta otherUtcOffset = DatetimeModuleBuiltins.callUtcOffset(other.tzInfo, PNone.NONE, inliningTarget);
+            PTimeDelta selfUtcOffset = DatetimeModuleBuiltins.callUtcOffset(selfTzInfo, PNone.NONE, inliningTarget);
+            PTimeDelta otherUtcOffset = DatetimeModuleBuiltins.callUtcOffset(otherTzInfo, PNone.NONE, inliningTarget);
 
             if (Objects.equals(selfUtcOffset, otherUtcOffset)) {
                 return compareTimeComponents(self, other, op);
@@ -432,7 +445,7 @@ public final class TimeBuiltins extends PythonBuiltins {
             return op.compareResultToBool(result);
         }
 
-        private static boolean compareTimeComponents(PTime self, PTime other, RichCmpOp op) {
+        private static boolean compareTimeComponents(TimeValue self, TimeValue other, RichCmpOp op) {
             // compare only hours, minutes, ... and ignore fold
             int[] selfComponents = new int[]{self.hour, self.minute, self.second, self.microsecond};
             int[] otherComponents = new int[]{other.hour, other.minute, other.second, other.microsecond};
@@ -451,12 +464,14 @@ public final class TimeBuiltins extends PythonBuiltins {
         static long hash(VirtualFrame frame, Object selfObj,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TimeNodes.AsManagedTimeNode asManagedTimeNode,
+                        @Cached TemporalValueNodes.GetTimeValue asManagedTimeNode,
+                        @Cached TimeNodes.TzInfoNode tzInfoNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectHashNode hashNode) {
-            PTime self = asManagedTimeNode.execute(inliningTarget, selfObj);
-            PTimeDelta utcOffset = DatetimeModuleBuiltins.callUtcOffset(self.tzInfo, PNone.NONE, frame, inliningTarget, callMethodObjArgs, raiseNode);
+            TimeValue self = asManagedTimeNode.execute(inliningTarget, selfObj);
+            Object tzInfo = tzInfoNode.execute(inliningTarget, selfObj);
+            PTimeDelta utcOffset = DatetimeModuleBuiltins.callUtcOffset(tzInfo, PNone.NONE, frame, inliningTarget, callMethodObjArgs, raiseNode);
 
             if (utcOffset == null) {
                 var content = new int[]{self.hour, self.minute, self.second, self.microsecond};
@@ -482,7 +497,14 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getHour(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getHour(self, readNode);
+            return TimeNodes.FromNative.getHour(self, readNode);
+        }
+
+        @Specialization
+        static int getHour(Object self,
+                        @Bind Node inliningTarget,
+                        @Cached TemporalValueNodes.GetTimeValue readTimeValueNode) {
+            return readTimeValueNode.execute(inliningTarget, self).hour;
         }
     }
 
@@ -498,7 +520,14 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getMinute(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getMinute(self, readNode);
+            return TimeNodes.FromNative.getMinute(self, readNode);
+        }
+
+        @Specialization
+        static int getMinute(Object self,
+                        @Bind Node inliningTarget,
+                        @Cached TemporalValueNodes.GetTimeValue readTimeValueNode) {
+            return readTimeValueNode.execute(inliningTarget, self).minute;
         }
     }
 
@@ -514,7 +543,14 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getSecond(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getSecond(self, readNode);
+            return TimeNodes.FromNative.getSecond(self, readNode);
+        }
+
+        @Specialization
+        static int getSecond(Object self,
+                        @Bind Node inliningTarget,
+                        @Cached TemporalValueNodes.GetTimeValue readTimeValueNode) {
+            return readTimeValueNode.execute(inliningTarget, self).second;
         }
     }
 
@@ -530,7 +566,14 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getMicrosecond(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getMicrosecond(self, readNode);
+            return TimeNodes.FromNative.getMicrosecond(self, readNode);
+        }
+
+        @Specialization
+        static int getMicrosecond(Object self,
+                        @Bind Node inliningTarget,
+                        @Cached TemporalValueNodes.GetTimeValue readTimeValueNode) {
+            return readTimeValueNode.execute(inliningTarget, self).microsecond;
         }
     }
 
@@ -559,7 +602,14 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getFold(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.AsManagedTimeNode.getFold(self, readNode);
+            return TimeNodes.FromNative.getFold(self, readNode);
+        }
+
+        @Specialization
+        static int getFold(Object self,
+                        @Bind Node inliningTarget,
+                        @Cached TemporalValueNodes.GetTimeValue readTimeValueNode) {
+            return readTimeValueNode.execute(inliningTarget, self).fold;
         }
     }
 
@@ -946,11 +996,13 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static Object replace(VirtualFrame frame, Object self, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject,
                         @Bind Node inliningTarget,
-                        @Cached TimeNodes.AsManagedTimeNode asManagedTimeNode,
+                        @Cached TemporalValueNodes.GetTimeValue asManagedTimeNode,
                         @Cached PyLongAsLongNode asLongNode,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @Cached TimeNodes.TzInfoNode tzInfoNode,
                         @Cached GetClassNode getClassNode,
                         @Cached TimeNodes.NewNode newTimeNode) {
-            PTime time = asManagedTimeNode.execute(inliningTarget, self);
+            TimeValue time = asManagedTimeNode.execute(inliningTarget, self);
             final long hour, minute, second, microsecond, fold;
             final Object tzInfo;
 
@@ -979,7 +1031,7 @@ public final class TimeBuiltins extends PythonBuiltins {
             }
 
             if (tzInfoObject == PNone.NO_VALUE) {
-                tzInfo = time.tzInfo;
+                tzInfo = tzInfoNode.execute(inliningTarget, self);
             } else if (tzInfoObject == PNone.NONE) {
                 tzInfo = null;
             } else {
@@ -992,7 +1044,7 @@ public final class TimeBuiltins extends PythonBuiltins {
                 fold = asLongNode.execute(frame, inliningTarget, foldObject);
             }
 
-            Object type = getClassNode.execute(inliningTarget, self);
+            Object type = getResultTimeType(self, inliningTarget, isForeignObjectNode, getClassNode);
             return newTimeNode.execute(inliningTarget, type, hour, minute, second, microsecond, tzInfo, fold);
         }
     }
@@ -1004,10 +1056,11 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString isoFormat(VirtualFrame frame, Object self, Object timespecObject,
                         @Bind Node inliningTarget,
+                        @Cached TimeNodes.TzInfoNode tzInfoNode,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return isoFormatBoundary(self, timespecObject, inliningTarget);
+                return isoFormatBoundary(self, timespecObject, inliningTarget, tzInfoNode.execute(inliningTarget, self));
             } finally {
                 // A Python method call (using PyObjectCallMethodObjArgs and
                 // DatetimeModuleBuiltins.callUtcOffset) should be connected to a
@@ -1017,8 +1070,8 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static TruffleString isoFormatBoundary(Object selfObj, Object timespecObject, Node inliningTarget) {
-            PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);
+        private static TruffleString isoFormatBoundary(Object selfObj, Object timespecObject, Node inliningTarget, Object tzInfo) {
+            TimeValue self = TemporalValueNodes.GetTimeValue.executeUncached(inliningTarget, selfObj);
             var builder = new StringBuilder();
 
             final String timespec;
@@ -1075,7 +1128,7 @@ public final class TimeBuiltins extends PythonBuiltins {
                                     ErrorMessages.UNKNOWN_TIMESPEC_VALUE);
             }
 
-            Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(self.tzInfo, PNone.NONE, true, inliningTarget);
+            Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(tzInfo, PNone.NONE, true, inliningTarget);
             builder.append(utcOffsetString);
 
             return FromJavaStringNode.getUncached().execute(builder.toString(), TS_ENCODING);
@@ -1170,10 +1223,11 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString strftime(VirtualFrame frame, Object self, TruffleString format,
                         @Bind Node inliningTarget,
+                        @Cached TimeNodes.TzInfoNode tzInfoNode,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return strftimeBoundary(self, format, inliningTarget);
+                return strftimeBoundary(self, format, inliningTarget, tzInfoNode.execute(inliningTarget, self));
             } finally {
                 // A Python method call (using PyObjectCallMethodObjArgs and
                 // DatetimeModuleBuiltins.formatUtcOffset) should be connected to a
@@ -1183,11 +1237,11 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static TruffleString strftimeBoundary(Object selfObj, TruffleString format, Node inliningTarget) {
-            PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);
+        private static TruffleString strftimeBoundary(Object selfObj, TruffleString format, Node inliningTarget, Object tzInfo) {
+            TimeValue self = TemporalValueNodes.GetTimeValue.executeUncached(inliningTarget, selfObj);
             // Reuse time.strftime(format, time_tuple) method.
             int[] timeTuple = new int[]{1900, 1, 1, self.hour, self.minute, self.second, 0, 1, -1};
-            String formatPreprocessed = preprocessFormat(format, self, inliningTarget);
+            String formatPreprocessed = preprocessFormat(format, self, inliningTarget, tzInfo);
             return TimeModuleBuiltins.StrfTimeNode.format(formatPreprocessed, timeTuple, TruffleString.FromJavaStringNode.getUncached());
         }
 
@@ -1195,7 +1249,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         // %Z so handle them here.
         // CPython: wrap_strftime()
         @TruffleBoundary
-        private static String preprocessFormat(TruffleString tsformat, PTime self, Node inliningTarget) {
+        private static String preprocessFormat(TruffleString tsformat, TimeValue self, Node inliningTarget, Object tzInfo) {
             String format = tsformat.toString();
             StringBuilder builder = new StringBuilder();
             int i = 0;
@@ -1218,13 +1272,13 @@ public final class TimeBuiltins extends PythonBuiltins {
                 char c = format.charAt(p + 1);
 
                 if (c == 'z') {
-                    Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(self.tzInfo, PNone.NONE, false, inliningTarget);
+                    Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(tzInfo, PNone.NONE, false, inliningTarget);
                     builder.append(utcOffsetString);
                     i = p + 2;
                 } else if (c == 'Z') {
-                    if (self.tzInfo != null) {
+                    if (tzInfo != null) {
                         // call tzname()
-                        Object tzNameObject = PyObjectCallMethodObjArgs.executeUncached(self.tzInfo, T_TZNAME, PNone.NONE);
+                        Object tzNameObject = PyObjectCallMethodObjArgs.executeUncached(tzInfo, T_TZNAME, PNone.NONE);
 
                         // ignore None value
                         if (tzNameObject != PNone.NONE) {
@@ -1255,7 +1309,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
                     char d = format.charAt(p + 2);
                     if (d == 'z') {
-                        Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(self.tzInfo, PNone.NONE, true, inliningTarget);
+                        Object utcOffsetString = DatetimeModuleBuiltins.formatUtcOffset(tzInfo, PNone.NONE, true, inliningTarget);
                         builder.append(utcOffsetString);
 
                         i = p + 3;
@@ -1295,7 +1349,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
     }
 
-    private static long toMicroseconds(PTime self, PTimeDelta utcOffset) {
+    private static long toMicroseconds(TimeValue self, PTimeDelta utcOffset) {
         return (long) self.hour * 3600 * 1_000_000 +
                         (long) self.minute * 60 * 1_000_000 +
                         (long) self.second * 1_000_000 +
@@ -1303,5 +1357,9 @@ public final class TimeBuiltins extends PythonBuiltins {
                         (long) utcOffset.days * 24 * 3600 * 1_000_000 -
                         (long) utcOffset.seconds * 1_000_000 -
                         (long) utcOffset.microseconds;
+    }
+
+    private static Object getResultTimeType(Object self, Node inliningTarget, IsForeignObjectNode isForeignObjectNode, GetClassNode getClassNode) {
+        return isForeignObjectNode.execute(inliningTarget, self) ? PythonBuiltinClassType.PTime : getClassNode.execute(inliningTarget, self);
     }
 }

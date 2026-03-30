@@ -150,7 +150,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private PythonObject createUCDCompatibilityObject(Python3Core core, PythonModule self) {
+    private static PythonObject createUCDCompatibilityObject(Python3Core core, PythonModule self) {
         TruffleString t_ucd = toTruffleStringUncached("UCD");
         PythonClass clazz = PFactory.createPythonClassAndFixupSlots(null, core.getLanguage(), t_ucd, PythonBuiltinClassType.PythonObject,
                         new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});

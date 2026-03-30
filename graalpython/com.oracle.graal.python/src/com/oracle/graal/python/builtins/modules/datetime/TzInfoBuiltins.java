@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
+import com.oracle.graal.python.lib.PyDateTimeCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -174,7 +175,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
         @Specialization
         static Object fromUtc(VirtualFrame frame, Object self, Object dateTime,
                         @Bind Node inliningTarget,
-                        @Cached DateTimeNodes.DateTimeCheckNode dateTimeCheckNode,
+                        @Cached PyDateTimeCheckNode dateTimeCheckNode,
                         @Cached DateTimeNodes.TzInfoNode tzInfoNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode,
