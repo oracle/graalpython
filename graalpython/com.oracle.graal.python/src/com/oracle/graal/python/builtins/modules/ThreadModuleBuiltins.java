@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___EXCEPTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -57,11 +59,20 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
@@ -76,11 +87,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleThreadBuilder;
@@ -97,6 +110,15 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(defineModule = J__THREAD)
 public final class ThreadModuleBuiltins extends PythonBuiltins {
 
+    public static final StructSequence.BuiltinTypeDescriptor EXCEPTHOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
+                    PythonBuiltinClassType.PExceptHookArgs,
+                    4,
+                    new String[]{
+                                    "exc_type", "exc_value", "exc_traceback", "thread"},
+                    new String[]{
+                                    "Exception type", "Exception value", "Exception traceback",
+                                    "Exception thread"});
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ThreadModuleBuiltinsFactory.getFactories();
@@ -106,6 +128,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         addBuiltinConstant("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
         addBuiltinConstant("TIMEOUT_MAX", TIMEOUT_MAX);
+        StructSequence.initType(core, EXCEPTHOOK_ARGS_DESC);
         core.lookupBuiltinModule(T__THREAD).setModuleState(0);
         super.initialize(core);
     }
@@ -170,6 +193,92 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
             }
             return PythonContext.get(inliningTarget).getAndSetPythonsThreadStackSize(stackSize);
+        }
+    }
+
+    @Builtin(name = "_excepthook", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetThreadExceptHookNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object getExceptHook(@SuppressWarnings("unused") PythonModule self,
+                        Object exceptHookArgs,
+                        @Bind Node inliningTarget,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectSetAttr setAttr,
+                        @Cached PyObjectStrAsTruffleStringNode strNode) {
+
+            Object argsType = GetClassNode.GetPythonObjectClassNode.executeUncached((PythonObject) exceptHookArgs);
+            if (!TypeNodes.IsSameTypeNode.executeUncached(argsType, PythonBuiltinClassType.PExceptHookArgs)) {
+                throw PRaiseNode.getUncached().raise(raiseNode, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_TYPE_MUST_BE, "_thread.excepthook", "ExceptHookArgs");
+            }
+            SequenceStorage seq = ((PTuple) exceptHookArgs).getSequenceStorage();
+            if (seq.length() != 4) {
+                throw PRaiseNode.getUncached().raise(raiseNode, PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, 4, seq.length());
+            }
+
+            Object excType = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 0);
+
+            if (TypeNodes.IsSameTypeNode.executeUncached(excType, PythonBuiltinClassType.SystemExit)) {
+                return PNone.NONE;
+            }
+            Object excValue = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 1);
+            Object excTraceback = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 2);
+            Object thread = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 3);
+
+            TruffleString name;
+
+            Object nameAttr = lookupAttr.execute(null, inliningTarget, thread, tsLiteral("_name"));
+            if (nameAttr != null && nameAttr != PNone.NONE && nameAttr != PNone.NO_VALUE) {
+                name = strNode.execute(null, inliningTarget, nameAttr);
+            } else {
+                Object getIdentBuiltin = lookupAttr.execute(null, inliningTarget, thread, tsLiteral("get_ident"));
+                Object ident = callNode.executeWithoutFrame(getIdentBuiltin);
+                name = ident != null ? strNode.execute(null, inliningTarget, ident) : tsLiteral("<unknown>");
+            }
+
+            Object sysMod = getContext().getSysModule();
+            Object stdErr = lookupAttr.execute(null, inliningTarget, sysMod, T_STDERR);
+
+            boolean stdErrInvalid = stdErr == null || stdErr == PNone.NONE || stdErr == PNone.NO_VALUE;
+
+            if (stdErrInvalid) {
+                if (thread != null && thread != PNone.NONE && thread != PNone.NO_VALUE) {
+                    stdErr = lookupAttr.execute(null, inliningTarget, thread, tsLiteral("_stderr"));
+                }
+                if (stdErr == null || stdErr == PNone.NONE || stdErr == PNone.NO_VALUE) {
+                    return PNone.NONE;
+                }
+            }
+
+            Object write = lookupAttr.execute(null, inliningTarget, stdErr, tsLiteral("write"));
+            Object flush = lookupAttr.execute(null, inliningTarget, stdErr, tsLiteral("flush"));
+
+            callNode.executeWithoutFrame(write, tsLiteral("Exception in thread "));
+            callNode.executeWithoutFrame(write, name);
+            callNode.executeWithoutFrame(write, tsLiteral(":\n"));
+            callNode.executeWithoutFrame(flush);
+
+            Object sysExcepthook = lookupAttr.execute(null, inliningTarget, sysMod, T___EXCEPTHOOK__);
+            if (sysExcepthook != PNone.NO_VALUE && sysExcepthook != PNone.NONE) {
+                if (!stdErrInvalid) {
+                    callNode.executeWithoutFrame(sysExcepthook, excType, excValue, excTraceback);
+                } else {
+                    Object oldStdErr = lookupAttr.execute(null, inliningTarget, sysMod, T_STDERR);
+                    try {
+                        setAttr.execute(inliningTarget, sysMod, T_STDERR, stdErr);
+                        callNode.executeWithoutFrame(sysExcepthook, excType, excValue, excTraceback);
+                    } finally {
+                        setAttr.execute(inliningTarget, sysMod, T_STDERR, oldStdErr == PNone.NO_VALUE ? PNone.NONE : oldStdErr);
+                    }
+                }
+                callNode.executeWithoutFrame(flush);
+            } else if (excValue instanceof PBaseException) {
+                callNode.executeWithoutFrame(write, strNode.execute(null, inliningTarget, excValue));
+                callNode.executeWithoutFrame(flush);
+            }
+            return PNone.NONE;
         }
     }
 

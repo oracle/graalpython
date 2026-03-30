@@ -989,7 +989,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
                                     UnraisableHookArgs
 
                                     Type used to pass arguments to sys.unraisablehook.""")),
+    PExceptHookArgs(
+                    "_ExceptHookArgs",
+                    PTuple,
+                    newBuilder().publishInModule(J__THREAD).slots(StructSequenceBuiltins.SLOTS, InstantiableStructSequenceBuiltins.SLOTS).doc("""
+                                    _ExceptHookArgs
 
+                                    Type used to pass arguments to _thread._excepthook.""")),
     PSSLSession("SSLSession", PythonObject, newBuilder().publishInModule(J__SSL).disallowInstantiation()),
     PSSLContext("_SSLContext", PythonObject, newBuilder().publishInModule(J__SSL).basetype().slots(SSLContextBuiltins.SLOTS)),
     PSSLSocket("_SSLSocket", PythonObject, newBuilder().publishInModule(J__SSL).basetype()),
