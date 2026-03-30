@@ -269,7 +269,6 @@ import com.oracle.graal.python.builtins.objects.foreign.ForeignInstantiableBuilt
 import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.foreign.ForeignTimeBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignTimeZoneBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
@@ -504,7 +503,6 @@ public abstract class Python3Core {
                         new ForeignNumberBuiltins(),
                         new ForeignBooleanBuiltins(),
                         new ForeignDateTimeBuiltins(),
-                        new ForeignTimeBuiltins(),
                         new ForeignTimeZoneBuiltins(),
                         new ForeignAbstractClassBuiltins(),
                         new ForeignExecutableBuiltins(),

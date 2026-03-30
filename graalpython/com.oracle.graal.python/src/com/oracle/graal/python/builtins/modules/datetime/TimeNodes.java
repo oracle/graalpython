@@ -270,6 +270,10 @@ public class TimeNodes {
     abstract static class TzInfoNode extends Node {
         public abstract Object execute(Node inliningTarget, Object obj);
 
+        public static Object executeUncached(Node inliningTarget, Object obj) {
+            return TimeNodesFactory.TzInfoNodeGen.getUncached().execute(inliningTarget, obj);
+        }
+
         @Specialization
         static Object getTzInfo(PTime self) {
             return self.tzInfo;
@@ -281,6 +285,13 @@ public class TimeNodes {
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
             return FromNative.getTzInfo(self, readByteNode, readObjectNode);
+        }
+
+        @Specialization
+        static Object getTzInfo(Node inliningTarget, Object self,
+                        @Cached TemporalValueNodes.GetTimeValue readTimeValueNode) {
+            TemporalValueNodes.TimeValue timeValue = readTimeValueNode.execute(inliningTarget, self);
+            return TemporalValueNodes.toPythonTzInfo(timeValue.tzInfo, timeValue.zoneId, inliningTarget);
         }
     }
 }

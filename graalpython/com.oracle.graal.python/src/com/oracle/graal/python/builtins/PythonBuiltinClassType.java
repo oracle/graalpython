@@ -187,7 +187,6 @@ import com.oracle.graal.python.builtins.objects.foreign.ForeignInstantiableBuilt
 import com.oracle.graal.python.builtins.objects.foreign.ForeignIterableBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
-import com.oracle.graal.python.builtins.objects.foreign.ForeignTimeBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignTimeZoneBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
@@ -1235,7 +1234,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     // foreign datetime
     ForeignDate("ForeignDate", PDate, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
-    ForeignTime("ForeignTime", PTime, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignTimeBuiltins.SLOTS)),
+    ForeignTime("ForeignTime", PTime, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation()),
     ForeignDateTime("ForeignDateTime", PDateTime, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignDateTimeBuiltins.SLOTS)),
     ForeignTimeZone("ForeignTimeZone", PTzInfo, newBuilder().publishInModule(J_POLYGLOT).basetype().addDict().disallowInstantiation().slots(ForeignTimeZoneBuiltins.SLOTS)),
 
