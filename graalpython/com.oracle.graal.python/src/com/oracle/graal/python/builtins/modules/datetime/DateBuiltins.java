@@ -116,6 +116,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -378,7 +379,7 @@ public final class DateBuiltins extends PythonBuiltins {
 
             LocalDate localDate = ChronoUnit.DAYS.addTo(from, days - 1);
             return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget,
-                            GetClassNode.executeUncached(dateObj),
+                            getResultDateType(dateObj),
                             localDate.getYear(),
                             localDate.getMonthValue(),
                             localDate.getDayOfMonth());
@@ -443,7 +444,7 @@ public final class DateBuiltins extends PythonBuiltins {
 
                 LocalDate localDate = ChronoUnit.DAYS.addTo(from, days - 1);
                 return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget,
-                                GetClassNode.executeUncached(left),
+                                getResultDateType(left),
                                 localDate.getYear(),
                                 localDate.getMonthValue(),
                                 localDate.getDayOfMonth());
@@ -519,6 +520,10 @@ public final class DateBuiltins extends PythonBuiltins {
                         @Cached TemporalValueNodes.GetDateValue readDateValueNode) {
             return readDateValueNode.execute(inliningTarget, self).day;
         }
+    }
+
+    private static Object getResultDateType(Object dateObj) {
+        return IsForeignObjectNode.executeUncached(dateObj) ? PythonBuiltinClassType.PDate : GetClassNode.executeUncached(dateObj);
     }
 
     @Builtin(name = "today", minNumOfPositionalArgs = 1, isClassmethod = true, parameterNames = {"self"})
