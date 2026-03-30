@@ -306,6 +306,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @GenerateBytecode(//
                 languageClass = PythonLanguage.class, //
+                sourceContentSupplier = "loadSourceContent", //
                 illegalLocalException = PException.class, //
                 illegalLocalExceptionFactory = "raiseUnboundLocalException", //
                 enableBlockScoping = false, //
@@ -410,6 +411,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     protected PBytecodeDSLRootNode(PythonLanguage language, FrameDescriptor.Builder frameDescriptorBuilder) {
         super(language, frameDescriptorBuilder.info(new BytecodeDSLFrameInfo()).build());
         ((BytecodeDSLFrameInfo) getFrameDescriptor().getInfo()).setRootNode(this);
+    }
+
+    public static Source loadSourceContent(PythonLanguage language, Source sourceWithoutContent) {
+        return language.getOrCreateSourceWithContent(sourceWithoutContent);
     }
 
     public static PBytecodeDSLRootNode cast(RootNode root) {
@@ -1032,7 +1037,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Override
     protected byte[] extractCode(Node node) {
-        return MarshalModuleBuiltins.serializeCodeUnit(node, PythonContext.get(node), co);
+        return MarshalModuleBuiltins.serializeCodeUnit(node, getLanguage(), co);
     }
 
     private static Object checkUnboundCell(PCell cell, int index, BytecodeNode bytecodeNode) {

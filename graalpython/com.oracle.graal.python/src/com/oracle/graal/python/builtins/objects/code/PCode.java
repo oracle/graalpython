@@ -63,7 +63,6 @@ import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
@@ -506,7 +505,7 @@ public final class PCode extends PythonBuiltinObject {
     private PCode createCode(BytecodeDSLCodeUnit codeUnit) {
         PBytecodeDSLRootNode outerRootNode = (PBytecodeDSLRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> codeUnit.createRootNode(PythonContext.get(null), outerRootNode.getSource()), codeUnit);
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> codeUnit.createRootNode(l, outerRootNode.getSource()), codeUnit);
         PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) callTarget.getRootNode();
         return PFactory.createCode(language, callTarget, rootNode.getSignature(), codeUnit, getFilename());
     }
@@ -526,7 +525,7 @@ public final class PCode extends PythonBuiltinObject {
         PBytecodeRootNode outerRootNode = (PBytecodeRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
         RootCallTarget callTarget = language.createCachedCallTarget(
-                        l -> PBytecodeRootNode.createMaybeGenerator(language, codeUnit, outerRootNode.getLazySource(), outerRootNode.isInternal()), codeUnit);
+                        l -> PBytecodeRootNode.createMaybeGenerator(language, codeUnit, outerRootNode.getSource(), outerRootNode.isInternal()), codeUnit);
         RootNode rootNode = callTarget.getRootNode();
         if (rootNode instanceof PBytecodeGeneratorFunctionRootNode generatorRoot) {
             rootNode = generatorRoot.getBytecodeRootNode();

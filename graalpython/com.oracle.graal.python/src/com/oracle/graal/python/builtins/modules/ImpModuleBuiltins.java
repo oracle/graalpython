@@ -49,12 +49,14 @@ import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenS
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.internString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -117,6 +119,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -473,7 +476,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 Object code = null;
 
                 try {
-                    code = MarshalModuleBuiltins.Marshal.load(context, bytes, size, 0);
+                    code = MarshalModuleBuiltins.Marshal.load(context.getLanguage(), bytes, size, 0);
                 } catch (MarshalError | NumberFormatException e) {
                     raiseFrozenError(inliningTarget, raiseNode, FROZEN_INVALID, name);
                 }
@@ -489,8 +492,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 info = result.info;
                 raiseFrozenError(inliningTarget, raiseNode, status, name);
 
-                RootCallTarget callTarget = createCallTarget(context, info);
-                return PFactory.createCode(context.getLanguage(), callTarget);
+                return createCode(context, info);
             }
         }
     }
@@ -540,9 +542,10 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
             PMemoryView data = null;
 
+            PythonLanguage language = context.getLanguage();
             if (withData) {
-                byte[] bytes = MarshalModuleBuiltins.serializeCodeUnit(inliningTarget, context, info.code);
-                data = PyMemoryViewFromObject.getUncached().execute(null, PFactory.createBytes(context.getLanguage(inliningTarget), bytes));
+                byte[] bytes = MarshalModuleBuiltins.serializeCodeUnit(inliningTarget, language, info.code);
+                data = PyMemoryViewFromObject.getUncached().execute(null, PFactory.createBytes(language, bytes));
             }
 
             Object[] returnValues = new Object[]{
@@ -551,7 +554,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                             info.origName == null ? PNone.NONE : info.origName
             };
 
-            return PFactory.createTuple(context.getLanguage(inliningTarget), returnValues);
+            return PFactory.createTuple(language, returnValues);
         }
     }
 
@@ -622,16 +625,15 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 }
         }
 
-        RootCallTarget callTarget = createCallTarget(core.getContext(), info);
+        PCode code = createCode(core.getContext(), info);
         PythonModule module = globals == null ? PFactory.createPythonModule(name) : globals;
-        PCode code = PFactory.createCode(core.getLanguage(), callTarget);
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */
             WriteAttributeToPythonObjectNode.getUncached().execute(module, T___PATH__, PFactory.createList(core.getLanguage()));
         }
 
-        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(code, module));
+        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(code.getRootCallTarget(), PArguments.withGlobals(code, module));
 
         Object origName = info.origName == null ? PNone.NONE : info.origName;
         WriteAttributeToPythonObjectNode.getUncached().execute(module, T___ORIGNAME__, origName);
@@ -639,12 +641,42 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         return module;
     }
 
-    private static RootCallTarget createCallTarget(PythonContext context, FrozenInfo info) {
-        return (RootCallTarget) context.getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(info.origName, System.identityHashCode(info.code)), () -> {
-            String name = PythonLanguage.FROZEN_FILENAME_PREFIX + info.name + PythonLanguage.FROZEN_FILENAME_SUFFIX;
-            Source source = Source.newBuilder("python", "", name).content(Source.CONTENT_NONE).build();
-            return PythonLanguage.callTargetFromBytecode(context, source, info.code);
-        });
+    private static PCode createCode(PythonContext context, FrozenInfo info) {
+        String moduleName = info.name.toJavaStringUncached();
+        String codeName = PythonLanguage.FROZEN_FILENAME_PREFIX + moduleName + PythonLanguage.FROZEN_FILENAME_SUFFIX;
+        TruffleFile file = null;
+        String filename = codeName;
+        try {
+            String fs = context.getEnv().getFileNameSeparator();
+            String basename = context.getStdlibHome() + fs + moduleName.replace(".", fs);
+            String path = info.isPackage ? basename + fs + "__init__.py" : basename + J_PY_EXTENSION;
+            file = context.getEnv().getInternalTruffleFile(path);
+            if (file.isReadable()) {
+                filename = path;
+            }
+        } catch (UnsupportedOperationException | IllegalArgumentException | SecurityException e) {
+            // Fallthrough
+        }
+        TruffleFile originalFile = file;
+        Source source = context.getLanguage().getOrCreateSource((ignored -> {
+            Source newSource = Source.newBuilder(PythonLanguage.ID, "", codeName) //
+                            .content(Source.CONTENT_NONE) //
+                            .internal(PythonLanguage.shouldMarkSourceInternal(context)) //
+                            .mimeType(PythonLanguage.MIME_TYPE).build();
+            PythonLanguage language = context.getLanguage();
+            if (originalFile != null) {
+                language.registerOriginalFile(newSource, originalFile);
+            }
+            return newSource;
+        }), codeName);
+        RootCallTarget callTarget = (RootCallTarget) context.getLanguage().cacheCode(
+                        new PythonLanguage.CodeCacheKey(info.origName, System.identityHashCode(info.code)),
+                        () -> context.getLanguage().callTargetFromBytecode(source, info.code));
+        /*
+         * Setting the original filename as the co_filename is a deviance from CPython, but it's
+         * more user friendly and lets us freeze more modules without it being too visible.
+         */
+        return PFactory.createCode(context.getLanguage(), callTarget, internString(toTruffleStringUncached(filename)));
     }
 
     /*

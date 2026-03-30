@@ -60,7 +60,6 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.LazySource;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -95,7 +94,7 @@ public abstract class CodeNodes {
             PythonLanguage language = context.getLanguage(this);
             Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
-                return createCode(language, context, argcount,
+                return createCode(language, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
                                 constants, names, varnames, freevars, cellvars,
                                 filename, name, qualname, firstlineno, linetable);
@@ -105,7 +104,7 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private static PCode createCode(PythonLanguage language, PythonContext context, int argCount,
+        private static PCode createCode(PythonLanguage language, int argCount,
                         int positionalOnlyArgCount, int kwOnlyArgCount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, TruffleString[] names,
@@ -141,14 +140,14 @@ public abstract class CodeNodes {
                                 parameterNames,
                                 kwOnlyNames);
             } else {
-                ct = deserializeForBytecodeInterpreter(context, codedata, cellvars, freevars, flags);
+                ct = deserializeForBytecodeInterpreter(language, codedata, cellvars, freevars, flags);
                 signature = ((PRootNode) ct.getRootNode()).getSignature();
             }
             return PFactory.createCode(language, ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
         }
 
-        private static RootCallTarget deserializeForBytecodeInterpreter(PythonContext context, byte[] data, TruffleString[] cellvars, TruffleString[] freevars, int flags) {
-            CodeUnit codeUnit = MarshalModuleBuiltins.deserializeCodeUnit(null, context, data);
+        private static RootCallTarget deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars, int flags) {
+            CodeUnit codeUnit = MarshalModuleBuiltins.deserializeCodeUnit(null, language, data);
             RootNode rootNode;
 
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
@@ -156,7 +155,7 @@ public abstract class CodeNodes {
                 if (code.flags != flags) {
                     code = code.withFlags(flags);
                 }
-                rootNode = code.createRootNode(context, PythonUtils.createFakeSource());
+                rootNode = code.createRootNode(language, PythonUtils.createFakeSource());
             } else {
                 BytecodeCodeUnit code = (BytecodeCodeUnit) codeUnit;
                 if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars) || flags != code.flags) {
@@ -168,9 +167,9 @@ public abstract class CodeNodes {
                                     code.variableShouldUnbox,
                                     code.generalizeInputsKeys, code.generalizeInputsIndices, code.generalizeInputsValues, code.generalizeVarsIndices, code.generalizeVarsValues);
                 }
-                rootNode = PBytecodeRootNode.create(context.getLanguage(), code, new LazySource(PythonUtils.createFakeSource()), false);
+                rootNode = PBytecodeRootNode.create(language, code, PythonUtils.createFakeSource(), false);
                 if (code.isGeneratorOrCoroutine()) {
-                    rootNode = new PBytecodeGeneratorFunctionRootNode(context.getLanguage(), rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
+                    rootNode = new PBytecodeGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
                 }
             }
             return PythonUtils.getOrCreateCallTarget(rootNode);

@@ -507,7 +507,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             try {
                 // get_data
                 TruffleString strBytecodePath = PyObjectStrAsTruffleStringNode.executeUncached(bytecodePath);
-                TruffleFile bytecodeFile = context.getEnv().getPublicTruffleFile(strBytecodePath.toJavaStringUncached());
+                TruffleFile bytecodeFile = context.getPublicTruffleFileRelaxed(strBytecodePath);
                 byte[] bytes = bytecodeFile.readAllBytes();
                 // _classify_pyc
                 if (bytes.length < 16 || !Arrays.equals(bytes, 0, 4, MAGIC_NUMBER_BYTES, 0, 4)) {
@@ -560,7 +560,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     Object message = PyObjectCallMethodObjArgs.executeUncached(MESSAGE, T_FORMAT, bytecodePath, sourcePath);
                     CallNode.executeUncached(context.lookupBuiltinModule(T__BOOTSTRAP).getAttribute(T__VERBOSE_MESSAGE), message);
                 }
-                return MarshalModuleBuiltins.fromBytecodeFile(context, bytecodeFile, bytes, 16, bytes.length - 16, cacheKey);
+                TruffleFile sourceFile = null;
+                if (sourcePath != PNone.NONE) {
+                    try {
+                        TruffleString strSourcePath = PyObjectStrAsTruffleStringNode.executeUncached(sourcePath);
+                        sourceFile = context.getPublicTruffleFileRelaxed(strSourcePath);
+                    } catch (SecurityException | UnsupportedOperationException | IllegalArgumentException ignored) {
+                        // Fall back to Marshal's empty source.
+                    }
+                }
+                return MarshalModuleBuiltins.fromBytecodeFile(context.getLanguage(), bytecodeFile, sourceFile, bytes, 16, bytes.length - 16, cacheKey);
             } catch (MarshalModuleBuiltins.Marshal.MarshalError me) {
                 throw PRaiseNode.raiseStatic(inliningTarget, me.type, me.message, me.arguments);
             } catch (IOException | SecurityException | UnsupportedOperationException | IllegalArgumentException e) {

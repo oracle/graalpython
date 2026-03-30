@@ -147,7 +147,6 @@ import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.bytecode.BytecodeConfig;
@@ -486,14 +485,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         @Override
-        public PBytecodeDSLRootNode createRootNode(PythonContext context, Source source) {
+        public PBytecodeDSLRootNode createRootNode(PythonLanguage language, Source source) {
             return nodes.getNode(0);
         }
 
         @Override
-        public byte[] createSerializedBytecode(PythonContext context) {
+        public byte[] createSerializedBytecode(PythonLanguage language) {
             try {
-                BytecodeSerializer serializer = new MarshalModuleBuiltins.PBytecodeDSLSerializer(context);
+                BytecodeSerializer serializer = new MarshalModuleBuiltins.PBytecodeDSLSerializer(language);
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 nodes.serialize(new DataOutputStream(bytes), serializer);
                 return bytes.toByteArray();
