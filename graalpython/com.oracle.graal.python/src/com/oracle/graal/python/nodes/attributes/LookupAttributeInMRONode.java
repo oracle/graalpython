@@ -44,7 +44,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -56,6 +55,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.StacktracelessCheckedException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -93,16 +93,17 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     protected abstract Object executeInternal(Object klass) throws MROChangedException;
 
+    @ImportStatic(PythonUtils.class)
     @GenerateUncached
-    @GenerateInline(false) // footprint reduction 36 -> 17
+    @GenerateInline(false)
     public abstract static class Dynamic extends PNodeWithContext {
         public abstract Object execute(Object klass, TruffleString key);
 
-        @Specialization(guards = "equalNode.execute(inliningTarget, key, cachedKey)", limit = "2")
+        @Specialization(guards = "equalNode.execute(key, cachedKey, TS_ENCODING)", limit = "2")
         static Object lookupConstantMROEquals(Object klass, TruffleString key,
                         @Bind Node inliningTarget,
                         @Cached("key") TruffleString cachedKey,
-                        @Cached @Shared StringUtils.EqualNode equalNode,
+                        @Cached @Shared TruffleString.EqualNode equalNode,
                         @Cached("create(cachedKey)") LookupAttributeInMRONode lookup) {
             return lookup.execute(klass);
         }
