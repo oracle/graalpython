@@ -207,6 +207,41 @@ def create_asv_benchmark_selection(benchmarks, skipped=()):
     return '^(?!' + '|'.join(negative_lookaheads) + ')(' + regex + ')'
 
 
+def patch_asv_for_cpython_312(workdir, vm_venv):
+    pattern = join(workdir, vm_venv, "lib", "python*", "site-packages", "asv", "plugins", "virtualenv.py")
+    candidates = glob.glob(pattern)
+    if not candidates:
+        mx.abort(f"Could not find ASV virtualenv plugin to patch: {pattern}")
+
+    if len(candidates) != 1:
+        mx.abort(f"Found multiple ASV virtualenv plugins to patch: {candidates}")
+
+    virtualenv_py = candidates[0]
+    with open(virtualenv_py) as f:
+        content = f.read()
+
+    patched_import = "from packaging.version import parse as LooseVersion"
+    if patched_import in content:
+        mx.log(f"ASV virtualenv plugin already patched: {virtualenv_py}")
+        return
+
+    distutils_import = "from distutils.version import LooseVersion"
+    if distutils_import not in content:
+        mx.abort(f"Unexpected ASV virtualenv plugin contents, cannot patch: {virtualenv_py}")
+
+    content = content.replace(
+        distutils_import,
+        "try:\n"
+        "    from packaging.version import parse as LooseVersion\n"
+        "except Exception:\n"
+        "    from distutils.version import LooseVersion",
+        1,
+    )
+    with open(virtualenv_py, "w") as f:
+        f.write(content)
+    mx.log(f"Patched ASV virtualenv plugin for CPython 3.12+: {virtualenv_py}")
+
+
 class PyPerfJsonRule(mx_benchmark.Rule):
     """Parses a JSON file produced by PyPerf and creates a measurement result."""
 
@@ -638,6 +673,8 @@ class NumPySuite(PySuite):
             vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
             pip = join(workdir, vm_venv, "bin", "pip")
             mx.run([pip, "install", *self.BENCHMARK_REQ], cwd=workdir)
+            if vm.name() == "cpython":
+                patch_asv_for_cpython_312(workdir, vm_venv)
             mx.run(
                 [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
             )
@@ -773,6 +810,8 @@ class PandasSuite(PySuite):
                 env = os.environ.copy()
                 env['PIP_CONSTRAINT'] = constraints.name
                 mx.run([pip, "install", *self.BENCHMARK_REQ], cwd=workdir, env=env)
+            if vm.name() == "cpython":
+                patch_asv_for_cpython_312(workdir, vm_venv)
             mx.run(
                 [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
             )
