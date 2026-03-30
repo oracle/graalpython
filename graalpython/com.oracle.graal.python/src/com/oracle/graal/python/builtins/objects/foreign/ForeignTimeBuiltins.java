@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
@@ -64,7 +63,6 @@ import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.Time
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
@@ -79,9 +77,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -105,35 +101,6 @@ public final class ForeignTimeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ForeignTimeBuiltinsFactory.getFactories();
-    }
-
-    @Slot(value = SlotKind.tp_repr, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static TruffleString repr(Object selfObj,
-                        @Bind Node inliningTarget) {
-            TimeValue self = TemporalValueNodes.GetTimeValue.executeUncached(inliningTarget, selfObj);
-            TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
-            String value = self.microsecond == 0
-                            ? String.format("%s(%d, %d, %d)", typeName, self.hour, self.minute, self.second)
-                            : String.format("%s(%d, %d, %d, %d)", typeName, self.hour, self.minute, self.second, self.microsecond);
-            return TruffleString.FromJavaStringNode.getUncached().execute(value, TS_ENCODING);
-        }
-    }
-
-    @Slot(value = SlotKind.tp_str, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class StrNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object str(Object selfObj,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage lang,
-                        @Cached TemporalValueNodes.GetTimeValue readTimeValueNode,
-                        @Cached PyObjectStrAsObjectNode strAsObjectNode) {
-            return strAsObjectNode.execute(inliningTarget, toPythonTime(lang, readTimeValueNode.execute(inliningTarget, selfObj), inliningTarget));
-        }
     }
 
     @Slot(value = SlotKind.tp_richcompare, isComplex = true)

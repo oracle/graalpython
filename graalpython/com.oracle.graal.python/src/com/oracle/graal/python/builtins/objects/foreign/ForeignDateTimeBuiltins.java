@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.foreign;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -67,7 +66,6 @@ import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaNodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
@@ -85,7 +83,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -103,11 +100,9 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = ForeignDateTimeBuiltinsSlotsGen.SLOTS;
 
     private static final TruffleString T_ASTIMEZONE = tsLiteral("astimezone");
-    private static final TruffleString T_DATE = tsLiteral("date");
     private static final TruffleString T_DST = tsLiteral("dst");
     private static final TruffleString T_ISOFORMAT = tsLiteral("isoformat");
     private static final TruffleString T_STRFTIME = tsLiteral("strftime");
-    private static final TruffleString T_TIME = tsLiteral("time");
     private static final TruffleString T_TIMETZ = tsLiteral("timetz");
     private static final TruffleString T_TIMESTAMP = tsLiteral("timestamp");
     private static final TruffleString T_TIMETUPLE = tsLiteral("timetuple");
@@ -118,33 +113,6 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ForeignDateTimeBuiltinsFactory.getFactories();
-    }
-
-    @Slot(value = SlotKind.tp_repr, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static TruffleString repr(Object selfObj,
-                        @Bind Node inliningTarget) {
-            DateTimeValue self = TemporalValueNodes.GetDateTimeValue.executeUncached(inliningTarget, selfObj);
-            TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(selfObj));
-            String string = String.format("%s(%d, %d, %d, %d, %d, %d, %d)", typeName, self.year, self.month, self.day, self.hour, self.minute, self.second, self.microsecond);
-            return toTruffleStringUncached(string);
-        }
-    }
-
-    @Slot(value = SlotKind.tp_str, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class StrNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object str(Object selfObj,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage lang,
-                        @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode,
-                        @Cached PyObjectStrAsObjectNode strAsObjectNode) {
-            return strAsObjectNode.execute(inliningTarget, toPythonDateTime(lang, readDateTimeValueNode.execute(inliningTarget, selfObj), inliningTarget));
-        }
     }
 
     @Slot(value = SlotKind.tp_richcompare, isComplex = true)
@@ -398,32 +366,6 @@ public final class ForeignDateTimeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode) {
             return readDateTimeValueNode.execute(inliningTarget, selfObj).fold;
-        }
-    }
-
-    @Builtin(name = "date", minNumOfPositionalArgs = 1, parameterNames = {"self"})
-    @GenerateNodeFactory
-    abstract static class DateNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object date(VirtualFrame frame, Object selfObj,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage lang,
-                        @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode,
-                        @Cached PyObjectCallMethodObjArgs callMethodObjArgs) {
-            return callMethodObjArgs.execute(frame, inliningTarget, toPythonDateTime(lang, readDateTimeValueNode.execute(inliningTarget, selfObj), inliningTarget), T_DATE);
-        }
-    }
-
-    @Builtin(name = "time", minNumOfPositionalArgs = 1, parameterNames = {"self"})
-    @GenerateNodeFactory
-    abstract static class TimeNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object time(VirtualFrame frame, Object selfObj,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage lang,
-                        @Cached TemporalValueNodes.GetDateTimeValue readDateTimeValueNode,
-                        @Cached PyObjectCallMethodObjArgs callMethodObjArgs) {
-            return callMethodObjArgs.execute(frame, inliningTarget, toPythonDateTime(lang, readDateTimeValueNode.execute(inliningTarget, selfObj), inliningTarget), T_TIME);
         }
     }
 

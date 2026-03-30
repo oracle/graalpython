@@ -466,6 +466,13 @@ public final class DateBuiltins extends PythonBuiltins {
                         @Cached CStructAccess.ReadByteNode readNode) {
             return DateNodes.FromNative.getYear(self, readNode);
         }
+
+        @Specialization
+        static int getYear(Object self,
+                        @Bind Node inliningTarget,
+                        @Cached TemporalValueNodes.GetDateValue readDateValueNode) {
+            return readDateValueNode.execute(inliningTarget, self).year;
+        }
     }
 
     @Builtin(name = "month", minNumOfPositionalArgs = 1, isGetter = true)
@@ -482,6 +489,13 @@ public final class DateBuiltins extends PythonBuiltins {
                         @Cached CStructAccess.ReadByteNode readNode) {
             return DateNodes.FromNative.getMonth(self, readNode);
         }
+
+        @Specialization
+        static int getMonth(Object self,
+                        @Bind Node inliningTarget,
+                        @Cached TemporalValueNodes.GetDateValue readDateValueNode) {
+            return readDateValueNode.execute(inliningTarget, self).month;
+        }
     }
 
     @Builtin(name = "day", minNumOfPositionalArgs = 1, isGetter = true)
@@ -497,6 +511,13 @@ public final class DateBuiltins extends PythonBuiltins {
         static int getDay(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
             return DateNodes.FromNative.getDay(self, readNode);
+        }
+
+        @Specialization
+        static int getDay(Object self,
+                        @Bind Node inliningTarget,
+                        @Cached TemporalValueNodes.GetDateValue readDateValueNode) {
+            return readDateValueNode.execute(inliningTarget, self).day;
         }
     }
 
