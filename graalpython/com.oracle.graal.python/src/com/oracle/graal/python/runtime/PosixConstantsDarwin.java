@@ -90,6 +90,12 @@ class PosixConstantsDarwin {
         constants.put("O_EXLOCK", 0x00000020);
         constants.put("O_EXEC", 0x40000000);
         constants.put("O_SEARCH", 0x40100000);
+        constants.put("O_EVTONLY", 0x00008000);
+        constants.put("O_FSYNC", 0x00000080);
+        constants.put("O_SYMLINK", 0x00200000);
+        constants.put("O_NOFOLLOW", 0x00000100);
+        constants.put("O_NOFOLLOW_ANY", 0x20000000);
+        constants.put("O_ASYNC", 0x00000040);
         constants.put("S_IFMT", 0x0000F000);
         constants.put("S_IFSOCK", 0x0000C000);
         constants.put("S_IFLNK", 0x0000A000);

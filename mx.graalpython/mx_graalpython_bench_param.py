@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2026, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -192,7 +192,6 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-arith-binop': ITER_5 + ['1000'],
     'c-arith-binop2': ITER_5 + ['100'],
     'c-call-classmethod': ITER_5 + ['50000000'],
-    'c-issubtype-polymorphic-forced-to-native': ITER_5 + ['50000000'],
     'c-issubtype-polymorphic': ITER_5 + ['50000000'],
     'c-issubtype-monorphic': ITER_5 + ['50000000'],
     'c-call-method': ITER_5 + ['5000000'],

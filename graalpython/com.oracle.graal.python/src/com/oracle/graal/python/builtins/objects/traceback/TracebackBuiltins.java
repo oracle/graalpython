@@ -216,7 +216,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 location = rootNode;
             }
             // create the PFrame and refresh frame values
-            return materializeFrameNode.execute(location, false, true, element.getFrame());
+            return materializeFrameNode.execute(location, true, true, element.getFrame());
         }
     }
 
