@@ -1,15 +1,15 @@
 ---
 layout: docs
 permalink: docs/
-redirect_to: docs/python-developers/
+redirect_to: jvm-developers/docs/
 ---
 
 <script>
-window.location.replace('/python/docs/python-developers/');
+window.location.replace('/python/jvm-developers/docs/');
 </script>
 
 <noscript>
-<meta http-equiv="refresh" content="0; url=/python/docs/python-developers/" />
+<meta http-equiv="refresh" content="0; url=/python/jvm-developers/docs/" />
 </noscript>
 
-<p>Redirecting to <a href="/python/docs/python-developers/">Python Developers documentation</a>...</p>
+<p>Redirecting to the documentation for <a href="/python/jvm-developers/docs/">JVM Developers</a>...</p>

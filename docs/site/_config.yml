@@ -3,8 +3,13 @@ url: "https://graalvm.org"
 github: "oracle/graalpython"
 language_version: 25.0.2
 name: GraalPy
-
 permalink: pretty
+
+audiences:
+  - identifier: jvm
+    name: JVM
+  - identifier: python
+    name: Python
 
 plugins:
   - jekyll-relative-links

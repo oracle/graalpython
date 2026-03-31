@@ -1,14 +1,13 @@
 ---
 layout: docs
-title: Java Developers
-permalink: docs/java-developers/
-docs_index: java-developers
-nav_order: 2
+permalink: jvm-developers/docs/
+audience_identifier: jvm
+title: Documentation
 ---
 
-# GraalPy for Java Developers
+# Documentation for JVM Developers
 
-**For Java developers who need to use Python libraries from their Java applications or migrate from legacy Jython code.**
+**For JVM developers who need to use Python libraries from their JVM applications or migrate from legacy Jython code.**
 
 You do not need to install GraalPy separately - you can use GraalPy directly in Java with Maven or Gradle.
 This lets you call Python libraries like NumPy, pandas, or any PyPI package from your Java application.

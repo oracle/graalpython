@@ -1,8 +1,8 @@
 ---
 layout: base
+permalink: python-developers/compatibility/
+audience_identifier: python
 title: Compatibility
-permalink: compatibility/
-nav_order: 3
 ---
 
 <style>
@@ -60,6 +60,7 @@ img.pylogo {
 #compatibility-stats-not-supported {
   padding-left: 0.5em;
 }
+
 </style>
 
 
@@ -575,7 +576,7 @@ img.pylogo {
         <div class="compatibility">
             <div class="container">
             <div class="comp-info">
-            <img class="info-icon" src='{{ "/assets/img/python/info-icon.svg" | relative_url }}' alt="info icon">
+            <img class="info-icon" src='{{ "/assets/img/icon-set-general/info-icon.svg" | relative_url }}' alt="info icon">
             <h5 class="compatibility-text">Many more Python packages work on GraalPy than are listed here. If there is a package you are interested in that is not included, chances are that it might just work. If it does not, feel free to create an issue for us on <a href="https://github.com/oracle/graalpython/issues" target="_blank">GitHub</a>.</h5>
             </div>
                 <div class="package__row">

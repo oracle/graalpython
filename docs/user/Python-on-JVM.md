@@ -348,11 +348,6 @@ assert issubclass(PythonLevel, Level)
 assert PythonLevel.parse("INFO").getName() == "INFO"
 ```
 
-Two important caveats:
-
-  1. You cannot use other metaclasses, so inheriting from `ABC` and a Java class is not supported.
-  2. If you want to implement `__init__` to accept additional arguments, you must also override `__new__` to avoid passing the additional arguments to the Java constructor, which would not know how to handle them.
-
 ## Embedding Python into Java
 
 If you were embedding Jython in Java applications, there were two main approaches that need different migration paths:
