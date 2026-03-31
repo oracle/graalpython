@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -33,10 +33,10 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -128,20 +128,20 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
         @Specialization
         static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") IndirectCallData callData,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
-                        @Cached GilNode gil,
+                        @Cached GilNode.Interop gil,
                         @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             try {
-                Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
-                gil.release(true);
+                Object state = IndirectCallContext.enter(frame, language, context, callData);
+                gil.release(context, true);
                 try {
                     return toPTypeNode.executeConvert(lib.execute(callee, arguments));
                 } finally {
-                    gil.acquire();
+                    gil.acquire(context, inliningTarget);
                     IndirectCallContext.exit(frame, language, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException e) {

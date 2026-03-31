@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -1440,3 +1440,36 @@ class InteropTests(unittest.TestCase):
         doctest.Example = Example
 
         assert doctest.testmod(m=polyglot, verbose=getattr(unittest, "verbose"), optionflags=doctest.ELLIPSIS).failed == 0
+
+    def test_keep_gil_around_interop(self):
+        import java.lang.Thread as Thread
+        import threading, time
+        resumed = 0
+        done = threading.Event()
+
+        def worker():
+            nonlocal resumed
+            resumed = 0
+            while not done.is_set():
+                resumed += 1
+                time.sleep(0.0001)
+
+        def gil_test(gil_locked):
+            done.clear()
+            t = threading.Thread(target=worker)
+            t.start()
+            Thread.sleep(1000)
+            done.set()
+            t.join(timeout=5)
+            if gil_locked:
+                self.assertLess(resumed, 200, "Worker ran too many times when GIL was supposed to be locked")
+            else:
+                self.assertGreater(resumed, 100, "Worker ran too few times when GIL was supposed to be released")
+
+        gil_test(gil_locked=False)
+        with polyglot.gil_locked_during_interop(True):
+            gil_test(gil_locked=True)
+            with polyglot.gil_locked_during_interop(False):
+                gil_test(gil_locked=False)
+            gil_test(gil_locked=True)
+        gil_test(gil_locked=False)

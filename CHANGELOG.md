@@ -50,7 +50,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Update to Python 3.11.7.
 * We now provide intrinsified `_pickle` module also in the community version.
 * `polyglot.eval` now raises more meaningful exceptions. Unavailable languages raise `ValueError`. Exceptions from the polyglot language are raised directly as interop objects (typed as `polyglot.ForeignException`). The shortcut for executing python files without specifying language has been removed, use regular `eval` for executing Python code.
-* In Jython emulation mode we now magically fall back to calling Java getters or setters when using Python attribute access for non-visible properties. This can help migrating away from Jython if you relied on this behavior. 
+* In Jython emulation mode we now magically fall back to calling Java getters or setters when using Python attribute access for non-visible properties. This can help migrating away from Jython if you relied on this behavior.
 * The option `python.EmulateJython` to enable Jython emulation is now marked as stable, and can thus be relied upon in production.
 * Fixed parsing of pyvenv.cfg according to PEP 405, which is required to use [uv](https://github.com/astral-sh/uv?tab=readme-ov-file#uv) generated venvs with GraalPy.
 * Use https://www.graalvm.org/python/wheels/ as the default value for the `--extra-index-url` pip option. This will make it easy for users to install GraalPy binary wheels in the future.
@@ -198,7 +198,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Escaping Unicode characters using the character names in strings like
   "\N{GREEK CAPITAL LETTER DELTA}".
 * When a `*.py` file is imported, `*.pyc` file is created. It contains binary data to speed up parsing.
-* Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable, which is also accepted now. 
+* Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable, which is also accepted now.
 * Adding optin `DontWriteBytecodeFlag`. Equivalent to the Python -B flag. Don't write bytecode files.
 * Command option -B works
 * Implement better reference counting for native extensions to fix memory leaks

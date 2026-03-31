@@ -278,11 +278,11 @@ public final class IteratorBuiltins extends PythonBuiltins {
         static Object foreign(@SuppressWarnings("unused") Node inliningTarget, Object self,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @Cached(inline = false) PForeignToPTypeNode toPythonNode) {
             final Object element;
-
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 element = interop.getIteratorNextElement(self);
             } catch (StopIterationException e) {
@@ -290,7 +290,7 @@ public final class IteratorBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
 
             return toPythonNode.executeConvert(element);
@@ -440,14 +440,15 @@ public final class IteratorBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached GilNode gil) {
-            gil.release(true);
+                        @Cached GilNode.Interop gil) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 return interop.hasIteratorNextElement(self) ? 1 : 0;
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }

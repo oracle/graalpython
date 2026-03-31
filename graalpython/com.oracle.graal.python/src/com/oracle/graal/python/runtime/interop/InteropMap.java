@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.graal.python.runtime.interop;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -51,10 +50,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -67,9 +63,9 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @ExportLibrary(InteropLibrary.class)
 public final class InteropMap implements TruffleObject {
-    private final Map<String, Object> data;
+    private final HashMap<String, Object> data;
 
-    public InteropMap(Map<String, Object> data) {
+    private InteropMap(HashMap<String, Object> data) {
         this.data = data;
     }
 
@@ -81,44 +77,26 @@ public final class InteropMap implements TruffleObject {
 
     @ExportMessage(name = "readMember")
     @TruffleBoundary
-    Object getKey(String name,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            assert hasKey(name, gil);
-            return data.get(name);
-        } finally {
-            gil.release(mustRelease);
-        }
+    Object getKey(String name) {
+        assert hasKey(name);
+        return data.get(name);
     }
 
     @ExportMessage(name = "isMemberReadable")
     @TruffleBoundary
-    boolean hasKey(String name,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return data.containsKey(name);
-        } finally {
-            gil.release(mustRelease);
-        }
+    boolean hasKey(String name) {
+        return data.containsKey(name);
     }
 
     @ExportMessage(name = "getMembers")
     @TruffleBoundary
-    Object getKeys(@SuppressWarnings("unused") boolean includeInternal,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return new InteropArray(data.keySet().toArray());
-        } finally {
-            gil.release(mustRelease);
-        }
+    Object getKeys(@SuppressWarnings("unused") boolean includeInternal) {
+        return new InteropArray(data.keySet().toArray());
     }
 
     @TruffleBoundary
     public static InteropMap fromPDict(PDict dict) {
-        Map<String, Object> map = new HashMap<>();
+        HashMap<String, Object> map = new HashMap<>();
         final HashingStorage storage = dict.getDictStorage();
         HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
         while (HashingStorageIteratorNext.executeUncached(storage, it)) {
@@ -131,7 +109,7 @@ public final class InteropMap implements TruffleObject {
 
     @TruffleBoundary
     public static InteropMap fromPythonObject(PythonObject globals) {
-        Map<String, Object> map = new HashMap<>();
+        HashMap<String, Object> map = new HashMap<>();
         for (TruffleString name : globals.getAttributeNames()) {
             map.put(name.toJavaStringUncached(), globals.getAttribute(name));
         }
