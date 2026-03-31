@@ -859,7 +859,7 @@ public final class CApiContext extends CExtContext {
                 context.initializeNativeThreadState();
             }
         };
-        submitThreadLocalActions(context, threads, action);
+        context.getEnv().submitThreadLocal(threads, action);
     }
 
     private static Thread[] getOtherAliveAttachedThreads(PythonContext context) {
@@ -871,12 +871,6 @@ public final class CApiContext extends CExtContext {
             }
         }
         return threads.toArray(Thread[]::new);
-    }
-
-    private static void submitThreadLocalActions(PythonContext context, Thread[] threads, ThreadLocalAction action) {
-        for (Thread thread : threads) {
-            context.getEnv().submitThreadLocal(new Thread[]{thread}, action);
-        }
     }
 
     private static CApiContext loadCApi(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {

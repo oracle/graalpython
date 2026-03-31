@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -109,6 +110,42 @@ public final class PythonCextPyStateBuiltins {
                         @Cached GilNode gil) {
             gil.release(true);
             return PNone.NO_VALUE;
+        }
+    }
+
+    /**
+     * Very unlikely fallback for threads that were already attached when another thread initialized
+     * the C API, but were blocked at that time and therefore could not process the thread-local
+     * action that eagerly initializes their native 'tstate_current' TLS slot.
+     */
+    @CApiBuiltin(ret = PyThreadState, args = {Pointer}, acquireGil = false, call = Ignored)
+    abstract static class GraalPyPrivate_ThreadState_Get extends CApiUnaryBuiltinNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_ThreadState_Get.class);
+
+        @Specialization
+        @TruffleBoundary
+        static Object get(Object tstateCurrentPtr) {
+            PythonContext context = PythonContext.get(null);
+            PythonThreadState threadState = context.getThreadState(context.getLanguage());
+
+            /*
+             * The C caller may have observed 'tstate_current == NULL' before entering this upcall.
+             * While entering this builtin, the same thread may process a queued thread-local action
+             * from C API initialization and initialize its native thread state eagerly. So the
+             * fallback decision made in C can be stale by the time we get here.
+             */
+            if (threadState.isNativeThreadStateInitialized()) {
+                LOGGER.fine(() -> String.format("Lazy initialization attempt of native thread state for thread %s aborted. Was initialized in the meantime.", Thread.currentThread()));
+                Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
+                assert nativeThreadState != null;
+                return nativeThreadState;
+            }
+
+            LOGGER.fine(() -> "Lazy (fallback) initialization of native thread state for thread " + Thread.currentThread());
+            assert PThreadState.getNativeThreadState(threadState) == null;
+            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
+            threadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
+            return nativeThreadState;
         }
     }
 

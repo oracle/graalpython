@@ -804,7 +804,6 @@ public abstract class ExternalFunctionNodes {
                         CheckFunctionResultNode checkResultNode, CExtToJavaNode convertReturnValue, PForeignToPTypeNode fromForeign, GetThreadStateNode getThreadStateNode,
                         ExternalFunctionInvokeNode invokeNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            ctx.ensureNativeThreadStateInitialized(threadState);
             Object result = invokeNode.execute(frame, inliningTarget, threadState, timing, name, callable, cArguments);
             result = checkResultNode.execute(threadState, name, result);
             if (convertReturnValue != null) {

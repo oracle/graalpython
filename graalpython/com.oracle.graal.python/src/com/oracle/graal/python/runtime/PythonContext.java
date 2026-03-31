@@ -593,6 +593,10 @@ public final class PythonContext extends Python3Core {
             this.nativeThreadLocalVarPointer = ptr;
         }
 
+        public Object getNativeThreadLocalVarPointer() {
+            return nativeThreadLocalVarPointer;
+        }
+
         public boolean isNativeThreadStateInitialized() {
             return nativeThreadLocalVarPointer != null;
         }
@@ -2604,13 +2608,8 @@ public final class PythonContext extends Python3Core {
 
     @TruffleBoundary
     public void initializeNativeThreadState() {
+        LOGGER.fine(() -> "Initializing native thread state for thread " + Thread.currentThread());
         initializeNativeThreadState(getThreadState(getLanguage()));
-    }
-
-    public void ensureNativeThreadStateInitialized(PythonThreadState pythonThreadState) {
-        if (getCApiState() == CApiState.INITIALIZED && !pythonThreadState.isNativeThreadStateInitialized()) {
-            initializeNativeThreadState(pythonThreadState);
-        }
     }
 
     @SuppressWarnings("try")

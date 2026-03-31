@@ -83,6 +83,16 @@ extern "C" {
 static inline PyThreadState *
 _get_thread_state() {
     PyThreadState *ts = tstate_current;
+    if (UNLIKELY(ts == NULL)) {
+        /*
+         * Very unlikely fallback: this can happen if another thread initializes the C API while
+         * the current thread is attached to Python but blocked and therefore misses eager
+         * initialization of its native 'tstate_current' TLS slot.
+         */
+        ts = GraalPyPrivate_ThreadState_Get(&tstate_current);
+        assert(ts != NULL);
+        tstate_current = ts;
+    }
     assert(ts != NULL);
     return ts;
 }
