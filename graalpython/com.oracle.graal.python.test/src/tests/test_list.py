@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -990,6 +990,37 @@ def test_eq_side_effects():
     assert l1 < l2 # l1 cleared -> is smaller than l2
     assert l1 == []
     assert l2 == [0]
+
+
+def test_list_create():
+    def gen(items):
+        yield from items
+
+    o = object()
+
+    ast_no = 0
+    def test_list_ctor(t1, t2):
+        nonlocal ast_no
+        # Run several times to transition to cached
+        # Use eval with a number to force a new AST
+        # Test both builtin iterator and generic paths
+        ast_no += 1
+        for i in range(13):
+            t = t1 if i < 11 else t2
+            res = eval(f"list(it{ast_no})", {f'it{ast_no}': t})
+            assert tuple(res) == t
+        ast_no += 1
+        for i in range(13):
+            t = t1 if i < 11 else t2
+            res = eval(f"list(it{ast_no})", {f'it{ast_no}': gen(t)})
+            assert tuple(res) == t
+
+    test_list_ctor((1, 2, 3), (1, o, 3))
+    test_list_ctor((1, 2, 3), (1, 2 ** 32, 3))
+    test_list_ctor((1, 2, 3), (1, 2 ** 64, 3))
+    test_list_ctor((1, 2 ** 32, 3), (1, 2 ** 64, 3))
+    test_list_ctor((1.0, 2.0, 3.0), (2.0, o, 3.0))
+    test_list_ctor((True, False, True), (True, o, True))
 
 
 if __name__ == '__main__':
