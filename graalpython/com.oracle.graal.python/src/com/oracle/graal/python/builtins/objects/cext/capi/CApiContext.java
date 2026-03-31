@@ -62,12 +62,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -830,7 +825,7 @@ public final class CApiContext extends CExtContext {
                 try {
                     CApiContext cApiContext = loadCApi(node, context, name, path, reason);
                     assert context.getCApiState() == PythonContext.CApiState.INITIALIZING;
-                    initializeThreadStateCurrentForAttachedThreads(node, context);
+                    initializeThreadStateCurrentForAttachedThreads(context);
                     CApiTransitions.initializeReferenceQueuePolling(context.nativeContext);
                     context.runCApiHooks();
                     context.setCApiState(PythonContext.CApiState.INITIALIZED); // volatile write
@@ -853,8 +848,7 @@ public final class CApiContext extends CExtContext {
         return context.getCApiContext();
     }
 
-    @SuppressWarnings("try")
-    private static void initializeThreadStateCurrentForAttachedThreads(Node node, PythonContext context) throws ApiInitException {
+    private static void initializeThreadStateCurrentForAttachedThreads(PythonContext context) {
         Thread[] threads = getOtherAliveAttachedThreads(context);
         if (threads.length == 0) {
             return;
@@ -865,7 +859,7 @@ public final class CApiContext extends CExtContext {
                 context.initializeNativeThreadState();
             }
         };
-        waitForThreadLocalActions(node, context, submitThreadLocalActions(context, threads, action));
+        submitThreadLocalActions(context, threads, action);
     }
 
     private static Thread[] getOtherAliveAttachedThreads(PythonContext context) {
@@ -879,38 +873,9 @@ public final class CApiContext extends CExtContext {
         return threads.toArray(Thread[]::new);
     }
 
-    private static ArrayList<Future<Void>> submitThreadLocalActions(PythonContext context, Thread[] threads, ThreadLocalAction action) {
-        ArrayList<Future<Void>> futures = new ArrayList<>(threads.length);
+    private static void submitThreadLocalActions(PythonContext context, Thread[] threads, ThreadLocalAction action) {
         for (Thread thread : threads) {
-            futures.add(context.getEnv().submitThreadLocal(new Thread[]{thread}, action));
-        }
-        return futures;
-    }
-
-    @SuppressWarnings("try")
-    private static void waitForThreadLocalActions(Node node, PythonContext context, ArrayList<Future<Void>> futures) throws ApiInitException {
-        Node waitLocation = node != null ? node : context.getLanguage().unavailableSafepointLocation;
-        try (GilNode.UncachedRelease ignored = GilNode.uncachedRelease()) {
-            for (Future<Void> future : futures) {
-                TruffleSafepoint.setBlockedThreadInterruptible(waitLocation, voidFuture -> {
-                    try {
-                        voidFuture.get(10, TimeUnit.SECONDS);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException(e);
-                    } catch (TimeoutException | ExecutionException e) {
-                        throw new RuntimeException(e);
-                    } catch (CancellationException e) {
-                        // Ignore threads that went away while initialization was in progress.
-                    }
-                }, future);
-            }
-        } catch (RuntimeException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof TimeoutException) {
-                throw new ApiInitException(toTruffleStringUncached("Timed out while initializing native thread state on an attached thread."));
-            }
-            throw e;
+            context.getEnv().submitThreadLocal(new Thread[]{thread}, action);
         }
     }
 

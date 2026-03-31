@@ -853,6 +853,15 @@ public abstract class CExtNodes {
                 if (capiState != PythonContext.CApiState.INITIALIZING && capiState != PythonContext.CApiState.INITIALIZED) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     CApiContext.ensureCapiWasLoaded("call internal native GraalPy function");
+                    capiState = pythonContext.getCApiState();
+                }
+                if (capiState == PythonContext.CApiState.INITIALIZED) {
+                    PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
+                    // Native thread-state bootstrap may itself call internal C API helpers before
+                    // 'tstate_current' has been published for this thread.
+                    if (!threadState.isNativeThreadStateInitializationInProgress()) {
+                        pythonContext.ensureNativeThreadStateInitialized(threadState);
+                    }
                 }
                 // TODO review EnsureTruffleStringNode with GR-37896
                 Object callable = CApiContext.getNativeSymbol(inliningTarget, symbol);

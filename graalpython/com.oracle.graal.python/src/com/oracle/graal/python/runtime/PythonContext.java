@@ -2607,6 +2607,12 @@ public final class PythonContext extends Python3Core {
         initializeNativeThreadState(getThreadState(getLanguage()));
     }
 
+    public void ensureNativeThreadStateInitialized(PythonThreadState pythonThreadState) {
+        if (getCApiState() == CApiState.INITIALIZED && !pythonThreadState.isNativeThreadStateInitialized()) {
+            initializeNativeThreadState(pythonThreadState);
+        }
+    }
+
     @SuppressWarnings("try")
     public void initializeNativeThreadState(PythonThreadState pythonThreadState) {
         CompilerAsserts.neverPartOfCompilation();
