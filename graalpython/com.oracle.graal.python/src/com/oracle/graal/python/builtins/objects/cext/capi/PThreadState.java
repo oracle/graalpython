@@ -136,6 +136,16 @@ public final class PThreadState extends PythonStructNativeWrapper {
         return threadStateDict;
     }
 
+    /**
+     * This method runs on a critical bootstrap path when creating the native thread state. It may
+     * execute while the C API state is still INITIALIZING and before the current thread has
+     * installed its native 'tstate_current' TLS slot. So, this code must stay very restricted: only
+     * use bootstrap-safe allocation and raw struct writes here.
+     *
+     * In particular, do not introduce conversions such as PythonToNative(NewRef)Node or any other
+     * code paths that may poll the native reference queue, materialize additional native wrappers,
+     * or otherwise assume that the native thread state is already fully initialized.
+     */
     @TruffleBoundary
     private static long allocateCLayout() {
         long ptr = CStructAccess.AllocateNode.allocUncachedPointer(CStructs.PyThreadState.size());
