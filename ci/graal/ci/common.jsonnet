@@ -377,7 +377,6 @@ local common_json = import "../common.json";
         "*/*.log",
         "*/svmbuild/*.log",
         "*/svmbuild/images/*.log",
-        "*/*/stripped/*.map",
         "*/callgrind.*",
         "*.log",
       ],
