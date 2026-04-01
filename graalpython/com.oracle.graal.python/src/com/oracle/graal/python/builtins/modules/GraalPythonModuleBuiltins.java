@@ -292,6 +292,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
             mod.setAttribute(tsLiteral("dump_truffle_ast"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("tdebug"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("get_capi_state"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("set_storage_strategy"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("get_storage_strategy"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("storage_to_native"), PNone.NO_VALUE);
@@ -1191,6 +1192,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             boolean assertOn = false;
             assert assertOn = true;
             return assertOn;
+        }
+    }
+
+    @Builtin(name = "get_capi_state", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetCApiStateNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object doit() {
+            return toTruffleStringUncached(getContext().getCApiState().name());
         }
     }
 
