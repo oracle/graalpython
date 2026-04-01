@@ -261,7 +261,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteIncrementalEncoder_getstate_impl
         @Specialization
-        static Object getstate(MultibyteIncrementalEncoderObject self,
+        static Object getstate(VirtualFrame frame, MultibyteIncrementalEncoderObject self,
                         @Bind Node inliningTarget,
                         @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
                         @Cached CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode asUTF8AndSize,
@@ -278,7 +278,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
             // int statesize = 1;
 
             if (self.pending != null) {
-                byte[] pendingbuffer = asUTF8AndSize.execute(self.pending, T_UTF8, T_STRICT);
+                byte[] pendingbuffer = asUTF8AndSize.execute(frame, self.pending, T_UTF8, T_STRICT);
                 int pendingsize = pendingbuffer.length;
                 if (pendingsize > MAXENCPENDING * 4) {
                     throw raiseNode.raise(inliningTarget, UnicodeError, PENDING_BUFFER_TOO_LARGE);

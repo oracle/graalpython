@@ -635,17 +635,17 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = {"isString(source)", "isString(encoding)"})
-        static byte[] fromString(Node inliningTarget, Object source, Object encoding, @SuppressWarnings("unused") PNone errors,
+        static byte[] fromString(VirtualFrame frame, Node inliningTarget, Object source, Object encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached @Shared CastToTruffleStringNode castStr,
                         @Cached(inline = false) @Shared CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
-            return encodeNode.execute(source, castStr.execute(inliningTarget, encoding), T_STRICT);
+            return encodeNode.execute(frame, source, castStr.execute(inliningTarget, encoding), T_STRICT);
         }
 
         @Specialization(guards = {"isString(source)", "isString(encoding)", "isString(errors)"})
-        static byte[] fromString(Node inliningTarget, Object source, Object encoding, Object errors,
+        static byte[] fromString(VirtualFrame frame, Node inliningTarget, Object source, Object encoding, Object errors,
                         @Cached @Shared CastToTruffleStringNode castStr,
                         @Cached(inline = false) @Shared CodecsModuleBuiltins.CodecsEncodeToJavaBytesNode encodeNode) {
-            return encodeNode.execute(source, castStr.execute(inliningTarget, encoding), castStr.execute(inliningTarget, errors));
+            return encodeNode.execute(frame, source, castStr.execute(inliningTarget, encoding), castStr.execute(inliningTarget, errors));
         }
 
         @Specialization(guards = "isString(source)")

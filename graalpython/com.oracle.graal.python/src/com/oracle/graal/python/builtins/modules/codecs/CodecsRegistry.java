@@ -75,6 +75,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -86,6 +87,7 @@ public final class CodecsRegistry {
     // Equivalent of PyCodec_LookupError
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class PyCodecLookupErrorNode extends Node {
 
         public abstract Object execute(Node inliningTarget, TruffleString name);
