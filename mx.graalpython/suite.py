@@ -953,7 +953,7 @@ suite = {
                 "sdk:MAVEN_DOWNLOADER",
                 "sdk:NATIVEIMAGE",
             ],
-            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact provides a command-line launcher for GraalPy.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime. This artifact provides a command-line launcher for GraalPy.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python-launcher",
@@ -1023,7 +1023,7 @@ suite = {
                 "java.base",
             ],
             "compress": True,
-            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact includes the GraalPy standard library. It is not recommended to depend on the artifact directly. Instead, use \'org.graalvm.polyglot:python\' or \'org.graalvm.polyglot:python-community\' to ensure all dependencies are pulled in correctly.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime. This artifact includes the GraalPy standard library. It is not recommended to depend on the artifact directly. Instead, use \'org.graalvm.polyglot:python\' or \'org.graalvm.polyglot:python-community\' to ensure all dependencies are pulled in correctly.",
             "maven": {
                 "artifactId": "python-resources",
                 "groupId": "org.graalvm.python",
@@ -1075,7 +1075,7 @@ suite = {
                 "BOUNCYCASTLE-PKIX",
                 "BOUNCYCASTLE-UTIL",
             ],
-            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact includes the core language runtime without standard libraries. It is not recommended to depend on the artifact directly. Instead, use \'org.graalvm.polyglot:python\' or \'org.graalvm.polyglot:python-community\' to ensure all dependencies are pulled in correctly.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime. This artifact includes the core language runtime without standard libraries. It is not recommended to depend on the artifact directly. Instead, use \'org.graalvm.polyglot:python\' or \'org.graalvm.polyglot:python-community\' to ensure all dependencies are pulled in correctly.",
             "maven": {
                 "artifactId": "python-language",
                 "groupId": "org.graalvm.python",
@@ -1096,7 +1096,7 @@ suite = {
                 "GRAALPYTHON_RESOURCES",
                 "truffle:TRUFFLE_RUNTIME",
             ],
-            "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This POM dependency includes GraalPy dependencies and Truffle Community Edition.",
+            "description": "GraalPy, a high-performance embeddable Python 3 runtime. This POM dependency includes GraalPy dependencies and Truffle Community Edition.",
             "maven": {
                 "groupId": "org.graalvm.python",
                 "artifactId": "python",

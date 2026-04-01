@@ -1,0 +1,10 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <mask id="pyenv-badge-cutout">
+      <rect width="48" height="48" fill="black"/>
+      <circle cx="24" cy="24" r="24" fill="white"/>
+      <text x="24" y="28" fill="black" font-family="Oracle Sans, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">pyenv</text>
+    </mask>
+  </defs>
+  <rect width="48" height="48" fill="white" mask="url(#pyenv-badge-cutout)"/>
+</svg>

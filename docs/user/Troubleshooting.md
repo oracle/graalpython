@@ -6,7 +6,8 @@ This guide helps you resolve common issues when using GraalPy, whether running i
 
 ### VirtualFileSystem Cannot Load Files
 
-Some files may fail to load from the Virtual Filesystem even though they're included as resources. GraalPy automatically [extracts certain file types](Embedding-Build-Tools.md#extracting-files-from-virtual-filesystem) to the real filesystem, but you may still encounter errors.
+Some files may fail to load from the Virtual Filesystem even though they're included as resources.
+GraalPy automatically [extracts certain file types](Embedding-Build-Tools.md#extracting-files-from-virtual-filesystem) to the real filesystem, but you may still encounter errors.
 
 Example error:
 
@@ -56,14 +57,15 @@ Context context = GraalPyResources.contextBuilder(externalResourceDirectoryPath)
 
 For more details about the Python resources in GraalPy Embedding please refer to the [Embedding Build Tools](Embedding-Build-Tools.md) documentation.
 
-For more details about GraalPy context and Virtual FileSystem configuration please refer to [GraalPyResources](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/GraalPyResources.java) and
-[VirtualFileSystem](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/VirtualFileSystem.java) javadoc.
+For more details about GraalPy context and Virtual FileSystem configuration please refer to [GraalPyResources](https://oracle.github.io/graalpy-extensions/latest/org.graalvm.python.embedding/org/graalvm/python/embedding/GraalPyResources.html) and
+[VirtualFileSystem](https://oracle.github.io/graalpy-extensions/latest/org.graalvm.python.embedding/org/graalvm/python/embedding/VirtualFileSystem.html) javadoc.
 
 ## POSIX Backend Issues
 
 ### Issues with Java POSIX Backend
 
-The Virtual FileSystem relies on GraalPy's Java POSIX backend. Some Python packages bypass Python's I/O and directly access files through native extensions.
+The Virtual FileSystem relies on GraalPy's Java POSIX backend.
+Some Python packages bypass Python's I/O and directly access files through native extensions.
 
 Example error:
 
@@ -107,8 +109,8 @@ Depending on how you [deploy Python resources](Embedding-Build-Tools.md#deployme
 
 For more details about the Python resources in GraalPy Embedding please refer to the [Embedding Build Tools](Embedding-Build-Tools.md) documentation.
 
-For more details about GraalPy context and Virtual FileSystem configuration please refer to [GraalPyResources](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/GraalPyResources.java) and
-[VirtualFileSystem](https://github.com/oracle/graalpython/blob/master/graalpython/org.graalvm.python.embedding/src/org/graalvm/python/embedding/VirtualFileSystem.java) javadoc.
+For more details about GraalPy context and Virtual FileSystem configuration please refer to [GraalPyResources](https://oracle.github.io/graalpy-extensions/latest/org.graalvm.python.embedding/org/graalvm/python/embedding/GraalPyResources.html) and
+[VirtualFileSystem](https://oracle.github.io/graalpy-extensions/latest/org.graalvm.python.embedding/org/graalvm/python/embedding/VirtualFileSystem.html) javadoc.
 
 ## Import and Compatibility Issues
 

@@ -16,7 +16,7 @@ GraalPy is ready for production running pure Python code and has experimental su
 **Low-overhead integration with Java and other languages**
 
 * Use [Python in Java](docs/user/Interoperability.md) applications on GraalVM JDK, Oracle JDK, or OpenJDK
-* Use JVM tools like [Maven](docs/user/README.md), JFR, or [GraalVM Native Image](docs/user/Native-Images-with-Python.md)
+* Use JVM tools like [Maven](docs/user/Embedding-Build-Tools.md), JFR, or [GraalVM Native Image](docs/user/Native-Images-with-Python.md)
 * Manage Python libraries' system access thanks to GraalPy's [Java-based emulation of Python OS APIs](docs/user/Embedding-Permissions.md)
 
 **Compatible with the Python ecosystem**
@@ -84,65 +84,13 @@ This means that build tools have to be available and installation will take long
 We provide [Github actions](scripts/wheelbuilder) to help you build binary packages with the correct dependencies.
 Thanks to our integration with GraalVM Native Image, we can deploy Python applications as [standalone binary](docs/user/Python-Standalone-Applications.md), all dependencies included.
 
-* Linux
+**Quick Installation:**
 
-  The easiest way to install GraalPy on Linux is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-  To install version 25.0.2 using Pyenv, run the following commands:
-  ```bash
-  pyenv install graalpy-25.0.2
-  ```
-  ```bash
-  pyenv shell graalpy-25.0.2
-  ```
-  > NOTE: There will be a delay between GraalPy release and its availability on Pyenv. Make sure to update Pyenv.
+- **Linux/macOS**: `pyenv install graalpy-25.0.2 && pyenv shell graalpy-25.0.2`
+- **Windows**: `pyenv install graalpy-25.0.2-windows-amd64`
+- **Manual**: Download from [GitHub releases](https://github.com/oracle/graalpython/releases)
 
-  Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
-
-  1. Find the download that matches the pattern _graalpy-XX.Y.Z-linux-amd64.tar.gz_ or _graalpy-XX.Y.Z-linux-aarch64.tar.gz_ (depending on your platform) and download.
-  2. Uncompress the file and update your `PATH` environment variable to include the _graalpy-XX.Y.Z-linux-amd64/bin_ (or _graalpy-XX.Y.Z-linux-aarch64/bin_) directory.
-
-* macOS
-
-  The easiest way to install GraalPy on macOS is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-  To install version 25.0.2 using Pyenv, run the following commands:
-  ```bash
-  pyenv install graalpy-25.0.2
-  ```
-  ```bash
-  pyenv shell graalpy-25.0.2
-  ```
-  > NOTE: There will be a delay between GraalPy release and its availability on Pyenv. Make sure to update Pyenv.
-
-  Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
-
-  1. Find the download that matches the pattern _graalpy-XX.Y.Z-macos-aarch64.tar.gz_ and download.
-  2. Remove the quarantine attribute.
-      ```bash
-      sudo xattr -r -d com.apple.quarantine /path/to/graalpy
-      ```
-      For example:
-      ```bash
-      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.0.2
-      ```
-  3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-XX.Y.Z-macos-aarch64/bin_ directory.
-
-* Windows
-
-  The Windows support of GraalPy is still experimental, so not all features and packages may be available.
-  The easiest way to install GraalPy on Windows is to use [Pyenv-win](https://pyenv-win.github.io/pyenv-win/) (the Python version manager for Windows).
-  To install version 25.0.2 using Pyenv-win, run the following commands:
-  ```cmd
-  pyenv install graalpy-25.0.2-windows-amd64
-  ```
-  ```cmd
-  pyenv shell graalpy-25.0.2-windows-amd64
-  ```
-  > NOTE: There will be a delay between GraalPy release and its availability on Pyenv. Make sure to update Pyenv.
-
-  Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
-
-  1. Find the download that matches the pattern _graalpy-XX.Y.Z-windows-amd64.tar.gz_ and download.
-  2. Uncompress the file and update your `PATH` variable to include to the _graalpy-XX.Y.Z-windows-amd64/bin_ directory.
+**See the [complete installation guide](docs/user/Standalone-Getting-Started.md) for detailed instructions.**
 
 </details>
 <details>
@@ -161,36 +109,17 @@ The _setup-python_ action supports GraalPy:
 <details>
 <summary><strong><a name="start-migrating-jython-scripts-to-graalpy"></a>Migrating Jython Scripts to GraalPy</strong></summary>
 
-Most existing Jython code that uses Java integration will be based on a stable Jython release&mdash;however, these are only available in Python 2.x versions.
+Most existing Jython code that uses Java integration will be based on a stable Jython release—however, these are only available in Python 2.x versions.
 To migrate your code from Python 2 to Python 3, follow [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html).
 GraalPy provides a [special mode](docs/user/Python-on-JVM.md) to facilitate migration.
-To run Jython scripts, you need to use a GraalPy distribution running on the JVM so you can access Java classes from Python scripts.
 
-* Linux
+**Quick Setup:**
 
-  1. Find and download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases) that matches the pattern _graalpy-jvm-XX.Y.Z-linux-amd64.tar.gz_ or _graalpy-jvm-XX.Y.Z-linux-aarch64.tar.gz_ (depending on your platform) and download.
-  2. Uncompress the file and update your `PATH` environment variable to include the _graalpy-jvm-XX.Y.Z-linux-amd64/bin_ (or _graalpy-jvm-XX.Y.Z-linux-aarch64/bin_) directory.
-  3. Run your scripts with `graalpy --python.EmulateJython`.
+1. Download a GraalPy JVM distribution: `graalpy-jvm-XX.Y.Z-<platform>.tar.gz`
+2. Extract and add to PATH
+3. Run with: `graalpy --python.EmulateJython`
 
-* macOS
-
-  1. Find and download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases) that matches the pattern _graalpy-jvm-XX.Y.Z-macos-aarch64.tar.gz_ and download.
-  2. Remove the quarantine attribute.
-      ```bash
-      sudo xattr -r -d com.apple.quarantine /path/to/graalpy
-      ```
-      For example:
-      ```bash
-      sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.0.2
-      ```
-  3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-jvm-XX.Y.Z-macos-aarch64/bin_ directory.
-  4. Run your scripts with `graalpy --python.EmulateJython`.
-
-* Windows
-
-  1. Find and download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases) that matches the pattern _graalpy-jvm-XX.Y.Z-windows-amd64.tar.gz_.
-  2. Uncompress the file and update your `PATH` variable to include to the _graalpy-jvm-XX.Y.Z-windows-amd64/bin_ directory.
-  3. Run your scripts with `graalpy --python.EmulateJython`.
+**See the [complete migration guide](docs/user/Python-on-JVM.md) for detailed instructions.**
 
 </details>
 

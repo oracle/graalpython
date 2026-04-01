@@ -12,7 +12,7 @@ Platforms are identified using the target tuple format: `[CPU architecture]-[Ope
 
 Pure Python code runs reliably on GraalPy with recent JDKs when JIT compilation is disabled. However, advanced features like native extensions, platform-specific APIs, and JIT compilation have varying support depending on your platform tier.
 
-## Tier 1
+### Tier 1
 
 - **Stability:** CI failures block releases. Changes which would break the main or release branches are not allowed to be merged; any breakage should be fixed or reverted immediately.
 - **Responsibility:** All core developers are responsible to keep main, and thus these platforms, working.
@@ -23,7 +23,7 @@ Pure Python code runs reliably on GraalPy with recent JDKs when JIT compilation 
 | amd64-linux-glibc-graal-latest   | Oracle Linux 8 or similar. |
 | aarch64-linux-glibc-graal-latest | Oracle Linux 8 or similar. |
 
-## Tier 2
+### Tier 2
 
 - **Stability:** CI failures block releases. Changes which would break the main or release branches are not allowed to be merged; any breakage should be fixed or tests marked as skipped.
 - **Test Coverage:** Circa 10% of tests running on Tier 1 platforms may be skipped on Tier 2 platforms.
@@ -33,7 +33,7 @@ Pure Python code runs reliably on GraalPy with recent JDKs when JIT compilation 
 |-----------------------------------|-------------------------|
 | aarch64-macos-darwin-graal-latest | macOS on M-series CPUs. |
 
-## Tier 3
+### Tier 3
 
 - **Stability:** CI failures block releases. Changes which would break the main or release branches are not allowed to be merged; any breakage should be fixed or tests marked as skipped.
 - **Test Coverage:** Circa 25% of tests running on Tier 1 platforms may be skipped on Tier 3.
@@ -48,7 +48,7 @@ Pure Python code runs reliably on GraalPy with recent JDKs when JIT compilation 
 | amd64-macos-darwin-oracle-21    | JDK 21 is tested without JIT compilation.    |
 | amd64-windows-msvc-oracle-21    | JDK 21 is tested without JIT compilation.    |
 
-## Tier 4
+### Tier 4
 
 - **Stability:** CI failures do not block releases. Tests may be broken on the main and release branches.
 - **Test Coverage:** Smoke tests with platform-agnostic pure Python workloads are run on a regular schedule.

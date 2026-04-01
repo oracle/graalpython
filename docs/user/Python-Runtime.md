@@ -1,59 +1,41 @@
-# Testing Python Applications and Packages on GraalPy
+# GraalPy Runtime Guide
 
-## Choosing the GraalPy Runtime
+> **Quick Start**: For installation and basic usage, see [Standalone Getting Started](Standalone-Getting-Started.md).
 
-GraalPy provides a Python 3.12 compliant runtime.
-A primary goal is to support PyTorch, SciPy, and their constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
-GraalPy is distributed as an ahead-of-time compiled native executable, compact in size.
+## Choosing a GraalPy Distribution
 
-GraalPy provides the following capabilities:
+GraalPy is available in multiple distributions:
 
-* CPython-compatible distribution. This is the most compatible option to test Python code on GraalPy, since it most closely resembles the structure of CPython distributions.
-* Unique deployment mode for Python applications. Compile a Python application on GraalPy to [a single native binary](Python-Standalone-Applications.md) that embeds all needed resources.
-* Access to GraalVM's language ecosystems and tools. GraalPy can run many standard Python tools as well as tools from the GraalVM ecosystem.
+### Distribution Options
 
-### GraalPy Distributions
+- **GraalPy built on Oracle GraalVM** - Provides the best experience with additional optimizations, significantly faster performance and better memory efficiency. Licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html), which permits use by any user including commercial and production use. Redistribution is permitted as long as it is not for a fee.
+- **GraalPy Community** - Built on top of GraalVM Community Edition, fully open-source.
 
-GraalPy is available as **GraalPy built on Oracle GraalVM** and **GraalPy Community**.
+### Runtime Options
 
-* GraalPy built on top of Oracle GraalVM provides the best experience: it comes with additional optimizations, is significantly faster and more memory-efficient. It is licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html) license, same as Oracle GraalVM, which permits use by any user including commercial and production use.
-Redistribution is permitted as long as it is not for a fee.
+Two language runtime options are available for both distributions:
 
-* GraalPy Community is built on top of GraalVM Community Edition, and is fully open-source.
+- **Native** (recommended for standalone use)
+  - GraalPy is compiled ahead-of-time to a native executable
+  - You do not need a JVM to run GraalPy and it is compact in size
+  - Faster startup time
+  - Faster time to reach peak performance
 
-Two language runtime options are available for the Oracle and Community distributions of GraalPy:
+- **JVM**
+  - You can easily exploit Java interoperability
+  - Peak performance may be higher than the native option
+  - Slower startup time
 
-* Native
-  * GraalPy is compiled ahead-of-time to a native executable.
-  * This means that you do not need a JVM to run GraalPy and it is compact in size.
-* JVM
-  * You can easily exploit Java interoperability.
-  * Peak performance may be higher than the native option.
+### Distribution Identification
 
-### GraalPy Identification
+The GraalPy runtimes are identified using the pattern _graalpy(-community)(-jvm)-&lt;version&gt;-&lt;os&gt;-&lt;arch&gt;_:
 
-The four GraalPy runtimes are identified as follows, using the general pattern _graalpy(-community)(-jvm)-&lt;version&gt;-&lt;os&gt;-&lt;arch&gt;_:
+| Distribution  | Native                                    | JVM |
+| ------------- | ----------------------------------------- | ---- |
+| **Oracle**    | `graalpy-<version>-<os>-<arch>`           | `graalpy-jvm-<version>-<os>-<arch>` |
+| **Community** | `graalpy-community-<version>-<os>-<arch>` | `graalpy-community-jvm-<version>-<os>-<arch>` |
 
-<table>
-  <tr>
-    <th>&nbsp;</th>
-    <th>Oracle</th>
-    <th>Community</th>
-  </tr>
-  <tr>
-    <th>Native</th>
-    <td>graalpy-&lt;version&gt;-&lt;os&gt;-&lt;arch&gt;</td>
-    <td>graalpy-community-&lt;version&gt;-&lt;os&gt;-&lt;arch&gt;</td>
-  </tr>
-  <tr>
-    <th>JVM</th>
-    <td>graalpy-jvm-&lt;version&gt;-&lt;os&gt;-&lt;arch&gt;</td>
-    <td>graalpy-community-jvm-&lt;version&gt;-&lt;os&gt;-&lt;arch&gt;</td>
-  </tr>
-</table>
-
-
-### Comparison
+### Runtime Comparison
 
 | Runtime | Native (default) | JVM |
 |:-------|:-----------------|:----|
@@ -61,6 +43,18 @@ The four GraalPy runtimes are identified as follows, using the general pattern _
 | Time to reach peak performance | faster | slower |
 | Peak performance (also considering GC) |good | best |
 | Java interoperability | needs configuration | works |
+
+## GraalPy Capabilities
+
+GraalPy provides a Python 3.12 compliant runtime.
+A primary goal is to support PyTorch, SciPy, and their constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
+The GraalPy runtime is distributed as an ahead-of-time compiled native executable, compact in size.
+
+GraalPy provides the following capabilities:
+
+* CPython-compatible distribution. This is the most compatible option to test Python code on GraalPy, since it most closely resembles the structure of CPython distributions.
+* Unique deployment mode for Python applications. Compile a Python application on GraalPy to [a single native binary](Python-Standalone-Applications.md) that embeds all needed resources.
+* Access to GraalVM's language ecosystems and tools. GraalPy can run many standard Python tools as well as tools from the GraalVM ecosystem.
 
 ## Installing GraalPy
 
@@ -119,7 +113,7 @@ The Windows distribution of GraalPy has more limitations than its Linux or macOS
 
 It has the following known issues:
 - JLine treats Windows as a dumb terminal, with no autocomplete and limited editing capabilities in the REPL
-- Interactive `help()` in the REPL doesn't work
+- Interactive `help()` in the REPL does not work
 - Inside a virtual environment:
   - _graalpy.cmd_ and _graalpy.exe_ are broken
   - _pip.exe_ cannot be used directly
