@@ -950,14 +950,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return co.startLine;
     }
 
-    public Source getSource() {
-        SourceSection section = getSourceSection();
-        if (section == null) {
-            return PythonUtils.createFakeSource();
-        }
-        return section.getSource();
-    }
-
     @Override
     public abstract boolean isCaptureFramesForTrace(boolean compiledFrame);
 
