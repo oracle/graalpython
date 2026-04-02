@@ -5,11 +5,11 @@ redirect_to: jvm-developers/docs/
 ---
 
 <script>
-window.location.replace('/python/jvm-developers/docs/');
+window.location.replace({{ '/jvm-developers/docs/' | relative_url | jsonify }});
 </script>
 
 <noscript>
-<meta http-equiv="refresh" content="0; url=/python/jvm-developers/docs/" />
+<meta http-equiv="refresh" content="0; url={{ '/jvm-developers/docs/' | relative_url }}" />
 </noscript>
 
-<p>Redirecting to the documentation for <a href="/python/jvm-developers/docs/">JVM Developers</a>...</p>
+<p>Redirecting to the documentation for <a href="{{ '/jvm-developers/docs/' | relative_url }}">JVM Developers</a>...</p>
