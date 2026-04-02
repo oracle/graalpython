@@ -166,7 +166,7 @@ img.pylogo {
         });
         var module_testing_csv = new Promise(function (resolve, reject) {
             const xhr = new XMLHttpRequest();
-            const url = `/python/module_results/python-module-testing-${graalpyVersion}.csv`;
+            const url = `{{ '/module_results/' | relative_url }}python-module-testing-${graalpyVersion}.csv`;
             xhr.open('GET', url);
             xhr.overrideMimeType('text/plain');
             xhr.onload = function () {
@@ -183,7 +183,7 @@ img.pylogo {
         });
         var wheels_csv = new Promise(function (resolve, reject) {
             const xhr = new XMLHttpRequest();
-            const url = `/python/wheels/${graalpyVersion}.csv`;
+            const url = `{{ '/wheels/' | relative_url }}${graalpyVersion}.csv`;
             xhr.open('GET', url);
             xhr.overrideMimeType('text/plain');
             xhr.onload = function () {

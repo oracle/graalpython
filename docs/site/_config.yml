@@ -1,5 +1,5 @@
-baseurl: "/python"
-url: "https://graalvm.org"
+baseurl: ""
+url: "https://graalpy.org"
 github: "oracle/graalpython"
 language_version: 25.0.2
 name: GraalPy
