@@ -595,7 +595,18 @@ public final class MatchBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
 
-            for (Map.Entry<String, Object> entry : self.pattern.groupToIndexMap.entrySet()) {
+            String name = getLastGroupName(self.pattern.groupToIndexMap, groupIndex);
+            if (name != null) {
+                return fromJavaStringNode.execute(name, TS_ENCODING);
+            }
+
+            // the last matched group does not have a name
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private static String getLastGroupName(LinkedHashMap<String, Object> groupToIndexMap, int groupIndex) {
+            for (Map.Entry<String, Object> entry : groupToIndexMap.entrySet()) {
                 Object value = entry.getValue();
 
                 if (!(value instanceof Integer valueInteger)) {
@@ -606,13 +617,10 @@ public final class MatchBuiltins extends PythonBuiltins {
 
                 if (valueInteger == groupIndex) {
                     // a named group found
-                    String name = entry.getKey();
-                    return fromJavaStringNode.execute(name, TS_ENCODING);
+                    return entry.getKey();
                 }
             }
-
-            // the last matched group does not have a name
-            return PNone.NONE;
+            return null;
         }
     }
 

@@ -63,7 +63,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.List;
 
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -91,7 +90,7 @@ public final class TemplateFormatter {
     private String empty;
     private Object[] args;
     private Object keywords;
-    private List<Object[]> parserList = null;
+    private ArrayList<Object[]> parserList = null;
     private int autoNumbering;
     private int autoNumberingState;
 
@@ -411,9 +410,9 @@ public final class TemplateFormatter {
 
     public static class FieldNameSplitResult {
         public Object first;
-        public List<Object[]> parserList;
+        public ArrayList<Object[]> parserList;
 
-        public FieldNameSplitResult(Object first, List<Object[]> parserList) {
+        public FieldNameSplitResult(Object first, ArrayList<Object[]> parserList) {
             this.first = first;
             this.parserList = parserList;
         }
@@ -467,7 +466,7 @@ public final class TemplateFormatter {
     }
 
     @TruffleBoundary
-    public List<Object[]> formatterParser(Node node) {
+    public ArrayList<Object[]> formatterParser(Node node) {
         this.parserList = new ArrayList<>();
         this.lastEnd = 0;
         buildString(node, 0, this.template.length(), 2, null);

@@ -769,7 +769,7 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal private long perfCounterStart = System.nanoTime();
 
     public static final String CHILD_CONTEXT_DATA = "childContextData";
-    @CompilationFinal private List<Integer> childContextFDs;
+    @CompilationFinal private ArrayList<Integer> childContextFDs;
     private final ChildContextData childContextData;
     private final SharedMultiprocessingData sharedMultiprocessingData;
 
@@ -1241,7 +1241,7 @@ public final class PythonContext extends Python3Core {
         thread.start();
     }
 
-    public synchronized List<Integer> getChildContextFDs() {
+    public synchronized ArrayList<Integer> getChildContextFDs() {
         if (childContextFDs == null) {
             childContextFDs = new ArrayList<>();
         }

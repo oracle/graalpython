@@ -191,9 +191,14 @@ public final class PException extends AbstractTruffleException {
     @Override
     public String getMessage() {
         if (message == null) {
-            return pythonException.toString();
+            return getPythonExceptionString();
         }
         return message;
+    }
+
+    @TruffleBoundary
+    private String getPythonExceptionString() {
+        return pythonException.toString();
     }
 
     public void materializeMessage() {

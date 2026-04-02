@@ -912,7 +912,7 @@ public abstract class PosixSupportLibrary extends Library {
      * Exception that indicates and error while executing
      * {@link #getaddrinfo(Object, Object, Object, int, int, int, int)}.
      */
-    public static class GetAddrInfoException extends Exception {
+    public static final class GetAddrInfoException extends Exception {
 
         private static final long serialVersionUID = 3013253817849329391L;
 

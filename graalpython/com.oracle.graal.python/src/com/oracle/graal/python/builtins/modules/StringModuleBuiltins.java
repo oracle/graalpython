@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMATTER_FIELD_NAME_
 import static com.oracle.graal.python.nodes.BuiltinNames.J_FORMATTER_PARSER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__STRING;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -87,7 +88,7 @@ public final class StringModuleBuiltins extends PythonBuiltins {
         PSequenceIterator formatterParser(VirtualFrame frame, TruffleString self,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             TemplateFormatter formatter = new TemplateFormatter(self);
-            List<Object[]> parserList;
+            ArrayList<Object[]> parserList;
             PythonContext context = PythonContext.get(this);
             PythonLanguage language = context.getLanguage(this);
             Object state = ExecutionContext.BoundaryCallContext.enter(frame, language, context, boundaryCallData);
@@ -100,7 +101,7 @@ public final class StringModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static PSequenceIterator parserListToIterator(List<Object[]> parserList, PythonLanguage language) {
+    private static PSequenceIterator parserListToIterator(ArrayList<Object[]> parserList, PythonLanguage language) {
         Object[] tuples = new Object[parserList.size()];
         for (int i = 0; i < tuples.length; i++) {
             tuples[i] = PFactory.createTuple(language, parserList.get(i));
