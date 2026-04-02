@@ -48,6 +48,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS_CN;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_CN;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_NAME_MUST_BE_A_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_SUCH_CODEC_IS_SUPPORTED;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -134,7 +135,7 @@ public final class CodecsCNModuleBuiltins extends PythonBuiltins {
 
             MultibyteCodec codec = findCodec(CODEC_LIST, asUTF8Node.execute(inliningTarget, encoding), isEqual);
             if (codec == null) {
-                throw raiseNode.raise(inliningTarget, LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
+                throw raiseNode.raise(inliningTarget, ImportError, NO_SUCH_CODEC_IS_SUPPORTED);
             }
 
             PyCapsule codecobj = PFactory.createCapsuleJavaName(language, codec, PyMultibyteCodec_CAPSULE_NAME);
