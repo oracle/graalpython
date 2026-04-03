@@ -7,7 +7,10 @@
 import _codecs_jp, codecs
 import _multibytecodec as mbc
 
-codec = _codecs_jp.getcodec('shift_jis_2004')
+try:
+    codec = _codecs_jp.getcodec('shift_jis_2004')
+except LookupError as e:
+    raise ImportError(str(e)) from e
 
 class Codec(codecs.Codec):
     encode = codec.encode

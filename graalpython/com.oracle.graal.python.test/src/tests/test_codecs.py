@@ -4,6 +4,7 @@
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import importlib
 import sys
+from pathlib import Path
 
 
 def coding_checker(self, coder):
@@ -893,12 +894,31 @@ class CharmapEncodeTest(unittest.TestCase):
 
 class MultibyteCodecTest(unittest.TestCase):
 
-    def test_missing_multibyte_codecs_raise_import_error(self):
-        expected_exc = ImportError if sys.implementation.name == 'graalpy' else LookupError
+    def test_missing_multibyte_codecs_raise_lookup_error(self):
         for module_name in ('_codecs_cn', '_codecs_hk', '_codecs_iso2022', '_codecs_jp', '_codecs_kr', '_codecs_tw'):
             with self.subTest(module_name=module_name):
                 module = importlib.import_module(module_name)
-                self.assertRaises(expected_exc, module.getcodec, '__missing_codec__')
+                self.assertRaises(LookupError, module.getcodec, '__missing_codec__')
+
+    def test_unsupported_multibyte_codec_modules_raise_import_error_on_graalpy(self):
+        encodings_dir = Path(__file__).resolve().parents[3] / 'lib-python' / '3' / 'encodings'
+        for module_name in (
+            'encodings.euc_jis_2004',
+            'encodings.euc_jisx0213',
+            'encodings.iso2022_jp_1',
+            'encodings.iso2022_jp_2004',
+            'encodings.iso2022_jp_3',
+            'encodings.iso2022_jp_ext',
+            'encodings.shift_jis_2004',
+        ):
+            with self.subTest(module_name=module_name):
+                module_path = encodings_dir / f'{module_name.rsplit(".", 1)[1]}.py'
+                spec = importlib.util.spec_from_file_location(f'test_{module_name.replace(".", "_")}', module_path)
+                module = importlib.util.module_from_spec(spec)
+                if sys.implementation.name == 'graalpy':
+                    self.assertRaises(ImportError, spec.loader.exec_module, module)
+                else:
+                    spec.loader.exec_module(module)
 
     # just a smoke test
     def test_encode(self):
