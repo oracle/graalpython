@@ -894,10 +894,11 @@ class CharmapEncodeTest(unittest.TestCase):
 class MultibyteCodecTest(unittest.TestCase):
 
     def test_missing_multibyte_codecs_raise_import_error(self):
+        expected_exc = ImportError if sys.implementation.name == 'graalpy' else LookupError
         for module_name in ('_codecs_cn', '_codecs_hk', '_codecs_iso2022', '_codecs_jp', '_codecs_kr', '_codecs_tw'):
             with self.subTest(module_name=module_name):
                 module = importlib.import_module(module_name)
-                self.assertRaises(ImportError, module.getcodec, '__missing_codec__')
+                self.assertRaises(expected_exc, module.getcodec, '__missing_codec__')
 
     # just a smoke test
     def test_encode(self):
