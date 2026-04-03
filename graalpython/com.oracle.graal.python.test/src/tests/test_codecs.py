@@ -2,6 +2,7 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+import importlib
 import sys
 
 
@@ -891,6 +892,12 @@ class CharmapEncodeTest(unittest.TestCase):
 
 
 class MultibyteCodecTest(unittest.TestCase):
+
+    def test_missing_multibyte_codecs_raise_import_error(self):
+        for module_name in ('_codecs_cn', '_codecs_hk', '_codecs_iso2022', '_codecs_jp', '_codecs_kr', '_codecs_tw'):
+            with self.subTest(module_name=module_name):
+                module = importlib.import_module(module_name)
+                self.assertRaises(ImportError, module.getcodec, '__missing_codec__')
 
     # just a smoke test
     def test_encode(self):
