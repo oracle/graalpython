@@ -42,9 +42,7 @@
             amd64 +: common.darwin_amd64 + {
                 capabilities +: ["ram32gb"],
             },
-            aarch64 +: common.darwin_aarch64 + {
-                capabilities +: ["darwin_bigsur"],
-            },
+            aarch64 +: common.darwin_aarch64,
         },
         windows +: {
             amd64 +: common.windows_amd64 + {
@@ -280,8 +278,8 @@
             local jdk_version = self.jdk_version,
             local artifact_name = name + os + arch,
             local capabilities = if (self.os == "darwin" && self.arch != "aarch64") then
-                    // for darwin, amd64: set minimum requirement to bigsur
-                    [c for c in super.capabilities if !std.startsWith(c, "darwin")] + ["darwin_bigsur"]
+                    // for darwin, amd64: set minimum requirements
+                    [c for c in super.capabilities if !std.startsWith(c, "darwin")]
                 else
                     super.capabilities,
             capabilities: capabilities,
