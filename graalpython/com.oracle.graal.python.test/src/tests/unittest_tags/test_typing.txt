@@ -163,7 +163,7 @@ test.test_typing.ForwardRefTests.test_no_type_check @ darwin-arm64,linux-aarch64
 test.test_typing.ForwardRefTests.test_no_type_check_TypeError @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.ForwardRefTests.test_no_type_check_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.ForwardRefTests.test_no_type_check_class_and_static_methods @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_typing.ForwardRefTests.test_no_type_check_foreign_functions @ linux-aarch64-github,linux-x86_64-github
+test.test_typing.ForwardRefTests.test_no_type_check_foreign_functions @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_typing.ForwardRefTests.test_no_type_check_forward_ref_as_string @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.ForwardRefTests.test_no_type_check_lambda @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_typing.ForwardRefTests.test_no_type_check_nested_types @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
