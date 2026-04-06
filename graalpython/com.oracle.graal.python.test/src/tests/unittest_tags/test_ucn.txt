@@ -10,4 +10,5 @@ test.test_ucn.UnicodeNamesTest.test_misc_symbols @ darwin-arm64,linux-aarch64,li
 # Accesses http://www.pythontest.net
 !test.test_ucn.UnicodeNamesTest.test_named_sequences_full
 test.test_ucn.UnicodeNamesTest.test_named_sequences_names_in_pua_range @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ucn.UnicodeNamesTest.test_named_sequences_sample @ linux-x86_64-github
 test.test_ucn.UnicodeNamesTest.test_strict_error_handling @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
