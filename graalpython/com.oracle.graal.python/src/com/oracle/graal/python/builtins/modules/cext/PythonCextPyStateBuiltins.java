@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,7 +71,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ThreadLocalAction;
@@ -79,8 +78,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -116,19 +113,39 @@ public final class PythonCextPyStateBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyThreadState, args = {Pointer}, call = Ignored)
+    /**
+     * Very unlikely fallback for threads that were already attached when another thread initialized
+     * the C API, but were blocked at that time and therefore could not process the thread-local
+     * action that eagerly initializes their native 'tstate_current' TLS slot.
+     */
+    @CApiBuiltin(ret = PyThreadState, args = {Pointer}, acquireGil = false, call = Ignored)
     abstract static class GraalPyPrivate_ThreadState_Get extends CApiUnaryBuiltinNode {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_ThreadState_Get.class);
 
-        @Specialization(limit = "1")
-        static Object get(Object tstateCurrentPtr,
-                        @Bind Node inliningTarget,
-                        @Bind PythonContext context,
-                        @CachedLibrary("tstateCurrentPtr") InteropLibrary lib) {
-            PythonThreadState pythonThreadState = context.getThreadState(context.getLanguage(inliningTarget));
-            if (!lib.isNull(tstateCurrentPtr)) {
-                pythonThreadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
+        @Specialization
+        @TruffleBoundary
+        static Object get(Object tstateCurrentPtr) {
+            PythonContext context = PythonContext.get(null);
+            PythonThreadState threadState = context.getThreadState(context.getLanguage());
+
+            /*
+             * The C caller may have observed 'tstate_current == NULL' before entering this upcall.
+             * While entering this builtin, the same thread may process a queued thread-local action
+             * from C API initialization and initialize its native thread state eagerly. So the
+             * fallback decision made in C can be stale by the time we get here.
+             */
+            if (threadState.isNativeThreadStateInitialized()) {
+                LOGGER.fine(() -> String.format("Lazy initialization attempt of native thread state for thread %s aborted. Was initialized in the meantime.", Thread.currentThread()));
+                Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
+                assert nativeThreadState != null;
+                return nativeThreadState;
             }
-            return PThreadState.getOrCreateNativeThreadState(pythonThreadState);
+
+            LOGGER.fine(() -> "Lazy (fallback) initialization of native thread state for thread " + Thread.currentThread());
+            assert PThreadState.getNativeThreadState(threadState) == null;
+            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
+            threadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
+            return nativeThreadState;
         }
     }
 
@@ -151,12 +168,7 @@ public final class PythonCextPyStateBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-            PDict threadStateDict = threadState.getDict();
-            if (threadStateDict == null) {
-                threadStateDict = PFactory.createDict(context.getLanguage());
-                threadState.setDict(threadStateDict);
-            }
-            return threadStateDict;
+            return PThreadState.getOrCreateThreadStateDict(context, threadState);
         }
     }
 

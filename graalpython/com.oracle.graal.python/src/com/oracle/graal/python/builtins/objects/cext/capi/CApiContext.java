@@ -127,6 +127,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -794,7 +795,7 @@ public final class CApiContext extends CExtContext {
         assert PythonContext.get(null).ownsGil(); // unsafe lazy initialization
         // The initialization may run Python code (e.g., module import in
         // GraalPyPrivate_InitBuiltinTypesAndStructs), so just holding the GIL is not enough
-        if (!context.isCApiInitialized()) {
+        if (context.getCApiState() != PythonContext.CApiState.INITIALIZED) {
 
             // We import those modules ahead of the initialization without the initialization lock
             // to avoid deadlocks. We would have imported them in the initialization anyway, this
@@ -808,23 +809,68 @@ public final class CApiContext extends CExtContext {
                 TruffleSafepoint.setBlockedThreadInterruptible(node, ReentrantLock::lockInterruptibly, initLock);
             }
             try {
-                if (!context.isCApiInitialized()) {
-                    // loadCApi must set C API context half-way through its execution so that it can
-                    // run internal Java code that needs C API context
-                    TruffleSafepoint safepoint = TruffleSafepoint.getCurrent();
-                    boolean prevAllowSideEffects = safepoint.setAllowSideEffects(false);
+                PythonContext.CApiState state = context.getCApiState();
+                if (state == PythonContext.CApiState.INITIALIZED || state == PythonContext.CApiState.INITIALIZING) {
+                    return context.getCApiContext();
+                }
+                if (state == PythonContext.CApiState.FAILED) {
+                    throw new ApiInitException(toTruffleStringUncached("The C API initialization has previously failed."));
+                }
+
+                assert state == PythonContext.CApiState.UNINITIALIZED : state;
+                // loadCApi must set C API context half-way through its execution so that it can
+                // run internal Java code that needs C API context
+                TruffleSafepoint safepoint = TruffleSafepoint.getCurrent();
+                boolean prevAllowSideEffects = safepoint.setAllowSideEffects(false);
+                try {
+                    CApiContext cApiContext = loadCApi(node, context, name, path, reason);
+                    assert context.getCApiState() == PythonContext.CApiState.INITIALIZING;
+                    initializeThreadStateCurrentForAttachedThreads(context);
+                    CApiTransitions.initializeReferenceQueuePolling(context.nativeContext);
+                    context.runCApiHooks();
+                    context.setCApiState(PythonContext.CApiState.INITIALIZED); // volatile write
                     try {
-                        loadCApi(node, context, name, path, reason);
-                        context.setCApiInitialized(); // volatile write
-                    } finally {
-                        safepoint.setAllowSideEffects(prevAllowSideEffects);
+                        cApiContext.runBackgroundGCTask(context);
+                    } catch (RuntimeException e) {
+                        // This can happen when other languages restrict multithreading
+                        LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
                     }
+                } catch (Throwable t) {
+                    context.setCApiState(PythonContext.CApiState.FAILED);
+                    throw t;
+                } finally {
+                    safepoint.setAllowSideEffects(prevAllowSideEffects);
                 }
             } finally {
                 initLock.unlock();
             }
         }
         return context.getCApiContext();
+    }
+
+    private static void initializeThreadStateCurrentForAttachedThreads(PythonContext context) {
+        Thread[] threads = getOtherAliveAttachedThreads(context);
+        if (threads.length == 0) {
+            return;
+        }
+        ThreadLocalAction action = new ThreadLocalAction(true, false) {
+            @Override
+            protected void perform(ThreadLocalAction.Access access) {
+                context.initializeNativeThreadState();
+            }
+        };
+        context.getEnv().submitThreadLocal(threads, action);
+    }
+
+    private static Thread[] getOtherAliveAttachedThreads(PythonContext context) {
+        Thread currentThread = Thread.currentThread();
+        ArrayList<Thread> threads = new ArrayList<>();
+        for (Thread thread : context.getThreads()) {
+            if (thread != currentThread && thread.isAlive()) {
+                threads.add(thread);
+            }
+        }
+        return threads.toArray(Thread[]::new);
     }
 
     private static CApiContext loadCApi(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
@@ -872,6 +918,7 @@ public final class CApiContext extends CExtContext {
             Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
             context.setCApiContext(cApiContext);
+            context.setCApiState(PythonContext.CApiState.INITIALIZING);
 
             try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
                 /*
@@ -880,14 +927,18 @@ public final class CApiContext extends CExtContext {
                  * then already require the GC state.
                  */
                 Object gcState = cApiContext.createGCState();
-                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
+                PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
+                Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
+                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER,POINTER):POINTER", "exec").build()).call();
                 initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                U.execute(initFunction, builtinArrayWrapper, gcState);
+                Object nativeThreadLocalVarPointer = U.execute(initFunction, builtinArrayWrapper, gcState, nativeThreadState);
+                assert U.isPointer(nativeThreadLocalVarPointer);
+                assert !U.isNull(nativeThreadLocalVarPointer);
+                currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
             }
 
             assert PythonCApiAssertions.assertBuiltins(capiLibrary);
             cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
-            context.runCApiHooks();
 
             /*
              * C++ libraries sometimes declare global objects that have destructors that call
@@ -902,7 +953,6 @@ public final class CApiContext extends CExtContext {
             Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
             try {
                 cApiContext.addNativeFinalizer(context, finalizingPointer);
-                cApiContext.runBackgroundGCTask(context);
             } catch (RuntimeException e) {
                 // This can happen when other languages restrict multithreading
                 LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
@@ -1106,7 +1156,7 @@ public final class CApiContext extends CExtContext {
          * allocated resources (e.g. native object stubs). Calling
          * 'CApiTransitions.pollReferenceQueue' could then lead to a double-free.
          */
-        CApiTransitions.disableReferenceQueuePolling(handleContext);
+        CApiTransitions.disableReferenceQueuePollingPermanently(handleContext);
 
         TruffleSafepoint sp = TruffleSafepoint.getCurrent();
         boolean prev = sp.setAllowActions(false);

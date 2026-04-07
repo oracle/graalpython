@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -84,9 +84,16 @@ static inline PyThreadState *
 _get_thread_state() {
     PyThreadState *ts = tstate_current;
     if (UNLIKELY(ts == NULL)) {
-         ts = GraalPyPrivate_ThreadState_Get(&tstate_current);
-         tstate_current = ts;
+        /*
+         * Very unlikely fallback: this can happen if another thread initializes the C API while
+         * the current thread is attached to Python but blocked and therefore misses eager
+         * initialization of its native 'tstate_current' TLS slot.
+         */
+        ts = GraalPyPrivate_ThreadState_Get(&tstate_current);
+        assert(ts != NULL);
+        tstate_current = ts;
     }
+    assert(ts != NULL);
     return ts;
 }
 

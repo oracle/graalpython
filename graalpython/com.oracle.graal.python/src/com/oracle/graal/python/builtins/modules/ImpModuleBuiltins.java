@@ -287,7 +287,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 return 0;
             }
 
-            if (!context.hasCApiContext()) {
+            if (context.getCApiState() != PythonContext.CApiState.INITIALIZED) {
                 throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.CAPI_NOT_YET_INITIALIZED);
             }
 

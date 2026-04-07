@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,13 @@ class TestInetAtonErrors(unittest.TestCase):
         self.assertRaises(OSError, lambda : socket.inet_aton('oracle.com'))
         self.assertRaises(OSError, lambda : socket.inet_aton('255.255.256.1'))
         self.assertRaises(TypeError, lambda : socket.inet_aton(255))
+
+
+class TestHostLookupErrors(unittest.TestCase):
+    def test_gethostbyname_ex_invalid_host_raises_gaierror(self):
+        with self.assertRaises(socket.gaierror):
+            socket.gethostbyname_ex("nonexistent.invalid")
+
 
 def test_get_name_info():
     import socket

@@ -38,6 +38,11 @@
 # SOFTWARE.
 
 import datetime
+import os
+import subprocess
+import sys
+import textwrap
+import time
 import unittest
 
 class DateTest(unittest.TestCase):
@@ -542,11 +547,28 @@ class DateTest(unittest.TestCase):
         actual = datetime.datetime.strptime("+00:00 GMT", "%z %Z")
         self.assertEqual(actual.tzinfo.tzname(None), "GMT")
 
-        import time
         timezone_name = time.localtime().tm_zone
         self.assertIsNotNone(timezone_name)
         actual = datetime.datetime.strptime(f"+00:00 {timezone_name}", "%z %Z")
         self.assertEqual(actual.tzinfo.tzname(None), timezone_name)
+
+        if hasattr(time, "tzset") and sys.executable:
+            proc = subprocess.run(
+                [sys.executable, "-c", textwrap.dedent("""\
+                    import datetime
+                    import time
+
+                    time.tzset()
+                    timezone_name = time.localtime().tm_zone
+                    actual = datetime.datetime.strptime(f"+00:00 {timezone_name}", "%z %Z")
+                    assert actual.tzinfo.tzname(None) == timezone_name
+                """)],
+                env={**os.environ, "TZ": "Etc/GMT-1"},
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
 
         # time zone name without utc offset is ignored
         actual = datetime.datetime.strptime("UTC", "%Z")

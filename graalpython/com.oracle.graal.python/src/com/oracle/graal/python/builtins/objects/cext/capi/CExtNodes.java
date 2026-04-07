@@ -849,7 +849,8 @@ public abstract class CExtNodes {
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
                 PythonContext pythonContext = PythonContext.get(inliningTarget);
-                if (!pythonContext.hasCApiContext()) {
+                PythonContext.CApiState capiState = pythonContext.getCApiState();
+                if (capiState != PythonContext.CApiState.INITIALIZING && capiState != PythonContext.CApiState.INITIALIZED) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     CApiContext.ensureCapiWasLoaded("call internal native GraalPy function");
                 }
