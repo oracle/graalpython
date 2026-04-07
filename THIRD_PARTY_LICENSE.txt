@@ -343,7 +343,7 @@ The command line interpreter is covered by the Apache Software
 License. See the org/apache/LICENSE file for details.
 ================================================================================
 
-xz 5.2.6
+xz 5.8.3
 
 https://git.tukaani.org/?p=xz.git;a=blob;f=COPYING
 1
