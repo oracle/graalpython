@@ -306,7 +306,7 @@ public class CharsetMapping {
         addMapping("mac_turkish", "x-MacTurkish");
         addMapping("palmos", null);
         addMapping("ptcp154", null);
-        addMapping("shift_jis_2004", "Shift_JISX0213");
+        addMapping("shift_jis_2004", "x-SJIS_0213");
         addMapping("shift_jis", "Shift_JIS");
         addMapping("shift_jisx0213", "x-SJIS_0213");
         addMapping("utf_16_be", "UTF-16BE");
@@ -438,10 +438,6 @@ public class CharsetMapping {
         addAlias("uhc", "cp949");
         addAlias("950", "cp950");
         addAlias("ms950", "cp950");
-        addAlias("jisx0213", "euc_jis_2004");
-        addAlias("eucjis2004", "euc_jis_2004");
-        addAlias("euc_jis2004", "euc_jis_2004");
-        addAlias("eucjisx0213", "euc_jisx0213");
         addAlias("eucjp", "euc_jp");
         addAlias("ujis", "euc_jp");
         addAlias("u_jis", "euc_jp");

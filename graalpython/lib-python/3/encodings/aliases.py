@@ -491,10 +491,9 @@ aliases = {
     's_jis'              : 'shift_jis',
 
     # shift_jis_2004 codec
-    # GraalPy change: Java doesn't have this codec
-    # 'shiftjis2004'       : 'shift_jis_2004',
-    # 'sjis_2004'          : 'shift_jis_2004',
-    # 's_jis_2004'         : 'shift_jis_2004',
+    'shiftjis2004'       : 'shift_jis_2004',
+    'sjis_2004'          : 'shift_jis_2004',
+    's_jis_2004'         : 'shift_jis_2004',
 
     # shift_jisx0213 codec
     'shiftjisx0213'      : 'shift_jisx0213',

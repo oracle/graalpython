@@ -3,6 +3,7 @@
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import importlib
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -909,7 +910,6 @@ class MultibyteCodecTest(unittest.TestCase):
             'encodings.iso2022_jp_2004',
             'encodings.iso2022_jp_3',
             'encodings.iso2022_jp_ext',
-            'encodings.shift_jis_2004',
         ):
             with self.subTest(module_name=module_name):
                 module_path = encodings_dir / f'{module_name.rsplit(".", 1)[1]}.py'
@@ -919,6 +919,9 @@ class MultibyteCodecTest(unittest.TestCase):
                     self.assertRaises(ImportError, spec.loader.exec_module, module)
                 else:
                     spec.loader.exec_module(module)
+
+    def test_shift_jis_2004_codec_module_imports(self):
+        import encodings.shift_jis_2004
 
     # just a smoke test
     def test_encode(self):
