@@ -771,5 +771,35 @@
     "policy": "outlier-elimination-all-builds",
     "forks": "4x5",
     "focus": "0.0-0.4"
+  },
+  "peak/attribute-access.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "peak/call-method-polymorphic.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "peak/deltablue.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "peak/fibonacci.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "peak/richards.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "peak/sieve.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
   }
 }

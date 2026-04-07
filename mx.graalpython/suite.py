@@ -1709,6 +1709,9 @@ suite = {
                 "./numpy/common.py": [
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/numpy/common.py",
                 ],
+                "./peak/": [
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/peak/*.py",
+                ],
                 # Warmup benchmarks
                 "./warmup/": [
                     "file:benchmarks/warmup/*.py",
