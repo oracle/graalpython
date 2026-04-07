@@ -1,6 +1,6 @@
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2021, 2026, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -46,17 +46,17 @@
 from __future__ import print_function
 
 def warmupIterations():
-    return 10
+    return 0
 
 
 def iterations():
-    return 0
+    return 1000
 
 # Used in the polybench harness for aggregating the iteration datapoints.
 def summary():
     return {
         "name": "OutlierRemovalAverageSummary",
-        "lower-threshold": 0.05,
+        "lower-threshold": 0.0,
         "upper-threshold": 0.2,
     }
 

@@ -61,6 +61,10 @@ graalpython/com.oracle.graal.python.benchmarks/python/micro/special-len.py,zippy
 graalpython/com.oracle.graal.python.benchmarks/python/warmup/binarytrees3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/warmup/gcbench.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/warmup/pads-integerpartitions.py,benchmarks.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/peak/deltablue.py,gpl2cpe-python.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/peak/fibonacci.py,gpl2cpe-python.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/peak/richards.py,benchmarks.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/peak/sieve.py,gpl2cpe-python.copyright
 graalpython/com.oracle.graal.python.cext/expat/ascii.h,expat.copyright
 graalpython/com.oracle.graal.python.cext/expat/asciitab.h,expat.copyright
 graalpython/com.oracle.graal.python.cext/expat/expat.h,expat.copyright

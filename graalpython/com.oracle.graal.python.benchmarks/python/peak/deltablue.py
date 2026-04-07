@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -40,18 +40,18 @@ the layout & logic from the original. (Ugh.)
 
 """
 def warmupIterations():
-    return 10
+    return 300
 
 
 def iterations():
-    return 0
+    return 1000
 
 # Used in the polybench harness for aggregating the iteration datapoints.
 def summary():
     return {
         "name": "OutlierRemovalAverageSummary",
-        "lower-threshold": 0.1,
-        "upper-threshold": 0.4,
+        "lower-threshold": 0.0,
+        "upper-threshold": 1.0,
     }
 
 # The JS variant implements "OrderedCollection", which basically completely
