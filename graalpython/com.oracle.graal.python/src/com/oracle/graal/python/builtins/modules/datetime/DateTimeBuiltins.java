@@ -2310,22 +2310,14 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                                 TimeZone timeZone = TimeModuleBuiltins.getGlobalTimeZone(context);
                                 String zoneName = timeZone.getDisplayName(false, TimeZone.SHORT);
                                 String zoneNameDaylightSaving = timeZone.getDisplayName(true, TimeZone.SHORT);
+                                String matchedZoneName = matchTimeZoneName(string, i, zoneName, zoneNameDaylightSaving, "UTC", "GMT");
 
-                                if (string.startsWith("UTC", i)) {
-                                    builder.setTimeZoneName("UTC");
-                                    i += 3;
-                                } else if (string.startsWith("GMT", i)) {
-                                    builder.setTimeZoneName("GMT");
-                                    i += 3;
-                                } else if (string.startsWith(zoneName, i)) {
-                                    builder.setTimeZoneName(zoneName);
-                                    i += zoneName.length();
-                                } else if (string.startsWith(zoneNameDaylightSaving, i)) {
-                                    builder.setTimeZoneName(zoneNameDaylightSaving);
-                                    i += zoneNameDaylightSaving.length();
-                                } else {
+                                if (matchedZoneName == null) {
                                     throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.TIME_DATA_S_DOES_NOT_MATCH_FORMAT_S, string, format);
                                 }
+
+                                builder.setTimeZoneName(matchedZoneName);
+                                i += matchedZoneName.length();
                             }
                             case 'j' -> {
                                 var pos = new ParsePosition(i);
@@ -2485,6 +2477,16 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             }
 
             return result;
+        }
+
+        private static String matchTimeZoneName(String string, int from, String... candidates) {
+            String matched = null;
+            for (String candidate : candidates) {
+                if (candidate != null && string.startsWith(candidate, from) && (matched == null || candidate.length() > matched.length())) {
+                    matched = candidate;
+                }
+            }
+            return matched;
         }
 
         @TruffleBoundary
