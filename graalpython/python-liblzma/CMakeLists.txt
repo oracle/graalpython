@@ -135,8 +135,6 @@ target_sources(${TARGET_LZMA} PRIVATE
     "${SRC_DIR}/liblzma/common/index_hash.c"
     "${SRC_DIR}/liblzma/common/stream_decoder.c"
     "${SRC_DIR}/liblzma/common/vli_decoder.c"
-    "${SRC_DIR}/liblzma/check/crc64_table.c"
-    "${SRC_DIR}/liblzma/check/crc32_table.c"
     "${SRC_DIR}/liblzma/check/crc64_fast.c"
     "${SRC_DIR}/liblzma/check/crc32_fast.c"
     "${SRC_DIR}/liblzma/check/check.c"
