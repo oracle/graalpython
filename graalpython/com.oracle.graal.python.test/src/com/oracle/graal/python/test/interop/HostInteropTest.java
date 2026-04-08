@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -53,6 +54,7 @@ import java.time.ZoneId;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.io.ByteSequence;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -712,5 +714,80 @@ public class HostInteropTest extends PythonTests {
         assertEquals(0.5f, t.readBufferFloat(ByteOrder.LITTLE_ENDIAN, 0), 0.0);
         t.writeBufferDouble(ByteOrder.LITTLE_ENDIAN, 0, 12345.6789123);
         assertEquals(12345.6789123, t.readBufferDouble(ByteOrder.LITTLE_ENDIAN, 0), 0.0);
+    }
+
+    @Test
+    public void testHostByteBufferAsPythonBuffer() {
+        byte[] writable = new byte[]{1, 2, 3, 4};
+        context.getBindings("python").putMember("writable_bb", ByteBuffer.wrap(writable));
+        context.getBindings("python").putMember("readonly_bb", ByteBuffer.wrap(new byte[]{-1, 5, 6, 7, 8}).asReadOnlyBuffer());
+
+        context.eval("python", """
+                        import binascii
+                        import io
+
+                        mv = memoryview(writable_bb)
+                        assert not mv.readonly
+                        assert mv.tobytes() == b"\\x01\\x02\\x03\\x04"
+                        assert bytes(writable_bb) == b"\\x01\\x02\\x03\\x04"
+                        assert bytearray(writable_bb) == bytearray(b"\\x01\\x02\\x03\\x04")
+                        assert binascii.hexlify(writable_bb) == b"01020304"
+                        bio = io.BytesIO()
+                        assert bio.write(writable_bb) == 4
+                        assert bio.getvalue() == b"\\x01\\x02\\x03\\x04"
+                        mv[1] = 9
+                        assert io.BytesIO(b"abcd").readinto(writable_bb) == 4
+                        assert bytes(writable_bb) == b"abcd"
+
+                        ro = memoryview(readonly_bb)
+                        assert ro.readonly
+                        assert ro.tobytes() == b"\\xff\\x05\\x06\\x07\\x08"
+                        assert bytes(readonly_bb) == b"\\xff\\x05\\x06\\x07\\x08"
+                        assert bytearray(readonly_bb) == bytearray(b"\\xff\\x05\\x06\\x07\\x08")
+                        assert io.BytesIO().write(readonly_bb) == 5
+                        try:
+                            ro[0] = 1
+                            raise AssertionError("expected memoryview write to fail")
+                        except TypeError:
+                            pass
+                        try:
+                            io.BytesIO(b"wxyz").readinto(readonly_bb)
+                            raise AssertionError("expected readinto to fail")
+                        except TypeError:
+                            pass
+                        """);
+
+        assertArrayEquals(new byte[]{'a', 'b', 'c', 'd'}, writable);
+    }
+
+    @Test
+    public void testHostByteSequenceAsPythonBuffer() {
+        byte[] bytes = new byte[]{10, 20, 30, 40};
+        context.getBindings("python").putMember("seq", ByteSequence.create(bytes));
+
+        context.eval("python", """
+                        import binascii
+                        import io
+
+                        mv = memoryview(seq)
+                        assert mv.readonly
+                        assert mv.tobytes() == b"\\x0a\\x14\\x1e\\x28"
+                        assert bytes(seq) == b"\\x0a\\x14\\x1e\\x28"
+                        assert bytearray(seq) == bytearray(b"\\x0a\\x14\\x1e\\x28")
+                        assert binascii.hexlify(seq) == b"0a141e28"
+                        bio = io.BytesIO()
+                        assert bio.write(seq) == 4
+                        assert bio.getvalue() == b"\\x0a\\x14\\x1e\\x28"
+                        try:
+                            mv[0] = 1
+                            raise AssertionError("expected memoryview write to fail")
+                        except TypeError:
+                            pass
+                        try:
+                            io.BytesIO(b"abcd").readinto(seq)
+                            raise AssertionError("expected readinto to fail")
+                        except TypeError:
+                            pass
+                        """);
     }
 }
