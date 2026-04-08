@@ -1652,6 +1652,9 @@ suite = {
                     "file:benchmarks/warmup/*.py",
                     "dependency:GRAALPYTHON_PYFLATE_BENCHMARK_RESOURCE",
                 ],
+                "./warmup/matplotlib/": [
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/matplotlib/*.py",
+                ],
             },
         },
 

@@ -726,5 +726,35 @@
     "policy": "outlier-elimination-all-builds",
     "forks": "1x1",
     "focus": "0.0-1.0"
+  },
+  "warmup/matplotlib/3d_surface_wireframe.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "5x3",
+    "focus": "0.3-0.7"
+  },
+  "warmup/matplotlib/categorical_bar_and_box.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "5x3",
+    "focus": "0.4-0.6"
+  },
+  "warmup/matplotlib/distributions_hist_2d.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "3x5",
+    "focus": "0.4-0.9"
+  },
+  "warmup/matplotlib/polar_quiver_stream.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "0x0",
+    "focus": "0.5-0.85"
+  },
+  "warmup/matplotlib/simple_line_plot.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "4x3",
+    "focus": "0.0-0.4"
+  },
+  "warmup/matplotlib/subplots_and_styles.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "5x5",
+    "focus": "0.3-0.7"
   }
 }
