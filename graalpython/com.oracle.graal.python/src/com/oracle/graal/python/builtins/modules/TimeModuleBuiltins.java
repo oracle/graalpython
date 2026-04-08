@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -739,15 +739,17 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return yearstr.substring(yearstr.length() - 2);
         }
 
-        private static GregorianCalendar getCalendar(int[] time) {
+        private static GregorianCalendar getCalendar(int[] time, TimeZone timeZone) {
             Month month = Month.of(time[1]); // GregorianCalendar expect months that starts from 0
-            return new GregorianCalendar(time[0], month.ordinal(), time[2], time[3], time[4], time[5]);
+            GregorianCalendar calendar = new GregorianCalendar(timeZone);
+            calendar.set(time[0], month.ordinal(), time[2], time[3], time[4], time[5]);
+            return calendar;
         }
 
         // This taken from JPython + some switches were corrected to provide the
         // same result as CPython
         @TruffleBoundary
-        public static TruffleString format(String format, int[] date, TruffleString.FromJavaStringNode fromJavaStringNode) {
+        public static TruffleString format(String format, int[] date, TimeZone timeZone, TruffleString.FromJavaStringNode fromJavaStringNode) {
             String s = "";
             int lastc = 0;
             int j;
@@ -869,7 +871,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // TODO this is not correct, CPython counts the week of year
                         // from day of year item [8]
                         if (cal == null) {
-                            cal = getCalendar(date);
+                            cal = getCalendar(date, timeZone);
                         }
 
                         cal.setFirstDayOfWeek(Calendar.SUNDAY);
@@ -900,7 +902,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // from day of year item [8]
 
                         if (cal == null) {
-                            cal = getCalendar(date);
+                            cal = getCalendar(date, timeZone);
                         }
                         cal.setFirstDayOfWeek(Calendar.MONDAY);
                         cal.setMinimalDaysInFirstWeek(7);
@@ -945,7 +947,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     case 'Z':
                         // timezone name
                         if (cal == null) {
-                            cal = getCalendar(date);
+                            cal = getCalendar(date, timeZone);
                         }
                         // If items[8] == 1, we're in daylight savings time.
                         // -1 means the information was not available; treat this as if not in dst.
@@ -964,6 +966,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return fromJavaStringNode.execute(s, TS_ENCODING);
         }
 
+        @TruffleBoundary
+        public static TruffleString format(String format, int[] date, TruffleString.FromJavaStringNode fromJavaStringNode) {
+            return format(format, date, TimeZone.getDefault(), fromJavaStringNode);
+        }
+
+        @TruffleBoundary
+        private static TimeZone getTimeZone(ZoneId currentZoneId) {
+            return TimeZone.getTimeZone(currentZoneId);
+        }
+
         @Specialization
         static TruffleString formatTime(PythonModule module, TruffleString format, @SuppressWarnings("unused") PNone time,
                         @Bind Node inliningTarget,
@@ -972,11 +984,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             ModuleState moduleState = module.getModuleState(ModuleState.class);
-            return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), fromJavaStringNode);
+            return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), getTimeZone(moduleState.currentZoneId), fromJavaStringNode);
         }
 
         @Specialization
-        static TruffleString formatTime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, TruffleString format, PTuple time,
+        static TruffleString formatTime(VirtualFrame frame, PythonModule module, TruffleString format, PTuple time,
                         @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -985,7 +997,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             int[] date = checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, raiseNode);
-            return format(toJavaStringNode.execute(format), date, fromJavaStringNode);
+            return format(toJavaStringNode.execute(format), date, getTimeZone(module.getModuleState(ModuleState.class).currentZoneId), fromJavaStringNode);
         }
 
         @Specialization
