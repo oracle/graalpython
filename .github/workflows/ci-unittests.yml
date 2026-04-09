@@ -5,8 +5,41 @@ on:
   workflow_dispatch:
 
 jobs:
+  should-run:
+    runs-on: ubuntu-latest
+    outputs:
+      run_ci: ${{ steps.decision.outputs.run_ci }}
+      reason: ${{ steps.decision.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check if workflow should run
+        id: decision
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const eventName = context.eventName;
+
+            if (eventName === 'workflow_dispatch') {
+              core.setOutput('run_ci', 'true');
+              core.setOutput('reason', 'manual dispatch');
+              return;
+            }
+
+            if (pr.draft) {
+              core.setOutput('run_ci', 'false');
+              core.setOutput('reason', 'draft PR');
+              return;
+            }
+
+            core.setOutput('run_ci', 'false');
+            core.setOutput('reason', 'non-fork PR');
+
+      - name: Print results
+        run: |
+          echo "run_ci=${{ steps.decision.outputs.run_ci }}"
+          echo "reason=${{ steps.decision.outputs.reason }}"
   abi-check:
-    if: github.event.pull_request.draft == false
+    if: needs.should-run.outputs.run_ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -36,7 +69,7 @@ jobs:
         run: mx abi-check
 
   build-standalone-artifacts:
-    if: github.event.pull_request.draft == false && success()
+    if: needs.should-run.outputs.run_ci == 'true' && success()
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
@@ -44,7 +77,7 @@ jobs:
       artifacts_retention_days: 0
 
   run-tests:
-    if: success()
+    if: needs.should-run.outputs.run_ci == 'true' && success()
     needs: build-standalone-artifacts
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
@@ -52,7 +85,7 @@ jobs:
       export_test_reports: true
 
   collect-reports:
-    if: always()
+    if: needs.should-run.outputs.run_ci == 'true' && always()
     needs: run-tests
     runs-on: ubuntu-latest
     steps:
