@@ -123,21 +123,19 @@ See the [Interop Types to Python](#interop-types-to-python) section for more int
 Passing binary data between Java and Python deserves attention:
 
 - Java code typically uses `byte[]` or `java.nio.ByteBuffer`
-- Python code may use `bytes`, `bytearray`, `memoryview`, or file-like APIs such as `io.BytesIO`
+- Python code typically uses `bytes`, `bytearray`, `memoryview`, or file-like APIs such as `io.BytesIO`
 
 ### Java to Python
 
 Raw Java `byte[]` are accessible as `list`-like objects in Python.
 Only integral values that fit into a signed `byte` can be read from or written to such objects.
-Python, on the other hand, code expects binary data as unsigned byte values.
+Python, on the other hand, usually exposes binary data as unsigned byte values.
 To achieve the equivalent of a "re-interpreting cast", Java byte arrays should be passed to Python using `ByteBuffer.wrap(byte[])`:
 
 ```java
 import java.nio.ByteBuffer;
-
 byte[] data = ...;
 ByteBuffer buffer = ByteBuffer.wrap(data); // does not copy
-
 context.getBindings("python").putMember("java_buffer", buffer);
 ```
 
@@ -152,28 +150,25 @@ io.BytesIO(java_buffer)  # copies into BytesIO's internal storage
 
 ### Python to Java
 
-When Python returns a `bytes` object or another bytes-like object, the Java-side target type is `org.graalvm.polyglot.io.ByteSequence`:
+Python `bytes` and other bytes-like objects can be interpreterd like any `java.lang.List`.
+Because Python bytes are usually unsigned, however, they cannot simply be converted via `Value#as(byte[].class)` if any values are larger than 127.
+The Graal polyglot sdk provides `org.graalvm.polyglot.io.ByteSequence` as a target type to deal with this issue explicitly.
 
 ```java
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.ByteSequence;
-
 Value result = context.eval("python", "b'hello'");
-ByteSequence seq = result.as(ByteSequence.class); // lazy view, no copy yet
+ByteSequence seq = result.as(ByteSequence.class);   // does not copy
 ```
 
-`ByteSequence` is useful because:
-
-- it keeps the data as a byte sequence without immediately materializing a new `byte[]`
-- it is a natural match for Python `bytes`, which are immutable
-- it provides a convenient `toByteArray()` method when a Java API really needs a `byte[]` that deals with reinterprets the unsigned Python bytes as signed Java bytes.
+`ByteSequence` keeps the data as aPython-owned byte sequence without immediately copying.
+It provides a `toByteArray()` method that deals with re-interpreting unsigned Python bytes as signed Java bytes.
 
 ```java
 import java.nio.charset.StandardCharsets;
 import org.graalvm.polyglot.io.ByteSequence;
-
 ByteSequence seq = result.as(ByteSequence.class);
-byte[] bytes = seq.toByteArray(); // copies here
+byte[] bytes = seq.toByteArray();  // copies into Java byte[]
 String s = new String(bytes, StandardCharsets.UTF_8);
 ```
 
