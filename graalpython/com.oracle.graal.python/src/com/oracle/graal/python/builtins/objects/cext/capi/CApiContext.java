@@ -930,7 +930,8 @@ public final class CApiContext extends CExtContext {
                     NativeMemory.writePtrArrayElement(builtinArrayPtr, id, builtin.getNativePointer());
                 }
                 // TODO(NFI2) ENV parameter
-                long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeCAPIINIT(null, TIMING_INVOKE_CAPI_INIT, nfiContext, BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage()),
+                long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeCAPIINIT(null, TIMING_INVOKE_CAPI_INIT, nfiContext, BoundaryCallData.getUncached(),
+                                context.getThreadState(context.getLanguage()),
                                 ExternalFunctionSignature.CAPIINIT.bind(nfiContext, initFunction), 0L, builtinArrayPtr, gcState, nativeThreadState);
                 assert nativeThreadLocalVarPointer != NULLPTR;
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
@@ -951,7 +952,7 @@ public final class CApiContext extends CExtContext {
              */
             long finalizeFunction = capiLibrary.lookupSymbol("GraalPyPrivate_GetFinalizeCApiPointer");
             long finalizingPointer = ExternalFunctionInvoker.invokeGETFINALIZECAPIPOINTER(null, TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER, nfiContext, BoundaryCallData.getUncached(),
-                    context.getThreadState(context.getLanguage()), ExternalFunctionSignature.GETFINALIZECAPIPOINTER.bind(nfiContext, finalizeFunction));
+                            context.getThreadState(context.getLanguage()), ExternalFunctionSignature.GETFINALIZECAPIPOINTER.bind(nfiContext, finalizeFunction));
             try {
                 cApiContext.addNativeFinalizer(context, finalizingPointer);
             } catch (RuntimeException e) {
