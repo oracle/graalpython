@@ -12,12 +12,26 @@ jobs:
       reason: ${{ steps.decision.outputs.reason }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: Check file changes
+        id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            workflow_or_suite:
+              - '.github/**'
+              - 'mx.graalpython/suite.py'
+
       - name: Check if workflow should run
         id: decision
         uses: actions/github-script@v8
+        env:
+          HAS_WORKFLOW_OR_SUITE_CHANGES: ${{ steps.changes.outputs.workflow_or_suite || 'false' }}
         with:
           script: |
             const eventName = context.eventName;
+            const hasWorkflowOrSuiteChanges = process.env.HAS_WORKFLOW_OR_SUITE_CHANGES === 'true';
 
             if (eventName === 'workflow_dispatch') {
               core.setOutput('run_ci', 'true');
@@ -28,6 +42,12 @@ jobs:
             if (pr.draft) {
               core.setOutput('run_ci', 'false');
               core.setOutput('reason', 'draft PR');
+              return;
+            }
+
+            if (hasWorkflowOrSuiteChanges) {
+              core.setOutput('run_ci', 'true');
+              core.setOutput('reason', '.github or suite.py changes');
               return;
             }
 
