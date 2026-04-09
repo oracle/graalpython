@@ -59,6 +59,15 @@ jobs:
               return;
             }
 
+            if (pr.user?.login === 'graalvmbot') {
+              const isMergedOrClosed = pr.merged === true || pr.merged_at != null || pr.state !== 'open';
+              if (isMergedOrClosed) {
+                core.setOutput('run_ci', 'false');
+                core.setOutput('reason', 'graalvmbot PR already merged/closed');
+                return;
+              }
+            }
+
             if (pr.head?.repo?.fork) {
               core.setOutput('run_ci', 'true');
               core.setOutput('reason', 'fork PR');
@@ -72,6 +81,7 @@ jobs:
         run: |
           echo "run_ci=${{ steps.decision.outputs.run_ci }}"
           echo "reason=${{ steps.decision.outputs.reason }}"
+
   abi-check:
     if: needs.should-run.outputs.run_ci == 'true'
     runs-on: ubuntu-latest
