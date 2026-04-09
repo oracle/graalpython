@@ -41,6 +41,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 
 
@@ -49,6 +50,7 @@ class EntropySubprocessTests(unittest.TestCase):
     HASH_SECRET_BYTES = 24
     RANDOM_SEED_BYTES = 624 * 4
     HASH_AND_RANDOM_IMPORT_BYTES = HASH_SECRET_BYTES + RANDOM_SEED_BYTES
+    SSL_DATA_DIR = os.path.join(os.path.dirname(__file__), "ssldata")
 
     def _run_with_init_device(self, data: bytes, code: str):
         with tempfile.NamedTemporaryFile(delete=False) as f:
@@ -140,6 +142,35 @@ class EntropySubprocessTests(unittest.TestCase):
         self.assert_subprocess_ok(result)
         self.assertEqual("ok", result.stdout.strip())
 
+    def test_multiprocessing_deliver_challenge_does_not_mutate_random_state(self):
+        result = self._run_with_init_source(
+            "fixed:0x1234ABCD",
+            textwrap.dedent("""
+                import random
+                import multiprocessing.connection as mc
+                auth = b'authkey'
+
+                class Dummy:
+                    def __init__(self):
+                        self.sent = []
+
+                    def send_bytes(self, data):
+                        self.sent.append(data)
+
+                    def recv_bytes(self, _max):
+                        msg = self.sent[-1][len(mc._CHALLENGE):]
+                        return mc._create_response(auth, msg)
+
+                before = random.getstate()
+                d = Dummy()
+                mc.deliver_challenge(d, auth)
+                after = random.getstate()
+                print(before == after)
+            """),
+        )
+        self.assert_subprocess_ok(result)
+        self.assertEqual("True", result.stdout.strip())
+
     def test_tempfile_candidate_names_use_initrandom(self):
         result = self._run_with_init_device(
             b"\x00" * self.HASH_AND_RANDOM_IMPORT_BYTES,
@@ -169,6 +200,47 @@ class EntropySubprocessTests(unittest.TestCase):
         self.assert_subprocess_ok(result)
         self.assertEqual("False", result.stdout.strip())
 
+    def test_imaplib_connect_mutates_random_state(self):
+        result = self._run_with_init_source(
+            "fixed:0x1234ABCD",
+            textwrap.dedent("""
+                import random
+                import imaplib
+
+                class Dummy(imaplib.IMAP4):
+                    def open(self, host='', port=imaplib.IMAP4_PORT, timeout=None):
+                        pass
+
+                    def _get_response(self):
+                        self.untagged_responses = {'OK': [b'']}
+                        return 'OK'
+
+                    def _get_capabilities(self):
+                        self.capabilities = ('IMAP4REV1',)
+
+                    def shutdown(self):
+                        pass
+
+                before = random.getstate()
+                d = Dummy.__new__(Dummy)
+                d.debug = imaplib.Debug
+                d.state = 'LOGOUT'
+                d.literal = None
+                d.tagged_commands = {}
+                d.untagged_responses = {}
+                d.continuation_response = ''
+                d.is_readonly = False
+                d.tagnum = 0
+                d._tls_established = False
+                d._mode_ascii()
+                d._connect()
+                after = random.getstate()
+                print(before == after)
+            """),
+        )
+        self.assert_subprocess_ok(result)
+        self.assertEqual("False", result.stdout.strip())
+
     def test_pyexpat_import_does_not_use_additional_initrandom(self):
         result = self._run_with_init_device(
             b"\x00" * self.HASH_SECRET_BYTES,
@@ -177,6 +249,14 @@ class EntropySubprocessTests(unittest.TestCase):
         self.assert_subprocess_ok(result)
         self.assertEqual("pyexpat", result.stdout.strip())
 
+    def test_pyexpat_parsercreate_does_not_use_additional_initrandom(self):
+        result = self._run_with_init_device(
+            b"\x00" * self.HASH_SECRET_BYTES,
+            "import pyexpat; p = pyexpat.ParserCreate(); print(type(p).__name__)",
+        )
+        self.assert_subprocess_ok(result)
+        self.assertEqual("xmlparser", result.stdout.strip())
+
     def test_sqlite3_import_does_not_use_additional_initrandom(self):
         result = self._run_with_init_device(
             b"\x00" * self.HASH_SECRET_BYTES,
@@ -184,6 +264,28 @@ class EntropySubprocessTests(unittest.TestCase):
         )
         self.assert_subprocess_ok(result)
         self.assertEqual("_sqlite3", result.stdout.strip())
+
+    def test_sqlite3_randomblob_does_not_use_initrandom(self):
+        result = self._run_with_init_device(
+            b"\x00" * self.HASH_SECRET_BYTES,
+            "import sqlite3; "
+            "conn = sqlite3.connect(':memory:'); "
+            "print(conn.execute('select length(randomblob(16))').fetchone()[0])",
+        )
+        self.assert_subprocess_ok(result)
+        self.assertEqual("16", result.stdout.strip())
+
+    def test_ssl_load_cert_chain_does_not_use_initrandom(self):
+        cert = os.path.join(self.SSL_DATA_DIR, "signed_cert.pem")
+        result = self._run_with_init_device(
+            b"\x00" * self.HASH_SECRET_BYTES,
+            f"import ssl; "
+            f"ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); "
+            f"ctx.load_cert_chain(r'{cert}'); "
+            f"print('ok')",
+        )
+        self.assert_subprocess_ok(result)
+        self.assertEqual("ok", result.stdout.strip())
 
     def test_uuid1_mutates_random_state(self):
         result = self._run_with_init_source(
