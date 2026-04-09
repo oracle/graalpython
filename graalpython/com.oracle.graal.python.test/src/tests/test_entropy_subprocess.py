@@ -140,6 +140,35 @@ class EntropySubprocessTests(unittest.TestCase):
         self.assert_subprocess_ok(result)
         self.assertEqual("ok", result.stdout.strip())
 
+    def test_tempfile_candidate_names_use_initrandom(self):
+        result = self._run_with_init_device(
+            b"\x00" * self.HASH_AND_RANDOM_IMPORT_BYTES,
+            "import tempfile; next(tempfile._get_candidate_names()); print('ok')",
+        )
+        self.assert_initrandom_exhausted(result)
+
+    def test_tempfile_does_not_mutate_random_state(self):
+        result = self._run_with_init_source(
+            "fixed:0x1234ABCD",
+            "import random; before = random.getstate(); "
+            "import tempfile; next(tempfile._get_candidate_names()); "
+            "after = random.getstate(); "
+            "print(before == after)",
+        )
+        self.assert_subprocess_ok(result)
+        self.assertEqual("True", result.stdout.strip())
+
+    def test_email_generator_boundary_mutates_random_state(self):
+        result = self._run_with_init_source(
+            "fixed:0x1234ABCD",
+            "import random; before = random.getstate(); "
+            "from email.generator import Generator; Generator._make_boundary(); "
+            "after = random.getstate(); "
+            "print(before == after)",
+        )
+        self.assert_subprocess_ok(result)
+        self.assertEqual("False", result.stdout.strip())
+
     def test_pyexpat_import_does_not_use_additional_initrandom(self):
         result = self._run_with_init_device(
             b"\x00" * self.HASH_SECRET_BYTES,
@@ -155,6 +184,17 @@ class EntropySubprocessTests(unittest.TestCase):
         )
         self.assert_subprocess_ok(result)
         self.assertEqual("_sqlite3", result.stdout.strip())
+
+    def test_uuid1_mutates_random_state(self):
+        result = self._run_with_init_source(
+            "fixed:0x1234ABCD",
+            "import random; before = random.getstate(); "
+            "import uuid; uuid.uuid1(node=1); "
+            "after = random.getstate(); "
+            "print(before == after)",
+        )
+        self.assert_subprocess_ok(result)
+        self.assertEqual("False", result.stdout.strip())
 
     def test_uuid4_does_not_use_initrandom(self):
         result = self._run_with_init_device(
