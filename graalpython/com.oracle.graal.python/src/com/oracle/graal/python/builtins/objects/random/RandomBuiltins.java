@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.SecureRandom;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -132,10 +131,12 @@ public final class RandomBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PNone seedNone(PRandom random, @SuppressWarnings("unused") PNone none) {
-            SecureRandom secureRandom = getContext().getSecureRandom();
             int[] seed = new int[PRandom.N];
-            for (int i = 0; i < seed.length; ++i) {
-                seed[i] = secureRandom.nextInt();
+            byte[] seedBytes = new byte[seed.length * Integer.BYTES];
+            getContext().fillInitializationEntropyBytes(seedBytes);
+            ByteBuffer seedBuffer = ByteBuffer.wrap(seedBytes).order(ByteOrder.BIG_ENDIAN);
+            for (int i = 0; i < seed.length; i++) {
+                seed[i] = seedBuffer.getInt();
             }
             random.seed(seed);
             return PNone.NONE;
