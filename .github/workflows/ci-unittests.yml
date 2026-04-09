@@ -39,6 +39,14 @@ jobs:
               return;
             }
 
+            if (eventName !== 'pull_request') {
+              core.setOutput('run_ci', 'false');
+              core.setOutput('reason', `unsupported event: ${eventName}`);
+              return;
+            }
+
+            const pr = context.payload.pull_request;
+
             if (pr.draft) {
               core.setOutput('run_ci', 'false');
               core.setOutput('reason', 'draft PR');
@@ -51,8 +59,14 @@ jobs:
               return;
             }
 
+            if (pr.head?.repo?.fork) {
+              core.setOutput('run_ci', 'true');
+              core.setOutput('reason', 'fork PR');
+              return;
+            }
+
             core.setOutput('run_ci', 'false');
-            core.setOutput('reason', 'non-fork PR');
+            core.setOutput('reason', 'non-fork PR without .github/suite.py changes');
 
       - name: Print results
         run: |
