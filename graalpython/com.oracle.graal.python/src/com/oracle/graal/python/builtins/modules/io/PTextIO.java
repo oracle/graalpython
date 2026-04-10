@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,12 +41,8 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-
-import java.io.ByteArrayOutputStream;
 
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
@@ -93,7 +89,7 @@ public final class PTextIO extends PTextIOBase {
     private int decodedCharsUsed; /* offset (in code points) into _decoded_chars for read() */
     private int decodedCharsLen; /* code point length of decodedChars */
 
-    private ByteArrayOutputStream pendingBytes;       // data waiting to be written.
+    private PendingBytesOutputStream pendingBytes;       // data waiting to be written.
 
     /*
      * snapshot is either NULL, or a tuple (dec_flags, next_input) where dec_flags is the second
@@ -112,7 +108,7 @@ public final class PTextIO extends PTextIOBase {
 
     public PTextIO(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        pendingBytes = createOutputStream();
+        pendingBytes = new PendingBytesOutputStream();
     }
 
     @Override
@@ -324,11 +320,11 @@ public final class PTextIO extends PTextIOBase {
     }
 
     public void clearPendingBytes() {
-        pendingBytes = createOutputStream();
+        pendingBytes = new PendingBytesOutputStream();
     }
 
-    public byte[] getAndClearPendingBytes() {
-        byte[] b = toByteArray(pendingBytes);
+    public PendingBytesOutputStream getAndClearPendingBytes() {
+        PendingBytesOutputStream b = pendingBytes;
         clearPendingBytes();
         return b;
     }
