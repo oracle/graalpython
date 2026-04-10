@@ -878,8 +878,9 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static TruffleString doNative(long value,
+                        @Bind Node inliningTarget,
                         @Cached FromCharPointerNode fromPtr) {
-            return fromPtr.execute(value);
+            return fromPtr.execute(inliningTarget, value);
         }
     }
 

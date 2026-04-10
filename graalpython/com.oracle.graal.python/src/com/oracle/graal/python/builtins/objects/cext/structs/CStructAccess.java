@@ -58,6 +58,7 @@ import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -228,9 +229,10 @@ public class CStructAccess {
 
         @Specialization
         static TruffleString readLong(long pointer, CFields field,
+                        @Bind Node inliningTarget,
                         @Cached FromCharPointerNode toPython) {
             assert field.type.isCharPtr();
-            return toPython.execute(readPtrField(pointer, field));
+            return toPython.execute(inliningTarget, readPtrField(pointer, field));
         }
     }
 

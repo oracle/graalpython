@@ -92,10 +92,10 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -392,26 +392,29 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    @GenerateInline(false) // footprint reduction 36 -> 17
+    @GenerateInline
+    @GenerateCached(false)
     public abstract static class FromCharPointerNode extends Node {
-        public final TruffleString execute(long charPtr) {
-            return execute(charPtr, true);
+        public final TruffleString execute(Node inliningTarget, long charPtr) {
+            return execute(inliningTarget, charPtr, true);
         }
 
+        @TruffleBoundary
         public static TruffleString executeUncached(long charPtr) {
-            return FromCharPointerNodeGen.getUncached().execute(charPtr, true);
+            return FromCharPointerNodeGen.getUncached().execute(null, charPtr, true);
         }
 
+        @TruffleBoundary
         public static TruffleString executeUncached(long charPtr, boolean copy) {
-            return FromCharPointerNodeGen.getUncached().execute(charPtr, copy);
+            return FromCharPointerNodeGen.getUncached().execute(null, charPtr, copy);
         }
 
-        public abstract TruffleString execute(long charPtr, boolean copy);
+        public abstract TruffleString execute(Node inliningTarget, long charPtr, boolean copy);
 
         @Specialization
         static TruffleString doPointer(long charPtr, boolean copy,
-                        @Cached TruffleString.FromZeroTerminatedNativePointerNode fromNativePointerNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached(inline = false) TruffleString.FromZeroTerminatedNativePointerNode fromNativePointerNode,
+                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
             TruffleString nativeBacked = fromNativePointerNode.execute8Bit(charPtr, 0, Encoding.UTF_8, copy);
             return switchEncodingNode.execute(nativeBacked, TS_ENCODING);
         }

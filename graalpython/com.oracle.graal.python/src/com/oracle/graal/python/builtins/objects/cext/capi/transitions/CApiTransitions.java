@@ -1610,7 +1610,7 @@ public abstract class CApiTransitions {
                 return PNone.NO_VALUE;
             }
             log(pointer);
-            return logResult(fromCharPointerNode.execute(pointer));
+            return logResult(fromCharPointerNode.execute(inliningTarget, pointer));
         }
 
         @NeverDefault

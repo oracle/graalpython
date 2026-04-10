@@ -99,8 +99,7 @@ public final class PythonCextStructSeqBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static int doGeneric(PythonAbstractClass klass, long fields, int nInSequence,
-                        @Cached FromCharPointerNode fromCharPtr) {
+        static int doGeneric(PythonAbstractClass klass, long fields, int nInSequence) {
 
             ArrayList<TruffleString> names = new ArrayList<>();
             ArrayList<TruffleString> docs = new ArrayList<>();
@@ -114,8 +113,9 @@ public final class PythonCextStructSeqBuiltins {
                     break;
                 }
                 long doc = readPtrArrayElement(fields, pos * 2L + 1);
-                names.add(fromCharPtr.execute(name));
-                docs.add(doc == NULLPTR ? null : fromCharPtr.execute(doc));
+                // CPython also directly references name and doc string pointers without copying.
+                names.add(FromCharPointerNode.executeUncached(name, false));
+                docs.add(doc == NULLPTR ? null : FromCharPointerNode.executeUncached(doc, false));
                 pos++;
             }
 
@@ -123,7 +123,7 @@ public final class PythonCextStructSeqBuiltins {
             TruffleString[] fieldDocs = docs.toArray(TruffleString[]::new);
 
             StructSequence.Descriptor d = new StructSequence.Descriptor(nInSequence, fieldNames, fieldDocs);
-            StructSequence.initType(PythonContext.get(fromCharPtr), klass, d);
+            StructSequence.initType(PythonContext.get(null), klass, d);
             return 0;
         }
     }

@@ -50,7 +50,6 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -176,7 +175,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
             TruffleString name = FromCharPointerNode.executeUncached(namePointer, false);
             TruffleString doc = null;
             if (docPointer != NULLPTR) {
-                doc = FromCharPointerNodeGen.getUncached().execute(docPointer, false);
+                doc = FromCharPointerNode.executeUncached(docPointer, false);
             }
             int flags = CStructAccess.readIntField(pointer, PyMethodDef__ml_flags);
             long methPointer = CStructAccess.readPtrField(pointer, PyMethodDef__ml_meth);
