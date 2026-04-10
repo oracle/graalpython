@@ -9,6 +9,9 @@ test.test_concurrent_futures.test_as_completed.ThreadPoolAsCompletedTest.test_fu
 test.test_concurrent_futures.test_as_completed.ThreadPoolAsCompletedTest.test_no_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 # Transiently times out GR-65714
 !test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_crash_at_task_unpickle
+test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_crash_big_data @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_crash_during_func_exec_on_worker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_crash_during_result_pickle_on_worker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_error_at_task_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_error_at_task_unpickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_error_during_func_exec_on_worker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -19,6 +22,7 @@ test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.
 test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_exit_during_result_pickle_on_worker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_exit_during_result_unpickle_in_result_handler @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 !test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_gh105829_should_not_deadlock_if_wakeup_pipe_full
+test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_shutdown_deadlock @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 !test.test_concurrent_futures.test_deadlock.ProcessPoolSpawnExecutorDeadlockTest.test_shutdown_deadlock_pickle
 !test.test_concurrent_futures.test_future.FutureTests.test_cancel
 !test.test_concurrent_futures.test_future.FutureTests.test_cancelled

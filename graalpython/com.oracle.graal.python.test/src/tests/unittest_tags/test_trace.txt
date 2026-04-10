@@ -1,6 +1,6 @@
-test.test_trace.TestCommandLine.test_count_and_summary @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_trace.TestCommandLine.test_count_and_summary @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_trace.TestCommandLine.test_failures @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_trace.TestCommandLine.test_listfuncs_flag_success @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_trace.TestCommandLine.test_listfuncs_flag_success @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_trace.TestCommandLine.test_run_as_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_trace.TestCommandLine.test_sys_argv_list @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_trace.TestCoverage.test_coverage @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
