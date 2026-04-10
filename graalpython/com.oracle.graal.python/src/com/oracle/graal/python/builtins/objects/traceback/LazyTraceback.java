@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.traceback;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.UNKNOWN_LINE_NUMBER;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -150,7 +151,7 @@ public class LazyTraceback {
     }
 
     public static boolean elementWantedForTraceback(TruffleStackTraceElement element) {
-        Frame frame = element.getFrame();
+        Frame frame = PGenerator.unwrapDSLGeneratorFrame(element);
         if (frame != null) {
             // only include frames of non-builtin python functions
             Object info = frame.getFrameDescriptor().getInfo();
