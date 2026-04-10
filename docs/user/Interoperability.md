@@ -150,7 +150,7 @@ io.BytesIO(java_buffer)  # copies into BytesIO's internal storage
 
 ### Python to Java
 
-Python `bytes` and other bytes-like objects can be interpreterd like any `java.lang.List`.
+Python `bytes` and other bytes-like objects can be interpreted like any `java.lang.List`.
 Because Python bytes are usually unsigned, however, they cannot simply be converted via `Value#as(byte[].class)` if any values are larger than 127.
 The Graal polyglot sdk provides `org.graalvm.polyglot.io.ByteSequence` as a target type to deal with this issue explicitly.
 
@@ -161,7 +161,7 @@ Value result = context.eval("python", "b'hello'");
 ByteSequence seq = result.as(ByteSequence.class);   // does not copy
 ```
 
-`ByteSequence` keeps the data as aPython-owned byte sequence without immediately copying.
+`ByteSequence` keeps the data as a Python-owned byte sequence without immediately copying.
 It provides a `toByteArray()` method that deals with re-interpreting unsigned Python bytes as signed Java bytes.
 
 ```java

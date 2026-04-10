@@ -145,6 +145,7 @@ final class ForeignBufferAcquireExports {
         @ExportMessage
         void writeByte(int byteOffset, byte value,
                         @CachedLibrary("this.foreignBuffer") InteropLibrary interop) {
+            assert !readonly;
             try {
                 interop.writeBufferByte(foreignBuffer, byteOffset, value);
             } catch (UnsupportedMessageException | InvalidBufferOffsetException e) {
@@ -231,6 +232,7 @@ final class ForeignBufferAcquireExports {
         @ExportMessage
         void writeShortByteOrder(int byteOffset, short value, ByteOrder byteOrder,
                         @CachedLibrary("this.foreignBuffer") InteropLibrary interop) {
+            assert !readonly;
             try {
                 interop.writeBufferShort(foreignBuffer, byteOrder, byteOffset, value);
             } catch (UnsupportedMessageException | InvalidBufferOffsetException e) {
@@ -241,6 +243,7 @@ final class ForeignBufferAcquireExports {
         @ExportMessage
         void writeIntByteOrder(int byteOffset, int value, ByteOrder byteOrder,
                         @CachedLibrary("this.foreignBuffer") InteropLibrary interop) {
+            assert !readonly;
             try {
                 interop.writeBufferInt(foreignBuffer, byteOrder, byteOffset, value);
             } catch (UnsupportedMessageException | InvalidBufferOffsetException e) {
@@ -251,6 +254,7 @@ final class ForeignBufferAcquireExports {
         @ExportMessage
         void writeLongByteOrder(int byteOffset, long value, ByteOrder byteOrder,
                         @CachedLibrary("this.foreignBuffer") InteropLibrary interop) {
+            assert !readonly;
             try {
                 interop.writeBufferLong(foreignBuffer, byteOrder, byteOffset, value);
             } catch (UnsupportedMessageException | InvalidBufferOffsetException e) {
@@ -261,6 +265,7 @@ final class ForeignBufferAcquireExports {
         @ExportMessage
         void writeFloatByteOrder(int byteOffset, float value, ByteOrder byteOrder,
                         @CachedLibrary("this.foreignBuffer") InteropLibrary interop) {
+            assert !readonly;
             try {
                 interop.writeBufferFloat(foreignBuffer, byteOrder, byteOffset, value);
             } catch (UnsupportedMessageException | InvalidBufferOffsetException e) {
@@ -271,6 +276,7 @@ final class ForeignBufferAcquireExports {
         @ExportMessage
         void writeDoubleByteOrder(int byteOffset, double value, ByteOrder byteOrder,
                         @CachedLibrary("this.foreignBuffer") InteropLibrary interop) {
+            assert !readonly;
             try {
                 interop.writeBufferDouble(foreignBuffer, byteOrder, byteOffset, value);
             } catch (UnsupportedMessageException | InvalidBufferOffsetException e) {
