@@ -72,7 +72,6 @@ import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAG
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
 import static com.oracle.graal.python.nfi2.NativeMemory.mallocByteArray;
-import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElement;
 import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElements;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
@@ -94,9 +93,9 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -411,13 +410,9 @@ public abstract class CExtNodes {
 
         @Specialization
         static TruffleString doPointer(long charPtr, boolean copy,
-                        @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
+                        @Cached TruffleString.FromZeroTerminatedNativePointerNode fromNativePointerNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            int length = 0;
-            while (readByteArrayElement(charPtr, length) != 0) {
-                length++;
-            }
-            TruffleString nativeBacked = fromNativePointerNode.execute(charPtr, 0, length, Encoding.UTF_8, copy);
+            TruffleString nativeBacked = fromNativePointerNode.execute8Bit(charPtr, 0, Encoding.UTF_8, copy);
             return switchEncodingNode.execute(nativeBacked, TS_ENCODING);
         }
     }
