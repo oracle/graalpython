@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary;
+import com.oracle.truffle.api.library.GenerateLibrary.DefaultExport;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
@@ -75,6 +76,7 @@ import com.oracle.truffle.api.library.LibraryFactory;
  * to be released using {@link PythonBufferAccessLibrary#release(Object)} method when done.
  */
 @GenerateLibrary(assertions = PythonBufferAcquireLibrary.Assertions.class)
+@DefaultExport(ForeignBufferAcquireExports.class)
 public abstract class PythonBufferAcquireLibrary extends Library {
     /**
      * Return whether it is possible to acquire a read-only buffer for this object. The actual

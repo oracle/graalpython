@@ -4,6 +4,7 @@ This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 25.1.0
+* Treat foreign buffer objects as Python buffer-compatible binary objects, so APIs like `memoryview`, `bytes`, `bytearray`, `binascii.hexlify`, and `io.BytesIO` work naturally on them when embedding GraalPy in Java. This allows passing binary data between Python and Java's `ByteBuffer` and `ByteSequence` types with minimal (sometimes zero) copies.
 * Add support for [Truffle source options](https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/source/Source.SourceBuilder.html#option(java.lang.String,java.lang.String)):
   * The `python.Optimize` option can be used to specify the optimization level, like the `-O` (level 1) and `-OO` (level 2) commandline options.
   * The `python.NewGlobals` option can be used to run a source with a fresh globals dictionary instead of the main module globals, which is useful for embeddings that want isolated top-level execution.

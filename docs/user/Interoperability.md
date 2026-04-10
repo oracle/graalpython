@@ -118,6 +118,60 @@ assert l == [6]
 
 See the [Interop Types to Python](#interop-types-to-python) section for more interop traits and how they map to Python types.
 
+## Passing Binary Data Between Java and Python
+
+Passing binary data between Java and Python deserves attention:
+
+- Java code typically uses `byte[]` or `java.nio.ByteBuffer`
+- Python code typically uses `bytes`, `bytearray`, `memoryview`, or file-like APIs such as `io.BytesIO`
+
+### Java to Python
+
+Raw Java `byte[]` are accessible as `list`-like objects in Python.
+Only integral values that fit into a signed `byte` can be read from or written to such objects.
+Python, on the other hand, usually exposes binary data as unsigned byte values.
+To achieve the equivalent of a "re-interpreting cast", Java byte arrays should be passed to Python using `ByteBuffer.wrap(byte[])`:
+
+```java
+import java.nio.ByteBuffer;
+byte[] data = ...;
+ByteBuffer buffer = ByteBuffer.wrap(data); // does not copy
+context.getBindings("python").putMember("java_buffer", buffer);
+```
+
+Python can then use the object through buffer-oriented binary data APIs:
+
+```python
+memoryview(java_buffer)  # does not copy
+bytes(java_buffer)       # copies into an immutable Python-owned buffer
+bytearray(java_buffer)   # copies into a mutable Python-owned buffer
+io.BytesIO(java_buffer)  # copies into BytesIO's internal storage
+```
+
+### Python to Java
+
+Python `bytes` and other bytes-like objects can be interpreted like any `java.lang.List`.
+Because Python bytes are usually unsigned, however, they cannot simply be converted via `Value#as(byte[].class)` if any values are larger than 127.
+The Graal polyglot sdk provides `org.graalvm.polyglot.io.ByteSequence` as a target type to deal with this issue explicitly.
+
+```java
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.io.ByteSequence;
+Value result = context.eval("python", "b'hello'");
+ByteSequence seq = result.as(ByteSequence.class);   // does not copy
+```
+
+`ByteSequence` keeps the data as a Python-owned byte sequence without immediately copying.
+It provides a `toByteArray()` method that deals with re-interpreting unsigned Python bytes as signed Java bytes.
+
+```java
+import java.nio.charset.StandardCharsets;
+import org.graalvm.polyglot.io.ByteSequence;
+ByteSequence seq = result.as(ByteSequence.class);
+byte[] bytes = seq.toByteArray();  // copies into Java byte[]
+String s = new String(bytes, StandardCharsets.UTF_8);
+```
+
 ## Call Other Languages from Python
 
 The _polyglot_ API allows non-JVM specific interactions with other languages from Python scripts.
