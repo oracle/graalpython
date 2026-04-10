@@ -1,0 +1,525 @@
+* IO Perf Investigation Notes
+
+** Scope
+
+Investigation target: remaining performance gap in workload 07 / jsonrpc tokenizer style
+strict request-response traffic, especially tiny write/flush + pipe readline overhead in
+GraalPy's =_io= stack.
+
+Current reference commit for runtime changes:
+- =930c9f5b09= Add lower-level readInto fast path for buffered reads
+
+Related commits in this investigation:
+- =39bde29f49= Reduce tiny flush copying in =_io=
+- =3cc0650e9c= WIP: add jsonrpc pipe profiling scripts
+- =9d27960795= Add jsonrpc pipe microbenchmark to mx harness
+
+** Benchmark Shape
+
+In-repo harness benchmark:
+- =graalpython/com.oracle.graal.python.benchmarks/python/micro/jsonrpc-pipe.py=
+
+Representative command:
+#+begin_src bash
+graalpy graalpython/com.oracle.graal.python.benchmarks/python/harness.py \
+  graalpython/com.oracle.graal.python.benchmarks/python/micro/jsonrpc-pipe.py \
+  -i 12 5000 text text mask 64
+#+end_src
+
+Interpretation:
+- =5000= roundtrips per benchmark iteration
+- =text text= means parent and worker both use text I/O wrappers
+- =mask= uses the tokenizer-like normalize/mask request shape
+- =64= payload bytes
+
+The heavier =5000=-roundtrip mode is preferred for A/B work over the smaller =500= mode,
+because the smaller mode is too noisy for subtle changes.
+
+** Profiling Tooling
+
+Worker-only profiling scripts:
+- =scripts/profile_jsonrpc_pipe_worker.py=
+- =scripts/profile-jsonrpc-pipe-async-text.sh=
+- =scripts/profile-jsonrpc-pipe-async-buffer.sh=
+- =scripts/profile-jsonrpc-pipe-gprofng-text.sh=
+- =scripts/profile-jsonrpc-pipe-gprofng-buffer.sh=
+
+Typical async-profiler runs:
+#+begin_src bash
+REQS=20000 scripts/profile-jsonrpc-pipe-async-text.sh /tmp/jsonrpc-ee-worker-text-current.svg
+REQS=20000 scripts/profile-jsonrpc-pipe-async-buffer.sh /tmp/jsonrpc-ee-worker-buffer-current.svg
+#+end_src
+
+Current useful profiler artifacts:
+- =/tmp/jsonrpc-ee-worker-text-current.svg=
+- =/tmp/jsonrpc-ee-worker-buffer-current.svg=
+
+Async-profiler conclusions:
+- Whole-process launcher/harness profiles are dominated by compilation noise.
+- Worker-only profiles are the useful ones.
+- The comparison between =text= and =buffer= modes clearly isolates the remaining text-layer cost.
+
+gprofng status:
+- Installed locally and usable.
+- Produced coarse output dominated by =<Unknown>= under this WSL2 setup.
+- Useful as a secondary cross-check, not the primary driver for this work.
+
+** Current Hotspots
+
+From worker-only async-profiler on current committed state (=930c9f5b09=):
+
+Text-mode still shows:
+- =TextIOWrapperBuiltins$WriteNode.write=
+- =TextIOWrapperNodes$ReadlineNode.readline=
+- =TextIOWrapperNodes$ReadChunkNode.readChunk=
+- =BufferedWriterNodes$FlushUnlockedNode.bufferedwriterFlushUnlocked=
+- =BufferedWriterNodes$RawWriteNode.bufferedwriterRawWrite=
+- =FileIOBuiltins$ReadintoNode.readinto=
+- =PosixModuleBuiltins$ReadNode.read=
+- =FileIOBuiltins$WriteNode.write=
+- =PosixModuleBuiltins$WriteNode.write=
+
+Buffer-mode drops the text wrapper layer and shows mainly:
+- =BufferedReaderMixinBuiltins$BufferedReadlineNode.readline=
+- =BufferedWriterNodes$FlushUnlockedNode.bufferedwriterFlushUnlocked=
+- =BufferedWriterNodes$RawWriteNode.bufferedwriterRawWrite=
+- =FileIOBuiltins$ReadintoNode.readinto=
+- =PosixModuleBuiltins$ReadNode.read=
+- =FileIOBuiltins$WriteNode.write=
+- =PosixModuleBuiltins$WriteNode.write=
+
+Interpretation:
+- Lower buffered/file/posix path has improved.
+- Remaining gap is increasingly concentrated in the text wrapper read path.
+
+** Kept Changes
+
+*** =39bde29f49= Reduce tiny flush copying in =_io=
+
+What changed:
+- Replaced pending text output buffering with a stealable byte buffer:
+  - =PTextIO=
+  - =PendingBytesOutputStream=
+- Avoided =toByteArray()= copy on =TextIOWrapper= flush:
+  - =TextIOWrapperNodes.WriteFlushNode=
+- Avoided slice copy in =BufferedWriterNodes.FlushUnlockedNode= when =writePos == 0=
+
+Measured effect on the small =mx benchmark micro:jsonrpc-pipe= configuration:
+- =AVG (no warmup)= improved from =0.188 s= to =0.089 s=
+
+*** =930c9f5b09= Add lower-level readInto fast path for buffered reads
+
+What changed:
+- Added =PosixSupportLibrary.readInto(Object receiver, int fd, Buffer data)=
+- Implemented it in:
+  - =NFIPosixSupport=
+  - =EmulatedPosixSupport=
+  - =LoggingPosixSupport=
+  - =PreInitPosixSupport=
+- Used it from =BufferedReaderMixinBuiltins.FillBufferNode= only when:
+  - refill starts at offset =0=
+  - raw object is cached =PFileIO=
+
+This stays below the Python protocol layer and avoids:
+- temporary =PByteArray=
+- Python-level =raw.readinto()= call
+- extra copy back into the buffered reader's internal byte array
+
+Repeated heavy-run comparison against prior committed state:
+
+Baseline (=39bde29f49=), 5 runs:
+- median =AVG (no warmup)=: =0.551 s=
+- mean   =AVG (no warmup)=: =0.537 s=
+- min/max: =0.344 s= / =0.707 s=
+
+Candidate (=930c9f5b09=), 5 runs:
+- median =AVG (no warmup)=: =0.476 s=
+- mean   =AVG (no warmup)=: =0.503 s=
+- min/max: =0.346 s= / =0.682 s=
+
+Interpretation:
+- This lower-level read-side change was worth keeping.
+
+** Rejected Experiments
+
+*** Rejected: Python-level direct fill-buffer shortcut
+
+Location:
+- =BufferedReaderMixinBuiltins.FillBufferNode=
+
+Idea:
+- When =start == 0=, call =raw.readinto()= directly on =self.getBuffer()=
+
+Why rejected:
+- went back through Python-level dispatch
+- added significant hot-node complexity
+- repeated runs gave mixed signal and no clear win
+
+*** Rejected: =ReadChunkNode= telling / non-telling split
+
+Location:
+- =TextIOWrapperNodes.ReadChunkNode=
+
+Idea:
+- Split =self.isTelling()= and non-=telling= cases into separate specializations
+
+Repeated heavy-run results:
+- runs: =0.446 s=, =0.804 s=, =0.515 s=, =0.617 s=, =0.621 s=
+- median =0.617 s=
+- mean =0.601 s=
+
+Compared to current baseline (=930c9f5b09=):
+- median =0.476 s=
+- mean =0.503 s=
+
+Why rejected:
+- regression on repeated runs
+- likely extra node shape / cache sharing cost outweighed saved work
+
+*** Rejected: =ReadChunkNode= =PBytes= fast path
+
+Location:
+- =TextIOWrapperNodes.ReadChunkNode=
+
+Idea:
+- If =inputChunk instanceof PBytes=, skip the generic buffer acquire/release path
+
+Repeated heavy-run results:
+- runs: =0.515 s=, =0.647 s=, =0.510 s=, =0.707 s=, =0.613 s=
+- median =0.613 s=
+- mean =0.598 s=
+
+Compared to current baseline (=930c9f5b09=):
+- median =0.476 s=
+- mean =0.503 s=
+
+Why rejected:
+- regression on repeated runs
+- too small/local a fast path to beat the resulting code shape in practice
+
+*** Blocked: direct TextIOWrapper readline -> buffered byte readline delegation
+
+Location:
+- =TextIOWrapperNodes.ReadlineNode=
+
+Idea:
+- In the common unlimited, non-=tell()= case with no decoded-char backlog, delegate directly to
+  the underlying buffered byte =readline= node and decode just that one line.
+
+Reasoning:
+- This would bypass:
+  - =TextIOWrapperNodes.ReadChunkNode=
+  - =FindLineEndingNode=
+  - some =TruffleString= churn in the common NDJSON case
+
+Why not pursued further yet:
+- Cross-file Truffle DSL node construction blocked the straightforward implementation.
+- Attempting to cache =BufferedReaderMixinBuiltins.BufferedReadlineNode= from
+  =TextIOWrapperNodes= did not compile:
+  - implicit =create()= is not available there
+  - explicit =...BufferedReadlineNodeGen.create()= was not accepted by the DSL expression parser
+- Retried with explicit generated-node cache expressions and still hit DSL/parser visibility issues.
+
+This direction may still be worthwhile, but likely requires one of:
+- moving a reusable helper into a place both nodes can access cleanly
+- a small refactor in =BufferedReaderMixinBuiltins=
+- or a different Java-level delegation approach that does not require cross-file cached-node construction
+
+*** Rejected: shared bufferedReadline helper + TextIOWrapper fast path
+
+Location:
+- =BufferedReaderMixinBuiltins=
+- =TextIOWrapperNodes.ReadlineNode=
+
+Idea:
+- Extract the buffered byte-line acquisition logic into a reusable pure Java helper in
+  =BufferedReaderMixinBuiltins=
+- Cache the necessary nodes at the call site in =TextIOWrapperNodes=
+- In the common case (=limit < 0=, no decoded backlog, no =tell()= tracking), acquire a byte line
+  from the buffered layer and decode just that line
+
+Why this was attractive:
+- avoids cross-file generated-node construction
+- keeps lower-layer logic shared instead of duplicated
+- bypasses =ReadChunkNode= and =FindLineEndingNode= in the common NDJSON case
+
+Repeated heavy-run results:
+- runs: =0.520 s=, =0.391 s=, =0.526 s=, =0.665 s=, =0.550 s=
+- median =AVG (no warmup)=: =0.526 s=
+- mean =AVG (no warmup)=: =0.530 s=
+- median =BEST=: =0.278 s=
+
+Compared to current baseline (=930c9f5b09=):
+- baseline median =AVG (no warmup)=: =0.476 s=
+- baseline mean =AVG (no warmup)=: =0.503 s=
+- baseline median =BEST=: =0.288 s=
+
+Conclusion:
+- not good enough to keep
+- slightly better tail minima / bests, but worse median and mean
+- reverted
+
+** Measurement Guidance
+
+Preferred comparison protocol for future changes:
+- Use the current committed state as A
+- Use a single candidate patch as B
+- Rebuild once for B
+- Run 5 repeated harness invocations with:
+  - =-i 12 5000 text text mask 64=
+- Compare at least:
+  - median =AVG (no warmup)=
+  - mean =AVG (no warmup)=
+  - min/max =AVG (no warmup)=
+  - median =BEST=
+
+Avoid using single-run =AVG (no warmup)= from the small =500=-roundtrip benchmark for go/no-go
+decisions on subtle changes.
+
+** Current CPython Comparison
+
+Repeated heavy-run comparison using:
+#+begin_src bash
+graalpython/com.oracle.graal.python.benchmarks/python/harness.py \
+  graalpython/com.oracle.graal.python.benchmarks/python/micro/jsonrpc-pipe.py \
+  -i 12 5000 <parent-io> <worker-io> mask 64
+#+end_src
+
+Five-run summaries:
+
+| runtime/mode       | median AVG (no warmup) | mean AVG (no warmup) | median BEST |
+|--------------------+------------------------+-----------------------+-------------|
+| CPython text/text  | 0.529 s                | 0.554 s               | 0.508 s     |
+| CPython buffer/buffer | 0.513 s             | 0.517 s               | 0.488 s     |
+| GraalPy text/text  | 0.446 s                | 0.475 s               | 0.277 s     |
+| GraalPy buffer/buffer | 0.615 s             | 0.598 s               | 0.298 s     |
+
+Implications:
+- On the current committed state, GraalPy =text/text= is *faster* than CPython on this harness benchmark.
+- GraalPy =buffer/buffer= is still *slower* than CPython and also slower than GraalPy =text/text=.
+- Therefore, the remaining end-to-end issue on this benchmark is not simply "TextIOWrapper is slower".
+- The lower buffered/file/posix path still matters, and some previous assumptions should be re-checked
+  against the heavier benchmark protocol.
+
+** Interpreter (Compilation=false): native-ee standalone vs CPython
+
+*** Protocol
+
+Benchmark entrypoint and workload stayed the same as the prior investigation:
+- =graalpython/com.oracle.graal.python.benchmarks/python/harness.py=
+- =graalpython/com.oracle.graal.python.benchmarks/python/micro/jsonrpc-pipe.py=
+- workload parameters: =5000 text text mask 64=
+
+Pinned harness commands used for this section:
+#+begin_src bash
+env LC_ALL=C.UTF-8 PYTHONHASHSEED=0 \
+  GRAAL_PYTHON_VM_ARGS='--experimental-options --engine.Compilation=false' \
+  taskset -c 2 ./mxbuild/linux-amd64/GRAALPY_NATIVE_STANDALONE/bin/graalpy \
+  graalpython/com.oracle.graal.python.benchmarks/python/harness.py \
+  graalpython/com.oracle.graal.python.benchmarks/python/micro/jsonrpc-pipe.py \
+  -r 1 -i 12 5000 text text mask 64
+
+env LC_ALL=C.UTF-8 PYTHONHASHSEED=0 \
+  taskset -c 2 python3 \
+  graalpython/com.oracle.graal.python.benchmarks/python/harness.py \
+  graalpython/com.oracle.graal.python.benchmarks/python/micro/jsonrpc-pipe.py \
+  -r 1 -i 12 5000 text text mask 64
+#+end_src
+
+Protocol details:
+- =taskset -c 2= pins both parent and worker to one CPU
+- =LC_ALL=C.UTF-8= and =PYTHONHASHSEED=0= kept constant across runs
+- =-r 1= gives one unmeasured in-process pre-run before the 12 measured iterations
+- repeated each harness invocation 5 times per runtime
+- primary summary metric: cross-run median/mean of harness =AVG (all runs)=
+- steady-state cross-check: mean of the last 6 raw durations from each 12-iteration harness run
+
+Why use =GRAAL_PYTHON_VM_ARGS= here:
+- it ensures the worker subprocess launched by =jsonrpc-pipe.py= also sees
+  =--experimental-options --engine.Compilation=false=
+
+Hardware/software context for this section:
+- host: WSL2 Linux =6.6.87.2-microsoft-standard-WSL2=
+- CPU: =13th Gen Intel(R) Core(TM) i9-13900H=, 20 online CPUs
+- native standalone: =GraalPy 3.12.8 (Oracle GraalVM Native 25.1.0)=
+- CPython: =Python 3.12.11=
+
+*** Harness Results
+
+Five-run summaries for the pinned =-r 1 -i 12 5000 text text mask 64= protocol:
+
+| runtime              | median AVG (all runs) | mean AVG (all runs) | median tail-6 avg | mean tail-6 avg | median BEST |
+|----------------------+------------------------+---------------------+-------------------+-----------------+-------------|
+| native-ee standalone | 1.203 s                | 1.234 s             | 1.162 s           | 1.190 s         | 1.124 s     |
+| CPython              | 0.244 s                | 0.244 s             | 0.242 s           | 0.244 s         | 0.236 s     |
+
+Observed gap:
+- native-ee standalone is about =4.93x= slower than CPython by median harness =AVG (all runs)=
+- even on the trailing-6 steady-state cross-check, native-ee standalone is still about =4.80x= slower
+
+Raw per-run summaries:
+- native-ee standalone:
+  - run 1: =AVG(all)= =1.217 s=, =BEST= =1.104 s=, tail-6 avg =1.134 s=
+  - run 2: =AVG(all)= =1.160 s=, =BEST= =1.105 s=, tail-6 avg =1.127 s=
+  - run 3: =AVG(all)= =1.195 s=, =BEST= =1.124 s=, tail-6 avg =1.164 s=
+  - run 4: =AVG(all)= =1.203 s=, =BEST= =1.129 s=, tail-6 avg =1.162 s=
+  - run 5: =AVG(all)= =1.394 s=, =BEST= =1.304 s=, tail-6 avg =1.361 s=
+- CPython:
+  - run 1: =AVG(all)= =0.250 s=, =BEST= =0.236 s=, tail-6 avg =0.253 s=
+  - run 2: =AVG(all)= =0.240 s=, =BEST= =0.236 s=, tail-6 avg =0.239 s=
+  - run 3: =AVG(all)= =0.243 s=, =BEST= =0.237 s=, tail-6 avg =0.242 s=
+  - run 4: =AVG(all)= =0.244 s=, =BEST= =0.235 s=, tail-6 avg =0.242 s=
+  - run 5: =AVG(all)= =0.244 s=, =BEST= =0.239 s=, tail-6 avg =0.242 s=
+
+Interpretation:
+- the current interpreter-mode gap is large and repeatable
+- the outlier native run 5 moves the mean a bit, but not the overall conclusion
+- the steady-state tail still shows a large gap, so this is not just cold startup
+
+*** Worker Breakdown
+
+Worker-only =gprofng= profile for native-ee standalone with =Compilation=false=:
+- collected by driving =15000= text-mode requests into a worker-only
+  =gprofng collect app -O /tmp/jsonrpc-native-text-compfalse.er -F off -- ...=
+  launch of:
+  - =./mxbuild/linux-amd64/GRAALPY_NATIVE_STANDALONE/bin/graalpy=
+  - =graalpython/com.oracle.graal.python.benchmarks/python/micro/jsonrpc-pipe.py --worker --worker-io=text=
+- with =GRAAL_PYTHON_VM_ARGS='--experimental-options --engine.Compilation=false'=
+
+Top native-ee standalone interpreter-mode functions/suspects:
+- =PBytecodeDSLRootNodeGen$CachedBytecodeNode.continueAt=: =65.47%= inclusive CPU
+- =SubstrateEnterpriseOptimizedCallTarget.invokeFromInterpreter=: =18.83%= inclusive CPU
+- =OptimizedCallTarget.callBoundary=: =16.14%= inclusive CPU
+- =CallDispatchersFactory$FunctionCachedCallNodeGen$Inlined.execute=: =11.21%= inclusive CPU
+- allocation/GC shows up materially:
+  - =G1Library.allocateArray=: =9.87%= inclusive CPU
+  - =MemAllocator::allocate=: =9.87%= inclusive CPU
+  - =slowPathNewInstance=: =4.93%= inclusive CPU
+- text-layer work is present but not dominant on its own:
+  - =TextIOWrapperNodesFactory$ReadChunkNodeGen$Inlined.execute=: =5.38%= inclusive CPU
+- JSON/string work is also visible:
+  - =JSONUtils.appendString=
+  - =JSONEncoderBuiltins...AppendSimpleObject=
+  - =JSONScannerBuiltins...scanOnceUnicode=
+  - =PatternBuiltins...SubnInnerNode=
+- raw syscall wrappers are not the main bucket in this profile:
+  - =write=: =9.42%= exclusive CPU
+  - =read=: =0.90%= exclusive CPU
+
+Worker-only CPython =cProfile= on the same text-mode worker shape (15000 requests):
+- =TextIOWrapper.readline=: =0.780 s= cumulative inside a =1.658 s= worker profile
+- =TextIOWrapper.flush=: =0.227 s=
+- =write_message=: =0.419 s= cumulative
+- =read_message=: =0.946 s= cumulative
+- =json.dumps=: =0.159 s=
+- =json.loads=: =0.143 s=
+- =mask_row=: =0.206 s=
+
+Interpretation:
+- native-ee standalone spends a large fraction above the syscall boundary in bytecode interpreter
+  dispatch, call boundaries, dynamic dispatch, and allocation/GC
+- CPython still pays most of its visible worker cost in text I/O and JSON, but those hot paths stay
+  largely in optimized C implementations rather than showing a large interpreter-dispatch bucket
+- therefore the native-ee interpreter-mode gap is not just "readline/flush are slower"; a broader
+  dispatch/allocation cost is visible in the worker profile
+
+*** Syscall Cross-Check
+
+One =strace -f -c= run per runtime, same pinned direct benchmark shape:
+- native-ee standalone direct =text/text=, =5000= roundtrips:
+  - clean wall time without =strace=: =1.979 s=
+  - traced syscall mix:
+    - =futex=: =95.09%= traced syscall time, 852 calls
+    - =read=: 10200 calls
+    - =write=: 10003 calls
+- CPython direct =text/text=, =5000= roundtrips:
+  - clean wall time without =strace=: =0.573 s=
+  - traced syscall mix:
+    - =wait4=: =78.22%= traced syscall time, 85 calls
+    - =write=: 10043 calls
+    - =read=: 10502 calls
+    - =futex=: only 44 calls, =0.05%= traced syscall time
+
+Important caveat:
+- =strace= perturbs wall times substantially under WSL2, so use it only for syscall mix, not for
+  timing conclusions
+
+Interpretation:
+- native-ee standalone and CPython issue roughly the same order of magnitude of =read= and =write=
+  syscalls for this workload
+- the main gap therefore is not "native-ee does far more pipe syscalls"
+- native-ee shows much heavier =futex= activity, which suggests extra runtime coordination/synchronization
+  on top of the same basic I/O pattern
+
+*** Isolation Experiment: Drop Text Wrappers Only
+
+Direct-mode check using the same benchmark, pinned to CPU 2, 3 runs each:
+
+| runtime/mode                | median wall time |
+|----------------------------+------------------|
+| native-ee standalone text/text   | 1.701 s      |
+| native-ee standalone buffer/buffer | 1.377 s    |
+| CPython text/text          | 0.280 s          |
+| CPython buffer/buffer      | 0.276 s          |
+
+Interpretation:
+- removing =TextIOWrapper= helps native-ee standalone by about =19%= in this interpreter-mode direct check
+- CPython changes very little between =text/text= and =buffer/buffer= on this workload
+- but native-ee standalone =buffer/buffer= is still about =4.99x= slower than CPython =buffer/buffer=
+- therefore text I/O is a meaningful contributor, but it does not explain the full interpreter-mode gap
+
+*** Current Hypotheses
+
+Most likely contributors to the remaining interpreter-mode gap:
+- bytecode interpreter dispatch / call-boundary overhead in the native standalone
+- object allocation and GC churn in request decode/normalize/encode paths
+- text read path cost still matters, especially =ReadChunkNode=, but it is only part of the total gap
+- extra runtime synchronization (visible in =futex= activity) may be contributing to end-to-end time
+
+Most likely productive next targets:
+- reduce allocation and dispatch churn in the short-request text/JSON path
+- re-check =TextIOWrapperNodes.ReadlineNode= and =ReadChunkNode=, but do not assume that fixing them
+  alone will close the gap
+- inspect why the interpreter-mode native standalone still stays ~5x behind CPython even in
+  =buffer/buffer= mode
+
+*** Experiment Log
+
+- Kept for protocol:
+  - switched from command-line-only flags to =GRAAL_PYTHON_VM_ARGS= for native-ee standalone
+  - reason: ensures the worker subprocess also runs with =Compilation=false=
+- Tried as isolation only:
+  - direct =buffer/buffer= runs under =Compilation=false=
+  - result: useful diagnostic, but not a runtime change
+- No runtime code micro-optimization was committed in this pass:
+  - the new measurements point to multiple cost centers
+  - better to keep the notes reproducible first, then patch one hotspot at a time
+
+** WSL2 Notes
+
+Environment:
+- WSL2 kernel detected
+- =perf= is present but kernel-matched tooling is not configured cleanly
+- =gprofng= is installed
+
+Practical consequence:
+- use worker-only async-profiler as primary guide
+- use gprofng only as a coarse cross-check
+
+** Next Likely Target
+
+Most likely remaining productive area:
+- =TextIOWrapperNodes.ReadlineNode=
+
+Rationale:
+- lower buffered/file/posix stack has already been improved
+- text-mode still pays in:
+  - =TextIOWrapperNodes$ReadlineNode.readline=
+  - =TextIOWrapperNodes$ReadChunkNode.readChunk=
+
+But:
+- recent attempts show that naive local fast paths in =ReadChunkNode= are easy to get wrong
+- likely next useful change must avoid growing node shape too much
+- focus should be on reducing actual =TruffleString= / substring / concat churn in the
+  common short-line case, not just adding more conditionals
+- the promising "delegate to buffered byte readline" idea is currently blocked by DSL wiring issues

@@ -301,6 +301,18 @@ def parse_int(value):
     return int(str(value).replace("_", ""))
 
 
+def get_subprocess_launcher_args():
+    orig_argv = getattr(sys, "orig_argv", None)
+    if not orig_argv:
+        return [sys.executable]
+    launcher_args = [sys.executable]
+    for arg in orig_argv[1:]:
+        if not arg.startswith("-"):
+            break
+        launcher_args.append(arg)
+    return launcher_args
+
+
 def __process_args__(roundtrips=500, client_io="text", worker_io="text", workload="mask", payload_bytes=64, batch_size=8):
     return [
         parse_int(roundtrips),
@@ -317,7 +329,7 @@ def __setup__(roundtrips=500, client_io="text", worker_io="text", workload="mask
     __teardown__()
     state = State(roundtrips, client_io, worker_io, workload, payload_bytes, batch_size)
     command = [
-        sys.executable,
+        *get_subprocess_launcher_args(),
         __file__,
         "--worker",
         "--worker-io=%s" % worker_io,
