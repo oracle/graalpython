@@ -51,7 +51,6 @@ import java.util.Map;
 import java.util.Random;
 
 import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.polyglot.Context;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -122,28 +121,6 @@ public class PythonContextEntropyTests {
             }
         } finally {
             Files.deleteIfExists(tempFile);
-        }
-    }
-
-    @Test
-    public void randomSeedNoneConsumesInitializationEntropyBytes() {
-        long seed = 0x1234ABCDL;
-        Context polyglotContext = PythonTests.enterContext(Map.of("python.InitializationEntropySource", "fixed:0x1234ABCD"), new String[]{"-S"});
-        try {
-            polyglotContext.eval("python", "import _random; _random.Random()");
-            PythonContext context = PythonContext.get(null);
-            byte[] actual = new byte[16];
-            context.fillInitializationEntropyBytes(actual);
-
-            Random expectedRandom = new Random(seed);
-            expectedRandom.nextBytes(new byte[24]);
-            expectedRandom.nextBytes(new byte[624 * Integer.BYTES]);
-            byte[] expected = new byte[16];
-            expectedRandom.nextBytes(expected);
-
-            assertArrayEquals(expected, actual);
-        } finally {
-            PythonTests.closeContext();
         }
     }
 }

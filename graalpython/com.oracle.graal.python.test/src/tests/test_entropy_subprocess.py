@@ -42,6 +42,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import threading
 import unittest
 
 
@@ -49,17 +50,45 @@ import unittest
 class EntropySubprocessTests(unittest.TestCase):
     HASH_SECRET_BYTES = 24
     RANDOM_SEED_BYTES = 624 * 4
-    HASH_AND_RANDOM_IMPORT_BYTES = HASH_SECRET_BYTES + RANDOM_SEED_BYTES
+    RANDOM_INSTANCE_BYTES = HASH_SECRET_BYTES + RANDOM_SEED_BYTES
+    RANDOM_MODULE_BYTES = HASH_SECRET_BYTES + (2 * RANDOM_SEED_BYTES)
+    TEMPFILE_CANDIDATE_NAME_BYTES = HASH_SECRET_BYTES + (4 * RANDOM_SEED_BYTES)
     SSL_DATA_DIR = os.path.join(os.path.dirname(__file__), "ssldata")
 
-    def _run_with_init_device(self, data: bytes, code: str):
-        with tempfile.NamedTemporaryFile(delete=False) as f:
-            f.write(data)
-            path = f.name
-        try:
-            return self._run_with_init_source(f"device:{path}", code)
-        finally:
-            os.unlink(path)
+    def _run_with_init_pipe(self, byte_count: int, code: str):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = os.path.join(temp_dir, "initrandom")
+            subprocess.run(["mkfifo", path], check=True)
+            writer_error = []
+            bytes_written = 0
+
+            def feed_pipe():
+                nonlocal bytes_written
+                try:
+                    fd = os.open(path, os.O_WRONLY)
+                    try:
+                        remaining = byte_count
+                        chunk = b"\x00" * min(4096, byte_count)
+                        while remaining > 0:
+                            written = os.write(fd, chunk[:remaining])
+                            bytes_written += written
+                            remaining -= written
+                    finally:
+                        os.close(fd)
+                except BaseException as exc:  # re-raised in the main thread
+                    writer_error.append(exc)
+
+            writer = threading.Thread(target=feed_pipe)
+            writer.start()
+            try:
+                result = self._run_with_init_source(f"device:{path}", code)
+            finally:
+                writer.join(timeout=10)
+            if writer.is_alive():
+                self.fail("initrandom pipe writer thread did not finish")
+            if writer_error:
+                raise writer_error[0]
+            return result, bytes_written
 
     def _run_with_init_source(self, source: str, code: str):
         env = os.environ.copy()
@@ -86,65 +115,64 @@ class EntropySubprocessTests(unittest.TestCase):
     def assert_subprocess_ok(self, result):
         self.assertEqual(0, result.returncode, result)
 
+    def assert_initrandom_bytes_used(self, byte_count: int, code: str, stdout: str):
+        result, bytes_written = self._run_with_init_pipe(byte_count, code)
+        self.assert_subprocess_ok(result)
+        self.assertEqual(byte_count, bytes_written)
+        self.assertEqual(stdout, result.stdout.strip())
+
+        exhausted_result, exhausted_written = self._run_with_init_pipe(byte_count - 1, code)
+        self.assert_initrandom_exhausted(exhausted_result)
+        self.assertEqual(byte_count - 1, exhausted_written)
+
     def test_startup_hash_secret_uses_initrandom(self):
-        result = self._run_with_init_device(b"\x00" * 4, "print('ok')")
-        self.assert_initrandom_exhausted(result)
+        self.assert_initrandom_bytes_used(self.HASH_SECRET_BYTES, "print('ok')", "ok")
 
     def test__random_random_uses_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.RANDOM_INSTANCE_BYTES,
             "import _random; _random.Random(); print('ok')",
+            "ok",
         )
-        self.assert_initrandom_exhausted(result)
 
     def test_random_module_import_uses_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.RANDOM_MODULE_BYTES,
             "import random; print('ok')",
+            "ok",
         )
-        self.assert_initrandom_exhausted(result)
 
-    def test_systemrandom_does_not_mutate_random_state(self):
-        result = self._run_with_init_source(
-            "fixed:0x1234ABCD",
-            "import random; before = random.getstate(); "
-            "random.SystemRandom().getrandbits(32); "
-            "after = random.getstate(); "
-            "print(before == after)",
+    def test_systemrandom_does_not_use_additional_initrandom(self):
+        self.assert_initrandom_bytes_used(
+            self.RANDOM_MODULE_BYTES,
+            "import random; random.SystemRandom().getrandbits(32); print('ok')",
+            "ok",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("True", result.stdout.strip())
 
-    def test_secrets_does_not_mutate_random_state(self):
-        result = self._run_with_init_source(
-            "fixed:0x1234ABCD",
-            "import random; before = random.getstate(); "
-            "import secrets; secrets.token_hex(8); "
-            "after = random.getstate(); "
-            "print(before == after)",
+    def test_secrets_does_not_use_additional_initrandom(self):
+        self.assert_initrandom_bytes_used(
+            self.RANDOM_MODULE_BYTES,
+            "import random; import secrets; secrets.token_hex(8); print('ok')",
+            "ok",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("True", result.stdout.strip())
 
     def test_os_urandom_does_not_use_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.HASH_SECRET_BYTES,
             "import os; print(len(os.urandom(16)))",
+            "16",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("16", result.stdout.strip())
 
     def test_multiprocessing_process_import_does_not_use_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.HASH_SECRET_BYTES,
             "import multiprocessing.process; print('ok')",
+            "ok",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("ok", result.stdout.strip())
 
-    def test_multiprocessing_deliver_challenge_does_not_mutate_random_state(self):
-        result = self._run_with_init_source(
-            "fixed:0x1234ABCD",
+    def test_multiprocessing_deliver_challenge_does_not_use_additional_initrandom(self):
+        self.assert_initrandom_bytes_used(
+            self.RANDOM_MODULE_BYTES,
             textwrap.dedent("""
                 import random
                 import multiprocessing.connection as mc
@@ -161,48 +189,37 @@ class EntropySubprocessTests(unittest.TestCase):
                         msg = self.sent[-1][len(mc._CHALLENGE):]
                         return mc._create_response(auth, msg)
 
-                before = random.getstate()
                 d = Dummy()
                 mc.deliver_challenge(d, auth)
-                after = random.getstate()
-                print(before == after)
+                print('ok')
             """),
+            "ok",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("True", result.stdout.strip())
 
     def test_tempfile_candidate_names_use_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_AND_RANDOM_IMPORT_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.TEMPFILE_CANDIDATE_NAME_BYTES,
             "import tempfile; next(tempfile._get_candidate_names()); print('ok')",
+            "ok",
         )
-        self.assert_initrandom_exhausted(result)
 
-    def test_tempfile_does_not_mutate_random_state(self):
-        result = self._run_with_init_source(
-            "fixed:0x1234ABCD",
-            "import random; before = random.getstate(); "
-            "import tempfile; next(tempfile._get_candidate_names()); "
-            "after = random.getstate(); "
-            "print(before == after)",
+    def test_tempfile_after_random_import_uses_initrandom(self):
+        self.assert_initrandom_bytes_used(
+            self.TEMPFILE_CANDIDATE_NAME_BYTES,
+            "import random; import tempfile; next(tempfile._get_candidate_names()); print('ok')",
+            "ok",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("True", result.stdout.strip())
 
-    def test_email_generator_boundary_mutates_random_state(self):
-        result = self._run_with_init_source(
-            "fixed:0x1234ABCD",
-            "import random; before = random.getstate(); "
-            "from email.generator import Generator; Generator._make_boundary(); "
-            "after = random.getstate(); "
-            "print(before == after)",
+    def test_email_generator_boundary_does_not_use_additional_initrandom(self):
+        self.assert_initrandom_bytes_used(
+            self.RANDOM_MODULE_BYTES,
+            "import random; from email.generator import Generator; Generator._make_boundary(); print('ok')",
+            "ok",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("False", result.stdout.strip())
 
-    def test_imaplib_connect_mutates_random_state(self):
-        result = self._run_with_init_source(
-            "fixed:0x1234ABCD",
+    def test_imaplib_connect_does_not_use_additional_initrandom(self):
+        self.assert_initrandom_bytes_used(
+            self.RANDOM_MODULE_BYTES,
             textwrap.dedent("""
                 import random
                 import imaplib
@@ -221,7 +238,6 @@ class EntropySubprocessTests(unittest.TestCase):
                     def shutdown(self):
                         pass
 
-                before = random.getstate()
                 d = Dummy.__new__(Dummy)
                 d.debug = imaplib.Debug
                 d.state = 'LOGOUT'
@@ -234,74 +250,62 @@ class EntropySubprocessTests(unittest.TestCase):
                 d._tls_established = False
                 d._mode_ascii()
                 d._connect()
-                after = random.getstate()
-                print(before == after)
+                print('ok')
             """),
+            "ok",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("False", result.stdout.strip())
 
     def test_pyexpat_import_does_not_use_additional_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.HASH_SECRET_BYTES,
             "import pyexpat; print(pyexpat.__name__)",
+            "pyexpat",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("pyexpat", result.stdout.strip())
 
     def test_pyexpat_parsercreate_does_not_use_additional_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.HASH_SECRET_BYTES,
             "import pyexpat; p = pyexpat.ParserCreate(); print(type(p).__name__)",
+            "xmlparser",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("xmlparser", result.stdout.strip())
 
     def test_sqlite3_import_does_not_use_additional_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.HASH_SECRET_BYTES,
             "import _sqlite3; print(_sqlite3.__name__)",
+            "_sqlite3",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("_sqlite3", result.stdout.strip())
 
     def test_sqlite3_randomblob_does_not_use_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.HASH_SECRET_BYTES,
             "import sqlite3; "
             "conn = sqlite3.connect(':memory:'); "
             "print(conn.execute('select length(randomblob(16))').fetchone()[0])",
+            "16",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("16", result.stdout.strip())
 
     def test_ssl_load_cert_chain_does_not_use_initrandom(self):
         cert = os.path.join(self.SSL_DATA_DIR, "signed_cert.pem")
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.HASH_SECRET_BYTES,
             f"import ssl; "
             f"ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); "
             f"ctx.load_cert_chain(r'{cert}'); "
             f"print('ok')",
+            "ok",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("ok", result.stdout.strip())
 
-    def test_uuid1_mutates_random_state(self):
-        result = self._run_with_init_source(
-            "fixed:0x1234ABCD",
-            "import random; before = random.getstate(); "
-            "import uuid; uuid.uuid1(node=1); "
-            "after = random.getstate(); "
-            "print(before == after)",
+    def test_uuid1_does_not_use_additional_initrandom(self):
+        self.assert_initrandom_bytes_used(
+            self.RANDOM_MODULE_BYTES,
+            "import random; import uuid; uuid.uuid1(node=1); print('ok')",
+            "ok",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("False", result.stdout.strip())
 
     def test_uuid4_does_not_use_initrandom(self):
-        result = self._run_with_init_device(
-            b"\x00" * self.HASH_SECRET_BYTES,
+        self.assert_initrandom_bytes_used(
+            self.HASH_SECRET_BYTES,
             "import uuid; print(uuid.uuid4().version)",
+            "4",
         )
-        self.assert_subprocess_ok(result)
-        self.assertEqual("4", result.stdout.strip())
