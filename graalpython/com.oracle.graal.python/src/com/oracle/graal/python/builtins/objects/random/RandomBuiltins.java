@@ -134,10 +134,7 @@ public final class RandomBuiltins extends PythonBuiltins {
             int[] seed = new int[PRandom.N];
             byte[] seedBytes = new byte[seed.length * Integer.BYTES];
             getContext().fillInitializationEntropyBytes(seedBytes);
-            ByteBuffer seedBuffer = ByteBuffer.wrap(seedBytes).order(ByteOrder.BIG_ENDIAN);
-            for (int i = 0; i < seed.length; i++) {
-                seed[i] = seedBuffer.getInt();
-            }
+            ByteBuffer.wrap(seedBytes).order(ByteOrder.BIG_ENDIAN).asIntBuffer().get(seed);
             random.seed(seed);
             return PNone.NONE;
         }
