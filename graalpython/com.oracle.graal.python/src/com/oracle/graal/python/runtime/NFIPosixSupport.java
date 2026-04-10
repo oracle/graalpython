@@ -566,6 +566,17 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public long readInto(int fd, Buffer data,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        setErrno(invokeNode, 0);
+        long n = invokeNode.callLong(this, PosixNativeFunction.call_read, fd, data.data, data.length);
+        if (n < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return n;
+    }
+
+    @ExportMessage
     public long write(int fd, Buffer data,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         setErrno(invokeNode, 0);        // TODO CPython does this, but do we need it?

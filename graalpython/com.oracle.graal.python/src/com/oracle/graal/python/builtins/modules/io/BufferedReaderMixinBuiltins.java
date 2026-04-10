@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.FlushAndRewin
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodesFactory.CheckIsClosedNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -97,7 +98,12 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.PosixSupport;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -114,6 +120,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -190,7 +197,8 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
 
         @Specialization
         static int bufferedreaderFillBuffer(VirtualFrame frame, Node inliningTarget, PBuffered self,
-                        @Cached RawReadNode rawReadNode) {
+                        @Cached RawReadNode rawReadNode,
+                        @Cached RawReadIntoBufferNode rawReadIntoBufferNode) {
             int start;
             if (isValidReadBuffer(self)) {
                 start = self.getReadEnd();
@@ -198,18 +206,76 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
                 start = 0;
             }
             int len = self.getBufferSize() - start;
-            byte[] fill = rawReadNode.execute(frame, inliningTarget, self, len);
-            if (fill == BLOCKED) {
-                return -2;
+            int n;
+            if (start == 0 && self.isFastClosedChecks()) {
+                n = rawReadIntoBufferNode.execute(frame, inliningTarget, self.getFileIORaw(), self.getBuffer(), len);
+                if (n == -2) {
+                    return -2;
+                }
+            } else {
+                byte[] fill = rawReadNode.execute(frame, inliningTarget, self, len);
+                if (fill == BLOCKED) {
+                    return -2;
+                }
+                n = fill.length;
+                if (n > 0) {
+                    PythonUtils.arraycopy(fill, 0, self.getBuffer(), start, n);
+                }
             }
-            int n = fill.length;
             if (n == 0) {
                 return n;
             }
-            PythonUtils.arraycopy(fill, 0, self.getBuffer(), start, n);
             self.setReadEnd(start + n);
             self.setRawPos(start + n);
             return n;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class RawReadIntoBufferNode extends PNodeWithContext {
+
+        public abstract int execute(VirtualFrame frame, Node inliningTarget, PFileIO raw, byte[] buffer, int len);
+
+        @Specialization
+        static int readIntoBuffer(VirtualFrame frame, Node inliningTarget, PFileIO raw, byte[] buffer, int len,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached InlinedBranchProfile readErrorProfile,
+                        @Cached InlinedBranchProfile readErrorProfile2,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                return readInto(raw.getFD(), buffer, len, inliningTarget, posixLib, context.getPosixSupport(), readErrorProfile, gil);
+            } catch (PosixSupportLibrary.PosixException e) {
+                if (e.getErrorCode() == OSErrorEnum.EAGAIN.getNumber()) {
+                    readErrorProfile2.enter(inliningTarget);
+                    return -2;
+                }
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        private static int readInto(int fd, byte[] buffer, int len,
+                        Node inliningTarget, PosixSupportLibrary posixLib, PosixSupport posixSupport,
+                        InlinedBranchProfile errorProfile, GilNode gil) throws PosixSupportLibrary.PosixException {
+            gil.release(true);
+            try {
+                while (true) {
+                    try {
+                        return (int) posixLib.readInto(posixSupport, fd, new PosixSupportLibrary.Buffer(buffer, len));
+                    } catch (PosixSupportLibrary.PosixException e) {
+                        errorProfile.enter(inliningTarget);
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            PythonContext.triggerAsyncActions(inliningTarget);
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
+            } finally {
+                gil.acquire();
+            }
         }
     }
 

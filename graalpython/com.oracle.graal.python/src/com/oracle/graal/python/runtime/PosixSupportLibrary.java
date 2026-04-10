@@ -93,6 +93,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Buffer read(Object receiver, int fd, long length) throws PosixException;
 
+    public abstract long readInto(Object receiver, int fd, Buffer data) throws PosixException;
+
     public abstract long write(Object receiver, int fd, Buffer data) throws PosixException;
 
     public abstract int dup(Object receiver, int fd) throws PosixException;
