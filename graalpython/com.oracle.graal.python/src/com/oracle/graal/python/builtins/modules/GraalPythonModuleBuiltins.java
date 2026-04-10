@@ -305,6 +305,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("get_handle_table_id"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_strong_handle_table_ref"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("has_id_reference"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("clear_interop_type_registry"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("foreign_number_list"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("foreign_wrapper"), PNone.NO_VALUE);
@@ -1254,6 +1255,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             Object ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).nativeContext, 0, id);
             assert ref == null || ref instanceof PythonAbstractObject || ref instanceof PythonObjectReference;
             return ref instanceof PythonAbstractObject || ref != null && ((PythonObjectReference) ref).isStrongReference();
+        }
+    }
+
+    @Builtin(name = "has_id_reference", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class HasIdReference extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static boolean doGeneric(Object object) {
+            return object instanceof PythonAbstractNativeObject nativeObject && nativeObject.ref != null;
         }
     }
 
