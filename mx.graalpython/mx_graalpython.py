@@ -301,7 +301,6 @@ def libpythonvm_build_args():
             "-Dpolyglot.image-build-time.PreinitializeContexts=python",
             "-H:+UnlockExperimentalVMOptions",
             '-H:+RelativeCodePointers',
-            '-H:+CompactingOldGen',
             "-H:-UnlockExperimentalVMOptions",
         ]
 
