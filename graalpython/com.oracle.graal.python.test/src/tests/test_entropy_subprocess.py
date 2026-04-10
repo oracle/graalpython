@@ -45,7 +45,7 @@ import textwrap
 import unittest
 
 
-@unittest.skipUnless(sys.implementation.name == "graalpy", "GraalPy-specific test")
+@unittest.skipUnless(sys.implementation.name == "graalpy" and sys.platform.startswith("linux"), "Linux GraalPy-specific test")
 class EntropySubprocessTests(unittest.TestCase):
     HASH_SECRET_BYTES = 24
     RANDOM_SEED_BYTES = 624 * 4

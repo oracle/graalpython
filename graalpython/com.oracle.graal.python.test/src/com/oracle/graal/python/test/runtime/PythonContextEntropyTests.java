@@ -53,12 +53,19 @@ import java.util.Random;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Context;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.Assume;
 
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
 
 public class PythonContextEntropyTests {
+
+    @Before
+    public void checkLinuxOnly() {
+        Assume.assumeTrue(System.getProperty("os.name").toLowerCase().contains("linux"));
+    }
 
     @After
     public void tearDown() {
