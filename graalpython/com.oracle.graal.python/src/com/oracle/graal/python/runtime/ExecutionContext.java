@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -181,7 +181,7 @@ public abstract class ExecutionContext {
                         @Bind Node inliningTarget,
                         @Cached PassCallerFrameNode passCallerFrame,
                         @Cached PassExceptionStateNode passExceptionState) {
-            assert PArguments.isPythonFrame(frame) || inliningTarget.getRootNode() instanceof TopLevelExceptionHandler : "calling from non-Python or non-top-level frame";
+            assert inliningTarget.getRootNode() instanceof TopLevelExceptionHandler || PArguments.assertIsPythonFrame(frame) : "calling from non-Python or non-top-level frame";
             passCallerFrame.execute(frame, inliningTarget, callArguments, callerFlags);
             passExceptionState.execute(frame, inliningTarget, callArguments, CallerFlags.needsExceptionState(callerFlags));
         }
