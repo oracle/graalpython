@@ -6,11 +6,7 @@ description: Run GraalPy ROTA maintenance workflows for (1) import update pull r
 # GraalPy ROTA
 
 ## Overview
-Execute recurring GraalPy ROTA tasks with exact commands and strict output structure. Prefer the procedures in this skill, and use `docs/contributor/ROTA.md` as the detailed source text.
-
-## Source Of Truth
-- Primary: `docs/contributor/ROTA.md`
-- If this skill workflow differs from the primary source, follow `docs/contributor/ROTA.md`.
+Execute recurring GraalPy ROTA tasks with exact commands and strict output structure. Prefer the procedures in this skill.
 
 ## Choose Workflow
 - Use `Import update` when asked to refresh imports and open the standard PR.
@@ -27,16 +23,17 @@ git checkout -b "update/GR-21590/$(date +%d%m%y)"
 ```bash
 mx python-update-import
 ```
-3. Update CPython unittest whitelist and inspect diff for plausibility. Expect mostly additions, not removals:
+3. Check if there is directory ../graal-enterprise, if not, stop and ask the user to provide it
+4. Update CPython unittest whitelist and inspect diff for plausibility. Expect mostly additions, not removals:
 ```bash
 mx --dy /graalpython-enterprise python-update-unittest-tags
 ```
-4. Create PR with description `[GR-21590] Import update`.
-5. Use `gdev-cli bitbucket` to create PR, start gates, and set reviewers:
+5. Create PR with description `[GR-21590] Import update`.
+6. Use `gdev-cli bitbucket` to create PR, start gates, and set reviewers:
 - `tim.felgentreff@oracle.com`
 - `michael.simacek@oracle.com`
 - `stepan.sindelar@oracle.com`
-6. Fix gate failures and push updates until gates pass.
+7. Fix gate failures and push updates until gates pass.
 
 ## Recent Periodic Issues Workflow
 1. Verify creator identity mapping:
