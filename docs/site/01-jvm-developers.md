@@ -368,6 +368,12 @@ try (Context context = GraalPyResources.contextBuilder().build()) {
             </div>
             <div class="guides__card">
               <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
+              <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-freeze-dependencies-guide/" target="_blank">
+                <div class="guides__topics">Freeze Transitive Python Dependencies for Reproducible Builds</div>
+              </a>
+            </div>
+            <div class="guides__card">
+              <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
               <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-spring-boot-guide/" target="_blank">
                 <div class="guides__topics">Use GraalPy with Spring Boot</div>
               </a>
@@ -378,6 +384,12 @@ try (Context context = GraalPyResources.contextBuilder().build()) {
               <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
               <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-micronaut-guide/" target="_blank">
                 <div class="guides__topics">Use GraalPy with Micronaut</div>
+              </a>
+            </div>
+            <div class="guides__card">
+              <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
+              <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-custom-venv-guide/" target="_blank">
+                <div class="guides__topics">Manually Install Python Packages</div>
               </a>
             </div>
             <div class="guides__card">
@@ -400,6 +412,12 @@ try (Context context = GraalPyResources.contextBuilder().build()) {
         <h3 class="truffle__subtitle">Demos</h3>
         <div class="guides__row">
           <div class="guides__column">
+            <div class="guides__card">
+              <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
+              <a href="https://github.com/graalvm/graal-languages-demos/tree/main/graalpy/graalpy-scripts-debug-guide" target="_blank">
+                <div class="guides__topics">Debug Python Scripts in VS Code with GraalPy</div>
+              </a>
+            </div>
             <div class="guides__card">
               <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
               <a href="https://github.com/graalvm/graal-languages-demos/tree/main/graalpy/graalpy-openai-starter/" target="_blank">

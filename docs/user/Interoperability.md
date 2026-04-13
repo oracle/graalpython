@@ -5,6 +5,8 @@ This means that you can use other languages' objects and functions directly from
 This interoperability works in both directions.
 Python can call other languages, and other languages can call Python code.
 
+> **Note for Python users:** The Java interoperability sections below require a JVM-based GraalPy runtime with the relevant Java classes on the classpath. The later `polyglot` sections describe the more general cross-language APIs for working with other Graal languages.
+
 ## Call Java from Python
 
 Java is the host language of the JVM and runs the GraalPy interpreter itself.

@@ -128,4 +128,4 @@ Context context = Context.newBuilder("python")
 Python native extensions run by default as native binaries with full access to the underlying system.
 This means they bypass the security controls described above.
 
-For more information about limitations when embedding native extensions, see [Embedding limitations](Native-Extensions.md#embedding-limitations).
+For more information about limitations when embedding native extensions, see [Embedding limitations](Embedding-Native-Extensions.md).

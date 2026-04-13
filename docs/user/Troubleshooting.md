@@ -1,6 +1,7 @@
-# GraalPy Troubleshooting
+# GraalPy Embedding Troubleshooting
 
-This guide helps you resolve common issues when using GraalPy, whether running it standalone or embedded in Java applications.
+This guide helps you resolve common issues when embedding GraalPy in Java applications.
+It focuses on Virtual FileSystem setup, context configuration, build tooling, and dependency alignment for JVM-based deployments.
 
 ## Virtual FileSystem Issues
 
