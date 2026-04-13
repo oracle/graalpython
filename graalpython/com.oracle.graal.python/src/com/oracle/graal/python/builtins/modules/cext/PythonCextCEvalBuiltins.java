@@ -55,10 +55,10 @@ import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -94,7 +94,8 @@ public final class PythonCextCEvalBuiltins {
     @CApiBuiltin(ret = PyThreadState, args = {}, acquireGil = false, call = Direct)
     static long PyEval_SaveThread() {
         PythonContext context = PythonContext.get(null);
-        long threadState = PThreadState.getOrCreateNativeThreadState(PythonLanguage.get(null), context);
+        long threadState = context.getThreadState(context.getLanguage()).getNativePointer();
+        assert threadState != PythonAbstractObject.UNINITIALIZED;
         LOGGER.fine("C extension releases GIL");
         GilNode.getUncached().release(context, true);
         return threadState;
