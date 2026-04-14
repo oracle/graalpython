@@ -16,22 +16,45 @@ jobs:
       - name: Check file changes
         id: changes
         if: github.event_name == 'pull_request'
-        uses: dorny/paths-filter@v3
+        uses: actions/github-script@v8
         with:
-          filters: |
-            workflow_or_suite:
-              - '.github/**'
-              - 'mx.graalpython/suite.py'
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.setOutput('workflow_or_suite', 'false');
+              core.setOutput('docs_only', 'false');
+              return;
+            }
+
+            const changedFiles = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100,
+              }
+            );
+
+            const hasWorkflowOrSuiteChanges = changedFiles.some(file =>
+              file.filename.startsWith('.github/') || file.filename === 'mx.graalpython/suite.py'
+            );
+            const hasOnlyDocsChanges = changedFiles.length > 0 && changedFiles.every(file => file.filename.startsWith('docs/'));
+
+            core.setOutput('workflow_or_suite', hasWorkflowOrSuiteChanges ? 'true' : 'false');
+            core.setOutput('docs_only', hasOnlyDocsChanges ? 'true' : 'false');
 
       - name: Check if workflow should run
         id: decision
         uses: actions/github-script@v8
         env:
           HAS_WORKFLOW_OR_SUITE_CHANGES: ${{ steps.changes.outputs.workflow_or_suite || 'false' }}
+          HAS_ONLY_DOCS_CHANGES: ${{ steps.changes.outputs.docs_only || 'false' }}
         with:
           script: |
             const eventName = context.eventName;
             const hasWorkflowOrSuiteChanges = process.env.HAS_WORKFLOW_OR_SUITE_CHANGES === 'true';
+            const hasOnlyDocsChanges = process.env.HAS_ONLY_DOCS_CHANGES === 'true';
 
             if (eventName === 'workflow_dispatch') {
               core.setOutput('run_ci', 'true');
@@ -50,6 +73,12 @@ jobs:
             if (pr.draft) {
               core.setOutput('run_ci', 'false');
               core.setOutput('reason', 'draft PR');
+              return;
+            }
+
+            if (hasOnlyDocsChanges) {
+              core.setOutput('run_ci', 'false');
+              core.setOutput('reason', 'docs-only changes');
               return;
             }
 
@@ -84,6 +113,7 @@ jobs:
 
   abi-check:
     if: needs.should-run.outputs.run_ci == 'true'
+    needs: should-run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -114,6 +144,7 @@ jobs:
 
   build-standalone-artifacts:
     if: needs.should-run.outputs.run_ci == 'true' && success()
+    needs: should-run
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
@@ -122,7 +153,7 @@ jobs:
 
   run-tests:
     if: needs.should-run.outputs.run_ci == 'true' && success()
-    needs: build-standalone-artifacts
+    needs: [should-run, build-standalone-artifacts]
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
@@ -130,7 +161,7 @@ jobs:
 
   collect-reports:
     if: needs.should-run.outputs.run_ci == 'true' && always()
-    needs: run-tests
+    needs: [should-run, run-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
