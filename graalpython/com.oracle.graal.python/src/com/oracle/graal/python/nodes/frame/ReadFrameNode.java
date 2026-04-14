@@ -440,7 +440,7 @@ public abstract class ReadFrameNode extends Node {
                     if (!selector.skip(pRootNode)) {
                         if (i == level) {
                             Frame frame = ReadFrameNode.getFrame(frameInstance, frameAccess);
-                            assert PArguments.isPythonFrame(frame);
+                            assert PArguments.assertIsPythonFrame(frame);
                             IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, callerFlags);
                             if (prevRootNode instanceof PRootNode prevPRootNode && prevPRootNode.setsUpCalleeContext()) {
                                 // Update the flags in the callee

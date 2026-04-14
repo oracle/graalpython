@@ -65,6 +65,14 @@ public final class PArguments {
     private static final int INDEX_CURRENT_EXCEPTION = 5;
     public static final int USER_ARGUMENTS_OFFSET = 6;
 
+    public static boolean assertIsPythonFrame(Frame frame) {
+        assert frame != null;
+        Object[] frameArgs = frame.getArguments();
+        assert frameArgs.length >= USER_ARGUMENTS_OFFSET : frameArgs.length;
+        assert frameArgs[INDEX_CURRENT_FRAME_INFO] instanceof PFrame.Reference : frameArgs[INDEX_CURRENT_FRAME_INFO];
+        return true;
+    }
+
     public static boolean isPythonFrame(Frame frame) {
         return frame != null && isPythonFrame(frame.getArguments());
     }
