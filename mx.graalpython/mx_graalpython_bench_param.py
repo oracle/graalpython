@@ -364,6 +364,7 @@ HEAP_BENCHMARKS = {
         "post-startup": [],
         "import-a-lot": [],
         "allocate-objects": [],
+        "allocate-dicts": [],
     }],
     "micro-small-heap": [PATH_MICRO, MICRO_BENCHMARKS_SMALL],
 }
