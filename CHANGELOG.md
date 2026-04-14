@@ -37,6 +37,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Enable FTS3, FTS4, FTS5, RTREE, and math function features in the bundled sqlite3 library.
 * Add support patches for Torch 2.7.0, PyGObject 3.52.3, xmlschema 4.0.0, lxml < 5.4.0, SciPy 1.15, jq 1.8.0, NumPy < 2.3, ormsgpack < 1.9.1, pandas 2.2.3, PyArrow 19.0, PyMuPDF 1.25.4.
 * The GraalPy Native standalone on Linux now uses the G1 garbage collector which is much faster.
+* The GraalPy Native standalone on Linux now uses a lower-footprint Native Image garbage collection configuration. This reduces resident set size (RSS) for many workloads, but may increase startup time and warmup time, and can slow down some workloads.
 * The full-featured Python REPL is now available on GraalPy standalone builds for Windows.
 
 ## Version 24.2.0
