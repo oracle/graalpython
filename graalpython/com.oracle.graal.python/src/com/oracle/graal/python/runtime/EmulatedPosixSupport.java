@@ -526,31 +526,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         }
     }
 
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public long readInto(int fd, Buffer data,
-                    @Bind Node inliningTarget,
-                    @Shared("errorBranch") @Cached InlinedBranchProfile errorBranch,
-                    @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
-        Channel channel = getFileChannel(fd);
-        if (!(channel instanceof ReadableByteChannel readableChannel)) {
-            errorBranch.enter(inliningTarget);
-            throw posixException(OSErrorEnum.EBADF);
-        }
-        try {
-            int n = doReadIntoChannel(readableChannel, data.data, (int) data.length);
-            return n < 0 ? 0 : n;
-        } catch (Exception e) {
-            errorBranch.enter(inliningTarget);
-            throw posixException(OSErrorEnum.fromException(e, eqNode));
-        }
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    private static int doReadIntoChannel(ReadableByteChannel channel, byte[] data, int length) throws IOException {
-        return channel.read(ByteBuffer.wrap(data, 0, length));
-    }
-
     @TruffleBoundary
     private static Buffer readBytesFromChannel(ReadableByteChannel channel, long sizeIn) throws IOException {
         long size = sizeIn;

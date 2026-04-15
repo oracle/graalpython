@@ -185,17 +185,6 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final long readInto(int fd, Buffer data,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("readInto", "%d, %d", fd, data.length);
-        try {
-            return logExit("readInto", "%d", lib.readInto(delegate, fd, data));
-        } catch (PosixException e) {
-            throw logException("readInto", e);
-        }
-    }
-
-    @ExportMessage
     final long write(int fd, Buffer data,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("write", "%d, %d", fd, data.length);
