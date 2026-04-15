@@ -232,6 +232,11 @@ public final class PythonOptions {
                         }
                     }));
 
+    @Option(category = OptionCategory.EXPERT, help = "Entropy source used for reviewed initialization-time randomness. " +
+                    "Use 'default' to reuse the default Java source, 'device:<path>' to read bytes from a device or file, " +
+                    "or 'fixed:<seed>' for deterministic testing.", usageSyntax = "default|device:<path>|fixed:<seed>", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<String> InitializationEntropySource = new OptionKey<>("default");
+
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the POSIX module.", usageSyntax = "java|native", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> PosixModuleBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
 

@@ -76,7 +76,9 @@ import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.security.ProviderException;
 import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
@@ -88,6 +90,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -705,6 +708,7 @@ public final class PythonContext extends Python3Core {
     private final IDUtils idUtils = new IDUtils();
 
     @CompilationFinal private SecureRandom secureRandom;
+    private InitializationEntropySource initializationEntropySource;
 
     // Equivalent of _Py_HashSecret
     @CompilationFinal(dimensions = 1) private byte[] hashSecret = new byte[24];
@@ -1460,6 +1464,44 @@ public final class PythonContext extends Python3Core {
         return secureRandom;
     }
 
+    public void fillInitializationEntropyBytes(byte[] bytes) {
+        getInitializationEntropySource().nextBytes(bytes);
+    }
+
+    private InitializationEntropySource getInitializationEntropySource() {
+        assert !env.isPreInitialization();
+        if (initializationEntropySource == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            initializationEntropySource = createInitializationEntropySource(getOption(PythonOptions.InitializationEntropySource));
+        }
+        return initializationEntropySource;
+    }
+
+    private InitializationEntropySource createInitializationEntropySource(String spec) {
+        if ("default".equals(spec)) {
+            return new DefaultInitializationEntropySource(getSecureRandom());
+        }
+        if (spec.startsWith("device:")) {
+            String path = spec.substring("device:".length());
+            if (path.isEmpty()) {
+                throw new IllegalArgumentException("python.InitializationEntropySource device path must not be empty");
+            }
+            return new DeviceInitializationEntropySource(path);
+        }
+        if (spec.startsWith("fixed:")) {
+            String seed = spec.substring("fixed:".length());
+            if (seed.isEmpty()) {
+                throw new IllegalArgumentException("python.InitializationEntropySource fixed seed must not be empty");
+            }
+            try {
+                return new FixedInitializationEntropySource(Long.decode(seed));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("python.InitializationEntropySource fixed seed must be a decimal or hexadecimal long", e);
+            }
+        }
+        throw new IllegalArgumentException("python.InitializationEntropySource must be 'default', 'device:<path>', or 'fixed:<seed>'");
+    }
+
     public byte[] getHashSecret() {
         assert !env.isPreInitialization();
         return hashSecret;
@@ -1692,7 +1734,65 @@ public final class PythonContext extends Python3Core {
             }
         } else {
             // Generate random seed
-            getSecureRandom().nextBytes(hashSecret);
+            fillInitializationEntropyBytes(hashSecret);
+        }
+    }
+
+    private interface InitializationEntropySource {
+        void nextBytes(byte[] bytes);
+    }
+
+    private static final class DefaultInitializationEntropySource implements InitializationEntropySource {
+        private final SecureRandom secureRandom;
+
+        DefaultInitializationEntropySource(SecureRandom secureRandom) {
+            this.secureRandom = secureRandom;
+        }
+
+        @Override
+        public synchronized void nextBytes(byte[] bytes) {
+            secureRandom.nextBytes(bytes);
+        }
+    }
+
+    private static final class DeviceInitializationEntropySource implements InitializationEntropySource {
+        private final InputStream inputStream;
+
+        DeviceInitializationEntropySource(String path) {
+            try {
+                inputStream = java.nio.file.Files.newInputStream(Path.of(path));
+            } catch (IOException e) {
+                throw new IllegalArgumentException("failed to open initialization entropy device: " + path, e);
+            }
+        }
+
+        @Override
+        public synchronized void nextBytes(byte[] bytes) {
+            int offset = 0;
+            try {
+                while (offset < bytes.length) {
+                    int read = inputStream.read(bytes, offset, bytes.length - offset);
+                    if (read < 0) {
+                        throw new ProviderException("initialization entropy device exhausted");
+                    }
+                    offset += read;
+                }
+            } catch (IOException e) {
+                throw new ProviderException("failed to read initialization entropy device", e);
+            }
+        }
+    }
+
+    private static final class FixedInitializationEntropySource implements InitializationEntropySource {
+        private final Random random;
+
+        FixedInitializationEntropySource(long seed) {
+            this.random = new Random(seed);
+        }
+
+        @Override
+        public synchronized void nextBytes(byte[] bytes) {
+            random.nextBytes(bytes);
         }
     }
 
