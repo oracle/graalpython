@@ -66,7 +66,7 @@ public abstract class GetFixedAttributeNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlotsNode,
-                    @Cached MergedObjectTypeModuleGetFixedAttributeNode innerNode) {
+                    @Cached(inline = true) MergedObjectTypeModuleGetFixedAttributeNode innerNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         TpSlots slots = getSlotsNode.execute(inliningTarget, type);
         return innerNode.execute(frame, inliningTarget, object, key, type, slots);

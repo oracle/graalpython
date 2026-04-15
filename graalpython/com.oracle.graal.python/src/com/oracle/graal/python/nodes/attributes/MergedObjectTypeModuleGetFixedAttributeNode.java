@@ -82,7 +82,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * inlining, but the caller is expected to keep its identity stable for the lifetime of the node.
  */
 @GenerateInline
-@GenerateCached(false)
+@GenerateCached
 public abstract class MergedObjectTypeModuleGetFixedAttributeNode extends PNodeWithContext {
 
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, TpSlots slots);

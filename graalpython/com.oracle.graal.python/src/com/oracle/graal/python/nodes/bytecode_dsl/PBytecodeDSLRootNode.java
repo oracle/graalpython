@@ -103,12 +103,16 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterato
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.compiler.CodeUnit;
@@ -179,7 +183,10 @@ import com.oracle.graal.python.nodes.argument.keywords.ConcatDictToStorageNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
-import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedModuleAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedObjectAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedTypeAttributeNode;
+import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.bytecode.CopyDictWithoutKeysNode;
@@ -1657,19 +1664,79 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class GetAttribute {
-        @Specialization(excludeForUncached = true)
+        protected static boolean isObjectGetAttribute(TpSlots slots) {
+            return slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro();
+        }
+
+        protected static boolean isModuleGetAttribute(TpSlots slots) {
+            return slots.tp_getattro() == ModuleBuiltins.SLOTS.tp_getattro();
+        }
+
+        protected static boolean isTypeGetAttribute(TpSlots slots) {
+            return slots.tp_getattro() == TypeBuiltins.SLOTS.tp_getattro();
+        }
+
+        @ForceQuickening
+        @Specialization(guards = "isObjectGetAttribute(slots)", excludeForUncached = true)
+        public static Object doObject(VirtualFrame frame,
+                        TruffleString name,
+                        Object obj,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Bind("getClassNode.execute(inliningTarget, obj)") Object type,
+                        @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
+                        @Bind("getSlotsNode.execute(inliningTarget, type)") TpSlots slots,
+                        @Shared @Cached(inline = false) GetFixedObjectAttributeNode getObjectAttributeNode) {
+            return getObjectAttributeNode.execute(frame, inliningTarget, obj, name, type);
+        }
+
+        @ForceQuickening
+        @Specialization(guards = "isModuleGetAttribute(slots)", excludeForUncached = true)
+        public static Object doModule(VirtualFrame frame,
+                        TruffleString name,
+                        Object obj,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Bind("getClassNode.execute(inliningTarget, obj)") Object type,
+                        @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
+                        @Bind("getSlotsNode.execute(inliningTarget, type)") TpSlots slots,
+                        @Shared @Cached(inline = false) GetFixedModuleAttributeNode getModuleAttributeNode) {
+            return getModuleAttributeNode.execute(frame, inliningTarget, obj, name, type);
+        }
+
+        @ForceQuickening
+        @Specialization(guards = "isTypeGetAttribute(slots)", excludeForUncached = true)
+        public static Object doType(VirtualFrame frame,
+                        TruffleString name,
+                        Object obj,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Bind("getClassNode.execute(inliningTarget, obj)") Object type,
+                        @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
+                        @Bind("getSlotsNode.execute(inliningTarget, type)") TpSlots slots,
+                        @Shared @Cached(inline = false) GetFixedTypeAttributeNode getTypeAttributeNode) {
+            return getTypeAttributeNode.execute(frame, inliningTarget, obj, name, type);
+        }
+
+        @Specialization(replaces = {"doObject", "doModule", "doType"}, excludeForUncached = true)
         public static Object doIt(VirtualFrame frame,
                         TruffleString name,
                         Object obj,
-                        @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
-            return getAttributeNode.execute(frame, obj);
+                        @Bind Node inliningTarget,
+                        @Shared @Cached GetClassNode getClassNode,
+                        @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
+                        @Shared @Cached(inline = false) MergedObjectTypeModuleGetFixedAttributeNode getAttributeNode) {
+            Object type = getClassNode.execute(inliningTarget, obj);
+            TpSlots slots = getSlotsNode.execute(inliningTarget, type);
+            return getAttributeNode.execute(frame, inliningTarget, obj, name, type, slots);
         }
 
         @Specialization(replaces = "doIt")
         @InliningCutoff
         public static Object doItUncached(VirtualFrame frame, TruffleString name, Object obj,
+                        @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr dummyToForceStoreBCI) {
-            return PyObjectGetAttr.getUncached().execute(frame, null, obj, name);
+            return PyObjectGetAttr.getUncached().execute(frame, inliningTarget, obj, name);
         }
     }
 
