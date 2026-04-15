@@ -71,6 +71,7 @@ CONFIGURATION_INTERPRETER_MULTI = "interpreter-multi"
 CONFIGURATION_NATIVE_INTERPRETER_MULTI = "native-interpreter-multi"
 CONFIGURATION_DEFAULT_MULTI_TIER = "default-multi-tier"
 CONFIGURATION_NATIVE = "native"
+CONFIGURATION_UNCACHED = "interpreter-uncached"
 CONFIGURATION_NATIVE_MULTI = "native-multi"
 CONFIGURATION_NATIVE_MULTI_TIER = "native-multi-tier"
 CONFIGURATION_SANDBOXED = "sandboxed"
@@ -335,6 +336,10 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
     def run(self, *args, **kwargs):
         code, out, dims = super().run(*args, **kwargs)
         dims.update(self._dims)
+        is_uncached_config = self.config_name().startswith(CONFIGURATION_UNCACHED)
+        if ("forced uncached interpreter: True" not in out) == is_uncached_config:
+            mx.abort(f"ERROR: benchmark config '{CONFIGURATION_UNCACHED}' not consistent with what runtime reported. "
+                     f"You may need to rebud the native image with environment variable GRAALPY_ForceUncachedInterpreter=true.")
         return code, out, dims
 
     def get_extra_polyglot_args(self):
@@ -1084,6 +1089,7 @@ def register_vms(suite, sandboxed_options):
     add_graalpy_vm(CONFIGURATION_DEFAULT_MULTI_TIER, '--experimental-options', '--engine.MultiTier=true')
     add_graalpy_vm(CONFIGURATION_SANDBOXED, *sandboxed_options)
     add_graalpy_vm(CONFIGURATION_NATIVE)
+    add_graalpy_vm(CONFIGURATION_UNCACHED, '--experimental-options', '--engine.Compilation=false', '--python.ForceUncachedInterpreter=true')
     add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER, '--experimental-options', '--engine.Compilation=false')
     add_graalpy_vm(CONFIGURATION_SANDBOXED_MULTI, '--experimental-options', '-multi-context', *sandboxed_options)
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI, '--experimental-options', '-multi-context')
