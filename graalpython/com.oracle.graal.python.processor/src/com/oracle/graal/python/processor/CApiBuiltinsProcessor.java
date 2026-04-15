@@ -1157,25 +1157,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return processingEnv.getTypeUtils().getPrimitiveType(TypeKind.LONG);
     }
 
-    /**
-     * Maps an {@code com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgBehavior} to
-     * the NFI type.
-     */
-    private String toNfiType(String argDescriptor) {
-        // TODO: types should be inferred with: 'ArgDescriptor.behavior.nfi2Type'
-        return switch (argDescriptor) {
-            case "Void" -> "NfiType.VOID";
-            case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "NfiType.SINT32";
-            case "Py_ssize_t", "PrimitiveResult64" -> "NfiType.SINT64";
-            case "PyObjectReturn", "PyObject", "PyObjectTransfer", "Pointer", "PyObjectConstArray", "PyTypeObject", "PyThreadState", "CharPtrAsTruffleString", "IterResult", "CHAR_PTR" ->
-                "NfiType.RAW_POINTER";
-            default -> {
-                processingEnv.getMessager().printError(String.format("Unexpected ArgDescriptor: '%s'", argDescriptor));
-                yield null;
-            }
-        };
-    }
-
     private static String getNfiMethodHandleVarName(String signatureName) {
         return "NFI_METHOD_HANDLE_" + signatureName;
     }
@@ -1348,7 +1329,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
             List<String> cArgs = new LinkedList<>();
             i = 0;
-            for (String ignored : argTypes) {
+            for (int unused = 0; unused < argTypes.size(); unused++) {
                 cArgs.add(argName(i++));
             }
 

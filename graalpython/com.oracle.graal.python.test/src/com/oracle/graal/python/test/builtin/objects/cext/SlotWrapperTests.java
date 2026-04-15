@@ -72,6 +72,7 @@ public class SlotWrapperTests {
     @BeforeClass
     public static void setUpClass() {
         Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+        Assume.assumeTrue(Runtime.version().feature() >= 22);
     }
 
     @Before

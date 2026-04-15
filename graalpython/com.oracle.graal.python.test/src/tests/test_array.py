@@ -41,7 +41,7 @@ import copy
 import types
 from array import array
 
-from tests.util import storage_to_native
+from tests.util import skip_if_sandboxed, storage_to_native
 
 
 def assert_raises(err, fn, *args, **kwargs):
@@ -103,6 +103,7 @@ def test_add_int_to_long_array():
     assert y[0] == 42
 
 
+@skip_if_sandboxed("Needs native storage support in sandboxed runs")
 def test_array_native_storage():
     a = array('l', [1, 2, 3])
     storage_to_native(a)

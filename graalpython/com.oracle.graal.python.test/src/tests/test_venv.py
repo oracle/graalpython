@@ -45,6 +45,8 @@ import tempfile
 import textwrap
 import unittest
 
+from tests.util import _is_sandboxed
+
 BINDIR = 'bin' if sys.platform != 'win32' else 'Scripts'
 EXESUF = '' if sys.platform != 'win32' else '.exe'
 
@@ -173,6 +175,8 @@ class VenvTest(unittest.TestCase):
             assert self.env_dir in run, run
 
     def test_create_and_use_venv_with_pip(self):
+        if sys.platform == "win32" and _is_sandboxed():
+            self.skipTest("Skipped in sandboxed configuration on Windows due to pip relying on winreg/ctypes lookup during ensurepip")
         run = None
         msg = ''
         try:

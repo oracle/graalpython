@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,24 @@ import sys
 import unittest
 
 IS_BYTECODE_DSL = sys.implementation.name == 'graalpy' and __graalpython__.is_bytecode_dsl_interpreter
+
+
+def _is_sandboxed():
+    return (
+        sys.implementation.name == 'graalpy' and
+        __graalpython__.posix_module_backend() == 'java' and
+        __graalpython__.sha3_module_backend() == 'java' and
+        __graalpython__.pyexpat_module_backend() == 'java'
+    )
+
+
+def skip_if_sandboxed(reason=''):
+    def wrapper(test):
+        if _is_sandboxed():
+            return unittest.skip(f"Skipped in sandboxed configuration. {reason}")(test)
+        return test
+    return wrapper
+
 
 def skipIfBytecodeDSL(reason=''):
     def wrapper(test):

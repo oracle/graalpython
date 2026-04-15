@@ -44,7 +44,9 @@ import java.util.EnumSet;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -61,6 +63,11 @@ import com.oracle.graal.python.util.Function;
 
 public class TpSlotsTests {
     private NfiContext nfiContext;
+
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeTrue(Runtime.version().feature() >= 22);
+    }
 
     @Before
     public void setUp() {

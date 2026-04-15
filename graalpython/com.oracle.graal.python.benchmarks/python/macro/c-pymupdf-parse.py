@@ -65,7 +65,7 @@ def parse_pdf():
     pdf_stream = io.BytesIO(PDF_BYTES)
     docType = "pdf"
     doc = pymupdf.open(stream=pdf_stream, filetype=docType)
-    # doc = pymupdf.open("./sample.pdf")
+    # doc = pymupdf.open("./sample.txt")
     md_text = pymupdf4llm.to_markdown(doc, show_progress = True)
     doc.close()
     return md_text
@@ -73,7 +73,7 @@ def parse_pdf():
 
 def __setup__(*args):
     global PDF_BYTES
-    with open(os.path.join(os.path.dirname(__file__), "sample.pdf"), "rb") as f:
+    with open(os.path.join(os.path.dirname(__file__), "sample.txt"), "rb") as f:
         PDF_BYTES = f.read()
 
 

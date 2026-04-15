@@ -280,7 +280,7 @@ public final class NativeMemory {
 
     public static void writePtrArrayElements(long arrayPtr, long dstIndex, long[] src, int offset, int count) {
         assert canMultiplyWithoutOverflow(dstIndex, (int) POINTER_SIZE);
-        UNSAFE.copyMemory(src, Unsafe.ARRAY_LONG_BASE_OFFSET + (long) offset * POINTER_SIZE, null, arrayPtr + dstIndex * POINTER_SIZE, (long) count * POINTER_SIZE);
+        UNSAFE.copyMemory(src, Unsafe.ARRAY_LONG_BASE_OFFSET + offset * POINTER_SIZE, null, arrayPtr + dstIndex * POINTER_SIZE, count * POINTER_SIZE);
     }
 
     public static void copyPtrArray(long dstArray, long dstIndex, long srcArray, long srcIndex, long count) {

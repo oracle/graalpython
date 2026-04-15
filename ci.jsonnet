@@ -118,10 +118,6 @@
     // -----------------------------------------------------------------------------------------------------------------
     local gate_task_dict = {
         "python-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk21"          : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
-            "linux:aarch64:jdk21"        : daily     + t("02:00:00") + provide(GPY_JVM21_STANDALONE),
-            "darwin:aarch64:jdk21"       : daily     + t("01:30:00") + provide(GPY_JVM21_STANDALONE),
-            "windows:amd64:jdk21"        : daily     + t("01:30:00") + provide(GPY_JVM21_STANDALONE),
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_JVM_STANDALONE),
@@ -136,10 +132,6 @@
             "darwin:aarch64:jdk-latest"  : daily     + t("01:00:00"),
         }),
         "python-unittest-multi-context": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk21"          : daily     + t("01:00:00") + require(GPY_JVM21_STANDALONE),
-            "linux:aarch64:jdk21"        : daily     + t("01:30:00") + require(GPY_JVM21_STANDALONE),
-            "darwin:aarch64:jdk21"       : daily     + t("01:00:00") + require(GPY_JVM21_STANDALONE),
-            "windows:amd64:jdk21"        : daily     + t("02:00:00"),
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : daily     + t("01:30:00") + require(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : daily     + t("01:00:00") + require(GPY_JVM_STANDALONE),
@@ -160,10 +152,6 @@
             "linux:amd64:jdk-latest"     : tier2,
         }),
         "python-unittest-standalone": gpgate_maven + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk21"          : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
-            "linux:aarch64:jdk21"        : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
-            "darwin:aarch64:jdk21"       : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
-            "windows:amd64:jdk21"        : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE) + batches(2),
             "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
@@ -244,21 +232,21 @@
             "windows:amd64:jdk-latest"   : weekly    + t("20:00:00") + require(GPY_NATIVE_STANDALONE),
         }),
         "python-coverage-jacoco-tagged": cov_jacoco_tagged + batches(COVERAGE_SPLIT) + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk21"          : weekly    + t("20:00:00"),
-            "darwin:aarch64:jdk21"       : weekly    + t("20:00:00"),
-            "windows:amd64:jdk21"        : weekly    + t("20:00:00"),
+            "linux:amd64:jdk-latest"          : weekly    + t("20:00:00"),
+            "darwin:aarch64:jdk-latest"       : weekly    + t("20:00:00"),
+            "windows:amd64:jdk-latest"        : weekly    + t("20:00:00"),
         }),
         "python-coverage-jacoco-base": cov_jacoco_base + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk21"          : weekly    + t("20:00:00"),
-            "darwin:aarch64:jdk21"       : weekly    + t("20:00:00"),
-            "windows:amd64:jdk21"        : weekly    + t("20:00:00"),
+            "linux:amd64:jdk-latest"          : weekly    + t("20:00:00"),
+            "darwin:aarch64:jdk-latest"       : weekly    + t("20:00:00"),
+            "windows:amd64:jdk-latest"        : weekly    + t("20:00:00"),
         }),
         "python-coverage-truffle": cov_truffle + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk21"          : weekly    + t("20:00:00"),
+            "linux:amd64:jdk-latest"          : weekly    + t("20:00:00"),
         }),
-        // "corp-compliance-watchdog": watchdog + platform_spec(no_jobs) + platform_spec({
-        //     "linux:amd64:jdk-latest"     : tier1,
-        // }),
+        "corp-compliance-watchdog": watchdog + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier1,
+        }),
         "bisect-benchmark": bisect_bench_task + platform_spec(no_jobs) + platform_spec({
             # Compiler and SVM no longer support building with anything but the
             # latest JDK. This makes the bisect job prone to failure when
@@ -269,14 +257,24 @@
         "style": style_gate + task_spec({ tags:: "style,build,python-license" }) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier1 + provide(GPY_JVM_STANDALONE),
         }),
-        // "style-ecj": style_gate + task_spec({ tags:: "style,ecjbuild" }) + platform_spec(no_jobs) + platform_spec({
-        //     "linux:amd64:jdk-latest"     : tier1,
-        // }),
+        "style-ecj": style_gate + task_spec({ tags:: "style,ecjbuild" }) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier1,
+        }),
         // tests with sandboxed backends for various modules (posix, sha3, compression, pyexpat, ...)
         "python-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk21"          : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
+            "linux:aarch64:jdk21"        : daily     + t("02:00:00") + provide(GPY_JVM21_STANDALONE),
+            "darwin:aarch64:jdk21"       : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
+            "windows:amd64:jdk21"        : daily     + t("01:30:00"),
             "linux:amd64:jdk-latest"     : tier2 + batches(2),
             "linux:aarch64:jdk-latest"   : tier3,
             "darwin:aarch64:jdk-latest"  : tier3,
+        }),
+        "python-unittest-multi-context-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk21"          : daily     + t("01:00:00") + require(GPY_JVM21_STANDALONE),
+            "linux:aarch64:jdk21"        : daily     + t("01:30:00") + require(GPY_JVM21_STANDALONE),
+            "darwin:aarch64:jdk21"       : daily     + t("01:00:00") + require(GPY_JVM21_STANDALONE),
+            "windows:amd64:jdk21"        : daily     + t("02:00:00"),
         }),
         "python-svm-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3 + provide(GPYEE_NATIVE_STANDALONE),

@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,10 +37,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from tests.util import skip_if_sandboxed
+
+
+@skip_if_sandboxed("Needs native extension support for sqlite3 in sandboxed runs")
 def test_basic_functionality():
     """
     This is a basic test to ensure that the module can be imported.
-    The main sqlite3 test suite will be silently skipped if the 
+    The main sqlite3 test suite will be silently skipped if the
     "_sqlite3" module is not available.
     """
     import sqlite3
@@ -51,6 +55,7 @@ def test_basic_functionality():
     conn.close()
 
 
+@skip_if_sandboxed("Needs native extension support for sqlite3 in sandboxed runs")
 def test_fts5_works():
     # we explicitly enable those features below, but on CPython they might not
     # be available if using some system libsqlite that doesn't have them
