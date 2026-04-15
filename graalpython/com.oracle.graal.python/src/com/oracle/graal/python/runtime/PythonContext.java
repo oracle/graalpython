@@ -708,7 +708,6 @@ public final class PythonContext extends Python3Core {
     private final IDUtils idUtils = new IDUtils();
 
     @CompilationFinal private SecureRandom secureRandom;
-    @CompilationFinal private SecureRandom initializationSecureRandom;
     private InitializationEntropySource initializationEntropySource;
 
     // Equivalent of _Py_HashSecret
@@ -1465,15 +1464,6 @@ public final class PythonContext extends Python3Core {
         return secureRandom;
     }
 
-    public SecureRandom getInitRandom() {
-        assert !env.isPreInitialization();
-        if (initializationSecureRandom == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            initializationSecureRandom = new InitializationSecureRandom(getInitializationEntropySource());
-        }
-        return initializationSecureRandom;
-    }
-
     public void fillInitializationEntropyBytes(byte[] bytes) {
         getInitializationEntropySource().nextBytes(bytes);
     }
@@ -1750,31 +1740,6 @@ public final class PythonContext extends Python3Core {
 
     private interface InitializationEntropySource {
         void nextBytes(byte[] bytes);
-    }
-
-    private static final class InitializationSecureRandom extends SecureRandom {
-        private static final long serialVersionUID = 1L;
-        private final transient InitializationEntropySource source;
-
-        InitializationSecureRandom(InitializationEntropySource source) {
-            this.source = source;
-        }
-
-        @Override
-        public void setSeed(byte[] seed) {
-        }
-
-        @Override
-        public void nextBytes(byte[] bytes) {
-            source.nextBytes(bytes);
-        }
-
-        @Override
-        public byte[] generateSeed(int numBytes) {
-            byte[] seed = new byte[numBytes];
-            source.nextBytes(seed);
-            return seed;
-        }
     }
 
     private static final class DefaultInitializationEntropySource implements InitializationEntropySource {
