@@ -334,6 +334,7 @@
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ce_default_interpreter"                    : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
+            "vm_name:graalvm_ee_default_interpreter_uncached"           : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
             "vm_name:graalpython_core_interpreter"                      : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:graalpython_core_native_interpreter"               : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},

@@ -338,8 +338,7 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
         dims.update(self._dims)
         is_uncached_config = self.config_name().startswith(CONFIGURATION_UNCACHED)
         if ("forced uncached interpreter: True" not in out) == is_uncached_config:
-            mx.abort(f"ERROR: benchmark config '{CONFIGURATION_UNCACHED}' not consistent with what runtime reported. "
-                     f"You may need to rebud the native image with environment variable GRAALPY_ForceUncachedInterpreter=true.")
+            mx.abort(f"ERROR: benchmark config '{CONFIGURATION_UNCACHED}' not consistent with what runtime reported.")
         return code, out, dims
 
     def get_extra_polyglot_args(self):
