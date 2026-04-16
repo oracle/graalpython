@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.bouncycastle;
 
-import java.security.Security;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
@@ -54,8 +51,5 @@ public final class BouncyCastleFeature implements Feature {
         support.initializeAtBuildTime("org.bouncycastle", "security provider");
         support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$Default", "RNG");
         support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV", "RNG");
-        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
-            Security.addProvider(new BouncyCastleProvider());
-        }
     }
 }
