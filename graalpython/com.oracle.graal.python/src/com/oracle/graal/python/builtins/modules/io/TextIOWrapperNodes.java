@@ -884,7 +884,7 @@ public abstract class TextIOWrapperNodes {
 
             if (buffer instanceof PBuffered) {
                 /* Cache the raw FileIO object to speed up 'closed' checks */
-                if (((PBuffered) buffer).isFastClosedChecks()) {
+                if (((PBuffered) buffer).hasFileIORaw()) {
                     PFileIO f = ((PBuffered) buffer).getFileIORaw();
                     self.setFileIO(f);
                 }

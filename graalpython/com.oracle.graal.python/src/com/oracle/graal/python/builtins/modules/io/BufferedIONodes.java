@@ -131,12 +131,12 @@ public class BufferedIONodes {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"self.getBuffer() != null", "self.isFastClosedChecks()"})
+        @Specialization(guards = {"self.getBuffer() != null", "self.hasFileIORaw()"})
         static boolean isClosedFileIO(PBuffered self) {
             return self.getFileIORaw().isClosed();
         }
 
-        @Specialization(guards = {"self.getBuffer() != null", "!self.isFastClosedChecks()"})
+        @Specialization(guards = {"self.getBuffer() != null", "!self.hasFileIORaw()"})
         static boolean isClosedBuffered(VirtualFrame frame, Node inliningTarget, PBuffered self,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectIsTrueNode isTrue) {
