@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.bouncycastle;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
@@ -51,5 +52,8 @@ public final class BouncyCastleFeature implements Feature {
         support.initializeAtBuildTime("org.bouncycastle", "security provider");
         support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$Default", "RNG");
         support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV", "RNG");
+        // Force provider mappings to be initialized during image generation without registering BC
+        // globally at runtime startup.
+        new BouncyCastleProvider().getServices();
     }
 }

@@ -45,6 +45,7 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Signature;
 import java.util.Iterator;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
@@ -66,6 +67,16 @@ public final class BouncyCastleSupportProvider {
             return getSupport().createDigest(algorithm);
         } catch (MissingBouncyCastleException e) {
             NoSuchAlgorithmException wrapped = new NoSuchAlgorithmException(algorithm + " MessageDigest not available");
+            wrapped.initCause(e);
+            throw wrapped;
+        }
+    }
+
+    public static Signature createSignature(String algorithm) throws NoSuchAlgorithmException {
+        try {
+            return getSupport().createSignature(algorithm);
+        } catch (MissingBouncyCastleException e) {
+            NoSuchAlgorithmException wrapped = new NoSuchAlgorithmException(algorithm + " Signature not available");
             wrapped.initCause(e);
             throw wrapped;
         }

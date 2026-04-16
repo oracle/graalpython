@@ -45,6 +45,7 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.Signature;
 
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordException;
 
@@ -52,4 +53,6 @@ public interface BouncyCastleSupport {
     PrivateKey loadPrivateKey(char[] password, String pemText) throws IOException, NeedsPasswordException, GeneralSecurityException;
 
     MessageDigest createDigest(String algorithm) throws NoSuchAlgorithmException;
+
+    Signature createSignature(String algorithm) throws NoSuchAlgorithmException;
 }

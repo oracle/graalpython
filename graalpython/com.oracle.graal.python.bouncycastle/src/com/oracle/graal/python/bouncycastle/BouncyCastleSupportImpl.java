@@ -48,6 +48,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.Security;
+import java.security.Signature;
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -75,8 +76,8 @@ public final class BouncyCastleSupportImpl implements BouncyCastleSupport {
 
     @Override
     public PrivateKey loadPrivateKey(char[] password, String pemText) throws IOException, NeedsPasswordException, GeneralSecurityException {
+        Provider provider = getProvider();
         try (PEMParser pemParser = new PEMParser(new StringReader(pemText))) {
-            Provider provider = getProvider();
             JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(provider);
             Object object;
             while ((object = pemParser.readObject()) != null) {
@@ -112,5 +113,10 @@ public final class BouncyCastleSupportImpl implements BouncyCastleSupport {
     @Override
     public MessageDigest createDigest(String algorithm) throws NoSuchAlgorithmException {
         return MessageDigest.getInstance(algorithm, getProvider());
+    }
+
+    @Override
+    public Signature createSignature(String algorithm) throws NoSuchAlgorithmException {
+        return Signature.getInstance(algorithm, getProvider());
     }
 }

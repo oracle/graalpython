@@ -264,6 +264,18 @@
     }
   },
   {
+    "name": "org.bouncycastle.jcajce.provider.asymmetric.dsa.KeyFactorySpi",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ],
+    "condition": {
+      "typeReachable": "org.bouncycastle.jce.provider.BouncyCastleProvider"
+    }
+  },
+  {
     "name": "org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyFactorySpi",
     "methods": [
       {
@@ -1213,6 +1225,66 @@
   },
   {
     "name": "org.bouncycastle.jcajce.provider.symmetric.AES$ECB",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ],
+    "condition": {
+      "typeReachable": "org.bouncycastle.jce.provider.BouncyCastleProvider"
+    }
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.AES$CBC",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ],
+    "condition": {
+      "typeReachable": "org.bouncycastle.jce.provider.BouncyCastleProvider"
+    }
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.AES$CBC128",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ],
+    "condition": {
+      "typeReachable": "org.bouncycastle.jce.provider.BouncyCastleProvider"
+    }
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.AES$CBC192",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ],
+    "condition": {
+      "typeReachable": "org.bouncycastle.jce.provider.BouncyCastleProvider"
+    }
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.AES$CBC256",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ],
+    "condition": {
+      "typeReachable": "org.bouncycastle.jce.provider.BouncyCastleProvider"
+    }
+  },
+  {
+    "name": "org.bouncycastle.jcajce.provider.symmetric.AES$PBEWithMD5And256BitAESCBCOpenSSL",
     "methods": [
       {
         "name": "<init>",

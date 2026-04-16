@@ -936,6 +936,9 @@ public final class CertUtils {
                 }
             }
         }
+        if (checkPrivateKeyWithBouncyCastle(signatureAlgorithm, privateKey, publicKey, data)) {
+            return true;
+        }
         return checkPrivateKey(signatureAlgorithm, (Provider) null, privateKey, publicKey, data);
     }
 
@@ -949,6 +952,20 @@ public final class CertUtils {
             signature.update(data);
             boolean verified = signature.verify(signed);
             return verified;
+        } catch (InvalidKeyException e) {
+            return false;
+        }
+    }
+
+    private static boolean checkPrivateKeyWithBouncyCastle(String signatureAlgorithm, PrivateKey privateKey, PublicKey publicKey, byte[] data) throws NoSuchAlgorithmException, SignatureException {
+        try {
+            Signature signature = BouncyCastleSupportProvider.createSignature(signatureAlgorithm);
+            signature.initSign(privateKey);
+            signature.update(data);
+            byte[] signed = signature.sign();
+            signature.initVerify(publicKey);
+            signature.update(data);
+            return signature.verify(signed);
         } catch (InvalidKeyException e) {
             return false;
         }
