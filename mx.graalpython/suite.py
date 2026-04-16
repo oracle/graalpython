@@ -1094,9 +1094,10 @@ suite = {
                 "exports": [
                     "com.oracle.graal.python.* to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.builtins.objects.ssl to graalpython.bouncycastle",
+                    "com.oracle.graal.python.runtime.crypto to graalpython.bouncycastle",
                 ],
                 "uses": [
-                    "com.oracle.graal.python.builtins.objects.ssl.SSLBouncyCastleSupport",
+                    "com.oracle.graal.python.runtime.crypto.BouncyCastleSupport",
                 ],
             },
             "useModulePath": True,

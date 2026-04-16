@@ -38,14 +38,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.ssl;
+package com.oracle.graal.python.runtime.crypto;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordException;
 
-public interface SSLBouncyCastleSupport {
+public interface BouncyCastleSupport {
     PrivateKey loadPrivateKey(char[] password, String pemText) throws IOException, NeedsPasswordException, GeneralSecurityException;
+
+    MessageDigest createDigest(String algorithm) throws NoSuchAlgorithmException;
 }

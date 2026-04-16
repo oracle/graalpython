@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.crypto.BouncyCastleSupportProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -392,11 +393,28 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static MessageDigest createDigest(String name, byte[] bytes, int bytesLen) throws NoSuchAlgorithmException {
-            MessageDigest digest = MessageDigest.getInstance(name);
+            MessageDigest digest;
+            try {
+                digest = MessageDigest.getInstance(name);
+            } catch (NoSuchAlgorithmException primary) {
+                if (!isBouncyCastleDigest(name)) {
+                    throw primary;
+                }
+                try {
+                    digest = BouncyCastleSupportProvider.createDigest(name);
+                } catch (NoSuchAlgorithmException secondary) {
+                    primary.addSuppressed(secondary);
+                    throw primary;
+                }
+            }
             if (bytes != null) {
                 digest.update(bytes, 0, bytesLen);
             }
             return digest;
+        }
+
+        private static boolean isBouncyCastleDigest(String name) {
+            return name.startsWith("BLAKE2B-") || name.startsWith("BLAKE2S-");
         }
     }
 

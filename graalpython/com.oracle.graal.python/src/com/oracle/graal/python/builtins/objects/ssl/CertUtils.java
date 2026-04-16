@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.crypto.BouncyCastleSupportProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -754,12 +755,12 @@ public final class CertUtils {
                         if (!block.headers().isEmpty() && password == null) {
                             throw new NeedsPasswordException();
                         }
-                        privateKey = SSLBouncyCastleSupportProvider.loadPrivateKey(password, pemBlockToText(rawBlock));
+                        privateKey = BouncyCastleSupportProvider.loadPrivateKey(password, pemBlockToText(rawBlock));
                     }
                     break;
                 }
             }
-        } catch (SSLBouncyCastleSupportProvider.MissingBouncyCastleException e) {
+        } catch (BouncyCastleSupportProvider.MissingBouncyCastleException e) {
             throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, toTruffleStringUncached(e.getMessage()));
         } catch (IOException | GeneralSecurityException e) {
             throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);

@@ -38,10 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.ssl;
+package com.oracle.graal.python.runtime.crypto;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.util.Iterator;
 import java.util.ServiceConfigurationError;
@@ -49,20 +51,30 @@ import java.util.ServiceLoader;
 
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordException;
 
-public final class SSLBouncyCastleSupportProvider {
-    public static final String MISSING_MESSAGE = "Encrypted legacy PEM private keys require BouncyCastle support; add the GraalPy BC support module and BouncyCastle jars to the classpath or modulepath, or convert the key to PKCS#8.";
+public final class BouncyCastleSupportProvider {
+    public static final String MISSING_PRIVATE_KEY_MESSAGE = "Encrypted legacy PEM private keys require BouncyCastle support; add the GraalPy BC support module and BouncyCastle jars to the classpath or modulepath, or convert the key to PKCS#8.";
 
-    private SSLBouncyCastleSupportProvider() {
+    private BouncyCastleSupportProvider() {
     }
 
     public static PrivateKey loadPrivateKey(char[] password, String pemText) throws IOException, NeedsPasswordException, GeneralSecurityException {
         return getSupport().loadPrivateKey(password, pemText);
     }
 
-    private static SSLBouncyCastleSupport getSupport() throws MissingBouncyCastleException {
+    public static MessageDigest createDigest(String algorithm) throws NoSuchAlgorithmException {
+        try {
+            return getSupport().createDigest(algorithm);
+        } catch (MissingBouncyCastleException e) {
+            NoSuchAlgorithmException wrapped = new NoSuchAlgorithmException(algorithm + " MessageDigest not available");
+            wrapped.initCause(e);
+            throw wrapped;
+        }
+    }
+
+    private static BouncyCastleSupport getSupport() throws MissingBouncyCastleException {
         Throwable failure = null;
         try {
-            SSLBouncyCastleSupport support = getSupport(ServiceLoader.load(ModuleLayer.boot(), SSLBouncyCastleSupport.class));
+            BouncyCastleSupport support = getSupport(ServiceLoader.load(ModuleLayer.boot(), BouncyCastleSupport.class));
             if (support != null) {
                 return support;
             }
@@ -70,7 +82,7 @@ public final class SSLBouncyCastleSupportProvider {
             failure = e;
         }
         try {
-            SSLBouncyCastleSupport support = getSupport(ServiceLoader.load(SSLBouncyCastleSupport.class));
+            BouncyCastleSupport support = getSupport(ServiceLoader.load(BouncyCastleSupport.class));
             if (support != null) {
                 return support;
             }
@@ -81,7 +93,7 @@ public final class SSLBouncyCastleSupportProvider {
             failure = e;
         }
         try {
-            SSLBouncyCastleSupport support = getSupport(ServiceLoader.load(SSLBouncyCastleSupport.class, SSLBouncyCastleSupportProvider.class.getClassLoader()));
+            BouncyCastleSupport support = getSupport(ServiceLoader.load(BouncyCastleSupport.class, BouncyCastleSupportProvider.class.getClassLoader()));
             if (support != null) {
                 return support;
             }
@@ -94,8 +106,8 @@ public final class SSLBouncyCastleSupportProvider {
         throw new MissingBouncyCastleException(failure);
     }
 
-    private static SSLBouncyCastleSupport getSupport(ServiceLoader<SSLBouncyCastleSupport> serviceLoader) {
-        Iterator<SSLBouncyCastleSupport> iterator = serviceLoader.iterator();
+    private static BouncyCastleSupport getSupport(ServiceLoader<BouncyCastleSupport> serviceLoader) {
+        Iterator<BouncyCastleSupport> iterator = serviceLoader.iterator();
         return iterator.hasNext() ? iterator.next() : null;
     }
 
@@ -103,7 +115,7 @@ public final class SSLBouncyCastleSupportProvider {
         private static final long serialVersionUID = 1L;
 
         MissingBouncyCastleException(Throwable cause) {
-            super(MISSING_MESSAGE, cause);
+            super(MISSING_PRIVATE_KEY_MESSAGE, cause);
         }
     }
 }

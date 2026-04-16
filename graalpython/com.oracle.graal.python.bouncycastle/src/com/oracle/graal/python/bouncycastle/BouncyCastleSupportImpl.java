@@ -43,6 +43,8 @@ package com.oracle.graal.python.bouncycastle;
 import java.io.IOException;
 import java.io.StringReader;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.Security;
@@ -60,17 +62,15 @@ import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 import org.bouncycastle.pkcs.PKCSException;
 
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordException;
-import com.oracle.graal.python.builtins.objects.ssl.SSLBouncyCastleSupport;
+import com.oracle.graal.python.runtime.crypto.BouncyCastleSupport;
 
-public final class BCSSLBouncyCastleSupport implements SSLBouncyCastleSupport {
+public final class BouncyCastleSupportImpl implements BouncyCastleSupport {
     private static Provider getProvider() {
         Provider provider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
         if (provider != null) {
             return provider;
         }
-        provider = new BouncyCastleProvider();
-        Security.addProvider(provider);
-        return provider;
+        return new BouncyCastleProvider();
     }
 
     @Override
@@ -107,5 +107,10 @@ public final class BCSSLBouncyCastleSupport implements SSLBouncyCastleSupport {
         } catch (OperatorCreationException | PKCSException e) {
             throw new GeneralSecurityException(e);
         }
+    }
+
+    @Override
+    public MessageDigest createDigest(String algorithm) throws NoSuchAlgorithmException {
+        return MessageDigest.getInstance(algorithm, getProvider());
     }
 }
