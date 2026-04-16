@@ -451,15 +451,6 @@ async def codex_fix_issue(issue_id: int, print_token_usage: bool, sem: asyncio.S
 
         if fixed:
             _log_success(f"Codex marked issue #{issue_id} as fixed.")
-
-        # while True:
-        #     followup_user_prompt = input(colored("\nFollowup prompt: ", "yellow"))
-        #     if not followup_user_prompt.strip():
-        #         break
-        
-        #     response, _ = await _codex_prompt_async(f"{followup_user_prompt}", thread, stream_live=True)
-        #     _log_info(f"Codex response:")
-        #     print(response)
             
         if print_token_usage:
             _log_info(f"[{issue_id}]")
