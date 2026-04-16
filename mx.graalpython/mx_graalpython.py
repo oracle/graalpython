@@ -129,8 +129,6 @@ GITHUB_CI = get_boolean_env("GITHUB_CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', True)
-GRAALPY_WITH_BOUNCYCASTLE = get_boolean_env("GRAALPY_WITH_BOUNCYCASTLE", mx.primary_suite() == SUITE or SUITE.dir == os.getcwd())
-
 
 mx_gate.add_jacoco_excludes([
     "com.oracle.graal.python.pegparser.sst",
@@ -160,17 +158,6 @@ if wants_debug_build():
     setattr(mx_native.DefaultNativeProject, "cflags", property(
         lambda self: self._original_cflags + (["/Z7"] if WIN32 else ["-fPIC", "-ggdb3"])
     ))
-
-
-if GRAALPY_WITH_BOUNCYCASTLE:
-    setattr(ThinLauncherProject, "_original_cflags_without_graalpy_bouncycastle", ThinLauncherProject.cflags)
-    def _flags_with_bc_args(self):
-        if "graalpy" in repr(self):
-            if dvmargs := getattr(self, "default_vm_args", None):
-                mx.log("Appending bouncycastle to GraalPy launcher -add-modules")
-                dvmargs.append('--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util')
-        return self._original_cflags_without_graalpy_bouncycastle
-    setattr(ThinLauncherProject, "cflags", property(_flags_with_bc_args))
 
 
 if WIN32:
@@ -259,14 +246,6 @@ def get_jdk():
 def graalpy_standalone_deps():
     include_truffle_runtime = not mx.env_var_to_bool("EXCLUDE_TRUFFLE_RUNTIME")
     deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
-    if GRAALPY_WITH_BOUNCYCASTLE:
-        mx.log("Including bouncycastle with GraalPy standalone")
-        deps += [
-            "graalpython:GRAALPYTHON_BOUNCYCASTLE",
-            "graalpython:BOUNCYCASTLE-PROVIDER",
-            "graalpython:BOUNCYCASTLE-PKIX",
-            "graalpython:BOUNCYCASTLE-UTIL",
-        ]
     return deps
 
 
