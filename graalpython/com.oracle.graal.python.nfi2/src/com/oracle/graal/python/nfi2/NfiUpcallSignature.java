@@ -49,6 +49,6 @@ public final class NfiUpcallSignature {
 
     @SuppressWarnings({"unused", "static-method"})
     public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
     }
 }

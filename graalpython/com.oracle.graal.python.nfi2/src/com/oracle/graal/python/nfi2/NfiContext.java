@@ -48,11 +48,11 @@ public final class NfiContext {
 
     @SuppressWarnings("static-method")
     public void close() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
     }
 
     @SuppressWarnings({"unused", "static-method"})
     public NfiLibrary loadLibrary(String name, int flags) throws NfiLoadException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
     }
 }

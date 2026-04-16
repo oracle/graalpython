@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,11 +48,11 @@ public final class NfiLibrary {
 
     @SuppressWarnings({"unused", "static-method"})
     public long lookupSymbol(String name) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
     }
 
     @SuppressWarnings({"unused", "static-method"})
     public long lookupOptionalSymbol(String name) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
     }
 }

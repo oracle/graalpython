@@ -163,6 +163,8 @@ public final class CApiContext extends CExtContext {
     private static final CApiTiming TIMING_INVOKE_MODULE_INIT = CApiTiming.create(true, "invokeModuleInit");
     private static final CApiTiming TIMING_INVOKE_CAPI_INIT = CApiTiming.create(true, "invokeCApiInit");
     private static final CApiTiming TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER = CApiTiming.create(true, "invokeGetFinalizeCApiPointer");
+    private static final TruffleString C_API_UNSUPPORTED = toTruffleStringUncached(
+                    "The C API is unsupported on this JDK and/or platform, either because JEP 454 is not supported here or native access was expressly forbidden.");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
@@ -814,6 +816,9 @@ public final class CApiContext extends CExtContext {
                 if (state == PythonContext.CApiState.INITIALIZED || state == PythonContext.CApiState.INITIALIZING) {
                     return context.getCApiContext();
                 }
+                if (state == PythonContext.CApiState.CANNOT_IMPORT) {
+                    throw new ImportException(null, name, path, C_API_UNSUPPORTED);
+                }
                 if (state == PythonContext.CApiState.FAILED) {
                     throw new ApiInitException(toTruffleStringUncached("The C API initialization has previously failed."));
                 }
@@ -836,6 +841,9 @@ public final class CApiContext extends CExtContext {
                         // This can happen when other languages restrict multithreading
                         LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
                     }
+                } catch (ImportException e) {
+                    context.setCApiState(PythonContext.CApiState.CANNOT_IMPORT);
+                    throw e;
                 } catch (Throwable t) {
                     context.setCApiState(PythonContext.CApiState.FAILED);
                     throw t;
@@ -966,6 +974,9 @@ public final class CApiContext extends CExtContext {
              * Python exceptions that occur during the C API initialization are just passed through
              */
             throw e;
+        } catch (UnsupportedOperationException e) {
+            assert e.getMessage() != null : "We missed an UnsupportedOperationException that might occur during C API initialization";
+            throw new ImportException(null, name, path, toTruffleStringUncached(e.getMessage()));
         } catch (NfiLoadException e) {
             if (!context.isNativeAccessAllowed()) {
                 throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);

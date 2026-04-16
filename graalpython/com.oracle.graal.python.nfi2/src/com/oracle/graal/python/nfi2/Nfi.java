@@ -41,9 +41,10 @@
 package com.oracle.graal.python.nfi2;
 
 public final class Nfi {
+    static final String ERROR_MESSAGE = "JEP 454 is not included on this JDK, this prevents loading native extensions modules.";
 
     public static NfiContext createContext() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(ERROR_MESSAGE);
     }
 
     @SuppressWarnings("unused")

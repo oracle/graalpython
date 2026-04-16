@@ -778,7 +778,8 @@ public final class PythonContext extends Python3Core {
         UNINITIALIZED,
         INITIALIZING,
         INITIALIZED,
-        FAILED
+        FAILED,
+        CANNOT_IMPORT
     }
 
     /** Initialization state of the C API context. */
@@ -2788,28 +2789,29 @@ public final class PythonContext extends Python3Core {
     }
 
     public CApiState getCApiState() {
-        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED : cApiState;
+        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED || cApiState == CApiState.CANNOT_IMPORT : cApiState;
         return cApiState;
     }
 
     public void setCApiState(CApiState state) {
         /*- Allowed transitions:
-         * UNINITIALIZED -> INITIALIZING, FAILED
-         * INITIALIZING -> INITIALIZED, FAILED
+         * UNINITIALIZED -> INITIALIZING, FAILED, CANNOT_IMPORT
+         * INITIALIZING -> INITIALIZED, FAILED, CANNOT_IMPORT
          */
         assert state != CApiState.UNINITIALIZED;
         assert cApiInitializationLock.isHeldByCurrentThread();
         assert state != CApiState.INITIALIZING || cApiContext != null;
         assert state != CApiState.INITIALIZED || cApiContext != null;
-        assert cApiState != CApiState.UNINITIALIZED || state == CApiState.INITIALIZING || state == CApiState.FAILED;
-        assert cApiState != CApiState.INITIALIZING || state == CApiState.INITIALIZED || state == CApiState.FAILED;
+        assert cApiState != CApiState.UNINITIALIZED || state == CApiState.INITIALIZING || state == CApiState.FAILED || state == CApiState.CANNOT_IMPORT;
+        assert cApiState != CApiState.INITIALIZING || state == CApiState.INITIALIZED || state == CApiState.FAILED || state == CApiState.CANNOT_IMPORT;
         assert cApiState != CApiState.INITIALIZED;
         assert cApiState != CApiState.FAILED;
+        assert cApiState != CApiState.CANNOT_IMPORT;
         cApiState = state;
     }
 
     public CApiContext getCApiContext() {
-        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED;
+        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED || cApiState == CApiState.CANNOT_IMPORT;
         return cApiContext;
     }
 

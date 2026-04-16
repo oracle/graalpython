@@ -48,16 +48,16 @@ public final class NfiBoundFunction {
 
     @SuppressWarnings("unused")
     public static NfiBoundFunction create(NfiContext context, long pointer, NfiType resType, NfiType... argTypes) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
     }
 
     @SuppressWarnings("static-method")
     public long getAddress() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
     }
 
     @SuppressWarnings({"unused", "static-method"})
     public Object invoke(Object... args) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
     }
 }
