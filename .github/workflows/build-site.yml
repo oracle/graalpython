@@ -1,4 +1,4 @@
-name: Build and deploy website
+name: Publish Website
 
 on:
   pull_request:
@@ -45,7 +45,7 @@ jobs:
         run: bundle exec jekyll build
 
       - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/site/_site
 
