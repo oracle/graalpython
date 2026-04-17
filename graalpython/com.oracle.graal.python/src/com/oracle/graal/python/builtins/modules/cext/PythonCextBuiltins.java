@@ -272,6 +272,12 @@ public final class PythonCextBuiltins {
             return PFactory.createFloat(language, d);
         }
 
+        @Specialization
+        static PythonBuiltinObject doBoolean(boolean b,
+                        @Bind PythonContext context) {
+            return b ? context.getTrue() : context.getFalse();
+        }
+
         static boolean isNaN(double d) {
             return Double.isNaN(d);
         }
