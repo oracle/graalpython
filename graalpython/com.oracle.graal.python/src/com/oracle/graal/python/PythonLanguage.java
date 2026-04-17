@@ -316,7 +316,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * runtime. Using {@link EconomicMap} avoids embedding a large number of
      * {@link java.util.concurrent.ConcurrentHashMap.Node} objects into the image heap.
      */
-    private final EconomicMap<Object, RootCallTarget> imageBuildtimeCachedCallTargets = EconomicMap.create();
+    private final EconomicMap<Object, RootCallTarget> imageBuildtimeCachedCallTargets = ImageInfo.inImageCode() ? EconomicMap.create() : null;
     /**
      * Call targets added after image startup, or all cached call targets when running on the JVM.
      */
@@ -1171,8 +1171,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTargetUnsafe(rootNodeFunction, Arrays.asList(cacheKeys), cacheInSingleContext);
     }
 
-    @TruffleBoundary
     private RootCallTarget getOrCreateCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
+        CompilerAsserts.neverPartOfCompilation();
         if (ImageInfo.inImageRuntimeCode()) {
             RootCallTarget preinitialized = imageBuildtimeCachedCallTargets.get(key);
             if (preinitialized != null) {
