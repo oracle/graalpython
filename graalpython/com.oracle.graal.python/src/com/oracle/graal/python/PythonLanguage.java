@@ -48,6 +48,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
+import org.graalvm.collections.EconomicMap;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionDescriptors;
@@ -311,12 +312,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final Assumption noInteropTypeRegisteredAssumption = Truffle.getRuntime().createAssumption("No class for interop registered");
 
     /**
-     * A thread-safe map to retrieve (and cache) singleton instances of call targets, e.g., for
-     * Arithmetic operations, wrappers, named cext functions, etc. This reduces the number of call
-     * targets and allows AST sharing across contexts. The key in this map is either a single value
-     * or a list of values.
+     * Call targets that are populated during native-image build time and then only read at image
+     * runtime. Using {@link EconomicMap} avoids embedding a large number of
+     * {@link java.util.concurrent.ConcurrentHashMap.Node} objects into the image heap.
      */
-    private final ConcurrentHashMap<Object, RootCallTarget> cachedCallTargets = new ConcurrentHashMap<>();
+    private final EconomicMap<Object, RootCallTarget> imageBuildtimeCachedCallTargets = ImageInfo.inImageCode() ? EconomicMap.create() : null;
+    /**
+     * Call targets added after image startup, or all cached call targets when running on the JVM.
+     */
+    private final ConcurrentHashMap<Object, RootCallTarget> runtimeCachedCallTargets = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private final RootCallTarget[] builtinSlotsCallTargets;
 
@@ -1157,7 +1161,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private RootCallTarget createCachedCallTargetUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, Object key, boolean cacheInSingleContext) {
         CompilerAsserts.neverPartOfCompilation();
         if (cacheInSingleContext || !singleContext) {
-            return cachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
+            return getOrCreateCachedCallTarget(rootNodeFunction, key);
         } else {
             return PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this));
         }
@@ -1165,6 +1169,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private RootCallTarget createCachedCallTargetUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, boolean cacheInSingleContext, Object... cacheKeys) {
         return createCachedCallTargetUnsafe(rootNodeFunction, Arrays.asList(cacheKeys), cacheInSingleContext);
+    }
+
+    private RootCallTarget getOrCreateCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (ImageInfo.inImageRuntimeCode()) {
+            RootCallTarget preinitialized = imageBuildtimeCachedCallTargets.get(key);
+            if (preinitialized != null) {
+                return preinitialized;
+            }
+            return runtimeCachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
+        }
+        if (ImageInfo.inImageBuildtimeCode()) {
+            synchronized (imageBuildtimeCachedCallTargets) {
+                RootCallTarget cached = imageBuildtimeCachedCallTargets.get(key);
+                if (cached == null) {
+                    cached = PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this));
+                    imageBuildtimeCachedCallTargets.put(key, cached);
+                }
+                return cached;
+            }
+        }
+        return runtimeCachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
     }
 
     @Override
