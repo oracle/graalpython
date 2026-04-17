@@ -121,6 +121,7 @@ MICRO_BENCHMARKS = {
     'virtualize-in-try-catch-oom': ITER_10,
     'phase_shift_warmup_baseline': ITER_5 + ['--self-measurement'] + ['500'],
     'phase_shift_warmup': ITER_3 + ['--self-measurement'] + ['1600', '500'],
+    'jsonrpc-pipe': ITER_10 + ['500', 'text', 'text', 'mask', '64'],
     'startup': ITER_5 + ['50'],
     'startup-imports': ITER_5 + ['20'],
 }
@@ -130,6 +131,7 @@ MICRO_BENCHMARKS_SMALL = {
     'nano-arith': ITER_6 + WARMUP_2,
     'nano-loop': ITER_6 + WARMUP_2,
     'nano-if': ITER_6 + WARMUP_2,
+    'jsonrpc-pipe': ITER_6 + WARMUP_2 + ['100', 'text', 'text', 'mask', '64'],
     'arith-modulo-sized': ITER_6 + WARMUP_2 + ['1'],
     'if-generic': ITER_10 + WARMUP_2 + ['500000'],
     'if-generic-non-builtin': ITER_10 + WARMUP_2 + ['500000'],

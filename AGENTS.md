@@ -68,6 +68,10 @@ It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib
 * Style / formatting
   `mx python-style --fix`
   `mx python-gate --tags style`
+* Building standalones for benchmarking
+  - use `mx --env native-ee sforceimports && mx --env native-ee checkout-downstream compiler graal-enterprise` to get the right revisions
+  - use `mx -p ../graal/vm fetch-jdk -jdk-id labsjdk-ce-latest` and set JAVA_HOME as per that command's output
+  - use `mx --env jvm-ee-libgraal` and `mx --env native-ee` to build the JAVA and NATIVE standalone distributions
 
 ## NOTES
 - When searching for implementation, prefer `graalpython/com.oracle.graal.python/src/...` over vendored `lib-python` unless you are intentionally modifying upstream stdlib/tests.

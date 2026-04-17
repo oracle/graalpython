@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,11 +48,16 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffs
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_INVALID_LENGTH;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING;
+import static com.oracle.graal.python.nodes.ErrorMessages.IO_CLOSED;
+import static com.oracle.graal.python.nodes.ErrorMessages.FILE_NOT_OPEN_FOR_S;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -61,8 +66,12 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -72,8 +81,10 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.runtime.GilNode;
 
 public class BufferedWriterNodes {
 
@@ -222,7 +233,40 @@ public class BufferedWriterNodes {
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedwriter_raw_write
          */
-        @Specialization
+        @SuppressWarnings("truffle-sharing")
+        @Specialization(guards = "self.hasFileIORaw()")
+        static int bufferedwriterRawWriteFileIO(VirtualFrame frame, Node inliningTarget, PBuffered self, byte[] buf, int len,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode raiseNode) {
+            PFileIO fileIO = self.getFileIORaw();
+            if (fileIO.isClosed()) {
+                throw raiseNode.raise(inliningTarget, ValueError, IO_CLOSED);
+            }
+            if (!fileIO.isWritable()) {
+                throw raiseNode.raise(inliningTarget, IOUnsupportedOperation, FILE_NOT_OPEN_FOR_S, "writing");
+            }
+            final int n;
+            try {
+                n = Math.toIntExact(PosixModuleBuiltins.WriteNode.write(fileIO.getFD(), buf, len,
+                                inliningTarget, posixLib, context.getPosixSupport(), errorProfile, gil));
+            } catch (PosixException e) {
+                if (e.getErrorCode() == OSErrorEnum.EAGAIN.getNumber()) {
+                    return -2;
+                }
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+            if (n > 0 && self.getAbsPos() != -1) {
+                self.incAbsPos(n);
+            }
+            return n;
+        }
+
+        @SuppressWarnings("truffle-sharing")
+        @Specialization(guards = "!self.hasFileIORaw()")
         static int bufferedwriterRawWrite(VirtualFrame frame, Node inliningTarget, PBuffered self, byte[] buf, int len,
                         @Bind PythonLanguage language,
                         @Cached PyObjectCallMethodObjArgs callMethod,
@@ -272,8 +316,16 @@ public class BufferedWriterNodes {
                 self.incRawPos(-rewind);
             }
             while (self.getWritePos() < self.getWriteEnd()) {
-                byte[] buf = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getWritePos(), self.getWriteEnd());
-                int n = rawWriteNode.execute(frame, inliningTarget, self, buf, buf.length);
+                byte[] buf;
+                int len;
+                if (self.hasFileIORaw() && self.getWritePos() == 0) {
+                    buf = self.getBuffer();
+                    len = self.getWriteEnd();
+                } else {
+                    buf = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getWritePos(), self.getWriteEnd());
+                    len = buf.length;
+                }
+                int n = rawWriteNode.execute(frame, inliningTarget, self, buf, len);
                 if (n == -2) {
                     throw raiseBlockingIOError.get(inliningTarget).raiseEAGAIN(WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, 0);
                 }

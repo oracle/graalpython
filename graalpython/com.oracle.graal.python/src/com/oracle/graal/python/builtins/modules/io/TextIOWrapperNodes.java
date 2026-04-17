@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -207,8 +207,8 @@ public abstract class TextIOWrapperNodes {
         static void writeflush(VirtualFrame frame, Node inliningTarget, PTextIO self,
                         @Bind PythonLanguage language,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
-            byte[] pending = self.getAndClearPendingBytes();
-            PBytes b = PFactory.createBytes(language, pending);
+            PendingBytesOutputStream pending = self.getAndClearPendingBytes();
+            PBytes b = PFactory.createBytes(language, pending.getBuffer(), pending.getCount());
             callMethod.execute(frame, inliningTarget, self.getBuffer(), T_WRITE, b);
             // TODO: check _PyIO_trap_eintr
         }
@@ -884,7 +884,7 @@ public abstract class TextIOWrapperNodes {
 
             if (buffer instanceof PBuffered) {
                 /* Cache the raw FileIO object to speed up 'closed' checks */
-                if (((PBuffered) buffer).isFastClosedChecks()) {
+                if (((PBuffered) buffer).hasFileIORaw()) {
                     PFileIO f = ((PBuffered) buffer).getFileIORaw();
                     self.setFileIO(f);
                 }
