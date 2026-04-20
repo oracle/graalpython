@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,21 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.ssl;
+package com.oracle.graal.python.runtime.crypto;
 
-import java.security.Provider;
-import java.security.Security;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.Signature;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordException;
 
-public final class LazyBouncyCastleProvider {
-    private static Provider securityProvider;
+public interface BouncyCastleSupport {
+    PrivateKey loadPrivateKey(char[] password, String pemText) throws IOException, NeedsPasswordException, GeneralSecurityException;
 
-    public static synchronized Provider initProvider() {
-        if (securityProvider == null) {
-            securityProvider = new BouncyCastleProvider();
-            Security.addProvider(securityProvider);
-        }
-        return securityProvider;
-    }
+    MessageDigest createDigest(String algorithm) throws NoSuchAlgorithmException;
+
+    Signature createSignature(String algorithm) throws NoSuchAlgorithmException;
 }

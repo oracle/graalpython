@@ -22,6 +22,8 @@ git rev-list --all --parents | rg ' <PR_HEAD_SHA>( |$)'
 ```
 Pick the merge commit where one parent is `<PR_HEAD_SHA>` and the other is the target branch tip at merge time.
 
+If you cannot find it this way, another heuristic is to take the branch name and append `_gate` - that usually has the merge commit we want as tip.
+
 3. Check builds on that merge commit:
 ```bash
 gdev-cli bitbucket get-builds --commit=<MERGE_SHA> --all --format=key,state,url

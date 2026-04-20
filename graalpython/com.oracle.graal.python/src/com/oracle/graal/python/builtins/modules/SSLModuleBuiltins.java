@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,8 +67,6 @@ import java.util.List;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
-import org.bouncycastle.util.encoders.DecoderException;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
@@ -79,7 +77,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
-import com.oracle.graal.python.builtins.objects.ssl.LazyBouncyCastleProvider;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipher;
 import com.oracle.graal.python.builtins.objects.ssl.SSLCipherSelector;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
@@ -219,7 +216,6 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        LazyBouncyCastleProvider.initProvider();
         loadDefaults(core.getContext());
         PythonModule module = core.lookupBuiltinModule(T__SSL);
         module.setAttribute(tsLiteral("OPENSSL_VERSION_NUMBER"), 0);
@@ -443,7 +439,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(null, SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
                 }
                 return CertUtils.decodeCertificate(inliningTarget, constructAndRaiseNode, (X509Certificate) certs.get(0), PythonLanguage.get(null));
-            } catch (IOException | DecoderException ex) {
+            } catch (IOException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(null, SSL_CANT_OPEN_FILE_S, ex.toString());
             } catch (CertificateException | CRLException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(null, SSL_ERR_DECODING_PEM_FILE_S, ex.toString());

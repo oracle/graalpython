@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,6 +56,8 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -66,12 +68,6 @@ import java.util.Map;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-
-import org.bouncycastle.crypto.CipherParameters;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.jcajce.provider.util.DigestFactory;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -88,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.ssl.LazyBouncyCastleProvider;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -104,8 +99,8 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.crypto.BouncyCastleSupportProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -172,7 +167,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         PythonLanguage language = core.getLanguage();
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
         EconomicMapStorage storage = EconomicMapStorage.create();
-        LazyBouncyCastleProvider.initProvider();
         ArrayList<String> digests = new ArrayList<>();
         for (var provider : Security.getProviders()) {
             for (var service : provider.getServices()) {
@@ -399,11 +393,28 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static MessageDigest createDigest(String name, byte[] bytes, int bytesLen) throws NoSuchAlgorithmException {
-            MessageDigest digest = MessageDigest.getInstance(name);
+            MessageDigest digest;
+            try {
+                digest = MessageDigest.getInstance(name);
+            } catch (NoSuchAlgorithmException primary) {
+                if (!isBouncyCastleDigest(name)) {
+                    throw primary;
+                }
+                try {
+                    digest = BouncyCastleSupportProvider.createDigest(name);
+                } catch (NoSuchAlgorithmException secondary) {
+                    primary.addSuppressed(secondary);
+                    throw primary;
+                }
+            }
             if (bytes != null) {
                 digest.update(bytes, 0, bytesLen);
             }
             return digest;
+        }
+
+        private static boolean isBouncyCastleDigest(String name) {
+            return name.startsWith("BLAKE2B-") || name.startsWith("BLAKE2S-");
         }
     }
 
@@ -481,10 +492,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                Digest digest = getDigest(toJavaStringNode.execute(hashName));
-                if (digest == null) {
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError, UNSUPPORTED_HASH_TYPE, hashName);
-                }
+                String javaHashName = toJavaStringNode.execute(hashName);
                 if (iterations < 1) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ITERATION_VALUE_MUST_BE_GREATER_THAN_ZERO);
                 }
@@ -493,11 +501,10 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 }
                 long dklen;
                 if (noDklenProfile.profile(inliningTarget, PGuards.isPNone(dklenObj))) {
-                    dklen = digest.getDigestSize();
+                    dklen = getPbkdf2MacLength(javaHashName);
                 } else {
                     dklen = asLongNode.execute(frame, inliningTarget, dklenObj);
                 }
-                dklen *= Byte.SIZE;
                 if (dklen < 1) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, KEY_LENGTH_MUST_BE_GREATER_THAN_ZERO);
                 }
@@ -506,7 +513,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 }
                 byte[] passwordBytes = passwordLib.getInternalOrCopiedExactByteArray(password);
                 byte[] saltBytes = saltLib.getInternalOrCopiedExactByteArray(salt);
-                return PFactory.createBytes(language, generate(digest, passwordBytes, saltBytes, (int) iterations, (int) dklen));
+                return PFactory.createBytes(language, generate(javaHashName, passwordBytes, saltBytes, (int) iterations, (int) dklen));
+            } catch (GeneralSecurityException e) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError, UNSUPPORTED_HASH_TYPE, hashName);
             } finally {
                 passwordLib.release(password);
                 saltLib.release(salt);
@@ -514,20 +523,70 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Digest getDigest(String name) {
-            name = name.toLowerCase();
-            return DigestFactory.getDigest(NAME_MAPPINGS.getOrDefault(name, name));
+        private static int getPbkdf2MacLength(String name) throws NoSuchAlgorithmException {
+            return switch (name.toLowerCase()) {
+                case "sha1" -> 20;
+                case "sha224" -> 28;
+                case "sha256" -> 32;
+                case "sha384" -> 48;
+                case "sha512" -> 64;
+                default -> throw new NoSuchAlgorithmException(name);
+            };
         }
 
         @TruffleBoundary
-        private static byte[] generate(Digest digest, byte[] password, byte[] salt, int iterations, int dklen) {
-            PKCS5S2ParametersGenerator generator = new PKCS5S2ParametersGenerator(digest);
-            generator.init(password, salt, iterations);
-            CipherParameters cipherParameters = generator.generateDerivedParameters(dklen);
-            if (!(cipherParameters instanceof KeyParameter keyParameter)) {
-                throw CompilerDirectives.shouldNotReachHere("unexpected cipher parameters");
+        private static Mac createPbkdf2Mac(String name) throws NoSuchAlgorithmException {
+            String algorithm = getPbkdf2Algorithm(name);
+            if (algorithm == null) {
+                throw new NoSuchAlgorithmException(name);
             }
-            return keyParameter.getKey();
+            return Mac.getInstance(algorithm);
+        }
+
+        private static String getPbkdf2Algorithm(String name) {
+            return switch (name.toLowerCase()) {
+                case "sha1" -> "HmacSHA1";
+                case "sha224" -> "HmacSHA224";
+                case "sha256" -> "HmacSHA256";
+                case "sha384" -> "HmacSHA384";
+                case "sha512" -> "HmacSHA512";
+                default -> null;
+            };
+        }
+
+        @TruffleBoundary
+        private static byte[] generate(String hashName, byte[] password, byte[] salt, int iterations, int dklen) throws GeneralSecurityException {
+            Mac mac = createPbkdf2Mac(hashName);
+            try {
+                String algorithm = mac.getAlgorithm();
+                mac.init(new SecretKeySpec(password, algorithm));
+                int digestLength = mac.getMacLength();
+                byte[] derivedKey = new byte[dklen];
+                byte[] block = new byte[digestLength];
+                byte[] u = new byte[digestLength];
+                byte[] blockIndex = new byte[Integer.BYTES];
+                int blockCount = (dklen + digestLength - 1) / digestLength;
+                for (int i = 1; i <= blockCount; i++) {
+                    ByteBuffer.wrap(blockIndex).putInt(i);
+                    mac.update(salt);
+                    mac.update(blockIndex);
+                    byte[] initial = mac.doFinal();
+                    System.arraycopy(initial, 0, block, 0, digestLength);
+                    System.arraycopy(initial, 0, u, 0, digestLength);
+                    for (int j = 1; j < iterations; j++) {
+                        u = mac.doFinal(u);
+                        for (int k = 0; k < digestLength; k++) {
+                            block[k] ^= u[k];
+                        }
+                    }
+                    int offset = (i - 1) * digestLength;
+                    int length = Math.min(digestLength, dklen - offset);
+                    System.arraycopy(block, 0, derivedKey, offset, length);
+                }
+                return derivedKey;
+            } catch (InvalidKeyException e) {
+                throw new IllegalStateException(e);
+            }
         }
     }
 }

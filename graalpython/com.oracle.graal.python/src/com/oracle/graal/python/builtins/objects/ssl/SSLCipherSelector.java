@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -118,7 +118,7 @@ public class SSLCipherSelector {
             if (cipherString.startsWith("@STRENGTH")) {
                 selected.sort(Comparator.comparingInt(SSLCipher::getStrengthBits).reversed());
             } else if (cipherString.startsWith("@SECLEVEL=")) {
-                throw PRaiseNode.raiseStatic(node, NotImplementedError, toTruffleStringUncached("@SECLEVEL not implemented"));
+                handleSecurityLevel(node, cipherString);
             } else {
                 EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
                 Node prev = nodeRef.set(node);
@@ -138,6 +138,34 @@ public class SSLCipherSelector {
                 }
             }
         }
+    }
+
+    private static void handleSecurityLevel(Node node, String cipherString) {
+        String levelString = cipherString.substring("@SECLEVEL=".length());
+        if ("1".equals(levelString)) {
+            return;
+        }
+        if (!isDecimalDigits(levelString)) {
+            throw PRaiseNode.raiseStatic(node,
+                            NotImplementedError,
+                            toTruffleStringUncached("Unsupported OpenSSL cipher string directive: " + cipherString));
+        }
+        throw PRaiseNode.raiseStatic(node,
+                        NotImplementedError,
+                        toTruffleStringUncached("Unsupported OpenSSL security level @SECLEVEL=" + levelString + "; only @SECLEVEL=1 is supported"));
+    }
+
+    private static boolean isDecimalDigits(String value) {
+        if (value.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            if (ch < '0' || ch > '9') {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static List<SSLCipher> getCiphersForCipherString(Node node, String cipherString) {

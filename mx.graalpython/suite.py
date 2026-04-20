@@ -110,32 +110,32 @@ suite = {
             "digest": "sha512:bd77164795b5cbfbe864f64021e67e37f39cb9aba9abdd894d53fbb6857abe074923808918d1dc3bb0706253e726b2b9704cd0c3bc744d70e220c7356fa4995e",
         },
         "BOUNCYCASTLE-PROVIDER": {
-            "digest": "sha512:fb10c3c089921c8173ad285329f730e0e78de175d1b50b9bdd79c6a85a265af9b3331caa0c1ed57e5f47047319ce3b0f3bb5def0a3db9cccf2755cc95e145e52",
-            "sourceDigest": "sha512:7b06374b75040a1dba9419e17be29a155f01b14961521adcb8e980397b6ac7e2de55958e74ad41ba94766c4e992935abbd94fb964dbf806445a63a7346c0ae2e",
+            "digest": "sha512:e51cc843ca130ad4a15ff667360063bbb583af3f22e14193840a734da6665b470ba1855ce975f88a94ddd6419aa020d3a9966980bc1deb7514f92a7215d6e229",
+            "sourceDigest": "sha512:a2fe72266afcffce846dde5735d0fa28935942177375dd1c29bac819c1163f2da967e0b893d33d43868b6cdb8aa469e05fa460543d5448fa1e34155dcf86b0b7",
             "maven": {
               "groupId": "org.bouncycastle",
               "artifactId": "bcprov-jdk18on",
-              "version": "1.78.1",
+              "version": "1.83",
             },
             "moduleName": "org.bouncycastle.provider",
         },
         "BOUNCYCASTLE-PKIX": {
-            "digest": "sha512:d71a45844a7946b6a70315254e82a335d2df5e402b2d5a3b496fa69b355184338011b49c5f1c76026764a76f62f2bc140c25db2881bca91dde9677a25c6d587b",
-            "sourceDigest": "sha512:8508e9b26c60cc2fd3219d8ab0d3928891ecc42926e7c862c0fbf9940a4bcffe35c4a76c3934b33ed4311817dbf3b0b50068482f7c5f550261a50cc97879923a",
+            "digest": "sha512:9c67d990a56a5c448f9bb9edbb8b99dc15971e16de7e6f10c3eab129a1389eef4882c5a5d910ac4ddc27d44f7bc9fa4054c7f56dc031154c131bccc50ebd67b9",
+            "sourceDigest": "sha512:f24ad816393ed53d737db3c976ef37e4e009c2a366a1b97f80dace063320336ed1463b526eb6913cd1d462c2be18debd43ac1cab415639f900706e8e4fc13fe1",
             "maven": {
                 "groupId": "org.bouncycastle",
                 "artifactId": "bcpkix-jdk18on",
-                "version": "1.78.1",
+                "version": "1.83",
             },
             "moduleName": "org.bouncycastle.pkix",
         },
         "BOUNCYCASTLE-UTIL": {
-            "digest": "sha512:6a338c50d662993c9f00bba23f98443c923b9a95ff61dc653906f51857f8afaecc57a536bfaf6848ac8e7e9ce0a21f84ec068815853261268f97e951526bc766",
-            "sourceDigest": "sha512:852a1679a9c690f97c4ed175272b04ebedc89b9e4aa0322f32a799f619fd71602f89545fc02bb1093750ad7d796500fdd116203862ccecb3085af40aadcccea6",
+            "digest": "sha512:e19831d4afc0a709fd57694f33bfe3a8e881cba287c34fb076a44ef436e56e6bdf49299ca9525028a4de9bf5fadeaa254654d0e527855f1f5659c5a7be538576",
+            "sourceDigest": "sha512:bc4195692721827b41e21eaa14f9cf14dffe6f141ddfb8ac26d2a89f4ead3f1611671f8b6d39ec4be479c2ccf6e4bf33176123474f852910dc7dcc23485bd036",
             "maven": {
                 "groupId": "org.bouncycastle",
                 "artifactId": "bcutil-jdk18on",
-                "version": "1.78.1",
+                "version": "1.83",
             },
             "moduleName": "org.bouncycastle.util",
         },
@@ -390,9 +390,6 @@ suite = {
                 "truffle:TRUFFLE_XZ",
                 "truffle:TRUFFLE_ICU4J",
                 "regex:TREGEX",
-                "BOUNCYCASTLE-PROVIDER",
-                "BOUNCYCASTLE-PKIX",
-                "BOUNCYCASTLE-UTIL",
             ],
             "requires": [
                 "java.logging",
@@ -410,6 +407,29 @@ suite = {
                 "truffle:TRUFFLE_DSL_PROCESSOR"
             ],
             "forceJavac": True, # GRAALPYTHON_PROCESSOR is not compatible with ECJ
+            "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated": True,
+        },
+
+        "com.oracle.graal.python.bouncycastle": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "GRAALPYTHON",
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+                "BOUNCYCASTLE-UTIL",
+            ],
+            "requires": [
+                "java.logging",
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+                "jdk.security.auth",
+            ],
+            "jacoco": "include",
+            "checkstyle": "com.oracle.graal.python",
+            "javaCompliance": "17+",
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
         },
@@ -862,6 +882,7 @@ suite = {
             "default_vm_args": [
                 "--vm.Xss16777216", # request 16M of stack
                 '--vm.-enable-native-access=org.graalvm.shadowed.jline',
+                '--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util',
             ],
             "multitarget": [
                 {"os": ["linux"], "libc": ["glibc", "default"], "compiler": ["llvm-toolchain", "host", "*"]},
@@ -881,6 +902,7 @@ suite = {
             "build_args": [
                 # From mx.graalpython/native-image.properties
                 "--add-exports", "org.graalvm.nativeimage/org.graalvm.nativeimage.impl=ALL-UNNAMED",
+                "--add-exports", "org.graalvm.py/com.oracle.graal.python.builtins.objects.ssl=ALL-UNNAMED",
                 "-R:StackSize=16777216",
                 "-H:+AddAllCharsets",
                 "-H:IncludeLocales=no,be,ro,ru,es,se,in,ka,hu,hr,bg,is,mk,da,nn,cs,sq,fr,pl,fo,bs,kl,fa,sv,it,uk,af,tg,ps,de",
@@ -1036,11 +1058,47 @@ suite = {
             ],
         },
 
+        "GRAALPYTHON_BOUNCYCASTLE": {
+            "dependencies": [
+                "com.oracle.graal.python.bouncycastle",
+            ],
+            "distDependencies": [
+                "GRAALPYTHON",
+                "truffle:TRUFFLE_API",
+                "tools:TRUFFLE_PROFILER",
+                "regex:TREGEX",
+                "sdk:POLYGLOT",
+                "sdk:NATIVEIMAGE",
+                "sdk:COLLECTIONS",
+                "truffle:TRUFFLE_NFI",
+                "truffle:TRUFFLE_NFI_LIBFFI",
+                "truffle:TRUFFLE_NFI_PANAMA",
+                "truffle:TRUFFLE_ICU4J",
+                "truffle:TRUFFLE_XZ",
+            ],
+            "exclude": [
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+                "BOUNCYCASTLE-UTIL",
+            ],
+            "description": "Optional GraalPy BouncyCastle integration.",
+            "maven": {
+                "artifactId": "python-bouncycastle-support",
+                "groupId": "org.graalvm.python",
+                "tag": ["public"],
+            },
+        },
+
         "GRAALPYTHON": {
             "moduleInfo": {
                 "name": "org.graalvm.py",
                 "exports": [
                     "com.oracle.graal.python.* to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects.ssl to graalpython.bouncycastle",
+                    "com.oracle.graal.python.runtime.crypto",
+                ],
+                "uses": [
+                    "com.oracle.graal.python.runtime.crypto.BouncyCastleSupport",
                 ],
             },
             "useModulePath": True,
@@ -1069,11 +1127,6 @@ suite = {
                 "jdk.management",
                 "jdk.unsupported",
                 "jdk.security.auth",
-            ],
-            "exclude": [
-                "BOUNCYCASTLE-PROVIDER",
-                "BOUNCYCASTLE-PKIX",
-                "BOUNCYCASTLE-UTIL",
             ],
             "description": "GraalPy, a high-performance embeddable Python 3 runtime. This artifact includes the core language runtime without standard libraries. It is not recommended to depend on the artifact directly. Instead, use \'org.graalvm.polyglot:python\' or \'org.graalvm.polyglot:python-community\' to ensure all dependencies are pulled in correctly.",
             "maven": {
@@ -1428,6 +1481,7 @@ suite = {
             "distDependencies": [
                 "graalpython:GRAALPYTHON-LAUNCHER",
                 "graalpython:GRAALPYTHON",
+                "graalpython:GRAALPYTHON_BOUNCYCASTLE",
                 "graalpython:BOUNCYCASTLE-PROVIDER",
                 "graalpython:BOUNCYCASTLE-PKIX",
                 "graalpython:BOUNCYCASTLE-UTIL",

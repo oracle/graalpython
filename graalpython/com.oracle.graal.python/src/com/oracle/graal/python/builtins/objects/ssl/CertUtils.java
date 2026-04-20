@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,12 +61,15 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.Security;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
@@ -76,29 +79,26 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPrivateCrtKeySpec;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.cert.X509CRLHolder;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.openssl.PEMEncryptedKeyPair;
-import org.bouncycastle.openssl.PEMKeyPair;
-import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
-import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
-import org.bouncycastle.pkcs.PKCSException;
-import org.bouncycastle.util.encoders.DecoderException;
+import javax.crypto.EncryptedPrivateKeyInfo;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.crypto.BouncyCastleSupportProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -140,6 +141,23 @@ public final class CertUtils {
         public NeedsPasswordException() {
             super("Needs password to decrypt private key");
         }
+    }
+
+    public static final class BadBase64Exception extends IOException {
+        private static final long serialVersionUID = -8554489203372180057L;
+
+        public BadBase64Exception(Throwable cause) {
+            super(cause);
+        }
+    }
+
+    private record PemBlock(String type, byte[] content) {
+    }
+
+    private record KeyPemBlock(String type, byte[] content, Map<String, String> headers) {
+    }
+
+    private record PemBlockWithContent(String type, String content, int nextIndex) {
     }
 
     /**
@@ -315,6 +333,7 @@ public final class CertUtils {
     // private static
 
     private static final class DerValue {
+        private static final byte INTEGER = 0x02;
         private static final byte OCTET_STRING = 0x04;
         private static final byte OBJECT_IDENTIFIER = 0x06;
         private static final byte SEQUENCE = 0x10;
@@ -380,6 +399,31 @@ public final class CertUtils {
             return Arrays.copyOfRange(data, contentStart, contentStart + contentLen);
         }
 
+        BigInteger getInteger() throws CertificateParsingException {
+            if (contentTag != INTEGER) {
+                throw new CertificateParsingException(ERROR_MESSAGE);
+            }
+            return new BigInteger(getRawData());
+        }
+
+        List<DerValue> getSequenceElements() throws CertificateParsingException {
+            if (contentTag != SEQUENCE) {
+                throw new CertificateParsingException(ERROR_MESSAGE);
+            }
+            ArrayList<DerValue> values = new ArrayList<>();
+            int offset = contentStart;
+            int end = contentStart + contentLen;
+            while (offset < end) {
+                DerValue value = new DerValue(data, offset, end);
+                values.add(value);
+                offset = value.contentStart + value.contentLen;
+            }
+            if (offset != end) {
+                throw new CertificateParsingException(ERROR_MESSAGE);
+            }
+            return values;
+        }
+
         DerValue getObjectIdentifier() throws CertificateParsingException {
             if (contentTag != OBJECT_IDENTIFIER) {
                 return null;
@@ -429,14 +473,6 @@ public final class CertUtils {
             } else {
                 return null;
             }
-        }
-
-        List<DerValue> getSequenceElements() throws CertificateParsingException {
-            List<DerValue> result = new ArrayList<>();
-            iterateSequence((e, r) -> {
-                result.add(e);
-            }, result);
-            return result;
         }
 
         @FunctionalInterface
@@ -609,61 +645,124 @@ public final class CertUtils {
     @TruffleBoundary
     public static List<Object> getCertificates(BufferedReader r, boolean onlyCertificates) throws IOException, CertificateException, CRLException {
         List<Object> l = new ArrayList<>();
-        PEMParser pemParser = new PEMParser(r);
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
-        Object object;
-        while ((object = pemParser.readObject()) != null) {
-            if (object instanceof X509CertificateHolder) {
-                // TODO use the X509CertificateHolder directly without conversion
-                l.add(factory.generateCertificate(new ByteArrayInputStream(((X509CertificateHolder) object).getEncoded())));
-            }
-            if (!onlyCertificates && object instanceof X509CRLHolder) {
-                // TODO use the X509CRLHolder directly without conversion
-                l.add(factory.generateCRL(new ByteArrayInputStream(((X509CRLHolder) object).getEncoded())));
+        for (PemBlock block : readPemBlocks(r)) {
+            if ("CERTIFICATE".equals(block.type())) {
+                l.add(factory.generateCertificate(new ByteArrayInputStream(block.content())));
+            } else if (!onlyCertificates && ("X509 CRL".equals(block.type()) || "CRL".equals(block.type()))) {
+                l.add(factory.generateCRL(new ByteArrayInputStream(block.content())));
             }
         }
         return l;
+    }
+
+    private static List<PemBlock> readPemBlocks(BufferedReader reader) throws IOException {
+        StringBuilder text = new StringBuilder();
+        char[] buffer = new char[8192];
+        int read;
+        while ((read = reader.read(buffer)) != -1) {
+            text.append(buffer, 0, read);
+        }
+
+        String data = text.toString();
+        List<PemBlock> blocks = new ArrayList<>();
+        int fromIndex = 0;
+        while (true) {
+            int begin = data.indexOf("-----BEGIN ", fromIndex);
+            if (begin < 0) {
+                return blocks;
+            }
+            int typeStart = begin + "-----BEGIN ".length();
+            int typeEnd = data.indexOf("-----", typeStart);
+            if (typeEnd < 0) {
+                throw new IOException("Malformed PEM header");
+            }
+            String type = data.substring(typeStart, typeEnd);
+            int contentStart = typeEnd + "-----".length();
+            if (contentStart < data.length() && data.charAt(contentStart) == '\r') {
+                contentStart++;
+            }
+            if (contentStart < data.length() && data.charAt(contentStart) == '\n') {
+                contentStart++;
+            }
+
+            String endMarker = "-----END " + type + "-----";
+            int end = data.indexOf(endMarker, contentStart);
+            if (end < 0) {
+                throw new IOException("Missing PEM footer");
+            }
+
+            String content = data.substring(contentStart, end);
+            if (isCertificatePemType(type)) {
+                blocks.add(new PemBlock(type, decodePemContent(content)));
+            }
+            fromIndex = end + endMarker.length();
+        }
+    }
+
+    private static boolean isCertificatePemType(String type) {
+        return "CERTIFICATE".equals(type) || "X509 CRL".equals(type) || "CRL".equals(type);
+    }
+
+    private static byte[] decodePemContent(String content) throws IOException {
+        StringBuilder base64 = new StringBuilder(content.length());
+        for (String line : content.split("\\R")) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            if (trimmed.indexOf(':') >= 0) {
+                throw new IOException("Unexpected PEM headers");
+            }
+            base64.append(trimmed);
+        }
+        if (base64.length() == 0) {
+            throw new IOException("Empty PEM content");
+        }
+        try {
+            return Base64.getMimeDecoder().decode(base64.toString());
+        } catch (IllegalArgumentException e) {
+            throw new BadBase64Exception(e);
+        }
     }
 
     // No BoundaryCallContext: constructs and raises only builtin errors
     @TruffleBoundary
     static PrivateKey getPrivateKey(PythonContext context, Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, BufferedReader reader, char[] password, X509Certificate cert)
                     throws NeedsPasswordException {
-        PEMParser pemParser = new PEMParser(reader);
-        JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
-        Provider provider = LazyBouncyCastleProvider.initProvider();
-        converter.setProvider(provider);
         PrivateKey privateKey = null;
+        String algorithm = cert.getPublicKey().getAlgorithm();
         try {
-            Object object;
-            while ((object = pemParser.readObject()) != null) {
-                PrivateKeyInfo pkInfo;
-                if (object instanceof PEMKeyPair) {
-                    pkInfo = ((PEMKeyPair) object).getPrivateKeyInfo();
-                } else if (object instanceof PEMEncryptedKeyPair) {
+            String pemText = reader.readAllAsString();
+            int fromIndex = 0;
+            PemBlockWithContent rawBlock;
+            while ((rawBlock = findNextPemBlock(pemText, fromIndex)) != null) {
+                fromIndex = rawBlock.nextIndex();
+                KeyPemBlock block = decodePrivateKeyPemBlock(rawBlock.type(), rawBlock.content());
+                if ("PRIVATE KEY".equals(block.type())) {
+                    privateKey = decodePrivateKey(algorithm, block.content());
+                    break;
+                } else if ("ENCRYPTED PRIVATE KEY".equals(block.type())) {
                     if (password == null) {
                         throw new NeedsPasswordException();
                     }
-                    JcePEMDecryptorProviderBuilder decryptor = new JcePEMDecryptorProviderBuilder();
-                    decryptor.setProvider(provider);
-                    PEMKeyPair keyPair = ((PEMEncryptedKeyPair) object).decryptKeyPair(decryptor.build(password));
-                    pkInfo = keyPair.getPrivateKeyInfo();
-                } else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
-                    if (password == null) {
-                        throw new NeedsPasswordException();
+                    privateKey = decodeEncryptedPrivateKey(algorithm, block.content(), password);
+                    break;
+                } else if (isLegacyPrivateKeyType(block.type())) {
+                    if ("RSA PRIVATE KEY".equals(block.type()) && block.headers().isEmpty()) {
+                        privateKey = decodeRsaPrivateKey(block.content());
+                    } else {
+                        if (!block.headers().isEmpty() && password == null) {
+                            throw new NeedsPasswordException();
+                        }
+                        privateKey = BouncyCastleSupportProvider.loadPrivateKey(password, pemBlockToText(rawBlock));
                     }
-                    JceOpenSSLPKCS8DecryptorProviderBuilder decryptor = new JceOpenSSLPKCS8DecryptorProviderBuilder();
-                    decryptor.setProvider(provider);
-                    pkInfo = ((PKCS8EncryptedPrivateKeyInfo) object).decryptPrivateKeyInfo(decryptor.build(password));
-                } else if (object instanceof PrivateKeyInfo) {
-                    pkInfo = (PrivateKeyInfo) object;
-                } else {
-                    continue;
+                    break;
                 }
-                privateKey = converter.getPrivateKey(pkInfo);
-                break;
             }
-        } catch (IOException | DecoderException | OperatorCreationException | PKCSException e) {
+        } catch (BouncyCastleSupportProvider.MissingBouncyCastleException e) {
+            throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, toTruffleStringUncached(e.getMessage()));
+        } catch (IOException | GeneralSecurityException e) {
             throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
         if (privateKey == null) {
@@ -674,34 +773,202 @@ public final class CertUtils {
         return privateKey;
     }
 
+    private static PemBlockWithContent findNextPemBlock(String data, int fromIndex) throws IOException {
+        int begin = data.indexOf("-----BEGIN ", fromIndex);
+        if (begin < 0) {
+            return null;
+        }
+        int typeStart = begin + "-----BEGIN ".length();
+        int typeEnd = data.indexOf("-----", typeStart);
+        if (typeEnd < 0) {
+            throw new IOException("Malformed PEM header");
+        }
+        String type = data.substring(typeStart, typeEnd);
+        int contentStart = typeEnd + "-----".length();
+        if (contentStart < data.length() && data.charAt(contentStart) == '\r') {
+            contentStart++;
+        }
+        if (contentStart < data.length() && data.charAt(contentStart) == '\n') {
+            contentStart++;
+        }
+        String endMarker = "-----END " + type + "-----";
+        int end = data.indexOf(endMarker, contentStart);
+        if (end < 0) {
+            throw new IOException("Missing PEM footer");
+        }
+        return new PemBlockWithContent(type, data.substring(contentStart, end), end + endMarker.length());
+    }
+
+    private static KeyPemBlock decodePrivateKeyPemBlock(String type, String content) throws IOException {
+        Map<String, String> headers = new LinkedHashMap<>();
+        StringBuilder base64 = new StringBuilder(content.length());
+        boolean seenBase64 = false;
+        for (String line : content.split("\\R")) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            int colon = trimmed.indexOf(':');
+            if (!seenBase64 && colon >= 0) {
+                headers.put(trimmed.substring(0, colon).trim(), trimmed.substring(colon + 1).trim());
+            } else {
+                if (colon >= 0) {
+                    throw new IOException("Malformed PEM content");
+                }
+                seenBase64 = true;
+                base64.append(trimmed);
+            }
+        }
+        if (base64.length() == 0) {
+            throw new IOException("Empty PEM content");
+        }
+        try {
+            return new KeyPemBlock(type, Base64.getMimeDecoder().decode(base64.toString()), headers);
+        } catch (IllegalArgumentException e) {
+            throw new BadBase64Exception(e);
+        }
+    }
+
+    private static boolean isLegacyPrivateKeyType(String type) {
+        return "RSA PRIVATE KEY".equals(type) || "DSA PRIVATE KEY".equals(type) || "EC PRIVATE KEY".equals(type);
+    }
+
+    private static String pemBlockToText(PemBlockWithContent block) {
+        return "-----BEGIN " + block.type() + "-----\n" + block.content() + "\n-----END " + block.type() + "-----\n";
+    }
+
+    private static PrivateKey decodePrivateKey(String algorithm, byte[] encoded) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        return getKeyFactory(algorithm).generatePrivate(new PKCS8EncodedKeySpec(encoded));
+    }
+
+    private static PrivateKey decodeEncryptedPrivateKey(String algorithm, byte[] encoded, char[] password) throws IOException, GeneralSecurityException {
+        EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = new EncryptedPrivateKeyInfo(encoded);
+        SecretKeyFactory secretKeyFactory = getSecretKeyFactory(encryptedPrivateKeyInfo.getAlgName());
+        SecretKey secretKey = secretKeyFactory.generateSecret(new PBEKeySpec(password));
+        Provider provider = getPreferredSecurityProvider();
+        PKCS8EncodedKeySpec keySpec = provider != null ? encryptedPrivateKeyInfo.getKeySpec(secretKey, provider) : encryptedPrivateKeyInfo.getKeySpec(secretKey);
+        return getKeyFactory(algorithm).generatePrivate(keySpec);
+    }
+
+    private static PrivateKey decodeRsaPrivateKey(byte[] encoded) throws InvalidKeySpecException, NoSuchAlgorithmException {
+        try {
+            DerValue sequence = new DerValue(encoded);
+            List<DerValue> values = sequence.getSequenceElements();
+            if (values.size() < 9) {
+                throw new InvalidKeySpecException("Invalid RSA private key");
+            }
+            BigInteger version = values.get(0).getInteger();
+            if (!BigInteger.ZERO.equals(version) && !BigInteger.ONE.equals(version)) {
+                throw new InvalidKeySpecException("Unsupported RSA private key version");
+            }
+            RSAPrivateCrtKeySpec keySpec = new RSAPrivateCrtKeySpec(
+                            values.get(1).getInteger(),
+                            values.get(2).getInteger(),
+                            values.get(3).getInteger(),
+                            values.get(4).getInteger(),
+                            values.get(5).getInteger(),
+                            values.get(6).getInteger(),
+                            values.get(7).getInteger(),
+                            values.get(8).getInteger());
+            return getKeyFactory("RSA").generatePrivate(keySpec);
+        } catch (CertificateParsingException e) {
+            throw new InvalidKeySpecException("Invalid RSA private key", e);
+        }
+    }
+
+    private static KeyFactory getKeyFactory(String algorithm) throws NoSuchAlgorithmException {
+        Provider provider = getPreferredSecurityProvider();
+        return provider != null ? KeyFactory.getInstance(algorithm, provider) : KeyFactory.getInstance(algorithm);
+    }
+
+    private static SecretKeyFactory getSecretKeyFactory(String algorithm) throws NoSuchAlgorithmException {
+        Provider provider = getPreferredSecurityProvider();
+        return provider != null ? SecretKeyFactory.getInstance(algorithm, provider) : SecretKeyFactory.getInstance(algorithm);
+    }
+
+    private static Provider getPreferredSecurityProvider() {
+        String providerName = System.getProperty("python.security.provider");
+        if (providerName == null || providerName.isEmpty()) {
+            return null;
+        }
+        return Security.getProvider(providerName);
+    }
+
     private static void checkPrivateKey(Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, PythonContext context, PrivateKey privateKey, PublicKey publicKey) {
         /*
          * Check that the private key matches the public key by signing and verifying a short piece
          * of data.
          */
+        byte[] data = new byte[128];
+        context.getSecureRandom().nextBytes(data);
         try {
-            Signature sign;
-            try {
-                sign = Signature.getInstance(String.format("SHA256with%s", privateKey.getAlgorithm()));
-            } catch (NoSuchAlgorithmException e) {
-                sign = Signature.getInstance(String.format("SHA1with%s", privateKey.getAlgorithm()));
+            String signatureAlgorithm = privateKey.getAlgorithm();
+            if ("EC".equals(signatureAlgorithm)) {
+                signatureAlgorithm = "ECDSA";
             }
-            sign.initSign(privateKey);
-            byte[] data = new byte[128];
-            context.getSecureRandom().nextBytes(data);
-            sign.update(data);
-            byte[] signature = sign.sign();
-            sign.initVerify(publicKey);
-            sign.update(data);
-            if (sign.verify(signature)) {
-                return;
+            try {
+                if (checkPrivateKey("SHA256with%s".formatted(signatureAlgorithm), privateKey, publicKey, data)) {
+                    return;
+                }
+            } catch (NoSuchAlgorithmException e) {
+                if (checkPrivateKey("SHA1with%s".formatted(signatureAlgorithm), privateKey, publicKey, data)) {
+                    return;
+                }
             }
         } catch (NoSuchAlgorithmException e) {
             throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, e);
-        } catch (SignatureException | InvalidKeyException e) {
+        } catch (SignatureException e) {
             // fallthrough
         }
         throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+    }
+
+    private static boolean checkPrivateKey(String signatureAlgorithm, PrivateKey privateKey, PublicKey publicKey, byte[] data) throws NoSuchAlgorithmException, SignatureException {
+        Provider preferredProvider = getPreferredSecurityProvider();
+        if (preferredProvider != null && checkPrivateKey(signatureAlgorithm, preferredProvider, privateKey, publicKey, data)) {
+            return true;
+        }
+        Provider[] providers = Security.getProviders("Signature." + signatureAlgorithm);
+        if (providers != null) {
+            for (Provider provider : providers) {
+                if ((preferredProvider == null || !preferredProvider.getName().equals(provider.getName())) && checkPrivateKey(signatureAlgorithm, provider, privateKey, publicKey, data)) {
+                    return true;
+                }
+            }
+        }
+        if (checkPrivateKeyWithBouncyCastle(signatureAlgorithm, privateKey, publicKey, data)) {
+            return true;
+        }
+        return checkPrivateKey(signatureAlgorithm, (Provider) null, privateKey, publicKey, data);
+    }
+
+    private static boolean checkPrivateKey(String signatureAlgorithm, Provider provider, PrivateKey privateKey, PublicKey publicKey, byte[] data) throws NoSuchAlgorithmException, SignatureException {
+        try {
+            Signature signature = provider != null ? Signature.getInstance(signatureAlgorithm, provider) : Signature.getInstance(signatureAlgorithm);
+            signature.initSign(privateKey);
+            signature.update(data);
+            byte[] signed = signature.sign();
+            signature.initVerify(publicKey);
+            signature.update(data);
+            boolean verified = signature.verify(signed);
+            return verified;
+        } catch (InvalidKeyException e) {
+            return false;
+        }
+    }
+
+    private static boolean checkPrivateKeyWithBouncyCastle(String signatureAlgorithm, PrivateKey privateKey, PublicKey publicKey, byte[] data) throws NoSuchAlgorithmException, SignatureException {
+        try {
+            Signature signature = BouncyCastleSupportProvider.createSignature(signatureAlgorithm);
+            signature.initSign(privateKey);
+            signature.update(data);
+            byte[] signed = signature.sign();
+            signature.initVerify(publicKey);
+            signature.update(data);
+            return signature.verify(signed);
+        } catch (InvalidKeyException e) {
+            return false;
+        }
     }
 
     @TruffleBoundary
