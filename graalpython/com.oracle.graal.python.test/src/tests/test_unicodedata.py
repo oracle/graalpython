@@ -75,6 +75,10 @@ class TestUnicodedata(unittest.TestCase):
         with self.assertRaisesRegex(KeyError, "name too long"):
             unicodedata.lookup("a" * 257)
 
+    def test_lookup_unknown_name_via_fallback(self):
+        with self.assertRaisesRegex(KeyError, "undefined character name 'GIBBET NICH'"):
+            unicodedata.lookup("GIBBET NICH")
+
     def test_lookup_named_sequence(self):
         if unicodedata.ucd_3_2_0.bidirectional == unicodedata.bidirectional:
             raise unittest.SkipTest("Only supported with CPython's unicodedata.ucd_3_2_0")
