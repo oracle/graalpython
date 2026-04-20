@@ -1070,6 +1070,11 @@ version = '== 0.7.8'
 patch = 'librt-0.7.8.patch'
 license = 'MIT'
 
+[[librt.rules]]
+version = '== 0.9.0'
+patch = 'librt-0.9.0.patch'
+license = 'MIT'
+
 [[opencv-python.rules]]
 version = '== 4.12.*'
 patch = 'opencv-python-4.12.patch'
