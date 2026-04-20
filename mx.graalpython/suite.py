@@ -1549,6 +1549,9 @@ suite = {
                         "lib/src.zip",
                         "jmods",
                     ],
+                    "build_args": [
+                        "--add-exports", "org.graalvm.py/com.oracle.graal.python.nodes.bytecode=ALL-UNNAMED",
+                    ],
                 },
                 "jvmlibs/": [
                     "extracted-dependency:truffle:TRUFFLE_ATTACH_GRAALVM_SUPPORT",
