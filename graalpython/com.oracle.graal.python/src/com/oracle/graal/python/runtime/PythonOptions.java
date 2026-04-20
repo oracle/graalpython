@@ -62,6 +62,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -88,7 +89,6 @@ public final class PythonOptions {
      * bytecode interpreter.
      */
     public static final boolean ENABLE_BYTECODE_DSL_INTERPRETER;
-    public static final int UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT;
     private static final OptionType<TruffleString> TS_OPTION_TYPE = new OptionType<>("graal.python.TruffleString", PythonUtils::toTruffleStringUncached);
 
     static {
@@ -106,17 +106,6 @@ public final class PythonOptions {
             }
         } else {
             ENABLE_BYTECODE_DSL_INTERPRETER = true;
-        }
-
-        if (Boolean.getBoolean("python.ForceUncachedInterpreter")) {
-            UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT = Integer.MIN_VALUE;
-        } else {
-            String uncachedLimitStr = System.getProperty("python.UncachedInterpreterLimit");
-            if (uncachedLimitStr != null) {
-                UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT = Integer.parseInt(uncachedLimitStr);
-            } else {
-                UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT = -1;
-            }
         }
     }
 
@@ -445,6 +434,12 @@ public final class PythonOptions {
                     such as when settrace instrumentation is enabled. This option avoids rereading bytecode files by keeping the original bytecode form in memory""") //
     public static final OptionKey<Boolean> KeepBytecodeInMemory = new OptionKey<>(false);
 
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<Boolean> ForceUncachedInterpreter = new OptionKey<>(false);
+
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<Integer> UncachedInterpreterThreshold = new OptionKey<>(-1);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;
@@ -544,6 +539,16 @@ public final class PythonOptions {
             }
         }
         return true;
+    }
+
+    public static void setUncachedInterpreterThreshold(PythonLanguage language, BytecodeNode bytecodeNode) {
+        if (language.getEngineOption(ForceUncachedInterpreter)) {
+            bytecodeNode.setUncachedThreshold(Integer.MIN_VALUE);
+        }
+        int threshold = language.getEngineOption(UncachedInterpreterThreshold);
+        if (threshold >= 0) {
+            bytecodeNode.setUncachedThreshold(threshold);
+        }
     }
 
     @Idempotent

@@ -238,7 +238,11 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("is_native", TruffleOptions.AOT);
         addBuiltinConstant("is_bytecode_dsl_interpreter", PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER);
         PythonContext ctx = core.getContext();
-        TruffleString encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
+        PythonLanguage language = ctx.getLanguage();
+        // Engine options: if they differ from the values baked into the pre-initialized context,
+        // this `initialize` method is run again.
+        addBuiltinConstant("is_forced_uncached_interpreter", language.getEngineOption(PythonOptions.ForceUncachedInterpreter));
+        TruffleString encodingOpt = language.getEngineOption(PythonOptions.StandardStreamEncoding);
         TruffleString standardStreamEncoding = null;
         TruffleString standardStreamError = null;
         if (encodingOpt != null && !encodingOpt.isEmpty()) {

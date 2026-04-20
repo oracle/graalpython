@@ -61,6 +61,7 @@
       default_multi: "default-multi",
       interpreter: "interpreter",
       interpreter_manual: "interpreter-manual",
+      interpreter_uncached: "interpreter-uncached",
       native_interpreter: "native-interpreter",
       native_interpreter_manual: "native-interpreter-manual",
       interpreter_multi: "interpreter-multi",
@@ -139,6 +140,10 @@
       graalpython_interpreter_manual: {
         python_vm: PYVM.graalpython,
         python_vm_config: PYVM_CONFIG.interpreter_manual,
+      },
+      graalpython_interpreter_uncached: {
+        python_vm: PYVM.graalpython,
+        python_vm_config: PYVM_CONFIG.interpreter_uncached,
       },
       graalpython_native_interpreter: {
         python_vm: PYVM.graalpython,
@@ -239,6 +244,7 @@
         graalvm_ee_default: PYTHON_VM.graalpython + JVM_VM.graal_native_image_ee,
         graalvm_ee_default_manual: PYTHON_VM.graalpython_manual + JVM_VM.graal_native_image_ee,
         graalvm_ee_default_interpreter: PYTHON_VM.graalpython_interpreter + JVM_VM.graal_native_image_ee,
+        graalvm_ee_default_interpreter_uncached: PYTHON_VM.graalpython_interpreter_uncached + JVM_VM.graal_native_image_ee,
         graalvm_ee_default_interpreter_manual: PYTHON_VM.graalpython_interpreter_manual + JVM_VM.graal_native_image_ee,
         graalvm_ce_default_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graal_native_image_ce,
         graalvm_ee_default_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graal_native_image_ee,
