@@ -156,8 +156,10 @@ def downstream_test_pyo3(graalpy, testdir):
     src = testdir / 'pyo3'
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
-    run_in_venv(venv, ['pip', 'install', 'nox'])
-    run_in_venv(venv, ['nox', '-s', 'test-py'], cwd=src)
+    run_in_venv(venv, ['python', '-m', 'pip', 'install', '--upgrade', 'pip', 'nox[uv]'])
+    env = os.environ.copy()
+    env['NOX_DEFAULT_VENV_BACKEND'] = 'uv'
+    run_in_venv(venv, ['nox', '-s', 'test-py'], cwd=src, env=env)
 
 
 @downstream_test('pydantic-core')
