@@ -13,27 +13,14 @@ Execute recurring GraalPy ROTA tasks with exact commands and strict output struc
 - Use `Recent periodic issues` when asked to triage periodic job failures in Jira.
 
 ## Import Update Workflow
-1. Create a branch from latest `master`:
+1. Run the automated branch setup, import update, GitHub unittest-tag refresh, enterprise unittest-tag refresh, push, and standard PR creation:
 ```bash
-git checkout master
-git pull --ff-only
-git checkout -b "update/GR-21590/$(date +%d%m%y)"
+mx python-update-import --rota
 ```
-2. Update graal import:
-```bash
-mx python-update-import
-```
-3. Check if there is directory ../graal-enterprise, if not, stop and ask the user to provide it
-4. Update CPython unittest whitelist and inspect diff for plausibility. Expect mostly additions, not removals:
-```bash
-mx --dy /graalpython-enterprise python-update-unittest-tags
-```
-5. Create PR with description `[GR-21590] Import update`.
-6. Use `gdev-cli bitbucket` to create PR, start gates, and set reviewers:
-- `tim.felgentreff@oracle.com`
-- `michael.simacek@oracle.com`
-- `stepan.sindelar@oracle.com`
-7. Fix gate failures and push updates until gates pass.
+2. If the command reports that `../graal-enterprise/graalpython-enterprise` is missing, stop and ask the user to provide that checkout.
+3. Inspect the two generated commits and the created PR for plausibility. Expect mostly additions, not removals in the combined unittest-tag commit.
+4. Use `gdev-cli bitbucket` to start gates on the created PR. Reviewer assignment comes from the default `gdev-cli` configuration.
+5. Fix gate failures and push updates until gates pass.
 
 ## Recent Periodic Issues Workflow
 1. Verify creator identity mapping:
