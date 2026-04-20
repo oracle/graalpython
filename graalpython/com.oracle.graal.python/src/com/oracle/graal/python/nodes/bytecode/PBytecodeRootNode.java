@@ -3453,6 +3453,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void chainPythonExceptions(PException current, PException context) {
+        if (current.isReraised()) {
+            return;
+        }
         if (chainExceptionsNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             chainExceptionsNode = insert(ChainExceptionsNode.create());

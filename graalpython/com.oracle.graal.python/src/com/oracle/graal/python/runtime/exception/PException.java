@@ -116,6 +116,7 @@ public final class PException extends AbstractTruffleException {
     private int catchBci;
     private boolean reified = false;
     private boolean skipFirstTracebackFrame;
+    private boolean reraised;
 
     // See the docs of MaterializeLazyTracebackNode
     private int tracebackFrameCount;
@@ -436,6 +437,7 @@ public final class PException extends AbstractTruffleException {
     public PException getExceptionForReraise(boolean rootNodeVisible) {
         ensureReified();
         PException pe = PException.fromObject(pythonException, getLocation(), false);
+        pe.reraised = true;
         if (pe.getUnreifiedException() instanceof PBaseExceptionGroup grp) {
             grp.setContainsReraises(true);
         }
@@ -601,6 +603,10 @@ public final class PException extends AbstractTruffleException {
 
     public void dontTraceOnReraise() {
         shouldTrace = true;
+    }
+
+    public boolean isReraised() {
+        return reraised;
     }
 
     @TruffleBoundary

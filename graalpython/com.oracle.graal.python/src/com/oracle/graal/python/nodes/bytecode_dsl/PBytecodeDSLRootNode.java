@@ -901,7 +901,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 getCaughtExceptionNode = insert(ExceptionStateNodes.GetCaughtExceptionNode.create());
             }
             AbstractTruffleException context = getCaughtExceptionNode.execute(frame);
-            if (context instanceof PException pe2) {
+            if (context instanceof PException pe2 && !pe.isReraised()) {
                 if (chainExceptionsNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     chainExceptionsNode = insert(ChainExceptionsNode.create());
