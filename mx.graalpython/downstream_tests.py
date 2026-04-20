@@ -180,13 +180,11 @@ def downstream_test_pydantic_core(graalpy, testdir):
 def downstream_test_jiter(graalpy, testdir):
     run(['git', 'clone', 'https://github.com/pydantic/jiter.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'jiter'
-    venv = src / 'venv'
-    run([graalpy, '-m', 'venv', str(venv)])
-    run_in_venv(venv, ['pip', 'install', '-r', 'crates/jiter-python/tests/requirements.txt'], cwd=src)
-    run_in_venv(venv, ['pip', 'install', '-e', 'crates/jiter-python',
-                       '--config-settings=build-args=--profile dev'], cwd=src)
-    run_in_venv(venv, ['pytest', '-v', '--tb=short', 'crates/jiter-python/tests'], cwd=src)
-    run_in_venv(venv, ['python', 'crates/jiter-python/bench.py', 'jiter', 'jiter-cache', '--fast'], cwd=src)
+    env = os.environ.copy()
+    env['UV_PYTHON_DOWNLOADS'] = 'never'
+    run(['uv', 'sync', '--python', graalpy, '--group', 'dev', '--all-packages'], cwd=src, env=env)
+    run(['uv', 'run', '--python', graalpy, 'pytest', '-v', '--tb=short', 'crates/jiter-python/tests'], cwd=src, env=env)
+    run(['uv', 'run', '--python', graalpy, 'crates/jiter-python/bench.py', 'jiter', 'jiter-cache', '--fast'], cwd=src, env=env)
 
 
 @downstream_test('cython')
