@@ -1709,6 +1709,9 @@ suite = {
                 "./warmup/matplotlib/": [
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/matplotlib/*.py",
                 ],
+                "./warmup/import/": [
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/warmup/import/*.py",
+                ],
             },
         },
 

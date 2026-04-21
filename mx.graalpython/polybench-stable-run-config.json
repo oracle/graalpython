@@ -756,5 +756,20 @@
     "policy": "outlier-elimination-all-builds",
     "forks": "5x5",
     "focus": "0.3-0.7"
+  },
+  "warmup/import/simple_stdlib_import.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "4x5",
+    "focus": "0.0-0.6"
+  },
+  "warmup/import/complex_stdlib_import.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "5x5",
+    "focus": "0.3-0.6"
+  },
+  "warmup/import/matplotlib_import.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "4x5",
+    "focus": "0.0-0.4"
   }
 }
