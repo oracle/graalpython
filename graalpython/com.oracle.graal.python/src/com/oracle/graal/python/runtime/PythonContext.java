@@ -2683,7 +2683,7 @@ public final class PythonContext extends Python3Core {
         handler.activateGIL();
     }
 
-    public synchronized void attachThread(Thread thread, ContextThreadLocal<PythonThreadState> threadState) {
+    public void attachThread(Thread thread, ContextThreadLocal<PythonThreadState> threadState) {
         CompilerAsserts.neverPartOfCompilation();
         PythonThreadState pythonThreadState = threadState.get(thread);
         threadStateMapping.put(thread, pythonThreadState);
@@ -2723,7 +2723,7 @@ public final class PythonContext extends Python3Core {
         }
     }
 
-    public synchronized void disposeThread(Thread thread, boolean canRunGuestCode) {
+    public void disposeThread(Thread thread, boolean canRunGuestCode) {
         CompilerAsserts.neverPartOfCompilation();
         // check if there is a live sentinel lock
         PythonThreadState ts = threadStateMapping.get(thread);
