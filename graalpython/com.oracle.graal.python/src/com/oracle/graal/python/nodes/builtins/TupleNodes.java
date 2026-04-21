@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -101,10 +102,12 @@ public abstract class TupleNodes {
         static PTuple generic(VirtualFrame frame, Object iterable,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
+                        @Cached IteratorNodes.GetLength lenNode,
                         @Cached CreateStorageFromIteratorNode storageNode,
                         @Cached PyObjectGetIter getIter) {
+            int len = lenNode.execute(frame, inliningTarget, iterable);
             Object iterObj = getIter.execute(frame, inliningTarget, iterable);
-            return PFactory.createTuple(language, storageNode.execute(frame, iterObj));
+            return PFactory.createTuple(language, storageNode.execute(frame, iterObj, len));
         }
 
         @NeverDefault
