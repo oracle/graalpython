@@ -25,7 +25,7 @@ It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|
-| Build / run | `docs/contributor/CONTRIBUTING.md`, `mx.graalpython/` | This repo is `mx`-first (not a typical Maven/Gradle-only build). |
+| Build / run | `docs/contributor/CONTRIBUTING.md`, `mx.graalpython/` | This repo is `mx`-first. The project build command is `mx python-jvm`; do not substitute generic `mx build` for normal build/test workflows. |
 | Java runtime & Truffle nodes | `graalpython/com.oracle.graal.python/src/com/oracle/graal/python/{runtime,nodes,builtins}` | Main interpreter implementation. |
 | C-API / native extensions | `graalpython/com.oracle.graal.python.cext/{include,src,modules}` | Mirrors CPython naming; many files are adapted from CPython. |
 | Python stdlib overrides | `graalpython/lib-graalpython/` | GraalPy-specific modules executed at startup and/or used by builtins. |
@@ -42,6 +42,7 @@ It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib
 
 ## ANTI-PATTERNS (THIS PROJECT)
 - **Do not** base edits or reviews on `mxbuild/**` or `*.dist/**` outputs; change sources under `graalpython/**`, `mx.graalpython/**`, etc.
+- To build the project locally, use `mx python-jvm`. Do **not** treat generic `mx build` as the repo's normal build command unless a task explicitly requires something narrower.
 - Security reports: follow `SECURITY.md` (do **NOT** file public issues for vulnerabilities).
 - C-API: heed CPython-style invariants in headers (e.g. `ceval.h`: **NEVER** nest `Py_BEGIN_ALLOW_THREADS` blocks; avoid mixing PyMem/PyObject allocators with `malloc`).
 - Interop: foreign `executable` / `instantiable` objects are **never** called with keyword arguments (see `docs/user/Interoperability.md`).
@@ -55,8 +56,9 @@ It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib
 
 * Import dependent suites / download deps
   `mx sforceimport`
-* Build and run
+* Build the project
   `mx python-jvm`
+* Run after building
   `mx python -c 'print(42)'`
 * Common local testing
     * Run cpyext tests
