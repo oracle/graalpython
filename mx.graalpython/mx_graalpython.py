@@ -1947,7 +1947,7 @@ def graalpy_ext(*_):
 
 
 def dev_tag(_=None):
-    if not get_boolean_env('GRAALPYTHONDEVMODE', True) or 'dev' not in SUITE.release_version():
+    if not get_boolean_env('GRAALPYTHONDEVMODE', False) or 'dev' not in SUITE.release_version():
         mx.logv("GraalPy dev_tag: <0 because not in dev mode>")
         return ''
 
