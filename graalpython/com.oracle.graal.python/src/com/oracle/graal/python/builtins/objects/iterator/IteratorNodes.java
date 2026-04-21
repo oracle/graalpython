@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIterator;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -202,7 +203,7 @@ public abstract class IteratorNodes {
                     if (indexCheckNode.execute(inliningTarget, len)) {
                         int intLen = asSizeNode.executeExact(frame, inliningTarget, len);
                         if (intLen < 0) {
-                            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
+                            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
                         }
                         return intLen;
                     } else {
