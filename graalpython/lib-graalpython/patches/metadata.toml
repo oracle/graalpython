@@ -110,6 +110,16 @@ version = '>= 43.0.0'
 note = "Versions newer than 43 do not need a patch."
 
 [[cython.rules]]
+version = '>= 3.2.0, < 3.2.4'
+patch = 'cython-3.2.0.patch'
+license = 'Apache-2.0'
+
+[[cython.rules]]
+version = '== 3.2.4'
+patch = 'cython-3.2.4.patch'
+license = 'Apache-2.0'
+
+[[cython.rules]]
 version = '>= 3.1.7, <= 3.1.8'
 patch = 'cython-3.1.7.patch'
 license = 'Apache-2.0'
