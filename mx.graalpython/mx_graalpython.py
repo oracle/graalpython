@@ -1210,12 +1210,7 @@ def graalpytest(args):
     cmd_args = [*python_args, _python_test_runner(), 'run', *runner_args]
     delete_bad_env_keys(env)
     if python_binary:
-        try:
-            result = run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
-            print(f"back from mx.run, returning {result}")
-            return result
-        except BaseException as e:
-            print(f"Exception raised: {e}")
+        return run([python_binary, *cmd_args], nonZeroIsFatal=True, env=env)
     else:
         return full_python(cmd_args, env=env)
 
