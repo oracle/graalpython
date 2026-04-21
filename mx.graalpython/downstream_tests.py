@@ -165,17 +165,40 @@ def downstream_test_pyo3(graalpy, testdir):
 @downstream_test('pydantic-core')
 def downstream_test_pydantic_core(graalpy, testdir):
     run(['git', 'clone', 'https://github.com/pydantic/pydantic.git', '-b', 'main', '--depth', '1'], cwd=testdir)
-    src = testdir / 'pydantic' / 'pydantic-core'
-    run(['uv', 'sync', '--python', graalpy, '--group', 'testing-extra', '--no-install-project'], cwd=src)
-    run(['uv', 'build', '--python', graalpy, '--wheel', '.'], cwd=src)
-    [wheel] = (src.parent / 'dist').glob('pydantic_core-*graalpy*.whl')
-    # uv doesn't accept wheels with devtags
-    if match := re.search('dev[0-9a-f]{6,}', wheel.name):
-        wheel = wheel.rename(wheel.parent / wheel.name.replace(match.group(), ''))
-    run(['uv', 'pip', 'install', wheel], cwd=src)
+    repo = testdir / 'pydantic'
     env = os.environ.copy()
-    env['HYPOTHESIS_PROFILE'] = 'slow'
-    run(['uv', 'run', '--no-sync', 'pytest', '-v', '--tb=short'], cwd=src, env=env)
+    env['UV_PYTHON_DOWNLOADS'] = 'never'
+    env['UV_PYTHON'] = str(graalpy)
+    # Needed for rpds-py dependency
+    env['UNSAFE_PYO3_SKIP_VERSION_CHECK'] = '1'
+    # Commands taken from upstream. The upstream has some TODOs so we'll likely need to sync this again soon
+    run(
+        ['uv', 'sync', '--directory', 'pydantic-core', '--group', 'testing-extra', '--no-install-package', 'pydantic-core'],
+        cwd=repo,
+        env=env,
+    )
+    run(
+        [
+            'uv', 'sync', '--group', 'testing-extra', '--no-install-package', 'pydantic-core',
+            '--no-install-package', 'pytest-memray', '--no-install-package', 'memray',
+            '--no-install-package', 'pytest-codspeed', '--no-install-package', 'cffi', '--inexact',
+            # GraalPy change: greenlet crashes on import
+            '--no-install-package', 'greenlet',
+        ],
+        cwd=repo,
+        env=env,
+    )
+    del env['UV_PYTHON']
+    run(
+        ['uv', 'pip', 'install', './pydantic-core', '--no-deps', '--force-reinstall'],
+        cwd=repo,
+        env=env,
+    )
+    run(
+        ['uv', 'run', '--no-sync', 'pytest', 'tests/pydantic_core', '--ignore=tests/pydantic_core/test_docstrings.py'],
+        cwd=repo,
+        env=env,
+    )
 
 
 @downstream_test('jiter')
