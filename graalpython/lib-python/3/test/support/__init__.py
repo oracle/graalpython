@@ -793,6 +793,9 @@ def gc_collect(until = None):
             i += 1
             if i > 1000:
                 print("WARNING: timeout while waiting for GC")
+                if is_graalpy and hasattr(__graalpython__, 'dump_heap'):
+                    dump_path = __graalpython__.dump_heap()
+                    print(f"HEAP DUMP: {dump_path}")
                 break
 
 @contextlib.contextmanager

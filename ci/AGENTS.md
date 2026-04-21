@@ -16,3 +16,4 @@ Jsonnet/libsonnet CI definitions consumed by GitHub Actions matrix generation.
 ## ANTI-PATTERNS
 - Don’t encode secrets or environment-specific paths here.
 - Keep changes compatible with matrix generation (small diffs, deterministic output).
+- NEVER edit CI files in `./graal`
