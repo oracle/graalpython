@@ -69,6 +69,7 @@ import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CastBuiltinStringToTruffleStringNode;
@@ -141,6 +142,46 @@ public class HashingStorageNodes {
 
         @Specialization
         static Object foreign(Node inliningTarget, ForeignHashingStorage self, Object key, long keyHash,
+                        @Cached ForeignHashingStorage.GetNode getNode) {
+            return getNode.execute(inliningTarget, self, key);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class HashingStorageGetItemStringKey extends Node {
+        public abstract Object execute(Node inliningTarget, HashingStorage self, TruffleString key);
+
+        @Specialization
+        static Object economicMap(Node inliningTarget, EconomicMapStorage self, TruffleString key,
+                        @Cached TruffleString.HashCodeNode hashCodeNode,
+                        @Cached ObjectHashMap.GetNode getNode) {
+            return getNode.execute(null, inliningTarget, self.map, key, PyObjectHashNode.hash(key, hashCodeNode));
+        }
+
+        @Specialization
+        static Object dom(Node inliningTarget, DynamicObjectStorage self, TruffleString key,
+                        @Cached ReadAttributeFromPythonObjectNode readKey,
+                        @Cached InlinedConditionProfile noValueProfile) {
+            return DynamicObjectStorage.GetItemNode.string(inliningTarget, self, key, -1, readKey, noValueProfile);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        static Object empty(EmptyStorage self, TruffleString key) {
+            return null;
+        }
+
+        @Specialization
+        @InliningCutoff
+        static Object keywords(Node inliningTarget, KeywordsStorage self, TruffleString key,
+                        @Cached GetKeywordsStorageItemNode getNode) {
+            return getNode.execute(null, inliningTarget, self, key, -1);
+        }
+
+        @Specialization
+        static Object foreign(Node inliningTarget, ForeignHashingStorage self, TruffleString key,
                         @Cached ForeignHashingStorage.GetNode getNode) {
             return getNode.execute(inliningTarget, self, key);
         }

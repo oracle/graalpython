@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,10 +55,8 @@ import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -583,30 +581,6 @@ public final class StringUtils {
             return UnicodeCharacterAliases.CHARACTER_ALIASES.get(normalizedName);
         } else {
             return UCharacter.getCharFromName(characterName);
-        }
-    }
-
-    /**
-     * Like {@link com.oracle.truffle.api.strings.TruffleString.EqualNode} but with the proper
-     * {@link InliningCutoff} since {@link com.oracle.truffle.api.strings.TruffleString.EqualNode}
-     * is too big for host inlining, at least when used in node guards.
-     */
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class EqualNode extends Node {
-        public abstract boolean execute(Node inliningTarget, TruffleString left, TruffleString right);
-
-        @Specialization(guards = "left == right")
-        static boolean doIdentity(TruffleString left, TruffleString right) {
-            return true;
-        }
-
-        @InliningCutoff
-        @Fallback
-        static boolean doEquality(TruffleString left, TruffleString right,
-                        @Cached TruffleString.EqualNode equalNode) {
-            return equalNode.execute(left, right, TS_ENCODING);
         }
     }
 

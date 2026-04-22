@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -86,7 +86,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -238,7 +237,8 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ModuleGetattributeNode extends GetAttrBuiltinNode {
         /**
-         * Keep in sync with {@link MergedObjectTypeModuleGetAttributeNode}
+         * Keep in sync with
+         * {@link com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetFixedAttributeNode}
          */
         @Specialization
         static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,

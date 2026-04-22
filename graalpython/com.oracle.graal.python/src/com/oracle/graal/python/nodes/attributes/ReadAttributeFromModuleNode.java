@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemStringKey;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -74,7 +74,7 @@ public abstract class ReadAttributeFromModuleNode extends PNodeWithContext {
     static Object readModuleAttribute(PythonModule object, TruffleString key,
                     @Bind Node inliningTarget,
                     @Cached GetDictIfExistsNode getDict,
-                    @Cached HashingStorageGetItem getItem) {
+                    @Cached HashingStorageGetItemStringKey getItem) {
         var dict = getDict.execute(object);
         Object value = getItem.execute(inliningTarget, dict.getDictStorage(), key);
         if (value == null) {

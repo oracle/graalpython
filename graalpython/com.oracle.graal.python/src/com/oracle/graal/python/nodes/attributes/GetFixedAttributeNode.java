@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,7 @@ public abstract class GetFixedAttributeNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlotsNode,
-                    @Cached MergedObjectTypeModuleGetAttributeInnerNode innerNode) {
+                    @Cached(inline = true) MergedObjectTypeModuleGetFixedAttributeNode innerNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         TpSlots slots = getSlotsNode.execute(inliningTarget, type);
         return innerNode.execute(frame, inliningTarget, object, key, type, slots);

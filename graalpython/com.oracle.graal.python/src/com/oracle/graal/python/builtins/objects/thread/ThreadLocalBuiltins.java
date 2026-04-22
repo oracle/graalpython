@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,7 +72,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -141,7 +140,8 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
          * Keep in sync with
          * {@link com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode}
          * and {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode}
-         * and {@link MergedObjectTypeModuleGetAttributeNode}
+         * and
+         * {@link com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetFixedAttributeNode}
          */
         @Specialization
         Object doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,

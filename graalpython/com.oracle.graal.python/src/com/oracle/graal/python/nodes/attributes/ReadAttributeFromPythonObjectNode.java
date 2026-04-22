@@ -45,18 +45,15 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -64,7 +61,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * object has dict, also bypasses any other additional logic in {@link ReadAttributeFromObjectNode}.
  */
 @GenerateUncached
-@GenerateInline(false) // footprint reduction 44 -> 25
+@GenerateInline
 public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext {
     @NeverDefault
     public static ReadAttributeFromPythonObjectNode create() {
@@ -76,87 +73,65 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
     }
 
     public static Object executeUncached(PythonObject object, TruffleString key, Object defaultValue) {
-        return getUncached().execute(object, key, defaultValue);
+        return getUncached().execute(getUncached(), object, key, defaultValue);
     }
 
-    public abstract Object execute(PythonObject object, TruffleString key, Object defaultValue);
+    public final Object execute(PythonObject object, TruffleString key, Object defaultValue) {
+        return execute(this, object, key, defaultValue);
+    }
 
     public final Object execute(PythonObject object, TruffleString key) {
-        return execute(object, key, PNone.NO_VALUE);
+        return execute(this, object, key, PNone.NO_VALUE);
     }
 
     // used only by DynamicObjectStorage, which will be removed during the transition from
     // DynamicObject to ObjectHashMap
-    public abstract Object execute(DynamicObject object, TruffleString key, Object defaultValue);
-
-    protected static Object getAttribute(DynamicObject object, TruffleString key, Object defaultValue) {
-        return DynamicObject.GetNode.getUncached().execute(object, key, defaultValue);
+    public final Object execute(DynamicObject object, TruffleString key, Object defaultValue) {
+        return execute(this, object, key, defaultValue);
     }
 
-    @Idempotent
-    protected static boolean isLongLivedObject(DynamicObject object) {
-        return object instanceof PythonModule || object instanceof PythonManagedClass;
+    public abstract Object execute(Node inliningTarget, PythonObject object, TruffleString key, Object defaultValue);
+
+    public final Object execute(Node inliningTarget, PythonObject object, TruffleString key) {
+        return execute(inliningTarget, object, key, PNone.NO_VALUE);
     }
 
-    @Idempotent
-    protected static boolean isPrimitive(Object value) {
-        return PythonUtils.isPrimitive(value);
-    }
+    public abstract Object execute(Node inliningTarget, DynamicObject object, TruffleString key, Object defaultValue);
 
-    @NonIdempotent
-    protected static boolean locationIsAssumedFinal(Location loc) {
-        return loc != null && loc.isAssumedFinal();
-    }
-
-    protected static Location getLocationOrNull(Property prop) {
-        return prop == null ? null : prop.getLocation();
-    }
-
-    @SuppressWarnings("unused")
-    @Specialization(limit = "1", //
-                    guards = {
-                                    "isSingleContext()",
-                                    "dynamicObject == cachedObject",
-                                    "isLongLivedObject(cachedObject)",
-                                    "key == cachedKey",
-                                    "dynamicObject.getShape() == cachedShape",
-                                    "locationIsAssumedFinal(loc)",
-                                    "!isPrimitive(value)"
-                    }, //
-                    assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
-    protected static Object readFinalAttr(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
-                    @Cached("key") TruffleString cachedKey,
-                    @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
-                    @Cached(value = "getAttribute(dynamicObject, key, defaultValue)", weak = true) Object value) {
-        return value;
-    }
-
-    @SuppressWarnings("unused")
-    @Specialization(limit = "1", //
-                    guards = {
-                                    "isSingleContext()",
-                                    "dynamicObject == cachedObject",
-                                    "isLongLivedObject(cachedObject)",
-                                    "key == cachedKey",
-                                    "dynamicObject.getShape() == cachedShape",
-                                    "locationIsAssumedFinal(loc)",
-                                    "isPrimitive(value)"
-                    }, //
-                    assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
-    protected static Object readFinalPrimitiveAttr(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
-                    @Cached("key") TruffleString cachedKey,
-                    @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
-                    @Cached(value = "getAttribute(dynamicObject, key, defaultValue)") Object value) {
-        return value;
-    }
-
-    @Specialization(replaces = {"readFinalAttr", "readFinalPrimitiveAttr"})
-    protected static Object readDirect(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
+    @Specialization
+    protected static Object read(Node inliningTarget, DynamicObject dynamicObject, TruffleString key, Object defaultValue,
+                    @Cached ReceiverCast receiverCast,
                     @Cached DynamicObject.GetNode getNode) {
-        return getNode.execute(dynamicObject, key, defaultValue);
+        return getNode.execute(receiverCast.execute(inliningTarget, dynamicObject), key, defaultValue);
+    }
+
+    @GenerateCached(false)
+    @GenerateUncached
+    @GenerateInline
+    protected abstract static class ReceiverCast extends PNodeWithContext {
+
+        protected abstract DynamicObject execute(Node inliningTarget, DynamicObject object);
+
+        @Idempotent
+        protected static boolean isLongLivedObject(DynamicObject object) {
+            return object instanceof PythonModule || object instanceof PythonManagedClass;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(limit = "1", //
+                        guards = {
+                                        "isSingleContext()",
+                                        "dynamicObject == cachedObject",
+                                        "isLongLivedObject(cachedObject)",
+                        })
+        protected static DynamicObject readFinalAttr(DynamicObject dynamicObject,
+                        @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject) {
+            return cachedObject;
+        }
+
+        @Specialization(replaces = {"readFinalAttr"})
+        protected static DynamicObject readDirect(DynamicObject dynamicObject) {
+            return dynamicObject;
+        }
     }
 }

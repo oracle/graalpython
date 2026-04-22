@@ -184,19 +184,19 @@ public abstract class AbstractImportNode extends PNodeWithContext {
      * what it's set to in the frame and globals.
      */
     @GenerateUncached
-    @GenerateInline(false)       // footprint reduction 48 -> 29
+    @GenerateInline(false)
     public abstract static class ImportName extends Node {
         public abstract Object execute(Frame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level);
 
         @Specialization
         static Object importName(VirtualFrame frame, PythonContext context, PythonModule builtins, TruffleString name, Object globals, TruffleString[] fromList, int level,
-                        @Cached ReadAttributeFromPythonObjectNode readAttrNode,
                         @Bind Node inliningTarget,
+                        @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttrNode,
                         @Cached InlinedConditionProfile importFuncProfile,
                         @Cached PConstructAndRaiseNode.Lazy raiseNode,
                         @Cached CallNode importCallNode,
                         @Cached PyImportImportModuleLevelObject importModuleLevel) {
-            Object importFunc = readAttrNode.execute(builtins, T___IMPORT__, null);
+            Object importFunc = readAttrNode.execute(inliningTarget, builtins, T___IMPORT__, null);
             if (importFunc == null) {
                 throw raiseNode.get(inliningTarget).raiseImportError(frame, IMPORT_NOT_FOUND);
             }

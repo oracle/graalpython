@@ -140,7 +140,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -537,7 +536,8 @@ public final class TypeBuiltins extends PythonBuiltins {
          * {@link com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode}
          * and
          * {@link com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins.GetAttributeNode}
-         * and {@link MergedObjectTypeModuleGetAttributeNode}
+         * and
+         * {@link com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetFixedAttributeNode}
          */
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,

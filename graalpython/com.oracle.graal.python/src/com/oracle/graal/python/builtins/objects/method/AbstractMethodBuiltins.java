@@ -224,9 +224,9 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PyObjectLookupAttr lookup,
-                        @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
+                        @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttrNode) {
             // No profiling, performance here is not very important
-            Object module = readAttrNode.execute(self, T___MODULE__, PNone.NO_VALUE);
+            Object module = readAttrNode.execute(inliningTarget, self, T___MODULE__, PNone.NO_VALUE);
             if (module != PNone.NO_VALUE) {
                 return module;
             }
