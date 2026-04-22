@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -183,6 +183,11 @@ def test_descr_call_with_none():
     assert None.__bool__() is False
     assert_raises(TypeError, descr.__get__, None, None)
 
+
+def test_builtin_descriptors_reject_invalid_receivers():
+    assert_raises(TypeError, dict.get.__get__, 1, int)
+    assert_raises(TypeError, str.__str__.__get__, 1, int)
+
 def test_custom_getattribute():
     class AAA:
         __slots__ = '__wrapped__'
@@ -210,14 +215,14 @@ def test_custom_getattribute():
                 raise ValueError('wrapper has not been initialised')
 
             return getattr(self.__wrapped__, name)
-        
+
         def __iter__(self):
             return iter(self.__wrapped__)
 
     class BBB(AAA):
         def __init__(self, wrapped_dict=None):
             AAA.__init__(self, wrapped_dict)
-        
+
         def __getattribute__(self, name):
             if (hasattr(type(self), name)
                 and isinstance(getattr(type(self), name), property)):

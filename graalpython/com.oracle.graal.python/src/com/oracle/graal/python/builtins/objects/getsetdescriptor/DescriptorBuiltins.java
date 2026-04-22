@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,7 +60,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -127,25 +126,6 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doIndexedSlotDescriptor(IndexedSlotDescriptor self) {
             return self.getName();
-        }
-    }
-
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    abstract static class DescriptorCheckNode extends Node {
-        public abstract void execute(Node inliningTarget, Object descrType, Object nameObj, Object obj);
-
-        // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-        @Specialization
-        static void check(Node inliningTarget, Object descrType, Object name, Object obj,
-                        @Cached GetClassNode getClassNode,
-                        @Cached(inline = false) IsSubtypeNode isSubtypeNode,
-                        @Cached PRaiseNode raiseNode) {
-            Object type = getClassNode.execute(inliningTarget, obj);
-            if (!isSubtypeNode.execute(type, descrType)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.DESC_S_FOR_N_DOESNT_APPLY_TO_N, name, descrType, type);
-            }
         }
     }
 

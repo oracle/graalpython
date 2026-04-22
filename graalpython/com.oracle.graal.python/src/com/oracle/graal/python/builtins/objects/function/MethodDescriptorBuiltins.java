@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,13 +56,16 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.DescriptorCheckNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinFunction)
@@ -92,19 +95,33 @@ public final class MethodDescriptorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(instance)", "!self.needsDeclaringType()"})
         static PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass,
-                        @Bind PythonLanguage language) {
+                        @Bind PythonLanguage language,
+                        @Bind Node inliningTarget,
+                        @Shared("descriptorCheckNode") @Cached DescriptorCheckNode descriptorCheckNode) {
+            checkBuiltinDescriptorReceiver(self, instance, inliningTarget, descriptorCheckNode);
             return PFactory.createBuiltinMethod(language, instance, self);
         }
 
         @Specialization(guards = {"!isNoValue(instance)", "self.needsDeclaringType()"})
         static PBuiltinMethod doBuiltinMethodWithDeclaringClass(PBuiltinFunction self, Object instance, Object klass,
-                        @Bind PythonLanguage language) {
+                        @Bind PythonLanguage language,
+                        @Bind Node inliningTarget,
+                        @Shared("descriptorCheckNode") @Cached DescriptorCheckNode descriptorCheckNode) {
+            checkBuiltinDescriptorReceiver(self, instance, inliningTarget, descriptorCheckNode);
             return PFactory.createBuiltinMethod(language, instance, self, self.getEnclosingType());
         }
 
         @Specialization(guards = "isNoValue(instance)")
         static Object doBuiltinFunction(PBuiltinFunction self, Object instance, Object klass) {
             return self;
+        }
+
+        private static void checkBuiltinDescriptorReceiver(PBuiltinFunction self, Object instance, Node inliningTarget, DescriptorCheckNode descriptorCheckNode) {
+            Object enclosingType = self.getEnclosingType();
+            if (enclosingType == null) {
+                return;
+            }
+            descriptorCheckNode.execute(inliningTarget, enclosingType, self.getName(), instance);
         }
     }
 
@@ -113,14 +130,14 @@ public final class MethodDescriptorBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
         static TruffleString reprModuleFunction(PBuiltinFunction self,
-                        @Cached.Shared("formatter") @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+                        @Shared("formatter") @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             // (tfel): these really shouldn't be accessible, I think
             return simpleTruffleStringFormatNode.format("<built-in function %s>", self.getName());
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")
         static TruffleString reprClassFunction(PBuiltinFunction self,
-                        @Cached.Shared("formatter") @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+                        @Shared("formatter") @Cached StringUtils.SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("<method '%s' of '%s' objects>", self.getName(), TypeNodes.GetNameNode.executeUncached(self.getEnclosingType()));
         }
     }
