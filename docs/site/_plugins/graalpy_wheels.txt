@@ -71,9 +71,9 @@ numpy-2.2.4-graalpy312-graalpy250_312_native-macosx_13_0_arm64.whl
 numpy-2.2.4-graalpy312-graalpy250_312_native-manylinux_2_27_aarch64.whl
 numpy-2.2.4-graalpy312-graalpy250_312_native-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
 numpy-2.2.4-graalpy312-graalpy250_312_native-win_amd64.whl
-oracledb-3.0.0-graalpy312-graalpy250_312_native-macosx_11_0_arm64.whl
-oracledb-3.0.0-graalpy312-graalpy250_312_native-manylinux2014_aarch64.manylinux_2_17_aarch64.whl
-oracledb-3.0.0-graalpy312-graalpy250_312_native-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+oracledb-3.4.2-graalpy312-graalpy250_312_native-macosx_11_0_arm64.whl
+oracledb-3.4.2-graalpy312-graalpy250_312_native-manylinux2014_aarch64.manylinux_2_17_aarch64.whl
+oracledb-3.4.2-graalpy312-graalpy250_312_native-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
 polyleven-0.8-graalpy312-graalpy250_312_native-macosx_11_0_arm64.whl
 polyleven-0.8-graalpy312-graalpy250_312_native-manylinux1_x86_64.manylinux_2_5_x86_64.whl
 polyleven-0.8-graalpy312-graalpy250_312_native-manylinux2014_aarch64.manylinux_2_17_aarch64.whl
