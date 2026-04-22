@@ -22,7 +22,7 @@ CODEX_MODEL = "gpt-5.4"
 MAX_ISSUE_TEXT_CHARS = 700
 CODEX_BATCH_SIZE = 1
 CODEX_STDIO_READ_LIMIT = 1024 * 1024
-ISSUE_CATEGORIES = {"easy-ai-fix", "non-relevant"}
+ISSUE_CATEGORIES = {"easy-ai-fix", "good-first-issue", "non-relevant"}
 
 
 def _log_info(message: str) -> None:
@@ -109,7 +109,7 @@ def _patch_codex_stdio_limit(limit: int = CODEX_STDIO_READ_LIMIT) -> None:
     """Raise asyncio subprocess stream limit used by openai_codex_sdk.
 
     This avoids ValueError("Separator is found, but chunk is longer than limit")
-    when Codex emits a very large JSON line in experimental-json mode.
+    when Codex emits a very large JSON.
     """
     create_subprocess_exec = asyncio.create_subprocess_exec
     if getattr(create_subprocess_exec, "_gh_issues_limit_patched", False):
@@ -127,11 +127,8 @@ _patch_codex_stdio_limit()
 
 
 def _patch_codex_parse_file_change_in_progress() -> None:
-    """Work around SDK validation strictness for in-progress file_change events.
-
-    Some SDK versions model file_change status as completed|failed, while streamed
+    """Some model file_change status as completed|failed, while streamed
     events may emit in_progress. When that happens, parsing crashes the whole run.
-    We fall back to UnknownThreadItem for any item payload that fails strict parsing.
     """
     original_parse_thread_item = codex_parsing.parse_thread_item
     if getattr(original_parse_thread_item, "_gh_issues_file_change_patch", False):
@@ -287,14 +284,31 @@ def codex_sort_issues(
     workers: int = 1,
     print_token_usage: bool = False,
     max_files_to_read: int = 5,
-    short_output: bool = False,
 ) -> str:
+    def _build_enriched_issue(issue: dict, reason: str) -> dict[str, str | int]:
+        return {
+            "issue_id": issue["issue_id"],
+            "title": issue.get("title", ""),
+            "author": issue.get("author", ""),
+            "reason": reason,
+        }
+
     _log_info("Sorting issues with Codex...")
     compact_issues = _prepare_issues_for_codex(issues)
     by_id = {issue["issue_id"]: issue for issue in compact_issues}
-    categorized: dict[str, list[dict]] = {"easy-ai-fix": [], "non-relevant": []}
-    
-    batches = _chunks(compact_issues, CODEX_BATCH_SIZE)
+    categorized: dict[str, list[dict]] = {"easy-ai-fix": [], "good-first-issue": [], "non-relevant": []}
+    issues_for_classification: list[dict] = []
+
+    for issue in compact_issues:
+        issue_id = issue["issue_id"]
+        existing_categories = [label for label in issue.get("labels", []) if label in ISSUE_CATEGORIES]
+        if existing_categories:
+            category = existing_categories[0]
+            categorized[category].append(_build_enriched_issue(issue, "already labeled"))
+            continue
+        issues_for_classification.append(issue)
+
+    batches = _chunks(issues_for_classification, CODEX_BATCH_SIZE)
 
     async def _classify_batch(
         batch: list[dict], index: int, total: int, sem: asyncio.Semaphore
@@ -309,12 +323,14 @@ def codex_sort_issues(
             candidate_files = _candidate_files_for_issue(batch[0], max_files=max_files_to_read)
             
             prompt = (
-                "Classify each issue into one of: easy-ai-fix, non-relevant, ignore. "
+                "Classify each issue into one of: easy-ai-fix, good-first-issue, non-relevant, ignore. "
                 "Use short reasoning (<=120 chars). "
                 "Assign no longer relevant only if the issue is already fixed. "
                 "Do not assign easy-ai-fix if the issue appears already solved. "
+                "Use good-first-issue for beginner-friendly tasks with clear scope. "
                 "Return JSON array only with entries (do not include ignored ones): "
-                "{\"issue_id\": number, \"category\": \"easy-ai-fix|non-relevant\", \"title\": string, \"author\": string, \"reason\": string}. "
+                "{\"issue_id\": number, \"category\": \"easy-ai-fix|good-first-issue|non-relevant\", "
+                "\"title\": string, \"author\": string, \"reason\": string}. "
                 f"No markdown, no extra text. {codebase_instruction}\n\n"
                 f"candidate_files (optional, prefer these first): {json.dumps(candidate_files)}\n\n"
                 f"issues_json:\n{json.dumps(batch, ensure_ascii=True, indent=2)}"
@@ -338,30 +354,28 @@ def codex_sort_issues(
             await asyncio.gather(*tasks, return_exceptions=True)
             raise
 
-    parsed_batches = asyncio.run(_run_all())
+    parsed_batches = asyncio.run(_run_all()) if batches else []
     token_usage = {
         "input_tokens": 0,
         "cached_input_tokens": 0,
         "output_tokens": 0,
     }
 
-    for item in parsed_batches:
-        if isinstance(item, Exception):
-            _log_info(f"Skipping failed issue classification batch: {item}")
+    for batch_result in parsed_batches:
+        if isinstance(batch_result, Exception):
+            _log_info(f"Skipping failed issue classification batch: {batch_result}")
             continue
-        parsed, usage = item
+        parsed, usage = batch_result
         _accumulate_token_usage(token_usage, usage)
-        for item in parsed:
-            issue_id = item.get("issue_id")
-            category = item.get("category")
+        for classified_issue in parsed:
+            issue_id = classified_issue.get("issue_id")
+            category = classified_issue.get("category")
             if issue_id not in by_id or category not in ISSUE_CATEGORIES:
                 continue
-            enriched = {"issue_id": issue_id} if short_output else {
-                "issue_id": issue_id,
-                "title": by_id[issue_id]["title"],
-                "author": by_id[issue_id]["author"],
-                "reason": _trim_text(str(item.get("reason", "")), max_chars=160),
-            }
+            enriched = _build_enriched_issue(
+                by_id[issue_id],
+                _trim_text(str(classified_issue.get("reason", "")), max_chars=160),
+            )
             if not any(existing["issue_id"] == issue_id for existing in categorized[category]):
                 categorized[category].append(enriched)
 
@@ -371,6 +385,7 @@ def codex_sort_issues(
         {
             "non-relevant": categorized["non-relevant"],
             "easy-ai-fix": categorized["easy-ai-fix"],
+            "good-first-issue": categorized["good-first-issue"],
         },
         ensure_ascii=True,
         indent=2,
@@ -494,15 +509,14 @@ def sort_issues(args: argparse.Namespace) -> str:
         workers=args.codex_workers,
         print_token_usage=args.print_token_usage,
         max_files_to_read=max(0, args.codex_max_files),
-        short_output=args.short_output,
     )
-    
-    if args.json_output:
-        print(sorted_issues)
-    else:
-        sorted_issues_data = json.loads(sorted_issues)
-        _print_issue_results("non-relevant", sorted_issues_data)
-        _print_issue_results("easy-ai-fix", sorted_issues_data)
+
+    sorted_issues_data = json.loads(sorted_issues)
+    _print_issue_results("non-relevant", sorted_issues_data)
+    _print_issue_results("easy-ai-fix", sorted_issues_data)
+    _print_issue_results("good-first-issue", sorted_issues_data)
+    if args.apply_labels:
+        _prompt_and_apply_labels(sorted_issues_data, issues_data)
     return sorted_issues
 
 ### GitHub API interaction
@@ -573,6 +587,76 @@ def get_issue(issue_id: int) -> dict:
         "author": item.get("user", {}).get("login", ""),
         "labels": [label.get("name", "") for label in item.get("labels", [])],
     }
+
+
+def _ask_yes_no(question: str) -> bool:
+    while True:
+        reply = input(f"{question} [y/N]: ").strip().lower()
+        if reply in {"", "n", "no"}:
+            return False
+        if reply in {"y", "yes"}:
+            return True
+        _log_secondary("Please answer y or n.")
+
+
+def _update_issue_labels(issue_id: int, labels: list[str]) -> bool:
+    token = os.getenv("GITHUB_TOKEN")
+    if not token:
+        _log_secondary("GITHUB_TOKEN is not set. Cannot apply labels.")
+        return False
+
+    url = f"{GHAPI}/repos/{REPO}/issues/{issue_id}"
+    payload = json.dumps({"labels": labels}, ensure_ascii=True).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="PATCH",
+    )
+    try:
+        with urllib.request.urlopen(req):
+            return True
+    except Exception as exc:
+        _log_secondary(f"Failed to update labels for issue #{issue_id}: {exc}")
+        return False
+
+
+def _prompt_and_apply_labels(sorted_issues: dict, original_issues: list[dict]) -> None:
+    issues_by_id = {issue.get("issue_id"): issue for issue in original_issues}
+    updates_attempted = 0
+    updates_applied = 0
+
+    for category in ["easy-ai-fix", "good-first-issue", "non-relevant"]:
+        for classified in sorted_issues.get(category, []):
+            issue_id = classified.get("issue_id")
+            if issue_id is None:
+                continue
+            original = issues_by_id.get(issue_id, {})
+            title = classified.get("title") or original.get("title", "")
+            reason = str(classified.get("reason") or "").strip()
+            current_labels = [str(label) for label in original.get("labels", [])]
+            reason_text = f" | reason: {reason}" if reason else ""
+            action = _ask_yes_no(
+                f"Update issue #{issue_id} ({title}) with label '{category}'{reason_text}?"
+            )
+            if not action:
+                continue
+
+            updates_attempted += 1
+            if category in current_labels:
+                _log_secondary(f"Issue #{issue_id} already has label '{category}'.")
+                continue
+            updated_labels = list(dict.fromkeys(current_labels + [category]))
+            if _update_issue_labels(issue_id, updated_labels):
+                updates_applied += 1
+                _log_success(f"Updated labels for issue #{issue_id}.")
+
+    _log_info(f"Label updates attempted: {updates_attempted}, applied: {updates_applied}")
 
 
 def codex_gen_repros(issue_ids: list[str], codex_workers: int, print_token_usage: bool = False) -> None:
@@ -650,8 +734,7 @@ def main() -> None:
     issues_parser.add_argument("--limit", type=int, default=30, help="Maximum number of issues to fetch")
     issues_parser.add_argument("--label", type=str, help="Filter issues by label")
     issues_parser.add_argument("--codex-max-files", type=int, default=5, help="Max local files Codex should read per issue")
-    issues_parser.add_argument("--short-output", action="store_true", help="Output only issue IDs in each category")
-    issues_parser.add_argument("--json-output", action="store_true", help="Output only JSON result")
+    issues_parser.add_argument("--apply-labels", action="store_true", help="Prompt to apply labels to sorted issues")
     issues_parser.add_argument("--fix-easy-issues", type=bool, nargs="?", const=True, help="Attempt to fix easy-ai-fix issues with Codex")
 
     fix_issues_parser = subparsers.add_parser("fix-issues", help="Attempt to fix issue(s) with Codex")
