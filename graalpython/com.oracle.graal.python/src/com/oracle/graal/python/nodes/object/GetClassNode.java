@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
@@ -147,12 +148,14 @@ public abstract class GetClassNode extends PNodeWithContext {
 
         public abstract Object execute(Node inliningTarget, PythonAbstractNativeObject object);
 
+        // The dynamicType field is final, so the DSL shouldn't generate a runtime guard since we
+        // cache on the shape
         @Idempotent
-        static Object getDynamicType(Shape shape) {
-            return shape.getDynamicType();
+        static boolean dynamicTypeIsPythonClass(Shape shape) {
+            return PGuards.isPythonClass(shape.getDynamicType());
         }
 
-        @Specialization(guards = {"object.getShape() == cachedShape", "isPythonClass(getDynamicType(cachedShape))"}, limit = "1")
+        @Specialization(guards = {"object.getShape() == cachedShape", "dynamicTypeIsPythonClass(cachedShape)"}, limit = "1")
         static Object doConstantClass(@SuppressWarnings("unused") PythonObject object,
                         @Cached(value = "object.getShape()") Shape cachedShape) {
             return cachedShape.getDynamicType();

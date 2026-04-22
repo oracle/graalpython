@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -69,12 +69,17 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private boolean abstractClass;
 
     private final PDict subClasses;
+    /**
+     * This field is positioned to be at the same offset as the one in
+     * {@link com.oracle.graal.python.builtins.PythonBuiltinClassType#slots}. I found that the
+     * compiler in the lower tier will then unify the diamond because it's actually reading at the
+     * same offset from the object pointer, and that gave a small but measurable speedup.
+     */
+    protected TpSlots tpSlots;
     @CompilationFinal private Shape instanceShape;
     private TruffleString name;
     private TruffleString qualName;
     private int indexedSlotCount;
-
-    protected TpSlots tpSlots;
 
     /** {@code true} if the MRO contains a native class. */
     private final boolean needsNativeAllocation;

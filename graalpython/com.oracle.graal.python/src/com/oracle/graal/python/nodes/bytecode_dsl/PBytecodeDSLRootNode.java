@@ -104,15 +104,17 @@ import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.compiler.CodeUnit;
@@ -183,10 +185,8 @@ import com.oracle.graal.python.nodes.argument.keywords.ConcatDictToStorageNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
-import com.oracle.graal.python.nodes.attributes.GetFixedModuleAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetFixedObjectAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetFixedTypeAttributeNode;
-import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetFixedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.bytecode.CopyDictWithoutKeysNode;
@@ -250,6 +250,7 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
+import com.oracle.graal.python.util.DynamicObjectInternalAccessor;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -303,6 +304,8 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Location;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
@@ -1663,80 +1666,150 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
+    @ImportStatic({PGuards.class, TpSlots.class})
     public static final class GetAttribute {
-        protected static boolean isObjectGetAttribute(TpSlots slots) {
-            return slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro();
+        static Location getLocationWithFinalAssumption(Shape shape, Object key) {
+            return DynamicObjectInternalAccessor.getLocationWithFinalAssumption(shape, key);
         }
 
-        protected static boolean isModuleGetAttribute(TpSlots slots) {
-            return slots.tp_getattro() == ModuleBuiltins.SLOTS.tp_getattro();
-        }
+        // Builtin module object fast-path: we know there aren't any descriptors for other than
+        // dunder (__xxx__) names
+        public static Object loadModuleValue(PythonModule object, Shape cachedShape, Location cachedLocation, boolean cachedShapeGuard) {
+            Shape shape = object.getShape();
+            // GetClass.GetPythonObjectClassNode would cache on the shape if it can, and read the
+            // dynamic type from there unless it observes objects where the type was changed. This
+            // is rare enough that we can pay the price of a useless read here.
+            Object type = shape.getDynamicType();
+            if (type != PythonBuiltinClassType.PythonModule) {
+                return null;
+            }
 
-        protected static boolean isTypeGetAttribute(TpSlots slots) {
-            return slots.tp_getattro() == TypeBuiltins.SLOTS.tp_getattro();
-        }
+            assert object.checkDictFlags();
+            if ((shape.getFlags() & (PythonObject.HAS_MATERIALIZED_DICT)) == 0) {
+                Object value = DynamicObjectInternalAccessor.getLocationInternal(cachedLocation, object, cachedShape, cachedShapeGuard);
+                return value == PNone.NO_VALUE ? null : value;
+            }
 
-        @ForceQuickening
-        @Specialization(guards = "isObjectGetAttribute(slots)", excludeForUncached = true)
-        public static Object doObject(VirtualFrame frame,
-                        TruffleString name,
-                        Object obj,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Bind("getClassNode.execute(inliningTarget, obj)") Object type,
-                        @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
-                        @Bind("getSlotsNode.execute(inliningTarget, type)") TpSlots slots,
-                        @Shared @Cached(inline = false) GetFixedObjectAttributeNode getObjectAttributeNode) {
-            return getObjectAttributeNode.execute(frame, inliningTarget, obj, name, type);
-        }
-
-        @ForceQuickening
-        @Specialization(guards = "isModuleGetAttribute(slots)", excludeForUncached = true)
-        public static Object doModule(VirtualFrame frame,
-                        TruffleString name,
-                        Object obj,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Bind("getClassNode.execute(inliningTarget, obj)") Object type,
-                        @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
-                        @Bind("getSlotsNode.execute(inliningTarget, type)") TpSlots slots,
-                        @Shared @Cached(inline = false) GetFixedModuleAttributeNode getModuleAttributeNode) {
-            return getModuleAttributeNode.execute(frame, inliningTarget, obj, name, type);
+            return null;
         }
 
         @ForceQuickening
-        @Specialization(guards = "isTypeGetAttribute(slots)", excludeForUncached = true)
-        public static Object doType(VirtualFrame frame,
-                        TruffleString name,
-                        Object obj,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Bind("getClassNode.execute(inliningTarget, obj)") Object type,
-                        @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
-                        @Bind("getSlotsNode.execute(inliningTarget, type)") TpSlots slots,
-                        @Shared @Cached(inline = false) GetFixedTypeAttributeNode getTypeAttributeNode) {
-            return getTypeAttributeNode.execute(frame, inliningTarget, obj, name, type);
+        @Specialization(guards = {"guard", "cachedLocation != null", "value != null", "!canBeSpecialMethod(key, codePointLengthNode, codePointAtIndexNode)"}, limit = "3")
+        static Object doModule(TruffleString key, PythonModule receiver,
+                        @Bind("receiver.getShape()") Shape shape,
+                        @Cached("shape") Shape cachedShape,
+                        @Bind("shape == cachedShape") boolean guard,
+                        @Cached("getLocationWithFinalAssumption(cachedShape, key)") Location cachedLocation,
+                        @Exclusive @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Exclusive @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
+                        @Bind("loadModuleValue(receiver, cachedShape, cachedLocation, guard)") Object value) {
+            return value;
         }
 
-        @Specialization(replaces = {"doObject", "doModule", "doType"}, excludeForUncached = true)
+        // For type instance field: for builtin type we know descriptors only have dunder names
+        // (__xxx__), so we can skip descriptor check + we need to check the __get__ (tp_descr_get)
+        // on the resulting value (this is common situation)
+        public static Object loadTypeInstanceValue(VirtualFrame frame, Node inliningTarget, PythonManagedClass object, GetObjectSlotsNode getValueSlotsNode,
+                        CallSlotDescrGet callSlotDescrGet, Shape cachedShape, Location cachedLocation, boolean cachedShapeGuard) {
+            Shape shape = object.getShape();
+            Object type = shape.getDynamicType();
+            if (type != PythonBuiltinClassType.PythonClass) {
+                return null;
+            }
+            assert object.checkDictFlags();
+            if ((shape.getFlags() & (PythonObject.HAS_MATERIALIZED_DICT)) == 0) {
+                Object value = DynamicObjectInternalAccessor.getLocationInternal(cachedLocation, object, cachedShape, cachedShapeGuard);
+                if (value != PNone.NO_VALUE && value != null) {
+                    var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
+                    if (valueGet == null) {
+                        // TODO: hasNonDescriptorValueProfile.enter(inliningTarget);
+                        return value;
+                    } else {
+                        return callSlotDescrGet.execute(frame, inliningTarget, valueGet, value, PNone.NO_VALUE, object);
+                    }
+                }
+            }
+            return null;
+        }
+
+        @ForceQuickening
+        @Specialization(guards = {"guard", "cachedLocation != null", "value != null", "!canBeSpecialMethod(key, codePointLengthNode, codePointAtIndexNode)"}, limit = "3")
+        static Object doType(VirtualFrame frame, TruffleString key, PythonManagedClass receiver,
+                        @Bind("receiver.getShape()") Shape shape,
+                        @Cached("shape") Shape cachedShape,
+                        @Bind("shape == cachedShape") boolean guard,
+                        @Cached("getLocationWithFinalAssumption(cachedShape, key)") Location cachedLocation,
+                        @Cached GetObjectSlotsNode getObjectSlotsNode,
+                        @Cached CallSlotDescrGet callSlotDescrGet,
+                        @Exclusive @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Exclusive @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
+                        @Bind("loadTypeInstanceValue(frame, $node, receiver, getObjectSlotsNode, callSlotDescrGet, cachedShape, cachedLocation, guard)") Object value) {
+            return value;
+        }
+
+        // Object instance field fast-path: for cases where there is no descriptor and it's just
+        // simple DOM property read
+        public static Object loadInstanceValue(PythonObject object, LookupAttributeInMRONode getDesc, Shape cachedShape, Location cachedLocation, boolean cachedShapeGuard) {
+            TpSlots slots;
+            Shape shape = object.getShape();
+            Object type = shape.getDynamicType();
+            // If this path works out, the DynamicObject.GetNode will read and cache the shape.
+            // After PE it should pull up the guard, and the final dynamicType field will dominate
+            // the branch and PE will remove the slots branch it doesn't need. The
+            // PythonBuiltinClassType slots are final, so PE can use that, but PythonManagedClass
+            // slots are not, so we should probably profile?
+            if (type instanceof PythonBuiltinClassType pbct) {
+                slots = pbct.getSlots();
+            } else if (type instanceof PythonManagedClass klass) {
+                // TODO: InlineWeakValueProfile?
+                slots = klass.getTpSlots();
+            } else {
+                return null;
+            }
+            // The next check will fold after PE if the pbct was constant, which is implied by the
+            // guard in getDesc
+            if (slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro() ||
+                            slots.tp_getattro() == ModuleBuiltins.SLOTS.tp_getattro()) {
+                Object descr = getDesc.execute(type);
+                if (descr == PNone.NO_VALUE) {
+                    assert object.checkDictFlags();
+                    if ((shape.getFlags() & (PythonObject.HAS_MATERIALIZED_DICT)) == 0) {
+                        Object value = DynamicObjectInternalAccessor.getLocationInternal(cachedLocation, object, cachedShape, cachedShapeGuard);
+                        // Note: the NO_VALUE check is harmless for PE, because it leads to a deopt
+                        // anyway
+                        return value == PNone.NO_VALUE ? null : value;
+                    }
+                }
+            }
+            return null;
+        }
+
+        @ForceQuickening
+        @Specialization(guards = {"guard", "cachedLocation != null", "value != null"}, replaces = "doModule", limit = "3")
+        static Object doInstanceValue(TruffleString key, PythonObject receiver,
+                        @Bind("receiver.getShape()") Shape shape,
+                        @Cached("shape") Shape cachedShape,
+                        @Bind("shape == cachedShape") boolean guard,
+                        @Cached("getLocationWithFinalAssumption(cachedShape, key)") Location cachedLocation,
+                        @Cached("create(key)") LookupAttributeInMRONode getDesc,
+                        @Bind("loadInstanceValue(receiver, getDesc, cachedShape, cachedLocation, guard)") Object value) {
+            return value;
+        }
+
+        @Specialization(excludeForUncached = true, replaces = {"doInstanceValue", "doType"})
         public static Object doIt(VirtualFrame frame,
-                        TruffleString name,
+                        TruffleString key,
                         Object obj,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached GetCachedTpSlotsNode getSlotsNode,
-                        @Shared @Cached(inline = false) MergedObjectTypeModuleGetFixedAttributeNode getAttributeNode) {
-            Object type = getClassNode.execute(inliningTarget, obj);
-            TpSlots slots = getSlotsNode.execute(inliningTarget, type);
-            return getAttributeNode.execute(frame, inliningTarget, obj, name, type, slots);
+                        @Cached("create(key)") GetFixedAttributeNode getAttributeNode) {
+            return getAttributeNode.execute(frame, obj);
         }
 
         @Specialization(replaces = "doIt")
         @InliningCutoff
-        public static Object doItUncached(VirtualFrame frame, TruffleString name, Object obj,
-                        @Bind Node inliningTarget,
+        public static Object doItUncached(VirtualFrame frame, TruffleString key, Object obj,
+                        @Bind Node inliningTargetForDummy,
                         @Cached PyObjectGetAttr dummyToForceStoreBCI) {
-            return PyObjectGetAttr.getUncached().execute(frame, inliningTarget, obj, name);
+            return PyObjectGetAttr.getUncached().execute(frame, null, obj, key);
         }
     }
 

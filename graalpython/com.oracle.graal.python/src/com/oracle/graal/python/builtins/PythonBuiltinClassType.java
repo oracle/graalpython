@@ -1587,7 +1587,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final TpSlots declaredSlots;
 
     /**
-     * The actual slots including slots inherited from base classes
+     * The actual slots including slots inherited from base classes.
+     *
+     * n.b.: this field is positioned to be at the same offset as the one in
+     * {@link com.oracle.graal.python.builtins.objects.type.PythonManagedClass#tpSlots}.
      */
     private final TpSlots slots;
 

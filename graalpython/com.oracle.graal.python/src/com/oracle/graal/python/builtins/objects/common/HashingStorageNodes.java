@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.HashingStorageSetItemWithHashNodeGen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage.GetKeywordsStorageItemNode;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
@@ -272,9 +273,13 @@ public class HashingStorageNodes {
     }
 
     static EconomicMapStorage dynamicObjectStorageToEconomicMap(Node inliningTarget, DynamicObjectStorage s,
+                    DynamicObject.SetShapeFlagsNode setShapeFlags,
                     DynamicObject.GetKeyArrayNode getKeyArrayNode, DynamicObject.GetNode getNode,
                     PyObjectHashNode hashNode, ObjectHashMap.PutNode putNode) {
         DynamicObject store = s.store;
+        if (store instanceof PythonObject pyObj) {
+            setShapeFlags.executeAdd(pyObj, PythonObject.HAS_MATERIALIZED_DICT);
+        }
         Object[] keys = getKeyArrayNode.execute(store);
         EconomicMapStorage result = EconomicMapStorage.create(keys.length);
         ObjectHashMap resultMap = result;
@@ -382,9 +387,10 @@ public class HashingStorageNodes {
                             @Cached PyObjectHashNode hashNode,
                             @Cached ObjectHashMap.PutNode putUnsafeNode,
                             @Cached PutNode putNode,
+                            @Cached DynamicObject.SetShapeFlagsNode setShapeFlags,
                             @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode,
                             @Cached DynamicObject.GetNode getNode) {
-                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, getKeyArrayNode, getNode, hashNode, putUnsafeNode);
+                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, setShapeFlags, getKeyArrayNode, getNode, hashNode, putUnsafeNode);
                 putNode.execute(frame, inliningTarget, result, key, keyHash, value);
                 return result;
             }
@@ -511,9 +517,10 @@ public class HashingStorageNodes {
                             @Cached PyObjectHashNode hashNode,
                             @Cached ObjectHashMap.PutNode putUnsafeNode,
                             @Cached PutNode putNode,
+                            @Cached DynamicObject.SetShapeFlagsNode setShapeFlags,
                             @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode,
                             @Cached DynamicObject.GetNode getNode) {
-                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, getKeyArrayNode, getNode, hashNode, putUnsafeNode);
+                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, setShapeFlags, getKeyArrayNode, getNode, hashNode, putUnsafeNode);
                 putNode.execute(frame, inliningTarget, result, key, hashNode.execute(frame, inliningTarget, key), value);
                 return result;
             }

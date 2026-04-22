@@ -103,7 +103,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
 
     @Idempotent
     protected static boolean hasNoDict(Shape shape) {
-        return (shape.getFlags() & PythonObject.HAS_MATERIALIZED_DICT) == 0;
+        return (shape.getFlags() & PythonObject.HAS_DICT) == 0;
     }
 
     @Specialization(guards = {"isSingleContext()", "object == cached", "dictIsConstant(cached)", "dict != null"}, limit = "1")

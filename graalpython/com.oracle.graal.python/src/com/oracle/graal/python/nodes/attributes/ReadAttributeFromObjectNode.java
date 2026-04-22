@@ -91,6 +91,7 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
                     @Shared @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttributeFromPythonObjectNode,
                     @Shared @Cached HashingStorageGetItemStringKey getItem) {
         var dict = getDict.execute(object);
+        assert object.checkDictFlags(dict);
         if (profileHasDict.profile(inliningTarget, dict == null)) {
             return readAttributeFromPythonObjectNode.execute(inliningTarget, object, key);
         } else {

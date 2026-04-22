@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_DICT;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_MATERIALIZED_DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON_INTEROP_BEHAVIOR__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASICSIZE__;
@@ -50,6 +51,8 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___VECTORCALL
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___WEAKLISTOFFSET__;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.WriteNodeGen;
@@ -169,8 +172,18 @@ public final class HiddenAttr {
         static void doPythonObjectDict(PythonObject self, HiddenAttr attr, Object value,
                         @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode,
                         @Shared @Cached DynamicObject.PutNode putNode) {
-            setShapeFlagsNode.executeAdd(self, HAS_MATERIALIZED_DICT);
+            setShapeFlagsNode.executeAdd(self, HAS_DICT);
+            if (isGenericDict(self, value)) {
+                setShapeFlagsNode.executeAdd(self, HAS_MATERIALIZED_DICT);
+            }
             putNode.execute(self, DICT.key, value);
+        }
+
+        private static boolean isGenericDict(PythonObject self, Object value) {
+            if (value instanceof PDict dict && dict.getDictStorage() instanceof DynamicObjectStorage dynamicStorage) {
+                return dynamicStorage.getStore() != self;
+            }
+            return true;
         }
 
         @Specialization(guards = "attr != DICT || !isPythonObject(self)")
