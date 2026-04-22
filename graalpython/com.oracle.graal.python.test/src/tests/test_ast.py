@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -191,6 +191,21 @@ class AstTest(unittest.TestCase):
         code = compile(m, '1+1', 'exec')
         assert code is not None
         assert eval(code) is None
+        assert isinstance(code, types.CodeType)
+
+    def test_compile_match_singleton_none(self):
+        # This occurs in pytest-generated ASTs
+        m = ast.Module(
+            body=[
+                ast.Match(
+                    subject=ast.Name("v", ast.Load()),
+                    cases=[ast.match_case(pattern=ast.MatchSingleton(None), body=[ast.Pass()])],
+                )
+            ],
+            type_ignores=[],
+        )
+        m = ast.fix_missing_locations(m)
+        code = compile(m, "<test>", "exec")
         assert isinstance(code, types.CodeType)
 
 if __name__ == '__main__':

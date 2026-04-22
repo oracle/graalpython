@@ -81,6 +81,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -93,6 +95,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
@@ -249,26 +252,23 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         private static final int NAME_MAX_LENGTH = 256;
 
         @Specialization
-        @TruffleBoundary
-        static Object lookup(TruffleString name,
+        static Object lookup(VirtualFrame frame, TruffleString name,
                         @Bind PythonLanguage lang,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             String nameString = ToJavaStringNode.getUncached().execute(name);
             if (nameString.length() > NAME_MAX_LENGTH) {
                 throw PRaiseNode.raiseStatic(inliningTarget, KeyError, ErrorMessages.NAME_TOO_LONG);
             }
 
-            String character = getCharacterByUnicodeName(nameString);
-            if (character == null) {
-                character = getCharacterByUnicodeNameAlias(nameString);
-            }
-            if (character != null) {
-                return FromJavaStringNode.getUncached().execute(character, TS_ENCODING);
-            }
-
-            Object namedSequence = lookupNamedSequenceFromFallback(lang, name);
-            if (namedSequence != null) {
-                return namedSequence;
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                Object result = lookupBoundary(lang, nameString, name);
+                if (result != null) {
+                    return result;
+                }
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
             throw PRaiseNode.raiseStatic(inliningTarget, KeyError, ErrorMessages.UNDEFINED_CHARACTER_NAME, name);
         }
@@ -301,6 +301,17 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
+        private static Object lookupBoundary(PythonLanguage lang, String nameString, TruffleString name) {
+            String character = getCharacterByUnicodeName(nameString);
+            if (character == null) {
+                character = getCharacterByUnicodeNameAlias(nameString);
+            }
+            if (character != null) {
+                return FromJavaStringNode.getUncached().execute(character, TS_ENCODING);
+            }
+            return lookupNamedSequenceFromFallback(lang, name);
+        }
+
         private static Object lookupNamedSequenceFromFallback(PythonLanguage lang, TruffleString name) {
             if (lang.getEngineOption(PythonOptions.UnicodeCharacterDatabaseNativeFallback)) {
                 try {

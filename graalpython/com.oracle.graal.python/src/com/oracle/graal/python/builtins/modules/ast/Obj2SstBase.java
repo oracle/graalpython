@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.ast;
 
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_CONSTANT;
+import static com.oracle.graal.python.builtins.modules.ast.AstState.T_C_MATCHSINGLETON;
 import static com.oracle.graal.python.builtins.modules.ast.AstState.T_F_VALUE;
 import static com.oracle.graal.python.nodes.ErrorMessages.AST_IDENTIFIER_MUST_BE_OF_TYPE_STR;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_SOME_SORT_OF_S_BUT_GOT_S;
@@ -124,7 +125,7 @@ abstract class Obj2SstBase {
             // since our SST nodes are in the pegparser project which does not have access to Python
             // exceptions. So we handle PNone.NONE here, but there is one exception - None is a
             // valid value for the required field ExprTy.Constant.value.
-            if (!(nodeName == T_C_CONSTANT && attrName == T_F_VALUE)) {
+            if (!((nodeName == T_C_CONSTANT || nodeName == T_C_MATCHSINGLETON) && attrName == T_F_VALUE)) {
                 throw raiseValueError(FIELD_S_IS_REQUIRED_FOR_S, attrName, nodeName);
             }
         }
