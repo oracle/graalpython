@@ -129,6 +129,7 @@ GITHUB_CI = get_boolean_env("GITHUB_CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', True)
+GRAALPY_WITH_BOUNCYCASTLE = get_boolean_env("GRAALPY_WITH_BOUNCYCASTLE", True)
 
 mx_gate.add_jacoco_excludes([
     "com.oracle.graal.python.pegparser.sst",
@@ -158,6 +159,29 @@ if wants_debug_build():
     setattr(mx_native.DefaultNativeProject, "cflags", property(
         lambda self: self._original_cflags + (["/Z7"] if WIN32 else ["-fPIC", "-ggdb3"])
     ))
+
+
+def _is_graalos_build():
+    return "musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")
+
+
+def _with_bouncycastle():
+    return GRAALPY_WITH_BOUNCYCASTLE and not _is_graalos_build()
+
+
+if GRAALPY_WITH_BOUNCYCASTLE:
+    setattr(ThinLauncherProject, "_original_cflags_without_graalpy_bouncycastle", ThinLauncherProject.cflags)
+
+    def _flags_with_bc_args(self):
+        if "graalpy" in repr(self) and not _is_graalos_build():
+            if dvmargs := getattr(self, "default_vm_args", None):
+                arg = '--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util'
+                if arg not in dvmargs:
+                    mx.log("Appending bouncycastle to GraalPy launcher -add-modules")
+                    dvmargs.append(arg)
+        return self._original_cflags_without_graalpy_bouncycastle
+
+    setattr(ThinLauncherProject, "cflags", property(_flags_with_bc_args))
 
 
 if WIN32:
@@ -246,6 +270,14 @@ def get_jdk():
 def graalpy_standalone_deps():
     include_truffle_runtime = not mx.env_var_to_bool("EXCLUDE_TRUFFLE_RUNTIME")
     deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
+    if _with_bouncycastle():
+        mx.log("Including bouncycastle with GraalPy standalone")
+        deps += [
+            "graalpython:GRAALPYTHON_BOUNCYCASTLE",
+            "graalpython:BOUNCYCASTLE-PROVIDER",
+            "graalpython:BOUNCYCASTLE-PKIX",
+            "graalpython:BOUNCYCASTLE-UTIL",
+        ]
     return deps
 
 
@@ -289,7 +321,7 @@ def libpythonvm_build_args():
     if os.environ.get("GITHUB_CI"):
         build_args += github_ci_build_args()
 
-    if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
+    if graalos := _is_graalos_build():
         build_args += ['-H:+GraalOS']
     else:
         build_args += [

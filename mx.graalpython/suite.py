@@ -882,7 +882,6 @@ suite = {
             "default_vm_args": [
                 "--vm.Xss16777216", # request 16M of stack
                 '--vm.-enable-native-access=org.graalvm.shadowed.jline',
-                '--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util',
             ],
             "multitarget": [
                 {"os": ["linux"], "libc": ["glibc", "default"], "compiler": ["llvm-toolchain", "host", "*"]},
@@ -1481,10 +1480,6 @@ suite = {
             "distDependencies": [
                 "graalpython:GRAALPYTHON-LAUNCHER",
                 "graalpython:GRAALPYTHON",
-                "graalpython:GRAALPYTHON_BOUNCYCASTLE",
-                "graalpython:BOUNCYCASTLE-PROVIDER",
-                "graalpython:BOUNCYCASTLE-PKIX",
-                "graalpython:BOUNCYCASTLE-UTIL",
                 "sdk:TOOLS_FOR_STANDALONE",
             ],
             "dynamicDistDependencies": "graalpy_standalone_deps",
