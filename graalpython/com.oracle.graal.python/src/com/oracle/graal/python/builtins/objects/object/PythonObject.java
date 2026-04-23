@@ -83,6 +83,7 @@ public class PythonObject extends PythonAbstractObject {
     @SuppressWarnings("this-escape") // escapes in the assertion
     public PythonObject(Object pythonClass, Shape instanceShape) {
         super(instanceShape);
+        assert pythonClass != null;
         assert !PGuards.isPythonClass(getShape().getDynamicType()) || IsSameTypeNode.executeUncached(getShape().getDynamicType(), pythonClass) : getShape().getDynamicType() + " vs " + pythonClass;
         this.pythonClass = pythonClass;
     }
@@ -112,7 +113,7 @@ public class PythonObject extends PythonAbstractObject {
 
     public final void setPythonClass(Object pythonClass) {
         assert getShape().getDynamicType() == PNone.NO_VALUE;
-        assert pythonClass instanceof PythonManagedClass;
+        assert PGuards.isPythonClass(pythonClass);
         this.pythonClass = pythonClass;
     }
 
