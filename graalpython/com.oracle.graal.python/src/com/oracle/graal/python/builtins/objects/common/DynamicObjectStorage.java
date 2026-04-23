@@ -292,7 +292,8 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = "isPythonObject(receiver.getStore())")
         static HashingStorage clearObjectBacked(Node inliningTarget, DynamicObjectStorage receiver,
-                        @Cached HiddenAttr.ReadNode readHiddenAttrNode) {
+                        @Cached HiddenAttr.ReadNode readHiddenAttrNode,
+                        @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
             /*
              * We cannot use resetShape as that would lose hidden keys, such as CLASS or OBJ_ID.
              * Construct a new storage instead and set it as the object's __dict__'s storage.
@@ -301,6 +302,7 @@ public final class DynamicObjectStorage extends HashingStorage {
             PythonObject owner = (PythonObject) receiver.getStore();
             PDict dict = (PDict) readHiddenAttrNode.execute(inliningTarget, owner, HiddenAttr.DICT, null);
             if (dict != null && dict.getDictStorage() == receiver) {
+                setShapeFlagsNode.executeAdd(owner, PythonObject.HAS_DICT | PythonObject.HAS_MATERIALIZED_DICT);
                 dict.setDictStorage(newStorage);
             }
             return newStorage;
