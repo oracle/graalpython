@@ -440,7 +440,13 @@ public abstract class ReadFrameNode extends Node {
                     if (!selector.skip(pRootNode)) {
                         if (i == level) {
                             Frame frame = ReadFrameNode.getFrame(frameInstance, frameAccess);
-                            assert PArguments.assertIsPythonFrame(frame);
+                            /*
+                             * It's possible that an async action interrupts a frame before the
+                             * callee context initialized the frame reference, skip it then
+                             */
+                            if (PArguments.getCurrentFrameInfo(frame) == null) {
+                                return null;
+                            }
                             IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, callerFlags);
                             if (prevRootNode instanceof PRootNode prevPRootNode && prevPRootNode.setsUpCalleeContext()) {
                                 // Update the flags in the callee

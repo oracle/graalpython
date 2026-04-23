@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,14 @@ def test_views():
     assert set(mp.items()) == {('a', 1), ('b', 2), ('c', 3)}, "items view invalid"
 
 
+def test_values_descriptor_rejects_non_mappingproxy():
+    class NotADict:
+        values = type(object.__dict__).values
+
+    assert_raises(TypeError, type(object.__dict__).values.__get__, NotADict(), NotADict)
+    assert_raises(TypeError, lambda: NotADict().values)
+
+
 def test_init():
     class CustomMappingObject:
         def __init__(self, keys, values):
@@ -130,8 +138,8 @@ def test_iter():
 
     mp_keys = set([k for k in mp])
     assert d.keys() == mp_keys
-    
-def test_create():    
+
+def test_create():
     _mappingproxy(dict())
     mp = _mappingproxy({'a': 1})
     _mappingproxy(mp)
