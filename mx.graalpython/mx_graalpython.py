@@ -169,19 +169,10 @@ def _with_bouncycastle():
     return GRAALPY_WITH_BOUNCYCASTLE and not _is_graalos_build()
 
 
-if GRAALPY_WITH_BOUNCYCASTLE:
-    setattr(ThinLauncherProject, "_original_cflags_without_graalpy_bouncycastle", ThinLauncherProject.cflags)
-
-    def _flags_with_bc_args(self):
-        if "graalpy" in repr(self) and not _is_graalos_build():
-            if dvmargs := getattr(self, "default_vm_args", None):
-                arg = '--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util'
-                if arg not in dvmargs:
-                    mx.log("Appending bouncycastle to GraalPy launcher -add-modules")
-                    dvmargs.append(arg)
-        return self._original_cflags_without_graalpy_bouncycastle
-
-    setattr(ThinLauncherProject, "cflags", property(_flags_with_bc_args))
+def bcflags():
+    if _with_bouncycastle():
+        return '--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util'
+    return ''
 
 
 if WIN32:
@@ -2019,6 +2010,7 @@ mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 
 mx_subst.results_substitutions.register_no_arg('graalpy_cmake_build_type', graalpy_cmake_build_type)
+mx_subst.string_substitutions.register_no_arg('bcflags', bcflags)
 
 
 def update_import(name, suite_py: Path, args):

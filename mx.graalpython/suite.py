@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "dbc733f99ceebfd8bd02911b8e7313787affd49a",
+                "version": "d98d0663dc5d103bc3a142266befac796b52cdb3",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "dbc733f99ceebfd8bd02911b8e7313787affd49a",
+                "version": "d98d0663dc5d103bc3a142266befac796b52cdb3",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -882,6 +882,7 @@ suite = {
             "default_vm_args": [
                 "--vm.Xss16777216", # request 16M of stack
                 '--vm.-enable-native-access=org.graalvm.shadowed.jline',
+                '<bcflags>',
             ],
             "multitarget": [
                 {"os": ["linux"], "libc": ["glibc", "default"], "compiler": ["llvm-toolchain", "host", "*"]},
