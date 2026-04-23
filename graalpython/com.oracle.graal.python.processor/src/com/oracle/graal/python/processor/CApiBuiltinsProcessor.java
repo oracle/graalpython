@@ -719,15 +719,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         for (int i = 0; i < javaBuiltins.size(); i++) {
             var builtin = javaBuiltins.get(i);
             String argString = Arrays.stream(builtin.arguments).map(b -> '"' + capiTypeToForeignPrimitiveType(b) + '"').collect(Collectors.joining(", "));
-            String classString;
-            String methodString;
-            if (builtin.origin instanceof TypeElement) {
-                classString = "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry";
-                methodString = "upcall_" + builtin.name;
-            } else {
-                classString = ((TypeElement) builtin.origin.getEnclosingElement()).getQualifiedName().toString();
-                methodString = builtin.origin.getSimpleName().toString();
-            }
+            String classString = getUpcallTargetClass(builtin);
+            String methodString = getUpcallTargetMethod(builtin);
             lines.add("      {");
             lines.add("        \"class\": \"" + classString + "\",");
             lines.add("        \"method\": \"" + methodString + "\",");
@@ -744,6 +737,24 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("}");
 
         updateResource("META-INF/native-image/com.oracle.graal.python.capi/reachability-metadata.json", javaBuiltins, lines, StandardLocation.CLASS_OUTPUT);
+    }
+
+    private static boolean usesUpcallWrapper(CApiBuiltinDesc builtin) {
+        return builtin.origin instanceof TypeElement || builtin.canRaise;
+    }
+
+    private static String getUpcallTargetClass(CApiBuiltinDesc builtin) {
+        if (usesUpcallWrapper(builtin)) {
+            return "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry";
+        }
+        return ((TypeElement) builtin.origin.getEnclosingElement()).getQualifiedName().toString();
+    }
+
+    private static String getUpcallTargetMethod(CApiBuiltinDesc builtin) {
+        if (usesUpcallWrapper(builtin)) {
+            return "upcall_" + builtin.name;
+        }
+        return builtin.origin.getSimpleName().toString();
     }
 
     /**
@@ -817,15 +828,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("        try {");
         for (var builtin : javaBuiltins) {
             String argString = Arrays.stream(builtin.arguments).map(b -> capiTypeToJavaPrimitiveType(b) + ".class").collect(Collectors.joining(", "));
-            String classString;
-            String methodString;
-            if (builtin.origin instanceof TypeElement || builtin.canRaise) {
-                classString = "PythonCextBuiltinRegistry";
-                methodString = "\"upcall_" + builtin.name + "\"";
-            } else {
-                classString = ((TypeElement) builtin.origin.getEnclosingElement()).getQualifiedName().toString();
-                methodString = '"' + builtin.origin.getSimpleName().toString() + '"';
-            }
+            String classString = usesUpcallWrapper(builtin) ? "PythonCextBuiltinRegistry" : getUpcallTargetClass(builtin);
+            String methodString = '"' + getUpcallTargetMethod(builtin) + '"';
             lines.add("            HANDLE_" + builtin.name + " = MethodHandles.lookup().findStatic(" + classString + ".class, " + methodString + ", MethodType.methodType(" +
                             capiTypeToJavaPrimitiveType(builtin.returnType) + ".class" + (builtin.arguments.length > 0 ? ", " : "") + argString + "));");
         }
