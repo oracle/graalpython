@@ -107,8 +107,8 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.FormatNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitLinesNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
@@ -171,7 +171,6 @@ import com.oracle.graal.python.runtime.formatting.TextFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1132,43 +1131,36 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CapitalizeNode extends PythonUnaryBuiltinNode {
 
-        @CompilationFinal private static CaseMap.Title titlecaser;
-
         @Specialization
         static TruffleString capitalize(TruffleString self,
+                        @Bind PythonLanguage language,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             if (self.isEmpty()) {
                 return T_EMPTY_STRING;
             } else {
-                return fromJavaStringNode.execute(capitalizeImpl(toJavaStringNode.execute(self)), TS_ENCODING);
+                return fromJavaStringNode.execute(capitalizeImpl(language.getCachedICUTitleCaser(), toJavaStringNode.execute(self)), TS_ENCODING);
             }
         }
 
         @Specialization
         static TruffleString doGeneric(Object self,
                         @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             String s = castToJavaStringNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "capitalize", self);
             if (s.isEmpty()) {
                 return T_EMPTY_STRING;
             }
-            return fromJavaStringNode.execute(capitalizeImpl(s), TS_ENCODING);
-        }
-
-        private static String capitalizeImpl(String str) {
-            if (titlecaser == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                titlecaser = CaseMap.toTitle().wholeString().noBreakAdjustment();
-            }
-            return apply(str);
+            return fromJavaStringNode.execute(capitalizeImpl(language.getCachedICUTitleCaser(), s), TS_ENCODING);
         }
 
         @TruffleBoundary
-        private static String apply(String str) {
-            return titlecaser.apply(Locale.ROOT, null, str);
+        private static String capitalizeImpl(CaseMap.Title titleCaser, String str) {
+            return titleCaser.apply(Locale.ROOT, null, str);
         }
+
     }
 
     // str.partition
@@ -2235,8 +2227,8 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class TitleNode extends PythonUnaryClinicBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
         static TruffleString doString(TruffleString self,
+                        @Bind PythonLanguage language,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -2251,27 +2243,36 @@ public final class StringBuiltins extends PythonBuiltins {
             int end = 0;
             while (it.hasNext()) {
                 final int cp = nextNode.execute(it, TS_ENCODING);
-                if (!UCharacter.isLowerCase(cp) && !UCharacter.isUpperCase(cp)) {
+                if (notUpperOrLowerCase(cp)) {
                     if (start == end) {
                         appendCodePointNode.execute(sb, cp, 1, true);
                     } else {
-                        appendSegment(self, appendStringNode, substringNode, toJavaStringNode, fromJavaStringNode, sb, start, end);
+                        appendSegment(self, language, appendStringNode, substringNode, toJavaStringNode, fromJavaStringNode, sb, start, end);
                     }
                     start = end + 1;
                 }
                 end++;
             }
             if (start != end) {
-                appendSegment(self, appendStringNode, substringNode, toJavaStringNode, fromJavaStringNode, sb, start, end - 1);
+                appendSegment(self, language, appendStringNode, substringNode, toJavaStringNode, fromJavaStringNode, sb, start, end - 1);
             }
             return toStringNode.execute(sb);
         }
 
-        private static void appendSegment(TruffleString self, TruffleStringBuilder.AppendStringNode appendStringNode, TruffleString.SubstringNode substringNode,
+        private static void appendSegment(TruffleString self, PythonLanguage language, TruffleStringBuilder.AppendStringNode appendStringNode, TruffleString.SubstringNode substringNode,
                         TruffleString.ToJavaStringNode toJavaStringNode, TruffleString.FromJavaStringNode fromJavaStringNode, TruffleStringBuilderUTF32 sb, int start, int end) {
             TruffleString segment = substringNode.execute(self, start, end - start + 1, TS_ENCODING, true);
-            String titleSegment = UCharacter.toTitleCase(Locale.ROOT, toJavaStringNode.execute(segment), null);
-            appendStringNode.execute(sb, fromJavaStringNode.execute(titleSegment, TS_ENCODING));
+            appendStringNode.execute(sb, fromJavaStringNode.execute(applyTitleCase(language.getCachedICUTitleCaser(), toJavaStringNode.execute(segment)), TS_ENCODING));
+        }
+
+        @TruffleBoundary
+        private static boolean notUpperOrLowerCase(int cp) {
+            return !UCharacter.isULowercase(cp) && !UCharacter.isUUppercase(cp);
+        }
+
+        @TruffleBoundary
+        private static String applyTitleCase(CaseMap.Title titleCaser, String s) {
+            return titleCaser.apply(Locale.ROOT, null, s);
         }
 
         @Override

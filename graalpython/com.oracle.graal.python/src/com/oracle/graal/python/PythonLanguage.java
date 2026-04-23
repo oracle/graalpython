@@ -55,6 +55,7 @@ import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
 import org.graalvm.polyglot.SandboxPolicy;
+import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
 
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -981,11 +982,23 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @CompilationFinal private Object cachedTRegexLineBreakRegex;
 
     public Object getCachedTRegexLineBreakRegex(Node location, PythonContext context) {
+        CompilerAsserts.partialEvaluationConstant(this);
         if (cachedTRegexLineBreakRegex == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             cachedTRegexLineBreakRegex = context.getEnv().parseInternal(LINEBREAK_REGEX_SOURCE).call(location);
         }
         return cachedTRegexLineBreakRegex;
+    }
+
+    @CompilationFinal private CaseMap.Title cachedICUTitleCaser;
+
+    public CaseMap.Title getCachedICUTitleCaser() {
+        CompilerAsserts.partialEvaluationConstant(this);
+        if (cachedICUTitleCaser == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            cachedICUTitleCaser = CaseMap.toTitle().wholeString().noBreakAdjustment();
+        }
+        return cachedICUTitleCaser;
     }
 
     @Override

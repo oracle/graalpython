@@ -48,7 +48,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacterCategory;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
@@ -221,17 +220,6 @@ public final class StringUtils {
 
     @TruffleBoundary
     public static boolean isPrintable(int codepoint) {
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // Executing ICU4J at image build time causes issues with runtime/build time
-            // initialization
-            assert codepoint < 0x100;
-            return codepoint >= 32;
-        }
-        return isPrintableICU(codepoint);
-    }
-
-    @TruffleBoundary
-    private static boolean isPrintableICU(int codepoint) {
         // ICU's definition of printability is different from CPython, so we cannot use
         // UCharacter.isPrintable
         int category = UCharacter.getType(codepoint);
@@ -252,32 +240,16 @@ public final class StringUtils {
 
     @TruffleBoundary
     public static String toLowerCase(String self) {
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // Avoid initializing ICU4J in image build
-            return self.toLowerCase();
-        }
         return UCharacter.toLowerCase(Locale.ROOT, self);
     }
 
     @TruffleBoundary
     public static String toUpperCase(String str) {
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // Avoid initializing ICU4J in image build
-            return str.toUpperCase();
-        }
         return UCharacter.toUpperCase(Locale.ROOT, str);
     }
 
     @TruffleBoundary
     public static boolean isAlnum(int codePoint) {
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // Avoid initializing ICU4J in image build
-            return Character.isLetterOrDigit(codePoint);
-        }
-        return isAlnumICU(codePoint);
-    }
-
-    private static boolean isAlnumICU(int codePoint) {
         if (UCharacter.isLetter(codePoint) || UCharacter.isDigit(codePoint) || UCharacter.hasBinaryProperty(codePoint, UProperty.NUMERIC_TYPE)) {
             return true;
         }
@@ -335,22 +307,12 @@ public final class StringUtils {
 
         @TruffleBoundary
         static boolean isIdentifierStart(int codePoint) {
-            if (ImageInfo.inImageBuildtimeCode()) {
-                // Avoid initializing ICU4J at image build time
-                return Character.isUnicodeIdentifierStart(codePoint);
-            } else {
-                return UCharacter.hasBinaryProperty(codePoint, UProperty.XID_START);
-            }
+            return UCharacter.hasBinaryProperty(codePoint, UProperty.XID_START);
         }
 
         @TruffleBoundary
         static boolean isIdentifierPart(int codePoint) {
-            if (ImageInfo.inImageBuildtimeCode()) {
-                // Avoid initializing ICU4J at image build time
-                return Character.isUnicodeIdentifierPart(codePoint);
-            } else {
-                return UCharacter.hasBinaryProperty(codePoint, UProperty.XID_CONTINUE);
-            }
+            return UCharacter.hasBinaryProperty(codePoint, UProperty.XID_CONTINUE);
         }
     }
 
