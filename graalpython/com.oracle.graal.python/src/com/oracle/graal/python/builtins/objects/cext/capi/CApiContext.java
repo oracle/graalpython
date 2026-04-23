@@ -946,6 +946,7 @@ public final class CApiContext extends CExtContext {
             } finally {
                 NativeMemory.free(builtinArrayPtr);
             }
+            CApiTransitions.initializeThreadStateDeallocatingOffsets();
 
             assert PythonCApiAssertions.assertBuiltins(capiLibrary);
             cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);

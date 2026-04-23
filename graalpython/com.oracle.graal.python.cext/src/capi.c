@@ -100,6 +100,44 @@ typedef struct {
 // defined in 'unicodeobject.c'
 void unicode_dealloc(PyObject *unicode);
 
+NO_INLINE void
+graalpy_dealloc_stack_grow(PyThreadState *tstate)
+{
+    size_t old_capacity;
+    size_t new_capacity;
+
+    assert(tstate != NULL);
+
+    old_capacity = (size_t)tstate->graalpy_deallocating.capacity;
+    new_capacity = old_capacity > 0 ? old_capacity * 2 : 3;
+    if (new_capacity <= old_capacity || new_capacity > INT_MAX) {
+        Py_FatalError("GraalPy deallocating stack capacity overflow");
+    }
+
+    if (GraalPyPrivate_DeallocStack_Grow(tstate, new_capacity) != 0) {
+        Py_FatalError("out of memory while growing GraalPy deallocating stack");
+    }
+}
+
+void
+graalpy_dealloc_stack_push(PyThreadState *tstate, PyObject *op)
+{
+    assert(tstate != NULL);
+    if (UNLIKELY(tstate->graalpy_deallocating.len >= tstate->graalpy_deallocating.capacity)) {
+        graalpy_dealloc_stack_grow(tstate);
+    }
+    tstate->graalpy_deallocating.items[tstate->graalpy_deallocating.len++] = op;
+}
+
+void
+graalpy_dealloc_stack_pop(PyThreadState *tstate, PyObject *op)
+{
+    assert(tstate != NULL);
+    assert(tstate->graalpy_deallocating.len > 0);
+    assert(tstate->graalpy_deallocating.items[tstate->graalpy_deallocating.len - 1] == op);
+    tstate->graalpy_deallocating.items[--tstate->graalpy_deallocating.len] = NULL;
+}
+
 static void object_dealloc(PyObject *self) {
     Py_TYPE(self)->tp_free(self);
 }

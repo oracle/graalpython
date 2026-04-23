@@ -92,6 +92,7 @@ public enum CStructs {
     PyGetSetDef,
     PyMemberDef,
     PyThreadState,
+    GraalPyDeallocState,
     wchar_t,
     long__long,
     Py_ssize_t,

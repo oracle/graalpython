@@ -356,9 +356,14 @@ public enum CFields {
     PyThreadState__dict(PyObject),
     PyThreadState__small_ints(PyObjectPtr),
     PyThreadState__gc(Pointer),
+    PyThreadState__graalpy_deallocating(Pointer),
     PyThreadState__py_recursion_limit(Int),
     PyThreadState__py_recursion_remaining(Int),
     PyThreadState__c_recursion_remaining(Int),
+
+    GraalPyDeallocState__items(PyObjectPtr),
+    GraalPyDeallocState__len(Int),
+    GraalPyDeallocState__capacity(Int),
 
     GCState__enabled(Int),
     GCState__debug(Int),
@@ -400,7 +405,7 @@ public enum CFields {
 
     @CompilationFinal private long offset = -1;
 
-    long offset() {
+    public long offset() {
         long o = offset;
         if (o == -1) {
             CompilerDirectives.transferToInterpreterAndInvalidate();

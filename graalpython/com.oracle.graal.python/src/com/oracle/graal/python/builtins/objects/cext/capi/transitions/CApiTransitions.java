@@ -128,6 +128,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -582,7 +583,7 @@ public abstract class CApiTransitions {
                             }
                         }
                     } else if (entry instanceof NativeObjectReference reference) {
-                        if (nativeLookupRemove(handleContext, reference.pointer) != null) {
+                        if (nativeLookupRemove(handleContext, reference.pointer) == reference) {
                             // The reference was still in our lookup table, it was not otherwise
                             // freed and we can process it now
                             LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
@@ -1679,7 +1680,7 @@ public abstract class CApiTransitions {
                         @Exclusive @Cached InlinedBranchProfile hasReplicatedNativeReferences,
                         @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             if (needsTransfer && PythonContext.get(inliningTarget).isNativeAccessAllowed()) {
-                long newRefcnt = CApiTransitions.addNativeRefCount(obj.getPtr(), 1);
+                long newRefcnt = addNativeRefCount(obj.getPtr(), 1, false);
                 /*
                  * If a native object was only referenced from managed (i.e. refcnt ==
                  * MANAGED_REFCNT), it may be that its native references were already replicated to
@@ -2035,17 +2036,18 @@ public abstract class CApiTransitions {
                 }
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
+                PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage());
                 if (isNativeProfile.profile(inliningTarget, lookup != null)) {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
                         if (LOGGER.isLoggable(Level.FINE)) {
                             LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
                         }
-                        return createAbstractNativeObject(nativeContext, needsTransfer, pointer);
+                        return createAbstractNativeObject(threadState, nativeContext, needsTransfer, pointer);
                     }
                     if (isNativeObjectProfile.profile(inliningTarget, ref instanceof PythonAbstractNativeObject)) {
                         if (needsTransfer) {
-                            addNativeRefCount(pointer, -1);
+                            subNativeRefCount(pointer, 1);
                         }
                         return ref;
                     } else {
@@ -2053,7 +2055,7 @@ public abstract class CApiTransitions {
                         result = (PythonAbstractObject) ref;
                     }
                 } else {
-                    return createAbstractNativeObject(nativeContext, needsTransfer, pointer);
+                    return createAbstractNativeObject(threadState, nativeContext, needsTransfer, pointer);
                 }
             }
             return updateRef(inliningTarget, wrapperProfile, updateRefNode, needsTransfer, release, result);
@@ -2247,15 +2249,16 @@ public abstract class CApiTransitions {
                 }
             } else {
                 IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
+                PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage());
                 if (isNativeProfile.profile(inliningTarget, lookup != null)) {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
-                        return createAbstractNativeObject(nativeContext, stealing, pointer);
+                        return createAbstractNativeObject(threadState, nativeContext, stealing, pointer);
                     }
                     if (isNativeObjectProfile.profile(inliningTarget, ref instanceof PythonAbstractNativeObject)) {
                         if (stealing) {
-                            addNativeRefCount(pointer, -1);
+                            subNativeRefCount(pointer, 1);
                         }
                         return ref;
                     } else {
@@ -2263,7 +2266,7 @@ public abstract class CApiTransitions {
                         pythonAbstractObject = (PythonAbstractObject) ref;
                     }
                 } else {
-                    return createAbstractNativeObject(nativeContext, stealing, pointer);
+                    return createAbstractNativeObject(threadState, nativeContext, stealing, pointer);
                 }
             }
             return NativeToPythonInternalNode.updateRef(inliningTarget, wrapperProfile, updateRefNode, stealing, false, pythonAbstractObject);
@@ -2434,9 +2437,49 @@ public abstract class CApiTransitions {
 
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
     private static final int TP_REFCNT_OFFSET = 0;
+    private static long tstateGraalpyDeallocatingOffset = -1;
+    private static long graalpyDeallocatingItemsOffset = -1;
+    private static long graalpyDeallocatingLenOffset = -1;
+    private static long graalpyDeallocatingCapacityOffset = -1;
 
-    public static long addNativeRefCount(long pointer, long refCntDelta) {
-        return addNativeRefCount(pointer, refCntDelta, false);
+    public static void initializeThreadStateDeallocatingOffsets() {
+        if (tstateGraalpyDeallocatingOffset == -1) {
+            tstateGraalpyDeallocatingOffset = CFields.PyThreadState__graalpy_deallocating.offset();
+            graalpyDeallocatingItemsOffset = CFields.GraalPyDeallocState__items.offset();
+            graalpyDeallocatingLenOffset = CFields.GraalPyDeallocState__len.offset();
+            graalpyDeallocatingCapacityOffset = CFields.GraalPyDeallocState__capacity.offset();
+        }
+    }
+
+    @TruffleBoundary
+    private static boolean isDeallocatingSlowPath(long pointer) {
+        PythonContext context = PythonContext.get(null);
+        PythonThreadState threadState = context.getThreadState(context.getLanguage());
+        if (!threadState.isNativeThreadStateInitialized()) {
+            return false;
+        }
+        long threadStatePointer = threadState.getNativePointer();
+        return isDeallocating(pointer, threadStatePointer);
+    }
+
+    private static boolean isDeallocating(long pointer, long threadStatePointer) {
+        assert tstateGraalpyDeallocatingOffset != -1 : "thread-state deallocating offsets not initialized";
+        assert threadStatePointer != 0;
+        long deallocatingState = threadStatePointer + tstateGraalpyDeallocatingOffset;
+        int length = UNSAFE.getInt(deallocatingState + graalpyDeallocatingLenOffset);
+        if (length <= 0) {
+            return false;
+        }
+        int capacity = UNSAFE.getInt(deallocatingState + graalpyDeallocatingCapacityOffset);
+        assert length <= capacity : PythonUtils.formatJString("invalid deallocating stack size for tstate 0x%x (%d/%d)", threadStatePointer, length, capacity);
+        long deallocatingArray = UNSAFE.getAddress(deallocatingState + graalpyDeallocatingItemsOffset);
+        assert deallocatingArray != 0;
+        for (int i = 0; i < length; i++) {
+            if (UNSAFE.getAddress(deallocatingArray + i * NativeMemory.POINTER_SIZE) == pointer) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static long addNativeRefCount(long pointer, long refCntDelta, boolean ignoreIfDead) {
@@ -2455,6 +2498,7 @@ public abstract class CApiTransitions {
 
         LOGGER.finest(() -> PythonUtils.formatJString("addNativeRefCount %x %x %d + %d", pointer, refCount, refCount, refCntDelta));
 
+        assert !isDeallocatingSlowPath(pointer);
         UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, refCount + refCntDelta);
         return refCount + refCntDelta;
     }
@@ -2462,6 +2506,7 @@ public abstract class CApiTransitions {
     public static long subNativeRefCount(long pointer, long refCntDelta) {
         assert PythonContext.get(null).isNativeAccessAllowed();
         assert PythonContext.get(null).ownsGil();
+        assert !isDeallocatingSlowPath(pointer);
         long refCount = UNSAFE.getLong(pointer + TP_REFCNT_OFFSET);
         if (refCount == IMMORTAL_REFCNT) {
             return IMMORTAL_REFCNT;
@@ -2496,21 +2541,22 @@ public abstract class CApiTransitions {
         UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, newValue);
     }
 
-    private static PythonAbstractNativeObject createAbstractNativeObject(HandleContext handleContext, boolean transfer, long pointer) {
+    private static PythonAbstractNativeObject createAbstractNativeObject(PythonThreadState threadState, HandleContext handleContext, boolean transfer, long pointer) {
         pollReferenceQueue();
         PythonAbstractNativeObject result = new PythonAbstractNativeObject(pointer);
         long refCntDelta = MANAGED_REFCNT - (transfer ? 1 : 0);
         /*
-         * Some APIs might be called from tp_dealloc/tp_del/tp_finalize where the refcount is 0. In
-         * that case we don't want to create a new reference, since that would resurrect the object
-         * and we would end up deallocating it twice.
+         * Some APIs might be called from tp_dealloc/tp_del/tp_finalize while the native object is
+         * already dying. In that case we don't want to create a new reference, since that would
+         * resurrect the object and we would end up deallocating it twice.
          */
-        long refCount = addNativeRefCount(pointer, refCntDelta, true);
-        if (refCount > 0) {
+        boolean isDeallocating = threadState.isNativeThreadStateInitialized() && isDeallocating(pointer, threadState.getNativePointer());
+        if (!isDeallocating && addNativeRefCount(pointer, refCntDelta, true) > 0) {
             NativeObjectReference ref = new NativeObjectReference(handleContext, result, pointer);
             nativeLookupPut(handleContext, pointer, ref);
         } else if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(PythonUtils.formatJString("createAbstractNativeObject: creating PythonAbstractNativeObject for a dying object (refcount 0): 0x%x", pointer));
+            LOGGER.fine(PythonUtils.formatJString("createAbstractNativeObject: creating PythonAbstractNativeObject for a dying object (reason: %s): 0x%x",
+                            isDeallocating ? "deallocating" : "refcount 0", pointer));
         }
 
         return result;

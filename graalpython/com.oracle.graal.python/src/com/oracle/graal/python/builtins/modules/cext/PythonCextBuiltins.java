@@ -124,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -1187,6 +1188,13 @@ public final class PythonCextBuiltins {
     @TruffleBoundary
     static long GraalPyPrivate_GetInitialNativeMemory() {
         return PythonOptions.InitialNativeMemory.getValue(PythonContext.get(null).getEnv().getOptions());
+    }
+
+    // doesn't need a GIL; just accessing thread-local data
+    @CApiBuiltin(ret = Int, args = {PyThreadState, SIZE_T}, call = Ignored, acquireGil = false)
+    @TruffleBoundary
+    static int GraalPyPrivate_DeallocStack_Grow(long threadStatePointer, long newCapacity) {
+        return PThreadState.growDeallocatingStack(threadStatePointer, newCapacity);
     }
 
     @CApiBuiltin(ret = Void, args = {SIZE_T}, call = Ignored)

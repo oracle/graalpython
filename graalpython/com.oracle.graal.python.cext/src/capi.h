@@ -168,6 +168,10 @@ extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
 extern Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing;
 #define graalpy_finalizing (_graalpy_finalizing != NULL && *_graalpy_finalizing)
 
+void graalpy_dealloc_stack_grow(PyThreadState *tstate);
+void graalpy_dealloc_stack_push(PyThreadState *tstate, PyObject *op);
+void graalpy_dealloc_stack_pop(PyThreadState *tstate, PyObject *op);
+
 #if (__linux__ && __GNU_LIBRARY__)
 #include <stdlib.h>
 #include <string.h>

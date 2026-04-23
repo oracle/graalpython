@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.NATIVE_POINTER_FREED;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.callocPtrArray;
 import static com.oracle.graal.python.nfi2.NativeMemory.mallocPtrArray;
 import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElement;
 
@@ -59,6 +60,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
@@ -75,6 +77,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
  */
 public abstract class PThreadState {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PThreadState.class);
+    private static final int GRAALPY_DEALLOC_STACK_INITIAL_CAPACITY = 3;
 
     /** Same as _PY_NSMALLNEGINTS */
     public static final int PY_NSMALLNEGINTS = 5;
@@ -135,7 +138,6 @@ public abstract class PThreadState {
      */
     @TruffleBoundary
     private static long allocateCLayout() {
-
         long ptr = CStructAccess.allocate(CStructs.PyThreadState);
         PythonContext pythonContext = PythonContext.get(null);
         /*
@@ -146,11 +148,16 @@ public abstract class PThreadState {
         CStructAccess.writePtrField(ptr, CFields.PyThreadState__dict, NULLPTR);
         CApiContext cApiContext = pythonContext.getCApiContext();
         long smallInts = mallocPtrArray(PY_NSMALLNEGINTS + PY_NSMALLPOSINTS);
+        long deallocatingState = CStructAccess.getFieldPtr(ptr, CFields.PyThreadState__graalpy_deallocating);
+        long deallocating = mallocPtrArray(GRAALPY_DEALLOC_STACK_INITIAL_CAPACITY);
         CStructAccess.writePtrField(ptr, CFields.PyThreadState__small_ints, smallInts);
+        CStructAccess.writePtrField(deallocatingState, CFields.GraalPyDeallocState__items, deallocating);
         for (int i = -PY_NSMALLNEGINTS; i < PY_NSMALLPOSINTS; i++) {
             writePtrArrayElement(smallInts, i + PY_NSMALLNEGINTS, CApiTransitions.HandlePointerConverter.intToPointer(i));
         }
         CStructAccess.writePtrField(ptr, CFields.PyThreadState__gc, cApiContext.getGCState());
+        CStructAccess.writeIntField(deallocatingState, CFields.GraalPyDeallocState__len, 0);
+        CStructAccess.writeIntField(deallocatingState, CFields.GraalPyDeallocState__capacity, GRAALPY_DEALLOC_STACK_INITIAL_CAPACITY);
         // py_recursion_limit = Py_DEFAULT_RECURSION_LIMIT (1000)
         // (cpython/Include/internal/pycore_runtime_init.h)
         int recLimit = pythonContext.getSysModuleState().getRecursionLimit();
@@ -162,6 +169,31 @@ public abstract class PThreadState {
         return ptr;
     }
 
+    public static int growDeallocatingStack(long nativeThreadState, long newCapacity) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert nativeThreadState != NULLPTR;
+        long deallocatingState = CStructAccess.getFieldPtr(nativeThreadState, CFields.PyThreadState__graalpy_deallocating);
+        long oldItems = CStructAccess.readPtrField(deallocatingState, CFields.GraalPyDeallocState__items);
+        int oldCapacity = CStructAccess.readIntField(deallocatingState, CFields.GraalPyDeallocState__capacity);
+        assert newCapacity > oldCapacity;
+        assert newCapacity <= Integer.MAX_VALUE;
+
+        long newItems;
+        try {
+            newItems = callocPtrArray(newCapacity);
+        } catch (OutOfMemoryError e) {
+            return -1;
+        }
+
+        if (oldItems != NULLPTR) {
+            NativeMemory.memcpy(newItems, oldItems, oldCapacity * NativeMemory.POINTER_SIZE);
+            NativeMemory.free(oldItems);
+        }
+        CStructAccess.writePtrField(deallocatingState, CFields.GraalPyDeallocState__items, newItems);
+        CStructAccess.writeIntField(deallocatingState, CFields.GraalPyDeallocState__capacity, (int) newCapacity);
+        return 0;
+    }
+
     @TruffleBoundary
     public static void dispose(PythonThreadState threadState) {
         long nativeCompanion = threadState.getNativePointer();
@@ -171,6 +203,12 @@ public abstract class PThreadState {
 
         assert !HandlePointerConverter.pointsToPyHandleSpace(nativeCompanion);
         threadState.clearNativePointer();
+
+        long deallocatingState = CStructAccess.getFieldPtr(nativeCompanion, CFields.PyThreadState__graalpy_deallocating);
+        long deallocatingItems = CStructAccess.readPtrField(deallocatingState, CFields.GraalPyDeallocState__items);
+        if (deallocatingItems != NULLPTR) {
+            NativeMemory.free(deallocatingItems);
+        }
 
         // TODO(fa): decref PyThreadState__dict
         LOGGER.fine(String.format("Freeing (PyThreadState *)0x%x", nativeCompanion));
