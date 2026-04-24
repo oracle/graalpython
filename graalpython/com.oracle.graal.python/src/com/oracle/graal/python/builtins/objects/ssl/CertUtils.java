@@ -733,7 +733,7 @@ public final class CertUtils {
         PrivateKey privateKey = null;
         String algorithm = cert.getPublicKey().getAlgorithm();
         try {
-            String pemText = reader.readAllAsString();
+            String pemText = readAll(reader);
             int fromIndex = 0;
             PemBlockWithContent rawBlock;
             while ((rawBlock = findNextPemBlock(pemText, fromIndex)) != null) {
@@ -771,6 +771,16 @@ public final class CertUtils {
         PublicKey publicKey = cert.getPublicKey();
         checkPrivateKey(inliningTarget, raiseNode, context, privateKey, publicKey);
         return privateKey;
+    }
+
+    private static String readAll(BufferedReader reader) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        char[] buf = new char[8192];
+        int n;
+        while ((n = reader.read(buf)) != -1) {
+            sb.append(buf, 0, n);
+        }
+        return sb.toString();
     }
 
     private static PemBlockWithContent findNextPemBlock(String data, int fromIndex) throws IOException {
