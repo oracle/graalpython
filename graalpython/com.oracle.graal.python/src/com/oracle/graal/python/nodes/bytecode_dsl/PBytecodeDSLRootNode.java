@@ -2075,15 +2075,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             if (keysAndValues.length != entries * 2) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-            ObjectHashMap map = new ObjectHashMap(keysAndValues.length / 2);
-            PDict dict = PFactory.createDict(rootNode.getLanguage(), new EconomicMapStorage(map, false));
+            EconomicMapStorage map = EconomicMapStorage.create(entries);
+            PDict dict = PFactory.createDict(rootNode.getLanguage(), map);
             for (int i = 0; i < entries; i++) {
                 Object key = keysAndValues[i * 2];
                 Object value = keysAndValues[i * 2 + 1];
                 // Each entry represents either a k: v pair or a **splats. splats have no key.
                 if (key == PNone.NO_VALUE) {
                     updateNode.execute(frame, dict, value);
-                    assert dict.getDictStorage() instanceof EconomicMapStorage es && es.mapIsEqualTo(map);
+                    assert dict.getDictStorage() == map;
                 } else {
                     long hash = hashNode.execute(frame, inliningTarget, key);
                     putNode.put(frame, inliningTarget, map, key, hash, value);

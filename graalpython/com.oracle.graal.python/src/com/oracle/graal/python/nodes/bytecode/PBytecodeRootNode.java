@@ -5860,10 +5860,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private static ObjectHashMap moveFromStackToSetHashMap(VirtualFrame virtualFrame, int start, int stop, ObjHashMapPutNode putNode) {
+    private static EconomicMapStorage moveFromStackToSetHashMap(VirtualFrame virtualFrame, int start, int stop, ObjHashMapPutNode putNode) {
         CompilerAsserts.partialEvaluationConstant(start);
         CompilerAsserts.partialEvaluationConstant(stop);
-        var result = new ObjectHashMap(stop - start);
+        EconomicMapStorage result = EconomicMapStorage.create(stop - start);
         for (int i = start; i < stop; i++) {
             putNode.execute(virtualFrame, result, virtualFrame.getObject(i), PNone.NONE);
             virtualFrame.clear(i);
@@ -5872,10 +5872,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @ExplodeLoop
-    private static ObjectHashMap moveFromStackToDictHashMap(VirtualFrame virtualFrame, int start, int stop, ObjHashMapPutNode putNode) {
+    private static EconomicMapStorage moveFromStackToDictHashMap(VirtualFrame virtualFrame, int start, int stop, ObjHashMapPutNode putNode) {
         CompilerAsserts.partialEvaluationConstant(start);
         CompilerAsserts.partialEvaluationConstant(stop);
-        var result = new ObjectHashMap((stop - start) / 2);
+        EconomicMapStorage result = EconomicMapStorage.create((stop - start) / 2);
         for (int i = start; i + 1 < stop; i += 2) {
             putNode.execute(virtualFrame, result, virtualFrame.getObject(i), virtualFrame.getObject(i + 1));
             virtualFrame.clear(i);
@@ -5904,16 +5904,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             case CollectionBits.KIND_SET: {
                 ObjHashMapPutNode putNode = insertChildNode(localNodes, nodeIndex, UNCACHED_OBJ_HASHMAP_PUT, ObjHashMapPutNodeGen.class, NODE_OBJ_HASHMAP_PUT,
                                 useCachedNodes);
-                ObjectHashMap storage = moveFromStackToSetHashMap(virtualFrame, stackTop - count + 1, stackTop + 1, putNode);
-                res = PFactory.createSet(getLanguage(), new EconomicMapStorage(storage, false));
+                EconomicMapStorage storage = moveFromStackToSetHashMap(virtualFrame, stackTop - count + 1, stackTop + 1, putNode);
+                res = PFactory.createSet(getLanguage(), storage);
                 break;
             }
             case CollectionBits.KIND_DICT: {
                 ObjHashMapPutNode putNode = insertChildNode(localNodes, nodeIndex, UNCACHED_OBJ_HASHMAP_PUT, ObjHashMapPutNodeGen.class, NODE_OBJ_HASHMAP_PUT,
                                 useCachedNodes);
                 assert count % 2 == 0;
-                ObjectHashMap storage = moveFromStackToDictHashMap(virtualFrame, stackTop - count + 1, stackTop + 1, putNode);
-                res = PFactory.createDict(getLanguage(), new EconomicMapStorage(storage, false));
+                EconomicMapStorage storage = moveFromStackToDictHashMap(virtualFrame, stackTop - count + 1, stackTop + 1, putNode);
+                res = PFactory.createDict(getLanguage(), storage);
                 break;
             }
             case CollectionBits.KIND_KWORDS: {
