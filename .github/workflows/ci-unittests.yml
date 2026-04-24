@@ -5,8 +5,115 @@ on:
   workflow_dispatch:
 
 jobs:
+  should-run:
+    runs-on: ubuntu-latest
+    outputs:
+      run_ci: ${{ steps.decision.outputs.run_ci }}
+      reason: ${{ steps.decision.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check file changes
+        id: changes
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.setOutput('workflow_or_suite', 'false');
+              core.setOutput('docs_only', 'false');
+              return;
+            }
+
+            const changedFiles = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100,
+              }
+            );
+
+            const hasWorkflowOrSuiteChanges = changedFiles.some(file =>
+              file.filename.startsWith('.github/') || file.filename === 'mx.graalpython/suite.py'
+            );
+            const hasOnlyDocsChanges = changedFiles.length > 0 && changedFiles.every(file => file.filename.startsWith('docs/'));
+
+            core.setOutput('workflow_or_suite', hasWorkflowOrSuiteChanges ? 'true' : 'false');
+            core.setOutput('docs_only', hasOnlyDocsChanges ? 'true' : 'false');
+
+      - name: Check if workflow should run
+        id: decision
+        uses: actions/github-script@v8
+        env:
+          HAS_WORKFLOW_OR_SUITE_CHANGES: ${{ steps.changes.outputs.workflow_or_suite || 'false' }}
+          HAS_ONLY_DOCS_CHANGES: ${{ steps.changes.outputs.docs_only || 'false' }}
+        with:
+          script: |
+            const eventName = context.eventName;
+            const hasWorkflowOrSuiteChanges = process.env.HAS_WORKFLOW_OR_SUITE_CHANGES === 'true';
+            const hasOnlyDocsChanges = process.env.HAS_ONLY_DOCS_CHANGES === 'true';
+
+            if (eventName === 'workflow_dispatch') {
+              core.setOutput('run_ci', 'true');
+              core.setOutput('reason', 'manual dispatch');
+              return;
+            }
+
+            if (eventName !== 'pull_request') {
+              core.setOutput('run_ci', 'false');
+              core.setOutput('reason', `unsupported event: ${eventName}`);
+              return;
+            }
+
+            const pr = context.payload.pull_request;
+
+            if (pr.draft) {
+              core.setOutput('run_ci', 'false');
+              core.setOutput('reason', 'draft PR');
+              return;
+            }
+
+            if (hasOnlyDocsChanges) {
+              core.setOutput('run_ci', 'false');
+              core.setOutput('reason', 'docs-only changes');
+              return;
+            }
+
+            if (hasWorkflowOrSuiteChanges) {
+              core.setOutput('run_ci', 'true');
+              core.setOutput('reason', '.github or suite.py changes');
+              return;
+            }
+
+            if (pr.user?.login === 'graalvmbot') {
+              const isMergedOrClosed = pr.merged === true || pr.merged_at != null || pr.state !== 'open';
+              if (isMergedOrClosed) {
+                core.setOutput('run_ci', 'false');
+                core.setOutput('reason', 'graalvmbot PR already merged/closed');
+                return;
+              }
+            }
+
+            if (pr.head?.repo?.fork) {
+              core.setOutput('run_ci', 'true');
+              core.setOutput('reason', 'fork PR');
+              return;
+            }
+
+            core.setOutput('run_ci', 'false');
+            core.setOutput('reason', 'non-fork PR without .github/suite.py changes');
+
+      - name: Print results
+        run: |
+          echo "run_ci=${{ steps.decision.outputs.run_ci }}"
+          echo "reason=${{ steps.decision.outputs.reason }}"
+
   abi-check:
-    if: github.event.pull_request.draft == false
+    if: needs.should-run.outputs.run_ci == 'true'
+    needs: should-run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -36,7 +143,8 @@ jobs:
         run: mx abi-check
 
   build-standalone-artifacts:
-    if: github.event.pull_request.draft == false && success()
+    if: needs.should-run.outputs.run_ci == 'true' && success()
+    needs: should-run
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
@@ -44,16 +152,16 @@ jobs:
       artifacts_retention_days: 0
 
   run-tests:
-    if: success()
-    needs: build-standalone-artifacts
+    if: needs.should-run.outputs.run_ci == 'true' && success()
+    needs: [should-run, build-standalone-artifacts]
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
       export_test_reports: true
 
   collect-reports:
-    if: always()
-    needs: run-tests
+    if: needs.should-run.outputs.run_ci == 'true' && always()
+    needs: [should-run, run-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
