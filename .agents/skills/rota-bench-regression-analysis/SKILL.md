@@ -18,7 +18,14 @@ scripts/compare_bench_regressions.py --rota --json-out /tmp/compare_bench_regres
 3. Focus on `plausible` regressions. Ignore `flaky` and `inconclusive` items unless they help explain a plausible shift.
 4. Split the summary into:
 - `Attributed`
-- `Unattributed`
+- `To bisect`
+- `To watch`
+5. Show the current summary
+6. Execute the bisect script for each "to bisect" entry in parallel, then wait for all of them to finish.
+   The builds can take many hours without the script showing any output, make sure you wait for them with a long timeout.
+   If running in codex: round-robin poll the processes with `write_stdin` and 1 hour timeout (the configuration might cap this at a lower timeout in practice)
+7. Collect the bisect results and move any benchmarks that were attributed by the bisections.
+8. Show the final summary. Note any failed bisects.
 
 ## Useful JSON Queries
 ```bash
@@ -67,10 +74,16 @@ git diff --stat GOOD..BAD
 
 ## Output Contract
 - List findings first, not process notes.
-- Keep two top-level sections: `Attributed` and `Unattributed`.
+- Keep three top-level sections (if not empty): `Attributed` and `To bisect` and `To watch`
 - In the attributed section, use this header format: `abcd1234efgh | author@oracle.com | Full subject`
-- In the unattributed section, say whether the item looks real, flaky, or likely the same cause as another attributed item.
+- Unattributed changes that look plausible go to "to bisect", flaky ones go to "to watch"
+- In the "to bisect" section, add an invocation (don't execute yet) of `scripts/bisect_benchmark_regression.py` that can bisect it (use unabbreviated commits in this case)
+- In the "to watch" section, say whether the item looks flaky, or likely the same cause as another attributed item.
 - Do not abbreviate commit subjects.
 - Keep author emails.
 - Abbreviate commit IDs to 12 characters.
-- Do not list every benchmark; only the worst examples from each affected suite.
+- Do not list every benchmark if there are many; only the worst examples from each affected suite. If you didn't list all, say "and X others".
+
+## Guardrails
+- If the script or you can't find `bench-cli`, ask the user to provide it from the `bench-server` repo.
+- Don't submit more than 5 bisect jobs. If there are more in the "to bisect" list, pick 5 that look the most serious and leave the rest as "to bisect".

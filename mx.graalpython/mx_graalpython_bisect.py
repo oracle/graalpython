@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -70,6 +70,8 @@ DOWNSTREAM_REPO_MAPPING = {
     DIR: GRAAL_DIR,
     GRAAL_DIR: GRAAL_ENTERPRISE_DIR,
 }
+
+RESULTS_JSON_PATH = 'bisect-benchmark-result.json'
 
 
 def get_commit(repo_path, ref='HEAD'):
@@ -178,6 +180,22 @@ class BisectResult:
                     .format(self.repo_name, self.bad_commit, get_message(self.repo_path, self.bad_commit)))
         return ''
 
+    def to_dict(self):
+        return {
+            'repo_name': self.repo_name,
+            'repo_path': str(self.repo_path),
+            'commits': self.commits,
+            'results': [result.to_dict() if result is not None else None for result in self.results],
+            'good_index': self.good_index,
+            'bad_index': self.bad_index,
+            'good_commit': self.good_commit,
+            'bad_commit': self.bad_commit,
+            'dependency_results': {
+                str(index): dependency_result.to_dict()
+                for index, dependency_result in self.dependency_results.items()
+            },
+        }
+
 
 class BenchmarkResult(abc.ABC):
     def __init__(self, value, unit=None):
@@ -200,6 +218,14 @@ class BenchmarkResult(abc.ABC):
     @abc.abstractmethod
     def is_good(self, good_result, bad_result):
         pass
+
+    def to_dict(self):
+        return {
+            'kind': type(self).__name__,
+            'value': self.value,
+            'unit': self.unit,
+            'display': str(self),
+        }
 
 
 class LowerIsBetterResult(BenchmarkResult):
@@ -357,6 +383,16 @@ def _bisect_benchmark(argv, bisect_id, email_to):
     print(visualization)
     print()
     print(summary)
+
+    with open(RESULTS_JSON_PATH, 'w', encoding='utf-8') as result_file:
+        json.dump({
+            'bisect_id': bisect_id,
+            'summary': summary,
+            'visualization': visualization,
+            'result': result.to_dict(),
+            'build_url': os.environ.get('BUILD_URL'),
+        }, result_file, indent=2, sort_keys=True)
+        result_file.write('\n')
 
     if args.rerun_with_commands:
         print('\n\nRerunning the good and bad commits with extra benchmark commands:')
