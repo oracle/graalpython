@@ -58,7 +58,7 @@ import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNod
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.ErrorMessages.NAMELESS_MODULE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -91,7 +91,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
-import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;

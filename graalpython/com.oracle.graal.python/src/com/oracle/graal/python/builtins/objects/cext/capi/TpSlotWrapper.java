@@ -41,10 +41,10 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.nfi2.NfiType.RAW_POINTER;
-import static com.oracle.graal.python.nfi2.NfiType.SINT32;
-import static com.oracle.graal.python.nfi2.NfiType.SINT64;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NfiType.RAW_POINTER;
+import static com.oracle.graal.python.runtime.nativeaccess.NfiType.SINT32;
+import static com.oracle.graal.python.runtime.nativeaccess.NfiType.SINT64;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.lang.invoke.MethodHandle;
@@ -89,8 +89,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlo
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.RichCmpOp;
-import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiUpcallSignature;
+import com.oracle.graal.python.runtime.nativeaccess.Nfi;
+import com.oracle.graal.python.runtime.nativeaccess.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;

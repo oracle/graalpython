@@ -47,7 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VoidNoReturn;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.exception.ExceptionUtils.printPythonLikeStackTrace;
 
 import com.oracle.graal.python.PythonLanguage;

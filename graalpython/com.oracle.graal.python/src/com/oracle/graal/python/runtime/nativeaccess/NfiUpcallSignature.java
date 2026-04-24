@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,30 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi2;
+package com.oracle.graal.python.runtime.nativeaccess;
+
+import java.lang.invoke.MethodHandle;
 
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class NfiLibrary {
+public final class NfiUpcallSignature {
+    private final NfiType resType;
+    private final NfiType[] argTypes;
 
-    private final NfiContext context;
-    final long ptr;
+    @SuppressWarnings("restricted")
+    NfiUpcallSignature(NfiType resType, NfiType[] argTypes) {
+        this.resType = resType;
+        this.argTypes = argTypes;
+    }
 
     @SuppressWarnings("unused")
-    NfiLibrary(NfiContext context, long ptr) {
-        this.context = context;
-        this.ptr = ptr;
+    public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
+        // TODO(NFI2) if logging enabled, wrap the handle in a method that logs the name and args.
+        return NfiSupport.createClosure(staticMethodHandle, resType, argTypes, context.arena);
     }
 
-    public long lookupSymbol(String name) {
-        long symbol = lookupOptionalSymbol(name);
-        if (symbol == 0) {
-            throw CompilerDirectives.shouldNotReachHere("symbol not found: " + name);
+    @SuppressWarnings("unused")
+    private static Object closureLoggingWrapper(String name, NfiUpcallSignature signature, MethodHandle inner, Object[] args) {
+        // TODO(NFI2) implement logging
+        try {
+            return inner.invoke(args);
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
-        return symbol;
     }
 
-    public long lookupOptionalSymbol(String name) {
-        return context.lookupOptionalSymbol(ptr, name);
+    @Override
+    @TruffleBoundary
+    public String toString() {
+        StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < argTypes.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(argTypes[i]);
+        }
+        sb.append("): ");
+        sb.append(resType);
+        return sb.toString();
     }
 }

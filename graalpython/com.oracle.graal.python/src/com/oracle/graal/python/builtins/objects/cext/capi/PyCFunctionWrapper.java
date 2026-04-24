@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.invoke.MethodHandle;
@@ -58,9 +58,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiType;
-import com.oracle.graal.python.nfi2.NfiUpcallSignature;
+import com.oracle.graal.python.runtime.nativeaccess.Nfi;
+import com.oracle.graal.python.runtime.nativeaccess.NfiType;
+import com.oracle.graal.python.runtime.nativeaccess.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;

@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.free;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;

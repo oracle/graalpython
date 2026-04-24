@@ -55,7 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.HiddenAttr.AS_BUFFER;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -106,7 +106,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyDictSetItem;
-import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;

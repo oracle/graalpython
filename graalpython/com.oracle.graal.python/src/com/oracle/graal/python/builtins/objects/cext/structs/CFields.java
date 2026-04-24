@@ -101,7 +101,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.unaryfunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
-import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElements;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElements;
 
 import com.oracle.graal.python.annotations.CApiFields;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;

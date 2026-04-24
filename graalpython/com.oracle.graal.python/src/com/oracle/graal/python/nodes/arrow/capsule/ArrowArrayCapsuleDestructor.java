@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.arrow.capsule;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsuleGetPointerNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.nodes.arrow.InvokeArrowReleaseCallbackNode;
 import com.oracle.graal.python.runtime.PythonContext;

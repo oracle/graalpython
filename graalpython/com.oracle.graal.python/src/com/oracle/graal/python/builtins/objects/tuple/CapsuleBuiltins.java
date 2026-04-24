@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Collections;

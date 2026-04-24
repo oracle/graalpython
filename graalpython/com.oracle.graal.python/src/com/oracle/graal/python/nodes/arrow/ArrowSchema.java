@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.arrow;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.POINTER_SIZE;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.POINTER_SIZE;
 
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;

@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi2;
+package com.oracle.graal.python.runtime.nativeaccess;
 
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;

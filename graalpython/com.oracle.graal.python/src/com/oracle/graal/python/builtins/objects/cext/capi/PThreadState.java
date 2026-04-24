@@ -42,10 +42,10 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.NATIVE_POINTER_FREED;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.nfi2.NativeMemory.callocPtrArray;
-import static com.oracle.graal.python.nfi2.NativeMemory.mallocPtrArray;
-import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.callocPtrArray;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.mallocPtrArray;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtrArrayElement;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;

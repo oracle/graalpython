@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
-import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeByteArrayElement;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;

@@ -68,7 +68,7 @@ import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
-import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;

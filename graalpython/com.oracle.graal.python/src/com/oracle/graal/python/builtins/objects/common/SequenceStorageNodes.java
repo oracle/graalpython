@@ -26,17 +26,17 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBounds;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.nfi2.NativeMemory.callocByteArray;
-import static com.oracle.graal.python.nfi2.NativeMemory.callocPtrArray;
-import static com.oracle.graal.python.nfi2.NativeMemory.copyByteArray;
-import static com.oracle.graal.python.nfi2.NativeMemory.copyPtrArray;
-import static com.oracle.graal.python.nfi2.NativeMemory.free;
-import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
-import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
-import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElement;
-import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElements;
-import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.callocByteArray;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.callocPtrArray;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.copyByteArray;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.copyPtrArray;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeByteArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeByteArrayElements;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtrArrayElement;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;

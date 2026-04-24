@@ -44,7 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_meth;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_name;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import java.util.logging.Level;
 
@@ -55,8 +55,8 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.nfi2.NativeMemory;
-import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;

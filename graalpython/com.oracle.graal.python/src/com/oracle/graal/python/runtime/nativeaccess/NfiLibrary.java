@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi2;
+package com.oracle.graal.python.runtime.nativeaccess;
 
-import java.lang.invoke.MethodHandle;
+import com.oracle.truffle.api.CompilerDirectives;
 
-public final class NfiUpcallSignature {
+public final class NfiLibrary {
 
-    NfiUpcallSignature() {
+    private final NfiContext context;
+    final long ptr;
+
+    @SuppressWarnings("unused")
+    NfiLibrary(NfiContext context, long ptr) {
+        this.context = context;
+        this.ptr = ptr;
     }
 
-    @SuppressWarnings({"unused", "static-method"})
-    public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
-        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
+    public long lookupSymbol(String name) {
+        long symbol = lookupOptionalSymbol(name);
+        if (symbol == 0) {
+            throw CompilerDirectives.shouldNotReachHere("symbol not found: " + name);
+        }
+        return symbol;
+    }
+
+    public long lookupOptionalSymbol(String name) {
+        return context.lookupOptionalSymbol(ptr, name);
     }
 }

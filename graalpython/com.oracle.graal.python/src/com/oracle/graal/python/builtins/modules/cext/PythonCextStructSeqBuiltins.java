@@ -49,8 +49,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectTransfer;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.util.ArrayList;

@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.NodeFactoryBase;
-import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;

@@ -55,10 +55,10 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotGroup;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
-import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiBoundFunction;
-import com.oracle.graal.python.nfi2.NfiContext;
-import com.oracle.graal.python.nfi2.NfiType;
+import com.oracle.graal.python.runtime.nativeaccess.Nfi;
+import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
+import com.oracle.graal.python.runtime.nativeaccess.NfiType;
 import com.oracle.graal.python.util.Function;
 
 public class TpSlotsTests {

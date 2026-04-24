@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_INIT_NATIVE_DATETIME;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.allocate;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
-import static com.oracle.graal.python.nfi2.NativeMemory.free;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;

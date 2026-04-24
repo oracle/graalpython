@@ -51,10 +51,10 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
-import static com.oracle.graal.python.nfi2.NativeMemory.free;
-import static com.oracle.graal.python.nfi2.NativeMemory.malloc;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.calloc;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.malloc;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
@@ -65,7 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WriteTruffleStringNode;
-import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.strings.TruffleString;
 

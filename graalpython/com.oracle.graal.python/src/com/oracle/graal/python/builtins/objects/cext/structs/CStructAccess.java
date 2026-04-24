@@ -40,8 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.nfi2.NativeMemory.POINTER_SIZE;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.POINTER_SIZE;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteTruffleStringNodeGen;
-import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;

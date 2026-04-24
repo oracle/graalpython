@@ -57,7 +57,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
-import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.math.BigInteger;
@@ -81,7 +81,7 @@ import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
-import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;

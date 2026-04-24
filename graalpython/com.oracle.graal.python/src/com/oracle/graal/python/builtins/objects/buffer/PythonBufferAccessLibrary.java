@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.buffer;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
 
 import java.nio.ByteOrder;

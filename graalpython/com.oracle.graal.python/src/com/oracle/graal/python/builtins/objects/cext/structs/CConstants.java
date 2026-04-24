@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElements;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElements;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTERNAL_INT_OVERFLOW;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;

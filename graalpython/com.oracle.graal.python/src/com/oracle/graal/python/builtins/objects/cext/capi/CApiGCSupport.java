@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_LOGGER;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
-import static com.oracle.graal.python.nfi2.NativeMemory.free;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 
 import java.util.logging.Level;
 

@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.object;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GENERIC_SET_DICT;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import java.lang.ref.Reference;
 

@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;

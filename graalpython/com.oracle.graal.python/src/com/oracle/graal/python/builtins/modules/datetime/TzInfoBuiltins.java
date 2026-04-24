@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.modules.datetime;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETINITARGS__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;

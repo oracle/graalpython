@@ -359,44 +359,6 @@ suite = {
             ],
         },
 
-        # New version of NFI which uses panama directly, available for JDK22+ only
-        "com.oracle.graal.python.nfi2": {
-            "subDir": "graalpython",
-            "sourceDirs": ["src"],
-            "dependencies": [
-                "truffle:TRUFFLE_API",
-            ],
-            "requires": [
-                "java.base",
-                "java.logging",
-                "jdk.unsupported",
-            ],
-            "javaCompliance": "17+",
-            "checkstyle": "com.oracle.graal.python",
-            "annotationProcessors": [
-                "truffle:TRUFFLE_DSL_PROCESSOR"
-            ],
-            "workingSets": "Truffle,Python",
-            "spotbugsIgnoresGenerated": True,
-        },
-
-        "com.oracle.graal.python.nfi2.jdk22": {
-            "overlayTarget": "com.oracle.graal.python.nfi2",
-            "multiReleaseJarVersion": "22",
-            "subDir": "graalpython",
-            "sourceDirs": ["src"],
-            "dependencies": [
-                "com.oracle.graal.python.nfi2",
-            ],
-            "javaCompliance": "22+",
-            "checkstyle": "com.oracle.graal.python",
-            "annotationProcessors": [
-                "truffle:TRUFFLE_DSL_PROCESSOR"
-            ],
-            "workingSets": "Truffle,Python",
-            "spotbugsIgnoresGenerated": True,
-        },
-
         "com.oracle.graal.python.resources": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -421,7 +383,6 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.annotations",
                 "com.oracle.graal.python.pegparser",
-                "com.oracle.graal.python.nfi2",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_PROFILER",
@@ -1062,31 +1023,6 @@ suite = {
             "maven": False,
         },
 
-        "GRAALPYTHON_NFI2": {
-            "moduleInfo": {
-                "name": "org.graalvm.py.nfi2",
-                "exports": [
-                    "com.oracle.graal.python.nfi2",
-                ],
-            },
-            "dependencies": [
-                "com.oracle.graal.python.nfi2",
-            ],
-            "distDependencies": [
-                "truffle:TRUFFLE_API",
-            ],
-            "requires": [
-                "java.base",
-                "java.logging",
-                "jdk.unsupported",
-            ],
-            "maven": {
-                "artifactId": "nfi2",
-                "groupId": "org.graalvm.python",
-                "tag": ["default", "public"],
-            },
-        },
-
         "GRAALPYTHON_RESOURCES": {
             "platformDependent": False,
             "moduleInfo": {
@@ -1172,7 +1108,6 @@ suite = {
                 "com.oracle.graal.python.frozen",
             ],
             "distDependencies": [
-                "GRAALPYTHON_NFI2",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",

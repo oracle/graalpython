@@ -38,37 +38,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi2;
-
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
-import java.lang.foreign.MemorySegment;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.ref.Reference;
-
-import org.graalvm.nativeimage.ImageInfo;
+package com.oracle.graal.python.runtime.nativeaccess;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import org.graalvm.nativeimage.ImageInfo;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.ref.Reference;
 
 public final class NfiBoundFunction {
-    static final MethodType DOWNCALL_METHOD_TYPE = MethodType.methodType(Object.class, new Class<?>[]{long.class, Object[].class});
-
-    private static final MethodHandle OF_ADDRESS;
-
-    static {
-        try {
-            OF_ADDRESS = MethodHandles.lookup().findStatic(
-                            MemorySegment.class,
-                            "ofAddress",
-                            MethodType.methodType(MemorySegment.class, long.class));
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private final long ptr;
     private final MethodHandle boundHandle;
     private final NfiType resType;
@@ -81,17 +60,9 @@ public final class NfiBoundFunction {
         this.argTypes = argTypes;
     }
 
-    @SuppressWarnings("restricted")
     public static NfiBoundFunction create(@SuppressWarnings("unused") NfiContext context, long pointer, NfiType resType, NfiType... argTypes) {
         // TODO(NFI2) if logging enabled, use context to lookup name
-        assert !ImageInfo.inImageBuildtimeCode() : "binding native address at image build time";
-        FunctionDescriptor functionDescriptor = NfiContext.createFunctionDescriptor(resType, argTypes);
-        MethodHandle methodHandle = Linker.nativeLinker().downcallHandle(functionDescriptor);
-        methodHandle = MethodHandles.filterArguments(methodHandle, 0, OF_ADDRESS);
-        methodHandle = methodHandle.asSpreader(1, Object[].class, argTypes.length);
-        methodHandle = methodHandle.asType(DOWNCALL_METHOD_TYPE);
-        MethodHandle boundHandle = MethodHandles.insertArguments(methodHandle, 0, pointer);
-        return new NfiBoundFunction(pointer, boundHandle, resType, argTypes.clone());
+        return new NfiBoundFunction(pointer, NfiSupport.createBoundHandle(pointer, resType, argTypes), resType, argTypes.clone());
     }
 
     public long getAddress() {
@@ -128,13 +99,13 @@ public final class NfiBoundFunction {
         String signature = toSignatureString();
         if (ImageInfo.inImageCode()) {
             return "NfiBoundFunction[" +
-                            "ptr=" + ptr + ", " +
-                            "signature=" + signature + ']';
+                    "ptr=" + ptr + ", " +
+                    "signature=" + signature + ']';
         } else {
             return "NfiBoundFunction[" +
-                            "ptr=" + ptr + ", " +
-                            "boundHandle=" + boundHandle + ", " +
-                            "signature=" + signature + ']';
+                    "ptr=" + ptr + ", " +
+                    "boundHandle=" + boundHandle + ", " +
+                    "signature=" + signature + ']';
         }
     }
 

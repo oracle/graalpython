@@ -53,11 +53,11 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
-import static com.oracle.graal.python.nfi2.NativeMemory.free;
-import static com.oracle.graal.python.nfi2.NativeMemory.mallocPtrArray;
-import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElements;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.calloc;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.mallocPtrArray;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtrArrayElements;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -120,7 +120,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
-import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -290,8 +290,8 @@ public abstract class CApiTransitions {
 
         /**
          * Indicates if the native memory {@link #pointer} was allocated from Java using
-         * {@link com.oracle.graal.python.nfi2.NativeMemory#malloc(long)} and thus must be freed
-         * using {@link com.oracle.graal.python.nfi2.NativeMemory#free(long)}. For any
+         * {@link NativeMemory#malloc(long)} and thus must be freed
+         * using {@link NativeMemory#free(long)}. For any
          * {@link PythonObjectReference} the last collection is always on the Java side, since the
          * native side can only drop the ob_refcnt to {@link PythonObject#MANAGED_REFCNT} at which
          * point the {@link #strongReference} is removed and the Java GC will eventually get to

@@ -54,7 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_doc;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SEND;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_ISNT_MAPPING;

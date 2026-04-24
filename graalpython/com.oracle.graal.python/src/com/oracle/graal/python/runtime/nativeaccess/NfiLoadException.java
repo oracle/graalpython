@@ -38,21 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi2;
+package com.oracle.graal.python.runtime.nativeaccess;
 
-public final class NfiContext {
+public final class NfiLoadException extends Exception {
+    private static final long serialVersionUID = 8768143107513538801L;
 
-    // never instantiated on JDK <= 21
-    private NfiContext() {
-    }
-
-    @SuppressWarnings("static-method")
-    public void close() {
-        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    public NfiLibrary loadLibrary(String name, int flags) throws NfiLoadException {
-        throw new UnsupportedOperationException(Nfi.ERROR_MESSAGE);
+    public NfiLoadException(String message) {
+        super(message);
     }
 }

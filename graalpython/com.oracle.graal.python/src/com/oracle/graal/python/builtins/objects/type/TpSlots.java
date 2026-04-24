@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
@@ -210,7 +210,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotVarargsBuiltin;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
-import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;

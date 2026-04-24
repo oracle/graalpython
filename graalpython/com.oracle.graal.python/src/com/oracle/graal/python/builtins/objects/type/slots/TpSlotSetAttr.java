@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
-import static com.oracle.graal.python.nfi2.NativeMemory.free;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;

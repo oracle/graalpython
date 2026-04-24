@@ -38,12 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi2;
+package com.oracle.graal.python.runtime.nativeaccess;
 
 public final class Nfi {
 
     public static NfiContext createContext() {
-        // TODO(NFI2) check native access allowed? Or is the caller responsible for checking that?
+        // TODO(NFI2) check native access is allowed, or make callers do it explicitly.
         return new NfiContext();
     }
 

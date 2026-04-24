@@ -47,7 +47,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.nfi2.NfiLibrary;
+import com.oracle.graal.python.runtime.nativeaccess.NfiLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.strings.TruffleString;

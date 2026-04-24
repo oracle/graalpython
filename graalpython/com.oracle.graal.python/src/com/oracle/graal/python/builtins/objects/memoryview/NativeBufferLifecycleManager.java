@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 /**
  * Object for tracking lifetime of buffers inside memoryviews. The only purpose is to release the

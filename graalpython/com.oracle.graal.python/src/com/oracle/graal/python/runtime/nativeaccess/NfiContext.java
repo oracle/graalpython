@@ -38,27 +38,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi2;
+package com.oracle.graal.python.runtime.nativeaccess;
 
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
-import static java.lang.foreign.ValueLayout.JAVA_INT;
-import static java.lang.foreign.ValueLayout.JAVA_LONG;
-
-import java.lang.foreign.Arena;
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SymbolLookup;
-import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiContext {
-    private static final boolean IS_WINDOWS = System.getProperty("os.name", "").startsWith("Windows");
+    public static final String UNAVAILABLE = "JEP 454 is not included on this JDK, this prevents loading native extensions modules.";
+
     private static final int LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100;
     private static final int LOAD_LIBRARY_SEARCH_APPLICATION_DIR = 0x00000200;
     private static final int LOAD_LIBRARY_SEARCH_USER_DIRS = 0x00000400;
@@ -72,18 +65,19 @@ public final class NfiContext {
     private static final int FORMAT_MESSAGE_BUFFER_CHARS = 2048;
 
     private final ConcurrentLinkedQueue<NfiLibrary> libraries = new ConcurrentLinkedQueue<>();
-    final Arena arena;
+    final Object arena;
 
     @TruffleBoundary
     NfiContext() {
-        arena = Arena.ofShared();
+        arena = NfiSupport.createArena();
     }
 
     public void close() {
+        CompilerAsserts.neverPartOfCompilation();
         for (NfiLibrary library : libraries) {
             int result;
             try {
-                result = IS_WINDOWS ? (int) FREE_LIBRARY.invokeExact(freeLibraryPtr, library.ptr) : (int) DLCLOSE.invokeExact(dlclosePtr, library.ptr);
+                result = isWindows() ? (int) FREE_LIBRARY.invokeExact(freeLibraryPtr, library.ptr) : (int) DLCLOSE.invokeExact(dlclosePtr, library.ptr);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -91,17 +85,18 @@ public final class NfiContext {
                 // TODO(NFI2) log error
             }
         }
-        arena.close();
+        NfiSupport.closeArena(arena);
     }
 
     public NfiLibrary loadLibrary(String name, int flags) throws NfiLoadException {
+        CompilerAsserts.neverPartOfCompilation();
         long lib;
-        long nativeName = IS_WINDOWS ? NativeMemory.javaStringToNativeUtf16(name) : NativeMemory.javaStringToNativeUtf8(name);
+        long nativeName = isWindows() ? NativeMemory.javaStringToNativeUtf16(name) : NativeMemory.javaStringToNativeUtf8(name);
         try {
             ensureLoader();
-            if (IS_WINDOWS) {
+            if (isWindows()) {
                 int callFlags = sanitizeWindowsLoadLibraryFlags(flags) | WINDOWS_DEFAULT_LOAD_LIBRARY_FLAGS;
-                lib = (long) LOAD_LIBRARY_EX.invokeExact(loadLibraryExPtr, nativeName, MemorySegment.NULL, callFlags);
+                lib = (long) LOAD_LIBRARY_EX.invokeExact(loadLibraryExPtr, nativeName, 0L, callFlags);
             } else {
                 int callFlags = flags;
                 if ((callFlags & (RTLD_LAZY | RTLD_NOW)) == 0) {
@@ -127,7 +122,7 @@ public final class NfiContext {
         // TODO(NFI2) if logging enabled, keep track of ptr->name mappings
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
-            return IS_WINDOWS ? (long) GET_PROC_ADDRESS.invokeExact(getProcAddressPtr, library, nativeName) : (long) DLSYM.invokeExact(dlsymPtr, library, nativeName);
+            return isWindows() ? (long) GET_PROC_ADDRESS.invokeExact(getProcAddressPtr, library, nativeName) : (long) DLSYM.invokeExact(dlsymPtr, library, nativeName);
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
@@ -135,67 +130,61 @@ public final class NfiContext {
         }
     }
 
+    private static boolean isWindows() {
+        return PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32;
+    }
+
     // TODO(NFI2) platform-specific values for RTLD_* constants
     private static final int RTLD_LAZY = 1;
     private static final int RTLD_NOW = 2;
 
-    @SuppressWarnings("restricted") //
-    private static final MethodHandle DLOPEN = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT));
-    @SuppressWarnings("restricted") //
-    private static final MethodHandle DLCLOSE = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_INT, JAVA_LONG));
-    @SuppressWarnings("restricted") //
-    private static final MethodHandle DLSYM = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG));
-    @SuppressWarnings("restricted") //
-    private static final MethodHandle LOAD_LIBRARY_EX = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, ValueLayout.ADDRESS, JAVA_INT));
-    @SuppressWarnings("restricted") //
-    private static final MethodHandle FREE_LIBRARY = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_INT, JAVA_LONG));
-    @SuppressWarnings("restricted") //
-    private static final MethodHandle GET_PROC_ADDRESS = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG));
-    @SuppressWarnings("restricted") //
-    private static final MethodHandle GET_LAST_ERROR = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_INT));
-    @SuppressWarnings("restricted") //
-    private static final MethodHandle FORMAT_MESSAGE = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_INT, JAVA_INT, JAVA_LONG, JAVA_INT, JAVA_INT, JAVA_LONG, JAVA_INT, JAVA_LONG));
-    @SuppressWarnings("restricted") //
-    private static final MethodHandle DLERROR = Linker.nativeLinker().downcallHandle(FunctionDescriptor.of(JAVA_LONG));
+    private static final MethodHandle DLOPEN = NfiSupport.createFunctionPointerHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.SINT32);
+    private static final MethodHandle DLCLOSE = NfiSupport.createFunctionPointerHandle(NfiType.SINT32, NfiType.SINT64);
+    private static final MethodHandle DLSYM = NfiSupport.createFunctionPointerHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
+    private static final MethodHandle LOAD_LIBRARY_EX = NfiSupport.createFunctionPointerHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.SINT32);
+    private static final MethodHandle FREE_LIBRARY = NfiSupport.createFunctionPointerHandle(NfiType.SINT32, NfiType.SINT64);
+    private static final MethodHandle GET_PROC_ADDRESS = NfiSupport.createFunctionPointerHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
+    private static final MethodHandle GET_LAST_ERROR = NfiSupport.createFunctionPointerHandle(NfiType.SINT32);
+    private static final MethodHandle FORMAT_MESSAGE = NfiSupport.createFunctionPointerHandle(NfiType.SINT32, NfiType.SINT32, NfiType.RAW_POINTER, NfiType.SINT32, NfiType.SINT32,
+                    NfiType.RAW_POINTER, NfiType.SINT32, NfiType.RAW_POINTER);
+    private static final MethodHandle DLERROR = NfiSupport.createFunctionPointerHandle(NfiType.SINT64);
 
-    private static MemorySegment dlopenPtr;
-    private static MemorySegment dlclosePtr;
-    private static MemorySegment dlsymPtr;
-    private static MemorySegment dlerrorPtr;
-    private static MemorySegment loadLibraryExPtr;
-    private static MemorySegment freeLibraryPtr;
-    private static MemorySegment getProcAddressPtr;
-    private static MemorySegment getLastErrorPtr;
-    private static MemorySegment formatMessagePtr;
-    private static Arena windowsLookupArena;
-    private static SymbolLookup windowsLookup;
+    private static long dlopenPtr;
+    private static long dlclosePtr;
+    private static long dlsymPtr;
+    private static long dlerrorPtr;
+    private static long loadLibraryExPtr;
+    private static long freeLibraryPtr;
+    private static long getProcAddressPtr;
+    private static long getLastErrorPtr;
+    private static long formatMessagePtr;
+    private static Object windowsLookupArena;
+    private static Object windowsLookup;
 
-    // TODO(NFI2) error handling
-    @SuppressWarnings("restricted")
     private static void ensureLoader() {
-        if (IS_WINDOWS) {
-            if (loadLibraryExPtr != null) {
-                assert freeLibraryPtr != null;
-                assert getProcAddressPtr != null;
-                assert getLastErrorPtr != null;
-                assert formatMessagePtr != null;
+        if (isWindows()) {
+            if (loadLibraryExPtr != 0) {
+                assert freeLibraryPtr != 0;
+                assert getProcAddressPtr != 0;
+                assert getLastErrorPtr != 0;
+                assert formatMessagePtr != 0;
                 return;
             }
             if (windowsLookup == null) {
-                windowsLookupArena = Arena.ofShared();
-                windowsLookup = SymbolLookup.libraryLookup("kernel32", windowsLookupArena);
+                windowsLookupArena = NfiSupport.createArena();
+                windowsLookup = NfiSupport.libraryLookup("kernel32", windowsLookupArena);
             }
-            loadLibraryExPtr = windowsLookup.find("LoadLibraryExW").orElseThrow();
-            freeLibraryPtr = windowsLookup.find("FreeLibrary").orElseThrow();
-            getProcAddressPtr = windowsLookup.find("GetProcAddress").orElseThrow();
-            getLastErrorPtr = windowsLookup.find("GetLastError").orElseThrow();
-            formatMessagePtr = windowsLookup.find("FormatMessageW").orElseThrow();
+            loadLibraryExPtr = NfiSupport.lookupSymbol(windowsLookup, "LoadLibraryExW");
+            freeLibraryPtr = NfiSupport.lookupSymbol(windowsLookup, "FreeLibrary");
+            getProcAddressPtr = NfiSupport.lookupSymbol(windowsLookup, "GetProcAddress");
+            getLastErrorPtr = NfiSupport.lookupSymbol(windowsLookup, "GetLastError");
+            formatMessagePtr = NfiSupport.lookupSymbol(windowsLookup, "FormatMessageW");
             return;
         }
-        dlopenPtr = Linker.nativeLinker().defaultLookup().find("dlopen").orElseThrow();
-        dlclosePtr = Linker.nativeLinker().defaultLookup().find("dlclose").orElseThrow();
-        dlsymPtr = Linker.nativeLinker().defaultLookup().find("dlsym").orElseThrow();
-        dlerrorPtr = Linker.nativeLinker().defaultLookup().find("dlerror").orElseThrow();
+        dlopenPtr = NfiSupport.lookupDefault("dlopen");
+        dlclosePtr = NfiSupport.lookupDefault("dlclose");
+        dlsymPtr = NfiSupport.lookupDefault("dlsym");
+        dlerrorPtr = NfiSupport.lookupDefault("dlerror");
     }
 
     private static int sanitizeWindowsLoadLibraryFlags(int flags) {
@@ -204,7 +193,7 @@ public final class NfiContext {
 
     @TruffleBoundary
     private static NfiLoadException createLoadLibraryException() {
-        if (IS_WINDOWS) {
+        if (isWindows()) {
             int errorCode = getLastError();
             String detail = formatWindowsError(errorCode);
             if (detail == null || detail.isBlank()) {
@@ -256,26 +245,5 @@ public final class NfiContext {
         } finally {
             NativeMemory.free(buffer);
         }
-    }
-
-    static FunctionDescriptor createFunctionDescriptor(NfiType resType, NfiType[] argTypes) {
-        MemoryLayout[] argLayouts = new MemoryLayout[argTypes.length];
-        for (int i = 0; i < argTypes.length; i++) {
-            argLayouts[i] = asLayout(argTypes[i]);
-        }
-        return resType == NfiType.VOID ? FunctionDescriptor.ofVoid(argLayouts) : FunctionDescriptor.of(asLayout(resType), argLayouts);
-    }
-
-    private static MemoryLayout asLayout(NfiType type) {
-        return switch (type) {
-            case VOID -> throw shouldNotReachHere("VOID has no layout");
-            case SINT8 -> ValueLayout.JAVA_BYTE;
-            case SINT16 -> ValueLayout.JAVA_SHORT;
-            case SINT32 -> JAVA_INT;
-            case SINT64 -> JAVA_LONG;
-            case FLOAT -> ValueLayout.JAVA_FLOAT;
-            case DOUBLE -> ValueLayout.JAVA_DOUBLE;
-            case RAW_POINTER -> JAVA_LONG;
-        };
     }
 }

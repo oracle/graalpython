@@ -46,7 +46,7 @@ import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenS
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_INVALID;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_NOT_FOUND;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_OKAY;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;

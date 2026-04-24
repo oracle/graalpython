@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import java.util.logging.Level;
 

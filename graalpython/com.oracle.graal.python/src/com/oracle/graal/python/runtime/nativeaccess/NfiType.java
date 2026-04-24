@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,12 +38,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi2;
+package com.oracle.graal.python.runtime.nativeaccess;
 
-public final class NfiLoadException extends Exception {
-    private static final long serialVersionUID = 8768143107513538801L;
+public enum NfiType {
+    VOID,
+    SINT8,
+    SINT16,
+    SINT32,
+    SINT64,
+    FLOAT,
+    DOUBLE,
+    RAW_POINTER;    // arg must be long, retval is long
 
-    public NfiLoadException(String message) {
-        super(message);
+    boolean checkType(Object value) {
+        return switch (this) {
+            case VOID -> value == null;
+            case SINT8 -> value instanceof Byte;
+            case SINT16 -> value instanceof Short;
+            case SINT32 -> value instanceof Integer;
+            case SINT64 -> value instanceof Long;
+            case FLOAT -> value instanceof Float;
+            case DOUBLE -> value instanceof Double;
+            case RAW_POINTER -> value instanceof Long;
+        };
     }
 }

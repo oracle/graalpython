@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.capsule;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Capsule;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;

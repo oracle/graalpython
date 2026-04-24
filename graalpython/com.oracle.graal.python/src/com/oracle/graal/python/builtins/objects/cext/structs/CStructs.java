@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElements;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElements;
 
 import com.oracle.graal.python.annotations.CApiStructs;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;

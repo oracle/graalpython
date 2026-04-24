@@ -41,9 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.nfi2.NfiBoundFunction;
-import com.oracle.graal.python.nfi2.NfiContext;
-import com.oracle.graal.python.nfi2.NfiType;
+import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
+import com.oracle.graal.python.runtime.nativeaccess.NfiType;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public interface NativeCExtSymbol {

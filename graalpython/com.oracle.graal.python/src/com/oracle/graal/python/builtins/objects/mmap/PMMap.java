@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.mmap;
 
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
