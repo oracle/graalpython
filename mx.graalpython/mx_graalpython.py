@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -130,6 +130,7 @@ CI = get_boolean_env("CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', False)
+GRAALPY_WITH_BOUNCYCASTLE = get_boolean_env("GRAALPY_WITH_BOUNCYCASTLE", True)
 
 mx_gate.add_jacoco_excludes([
     "com.oracle.graal.python.pegparser.sst",
@@ -162,6 +163,20 @@ if wants_debug_build():
     mx_native.DefaultNativeProject.cflags = property(
         lambda self: self._original_cflags + (["/Z7"] if WIN32 else ["-fPIC", "-ggdb3"])
     )
+
+
+def _is_graalos_build():
+    return False
+
+
+def _with_bouncycastle():
+    return GRAALPY_WITH_BOUNCYCASTLE and not _is_graalos_build()
+
+
+def bcflags():
+    if _with_bouncycastle():
+        return '--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util'
+    return ''
 
 
 if WIN32:
@@ -266,6 +281,14 @@ def get_jdk():
 def graalpy_standalone_deps():
     include_truffle_runtime = not mx.env_var_to_bool("EXCLUDE_TRUFFLE_RUNTIME")
     deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
+    if _with_bouncycastle():
+        mx.log("Including bouncycastle with GraalPy standalone")
+        deps += [
+            "graalpython:GRAALPYTHON_BOUNCYCASTLE",
+            "graalpython:BOUNCYCASTLE-PROVIDER",
+            "graalpython:BOUNCYCASTLE-PKIX",
+            "graalpython:BOUNCYCASTLE-UTIL",
+        ]
     return deps
 
 
@@ -1690,6 +1713,9 @@ mx_subst.results_substitutions.register_with_arg('dev_tag', dev_tag)
 mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 
+mx_subst.path_substitutions.register_no_arg('bcflags', bcflags)
+mx_subst.results_substitutions.register_no_arg('bcflags', bcflags)
+mx_subst.string_substitutions.register_no_arg('bcflags', bcflags)
 
 def update_import(name, suite_py: Path, args):
     parent = os.path.join(SUITE.dir, "..")
@@ -1997,6 +2023,8 @@ def warn_about_old_hardcoded_version():
     replacements = set()
     for path, patterns in files_with_versions.items():
         full_path = os.path.join(SUITE.dir, path)
+        if not os.path.exists(full_path):
+            continue
         with open(full_path, "r", encoding="utf-8") as f:
             content = f.read()
         for pattern, test in patterns.items():
