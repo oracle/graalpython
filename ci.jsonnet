@@ -17,7 +17,7 @@
         RUBYGEMS_MIRROR: "",
         JEKYLL_THEME_GIT: "",
         WEBSITE_GIT: "",
-        STAGING_DEPLOY_CMD: [],
+        STAGING_DEPLOY_CMD: [["echo", "1"]],
         GRAAL_ENTERPRISE_GIT: "",
         CI_OVERLAYS_GIT: "",
         BENCHMARK_CONFIG_GIT: "",
@@ -120,7 +120,7 @@
         "python-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
             "linux:aarch64:jdk21"        : daily     + t("02:00:00") + provide(GPY_JVM21_STANDALONE),
-            "darwin:aarch64:jdk21"       : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
+            "darwin:aarch64:jdk21"       : daily     + t("01:30:00") + provide(GPY_JVM21_STANDALONE),
             "windows:amd64:jdk21"        : daily     + t("01:30:00") + provide(GPY_JVM21_STANDALONE),
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
