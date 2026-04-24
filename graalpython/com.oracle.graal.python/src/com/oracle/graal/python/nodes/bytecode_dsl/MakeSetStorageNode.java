@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.bytecode_dsl;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap.PutNode;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -66,12 +65,12 @@ public abstract class MakeSetStorageNode extends Node {
                     @Cached PyObjectHashNode hashNode,
                     @Cached PutNode putNode) {
         int profiledLen = lengthProfile.profile(inliningTarget, elements.length);
-        ObjectHashMap map = new ObjectHashMap(profiledLen);
+        EconomicMapStorage storage = EconomicMapStorage.create(profiledLen);
         for (int i = 0; i < profiledLen; i++) {
             Object key = elements[i];
             long keyHash = hashNode.execute(frame, inliningTarget, key);
-            putNode.put(frame, inliningTarget, map, key, keyHash, PNone.NONE);
+            putNode.put(frame, inliningTarget, storage, key, keyHash, PNone.NONE);
         }
-        return new EconomicMapStorage(map, false);
+        return storage;
     }
 }

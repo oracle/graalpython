@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,6 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
-
-import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.PutNodeGen;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMapFactory.RemoveNodeGen;
@@ -109,14 +107,10 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
  * <p>
  * Areas for future improvements:
  * <ul>
- * <li>Use byte[] array for the sparse indices array and determine the size of an index according to
- * the compact array size, i.e., 1 byte is enough for 256 items. This needs to also properly handle
- * the bit flag used to mark collisions.</li>
  * <li>Use another bit from the index in the sparse indices array to remember index of removed
  * items, i.e., dummy items would carry the old index and collision mask. Such dummy items can be
  * reused when inserting new items. This will help with the insert/remove of the same key
  * scenario.</li>
- * <li>Inline {@link ObjectHashMap} into {@code EconomicMapStorage} to save an indirection.</li>
  * <li>New strategy for long keys where the hashes array is used to store the keys, and the
  * keysAndValues array will store just values. Can be implemented by extending this class and
  * overriding few methods.</li>
@@ -124,12 +118,14 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
  * {@code None} and there is no need to allocate space for values in the keysAndValues array.</li>
  * </ul>
  */
-public final class ObjectHashMap {
+public class ObjectHashMap extends HashingStorage {
+    private static final int TIGHT_ENTRY_CAPACITY_LIMIT = 8;
+
     /**
      * Every hash map will preallocate at least this many buckets (and corresponding # of slots for
      * the real items).
      */
-    private static final int INITIAL_INDICES_SIZE = 8;
+    private static final int INITIAL_INDICES_SIZE = 4;
 
     /**
      * We limit the max size of preallocated hash maps. See the comment in the ctor.
@@ -137,21 +133,35 @@ public final class ObjectHashMap {
     private static final int MAX_PREALLOCATED_INDICES_SIZE = 1 << 20;
 
     /**
-     * Indices that participate in a collision chain are marked with the sign bit.
+     * Indices that participate in a collision chain are marked with the sign bit in the logical
+     * representation. The physical storage may use a narrower primitive array.
      */
     private static final int COLLISION_MASK = 1 << 31;
+    private static final int BYTE_COLLISION_MASK = 1 << 7;
+    private static final int SHORT_COLLISION_MASK = 1 << 15;
 
     /**
-     * We need some placeholders. Those masked with {@link #COLLISION_MASK} give numbers higher than
-     * our max number of items, which is MAX_INT/2, because we cram they keys and values together
-     * into one array.
+     * Sparse table indices use 0 and 1 as reserved markers and store real compact-array indices as
+     * {@code index + INDEX_OFFSET}. The collision bit is kept separately.
      */
-    private static final int DUMMY_INDEX = -2;
-    private static final int EMPTY_INDEX = -1;
+    private static final int EMPTY_INDEX = 0;
+    private static final int DUMMY_INDEX = 1;
+    private static final int INDEX_OFFSET = 2;
+    private static final int MAX_BYTE_INDEX = (BYTE_COLLISION_MASK - 1) - INDEX_OFFSET;
+    private static final int MAX_SHORT_INDEX = (SHORT_COLLISION_MASK - 1) - INDEX_OFFSET;
 
-    private static void markCollision(int[] indices, int compactIndex) {
-        assert indices[compactIndex] != EMPTY_INDEX;
-        indices[compactIndex] = indices[compactIndex] | COLLISION_MASK;
+    private static void markCollision(byte[] metadata, int entryCapacity, int compactIndex) {
+        int indexByteSize = getIndexByteSize(entryCapacity);
+        int indicesOffset = getIndicesOffset(entryCapacity);
+        markCollision(metadata, indicesOffset, indexByteSize, getPhysicalCollisionMaskForIndexByteSize(indexByteSize), compactIndex);
+    }
+
+    private static void markCollision(byte[] metadata, int indicesOffset, int indexByteSize, int physicalCollisionMask, int compactIndex) {
+        int index = getIndex(metadata, indicesOffset, indexByteSize, compactIndex);
+        assert index != EMPTY_INDEX;
+        if (index != DUMMY_INDEX) {
+            setIndex(metadata, indicesOffset, indexByteSize, physicalCollisionMask, compactIndex, index | COLLISION_MASK);
+        }
     }
 
     private static boolean isCollision(int index) {
@@ -159,25 +169,17 @@ public final class ObjectHashMap {
     }
 
     private static int unwrapIndex(int value) {
-        return value & ~COLLISION_MASK;
+        return (value & ~COLLISION_MASK) - INDEX_OFFSET;
     }
-
-    /**
-     * This is the factor how much the map grows when new entries are added. Note that we grow
-     * according to the used slots for real items, not according to the buckets count, because when
-     * "growing" we also remove dummy entries, so "growing" could mean that we also shrink.
-     */
-    private static final int GROWTH_RATE = 4;
 
     private static final long PERTURB_SHIFT = 5;
     // It takes at most this many >>> shifts to turn any long into 0
     private static final int PERTURB_SHIFTS_COUT = 13;
 
-    // Sparse array with indices pointing to hashes and keysAndValues
-    private int[] indices;
+    // Packed metadata: hashes first, then sparse indices.
+    private byte[] metadata;
 
-    // Compact arrays with the actual dict items:
-    long[] hashes;
+    // Compact array with the actual dict items:
     Object[] keysAndValues;
 
     // How many real items are in the dict
@@ -194,12 +196,12 @@ public final class ObjectHashMap {
 
     public ObjectHashMap(int capacity) {
         int allocateSize;
-        if (capacity <= INITIAL_INDICES_SIZE) {
+        int entryCapacity;
+        if (capacity <= 0) {
             allocateSize = INITIAL_INDICES_SIZE;
+            entryCapacity = getUsableSize(allocateSize);
         } else {
-            // We need the hash table of this size, in order to accommodate "capacity" many entries
-            int indicesCapacity = capacity + (capacity / 3);
-            if (indicesCapacity < 0 || indicesCapacity > MAX_PREALLOCATED_INDICES_SIZE) {
+            if (capacity > getUsableSize(MAX_PREALLOCATED_INDICES_SIZE)) {
                 // This oddity is here because in some cases we are asked to allocate very large
                 // dict in a situation where CPython (probably) does not preallocate at all and
                 // fails later during the actual insertion on something unrelated before it can
@@ -207,13 +209,13 @@ public final class ObjectHashMap {
                 // behavior, so we take it easy if the requested size is too large. Maybe we should
                 // rather revisit all such callsites instead of fixing this here...
                 allocateSize = MAX_PREALLOCATED_INDICES_SIZE;
+                entryCapacity = getUsableSize(allocateSize);
             } else {
-                int pow2 = getNextPow2(indicesCapacity);
-                assert pow2 > INITIAL_INDICES_SIZE;
-                allocateSize = pow2;
+                allocateSize = getMinBucketsCount(capacity);
+                entryCapacity = getRequestedEntryCapacity(capacity, allocateSize);
             }
         }
-        allocateData(allocateSize);
+        allocateData(allocateSize, entryCapacity);
     }
 
     public ObjectHashMap() {
@@ -222,16 +224,24 @@ public final class ObjectHashMap {
         allocateData(INITIAL_INDICES_SIZE);
     }
 
-    private void allocateData(int newSize) {
-        assert isPow2(newSize);
-        indices = new int[newSize];
-        Arrays.fill(indices, EMPTY_INDEX);
-        // since we allow ourselves to fill only up to 3/4 of the hash table, we need this many
-        // entries for the actual values: (we intentionally over-allocate by a small constant)
-        int quarter = newSize >> 2;
-        int usableSize = 3 * quarter + 2;
-        hashes = new long[usableSize];
-        keysAndValues = new Object[usableSize * 2];
+    protected ObjectHashMap(ObjectHashMap original) {
+        size = original.size;
+        usedHashes = original.usedHashes;
+        usedIndices = original.usedIndices;
+        metadata = PythonUtils.arrayCopyOf(original.metadata, original.metadata.length);
+        keysAndValues = PythonUtils.arrayCopyOf(original.keysAndValues, original.keysAndValues.length);
+    }
+
+    private void allocateData(int bucketsCount) {
+        allocateData(bucketsCount, getUsableSize(bucketsCount));
+    }
+
+    private void allocateData(int bucketsCount, int entryCapacity) {
+        assert isPow2(bucketsCount);
+        assert entryCapacity > 0 && entryCapacity <= getUsableSize(bucketsCount);
+        ensureArraySizesFit(bucketsCount, entryCapacity);
+        metadata = createMetadata(bucketsCount, entryCapacity);
+        keysAndValues = new Object[entryCapacity * 2];
     }
 
     public void clear() {
@@ -239,17 +249,6 @@ public final class ObjectHashMap {
         usedHashes = 0;
         usedIndices = 0;
         allocateData(INITIAL_INDICES_SIZE);
-    }
-
-    public ObjectHashMap copy() {
-        ObjectHashMap result = new ObjectHashMap();
-        result.size = size;
-        result.usedHashes = usedHashes;
-        result.usedIndices = usedIndices;
-        result.hashes = PythonUtils.arrayCopyOf(hashes, hashes.length);
-        result.indices = PythonUtils.arrayCopyOf(indices, indices.length);
-        result.keysAndValues = PythonUtils.arrayCopyOf(keysAndValues, keysAndValues.length);
-        return result;
     }
 
     public MapCursor getEntries() {
@@ -291,7 +290,7 @@ public final class ObjectHashMap {
         }
 
         public DictKey getKey() {
-            return new DictKey(ObjectHashMap.this.getKey(index), hashes[index]);
+            return new DictKey(ObjectHashMap.this.getKey(index), ObjectHashMap.this.getHash(index));
         }
 
         public Object getValue() {
@@ -299,15 +298,146 @@ public final class ObjectHashMap {
         }
     }
 
-    private static int getBucketsCount(int[] indices) {
-        return indices.length;
+    private int getEntryCapacity() {
+        return keysAndValues.length >> 1;
     }
 
-    private boolean needsResize(int[] localIndices) {
-        // when the hash table is 3/4 full, we resize on insertion
-        int bucketsCount = getBucketsCount(localIndices);
-        int bucketsCntQuarter = Math.max(1, bucketsCount >> 2);
-        return usedIndices + bucketsCntQuarter > bucketsCount;
+    private int getBucketsCount() {
+        return getBucketsCount(metadata, getEntryCapacity());
+    }
+
+    private static byte[] createMetadata(int bucketsCount, int usableSize) {
+        return new byte[getMetadataLength(bucketsCount, usableSize)];
+    }
+
+    private static int getBucketsCount(byte[] metadata, int entryCapacity) {
+        return (metadata.length - getIndicesOffset(entryCapacity)) / getIndexByteSize(entryCapacity);
+    }
+
+    private static int getIndexByteSize(int entryCapacity) {
+        if (entryCapacity - 1 <= MAX_BYTE_INDEX) {
+            return Byte.BYTES;
+        } else if (entryCapacity - 1 <= MAX_SHORT_INDEX) {
+            return Short.BYTES;
+        } else {
+            return Integer.BYTES;
+        }
+    }
+
+    private static int getIndicesOffset(int entryCapacity) {
+        return castMetadataInt(getIndicesOffsetLong(entryCapacity));
+    }
+
+    private static int getMetadataLength(int bucketsCount, int entryCapacity) {
+        return castMetadataInt(getMetadataLengthLong(bucketsCount, entryCapacity));
+    }
+
+    private static int getHashOffset(int index) {
+        return castMetadataInt((long) index * Long.BYTES);
+    }
+
+    private static int getIndexOffset(int entryCapacity, int compactIndex) {
+        return castMetadataInt((long) getIndicesOffset(entryCapacity) + ((long) compactIndex * getIndexByteSize(entryCapacity)));
+    }
+
+    private static int getIndexOffset(int indicesOffset, int indexByteSize, int compactIndex) {
+        return indicesOffset + compactIndex * indexByteSize;
+    }
+
+    private static long getIndicesOffsetLong(int entryCapacity) {
+        return (long) entryCapacity * Long.BYTES;
+    }
+
+    private static long getMetadataLengthLong(int bucketsCount, int entryCapacity) {
+        return getIndicesOffsetLong(entryCapacity) + ((long) bucketsCount * getIndexByteSize(entryCapacity));
+    }
+
+    private static void ensureArraySizesFit(int bucketsCount, int entryCapacity) {
+        long metadataLength = getMetadataLengthLong(bucketsCount, entryCapacity);
+        if (metadataLength > Integer.MAX_VALUE || ((long) entryCapacity << 1) > Integer.MAX_VALUE) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new OutOfMemoryError();
+        }
+    }
+
+    private static int castMetadataInt(long value) {
+        assert value >= 0 && value <= Integer.MAX_VALUE;
+        return (int) value;
+    }
+
+    private static int getPhysicalCollisionMaskForIndexByteSize(int indexByteSize) {
+        if (indexByteSize == Byte.BYTES) {
+            return BYTE_COLLISION_MASK;
+        } else if (indexByteSize == Short.BYTES) {
+            return SHORT_COLLISION_MASK;
+        } else {
+            return COLLISION_MASK;
+        }
+    }
+
+    private static int getPhysicalCollisionMask(int entryCapacity) {
+        return getPhysicalCollisionMaskForIndexByteSize(getIndexByteSize(entryCapacity));
+    }
+
+    private static int getIndex(byte[] metadata, int entryCapacity, int compactIndex) {
+        return getIndex(metadata, getIndicesOffset(entryCapacity), getIndexByteSize(entryCapacity), compactIndex);
+    }
+
+    private static int getIndex(byte[] metadata, int indicesOffset, int indexByteSize, int compactIndex) {
+        int offset = getIndexOffset(indicesOffset, indexByteSize, compactIndex);
+        if (indexByteSize == Byte.BYTES) {
+            return decodeIndex(metadata[offset] & 0xFF, BYTE_COLLISION_MASK);
+        } else if (indexByteSize == Short.BYTES) {
+            return decodeIndex(PythonUtils.ARRAY_ACCESSOR.getShort(metadata, offset) & 0xFFFF, SHORT_COLLISION_MASK);
+        } else {
+            return decodeIndex(PythonUtils.ARRAY_ACCESSOR.getInt(metadata, offset), COLLISION_MASK);
+        }
+    }
+
+    private static int decodeIndex(int encodedValue, int physicalCollisionMask) {
+        int value = encodedValue & (physicalCollisionMask - 1);
+        if ((encodedValue & physicalCollisionMask) != 0) {
+            value |= COLLISION_MASK;
+        }
+        return value;
+    }
+
+    private static void setIndex(byte[] metadata, int entryCapacity, int compactIndex, int logicalValue) {
+        setIndex(metadata, getIndicesOffset(entryCapacity), getIndexByteSize(entryCapacity), getPhysicalCollisionMask(entryCapacity), compactIndex, logicalValue);
+    }
+
+    private static void setIndex(byte[] metadata, int indicesOffset, int indexByteSize, int physicalCollisionMask, int compactIndex, int logicalValue) {
+        int encodedValue = logicalValue & ~COLLISION_MASK;
+        if ((logicalValue & COLLISION_MASK) != 0) {
+            encodedValue |= physicalCollisionMask;
+        }
+        int offset = getIndexOffset(indicesOffset, indexByteSize, compactIndex);
+        if (indexByteSize == Byte.BYTES) {
+            metadata[offset] = (byte) encodedValue;
+        } else if (indexByteSize == Short.BYTES) {
+            PythonUtils.ARRAY_ACCESSOR.putShort(metadata, offset, (short) encodedValue);
+        } else {
+            PythonUtils.ARRAY_ACCESSOR.putInt(metadata, offset, encodedValue);
+        }
+    }
+
+    private static long getHash(byte[] metadata, int index) {
+        return PythonUtils.ARRAY_ACCESSOR.getLong(metadata, getHashOffset(index));
+    }
+
+    private static void setHash(byte[] metadata, int index, long hash) {
+        PythonUtils.ARRAY_ACCESSOR.putLong(metadata, getHashOffset(index), hash);
+    }
+
+    long getHash(int index) {
+        return getHash(metadata, index);
+    }
+
+    private boolean needsResize(byte[] localMetadata) {
+        // Keep one slot empty at all times. For the smallest table, that means resizing once 2 of
+        // the 4 buckets are already in use instead of allowing the table to become completely full.
+        int bucketsCount = getBucketsCount(localMetadata, getEntryCapacity());
+        return usedHashes >= getEntryCapacity() || usedIndices >= getUsableSize(bucketsCount);
     }
 
     public int size() {
@@ -328,7 +458,7 @@ public final class ObjectHashMap {
                         @Cached InlinedBranchProfile lookupRestart) {
             while (true) {
                 try {
-                    return doPop(inliningTarget, map, map.indices, emptyMapProfile, hasValueProfile, hasCollisionProfile);
+                    return doPop(inliningTarget, map, map.metadata, emptyMapProfile, hasValueProfile, hasCollisionProfile);
                 } catch (RestartLookupException ignore) {
                     lookupRestart.enter(inliningTarget);
                 }
@@ -339,7 +469,7 @@ public final class ObjectHashMap {
             return indexInIndices != DUMMY_INDEX && indexInIndices != EMPTY_INDEX && indexToFind == unwrapIndex(indexInIndices);
         }
 
-        private static Object[] doPop(Node inliningTarget, ObjectHashMap map, int[] indices,
+        private static Object[] doPop(Node inliningTarget, ObjectHashMap map, byte[] metadata,
                         @Cached InlinedConditionProfile emptyMapProfile,
                         @Cached InlinedCountingConditionProfile hasValueProfile,
                         @Cached InlinedCountingConditionProfile hasCollisionProfile) throws RestartLookupException {
@@ -347,9 +477,14 @@ public final class ObjectHashMap {
                 return null;
             }
             Object[] localKeysAndValues = map.keysAndValues;
+            int entryCapacity = map.getEntryCapacity();
+            int indicesLen = getBucketsCount(metadata, entryCapacity);
+            int indexByteSize = getIndexByteSize(entryCapacity);
+            int indicesOffset = getIndicesOffset(entryCapacity);
+            int physicalCollisionMask = getPhysicalCollisionMaskForIndexByteSize(indexByteSize);
             int usedHashes = map.usedHashes;
             for (int i = usedHashes - 1; i >= 0; i--) {
-                if (indices != map.indices) {
+                if (metadata != map.metadata) {
                     // restart, can happen after Truffle safepoint on backedge
                     throw RestartLookupException.INSTANCE;
                 }
@@ -358,13 +493,13 @@ public final class ObjectHashMap {
                     // We can remove the item from the compact arrays
                     var result = new Object[]{map.getKey(i), value};
                     // We need to find the slot in the sparse indices array
-                    long hash = map.hashes[i];
-                    int compactIndex = getIndex(indices.length, hash);
-                    int index = indices[compactIndex];
+                    long hash = map.getHash(i);
+                    int compactIndex = getIndex(indicesLen, hash);
+                    int index = getIndex(metadata, indicesOffset, indexByteSize, compactIndex);
                     if (hasCollisionProfile.profile(inliningTarget, isIndex(index, i))) {
-                        indices[compactIndex] = DUMMY_INDEX;
+                        setIndex(metadata, indicesOffset, indexByteSize, physicalCollisionMask, compactIndex, DUMMY_INDEX);
                     } else {
-                        removeBucketWithIndex(map, indices, hash, compactIndex, i);
+                        removeBucketWithIndex(map, metadata, indicesOffset, indexByteSize, physicalCollisionMask, indicesLen, hash, compactIndex, i);
                     }
                     // Only remove the slot now, removeBucketWithIndex can restart the search
                     map.setValue(i, null);
@@ -376,20 +511,23 @@ public final class ObjectHashMap {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        private static void removeBucketWithIndex(ObjectHashMap map, int[] indices, long hash, int initialCompactIndex, int indexToFind) throws RestartLookupException {
-            int searchLimit = getBucketsCount(map.indices) + PERTURB_SHIFTS_COUT;
+        private static void removeBucketWithIndex(ObjectHashMap map, byte[] metadata, int indicesOffset, int indexByteSize, int physicalCollisionMask, int indicesLen, long hash,
+                        int initialCompactIndex,
+                        int indexToFind)
+                        throws RestartLookupException {
+            int searchLimit = indicesLen + PERTURB_SHIFTS_COUT;
             long perturb = hash;
             int compactIndex = initialCompactIndex;
             for (int i = 0; i < searchLimit; i++) {
-                if (indices != map.indices) {
+                if (metadata != map.metadata) {
                     // guards against things happening in the safepoint on the backedge
                     throw RestartLookupException.INSTANCE;
                 }
                 perturb >>>= PERTURB_SHIFT;
-                compactIndex = nextIndex(indices.length, compactIndex, perturb);
-                int index = indices[compactIndex];
+                compactIndex = nextIndex(indicesLen, compactIndex, perturb);
+                int index = getIndex(metadata, indicesOffset, indexByteSize, compactIndex);
                 if (isIndex(index, indexToFind)) {
-                    indices[compactIndex] = DUMMY_INDEX;
+                    setIndex(metadata, indicesOffset, indexByteSize, physicalCollisionMask, compactIndex, DUMMY_INDEX);
                     return;
                 }
             }
@@ -433,56 +571,60 @@ public final class ObjectHashMap {
                         InlinedCountingConditionProfile collisionFoundEqKey,
                         PyObjectRichCompareBool eqNode) throws RestartLookupException {
             assert map.checkInternalState();
-            int[] indices = map.indices;
-            int indicesLen = indices.length;
+            byte[] metadata = map.metadata;
+            int entryCapacity = map.getEntryCapacity();
+            int indicesLen = getBucketsCount(metadata, entryCapacity);
+            int indexByteSize = getIndexByteSize(entryCapacity);
+            int indicesOffset = getIndicesOffset(entryCapacity);
 
             int compactIndex = getIndex(indicesLen, keyHash);
-            int index = indices[compactIndex];
+            int index = getIndex(metadata, indicesOffset, indexByteSize, compactIndex);
             if (foundNullKey.profile(inliningTarget, index == EMPTY_INDEX)) {
                 return null;
             }
             if (foundSameHashKey.profile(inliningTarget, index != DUMMY_INDEX)) {
                 int unwrappedIndex = unwrapIndex(index);
-                if (foundEqKey.profile(inliningTarget, map.keysEqual(indices, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
+                if (foundEqKey.profile(inliningTarget, map.keysEqual(metadata, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
                     return map.getValue(unwrappedIndex);
-                } else if (!isCollision(indices[compactIndex])) {
-                    // ^ note: we need to re-read indices[compactIndex],
+                } else if (!isCollision(getIndex(metadata, indicesOffset, indexByteSize, compactIndex))) {
+                    // ^ note: we need to re-read the bucket,
                     // it may have been changed during __eq__
                     return null;
                 }
             }
 
-            return getCollision(frame, map, key, keyHash, inliningTarget, collisionFoundNoValue, collisionFoundEqKey, eqNode, indices, indicesLen, compactIndex);
+            return getCollision(frame, map, key, keyHash, inliningTarget, collisionFoundNoValue, collisionFoundEqKey, eqNode, metadata, indicesOffset, indexByteSize, indicesLen,
+                            compactIndex);
         }
 
         @InliningCutoff
         private static Object getCollision(Frame frame, ObjectHashMap map, Object key, long keyHash, Node inliningTarget,
                         InlinedCountingConditionProfile collisionFoundNoValue,
                         InlinedCountingConditionProfile collisionFoundEqKey,
-                        PyObjectRichCompareBool eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
+                        PyObjectRichCompareBool eqNode, byte[] metadata, int indicesOffset, int indexByteSize, int indicesLen, int compactIndex) throws RestartLookupException {
             int index;
             // collision: intentionally counted loop
             long perturb = keyHash;
-            int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
+            int searchLimit = indicesLen + PERTURB_SHIFTS_COUT;
             int i = 0;
             try {
                 for (; i < searchLimit; i++) {
-                    if (indices != map.indices) {
+                    if (metadata != map.metadata) {
                         // guards against things happening in the safepoint on the backedge
                         throw RestartLookupException.INSTANCE;
                     }
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
-                    index = map.indices[compactIndex];
+                    index = getIndex(metadata, indicesOffset, indexByteSize, compactIndex);
                     if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
                         return null;
                     }
                     if (index != DUMMY_INDEX) {
                         int unwrappedIndex = unwrapIndex(index);
-                        if (collisionFoundEqKey.profile(inliningTarget, map.keysEqual(indices, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
+                        if (collisionFoundEqKey.profile(inliningTarget, map.keysEqual(metadata, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
                             return map.getValue(unwrappedIndex);
-                        } else if (!isCollision(indices[compactIndex])) {
-                            // ^ note: we need to re-read indices[compactIndex],
+                        } else if (!isCollision(getIndex(metadata, indicesOffset, indexByteSize, compactIndex))) {
+                            // ^ note: we need to re-read the bucket,
                             // it may have been changed during __eq__
                             return null;
                         }
@@ -555,54 +697,60 @@ public final class ObjectHashMap {
                         InlinedBranchProfile rehash2Profile,
                         PyObjectRichCompareBool eqNode) throws RestartLookupException {
             assert map.checkInternalState();
-            int[] indices = map.indices;
-            int indicesLen = indices.length;
+            byte[] metadata = map.metadata;
+            int entryCapacity = map.getEntryCapacity();
+            int indicesLen = getBucketsCount(metadata, entryCapacity);
+            int indexByteSize = getIndexByteSize(entryCapacity);
+            int indicesOffset = getIndicesOffset(entryCapacity);
+            int physicalCollisionMask = getPhysicalCollisionMaskForIndexByteSize(indexByteSize);
 
             int compactIndex = getIndex(indicesLen, keyHash);
-            int index = indices[compactIndex];
+            int index = getIndex(metadata, indicesOffset, indexByteSize, compactIndex);
             if (foundNullKey.profile(inliningTarget, index == EMPTY_INDEX)) {
-                map.putInNewSlot(indices, inliningTarget, rehash1Profile, key, keyHash, value, compactIndex);
+                map.putInNewSlot(metadata, entryCapacity, inliningTarget, rehash1Profile, key, keyHash, value, compactIndex);
                 return;
             }
 
-            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, inliningTarget, unwrapIndex(index), key, keyHash, eqNode))) {
+            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(metadata, frame, inliningTarget, unwrapIndex(index), key, keyHash, eqNode))) {
                 // we found the key, override the value, Python does not override the key though
                 map.setValue(unwrapIndex(index), value);
                 return;
             }
 
-            putCollision(frame, map, key, keyHash, value, inliningTarget, collisionFoundNoValue, collisionFoundEqKey, rehash2Profile, eqNode, indices, indicesLen, compactIndex);
+            putCollision(frame, map, key, keyHash, value, inliningTarget, collisionFoundNoValue, collisionFoundEqKey, rehash2Profile, eqNode, metadata, indicesOffset, indexByteSize,
+                            physicalCollisionMask, entryCapacity, indicesLen, compactIndex);
         }
 
         @InliningCutoff
         private static void putCollision(Frame frame, ObjectHashMap map, Object key, long keyHash, Object value, Node inliningTarget,
                         InlinedCountingConditionProfile collisionFoundNoValue, InlinedCountingConditionProfile collisionFoundEqKey,
                         InlinedBranchProfile rehash2Profile, PyObjectRichCompareBool eqNode,
-                        int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
-            markCollision(indices, compactIndex);
+                        byte[] metadata, int indicesOffset, int indexByteSize, int physicalCollisionMask, int entryCapacity, int indicesLen, int compactIndex)
+                        throws RestartLookupException {
+            markCollision(metadata, indicesOffset, indexByteSize, physicalCollisionMask, compactIndex);
             long perturb = keyHash;
-            int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
+            int searchLimit = indicesLen + PERTURB_SHIFTS_COUT;
             int i = 0;
             try {
                 for (; i < searchLimit; i++) {
-                    if (indices != map.indices) {
+                    if (metadata != map.metadata) {
                         // guards against things happening in the safepoint on the backedge
                         throw RestartLookupException.INSTANCE;
                     }
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
-                    int index = indices[compactIndex];
+                    int index = getIndex(metadata, indicesOffset, indexByteSize, compactIndex);
                     if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
-                        map.putInNewSlot(indices, inliningTarget, rehash2Profile, key, keyHash, value, compactIndex);
+                        map.putInNewSlot(metadata, entryCapacity, inliningTarget, rehash2Profile, key, keyHash, value, compactIndex);
                         return;
                     }
-                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, inliningTarget, unwrapIndex(index), key, keyHash, eqNode))) {
+                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(metadata, frame, inliningTarget, unwrapIndex(index), key, keyHash, eqNode))) {
                         // we found the key, override the value, Python does not override the key
                         // though
                         map.setValue(unwrapIndex(index), value);
                         return;
                     }
-                    markCollision(indices, compactIndex);
+                    markCollision(metadata, indicesOffset, indexByteSize, physicalCollisionMask, compactIndex);
                     TruffleSafepoint.poll(inliningTarget);
                 }
             } finally {
@@ -618,28 +766,33 @@ public final class ObjectHashMap {
 
     // Internal helper: it is not profiling, never rehashes, and it assumes that the hash map never
     // contains the key that we are inserting
-    private void insertNewKey(int[] localIndices, Object key, long keyHash, Object value) {
-        assert localIndices == this.indices;
-        int compactIndex = getIndex(localIndices.length, keyHash);
-        int index = localIndices[compactIndex];
+    private void insertNewKey(byte[] localMetadata, Object key, long keyHash, Object value) {
+        assert localMetadata == this.metadata;
+        int entryCapacity = getEntryCapacity();
+        int indicesLen = getBucketsCount(localMetadata, entryCapacity);
+        int indexByteSize = getIndexByteSize(entryCapacity);
+        int indicesOffset = getIndicesOffset(entryCapacity);
+        int physicalCollisionMask = getPhysicalCollisionMaskForIndexByteSize(indexByteSize);
+        int compactIndex = getIndex(indicesLen, keyHash);
+        int index = getIndex(localMetadata, indicesOffset, indexByteSize, compactIndex);
         if (index == EMPTY_INDEX) {
-            putInNewSlot(localIndices, key, keyHash, value, compactIndex);
+            putInNewSlot(localMetadata, entryCapacity, key, keyHash, value, compactIndex);
             return;
         }
 
         // collision
-        markCollision(localIndices, compactIndex);
+        markCollision(localMetadata, indicesOffset, indexByteSize, physicalCollisionMask, compactIndex);
         long perturb = keyHash;
-        int searchLimit = getBucketsCount(localIndices) + PERTURB_SHIFTS_COUT;
+        int searchLimit = indicesLen + PERTURB_SHIFTS_COUT;
         for (int i = 0; i < searchLimit; i++) {
             perturb >>>= PERTURB_SHIFT;
-            compactIndex = nextIndex(localIndices.length, compactIndex, perturb);
-            index = localIndices[compactIndex];
+            compactIndex = nextIndex(indicesLen, compactIndex, perturb);
+            index = getIndex(localMetadata, indicesOffset, indexByteSize, compactIndex);
             if (index == EMPTY_INDEX) {
-                putInNewSlot(localIndices, key, keyHash, value, compactIndex);
+                putInNewSlot(localMetadata, entryCapacity, key, keyHash, value, compactIndex);
                 return;
             }
-            markCollision(localIndices, compactIndex);
+            markCollision(localMetadata, indicesOffset, indexByteSize, physicalCollisionMask, compactIndex);
         }
         // all values are dummies? Not possible, since we should have compacted the
         // hashes/keysAndValues arrays in "remove". Also, there must be an unused slot available,
@@ -647,29 +800,30 @@ public final class ObjectHashMap {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    private void putInNewSlot(int[] localIndices, Node inliningTarget, InlinedBranchProfile rehashProfile, Object key, long keyHash, Object value, int compactIndex) {
-        assert indices == localIndices;
-        if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, needsResize(localIndices))) {
+    private void putInNewSlot(byte[] localMetadata, int entryCapacity, Node inliningTarget, InlinedBranchProfile rehashProfile, Object key, long keyHash, Object value, int compactIndex) {
+        assert metadata == localMetadata;
+        assert entryCapacity == getEntryCapacity();
+        if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, needsResize(localMetadata))) {
             rehashProfile.enter(inliningTarget);
             rehashAndPut(key, keyHash, value);
             return;
         }
-        putInNewSlot(localIndices, key, keyHash, value, compactIndex);
+        putInNewSlot(localMetadata, entryCapacity, key, keyHash, value, compactIndex);
     }
 
-    private void putInNewSlot(int[] localIndices, Object key, long keyHash, Object value, int compactIndex) {
+    private void putInNewSlot(byte[] localMetadata, int entryCapacity, Object key, long keyHash, Object value, int compactIndex) {
         size++;
         usedIndices++;
         int newIndex = usedHashes++;
-        localIndices[compactIndex] = newIndex;
+        setIndex(localMetadata, entryCapacity, compactIndex, newIndex + INDEX_OFFSET);
         setValue(newIndex, value);
         setKey(newIndex, key);
-        hashes[newIndex] = keyHash;
+        setHash(localMetadata, newIndex, keyHash);
     }
 
     private boolean needsCompaction() {
         // if more than quarter of all the slots are occupied by dummy values -> compact
-        int quarterOfUsable = hashes.length >> 2;
+        int quarterOfUsable = getEntryCapacity() >> 2;
         int dummyCnt = usedHashes - size;
         return dummyCnt > quarterOfUsable;
     }
@@ -718,21 +872,25 @@ public final class ObjectHashMap {
                 compactProfile.enter(inliningTarget);
                 map.compact();
             }
-            int[] indices = map.indices;
-            int indicesLen = indices.length;
+            byte[] metadata = map.metadata;
+            int entryCapacity = map.getEntryCapacity();
+            int indicesLen = getBucketsCount(metadata, entryCapacity);
+            int indexByteSize = getIndexByteSize(entryCapacity);
+            int indicesOffset = getIndicesOffset(entryCapacity);
+            int physicalCollisionMask = getPhysicalCollisionMaskForIndexByteSize(indexByteSize);
 
             // Note: CPython is not shrinking the capacity of the hash table on delete, we do the
             // same
             int compactIndex = getIndex(indicesLen, keyHash);
-            int index = indices[compactIndex];
+            int index = getIndex(metadata, indicesOffset, indexByteSize, compactIndex);
             if (foundNullKey.profile(inliningTarget, index == EMPTY_INDEX)) {
                 return null; // not found
             }
 
             int unwrappedIndex = unwrapIndex(index);
-            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
+            if (foundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(metadata, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
                 Object result = map.getValue(unwrappedIndex);
-                indices[compactIndex] = DUMMY_INDEX;
+                setIndex(metadata, indicesOffset, indexByteSize, physicalCollisionMask, compactIndex, DUMMY_INDEX);
                 map.setValue(unwrappedIndex, null);
                 map.setKey(unwrappedIndex, null);
                 map.size--;
@@ -740,33 +898,35 @@ public final class ObjectHashMap {
             }
 
             // collision: intentionally counted loop
-            return removeCollision(frame, inliningTarget, map, key, keyHash, collisionFoundNoValue, collisionFoundEqKey, eqNode, indices, indicesLen, compactIndex);
+            return removeCollision(frame, inliningTarget, map, key, keyHash, collisionFoundNoValue, collisionFoundEqKey, eqNode, metadata, indicesOffset, indexByteSize,
+                            physicalCollisionMask, indicesLen, compactIndex);
         }
 
         @InliningCutoff
         private static Object removeCollision(Frame frame, Node inliningTarget, ObjectHashMap map, Object key, long keyHash,
                         InlinedCountingConditionProfile collisionFoundNoValue, InlinedCountingConditionProfile collisionFoundEqKey,
-                        PyObjectRichCompareBool eqNode, int[] indices, int indicesLen, int compactIndex) throws RestartLookupException {
+                        PyObjectRichCompareBool eqNode, byte[] metadata, int indicesOffset, int indexByteSize, int physicalCollisionMask, int indicesLen, int compactIndex)
+                        throws RestartLookupException {
             int unwrappedIndex;
             long perturb = keyHash;
-            int searchLimit = getBucketsCount(indices) + PERTURB_SHIFTS_COUT;
+            int searchLimit = indicesLen + PERTURB_SHIFTS_COUT;
             int i = 0;
             try {
                 for (; i < searchLimit; i++) {
-                    if (indices != map.indices) {
+                    if (metadata != map.metadata) {
                         // guards against things happening in the safepoint on the backedge
                         throw RestartLookupException.INSTANCE;
                     }
                     perturb >>>= PERTURB_SHIFT;
                     compactIndex = nextIndex(indicesLen, compactIndex, perturb);
-                    int index = indices[compactIndex];
+                    int index = getIndex(metadata, indicesOffset, indexByteSize, compactIndex);
                     if (collisionFoundNoValue.profile(inliningTarget, index == EMPTY_INDEX)) {
                         return null;
                     }
                     unwrappedIndex = unwrapIndex(index);
-                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(indices, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
+                    if (collisionFoundEqKey.profile(inliningTarget, index != DUMMY_INDEX && map.keysEqual(metadata, frame, inliningTarget, unwrappedIndex, key, keyHash, eqNode))) {
                         Object result = map.getValue(unwrappedIndex);
-                        indices[compactIndex] = DUMMY_INDEX;
+                        setIndex(metadata, indicesOffset, indexByteSize, physicalCollisionMask, compactIndex, DUMMY_INDEX);
                         map.setValue(unwrappedIndex, null);
                         map.setKey(unwrappedIndex, null);
                         map.size--;
@@ -797,9 +957,9 @@ public final class ObjectHashMap {
         }
     }
 
-    private boolean keysEqual(int[] originalIndices, Frame frame, Node inliningTarget, int index, Object key, long keyHash,
+    private boolean keysEqual(byte[] originalMetadata, Frame frame, Node inliningTarget, int index, Object key, long keyHash,
                     PyObjectRichCompareBool eqNode) throws RestartLookupException {
-        if (hashes[index] != keyHash) {
+        if (getHash(index) != keyHash) {
             return false;
         }
         Object originalKey = getKey(index);
@@ -807,7 +967,7 @@ public final class ObjectHashMap {
             return true;
         }
         boolean result = eqNode.executeEq(frame, inliningTarget, originalKey, key);
-        if (indices != originalIndices || getKey(index) != originalKey) {
+        if (metadata != originalMetadata || getKey(index) != originalKey) {
             // Either someone overridden the slot we are just examining, or rehasing reallocated the
             // indices array. We need to restart the lookup. Other situations are OK:
             //
@@ -832,42 +992,39 @@ public final class ObjectHashMap {
      */
     @TruffleBoundary
     private void rehashAndPut(Object newKey, long newKeyHash, Object newValue) {
-        int requiredIndicesSize = usedHashes * GROWTH_RATE;
-        // We need the hash table of this size, in order to accommodate "requiredIndicesSize" items
-        int indicesCapacity = requiredIndicesSize + (requiredIndicesSize / 3);
-        if (indicesCapacity < INITIAL_INDICES_SIZE) {
-            indicesCapacity = INITIAL_INDICES_SIZE;
-        } else {
-            indicesCapacity = getNextPow2(indicesCapacity);
-            if (indicesCapacity << 1 < 0) {
-                // some arrays we allocate are 2 times the size
-                throw new OutOfMemoryError();
-            }
-        }
-        long[] oldHashes = hashes;
+        int newSize = size + 1;
+        int indicesCapacity = getMinBucketsCount(newSize);
+        byte[] oldMetadata = metadata;
         Object[] oldKeysAndValues = keysAndValues;
         int oldUsedSize = usedHashes;
         int oldSize = size;
-        allocateData(indicesCapacity);
+        allocateData(indicesCapacity, getRequestedEntryCapacity(newSize, indicesCapacity));
         size = 0;
         usedHashes = 0;
         usedIndices = 0;
-        int[] localIndices = this.indices;
+        byte[] localMetadata = this.metadata;
         for (int i = 0; i < oldUsedSize; i++) {
             if (getValue(i, oldKeysAndValues) != null) {
                 final Object key = getKey(i, oldKeysAndValues);
-                insertNewKey(localIndices, key, oldHashes[i], getValue(i, oldKeysAndValues));
+                insertNewKey(localMetadata, key, getHash(oldMetadata, i), getValue(i, oldKeysAndValues));
             }
         }
         assert size == oldSize : String.format("size=%d, oldSize=%d, oldUsedSize=%d, usedHashes=%d, usedIndices=%d",
                         size, oldSize, oldUsedSize, usedHashes, usedIndices);
-        insertNewKey(localIndices, newKey, newKeyHash, newValue);
+        insertNewKey(localMetadata, newKey, newKeyHash, newValue);
+    }
+
+    private static int getRequestedEntryCapacity(int requestedCapacity, int bucketsCount) {
+        if (requestedCapacity <= TIGHT_ENTRY_CAPACITY_LIMIT) {
+            return requestedCapacity;
+        }
+        return getUsableSize(bucketsCount);
     }
 
     @TruffleBoundary
     private void compact() {
         // shuffle[X] will tell us by how much value X found in 'indices' should be shuffled to left
-        int[] shuffle = new int[hashes.length];
+        int[] shuffle = new int[getEntryCapacity()];
         int currentShuffle = 0;
         int dummyCount = 0;
         for (int i = 0; i < usedHashes; i++) {
@@ -882,21 +1039,23 @@ public final class ObjectHashMap {
                 setKey(i - currentShuffle, getKey(i));
                 setValue(i, null);
                 setKey(i, null);
-                hashes[i - currentShuffle] = hashes[i];
+                setHash(metadata, i - currentShuffle, getHash(i));
                 shuffle[i] = currentShuffle;
             }
         }
         usedHashes -= dummyCount; // We've "removed" the dummy entries
-        int[] localIndices = indices;
-        for (int i = 0; i < localIndices.length; i++) {
-            int index = localIndices[i];
+        byte[] localMetadata = metadata;
+        int entryCapacity = getEntryCapacity();
+        int localIndicesLength = getBucketsCount(localMetadata, entryCapacity);
+        for (int i = 0; i < localIndicesLength; i++) {
+            int index = getIndex(localMetadata, entryCapacity, i);
             if (index != EMPTY_INDEX && index != DUMMY_INDEX) {
                 boolean collision = isCollision(index);
                 int unwrapped = unwrapIndex(index);
                 int newIndex = unwrapped - shuffle[unwrapped];
-                localIndices[i] = newIndex;
+                setIndex(localMetadata, entryCapacity, i, newIndex + INDEX_OFFSET);
                 if (collision) {
-                    markCollision(localIndices, i);
+                    markCollision(localMetadata, entryCapacity, i);
                 }
             } else if (index == DUMMY_INDEX) {
                 dummyCount--;
@@ -914,6 +1073,24 @@ public final class ObjectHashMap {
     private static int getIndex(int indicesLen, long hash) {
         // since buckets count is power of 2, the & works as modulo
         return (int) (hash & (indicesLen - 1));
+    }
+
+    private static int getUsableSize(int bucketsCount) {
+        int minFreeBuckets = Math.max(2, bucketsCount >> 2);
+        return bucketsCount - minFreeBuckets + 1;
+    }
+
+    private static int getMinBucketsCount(int requiredEntries) {
+        int bucketsCount = INITIAL_INDICES_SIZE;
+        while (getUsableSize(bucketsCount) < requiredEntries) {
+            if (bucketsCount > Integer.MAX_VALUE >> 1) {
+                // The backing arrays cannot grow past Java array indexing limits. The exact packed
+                // metadata bound is checked in allocateData.
+                throw new OutOfMemoryError();
+            }
+            bucketsCount <<= 1;
+        }
+        return bucketsCount;
     }
 
     public static Object getKey(int index, Object[] keysAndValues) {
@@ -943,15 +1120,8 @@ public final class ObjectHashMap {
     private boolean checkInternalState() {
         // We must have at least one empty slot, collision resolution relies on the fact that it is
         // always going to find an empty slot
-        assert usedIndices < indices.length : usedIndices;
+        assert usedIndices < getBucketsCount() : usedIndices;
         return true;
-    }
-
-    private static int getNextPow2(int n) {
-        if (isPow2(n)) {
-            return n;
-        }
-        return 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(n));
     }
 
     private static boolean isPow2(int n) {
