@@ -163,7 +163,7 @@ public final class CApiContext extends CExtContext {
     private static final CApiTiming TIMING_INVOKE_MODULE_INIT = CApiTiming.create(true, "invokeModuleInit");
     private static final CApiTiming TIMING_INVOKE_CAPI_INIT = CApiTiming.create(true, "invokeCApiInit");
     private static final CApiTiming TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER = CApiTiming.create(true, "invokeGetFinalizeCApiPointer");
-    private static final TruffleString C_API_UNSUPPORTED = toTruffleStringUncached(
+    private static final TruffleString C_API_UNSUPPORTED = tsLiteral(
                     "The C API is unsupported on this JDK and/or platform, either because JEP 454 is not supported here or native access was expressly forbidden.");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
