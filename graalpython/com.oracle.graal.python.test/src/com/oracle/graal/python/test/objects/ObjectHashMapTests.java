@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -173,7 +173,7 @@ public class ObjectHashMapTests {
         // Basic tests of other methods
         Object[] oldKeys = keysToArray(map);
 
-        ObjectHashMap copy = map.copy();
+        ObjectHashMap copy = copyMap(map);
         assertEquals(map.size(), copy.size());
         for (Object key : oldKeys) {
             assertEquals(key.toString(), //
@@ -315,7 +315,7 @@ public class ObjectHashMapTests {
         Collections.reverse(keysValuesReversed);
         assertArrayEquals(message, keysValuesReversed.toArray(), reverseKeysToArray(actual));
 
-        EconomicMapStorage storage = new EconomicMapStorage(actual, false);
+        EconomicMapStorage storage = toEconomicMapStorage(actual);
         int[] size = new int[]{0};
         HashingStorageForEach.executeUncached(storage, new HashingStorageForEachCallback<>() {
             @Override
@@ -330,12 +330,12 @@ public class ObjectHashMapTests {
     }
 
     private static Object[] keysToArray(ObjectHashMap m) {
-        EconomicMapStorage s = new EconomicMapStorage(m, false);
+        EconomicMapStorage s = toEconomicMapStorage(m);
         return iteratorToArray(s, HashingStorageGetIterator.executeUncached(s));
     }
 
     private static Object[] reverseKeysToArray(ObjectHashMap m) {
-        EconomicMapStorage s = new EconomicMapStorage(m, false);
+        EconomicMapStorage s = toEconomicMapStorage(m);
         return iteratorToArray(s, HashingStorageGetReverseIterator.executeUncached(s));
     }
 
@@ -348,6 +348,24 @@ public class ObjectHashMapTests {
     }
 
     private static int valueCounter = 0;
+
+    private static ObjectHashMap copyMap(ObjectHashMap original) {
+        EconomicMapStorage copy = EconomicMapStorage.create(original.size());
+        MapCursor cursor = original.getEntries();
+        while (cursor.advance()) {
+            put(copy, cursor.getKey().getValue(), cursor.getKey().getPythonHash(), cursor.getValue());
+        }
+        return copy;
+    }
+
+    private static EconomicMapStorage toEconomicMapStorage(ObjectHashMap map) {
+        EconomicMapStorage storage = EconomicMapStorage.create(map.size());
+        MapCursor cursor = map.getEntries();
+        while (cursor.advance()) {
+            put(storage, cursor.getKey().getValue(), cursor.getKey().getPythonHash(), cursor.getValue());
+        }
+        return storage;
+    }
 
     public static Object newValue() {
         return "Val: " + (valueCounter++);

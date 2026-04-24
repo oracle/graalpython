@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,8 @@
 
 import unittest, sys
 
+graalpy_only = unittest.skipUnless(sys.implementation.name == "graalpy", "GraalPy-specific dict storage test")
+
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
     try:
@@ -46,7 +48,6 @@ def assert_raises(err, fn, *args, **kwargs):
     except err:
         raised = True
     assert raised
-
 
 def test_equality():
 
@@ -271,6 +272,225 @@ def test_init5():
     assert len(d) == 4, "invalid length, expected 4 but was %d" % len(d)
     assert set(d.keys()) == key_set, "unexpected keys: %s" % str(d.keys())
     assert set(d.values()) == {97, 98, 99, 100}, "unexpected values: %s" % str(d.values())
+
+
+@graalpy_only
+def test_economic_map_storage_small_dict_grows_cleanly():
+    d = {}
+    for i in range(4):
+        d[i] = i
+
+    assert list(d.items()) == [(0, 0), (1, 1), (2, 2), (3, 3)]
+
+    d[4] = 4
+
+    assert list(d.items()) == [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)]
+
+    del d[1]
+    d[1] = 10
+    assert list(d.items()) == [(0, 0), (2, 2), (3, 3), (4, 4), (1, 10)]
+
+
+def test_economic_map_storage_small_dict_hash_and_eq_counts():
+    count_hash = 0
+    count_eq = 0
+
+    class Key:
+        def __init__(self, x):
+            self.x = x
+
+        def __hash__(self):
+            nonlocal count_hash
+            count_hash += 1
+            return 12345
+
+        def __eq__(self, other):
+            nonlocal count_eq
+            count_eq += 1
+            return isinstance(other, Key) and self.x == other.x
+
+    a = Key(1)
+    d = {0: 0, 1: 1, 2: 2, 3: 3, a: 42}
+    b = Key(1)
+    count_hash = 0
+    count_eq = 0
+
+    assert b in d
+    assert count_hash == 1, count_hash
+    assert count_eq == 1, count_eq
+
+    assert d[b] == 42
+    assert count_hash == 2, count_hash
+    assert count_eq == 2, count_eq
+
+    d[b] = 112
+    assert count_hash == 3, count_hash
+    assert count_eq == 3, count_eq
+
+    del d[b]
+    assert count_hash == 4, count_hash
+    assert count_eq == 4, count_eq
+    assert a not in d
+
+
+def test_economic_map_storage_small_dict_copy_does_not_rehash_keys():
+    count_hash = 0
+    count_eq = 0
+
+    class Key:
+        def __init__(self, x):
+            self.x = x
+
+        def __hash__(self):
+            nonlocal count_hash
+            count_hash += 1
+            return self.x
+
+        def __eq__(self, other):
+            nonlocal count_eq
+            count_eq += 1
+            return isinstance(other, Key) and self.x == other.x
+
+    d = {Key(i): i for i in range(5)}
+    count_hash = 0
+    count_eq = 0
+
+    copied = d.copy()
+    assert copied == d
+    assert count_hash == 0, count_hash
+    assert count_eq == 0, count_eq
+
+    rebuilt = dict(d)
+    assert rebuilt == d
+    assert count_hash == 0, count_hash
+    assert count_eq == 0, count_eq
+
+
+def test_economic_map_storage_hash_and_eq_counts():
+    count_hash = 0
+    count_eq = 0
+
+    class Key:
+        def __init__(self, x):
+            self.x = x
+
+        def __hash__(self):
+            nonlocal count_hash
+            count_hash += 1
+            return 1234567
+
+        def __eq__(self, other):
+            nonlocal count_eq
+            count_eq += 1
+            return isinstance(other, Key) and self.x == other.x
+
+    a = Key(1)
+    d = {i: i for i in range(8)}
+    d[a] = 42
+
+    b = Key(1)
+    count_hash = 0
+    count_eq = 0
+
+    assert b in d
+    assert count_hash == 1, count_hash
+    assert count_eq == 1, count_eq
+
+    assert d[b] == 42
+    assert count_hash == 2, count_hash
+    assert count_eq == 2, count_eq
+
+    d[b] = 112
+    assert count_hash == 3, count_hash
+    assert count_eq == 3, count_eq
+
+    del d[b]
+    assert count_hash == 4, count_hash
+    assert count_eq == 4, count_eq
+    assert a not in d
+
+
+def test_economic_map_storage_copy_does_not_rehash_keys():
+    count_hash = 0
+    count_eq = 0
+
+    class Key:
+        def __init__(self, x):
+            self.x = x
+
+        def __hash__(self):
+            nonlocal count_hash
+            count_hash += 1
+            return self.x + 1000
+
+        def __eq__(self, other):
+            nonlocal count_eq
+            count_eq += 1
+            return isinstance(other, Key) and self.x == other.x
+
+    d = {Key(i): i for i in range(9)}
+
+    count_hash = 0
+    count_eq = 0
+
+    copied = d.copy()
+    assert copied == d
+    assert count_hash == 0, count_hash
+    assert count_eq == 0, count_eq
+
+    rebuilt = dict(d)
+    assert rebuilt == d
+    assert count_hash == 0, count_hash
+    assert count_eq == 0, count_eq
+
+
+def test_economic_map_storage_compaction_preserves_order_and_hashes():
+    count_hash = 0
+    count_eq = 0
+
+    class Key:
+        def __init__(self, x):
+            self.x = x
+
+        def __hash__(self):
+            nonlocal count_hash
+            count_hash += 1
+            return 987654321
+
+        def __eq__(self, other):
+            nonlocal count_eq
+            count_eq += 1
+            return isinstance(other, Key) and self.x == other.x
+
+    original = Key(1)
+    d = {i: i for i in range(11)}
+    d[original] = 99
+
+    for i in range(4):
+        del d[i]
+
+    count_hash = 0
+    count_eq = 0
+    del d[Key(1)]
+    assert count_hash == 1, count_hash
+    assert count_eq == 1, count_eq
+
+    replacement = Key(1)
+    count_hash = 0
+    count_eq = 0
+    d[replacement] = 100
+    assert count_hash == 1, count_hash
+    assert count_eq == 0, count_eq
+
+    assert list(d.items()) == [(4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (10, 10), (replacement, 100)]
+
+    probe = Key(1)
+    count_hash = 0
+    count_eq = 0
+    assert d[probe] == 100
+    assert count_hash == 1, count_hash
+    assert count_eq == 1, count_eq
+
 
 def test_init6():
     try:
@@ -893,6 +1113,45 @@ def test_calling_hash_and_eq():
     assert count_eq == 1, count_eq
 
 
+def test_hash_and_eq_for_keywords_storage():
+    count_hash = 0
+    count_eq = 0
+
+    class Probe:
+        def __hash__(self):
+            nonlocal count_hash
+            count_hash += 1
+            return hash("a")
+
+        def __eq__(self, other):
+            nonlocal count_eq
+            count_eq += 1
+            return other == "a"
+
+    def check(**kwargs):
+        probe = Probe()
+
+        assert probe in kwargs
+        assert count_hash == 1, count_hash
+        assert count_eq == 1, count_eq
+
+        assert kwargs[probe] == 1
+        assert count_hash == 2, count_hash
+        assert count_eq == 2, count_eq
+
+        kwargs[probe] = 2
+        assert kwargs["a"] == 2
+        assert count_hash == 3, count_hash
+        assert count_eq == 3, count_eq
+
+        del kwargs[probe]
+        assert "a" not in kwargs
+        assert count_hash == 4, count_hash
+        assert count_eq == 4, count_eq
+
+    check(a=1)
+
+
 def test_hash_and_eq_for_dynamic_object_storage():
     class MyObject:
         def __init__(self, string):
@@ -922,6 +1181,47 @@ def test_hash_and_eq_for_dynamic_object_storage():
     assert d2[MyObject("1")] == 112
     del d2[MyObject("1")]
     assert "1" not in d2
+
+
+def test_hash_and_eq_count_for_dynamic_object_storage():
+    count_hash = 0
+    count_eq = 0
+
+    class Probe:
+        def __hash__(self):
+            nonlocal count_hash
+            count_hash += 1
+            return hash("a")
+
+        def __eq__(self, other):
+            nonlocal count_eq
+            count_eq += 1
+            return other == "a"
+
+    class MyObject:
+        pass
+
+    d = MyObject().__dict__
+    d["a"] = 1
+    probe = Probe()
+
+    assert probe in d
+    assert count_hash == 1, count_hash
+    assert count_eq == 1, count_eq
+
+    assert d[probe] == 1
+    assert count_hash == 2, count_hash
+    assert count_eq == 2, count_eq
+
+    d[probe] = 2
+    assert d["a"] == 2
+    assert count_hash == 3, count_hash
+    assert count_eq == 3, count_eq
+
+    del d[probe]
+    assert "a" not in d
+    assert count_hash == 4, count_hash
+    assert count_eq == 4, count_eq
 
 def test_update_side_effect_on_other():
     class X:
@@ -1290,4 +1590,3 @@ def test_removing_attr_from_economic_map():
     del o.foo
 
     assert "foo" not in o.__dict__
-

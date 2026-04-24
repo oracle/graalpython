@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -98,6 +98,7 @@ public class PDictTest {
 
         dict.setItem(ts("key1"), 42);
         assertEquals(2, length(dict));
+        assertTrue(dict.getDictStorage() instanceof EconomicMapStorage);
 
         assertEquals(42, dict.getItem(ts("key1")));
     }
@@ -113,9 +114,20 @@ public class PDictTest {
 
         delItem(dict, ts("key2"));
         assertEquals(2, length(dict));
+        assertTrue(dict.getDictStorage() instanceof EconomicMapStorage);
 
         assertEquals(42, dict.getItem(ts("key1")));
 
         assertNull(dict.getItem(ts("key2")));
+    }
+
+    @Test
+    public void economicMapStorageEightEntries() {
+        PDict dict = PFactory.createDict(PythonLanguage.get(null));
+        for (int i = 0; i < 8; i++) {
+            dict.setItem(i, i);
+        }
+        assertTrue(dict.getDictStorage() instanceof EconomicMapStorage);
+        assertEquals(8, length(dict));
     }
 }
