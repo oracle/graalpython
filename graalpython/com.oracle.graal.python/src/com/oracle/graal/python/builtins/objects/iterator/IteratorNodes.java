@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.iterator;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIterator;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -202,7 +203,7 @@ public abstract class IteratorNodes {
                     if (indexCheckNode.execute(inliningTarget, len)) {
                         int intLen = asSizeNode.executeExact(frame, inliningTarget, len);
                         if (intLen < 0) {
-                            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
+                            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.LENGTH_HINT_SHOULD_RETURN_MT_ZERO);
                         }
                         return intLen;
                     } else {
