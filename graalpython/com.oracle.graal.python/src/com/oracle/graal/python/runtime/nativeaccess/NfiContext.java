@@ -90,10 +90,13 @@ public final class NfiContext {
 
     public NfiLibrary loadLibrary(String name, int flags) throws NfiLoadException {
         CompilerAsserts.neverPartOfCompilation();
+
+        // This needs to be done first and may fail if the executing JDK does not support FFM API.
+        ensureLoader();
+
         long lib;
         long nativeName = isWindows() ? NativeMemory.javaStringToNativeUtf16(name) : NativeMemory.javaStringToNativeUtf8(name);
         try {
-            ensureLoader();
             if (isWindows()) {
                 int callFlags = sanitizeWindowsLoadLibraryFlags(flags) | WINDOWS_DEFAULT_LOAD_LIBRARY_FLAGS;
                 lib = (long) LOAD_LIBRARY_EX.invokeExact(loadLibraryExPtr, nativeName, 0L, callFlags);
@@ -161,7 +164,7 @@ public final class NfiContext {
     private static Object windowsLookupArena;
     private static NativeLibraryLookup windowsLookup;
 
-    private static void ensureLoader() {
+    private static void ensureLoader() throws UnsupportedOperationException {
         if (isWindows()) {
             if (loadLibraryExPtr != 0) {
                 assert freeLibraryPtr != 0;
