@@ -138,16 +138,16 @@ public final class NfiContext {
     private static final int RTLD_LAZY = 1;
     private static final int RTLD_NOW = 2;
 
-    private static final MethodHandle DLOPEN = NfiSupport.createFunctionPointerHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.SINT32);
-    private static final MethodHandle DLCLOSE = NfiSupport.createFunctionPointerHandle(NfiType.SINT32, NfiType.SINT64);
-    private static final MethodHandle DLSYM = NfiSupport.createFunctionPointerHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
-    private static final MethodHandle LOAD_LIBRARY_EX = NfiSupport.createFunctionPointerHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.SINT32);
-    private static final MethodHandle FREE_LIBRARY = NfiSupport.createFunctionPointerHandle(NfiType.SINT32, NfiType.SINT64);
-    private static final MethodHandle GET_PROC_ADDRESS = NfiSupport.createFunctionPointerHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
-    private static final MethodHandle GET_LAST_ERROR = NfiSupport.createFunctionPointerHandle(NfiType.SINT32);
-    private static final MethodHandle FORMAT_MESSAGE = NfiSupport.createFunctionPointerHandle(NfiType.SINT32, NfiType.SINT32, NfiType.RAW_POINTER, NfiType.SINT32, NfiType.SINT32,
+    private static final MethodHandle DLOPEN = NfiSupport.createDowncallHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.SINT32);
+    private static final MethodHandle DLCLOSE = NfiSupport.createDowncallHandle(NfiType.SINT32, NfiType.SINT64);
+    private static final MethodHandle DLSYM = NfiSupport.createDowncallHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
+    private static final MethodHandle LOAD_LIBRARY_EX = NfiSupport.createDowncallHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.SINT32);
+    private static final MethodHandle FREE_LIBRARY = NfiSupport.createDowncallHandle(NfiType.SINT32, NfiType.SINT64);
+    private static final MethodHandle GET_PROC_ADDRESS = NfiSupport.createDowncallHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
+    private static final MethodHandle GET_LAST_ERROR = NfiSupport.createDowncallHandle(NfiType.SINT32);
+    private static final MethodHandle FORMAT_MESSAGE = NfiSupport.createDowncallHandle(NfiType.SINT32, NfiType.SINT32, NfiType.RAW_POINTER, NfiType.SINT32, NfiType.SINT32,
                     NfiType.RAW_POINTER, NfiType.SINT32, NfiType.RAW_POINTER);
-    private static final MethodHandle DLERROR = NfiSupport.createFunctionPointerHandle(NfiType.SINT64);
+    private static final MethodHandle DLERROR = NfiSupport.createDowncallHandle(NfiType.SINT64);
 
     private static long dlopenPtr;
     private static long dlclosePtr;
