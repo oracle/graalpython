@@ -1716,7 +1716,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         // (__xxx__), so we can skip descriptor check + we need to check the __get__ (tp_descr_get)
         // on the resulting value (this is common situation)
         public static Object loadTypeInstanceValue(VirtualFrame frame, Node inliningTarget, PythonManagedClass object, GetObjectSlotsNode getValueSlotsNode,
-                        CallSlotDescrGet callSlotDescrGet, Shape cachedShape, PropertyGetter cachedPropertyGetter) {
+                        CallSlotDescrGet callSlotDescrGet, Shape cachedShape, PropertyGetter cachedPropertyGetter, InlinedBranchProfile hasNonDescriptorValueProfile) {
             Object type = cachedShape.getDynamicType();
             if (type != PythonBuiltinClassType.PythonClass) {
                 return null;
@@ -1727,7 +1727,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 if (value != PNone.NO_VALUE && value != null) {
                     var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
                     if (valueGet == null) {
-                        // TODO: hasNonDescriptorValueProfile.enter(inliningTarget);
+                        hasNonDescriptorValueProfile.enter(inliningTarget);
                         return value;
                     } else {
                         return callSlotDescrGet.execute(frame, inliningTarget, valueGet, value, PNone.NO_VALUE, object);
@@ -1745,9 +1745,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter cachedPropertyGetter,
                         @Cached GetObjectSlotsNode getObjectSlotsNode,
                         @Cached CallSlotDescrGet callSlotDescrGet,
+                        @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
                         @Exclusive @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Exclusive @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
-                        @Bind("loadTypeInstanceValue(frame, $node, receiver, getObjectSlotsNode, callSlotDescrGet, cachedShape, cachedPropertyGetter)") Object value) {
+                        @Bind("loadTypeInstanceValue(frame, $node, receiver, getObjectSlotsNode, callSlotDescrGet, cachedShape, cachedPropertyGetter, hasNonDescriptorValueProfile)") Object value) {
             return value;
         }
 
