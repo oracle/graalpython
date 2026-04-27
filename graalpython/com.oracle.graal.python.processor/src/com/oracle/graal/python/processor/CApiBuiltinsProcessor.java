@@ -1399,6 +1399,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import java.lang.invoke.MethodHandle;");
         lines.add("import java.lang.invoke.MethodHandles;");
         lines.add("import java.lang.invoke.MethodType;");
+        lines.add("import java.util.OptionalLong;");
         lines.add("");
         lines.add("import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;");
         lines.add("");
@@ -1425,13 +1426,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("");
         lines.add("    @Override");
         lines.add("    @SuppressWarnings(\"restricted\")");
-        lines.add("    protected Object libraryLookupImpl(String name, Object arena) {");
-        lines.add("        return SymbolLookup.libraryLookup(name, (Arena) arena);");
-        lines.add("    }");
-        lines.add("");
-        lines.add("    @Override");
-        lines.add("    protected long lookupSymbolImpl(Object lookup, String name) {");
-        lines.add("        return ((SymbolLookup) lookup).find(name).orElseThrow().address();");
+        lines.add("    protected NativeLibraryLookup libraryLookupImpl(String name, Object arena) {");
+        lines.add("        SymbolLookup lookup = SymbolLookup.libraryLookup(name, (Arena) arena);");
+        lines.add("        return symbolName -> lookup.find(symbolName).map(segment -> OptionalLong.of(segment.address())).orElseGet(OptionalLong::empty);");
         lines.add("    }");
         lines.add("");
         lines.add("    @Override");

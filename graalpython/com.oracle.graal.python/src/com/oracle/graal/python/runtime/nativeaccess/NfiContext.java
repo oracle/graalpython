@@ -159,7 +159,7 @@ public final class NfiContext {
     private static long getLastErrorPtr;
     private static long formatMessagePtr;
     private static Object windowsLookupArena;
-    private static Object windowsLookup;
+    private static NativeLibraryLookup windowsLookup;
 
     private static void ensureLoader() {
         if (isWindows()) {

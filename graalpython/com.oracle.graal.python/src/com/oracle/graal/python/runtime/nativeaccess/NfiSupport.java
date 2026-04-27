@@ -90,12 +90,12 @@ public abstract class NfiSupport {
         INSTANCE.closeArenaImpl(arena);
     }
 
-    public static Object libraryLookup(String name, Object arena) {
+    public static NativeLibraryLookup libraryLookup(String name, Object arena) {
         return INSTANCE.libraryLookupImpl(name, arena);
     }
 
-    public static long lookupSymbol(Object lookup, String name) {
-        return INSTANCE.lookupSymbolImpl(lookup, name);
+    public static long lookupSymbol(NativeLibraryLookup lookup, String name) {
+        return lookup.find(name).orElseThrow();
     }
 
     public static long lookupDefault(String name) {
@@ -139,9 +139,7 @@ public abstract class NfiSupport {
 
     protected abstract void closeArenaImpl(Object arena);
 
-    protected abstract Object libraryLookupImpl(String name, Object arena);
-
-    protected abstract long lookupSymbolImpl(Object lookup, String name);
+    protected abstract NativeLibraryLookup libraryLookupImpl(String name, Object arena);
 
     protected abstract long lookupDefaultImpl(String name);
 

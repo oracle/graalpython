@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -7,15 +7,15 @@
  * Subject to the condition set forth below, permission is hereby granted to any
  * person obtaining a copy of this software, associated documentation and/or
  * data (collectively the "Software"), free of charge and under any and all
- * copyright rights in the Software, and any and all patent rights owned or
- * freely licensable by each licensor hereunder covering either (i) the
- * unmodified Software as contributed to or provided by such licensor, or (ii)
- * the Larger Works (as defined below), to deal in both
+ * copyright rights, and any and all patent rights owned or freely licensable by
+ * each licensor hereunder covering either (i) the unmodified Software as
+ * contributed to or provided by such licensor, or (ii) the Larger Works (as
+ * defined below), to deal in both
  *
  * (a) the Software, and
  *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- * one is included with the Software each a "Larger Work" to which the Software
+ * one is included with the Software (each a "Larger Work" to which the Software
  * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
@@ -40,36 +40,9 @@
  */
 package com.oracle.graal.python.runtime.nativeaccess;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
+import java.util.OptionalLong;
 
-final class NfiSupportJdk21 extends NfiSupport {
-    @Override
-    protected Object createArenaImpl() {
-        return null;
-    }
-
-    @Override
-    protected void closeArenaImpl(Object arena) {
-    }
-
-    @Override
-    protected NativeLibraryLookup libraryLookupImpl(String name, Object arena) {
-        throw unsupported();
-    }
-
-    @Override
-    protected long lookupDefaultImpl(String name) {
-        throw unsupported();
-    }
-
-    @Override
-    protected MethodHandle createDowncallHandleImpl(MethodType methodType, boolean critical) {
-        return unsupportedDowncallHandle(methodType);
-    }
-
-    @Override
-    protected long createClosureImpl(MethodHandle staticMethodHandle, NfiType resType, NfiType[] argTypes, Object arena) {
-        throw unsupported();
-    }
+@FunctionalInterface
+public interface NativeLibraryLookup {
+    OptionalLong find(String name);
 }
