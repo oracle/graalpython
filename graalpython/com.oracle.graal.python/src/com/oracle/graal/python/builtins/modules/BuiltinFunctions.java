@@ -174,6 +174,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallS
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyAIterCheckNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
@@ -223,7 +224,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
-import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -2598,8 +2598,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class AIter extends PythonUnaryBuiltinNode {
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object arg,
-                        @Cached GetAIterNode aiter) {
-            return aiter.execute(frame, arg);
+                        @Bind Node inliningTarget,
+                        @Cached GetObjectSlotsNode getSlots,
+                        @Cached CallSlotUnaryNode callSlot,
+                        @Cached PyAIterCheckNode checkNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PRaiseNode raiseNode) {
+            TpSlots slots = getSlots.execute(inliningTarget, arg);
+            if (slots.am_aiter() == null) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNC_ITERABLE, arg);
+            }
+            Object asyncIterator = callSlot.execute(frame, inliningTarget, slots.am_aiter(), arg);
+            if (!checkNode.execute(inliningTarget, asyncIterator)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AITER_RETURNED_NOT_ASYNC_ITERATOR,
+                                getClassNode.execute(inliningTarget, asyncIterator));
+            }
+            return asyncIterator;
         }
     }
 

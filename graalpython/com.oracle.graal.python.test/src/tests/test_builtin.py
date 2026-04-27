@@ -41,6 +41,24 @@ class BuiltinTest(unittest.TestCase):
         self.assertRaises(TypeError, divmod, 10, c2)
         self.assertRaises(TypeError, divmod, c1, 10)
 
+    def test_aiter_type_errors(self):
+        class BadAIter:
+            def __aiter__(self):
+                return object()
+
+        async def async_for_none():
+            async for _ in None:
+                pass
+
+        with self.assertRaisesRegex(TypeError, "'NoneType' object is not an async iterable"):
+            aiter(None)
+        with self.assertRaisesRegex(TypeError, "'int' object is not an async iterable"):
+            aiter(1)
+        with self.assertRaisesRegex(TypeError, r"aiter\(\) returned not an async iterator of type 'object'"):
+            aiter(BadAIter())
+        with self.assertRaisesRegex(TypeError, "'async for' requires an object with __aiter__ method, got NoneType"):
+            async_for_none().send(None)
+
     def test_getitem_typeerror(self):
         a = object()
         try:
