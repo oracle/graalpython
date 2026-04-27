@@ -250,6 +250,7 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
+import com.oracle.graal.python.util.InlineWeakValueProfile;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -1752,7 +1753,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         // Object instance field fast-path: for cases where there is no descriptor and it's just
         // simple DOM property read
-        public static Object loadInstanceValue(PythonObject object, LookupAttributeInMRONode getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter) {
+        public static Object loadInstanceValue(Node inliningTarget, PythonObject object, LookupAttributeInMRONode getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter,
+                        InlineWeakValueProfile slotsValueProfile) {
             TpSlots slots;
             Object type = cachedShape.getDynamicType();
             // If this path works out, PropertyGetter.accepts() guards on the shape.
@@ -1763,8 +1765,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             if (type instanceof PythonBuiltinClassType pbct) {
                 slots = pbct.getSlots();
             } else if (type instanceof PythonManagedClass klass) {
-                // TODO: InlineWeakValueProfile?
-                slots = klass.getTpSlots();
+                slots = slotsValueProfile.execute(inliningTarget, klass.getTpSlots());
             } else {
                 return null;
             }
@@ -1789,10 +1790,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @ForceQuickening
         @Specialization(guards = {"cachedPropertyGetter != null", "cachedPropertyGetter.accepts(receiver)", "value != null"}, replaces = "doModule", limit = "3")
         static Object doInstanceValue(TruffleString key, PythonObject receiver,
+                        @Bind Node inliningTarget,
                         @Cached("receiver.getShape()") Shape cachedShape,
                         @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter cachedPropertyGetter,
                         @Cached("create(key)") LookupAttributeInMRONode getDesc,
-                        @Bind("loadInstanceValue(receiver, getDesc, cachedShape, cachedPropertyGetter)") Object value) {
+                        @Cached InlineWeakValueProfile slotsValueProfile,
+                        @Bind("loadInstanceValue(inliningTarget, receiver, getDesc, cachedShape, cachedPropertyGetter, slotsValueProfile)") Object value) {
             return value;
         }
 
