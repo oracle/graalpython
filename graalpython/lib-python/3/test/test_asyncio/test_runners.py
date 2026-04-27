@@ -214,6 +214,7 @@ class RunTests(BaseTest):
         self.assertTrue(policy.set_event_loop.called)
 
     def test_asyncio_run_without_uncancel(self):
+        if os.environ.get("GITHUB_CI"): self.skipTest("Crashes runner on GitHub CI")
         # See https://github.com/python/cpython/issues/95097
         class Task:
             def __init__(self, loop, coro, **kwargs):
