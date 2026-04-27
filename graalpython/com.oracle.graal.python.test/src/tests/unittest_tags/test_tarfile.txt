@@ -13,7 +13,7 @@ test.test_tarfile.Bz2CompressStreamWriteTest.test_compression_levels @ darwin-ar
 test.test_tarfile.Bz2CompressWriteTest.test_compression_levels @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2CreateTest.test_create @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2CreateTest.test_create_existing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.Bz2CreateTest.test_create_existing_taropen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.Bz2CreateTest.test_create_existing_taropen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.Bz2CreateTest.test_create_pathlike_name @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2CreateTest.test_create_taropen @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2CreateTest.test_create_taropen_pathlike_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -27,7 +27,7 @@ test.test_tarfile.Bz2ListTest.test_list @ linux-aarch64,linux-aarch64-github,lin
 test.test_tarfile.Bz2ListTest.test_list_members @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2MiscReadTest.test_check_members @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2MiscReadTest.test_deprecation_if_no_filter_passed_to_extract @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.Bz2MiscReadTest.test_deprecation_if_no_filter_passed_to_extractall @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.Bz2MiscReadTest.test_deprecation_if_no_filter_passed_to_extractall @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.Bz2MiscReadTest.test_empty_name_attribute @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2MiscReadTest.test_empty_tarfile @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2MiscReadTest.test_extract_directory @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -43,7 +43,7 @@ test.test_tarfile.Bz2MiscReadTest.test_ignore_zeros @ darwin-arm64,linux-aarch64
 test.test_tarfile.Bz2MiscReadTest.test_illegal_mode_arg @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2MiscReadTest.test_init_close_fobj @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2MiscReadTest.test_int_name_attribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_erroneous @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_erroneous @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_keeps_position @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2MiscReadTest.test_is_tarfile_valid @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2MiscReadTest.test_length_zero_header @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -74,7 +74,7 @@ test.test_tarfile.Bz2StreamReadTest.test_null_tarfile @ darwin-arm64,linux-aarch
 test.test_tarfile.Bz2StreamReadTest.test_premature_end_of_archive @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.Bz2StreamReadTest.test_provoke_stream_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2StreamReadTest.test_read_through @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.Bz2StreamWriteTest.test_eof_marker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.Bz2StreamWriteTest.test_eof_marker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.Bz2StreamWriteTest.test_file_mode @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.Bz2StreamWriteTest.test_fileobj_no_close @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2StreamWriteTest.test_stream_padding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -90,7 +90,7 @@ test.test_tarfile.Bz2UstarReadTest.test_fileobj_symlink2 @ darwin-arm64,linux-aa
 test.test_tarfile.Bz2UstarReadTest.test_fileobj_text @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2UstarReadTest.test_issue14160 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2WriteTest.test_100_char_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.Bz2WriteTest.test_abs_pathnames @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.Bz2WriteTest.test_abs_pathnames @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.Bz2WriteTest.test_add_self @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2WriteTest.test_cwd @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2WriteTest.test_directory_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -106,7 +106,7 @@ test.test_tarfile.Bz2WriteTest.test_ordered_recursion @ darwin-arm64,linux-aarch
 test.test_tarfile.Bz2WriteTest.test_pathnames @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.Bz2WriteTest.test_symlink_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.Bz2WriteTest.test_tar_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.CommandLineTest.test_bad_use @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.CommandLineTest.test_bad_use @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.CommandLineTest.test_create_command @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.CommandLineTest.test_create_command_compressed @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.CommandLineTest.test_create_command_dot_started_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -138,7 +138,7 @@ test.test_tarfile.CreateTest.test_create_pathlike_name @ darwin-arm64,linux-aarc
 test.test_tarfile.CreateTest.test_create_taropen @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.CreateTest.test_create_taropen_pathlike_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.CreateTest.test_eof_marker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.CreateTest.test_fileobj_no_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.CreateTest.test_fileobj_no_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.CreateWithXModeTest.test_create @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.CreateWithXModeTest.test_create_existing @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.CreateWithXModeTest.test_create_pathlike_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -168,7 +168,7 @@ test.test_tarfile.GNUWriteTest.test_longlink_1023 @ darwin-arm64,linux-aarch64,l
 test.test_tarfile.GNUWriteTest.test_longlink_1024 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GNUWriteTest.test_longlink_1025 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GNUWriteTest.test_longname_1023 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.GNUWriteTest.test_longname_1024 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.GNUWriteTest.test_longname_1024 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.GNUWriteTest.test_longname_1025 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GNUWriteTest.test_longnamelink_1023 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GNUWriteTest.test_longnamelink_1024 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -184,7 +184,7 @@ test.test_tarfile.GzipCreateTest.test_create_pathlike_name @ darwin-arm64,linux-
 test.test_tarfile.GzipCreateTest.test_create_taropen @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipCreateTest.test_create_taropen_pathlike_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipCreateTest.test_create_with_compresslevel @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.GzipCreateTest.test_eof_marker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.GzipCreateTest.test_eof_marker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.GzipCreateTest.test_fileobj_no_close @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipDetectReadTest.test_detect_file @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipDetectReadTest.test_detect_fileobj @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -215,7 +215,7 @@ test.test_tarfile.GzipMiscReadTest.test_is_tarfile_valid @ darwin-arm64,linux-aa
 test.test_tarfile.GzipMiscReadTest.test_length_zero_header @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipMiscReadTest.test_next_on_empty_tarfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.GzipMiscReadTest.test_no_name_argument @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.GzipMiscReadTest.test_no_name_attribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.GzipMiscReadTest.test_no_name_attribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.GzipMiscReadTest.test_non_existent_tarfile @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipMiscReadTest.test_null_tarfile @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipMiscReadTest.test_parallel_iteration @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -231,7 +231,7 @@ test.test_tarfile.GzipStreamReadTest.test_extractfile_attrs @ darwin-arm64,linux
 test.test_tarfile.GzipStreamReadTest.test_fileobj_regular_file @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipStreamReadTest.test_ignore_zeros @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipStreamReadTest.test_is_tarfile_erroneous @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.GzipStreamReadTest.test_is_tarfile_keeps_position @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.GzipStreamReadTest.test_is_tarfile_keeps_position @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.GzipStreamReadTest.test_is_tarfile_valid @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipStreamReadTest.test_length_zero_header @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipStreamReadTest.test_non_existent_tarfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -247,7 +247,7 @@ test.test_tarfile.GzipStreamWriteTest.test_stream_padding @ darwin-arm64,linux-a
 test.test_tarfile.GzipUstarReadTest.test_add_dir_getmember @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.GzipUstarReadTest.test_fileobj_iter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipUstarReadTest.test_fileobj_link1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.GzipUstarReadTest.test_fileobj_link2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.GzipUstarReadTest.test_fileobj_link2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.GzipUstarReadTest.test_fileobj_readlines @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipUstarReadTest.test_fileobj_regular_file @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipUstarReadTest.test_fileobj_seek @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -263,7 +263,7 @@ test.test_tarfile.GzipWriteTest.test_directory_size @ darwin-arm64,linux-aarch64
 test.test_tarfile.GzipWriteTest.test_eof_marker @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipWriteTest.test_extractall_symlinks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipWriteTest.test_file_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.GzipWriteTest.test_fileobj_no_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.GzipWriteTest.test_fileobj_no_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.GzipWriteTest.test_filter @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipWriteTest.test_gettarinfo_pathlike_name @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.GzipWriteTest.test_link_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -290,7 +290,7 @@ test.test_tarfile.LzmaCreateTest.test_create_taropen_pathlike_name @ darwin-arm6
 test.test_tarfile.LzmaCreateTest.test_create_with_preset @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaCreateTest.test_eof_marker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaCreateTest.test_fileobj_no_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.LzmaDetectReadTest.test_detect_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.LzmaDetectReadTest.test_detect_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.LzmaDetectReadTest.test_detect_fileobj @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaListTest.test_list @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaListTest.test_list_members @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -304,7 +304,7 @@ test.test_tarfile.LzmaMiscReadTest.test_extract_hardlink @ darwin-arm64,linux-aa
 test.test_tarfile.LzmaMiscReadTest.test_extract_pathlike_dir @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaMiscReadTest.test_extractall @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.LzmaMiscReadTest.test_extractall_pathlike_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.LzmaMiscReadTest.test_extractfile_attrs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.LzmaMiscReadTest.test_extractfile_attrs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.LzmaMiscReadTest.test_fail_comp @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaMiscReadTest.test_fileobj_with_offset @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaMiscReadTest.test_find_members @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -319,7 +319,7 @@ test.test_tarfile.LzmaMiscReadTest.test_length_zero_header @ linux-aarch64,linux
 test.test_tarfile.LzmaMiscReadTest.test_next_on_empty_tarfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.LzmaMiscReadTest.test_no_name_attribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaMiscReadTest.test_non_existent_tarfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.LzmaMiscReadTest.test_null_tarfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.LzmaMiscReadTest.test_null_tarfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.LzmaMiscReadTest.test_parallel_iteration @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaMiscReadTest.test_pathlike_bytes_name @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaMiscReadTest.test_pathlike_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -335,7 +335,7 @@ test.test_tarfile.LzmaStreamReadTest.test_ignore_zeros @ darwin-arm64,linux-aarc
 test.test_tarfile.LzmaStreamReadTest.test_is_tarfile_erroneous @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaStreamReadTest.test_is_tarfile_keeps_position @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaStreamReadTest.test_is_tarfile_valid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.LzmaStreamReadTest.test_length_zero_header @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.LzmaStreamReadTest.test_length_zero_header @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.LzmaStreamReadTest.test_non_existent_tarfile @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaStreamReadTest.test_null_tarfile @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaStreamReadTest.test_premature_end_of_archive @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -351,7 +351,7 @@ test.test_tarfile.LzmaUstarReadTest.test_fileobj_link1 @ darwin-arm64,linux-aarc
 test.test_tarfile.LzmaUstarReadTest.test_fileobj_link2 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaUstarReadTest.test_fileobj_readlines @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaUstarReadTest.test_fileobj_regular_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.LzmaUstarReadTest.test_fileobj_seek @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.LzmaUstarReadTest.test_fileobj_seek @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.LzmaUstarReadTest.test_fileobj_symlink1 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaUstarReadTest.test_fileobj_symlink2 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.LzmaUstarReadTest.test_fileobj_text @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -383,7 +383,7 @@ test.test_tarfile.MemberReadTest.test_find_gnusparse @ darwin-arm64,linux-aarch6
 test.test_tarfile.MemberReadTest.test_find_gnusparse_00 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MemberReadTest.test_find_gnusparse_01 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MemberReadTest.test_find_gnusparse_10 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.MemberReadTest.test_find_lnktype @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.MemberReadTest.test_find_lnktype @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.MemberReadTest.test_find_pax_umlauts @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MemberReadTest.test_find_regtype @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MemberReadTest.test_find_regtype_oldv7 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -399,7 +399,7 @@ test.test_tarfile.MiscReadTest.test_empty_name_attribute @ darwin-arm64,linux-aa
 test.test_tarfile.MiscReadTest.test_empty_tarfile @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MiscReadTest.test_extract_directory @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.MiscReadTest.test_extract_hardlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.MiscReadTest.test_extract_pathlike_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.MiscReadTest.test_extract_pathlike_dir @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.MiscReadTest.test_extractall @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.MiscReadTest.test_extractall_pathlike_dir @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MiscReadTest.test_extractfile_attrs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -415,7 +415,7 @@ test.test_tarfile.MiscReadTest.test_is_tarfile_valid @ darwin-arm64,linux-aarch6
 test.test_tarfile.MiscReadTest.test_length_zero_header @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MiscReadTest.test_next_on_empty_tarfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.MiscReadTest.test_no_name_argument @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.MiscReadTest.test_no_name_attribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.MiscReadTest.test_no_name_attribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.MiscReadTest.test_non_existent_tarfile @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MiscReadTest.test_null_tarfile @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MiscReadTest.test_parallel_iteration @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -431,7 +431,7 @@ test.test_tarfile.MiscTest.test_number_field_limits @ darwin-arm64,linux-aarch64
 test.test_tarfile.MiscTest.test_read_number_fields @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MiscTest.test_useful_error_message_when_modules_missing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.MiscTest.test_write_number_fields @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.NoneInfoExtractTests_Data.test_extractall_none_gid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.NoneInfoExtractTests_Data.test_extractall_none_gid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.NoneInfoExtractTests_Data.test_extractall_none_gname @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.NoneInfoExtractTests_Data.test_extractall_none_mode @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.NoneInfoExtractTests_Data.test_extractall_none_mtime @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -447,7 +447,7 @@ test.test_tarfile.NoneInfoExtractTests_Default.test_extractall_none_uid @ darwin
 test.test_tarfile.NoneInfoExtractTests_Default.test_extractall_none_uname @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.NoneInfoExtractTests_FullyTrusted.test_extractall_none_gid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.NoneInfoExtractTests_FullyTrusted.test_extractall_none_gname @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.NoneInfoExtractTests_FullyTrusted.test_extractall_none_mode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.NoneInfoExtractTests_FullyTrusted.test_extractall_none_mode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.NoneInfoExtractTests_FullyTrusted.test_extractall_none_mtime @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.NoneInfoExtractTests_FullyTrusted.test_extractall_none_ownership @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.NoneInfoExtractTests_FullyTrusted.test_extractall_none_uid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -478,7 +478,7 @@ test.test_tarfile.OverwriteTests.test_overwrite_file_as_implicit_dir @ darwin-ar
 test.test_tarfile.OverwriteTests.test_overwrite_file_symlink_as_file @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.PAXUnicodeTest.test_binary_header @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.PAXUnicodeTest.test_iso8859_1_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.PAXUnicodeTest.test_uname_unicode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.PAXUnicodeTest.test_uname_unicode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.PAXUnicodeTest.test_unicode_argument @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.PAXUnicodeTest.test_utf7_filename @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.PAXUnicodeTest.test_utf8_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -494,7 +494,7 @@ test.test_tarfile.PaxWriteTest.test_create_pax_header @ darwin-arm64,linux-aarch
 test.test_tarfile.PaxWriteTest.test_longlink_1023 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.PaxWriteTest.test_longlink_1024 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.PaxWriteTest.test_longlink_1025 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.PaxWriteTest.test_longname_1023 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.PaxWriteTest.test_longname_1023 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.PaxWriteTest.test_longname_1024 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.PaxWriteTest.test_longname_1025 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.PaxWriteTest.test_longnamelink_1023 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -510,7 +510,7 @@ test.test_tarfile.ReplaceTests.test_replace_shallow @ darwin-arm64,linux-aarch64
 test.test_tarfile.StreamReadTest.test_compare_members @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.StreamReadTest.test_empty_tarfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.StreamReadTest.test_extractfile_attrs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.StreamReadTest.test_fileobj_regular_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.StreamReadTest.test_fileobj_regular_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.StreamReadTest.test_ignore_zeros @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.StreamReadTest.test_is_tarfile_erroneous @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.StreamReadTest.test_is_tarfile_keeps_position @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -526,7 +526,7 @@ test.test_tarfile.StreamWriteTest.test_file_mode @ darwin-arm64,linux-aarch64,li
 test.test_tarfile.StreamWriteTest.test_fileobj_no_close @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.StreamWriteTest.test_stream_padding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.TestExtractionFilters.test_absolute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.TestExtractionFilters.test_absolute_hardlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.TestExtractionFilters.test_absolute_hardlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.TestExtractionFilters.test_absolute_symlink @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.TestExtractionFilters.test_bad_filter_name @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_tarfile.TestExtractionFilters.test_benign_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -558,7 +558,7 @@ test.test_tarfile.UstarReadTest.test_fileobj_readlines @ darwin-arm64,linux-aarc
 test.test_tarfile.UstarReadTest.test_fileobj_regular_file @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.UstarReadTest.test_fileobj_seek @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.UstarReadTest.test_fileobj_symlink1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.UstarReadTest.test_fileobj_symlink2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.UstarReadTest.test_fileobj_symlink2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.UstarReadTest.test_fileobj_text @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.UstarReadTest.test_issue14160 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.UstarUnicodeTest.test_iso8859_1_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
@@ -574,7 +574,7 @@ test.test_tarfile.UstarUnicodeTest.test_unicode_longname4 @ darwin-arm64,linux-a
 test.test_tarfile.UstarUnicodeTest.test_unicode_name1 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.UstarUnicodeTest.test_unicode_name2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.UstarUnicodeTest.test_utf7_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_tarfile.UstarUnicodeTest.test_utf8_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_tarfile.UstarUnicodeTest.test_utf8_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_tarfile.WriteTest.test_100_char_name @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.WriteTest.test_abs_pathnames @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_tarfile.WriteTest.test_add_self @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
