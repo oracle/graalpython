@@ -83,8 +83,8 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1116,8 +1116,7 @@ public abstract class CExtCommonNodes {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
 
     /**
-     * Binds a native pointer with a signature to an object that can be directly
-     * {@link NfiBoundFunction#invoke(Object...) invoked}.
+     * Binds a native pointer with a signature to a typed native function pointer.
      *
      * <p>
      * <b>NOTE:</b> This method will fail if {@link PythonContext#isNativeAccessAllowed() native
@@ -1125,7 +1124,7 @@ public abstract class CExtCommonNodes {
      * </p>
      */
     @TruffleBoundary
-    public static NfiBoundFunction bindFunctionPointer(long pointer, NativeCExtSymbol descriptor) {
+    public static NativeFunctionPointer bindFunctionPointer(long pointer, NativeCExtSymbol descriptor) {
         PythonContext pythonContext = PythonContext.get(null);
         if (!pythonContext.isNativeAccessAllowed()) {
             LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", pointer));

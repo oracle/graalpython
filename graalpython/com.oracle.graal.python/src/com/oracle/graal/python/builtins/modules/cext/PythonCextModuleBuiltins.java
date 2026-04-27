@@ -91,7 +91,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -323,7 +323,7 @@ public final class PythonCextModuleBuiltins {
                     long mdState = self.getNativeModuleState();
                     if (mSize <= 0 || mdState != NULLPTR) {
                         PythonContext ctx = PythonContext.get(inliningTarget);
-                        NfiBoundFunction traverseExecutable = bindFunctionPointer(mTraverse, ExternalFunctionSignature.TRAVERSEPROC);
+                        NativeFunctionPointer traverseExecutable = bindFunctionPointer(mTraverse, ExternalFunctionSignature.TRAVERSEPROC);
                         int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING_INVOKE_TRAVERSE_PROC, ctx.ensureNfiContext(), BoundaryCallData.getUncached(),
                                         ctx.getThreadState(PythonLanguage.get(inliningTarget)), traverseExecutable, toNativeNode.executeLong(self), visitFun, arg);
                         checkPrimitiveFunctionResultNode.executeLong(inliningTarget, ctx.getThreadState(PythonLanguage.get(inliningTarget)), StringLiterals.T_VISIT, ires);

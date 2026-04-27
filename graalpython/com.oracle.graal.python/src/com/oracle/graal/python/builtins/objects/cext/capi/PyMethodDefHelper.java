@@ -55,8 +55,8 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -96,14 +96,14 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PyMethodDefHelper.class);
 
     public PyMethodDefHelper {
-        assert meth instanceof NfiBoundFunction || meth instanceof PyCFunctionWrapper;
+        assert meth instanceof NativeFunctionPointer || meth instanceof PyCFunctionWrapper;
     }
 
     private static Object getMethFromBuiltinFunction(CApiContext cApiContext, PBuiltinFunction object) {
         PKeyword[] kwDefaults = object.getKwDefaults();
         for (int i = 0; i < kwDefaults.length; i++) {
             if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
-                assert kwDefaults[i].getValue() instanceof NfiBoundFunction;
+                assert kwDefaults[i].getValue() instanceof NativeFunctionPointer;
                 // This can happen for slot wrapper methods of native slots
                 return kwDefaults[i].getValue();
             }
@@ -151,7 +151,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         PythonContext pythonContext = PythonContext.get(null);
         long nativeName = pythonContext.stringToNativeUtf8Bytes(name, false);
         long nativeDoc = doc != null ? pythonContext.stringToNativeUtf8Bytes(doc, false) : 0L;
-        long nativeMeth = meth instanceof NfiBoundFunction f ? f.getAddress() : ((PyCFunctionWrapper) meth).getPointer();
+        long nativeMeth = meth instanceof NativeFunctionPointer f ? f.getAddress() : ((PyCFunctionWrapper) meth).getPointer();
 
         long mem = CStructAccess.allocate(CStructs.PyMethodDef);
         CStructAccess.writePtrField(mem, PyMethodDef__ml_name, nativeName);

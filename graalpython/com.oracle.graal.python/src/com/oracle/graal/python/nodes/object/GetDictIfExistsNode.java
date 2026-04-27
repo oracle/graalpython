@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.HiddenAttr.ReadNode;
@@ -159,7 +159,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         }
 
         assert EnsurePythonObjectNode.doesNotNeedPromotion(object);
-        NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_GET_DICT_PTR);
+        NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_GET_DICT_PTR);
         try {
             long dictPtr = ExternalFunctionInvoker.invokeGETDICTPTRFUN(callable.getAddress(), pythonToNativeNode.execute(inliningTarget, object, false));
             Reference.reachabilityFence(object);

@@ -144,8 +144,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -202,11 +202,11 @@ public abstract class ExternalFunctionNodes {
     static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE = new TruffleString[]{KW_CALLABLE};
     static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new TruffleString[]{KW_CALLABLE, KW_CLOSURE};
 
-    public static PKeyword[] createKwDefaults(NfiBoundFunction callable) {
+    public static PKeyword[] createKwDefaults(NativeFunctionPointer callable) {
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable)};
     }
 
-    public static PKeyword[] createKwDefaults(NfiBoundFunction callable, long closure) {
+    public static PKeyword[] createKwDefaults(NativeFunctionPointer callable, long closure) {
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
     }
 
@@ -504,7 +504,7 @@ public abstract class ExternalFunctionNodes {
          *         wrapper.
          */
         @TruffleBoundary
-        public static PythonBuiltinObject createDescrWrapperFunction(TruffleString name, NfiBoundFunction callable, Object enclosingType, PExternalFunctionWrapper sig, PythonLanguage language) {
+        public static PythonBuiltinObject createDescrWrapperFunction(TruffleString name, NativeFunctionPointer callable, Object enclosingType, PExternalFunctionWrapper sig, PythonLanguage language) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createDescrWrapperFunction(%s, %s)", name, callable));
             RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name);
 
@@ -546,7 +546,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * A marker annotation used to denote root nodes that perform external function invocation. The
      * annotated elements need to be extendable and are expected to have an abstract method
-     * {@code protected abstract <returnType> invokeExternalFunction(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction, <arg0Type>, <arg1Type>, ..., <argNType>)}
+     * {@code protected abstract <returnType> invokeExternalFunction(VirtualFrame frame, PythonContext context, NativeFunctionPointer nativeFunction, <arg0Type>, <arg1Type>, ..., <argNType>)}
      * where the {@code returnType} matches the {@link ExternalFunctionSignature#returnValue} Java
      * type and same for the arguments {@link ExternalFunctionSignature#arguments}.
      */
@@ -559,7 +559,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * A marker annotation used to denote root nodes that perform external function invocation. The
      * annotated elements need to be extendable and are expected to have an abstract method
-     * {@code protected abstract <returnType> invokeExternalFunction(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction, <arg0Type>, <arg1Type>, ..., <argNType>)}
+     * {@code protected abstract <returnType> invokeExternalFunction(VirtualFrame frame, PythonContext context, NativeFunctionPointer nativeFunction, <arg0Type>, <arg1Type>, ..., <argNType>)}
      * where the {@code returnType} matches the {@link ExternalFunctionSignature#returnValue} Java
      * type and same for the arguments {@link ExternalFunctionSignature#arguments}.
      */
@@ -598,7 +598,7 @@ public abstract class ExternalFunctionNodes {
             }
         }
 
-        protected abstract Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction);
+        protected abstract Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction);
 
         @Override
         public final Object execute(VirtualFrame frame) {
@@ -614,7 +614,7 @@ public abstract class ExternalFunctionNodes {
             calleeContext.enter(frame, this);
             try {
                 Object callable = readCallableNode.execute(frame);
-                if (!(callable instanceof NfiBoundFunction boundFunction)) {
+                if (!(callable instanceof NativeFunctionPointer boundFunction)) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
                 return readArgumentsAndInvokeExternalFunction(frame, boundFunction);
@@ -778,7 +778,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             PythonContext context = PythonContext.get(this);
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.execute(frame);
@@ -848,7 +848,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             if (calleeContext == null || boundaryCallData == null || selfToNativeNode == null || argsToNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 createNodes();
@@ -919,10 +919,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.UNARYFUNC, argConversions = {PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             return returnNativeObjectToPython(invokeExternalFunction(frame, boundFunction, self));
         }
@@ -966,10 +966,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.NEWFUNC, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long argsTuplePtr, Object kwds);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long argsTuplePtr, Object kwds);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             PythonContext context = PythonContext.get(this);
             Object[] args = readVarargsNode.execute(frame);
 
@@ -1013,10 +1013,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.TERNARYFUNC, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long args, Object kwds);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long args, Object kwds);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             PythonContext context = PythonContext.get(this);
 
             Object self = readSelf(frame);
@@ -1071,10 +1071,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.INITPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long argsTuplePtr, Object kwds);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long argsTuplePtr, Object kwds);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             PythonContext context = PythonContext.get(this);
 
             Object self = readSelf(frame);
@@ -1125,10 +1125,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.INQUIRY, retConversion = int.class, argConversions = {PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             int result = invokeExternalFunction(frame, boundFunction, self);
             if (result == -1) {
@@ -1151,7 +1151,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             return invokeExternalFunction(frame, boundFunction, self, NULLPTR);
@@ -1173,7 +1173,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, isStatic, provider);
         }
 
-        final Object invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long arg) {
+        final Object invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long arg) {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             if (calleeContext == null || boundaryCallData == null || selfToNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1209,7 +1209,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object arg = ensurePythonObject(readArgNode.execute(frame));
             try {
@@ -1244,7 +1244,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             if (readVarargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 assert readKwargsNode == null;
@@ -1319,7 +1319,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             if (readClsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 assert readVarargsNode == null;
@@ -1398,7 +1398,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             if (readVarargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 assert boundaryCallData == null;
@@ -1483,10 +1483,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.SSIZEARGFUNC, argConversions = {PythonToNativeNode.class, long.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long i);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long i);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             long i = asSizeNode.executeExactCached(frame, readINode.execute(frame));
             return returnNativeObjectToPython(invokeExternalFunction(frame, boundFunction, self, i));
@@ -1515,10 +1515,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.GETATTRFUNC, argConversions = {PythonToNativeNode.class, long.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long key);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long key);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             long key = asCharPointerNode.execute(readArgNode.execute(frame));
             try {
@@ -1556,10 +1556,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.SETATTRFUNC, retConversion = int.class, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long key, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long key, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             long key = asCharPointerNode.execute(readArg1Node.execute(frame));
             Object value = ensurePythonObject(readArg2Node.execute(frame));
@@ -1595,10 +1595,10 @@ public abstract class ExternalFunctionNodes {
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.SETATTROFUNC, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class,
                         PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object name, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object name, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object name = ensurePythonObject(readNameNode.execute(frame));
@@ -1636,10 +1636,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.RICHCMPFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, int.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object name, int op);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object name, int op);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             try {
                 Object self = readSelf(frame);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
@@ -1671,10 +1671,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.SSIZEARGFUNC, argConversions = {PythonToNativeNode.class, long.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long i);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long i);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg1 = readArg1Node.execute(frame);
@@ -1703,10 +1703,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.SSIZEOBJARGPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long i, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long i, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object arg1 = readArg1Node.execute(frame);
             Object arg2 = ensurePythonObject(readArg2Node.execute(frame));
@@ -1737,10 +1737,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.SSIZEOBJARGPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long key, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long key, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object key = readKeyNode.execute(frame);
 
@@ -1772,10 +1772,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.DESCRGETFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object obj, Object type);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object obj, Object type);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object obj = PythonUtils.normalizeNone(ConditionProfile.getUncached(), ensurePythonObject(readObj.execute(frame)));
             Object type = PythonUtils.normalizeNone(ConditionProfile.getUncached(), ensurePythonObject(readType.execute(frame)));
@@ -1804,10 +1804,10 @@ public abstract class ExternalFunctionNodes {
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.DESCRSETFUNC, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class,
                         PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object obj, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object obj, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object obj = ensurePythonObject(readObj.execute(frame));
             if (invokeExternalFunction(frame, boundFunction, self, obj, PNone.NO_VALUE) < 0) {
@@ -1835,10 +1835,10 @@ public abstract class ExternalFunctionNodes {
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.SETATTROFUNC, retConversion = int.class, //
                         argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object obj, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object obj, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object obj = ensurePythonObject(readObj.execute(frame));
             // TODO: check if we need Carlo Verre hack here (see typeobject.c:hackcheck)
@@ -1867,10 +1867,10 @@ public abstract class ExternalFunctionNodes {
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.OBJOBJARGPROC, retConversion = int.class, //
                         argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object key, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object key, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object key = ensurePythonObject(readKeyNode.execute(frame));
             if (invokeExternalFunction(frame, boundFunction, self, key, PNone.NO_VALUE) < 0) {
@@ -1906,10 +1906,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.TERNARYFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object other, Object third);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object other, Object third);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object other = ensurePythonObject(readArg1Node.execute(frame));
             Object third = ensurePythonObject(readArg2Node.execute(frame));
@@ -1954,10 +1954,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.RICHCMPFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, int.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object other, int op);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object other, int op);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object other = ensurePythonObject(readArgNode.execute(frame));
             return returnNativeObjectToPython(invokeExternalFunction(frame, boundFunction, self, other, op));
@@ -1994,10 +1994,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.UNARYFUNC, argConversions = {PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             long lresult = invokeExternalFunction(frame, boundFunction, self);
             PythonContext context = PythonContext.get(this);
@@ -2025,10 +2025,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.GETTER, argConversions = {PythonToNativeNode.class, long.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long closure);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, long closure);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             if (readClosureNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2065,10 +2065,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.SETTER, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, long.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object value, long closure);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object value, long closure);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object arg = ensurePythonObject(ensureReadArgNode().execute(frame));
             if (readClosureNode == null) {
@@ -2106,10 +2106,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.LENFUNC, argConversions = {PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             long result = invokeExternalFunction(frame, boundFunction, self);
             if (result == -1) {
@@ -2137,10 +2137,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.OBJOBJPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object value = ensurePythonObject(readValueNode.execute(frame));
 
@@ -2173,10 +2173,10 @@ public abstract class ExternalFunctionNodes {
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.OBJOBJARGPROC, retConversion = int.class, //
                         argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object key, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object key, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object key = ensurePythonObject(readKeyNode.execute(frame));
             Object value = ensurePythonObject(readValueNode.execute(frame));
@@ -2212,10 +2212,10 @@ public abstract class ExternalFunctionNodes {
         }
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.BINARYFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object other);
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object other);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = readSelf(frame);
             Object other = ensurePythonObject(readOtherNode.execute(frame));
 
@@ -2253,10 +2253,10 @@ public abstract class ExternalFunctionNodes {
 
         @InvokeExternalFunction(value = ExternalFunctionSignature.DESCRSETFUNC, retConversion = int.class, //
                         argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object instance, Object value);
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction, Object self, Object instance, Object value);
 
         @Override
-        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
+        protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NativeFunctionPointer boundFunction) {
             Object self = ensurePythonObject(readSelf(frame));
             Object instance = ensurePythonObject(readInstanceNode.execute(frame));
             Object value = ensurePythonObject(readValueNode.execute(frame));
@@ -2355,7 +2355,7 @@ public abstract class ExternalFunctionNodes {
             assert (GetTypeFlagsNode.executeUncached(PythonBuiltinClassType.PTuple) & TypeFlags.HAVE_GC) != 0;
 
             PythonBuiltinClass argsTupleClass = context.lookupType(PythonBuiltinClassType.PTuple);
-            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_TYPE_GENERIC_ALLOC);
+            NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_TYPE_GENERIC_ALLOC);
             long op = ExternalFunctionInvoker.invokeTYPE_GENERIC_ALLOC(null, TIMING_invokeTypeGenericAlloc, context.ensureNfiContext(),
                             BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
                             pythonToNativeNode.execute(inliningTarget, argsTupleClass, false), n);
@@ -2411,7 +2411,7 @@ public abstract class ExternalFunctionNodes {
             }
             CApiTransitions.subNativeRefCount(argsTuplePtr, 1);
             PythonContext context = PythonContext.get(inliningTarget);
-            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_DEALLOC);
+            NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_DEALLOC);
             ExternalFunctionInvoker.invokePY_DEALLOC(null, TIMING_invokePyDealloc, context.ensureNfiContext(),
                             BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
                             argsTuplePtr);

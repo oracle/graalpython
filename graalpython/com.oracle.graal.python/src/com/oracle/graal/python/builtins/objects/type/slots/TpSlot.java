@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.NodeFactoryBase;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -203,13 +203,13 @@ public abstract class TpSlot {
      * array and cannot optimize for specific signature.
      */
     public abstract static sealed class TpSlotNative extends TpSlot permits TpSlotCExtNative {
-        final NfiBoundFunction callable;
+        final NativeFunctionPointer callable;
 
-        public TpSlotNative(NfiBoundFunction callable) {
+        public TpSlotNative(NativeFunctionPointer callable) {
             this.callable = callable;
         }
 
-        public static TpSlotNative createCExtSlot(NfiBoundFunction callable) {
+        public static TpSlotNative createCExtSlot(NativeFunctionPointer callable) {
             return new TpSlotCExtNative(callable);
         }
 
@@ -220,7 +220,7 @@ public abstract class TpSlot {
         /**
          * The native function that implements the slot.
          */
-        public final NfiBoundFunction getCallable() {
+        public final NativeFunctionPointer getCallable() {
             return callable;
         }
     }
@@ -229,7 +229,7 @@ public abstract class TpSlot {
      * Standard CPython C API slot that takes {@code PyObject*} arguments.
      */
     public static final class TpSlotCExtNative extends TpSlotNative {
-        public TpSlotCExtNative(NfiBoundFunction callable) {
+        public TpSlotCExtNative(NativeFunctionPointer callable) {
             super(callable);
         }
     }

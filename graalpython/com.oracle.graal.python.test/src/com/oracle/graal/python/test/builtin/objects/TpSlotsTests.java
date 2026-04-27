@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.runtime.nativeaccess.Nfi;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
 import com.oracle.graal.python.runtime.nativeaccess.NfiType;
 import com.oracle.graal.python.util.Function;
@@ -160,11 +160,11 @@ public class TpSlotsTests {
         }
     }
 
-    // Use the TpSlotMeta's ordinal value as a pointer for creating a dummy bound function to
+    // Use the TpSlotMeta's ordinal value as a pointer for creating a dummy native function pointer to
     // verify that the slot values were properly assigned to the right fields of TpSlots
     // record
     private TpSlotNative createCExtSlot(TpSlotMeta def) {
-        return TpSlotNative.createCExtSlot(NfiBoundFunction.create(nfiContext, def.ordinal(), NfiType.VOID));
+        return TpSlotNative.createCExtSlot(NativeFunctionPointer.create(nfiContext, def.ordinal(), NfiType.VOID));
     }
 
     private static void checkSlotValue(TpSlotMeta def, TpSlot slotValue) {

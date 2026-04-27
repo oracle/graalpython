@@ -42,20 +42,24 @@ package com.oracle.graal.python.runtime.nativeaccess;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class NfiBoundFunction {
+/**
+ * A native function pointer represented by its raw address and function pointer type. The type is
+ * stored as the native return type plus the native argument types.
+ */
+public final class NativeFunctionPointer {
     private final long ptr;
     private final NfiType resType;
     private final NfiType[] argTypes;
 
-    private NfiBoundFunction(long ptr, NfiType resType, NfiType[] argTypes) {
+    private NativeFunctionPointer(long ptr, NfiType resType, NfiType[] argTypes) {
         this.ptr = ptr;
         this.resType = resType;
         this.argTypes = argTypes;
     }
 
-    public static NfiBoundFunction create(@SuppressWarnings("unused") NfiContext context, long pointer, NfiType resType, NfiType... argTypes) {
+    public static NativeFunctionPointer create(@SuppressWarnings("unused") NfiContext context, long pointer, NfiType resType, NfiType... argTypes) {
         // TODO(NFI2) if logging enabled, use context to lookup name
-        return new NfiBoundFunction(pointer, resType, argTypes.clone());
+        return new NativeFunctionPointer(pointer, resType, argTypes.clone());
     }
 
     public long getAddress() {
@@ -65,7 +69,7 @@ public final class NfiBoundFunction {
     @Override
     @TruffleBoundary
     public String toString() {
-        return "NfiBoundFunction[" +
+        return "NativeFunctionPointer[" +
                         "ptr=" + ptr + ", " +
                         "signature=" + toSignatureString() + ']';
     }

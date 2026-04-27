@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -104,7 +104,7 @@ public enum CConstants {
         CompilerAsserts.neverPartOfCompilation();
         long constantsPointer;
         try {
-            NfiBoundFunction constants = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
+            NativeFunctionPointer constants = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
             constantsPointer = ExternalFunctionInvoker.invokePYTRUFFLE_CONSTANTS(constants.getAddress());
         } catch (Throwable t) {
             throw CompilerDirectives.shouldNotReachHere(t);

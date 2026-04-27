@@ -108,8 +108,8 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
 import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
 import com.oracle.graal.python.runtime.nativeaccess.NfiLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NfiLoadException;
@@ -204,13 +204,13 @@ public final class CApiContext extends CExtContext {
      * Same as {@link #nativeSymbolCache} if there is only one context per JVM (i.e. just one engine
      * in single-context mode). Will be {@code null} in case of multiple contexts.
      */
-    @CompilationFinal(dimensions = 1) private static NfiBoundFunction[] nativeSymbolCacheSingleContext;
+    @CompilationFinal(dimensions = 1) private static NativeFunctionPointer[] nativeSymbolCacheSingleContext;
     private static boolean nativeSymbolCacheSingleContextUsed;
 
     /**
      * A private (i.e. per-context) cache of C API symbols (usually helper functions).
      */
-    private final NfiBoundFunction[] nativeSymbolCache;
+    private final NativeFunctionPointer[] nativeSymbolCache;
 
     public static boolean isSpecialSingleton(Object delegate) {
         return getSingletonNativeWrapperIdx(delegate) != -1;
@@ -324,7 +324,7 @@ public final class CApiContext extends CExtContext {
 
     public CApiContext(PythonContext context, NfiLibrary library, NativeLibraryLocator locator) {
         super(context, library, locator.getCapiLibrary());
-        this.nativeSymbolCache = new NfiBoundFunction[NativeCAPISymbol.values().length];
+        this.nativeSymbolCache = new NativeFunctionPointer[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
 
         /*
@@ -543,8 +543,8 @@ public final class CApiContext extends CExtContext {
      *            {@link CApiContext} instance (if necessary).
      * @return The C API symbol cache.
      */
-    private static NfiBoundFunction[] getSymbolCache(Node caller) {
-        NfiBoundFunction[] cache = nativeSymbolCacheSingleContext;
+    private static NativeFunctionPointer[] getSymbolCache(Node caller) {
+        NativeFunctionPointer[] cache = nativeSymbolCacheSingleContext;
         if (cache != null) {
             return cache;
         }
@@ -564,13 +564,13 @@ public final class CApiContext extends CExtContext {
 
     public static boolean isIdenticalToSymbol(long ptr, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
-        NfiBoundFunction nativeSymbol = getNativeSymbol(null, symbol);
+        NativeFunctionPointer nativeSymbol = getNativeSymbol(null, symbol);
         return nativeSymbol.getAddress() == ptr;
     }
 
-    public static NfiBoundFunction getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
-        NfiBoundFunction[] nativeSymbolCache = getSymbolCache(caller);
-        NfiBoundFunction result = nativeSymbolCache[symbol.ordinal()];
+    public static NativeFunctionPointer getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
+        NativeFunctionPointer[] nativeSymbolCache = getSymbolCache(caller);
+        NativeFunctionPointer result = nativeSymbolCache[symbol.ordinal()];
         if (result == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             result = lookupNativeSymbol(nativeSymbolCache, symbol);
@@ -583,12 +583,12 @@ public final class CApiContext extends CExtContext {
      * Lookup the given C API symbol in the library, store it to the provided cache, and return the
      * callable symbol.
      */
-    private static NfiBoundFunction lookupNativeSymbol(NfiBoundFunction[] nativeSymbolCache, NativeCAPISymbol symbol) {
+    private static NativeFunctionPointer lookupNativeSymbol(NativeFunctionPointer[] nativeSymbolCache, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
         String name = symbol.getName();
         PythonContext pythonContext = PythonContext.get(null);
         long nativeSymbolPtr = pythonContext.getCApiContext().getLibrary().lookupSymbol(name);
-        NfiBoundFunction nativeSymbol = symbol.bind(pythonContext.ensureNfiContext(), nativeSymbolPtr);
+        NativeFunctionPointer nativeSymbol = symbol.bind(pythonContext.ensureNfiContext(), nativeSymbolPtr);
         VarHandle.storeStoreFence();
         return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
     }
@@ -613,7 +613,7 @@ public final class CApiContext extends CExtContext {
             this.gcRSSMinimum = context.getOption(PythonOptions.BackgroundGCTaskMinimum);
         }
 
-        NfiBoundFunction nativeSymbol = null;
+        NativeFunctionPointer nativeSymbol = null;
 
         long currentRSS = -1;
         long previousRSS = -1;

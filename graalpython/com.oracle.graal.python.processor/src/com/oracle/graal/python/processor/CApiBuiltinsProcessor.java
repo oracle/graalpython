@@ -91,7 +91,7 @@ import com.sun.source.util.Trees;
 public class CApiBuiltinsProcessor extends AbstractProcessor {
     private static final String TRUFFLE_VIRTUAL_FRAME = "com.oracle.truffle.api.frame.VirtualFrame";
     private static final String TRUFFLE_NODE = "com.oracle.truffle.api.nodes.Node";
-    private static final String NFI_BOUND_FUNCTION = "com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction";
+    private static final String NATIVE_FUNCTION_POINTER = "com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer";
     private static final String PYTHON_CONTEXT = "com.oracle.graal.python.runtime.PythonContext";
     private static final String TARGET_PACKAGE = "com.oracle.graal.python.builtins.modules.cext";
 
@@ -1205,7 +1205,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;");
         lines.add("import com.oracle.graal.python.builtins.objects.function.PArguments;");
-        lines.add("import " + NFI_PACKAGE + ".NfiBoundFunction;");
+        lines.add("import " + NFI_PACKAGE + ".NativeFunctionPointer;");
         lines.add("import " + NFI_PACKAGE + ".NfiContext;");
         lines.add("import " + NFI_PACKAGE + "." + NFI_SUPPORT_CLASS_NAME + ";");
         lines.add("import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;");
@@ -1254,14 +1254,14 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             List<String> invokeArgs = new LinkedList<>();
             if (sig.cannotRaise) {
                 invokeArgs.add("CApiTiming timing");
-                invokeArgs.add("NfiBoundFunction nfiFunction");
+                invokeArgs.add("NativeFunctionPointer nativeFunction");
             } else {
                 invokeArgs.add("VirtualFrame frame");
                 invokeArgs.add("CApiTiming timing");
                 invokeArgs.add("NfiContext nfiContext");
                 invokeArgs.add("BoundaryCallData boundaryCallData");
                 invokeArgs.add("PythonThreadState threadState");
-                invokeArgs.add("NfiBoundFunction nfiFunction");
+                invokeArgs.add("NativeFunctionPointer nativeFunction");
             }
             int i = 0;
             for (String argType : argTypes) {
@@ -1295,7 +1295,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 lines.add("        CApiTiming.enter();");
                 lines.add("        try {");
                 lines.add("            " + returnStmt + "invoke" + sig.name + "(" +
-                                "nfiFunction.getAddress()" +
+                                "nativeFunction.getAddress()" +
                                 (cArgs.isEmpty() ? "" : ", " + String.join(", ", cArgs)) + ");");
                 lines.add("        } catch (Throwable exception) {");
                 lines.add("            throw CompilerDirectives.shouldNotReachHere(exception);");
@@ -1309,7 +1309,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 contextInvokeArgs.add("VirtualFrame frame");
                 contextInvokeArgs.add("CApiTiming timing");
                 contextInvokeArgs.add("PythonContext context");
-                contextInvokeArgs.add("NfiBoundFunction nfiFunction");
+                contextInvokeArgs.add("NativeFunctionPointer nativeFunction");
                 contextInvokeArgs.addAll(typedArgs);
 
                 String returnStmt = isVoidReturn ? "" : "return ";
@@ -1317,7 +1317,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 List<String> nullFrameInvokeArgs = new LinkedList<>();
                 nullFrameInvokeArgs.add("CApiTiming timing");
                 nullFrameInvokeArgs.add("PythonContext context");
-                nullFrameInvokeArgs.add("NfiBoundFunction nfiFunction");
+                nullFrameInvokeArgs.add("NativeFunctionPointer nativeFunction");
                 nullFrameInvokeArgs.addAll(typedArgs);
                 lines.add("");
 
@@ -1334,7 +1334,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 lines.add("        CApiTiming.enter();");
                 lines.add("        try {");
                 lines.add("            " + returnStmt + "invoke" + sig.name + "(" +
-                                "nfiFunction.getAddress()" +
+                                "nativeFunction.getAddress()" +
                                 (cArgs.isEmpty() ? "" : ", " + String.join(", ", cArgs)) + ");");
                 lines.add("        } catch (Throwable exception) {");
                 lines.add("            CompilerDirectives.transferToInterpreterAndInvalidate();");
@@ -1655,7 +1655,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("import " + clazz.getQualifiedName() + ";");
             lines.add("import " + EXFUNC_INVOKER_PACKAGE + "." + EXFUNC_INVOKER_CLASS_NAME + ";");
             lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;");
-            lines.add("import " + NFI_BOUND_FUNCTION + ";");
+            lines.add("import " + NATIVE_FUNCTION_POINTER + ";");
             lines.add("import " + PYTHON_CONTEXT + ";");
             lines.add("import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;");
             lines.add("import " + TRUFFLE_VIRTUAL_FRAME + ";");
@@ -1684,7 +1684,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 boolean isVoidReturn = helper.origin.getReturnType().getKind() == TypeKind.VOID;
                 boolean cannotRaise = isCannotRaise(helper.signature);
 
-                if (!verifyArguments(helper.origin, TRUFFLE_VIRTUAL_FRAME, PYTHON_CONTEXT, NFI_BOUND_FUNCTION)) {
+                if (!verifyArguments(helper.origin, TRUFFLE_VIRTUAL_FRAME, PYTHON_CONTEXT, NATIVE_FUNCTION_POINTER)) {
                     return;
                 }
 
@@ -1700,12 +1700,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 List<String> cArgs = new ArrayList<>();
                 if (cannotRaise) {
                     cArgs.add("TIMING_" + helper.origin.getSimpleName());
-                    cArgs.add(formalParameters.get(2).getSimpleName().toString()); // boundFunction
+                    cArgs.add(formalParameters.get(2).getSimpleName().toString()); // nativeFunction
                 } else {
                     cArgs.add(formalParameters.get(0).getSimpleName().toString()); // frame
                     cArgs.add("TIMING_" + helper.origin.getSimpleName());
                     cArgs.add(formalParameters.get(1).getSimpleName().toString()); // context
-                    cArgs.add(formalParameters.get(2).getSimpleName().toString()); // boundFunction
+                    cArgs.add(formalParameters.get(2).getSimpleName().toString()); // nativeFunction
                 }
 
                 for (VariableElement formalParameter : formalParameters) {
@@ -1760,7 +1760,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperDescriptorRoot;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;");
-        lines.add("import " + NFI_BOUND_FUNCTION + ";");
+        lines.add("import " + NATIVE_FUNCTION_POINTER + ";");
         lines.add("import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;");
         lines.add("import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;");
         lines.add("import com.oracle.graal.python.runtime.PythonContext;");
@@ -1796,7 +1796,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             boolean isVoidReturn = wrapper.origin.getReturnType().getKind() == TypeKind.VOID;
 
             // verify arguments of annotated method
-            if (!verifyArguments(wrapper.origin, TRUFFLE_VIRTUAL_FRAME, NFI_BOUND_FUNCTION)) {
+            if (!verifyArguments(wrapper.origin, TRUFFLE_VIRTUAL_FRAME, NATIVE_FUNCTION_POINTER)) {
                 return;
             }
 
@@ -1828,14 +1828,14 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             List<String> cArgs = new LinkedList<>();
             if (cannotRaise) {
                 cArgs.add("timing");
-                cArgs.add(formalParameters.get(1).getSimpleName().toString()); // boundFunction
+                cArgs.add(formalParameters.get(1).getSimpleName().toString()); // nativeFunction
             } else {
                 cArgs.add(formalParameters.getFirst().getSimpleName().toString()); // frame
                 cArgs.add("timing");
                 cArgs.add("context.ensureNfiContext()");
                 cArgs.add("boundaryCallData"); // boundaryCallData
                 cArgs.add("getThreadStateNode.executeCached(context)"); // threadState
-                cArgs.add(formalParameters.get(1).getSimpleName().toString()); // boundFunction
+                cArgs.add(formalParameters.get(1).getSimpleName().toString()); // nativeFunction
             }
 
             Element clazz = wrapper.origin.getEnclosingElement();

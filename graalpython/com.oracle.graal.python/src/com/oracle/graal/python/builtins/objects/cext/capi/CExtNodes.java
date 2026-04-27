@@ -137,7 +137,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.runtime.nativeaccess.NfiBoundFunction;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
@@ -207,7 +207,7 @@ public abstract class CExtNodes {
                         @Cached PythonToNativeNode toNativeNode,
                         @Cached NativeToPythonTransferNode toJavaNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
-            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW);
+            NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW);
             try {
                 long result = ExternalFunctionInvoker.invokeFLOAT_SUBTYPE_NEW(callable.getAddress(), toNativeNode.executeLong(object), arg);
                 return toJavaNode.execute(result);
@@ -229,7 +229,7 @@ public abstract class CExtNodes {
                         @Cached NativeToPythonInternalNode toJavaNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(arg);
-            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_TUPLE_SUBTYPE_NEW);
+            NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_TUPLE_SUBTYPE_NEW);
             try {
                 long result = ExternalFunctionInvoker.invokeTUPLE_SUBTYPE_NEW(callable.getAddress(),
                                 toNativeNode.execute(inliningTarget, object, false),
@@ -253,7 +253,7 @@ public abstract class CExtNodes {
                         @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached NativeToPythonInternalNode toJavaNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
-            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_UNICODE_SUBTYPE_NEW);
+            NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_UNICODE_SUBTYPE_NEW);
             try {
                 Object promotedArg = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), arg, false);
                 long result = ExternalFunctionInvoker.invokeUNICODE_SUBTYPE_NEW(callable.getAddress(),
@@ -1038,7 +1038,7 @@ public abstract class CExtNodes {
         Object module;
         if (createFunction != NULLPTR) {
             PythonThreadState threadState = context.getThreadState(context.getLanguage());
-            NfiBoundFunction modCreate = ExternalFunctionSignature.MODCREATE.bind(context.ensureNfiContext(), createFunction);
+            NativeFunctionPointer modCreate = ExternalFunctionSignature.MODCREATE.bind(context.ensureNfiContext(), createFunction);
             long result = ExternalFunctionInvoker.invokeMODCREATE(null, TIMING_MOD_CREATE, context.ensureNfiContext(),
                             BoundaryCallData.getUncached(), threadState, modCreate,
                             PythonToNativeInternalNode.executeUncached(moduleSpec.originalModuleSpec, false), moduleDefPtr);
@@ -1123,7 +1123,7 @@ public abstract class CExtNodes {
                     long execFunction = readStructArrayPtrField(slotDefinitions, i, PyModuleDef_Slot__value);
                     PythonContext context = capiContext.getContext();
                     PythonThreadState threadState = context.getThreadState(context.getLanguage());
-                    NfiBoundFunction boundFunction = ExternalFunctionSignature.MODEXEC.bind(context.ensureNfiContext(), execFunction);
+                    NativeFunctionPointer boundFunction = ExternalFunctionSignature.MODEXEC.bind(context.ensureNfiContext(), execFunction);
                     int iResult = ExternalFunctionInvoker.invokeMODEXEC(null, TIMING_MOD_EXEC, context.ensureNfiContext(),
                                     BoundaryCallData.getUncached(), threadState, boundFunction,
                                     PythonToNativeInternalNode.executeUncached(module, false));
@@ -1182,7 +1182,7 @@ public abstract class CExtNodes {
         // TODO(fa) support static and class methods
         MethodDescriptorWrapper sig = MethodDescriptorWrapper.fromMethodFlags(flags);
         RootCallTarget callTarget = MethodDescriptorWrapper.getOrCreateCallTarget(language, sig, methodName, CExtContext.isMethStatic(flags));
-        NfiBoundFunction fun = CExtCommonNodes.bindFunctionPointer(mlMethObj, sig);
+        NativeFunctionPointer fun = CExtCommonNodes.bindFunctionPointer(mlMethObj, sig);
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
         HiddenAttr.WriteLongNode.executeUncached(function, METHOD_DEF_PTR, methodDefPtr);
