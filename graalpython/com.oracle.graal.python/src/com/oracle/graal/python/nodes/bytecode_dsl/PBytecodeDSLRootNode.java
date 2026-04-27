@@ -218,6 +218,7 @@ import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.exception.EncapsulateExceptionGroupNode;
 import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
@@ -1926,8 +1927,66 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
+    @ImportStatic({PythonUtils.class, PGuards.class, GetAttribute.class})
     public static final class GetMethod {
-        @Specialization
+        /** NO_VALUE result indicates that we should bail out to the full lookup */
+        @NeverDefault
+        static Object findStringMethod(Node n, TruffleString name) {
+            Object descr = LookupAttributeInMRONode.findAttr(PythonContext.get(n), PythonBuiltinClassType.PString, name, ReadAttributeFromPythonObjectNode.getUncached());
+            // NO_VALUE would mean we need to lookup on the instance, non-method descriptor means that it's going to be something non-callable.
+            // This is certainly going to lead to some error, so not interesting for fast-path
+            return MaybeBindDescriptorNode.isMethodDescriptor(descr) ? descr : PNone.NO_VALUE;
+        }
+
+        // Strings are by far the most common builtin objects on which we look up methods
+        @ForceQuickening
+        @Specialization(guards = "!isNoValue(result)", excludeForUncached = false)
+        public static Object doStringFastPath(VirtualFrame frame, TruffleString name, TruffleString obj,
+                        @Cached(value = "findStringMethod($node, name)", allowUncached = true, weak = true) Object result) {
+            return result;
+        }
+
+        @ForceQuickening
+        @Specialization(guards = {
+                        "!hasMaterializedDict(cachedShape)", "managedClass != null || isBuiltinWithObjectOrModuleGetattro(cachedShape)", //
+                        "cachedShape.check(obj)", "result != null"}, limit = "2", excludeForUncached = true)
+        public static Object doFastPath(VirtualFrame frame,
+                        TruffleString name, PythonObject obj,
+                        @Bind Node inliningTarget,
+                        @Cached("obj.getShape()") Shape cachedShape,
+                        @Cached(value = "getManagedClassOrNull(cachedShape)", weak = true) PythonManagedClass managedClass,
+                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, name)") PropertyGetter cachedPropertyGetter,
+                        @Cached InlineWeakValueProfile slotsValueProfile,
+                        @Cached InlinedBranchProfile hasInstanceValueBranchProfile,
+                        @Cached LookupAttributeInMRONode.CachedKeyFastPath getMethod,
+                        @Bind("getMethodFastPath(obj, name, inliningTarget, managedClass, cachedShape, cachedPropertyGetter, slotsValueProfile, hasInstanceValueBranchProfile, getMethod)") Object result) {
+            assert obj.checkDictFlags();
+            return result;
+        }
+
+        static Object getMethodFastPath(PythonObject obj, TruffleString name, Node inliningTarget, PythonManagedClass managedClass, Shape cachedShape, PropertyGetter cachedPropertyGetter,
+                        InlineWeakValueProfile slotsValueProfile, InlinedBranchProfile hasInstanceValueBranchProfile, LookupAttributeInMRONode.CachedKeyFastPath getMethod) {
+            if (managedClass != null) {
+                if (!GetAttribute.hasObjectOrModuleGetattro(inliningTarget, managedClass, slotsValueProfile)) {
+                    return null;
+                }
+            }
+            Object descr = getMethod.execute(inliningTarget, cachedShape.getDynamicType(), name);
+            if (descr == null || (descr != PNone.NO_VALUE && !MaybeBindDescriptorNode.isMethodDescriptor(descr))) {
+                return null;
+            }
+            if (cachedPropertyGetter != null) {
+                assert obj.checkDictFlags();
+                Object instanceValue = cachedPropertyGetter.get(obj);
+                if (instanceValue != PNone.NO_VALUE) {
+                    hasInstanceValueBranchProfile.enter(inliningTarget);
+                    return new BoundDescriptor(instanceValue);
+                }
+            }
+            return descr != PNone.NO_VALUE ? descr : null;
+        }
+
+        @Specialization(replaces = {"doStringFastPath", "doFastPath"})
         public static Object doIt(VirtualFrame frame,
                         TruffleString name, Object obj,
                         @Bind Node inliningTarget,
