@@ -112,6 +112,7 @@ public abstract class IteratorNodes {
      */
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class GetLength extends PNodeWithContext {
 

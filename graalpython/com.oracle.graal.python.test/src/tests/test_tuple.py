@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -282,6 +282,38 @@ class TupleTest(seq_tests.CommonTest):
         self.assertTrue(maketuple(b) is maketuple(b))
         self.assertTrue(tuple(b) is b)
         self.assertFalse(tuple(a) is a)
+
+    def test_constructor_validates_length_hint_before_iteration(self):
+        class BadLengthHint:
+            def __getitem__(self, index):
+                raise AssertionError("__getitem__ should not be called")
+
+            def __length_hint__(self):
+                return None
+
+        with self.assertRaisesRegex(TypeError, "__length_hint__ must be an integer"):
+            tuple(BadLengthHint())
+
+    def test_constructor_validates_len_before_iteration(self):
+        class BadLen:
+            def __getitem__(self, index):
+                raise AssertionError("__getitem__ should not be called")
+
+            def __len__(self):
+                return -1
+
+        with self.assertRaisesRegex(ValueError, "__len__\\(\\) should return >= 0"):
+            tuple(BadLen())
+
+    def test_constructor_length_hint_too_small(self):
+        class SmallLengthHint:
+            def __iter__(self):
+                return iter((1, 2, 3))
+
+            def __length_hint__(self):
+                return 1
+
+        self.assertEqual(tuple(SmallLengthHint()), (1, 2, 3))
 
 
 class TupleCompareTest(CompareTest):
