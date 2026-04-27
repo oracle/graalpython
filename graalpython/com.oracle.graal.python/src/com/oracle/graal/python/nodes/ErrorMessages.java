@@ -473,6 +473,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INPUTS_ARE_NOT_THE_SAME_LENGTH = tsLiteral("Inputs are not the same length");
     public static final TruffleString MATH_DOMAIN_ERROR = tsLiteral("math domain error");
     public static final TruffleString MATH_RANGE_ERROR = tsLiteral("math range error");
+    public static final TruffleString NUMERICAL_RESULT_OUT_OF_RANGE = tsLiteral("Numerical result out of range");
     public static final TruffleString MAX_MARSHAL_STACK_DEPTH = tsLiteral("Maximum marshal stack depth");
     public static final TruffleString M = tsLiteral("%m");
     public static final TruffleString MEMORYVIEW_INVALID_SLICE_KEY = tsLiteral("memoryview: invalid slice key");

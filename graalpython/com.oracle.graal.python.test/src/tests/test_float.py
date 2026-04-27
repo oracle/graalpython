@@ -63,6 +63,13 @@ class BasicTests(unittest.TestCase):
         # for doubles this big, all representable values are integers...
         assert (2**52 + 0.5).is_integer()
 
+    def test_pow_overflow(self):
+        self.assertRaises(OverflowError, pow, 10.0, 400)
+        self.assertRaises(OverflowError, pow, 10.0, 400.0)
+        self.assertRaises(OverflowError, pow, -1e308, 3.0)
+        self.assertEqual(pow(INF, 2.0), INF)
+        self.assertEqual(pow(2.0, INF), INF)
+
     def test_rounding(self):
         assert round(1.123, 0) == 1
         assert round(1.123, 1) == 1.1
