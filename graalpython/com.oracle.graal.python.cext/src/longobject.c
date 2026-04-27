@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -2453,6 +2453,7 @@ PyLong_FromString(const char *str, char **pend, int base)
 {
     int sign = 1, error_if_nonzero = 0;
     const char *start, *orig_str = str;
+    int orig_base = base;
     PyObject *z = NULL;
     PyObject *strobj;
     Py_ssize_t slen;
@@ -2517,7 +2518,6 @@ PyLong_FromString(const char *str, char **pend, int base)
             long long result = strtoll(str, &endptr, base);
             if (error_if_nonzero && result != 0) {
                 // let upcall handle the error reporting
-                base = 0;
                 break;
             }
             // POSIX.1-2008: strtoll must not set errno on success, and set
@@ -2538,10 +2538,52 @@ PyLong_FromString(const char *str, char **pend, int base)
         }
     }
     if (!z) {
-        z = GraalPyPrivate_Long_FromString((char *)orig_str, base);
-        if (z) {
-            // TODO: we should probably set the **pend out argument
+        z = GraalPyPrivate_Long_FromString(orig_str, orig_base);
+        if (!z && pend) {
+            /*
+             * We have an exception already, but we need to redo the validation
+             * to compute pend. Adapted from long_from_string_base
+             */
+            *pend = (char *)str;
+            const char *end, *p;
+            char prev = 0;
+            start = p = str;
+            /* Leading underscore not allowed. */
+            if (*start == '_') {
+                return NULL;
+            }
+            /* Verify all characters are digits and underscores. */
+            while (_PyLong_DigitValue[Py_CHARMASK(*p)] < base || *p == '_') {
+                if (*p == '_') {
+                    /* Double underscore not allowed. */
+                    if (prev == '_') {
+                        *pend = (char *)(p - 1);
+                        return NULL;
+                    }
+                }
+                prev = *p;
+                ++p;
+            }
+            /* Trailing underscore not allowed. */
+            if (prev == '_') {
+                *pend = (char *)(p - 1);
+                return NULL;
+            }
+            end = p;
+            *pend = (char *)end;
+            /* Reject empty strings */
+            if (start == end) {
+                return NULL;
+            }
+            /* Allow only trailing whitespace after `end` */
+            while (*p && Py_ISSPACE(*p)) {
+                p++;
+            }
+            *pend = (char *)p;
         }
+    }
+    if (z && pend) {
+        *pend = (char *)(str + strlen(str));
     }
     return z;
 }
