@@ -2059,6 +2059,7 @@ def _rota_import_update_pr_metadata(branch):
         "reviewers": [
             "tim.felgentreff@oracle.com",
             "michael.simacek@oracle.com",
+            "florian.angerer@oracle.com",
             "stepan.sindelar@oracle.com",
         ],
     }
