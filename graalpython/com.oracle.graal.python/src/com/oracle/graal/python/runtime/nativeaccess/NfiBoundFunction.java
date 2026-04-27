@@ -40,73 +40,34 @@
  */
 package com.oracle.graal.python.runtime.nativeaccess;
 
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import org.graalvm.nativeimage.ImageInfo;
-
-import java.lang.invoke.MethodHandle;
-import java.lang.ref.Reference;
 
 public final class NfiBoundFunction {
     private final long ptr;
-    private final MethodHandle boundHandle;
     private final NfiType resType;
     private final NfiType[] argTypes;
 
-    private NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiType resType, NfiType[] argTypes) {
+    private NfiBoundFunction(long ptr, NfiType resType, NfiType[] argTypes) {
         this.ptr = ptr;
-        this.boundHandle = boundHandle;
         this.resType = resType;
         this.argTypes = argTypes;
     }
 
     public static NfiBoundFunction create(@SuppressWarnings("unused") NfiContext context, long pointer, NfiType resType, NfiType... argTypes) {
         // TODO(NFI2) if logging enabled, use context to lookup name
-        return new NfiBoundFunction(pointer, NfiSupport.createBoundHandle(pointer, resType, argTypes), resType, argTypes.clone());
+        return new NfiBoundFunction(pointer, resType, argTypes.clone());
     }
 
     public long getAddress() {
         return ptr;
     }
 
-    @TruffleBoundary(allowInlining = true)
-    public Object invoke(Object... args) {
-        assert checkArgTypes(args);
-        try {
-            return boundHandle.invokeExact(args);
-        } catch (Throwable e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        } finally {
-            Reference.reachabilityFence(args);
-        }
-    }
-
-    boolean checkArgTypes(Object[] args) {
-        if (args.length != argTypes.length) {
-            return false;
-        }
-        for (int i = 0; i < args.length; i++) {
-            if (!argTypes[i].checkType(args[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override
     @TruffleBoundary
     public String toString() {
-        String signature = toSignatureString();
-        if (ImageInfo.inImageCode()) {
-            return "NfiBoundFunction[" +
-                    "ptr=" + ptr + ", " +
-                    "signature=" + signature + ']';
-        } else {
-            return "NfiBoundFunction[" +
-                    "ptr=" + ptr + ", " +
-                    "boundHandle=" + boundHandle + ", " +
-                    "signature=" + signature + ']';
-        }
+        return "NfiBoundFunction[" +
+                        "ptr=" + ptr + ", " +
+                        "signature=" + toSignatureString() + ']';
     }
 
     @TruffleBoundary

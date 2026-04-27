@@ -649,8 +649,8 @@ public final class CApiContext extends CExtContext {
             }
             Long rss = 0L;
             try {
-                rss = (Long) nativeSymbol.invoke();
-            } catch (Exception ignored) {
+                rss = ExternalFunctionInvoker.invokeGET_CURRENT_RSS(nativeSymbol.getAddress());
+            } catch (Throwable ignored) {
             }
             return rss;
         }

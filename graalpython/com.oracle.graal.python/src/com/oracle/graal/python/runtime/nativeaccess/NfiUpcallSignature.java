@@ -41,34 +41,23 @@
 package com.oracle.graal.python.runtime.nativeaccess;
 
 import java.lang.invoke.MethodHandle;
+import java.util.Arrays;
 
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiUpcallSignature {
     private final NfiType resType;
     private final NfiType[] argTypes;
 
-    @SuppressWarnings("restricted")
     NfiUpcallSignature(NfiType resType, NfiType[] argTypes) {
         this.resType = resType;
-        this.argTypes = argTypes;
+        this.argTypes = Arrays.copyOf(argTypes, argTypes.length);
     }
 
     @SuppressWarnings("unused")
     public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
         // TODO(NFI2) if logging enabled, wrap the handle in a method that logs the name and args.
         return NfiSupport.createClosure(staticMethodHandle, resType, argTypes, context.arena);
-    }
-
-    @SuppressWarnings("unused")
-    private static Object closureLoggingWrapper(String name, NfiUpcallSignature signature, MethodHandle inner, Object[] args) {
-        // TODO(NFI2) implement logging
-        try {
-            return inner.invoke(args);
-        } catch (Throwable e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
     }
 
     @Override

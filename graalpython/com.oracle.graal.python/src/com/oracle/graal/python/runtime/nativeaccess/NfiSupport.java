@@ -110,10 +110,6 @@ public abstract class NfiSupport {
         return INSTANCE.createDowncallHandleImpl(methodType, critical);
     }
 
-    public static MethodHandle createBoundHandle(long pointer, NfiType resType, NfiType... argTypes) {
-        return INSTANCE.createBoundHandleImpl(pointer, resType, argTypes);
-    }
-
     public static long createClosure(MethodHandle staticMethodHandle, NfiType resType, NfiType[] argTypes, Object arena) {
         return INSTANCE.createClosureImpl(staticMethodHandle, resType, argTypes, arena);
     }
@@ -125,14 +121,6 @@ public abstract class NfiSupport {
             parameterTypes[i + 1] = asJavaType(argTypes[i]);
         }
         return createDowncallHandleImpl(MethodType.methodType(asJavaType(resType), parameterTypes), false);
-    }
-
-    private MethodHandle createBoundHandleImpl(long pointer, NfiType resType, NfiType... argTypes) {
-        assert !ImageInfo.inImageBuildtimeCode() : "binding native address at image build time";
-        MethodHandle methodHandle = createTypedDowncallHandle(resType, argTypes);
-        methodHandle = methodHandle.asSpreader(1, Object[].class, argTypes.length);
-        methodHandle = methodHandle.asType(MethodType.methodType(Object.class, long.class, Object[].class));
-        return MethodHandles.insertArguments(methodHandle, 0, pointer);
     }
 
     protected abstract Object createArenaImpl();
