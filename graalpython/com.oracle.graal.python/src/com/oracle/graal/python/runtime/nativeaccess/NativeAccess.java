@@ -43,7 +43,7 @@ package com.oracle.graal.python.runtime.nativeaccess;
 public final class NativeAccess {
 
     public static NativeContext createContext() {
-        // TODO(NFI2) check native access is allowed, or make callers do it explicitly.
+        // TODO(native-access) check native access is allowed, or make callers do it explicitly.
         return new NativeContext();
     }
 

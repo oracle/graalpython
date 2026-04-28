@@ -57,7 +57,7 @@ public final class PythonCextPyLifecycleBuiltins {
         @Specialization
         @TruffleBoundary
         int doGeneric(@SuppressWarnings("unused") long funcPtr) {
-            // TODO(NFI2) implement and test this once GR-72092 is fixed
+            // TODO(native-access) implement and test this once GR-72092 is fixed
 // getContext().registerAtexitHook(new ShutdownHook() {
 // @Override
 // @TruffleBoundary

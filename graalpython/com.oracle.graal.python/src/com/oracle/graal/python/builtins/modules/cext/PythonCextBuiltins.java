@@ -718,7 +718,7 @@ public final class PythonCextBuiltins {
         }
     }
 
-    // TODO(NFI2) generate a static method for each builtin with concrete arg conversions, get rid
+    // TODO(native-access) generate a static method for each builtin with concrete arg conversions, get rid
     // of this wrapper and RootNode
     static Object executeBuiltinWrapper(CallTarget callTarget, Object[] args) {
         return callTarget.call(args);

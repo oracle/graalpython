@@ -208,7 +208,7 @@ public class CApiMemberAccessNodes {
             Object nativeResult = switch (type) {
                 case T_CHAR, T_BYTE, T_UBYTE, T_BOOL -> {
                     byte n = NativeMemory.readByte(memberPtr);
-                    if (isCharSigned()) {   // TODO(NFI2) profile
+                    if (isCharSigned()) {   // TODO(native-access) profile
                         yield (int) n;
                     }
                     yield Byte.toUnsignedInt(n);
@@ -236,7 +236,7 @@ public class CApiMemberAccessNodes {
             assert !(nativeResult instanceof Byte || nativeResult instanceof Short || nativeResult instanceof Float || nativeResult instanceof Character || nativeResult instanceof PException ||
                             nativeResult instanceof String) : nativeResult + " " + nativeResult.getClass();
             if (asPythonObjectNode != null) {
-                // TODO(NFI2) some of these could be inlined into the switch above
+                // TODO(native-access) some of these could be inlined into the switch above
                 nativeResult = asPythonObjectNode.execute(nativeResult);
             }
             if (type == T_OBJECT_EX && nativeResult == PNone.NO_VALUE) {

@@ -937,7 +937,7 @@ public final class CApiContext extends CExtContext {
                     CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
                     NativeMemory.writePtrArrayElement(builtinArrayPtr, id, builtin.getNativePointer());
                 }
-                // TODO(NFI2) ENV parameter
+                // TODO(native-access) ENV parameter
                 long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeCAPIINIT(null, TIMING_INVOKE_CAPI_INIT, nativeContext, BoundaryCallData.getUncached(),
                                 context.getThreadState(context.getLanguage()),
                                 ExternalFunctionSignature.CAPIINIT.bind(nativeContext, initFunction), 0L, builtinArrayPtr, gcState, nativeThreadState);

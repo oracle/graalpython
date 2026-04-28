@@ -82,7 +82,7 @@ public final class NativeContext {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
             if (result != 0) {
-                // TODO(NFI2) log error
+                // TODO(native-access) log error
             }
         }
         NativeAccessSupport.closeArena(arena);
@@ -122,7 +122,7 @@ public final class NativeContext {
 
     @SuppressWarnings("static-method")
     long lookupOptionalSymbol(long library, String name) {
-        // TODO(NFI2) if logging enabled, keep track of ptr->name mappings
+        // TODO(native-access) if logging enabled, keep track of ptr->name mappings
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
             return isWindows() ? (long) GET_PROC_ADDRESS.invokeExact(getProcAddressPtr, library, nativeName) : (long) DLSYM.invokeExact(dlsymPtr, library, nativeName);
@@ -137,7 +137,7 @@ public final class NativeContext {
         return PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32;
     }
 
-    // TODO(NFI2) platform-specific values for RTLD_* constants
+    // TODO(native-access) platform-specific values for RTLD_* constants
     private static final int RTLD_LAZY = 1;
     private static final int RTLD_NOW = 2;
 

@@ -1207,7 +1207,7 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    // TODO(NFI2) Remove or fix and add test for GraalPyPrivate_Unicode_FillUnicode
+    // TODO(native-access) Remove or fix and add test for GraalPyPrivate_Unicode_FillUnicode
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_FillUnicode extends CApiUnaryBuiltinNode {
         public static final int WCHAR_T_SIZE = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? 2 : 4;
@@ -1228,7 +1228,7 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    // TODO(NFI2) Remove GraalPyPrivate_Unicode_AsWideChar
+    // TODO(native-access) Remove GraalPyPrivate_Unicode_AsWideChar
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_AsWideChar extends CApiBinaryBuiltinNode {
         @Specialization

@@ -56,7 +56,7 @@ public final class NativeSignature {
 
     @SuppressWarnings("unused")
     public long createClosure(NativeContext context, String name, MethodHandle staticMethodHandle) {
-        // TODO(NFI2) if logging enabled, wrap the handle in a method that logs the name and args.
+        // TODO(native-access) if logging enabled, wrap the handle in a method that logs the name and args.
         return NativeAccessSupport.createClosure(staticMethodHandle, resType, argTypes, context.arena);
     }
 

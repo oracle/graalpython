@@ -82,7 +82,7 @@ class TestPyThread(CPyExtTestCase):
     )
 
 
-# TODO(NFI2) support ENV - thread attach/detach
+# TODO(native-access) support ENV - thread attach/detach
 @unittest.skipIf(True, "Needs pthread")
 class TestNativeThread(unittest.TestCase):
     def test_register_new_thread(self):
