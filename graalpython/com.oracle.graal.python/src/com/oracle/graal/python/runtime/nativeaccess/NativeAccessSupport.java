@@ -82,27 +82,27 @@ public abstract class NativeAccessSupport {
         };
     }
 
-    public static Object createArena() {
+    static Object createArena() {
         return INSTANCE.createArenaImpl();
     }
 
-    public static void closeArena(Object arena) {
+    static void closeArena(Object arena) {
         INSTANCE.closeArenaImpl(arena);
     }
 
-    public static NativeLibraryLookup libraryLookup(String name, Object arena) {
+    static NativeLibraryLookup libraryLookup(String name, Object arena) {
         return INSTANCE.libraryLookupImpl(name, arena);
     }
 
-    public static long lookupSymbol(NativeLibraryLookup lookup, String name) {
+    static long lookupSymbol(NativeLibraryLookup lookup, String name) {
         return lookup.find(name).orElseThrow();
     }
 
-    public static long lookupDefault(String name) {
+    static long lookupDefault(String name) {
         return INSTANCE.lookupDefaultImpl(name);
     }
 
-    public static MethodHandle createDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
+    static MethodHandle createDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
         return INSTANCE.createTypedDowncallHandle(resType, argTypes);
     }
 
@@ -110,7 +110,7 @@ public abstract class NativeAccessSupport {
         return INSTANCE.createDowncallHandleImpl(methodType, critical);
     }
 
-    public static long createClosure(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena) {
+    static long createClosure(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena) {
         return INSTANCE.createClosureImpl(staticMethodHandle, resType, argTypes, arena);
     }
 
