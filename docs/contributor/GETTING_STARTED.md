@@ -77,7 +77,7 @@ mx graalpytest graalpython/lib-python/3/test/test_threading.py::test.test_thread
 
 If you need a complete list of commands, run `mx help` or check [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## 5. Open your Pull Request
+## 5. Open your pull request
 
 1. Push your branch to your fork
 2. Open a PR against `master`
