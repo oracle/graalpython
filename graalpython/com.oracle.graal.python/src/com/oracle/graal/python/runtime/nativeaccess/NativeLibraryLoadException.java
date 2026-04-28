@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.runtime.nativeaccess;
 
-public final class NfiLoadException extends Exception {
+public final class NativeLibraryLoadException extends Exception {
     private static final long serialVersionUID = 8768143107513538801L;
 
-    public NfiLoadException(String message) {
+    public NativeLibraryLoadException(String message) {
         super(message);
     }
 }

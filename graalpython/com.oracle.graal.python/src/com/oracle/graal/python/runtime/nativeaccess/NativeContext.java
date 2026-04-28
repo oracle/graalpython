@@ -88,7 +88,7 @@ public final class NativeContext {
         NativeAccessSupport.closeArena(arena);
     }
 
-    public NativeLibrary loadLibrary(String name, int flags) throws NfiLoadException {
+    public NativeLibrary loadLibrary(String name, int flags) throws NativeLibraryLoadException {
         CompilerAsserts.neverPartOfCompilation();
 
         // This needs to be done first and may fail if the executing JDK does not support FFM API.
@@ -195,20 +195,20 @@ public final class NativeContext {
     }
 
     @TruffleBoundary
-    private static NfiLoadException createLoadLibraryException() {
+    private static NativeLibraryLoadException createLoadLibraryException() {
         if (isWindows()) {
             int errorCode = getLastError();
             String detail = formatWindowsError(errorCode);
             if (detail == null || detail.isBlank()) {
-                return new NfiLoadException("Windows error " + errorCode);
+                return new NativeLibraryLoadException("Windows error " + errorCode);
             }
-            return new NfiLoadException("Windows error " + errorCode + ": " + detail);
+            return new NativeLibraryLoadException("Windows error " + errorCode + ": " + detail);
         }
         String detail = getDlError();
         if (detail == null || detail.isBlank()) {
-            return new NfiLoadException("dlopen failed");
+            return new NativeLibraryLoadException("dlopen failed");
         }
-        return new NfiLoadException(detail);
+        return new NativeLibraryLoadException(detail);
     }
 
     private static int getLastError() {

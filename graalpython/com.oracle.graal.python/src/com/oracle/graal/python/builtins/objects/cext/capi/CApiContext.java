@@ -111,9 +111,9 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
-import com.oracle.graal.python.runtime.nativeaccess.NfiLoadException;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -978,7 +978,7 @@ public final class CApiContext extends CExtContext {
         } catch (UnsupportedOperationException e) {
             assert e.getMessage() != null : "We missed an UnsupportedOperationException that might occur during C API initialization";
             throw new ImportException(null, name, path, toTruffleStringUncached(e.getMessage()));
-        } catch (NfiLoadException e) {
+        } catch (NativeLibraryLoadException e) {
             if (!context.isNativeAccessAllowed()) {
                 throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
             }
@@ -1066,7 +1066,7 @@ public final class CApiContext extends CExtContext {
             library = context.ensureNativeContext().loadLibrary(loadPath, dlopenFlags);
         } catch (PException e) {
             throw e;
-        } catch (NfiLoadException e) {
+        } catch (NativeLibraryLoadException e) {
             if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
                 getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
                                 "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n" +
