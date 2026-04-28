@@ -34,7 +34,7 @@ You can contribute from:
 - **GitHub Codespaces** (quickest onboarding): see [Using a GitHub codespace](./CONTRIBUTING.md#using-a-github-codespace)
 - **Your local machine**: see [Setting up on your machine](./CONTRIBUTING.md#setting-up-on-your-machine)
 
-Then do the minimal git setup:
+Then do the minimal Git setup:
 
 ```bash
 git checkout master
