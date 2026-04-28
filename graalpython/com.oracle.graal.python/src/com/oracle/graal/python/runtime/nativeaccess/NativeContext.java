@@ -67,6 +67,10 @@ public final class NativeContext {
     private final ConcurrentLinkedQueue<NativeLibrary> libraries = new ConcurrentLinkedQueue<>();
     final Object arena;
 
+    public static NativeContext create() {
+        return new NativeContext();
+    }
+
     @TruffleBoundary
     NativeContext() {
         arena = NativeAccessSupport.createArena();

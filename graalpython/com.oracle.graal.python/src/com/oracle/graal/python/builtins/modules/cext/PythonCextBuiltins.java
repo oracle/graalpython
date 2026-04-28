@@ -168,7 +168,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.runtime.nativeaccess.NativeAccess;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -688,7 +687,7 @@ public final class PythonCextBuiltins {
                 for (int i = 0; i < args.length; i++) {
                     argTypes[i] = args[i].getNativeSimpleType();
                 }
-                NativeSignature signature = NativeAccess.createSignature(ret.getNativeSimpleType(), argTypes);
+                NativeSignature signature = NativeSignature.create(ret.getNativeSimpleType(), argTypes);
                 try {
                     pointer = signature.createClosure(context.ensureNativeContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
                     context.getCApiContext().setClosurePointer(null, this, pointer);

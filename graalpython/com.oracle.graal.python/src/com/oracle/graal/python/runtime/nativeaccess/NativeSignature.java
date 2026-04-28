@@ -49,6 +49,10 @@ public final class NativeSignature {
     private final NativeSimpleType resType;
     private final NativeSimpleType[] argTypes;
 
+    public static NativeSignature create(NativeSimpleType resType, NativeSimpleType... argTypes) {
+        return new NativeSignature(resType, argTypes);
+    }
+
     NativeSignature(NativeSimpleType resType, NativeSimpleType[] argTypes) {
         this.resType = resType;
         this.argTypes = Arrays.copyOf(argTypes, argTypes.length);
