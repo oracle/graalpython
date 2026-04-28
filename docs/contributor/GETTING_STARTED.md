@@ -42,7 +42,7 @@ git pull
 git checkout -b <your-branch-name>
 ```
 
-Optional but recommended after setup:
+Optionally, after setup:
 
 ```bash
 mx ideinit
