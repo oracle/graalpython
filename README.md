@@ -15,7 +15,7 @@ GraalPy is ready for production running pure Python code and has experimental su
 
 This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](./CONTRIBUTING.md).
 
-If you're thinking about contributing something to this repository, you will need to sign the [Oracle Contributor Agreement](https://www.graalvm.org/community/contributors/) for us to able to merge your work.
+If you’re considering contributing to this repository, you need to sign the [Oracle Contributor Agreement](https://www.graalvm.org/community/contributors/) before we can merge your changes.
 Also take a look at the [code of conduct](https://www.graalvm.org/community/conduct/) for contributors.
 
 [![Contributing to Graalpy](https://img.youtube.com/vi/qeAUgXQR1h0/0.jpg)](https://www.youtube.com/watch?v=qeAUgXQR1h0)
