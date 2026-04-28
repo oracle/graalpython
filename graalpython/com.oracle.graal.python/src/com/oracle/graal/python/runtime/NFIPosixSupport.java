@@ -230,6 +230,7 @@ public final class NFIPosixSupport extends PosixSupport {
         get_blocking("(sint32):sint32"),
         set_blocking("(sint32, sint32):sint32"),
         get_terminal_size("(sint32, [sint32]):sint32"),
+        call_raise("(sint32):sint32"),
         signal_self("(sint32):sint32"),
         call_kill("(sint64, sint32):sint32"),
         call_killpg("(sint64, sint32):sint32"),
@@ -1161,6 +1162,15 @@ public final class NFIPosixSupport extends PosixSupport {
     public void kill(long pid, int signal,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         int res = invokeNode.callInt(this, PosixNativeFunction.call_kill, pid, signal);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public void raise(int signal,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_raise, signal);
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }

@@ -604,6 +604,10 @@ int32_t call_kill(int64_t pid, int32_t signal) {
     return kill(pid, signal);
 }
 
+int32_t call_raise(int32_t signal) {
+    return raise(signal);
+}
+
 int32_t signal_self(int32_t signal) {
     switch (signal) {
         case SIGABRT:

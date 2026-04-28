@@ -2016,6 +2016,12 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public void raise(int signal) {
+        throw createUnsupportedFeature("raise");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public void signalSelf(int signal) {
         throw createUnsupportedFeature("signalSelf");
     }

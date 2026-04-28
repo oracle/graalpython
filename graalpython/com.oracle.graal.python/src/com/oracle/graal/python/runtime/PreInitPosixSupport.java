@@ -589,6 +589,13 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void raise(int signal,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        nativeLib.raise(nativePosixSupport, signal);
+    }
+
+    @ExportMessage
     final void signalSelf(int signal,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();

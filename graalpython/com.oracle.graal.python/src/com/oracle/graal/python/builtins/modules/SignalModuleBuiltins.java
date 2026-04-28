@@ -85,6 +85,8 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -98,6 +100,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -453,9 +456,18 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RaiseSignalNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        static PNone doInt(int signum) {
-            Signal.raise(new sun.misc.Signal(Signals.signalNumberToName(signum)));
+        static PNone doInt(VirtualFrame frame, int signum,
+                        @Bind PythonContext context,
+                        @Bind Node inliningTarget,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                posixLib.raise(context.getPosixSupport(), signum);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            } catch (UnsupportedPosixFeatureException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
+            }
             return PNone.NONE;
         }
 

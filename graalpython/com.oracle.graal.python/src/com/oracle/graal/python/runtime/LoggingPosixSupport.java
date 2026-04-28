@@ -753,6 +753,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void raise(int signal,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("raise", "%d", signal);
+        try {
+            lib.raise(delegate, signal);
+        } catch (PosixException e) {
+            throw logException("raise", e);
+        }
+    }
+
+    @ExportMessage
     final void signalSelf(int signal,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("signalSelf", "%d", signal);
