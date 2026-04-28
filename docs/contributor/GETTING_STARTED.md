@@ -29,7 +29,7 @@ If you think you've found a security vulnerability, do not raise a GitHub issue 
 
 ## 2. Set up your environment
 
-You can contribute from:
+You can contribute using one of the following environments:
 
 - **GitHub Codespaces** (quickest onboarding): see [Using a GitHub codespace](./CONTRIBUTING.md#using-a-github-codespace)
 - **Your local machine**: see [Setting up on your machine](./CONTRIBUTING.md#setting-up-on-your-machine)
