@@ -447,7 +447,7 @@ public final class PythonCextTypeBuiltins {
     public static void GraalPyPrivate_Type_NotifyDealloc(long ptr, int typeLookupIdx) {
         assert CStructAccess.readIntField(ptr, CFields.PyTypeObject__tp_version_tag) == typeLookupIdx;
         if (typeLookupIdx != 0) {
-            CApiTransitions.nativeTypeLookupRemove(PythonContext.get(null).nativeContext, ptr, typeLookupIdx);
+            CApiTransitions.nativeTypeLookupRemove(PythonContext.get(null).handleContext, ptr, typeLookupIdx);
         }
     }
 }

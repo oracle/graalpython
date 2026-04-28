@@ -1252,7 +1252,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doGeneric(int id) {
-            Object ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).nativeContext, 0, id);
+            Object ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).handleContext, 0, id);
             assert ref == null || ref instanceof PythonAbstractObject || ref instanceof PythonObjectReference;
             return ref instanceof PythonAbstractObject || ref != null && ((PythonObjectReference) ref).isStrongReference();
         }

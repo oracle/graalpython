@@ -1389,7 +1389,7 @@ public final class PythonCextBuiltins {
         assert PythonContext.get(null).isNativeAccessAllowed();
         assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
 
-        HandleContext handleContext = PythonContext.get(null).nativeContext;
+        HandleContext handleContext = PythonContext.get(null).handleContext;
 
         /*
          * The list's head is a dummy node that can not be a tagged pointer because it is not an
@@ -1457,14 +1457,14 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = Void, call = Ignored)
     static void GraalPyPrivate_EnableReferenceQueuePolling() {
         assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
-        HandleContext handleContext = PythonContext.get(null).nativeContext;
+        HandleContext handleContext = PythonContext.get(null).handleContext;
         CApiTransitions.enableReferenceQueuePolling(handleContext);
     }
 
     @CApiBuiltin(ret = Int, call = Ignored)
     static int GraalPyPrivate_DisableReferenceQueuePolling() {
         assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
-        HandleContext handleContext = PythonContext.get(null).nativeContext;
+        HandleContext handleContext = PythonContext.get(null).handleContext;
         return PInt.intValue(CApiTransitions.disableReferenceQueuePolling(handleContext));
     }
 

@@ -174,7 +174,7 @@ public abstract class PythonCextObjectBuiltins {
             assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(pointer)) == refCount;
             // refcounting on an immortal object should be a NOP
             assert refCount != PythonObject.IMMORTAL_REFCNT;
-            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+            HandleContext handleContext = PythonContext.get(inliningTarget).handleContext;
             int hti = CStructAccess.readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
             /*
              * The handle table index may be 0. This means that the managed object was already
@@ -213,7 +213,7 @@ public abstract class PythonCextObjectBuiltins {
                 pointers[i] = elem;
                 resolved[i] = nativeToPythonNode.execute(inliningTarget, elem, false);
             }
-            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+            HandleContext handleContext = PythonContext.get(inliningTarget).handleContext;
             for (int i = 0; i < resolved.length; i++) {
                 long refCount = CApiTransitions.readNativeRefCount(pointers[i]);
                 // refcounting on an immortal object should be a NOP
@@ -594,7 +594,7 @@ public abstract class PythonCextObjectBuiltins {
             assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
             assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
             int handleTableIndex = CStructAccess.readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
-            Object reference = CApiTransitions.nativeStubLookupGet(PythonContext.get(inliningTarget).nativeContext, pointer, handleTableIndex);
+            Object reference = CApiTransitions.nativeStubLookupGet(PythonContext.get(inliningTarget).handleContext, pointer, handleTableIndex);
             Object referent;
             if (reference instanceof PythonObjectReference pythonObjectReference) {
                 assert handleTableIndex == pythonObjectReference.getHandleTableIndex();

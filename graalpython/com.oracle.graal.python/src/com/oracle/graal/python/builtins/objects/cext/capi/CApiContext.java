@@ -700,7 +700,7 @@ public final class CApiContext extends CExtContext {
             }
 
             // skip GC if no new native weakrefs have been created.
-            int currentWeakrefCount = context.nativeContext.nativeLookup.size();
+            int currentWeakrefCount = context.handleContext.nativeLookup.size();
             if (currentWeakrefCount < this.previousWeakrefCount || this.previousWeakrefCount == -1) {
                 this.previousWeakrefCount = currentWeakrefCount;
                 return;
@@ -832,7 +832,7 @@ public final class CApiContext extends CExtContext {
                     CApiContext cApiContext = loadCApi(node, context, name, path, reason);
                     assert context.getCApiState() == PythonContext.CApiState.INITIALIZING;
                     initializeThreadStateCurrentForAttachedThreads(context);
-                    CApiTransitions.initializeReferenceQueuePolling(context.nativeContext);
+                    CApiTransitions.initializeReferenceQueuePolling(context.handleContext);
                     context.runCApiHooks();
                     context.setCApiState(PythonContext.CApiState.INITIALIZED); // volatile write
                     try {
@@ -1139,7 +1139,7 @@ public final class CApiContext extends CExtContext {
     public void finalizeCApi(boolean cancelling) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
-        HandleContext handleContext = context.nativeContext;
+        HandleContext handleContext = context.handleContext;
         if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
             context.killSystemThread(backgroundGCTaskThread);
             try {

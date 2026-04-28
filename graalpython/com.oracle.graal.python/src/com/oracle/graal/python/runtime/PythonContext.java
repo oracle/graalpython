@@ -234,7 +234,7 @@ public final class PythonContext extends Python3Core {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
     private static final long SIZEOF_INT64 = 8;
 
-    public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
+    public final HandleContext handleContext = new HandleContext(DEBUG_CAPI);
     public final NativeBufferContext nativeBufferContext = new NativeBufferContext();
     public final ArrowSupport arrowSupport = new ArrowSupport(this);
 
