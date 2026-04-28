@@ -237,7 +237,7 @@ public abstract class TpSlotDescrGet {
             Object promotedObj = ensurePythonObjectNode.execute(ctx, obj, false);
             Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
             try {
-                long lresult = ExternalFunctionInvoker.invokeDESCRGETFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                long lresult = ExternalFunctionInvoker.invokeDESCRGETFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
                                 selfToNativeNode.executeLong(promotedSelf), //
                                 objToNativeNode.executeLong(promotedObj), //
                                 valueToNativeNode.executeLong(promotedValue));

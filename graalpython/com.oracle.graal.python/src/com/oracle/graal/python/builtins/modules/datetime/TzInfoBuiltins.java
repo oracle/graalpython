@@ -124,7 +124,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW);
                     long nativeResult = ExternalFunctionInvoker.invokePY_TYPE_GENERIC_NEW(null, C_API_TIMING,
-                                    context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                     context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer, NULLPTR, NULLPTR);
                     return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
                 } finally {

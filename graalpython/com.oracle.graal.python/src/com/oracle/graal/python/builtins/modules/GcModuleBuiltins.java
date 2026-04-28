@@ -170,7 +170,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             if (pythonContext.getCApiContext() != null && pythonContext.getLanguage(inliningTarget).getEngineOption(PythonOptions.PythonGC)) {
                 NativeFunctionPointer executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
                 PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-                long lresult = ExternalFunctionInvoker.invokeGCCOLLECT(frame, C_API_TIMING, pythonContext.ensureNfiContext(), boundaryCallData, threadState, executable,
+                long lresult = ExternalFunctionInvoker.invokeGCCOLLECT(frame, C_API_TIMING, pythonContext.ensureNativeContext(), boundaryCallData, threadState, executable,
                                 castToJavaInt.execute(inliningTarget, level));
                 res = checkPrimitiveFunctionResultNode.executeLong(inliningTarget, threadState, SYMBOL.getTsName(), lresult);
             }

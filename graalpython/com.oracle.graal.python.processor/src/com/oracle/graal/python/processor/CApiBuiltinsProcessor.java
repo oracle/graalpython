@@ -1206,7 +1206,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;");
         lines.add("import com.oracle.graal.python.builtins.objects.function.PArguments;");
         lines.add("import " + NFI_PACKAGE + ".NativeFunctionPointer;");
-        lines.add("import " + NFI_PACKAGE + ".NfiContext;");
+        lines.add("import " + NFI_PACKAGE + ".NativeContext;");
         lines.add("import " + NFI_PACKAGE + "." + NFI_SUPPORT_CLASS_NAME + ";");
         lines.add("import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;");
         lines.add("import com.oracle.graal.python.runtime.GilNode;");
@@ -1258,7 +1258,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             } else {
                 invokeArgs.add("VirtualFrame frame");
                 invokeArgs.add("CApiTiming timing");
-                invokeArgs.add("NfiContext nfiContext");
+                invokeArgs.add("NativeContext nativeContext");
                 invokeArgs.add("BoundaryCallData boundaryCallData");
                 invokeArgs.add("PythonThreadState threadState");
                 invokeArgs.add("NativeFunctionPointer nativeFunction");
@@ -1832,7 +1832,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             } else {
                 cArgs.add(formalParameters.getFirst().getSimpleName().toString()); // frame
                 cArgs.add("timing");
-                cArgs.add("context.ensureNfiContext()");
+                cArgs.add("context.ensureNativeContext()");
                 cArgs.add("boundaryCallData"); // boundaryCallData
                 cArgs.add("getThreadStateNode.executeCached(context)"); // threadState
                 cArgs.add(formalParameters.get(1).getSimpleName().toString()); // nativeFunction

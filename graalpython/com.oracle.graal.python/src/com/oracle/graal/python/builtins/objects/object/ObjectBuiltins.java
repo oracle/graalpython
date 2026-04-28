@@ -366,7 +366,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_NEW);
                     return toPythonNode.execute(ExternalFunctionInvoker.invokePY_OBJECT_NEW(null, C_API_TIMING,
-                                    context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                     context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer));
                 } finally {
                     Reference.reachabilityFence(cls);

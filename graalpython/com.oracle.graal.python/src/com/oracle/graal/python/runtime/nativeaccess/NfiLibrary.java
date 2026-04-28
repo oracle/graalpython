@@ -44,11 +44,11 @@ import com.oracle.truffle.api.CompilerDirectives;
 
 public final class NfiLibrary {
 
-    private final NfiContext context;
+    private final NativeContext context;
     final long ptr;
 
     @SuppressWarnings("unused")
-    NfiLibrary(NfiContext context, long ptr) {
+    NfiLibrary(NativeContext context, long ptr) {
         this.context = context;
         this.ptr = ptr;
     }

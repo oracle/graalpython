@@ -293,7 +293,7 @@ public class TpSlotSetAttr {
             int iresult;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
             try {
-                iresult = ExternalFunctionInvoker.invokeSETATTRFUNC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                iresult = ExternalFunctionInvoker.invokeSETATTRFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
                                 selfToNativeNode.executeLong(promotedSelf), nameArg, valueToNativeNode.executeLong(promotedValue));
             } finally {
                 Reference.reachabilityFence(promotedSelf);

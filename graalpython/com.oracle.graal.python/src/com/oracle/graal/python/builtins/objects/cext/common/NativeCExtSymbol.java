@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
-import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
 import com.oracle.graal.python.runtime.nativeaccess.NfiType;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -55,7 +55,7 @@ public interface NativeCExtSymbol {
 
     ArgDescriptor[] getArguments();
 
-    default NativeFunctionPointer bind(NfiContext context, long pointer) {
+    default NativeFunctionPointer bind(NativeContext context, long pointer) {
         ArgDescriptor returnValue = getReturnValue();
         if (returnValue == null) {
             throw new UnsupportedOperationException("No signature for " + getName());

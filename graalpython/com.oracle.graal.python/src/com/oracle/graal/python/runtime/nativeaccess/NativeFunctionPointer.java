@@ -57,7 +57,7 @@ public final class NativeFunctionPointer {
         this.argTypes = argTypes;
     }
 
-    public static NativeFunctionPointer create(@SuppressWarnings("unused") NfiContext context, long pointer, NfiType resType, NfiType... argTypes) {
+    public static NativeFunctionPointer create(@SuppressWarnings("unused") NativeContext context, long pointer, NfiType resType, NfiType... argTypes) {
         // TODO(NFI2) if logging enabled, use context to lookup name
         return new NativeFunctionPointer(pointer, resType, argTypes.clone());
     }

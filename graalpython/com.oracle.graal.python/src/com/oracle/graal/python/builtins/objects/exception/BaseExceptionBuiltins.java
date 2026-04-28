@@ -174,7 +174,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
                 var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW);
-                long nativeResult = ExternalFunctionInvoker.invokeEXCEPTION_SUBTYPE_NEW(null, C_API_TIMING, context.ensureNfiContext(),
+                long nativeResult = ExternalFunctionInvoker.invokeEXCEPTION_SUBTYPE_NEW(null, C_API_TIMING, context.ensureNativeContext(),
                                 BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, clsPointer, argsTuplePointer);
                 return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), toPythonNode.execute(nativeResult));
             } finally {

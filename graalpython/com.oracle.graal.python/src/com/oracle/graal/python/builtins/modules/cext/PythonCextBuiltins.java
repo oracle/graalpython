@@ -690,7 +690,7 @@ public final class PythonCextBuiltins {
                 }
                 NativeSignature signature = NativeAccess.createSignature(ret.getNFI2Type(), argTypes);
                 try {
-                    pointer = signature.createClosure(context.ensureNfiContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
+                    pointer = signature.createClosure(context.ensureNativeContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
                     context.getCApiContext().setClosurePointer(null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {

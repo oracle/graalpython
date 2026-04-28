@@ -303,7 +303,7 @@ public final class TpSlotSqAssItem {
             Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
             Object promotedValue = ensurePythonObjectNode.execute(context, value, false);
             try {
-                int iresult = ExternalFunctionInvoker.invokeSSIZEOBJARGPROC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                int iresult = ExternalFunctionInvoker.invokeSSIZEOBJARGPROC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
                                 selfToNativeNode.executeLong(promotedSelf), key, valueToNativeNode.executeLong(promotedValue));
                 checkResultNode.executeBool(inliningTarget, threadState, T___SETITEM__, iresult);
             } finally {

@@ -261,7 +261,7 @@ public abstract class TpSlotRichCompare {
             Object promotedA = ensurePythonObjectNode.execute(ctx, a, false);
             Object promotedB = ensurePythonObjectNode.execute(ctx, b, false);
             try {
-                long lresult = ExternalFunctionInvoker.invokeRICHCMPFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                long lresult = ExternalFunctionInvoker.invokeRICHCMPFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 toNativeNodeA.executeLong(promotedA), toNativeNodeB.executeLong(promotedB), op.asNative());
                 return checkResultNode.execute(state, T_TP_RICHCOMPARE, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {

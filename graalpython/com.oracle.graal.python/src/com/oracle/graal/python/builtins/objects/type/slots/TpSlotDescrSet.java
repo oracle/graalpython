@@ -210,7 +210,7 @@ public abstract class TpSlotDescrSet {
             Object promotedObj = ensurePythonObjectNode.execute(ctx, obj, false);
             Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
             try {
-                int iresult = ExternalFunctionInvoker.invokeDESCRSETFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                int iresult = ExternalFunctionInvoker.invokeDESCRSETFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
                                 selfToNativeNode.execute(inliningTarget, promotedSelf, false), //
                                 objToNativeNode.execute(inliningTarget, promotedObj, false), //
                                 valueToNativeNode.execute(inliningTarget, promotedValue, false));

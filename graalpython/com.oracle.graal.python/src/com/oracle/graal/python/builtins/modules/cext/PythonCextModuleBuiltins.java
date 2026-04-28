@@ -324,7 +324,7 @@ public final class PythonCextModuleBuiltins {
                     if (mSize <= 0 || mdState != NULLPTR) {
                         PythonContext ctx = PythonContext.get(inliningTarget);
                         NativeFunctionPointer traverseExecutable = bindFunctionPointer(mTraverse, ExternalFunctionSignature.TRAVERSEPROC);
-                        int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING_INVOKE_TRAVERSE_PROC, ctx.ensureNfiContext(), BoundaryCallData.getUncached(),
+                        int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING_INVOKE_TRAVERSE_PROC, ctx.ensureNativeContext(), BoundaryCallData.getUncached(),
                                         ctx.getThreadState(PythonLanguage.get(inliningTarget)), traverseExecutable, toNativeNode.executeLong(self), visitFun, arg);
                         checkPrimitiveFunctionResultNode.executeLong(inliningTarget, ctx.getThreadState(PythonLanguage.get(inliningTarget)), StringLiterals.T_VISIT, ires);
                         return ires;

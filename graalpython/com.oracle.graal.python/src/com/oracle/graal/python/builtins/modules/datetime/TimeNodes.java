@@ -175,7 +175,7 @@ public class TimeNodes {
                     PythonContext context = PythonContext.get(null);
                     var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW);
                     long nativeResult = ExternalFunctionInvoker.invokeTIME_SUBTYPE_NEW(null, C_API_TIMING,
-                                    context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                     context.getThreadState(context.getLanguage()), callable, clsPointer, hour, minute, second, microsecond, tzInfoPointer, fold);
                     return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
                 } finally {

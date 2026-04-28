@@ -349,7 +349,7 @@ public final class TpSlotVarargs {
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
             try {
-                long nativeResult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                long nativeResult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.execute(inliningTarget, promotedSelf, false),
                                 argsTuplePtr,
                                 toNativeNode.execute(inliningTarget, kwargsDict, false));
@@ -417,7 +417,7 @@ public final class TpSlotVarargs {
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
             try {
-                int nativeResult = ExternalFunctionInvoker.invokeINITPROC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                int nativeResult = ExternalFunctionInvoker.invokeINITPROC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.execute(inliningTarget, promotedSelf, false),
                                 argsTuplePtr,
                                 toNativeNode.execute(inliningTarget, kwargsDict, false));

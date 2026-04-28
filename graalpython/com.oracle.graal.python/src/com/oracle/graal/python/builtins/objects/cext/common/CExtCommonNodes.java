@@ -1132,6 +1132,6 @@ public abstract class CExtCommonNodes {
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(PythonUtils.formatJString("Binding %s to native callable %s", pointer, descriptor.getName()));
         }
-        return descriptor.bind(pythonContext.ensureNfiContext(), pointer);
+        return descriptor.bind(pythonContext.ensureNativeContext(), pointer);
     }
 }

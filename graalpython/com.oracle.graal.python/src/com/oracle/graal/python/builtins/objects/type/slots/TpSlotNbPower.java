@@ -193,7 +193,7 @@ public final class TpSlotNbPower {
             Object promotedW = ensurePythonObjectNode.execute(ctx, w, false);
             Object promotedZ = ensurePythonObjectNode.execute(ctx, z, false);
             try {
-                long lresult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                long lresult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 vToNative.executeLong(promotedV), wToNative.executeLong(promotedW), zToNative.executeLong(promotedZ));
                 return checkResultNode.execute(state, T___POW__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
@@ -289,7 +289,7 @@ public final class TpSlotNbPower {
             Object promotedW = ensurePythonObjectNode.execute(ctx, w, false);
             Object promotedZ = ensurePythonObjectNode.execute(ctx, z, false);
             try {
-                long lresult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                long lresult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 vToNative.executeLong(promotedV), wToNative.executeLong(promotedW), zToNative.executeLong(promotedZ));
                 return checkResultNode.execute(state, T___IPOW__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {

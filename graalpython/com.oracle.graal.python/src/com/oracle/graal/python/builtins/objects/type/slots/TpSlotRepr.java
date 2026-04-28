@@ -120,7 +120,7 @@ public final class TpSlotRepr {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
-                long lresult = ExternalFunctionInvoker.invokeREPRFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                long lresult = ExternalFunctionInvoker.invokeREPRFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.executeLong(promotedSelf));
                 return checkResultNode.execute(state, T___REPR__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {

@@ -875,7 +875,7 @@ public abstract class ExternalFunctionNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
 
             try {
-                long l = ExternalFunctionInvoker.invokePYCFUNCTION_WITH_KEYWORDS(frame, timing, context.ensureNfiContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
+                long l = ExternalFunctionInvoker.invokePYCFUNCTION_WITH_KEYWORDS(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
                                 boundFunction, selfToNativeNode.executeLong(self), argsTuplePtr, kwargsToNativeNode.executeLong(kwargsDict));
                 return nativeToPython(context, l);
             } finally {
@@ -1181,7 +1181,7 @@ public abstract class ExternalFunctionNodes {
             }
             PythonContext context = PythonContext.get(this);
             try {
-                long l = ExternalFunctionInvoker.invokePYCFUNCTION(frame, timing, context.ensureNfiContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context), boundFunction,
+                long l = ExternalFunctionInvoker.invokePYCFUNCTION(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context), boundFunction,
                                 selfToNativeNode.executeLong(self), arg);
                 return nativeToPython(context, l);
             } finally {
@@ -1277,7 +1277,7 @@ public abstract class ExternalFunctionNodes {
             long nativeFastcallArgs = MethFastcallRoot.createFastcallArgsArray(fastcallArgs, argToNativeNode);
 
             try {
-                long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST_WITH_KEYWORDS(frame, timing, context.ensureNfiContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
+                long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST_WITH_KEYWORDS(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
                                 boundFunction, argToNativeNode.executeLong(self), nativeFastcallArgs, args.length, kwNamesToNativeNode.executeLong(kwnamesTuple));
                 return nativeToPython(context, l);
             } finally {
@@ -1354,7 +1354,7 @@ public abstract class ExternalFunctionNodes {
             long nativeFastcallArgs = MethFastcallRoot.createFastcallArgsArray(fastcallArgs, argToNativeNode);
 
             try {
-                long l = ExternalFunctionInvoker.invokePYCMETHOD(frame, timing, context.ensureNfiContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
+                long l = ExternalFunctionInvoker.invokePYCMETHOD(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
                                 boundFunction, argToNativeNode.executeLong(self), argToNativeNode.executeLong(cls), nativeFastcallArgs, args.length, kwNamesToNativeNode.executeLong(kwnamesTuple));
                 return nativeToPython(context, l);
             } finally {
@@ -1418,7 +1418,7 @@ public abstract class ExternalFunctionNodes {
             long argsArray = createFastcallArgsArray(promotedArgs, argToNativeNode);
 
             try {
-                long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST(frame, timing, context.ensureNfiContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
+                long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
                                 boundFunction, argToNativeNode.executeLong(self), argsArray, promotedArgs.length);
                 return nativeToPython(context, l);
             } finally {
@@ -2356,7 +2356,7 @@ public abstract class ExternalFunctionNodes {
 
             PythonBuiltinClass argsTupleClass = context.lookupType(PythonBuiltinClassType.PTuple);
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_TYPE_GENERIC_ALLOC);
-            long op = ExternalFunctionInvoker.invokeTYPE_GENERIC_ALLOC(null, TIMING_invokeTypeGenericAlloc, context.ensureNfiContext(),
+            long op = ExternalFunctionInvoker.invokeTYPE_GENERIC_ALLOC(null, TIMING_invokeTypeGenericAlloc, context.ensureNativeContext(),
                             BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
                             pythonToNativeNode.execute(inliningTarget, argsTupleClass, false), n);
 
@@ -2412,7 +2412,7 @@ public abstract class ExternalFunctionNodes {
             CApiTransitions.subNativeRefCount(argsTuplePtr, 1);
             PythonContext context = PythonContext.get(inliningTarget);
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_DEALLOC);
-            ExternalFunctionInvoker.invokePY_DEALLOC(null, TIMING_invokePyDealloc, context.ensureNfiContext(),
+            ExternalFunctionInvoker.invokePY_DEALLOC(null, TIMING_invokePyDealloc, context.ensureNativeContext(),
                             BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
                             argsTuplePtr);
         }

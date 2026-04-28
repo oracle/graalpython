@@ -634,7 +634,7 @@ public abstract class TypeNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(obj);
             PythonContext context = PythonContext.get(null);
             var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_TYPE_READY);
-            int res = ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNfiContext(),
+            int res = ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNativeContext(),
                             BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, PythonToNativeNode.executeLongUncached(obj));
             if (res < 0) {
                 throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, obj);

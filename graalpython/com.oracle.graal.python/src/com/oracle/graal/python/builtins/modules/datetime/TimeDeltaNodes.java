@@ -184,7 +184,7 @@ public class TimeDeltaNodes {
                     PythonContext context = PythonContext.get(null);
                     var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW);
                     long nativeResult = ExternalFunctionInvoker.invokeTIMEDELTA_SUBTYPE_NEW(null, C_API_TIMING,
-                                    context.ensureNfiContext(), BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
                                     clsPointer, daysNormalized, secondsNormalized, microsecondsNormalized);
                     return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
                 } finally {

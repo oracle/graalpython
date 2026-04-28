@@ -206,7 +206,7 @@ public class BytesBuiltins extends PythonBuiltins {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_BYTES_SUBTYPE_NEW);
                     return toPython.execute(ExternalFunctionInvoker.invokeBYTES_SUBTYPE_NEW(null, C_API_TIMING,
-                                    context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                     context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer, dataPointer, bytes.length));
                 } finally {
                     Reference.reachabilityFence(cls);

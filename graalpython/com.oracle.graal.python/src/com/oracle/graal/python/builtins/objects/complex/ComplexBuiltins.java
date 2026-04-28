@@ -268,7 +268,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
                     long nativeResult = ExternalFunctionInvoker.invokeCOMPLEX_SUBTYPE_FROM_DOUBLES(null, C_API_TIMING,
-                                    context.ensureNfiContext(), BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable,
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable,
                                     clsPointer, real, imaginary);
                     return checkFunctionResultNode.execute(context, symbol.getTsName(), toPythonNode.execute(nativeResult));
                 } finally {

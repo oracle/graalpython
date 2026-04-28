@@ -150,8 +150,8 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.runtime.nativeaccess.NativeAccess;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
-import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -787,7 +787,7 @@ public final class PythonContext extends Python3Core {
     private final ReentrantLock cApiInitializationLock = new ReentrantLock(false);
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private boolean nativeAccessAllowed;
-    @CompilationFinal private NfiContext nfiContext;
+    @CompilationFinal private NativeContext nativeContext;
 
     private TruffleString soABI;
 
@@ -2147,8 +2147,8 @@ public final class PythonContext extends Python3Core {
             // interrupt and join or kill python threads
             joinPythonThreads();
             stdioFlushFailed = flushStdFiles();
-            if (nfiContext != null) {
-                nfiContext.close();
+            if (nativeContext != null) {
+                nativeContext.close();
             }
             freeContextMemory();
             // destroy thread state data, if anything is still running, it will crash now
@@ -2825,13 +2825,13 @@ public final class PythonContext extends Python3Core {
         this.cApiContext = capiContext;
     }
 
-    public NfiContext ensureNfiContext() {
-        if (nfiContext == null) {
+    public NativeContext ensureNativeContext() {
+        if (nativeContext == null) {
             // TODO(NFI2) check native access allowed
-            nfiContext = NativeAccess.createContext();
+            nativeContext = NativeAccess.createContext();
             CompilerDirectives.transferToInterpreterAndInvalidate();
         }
-        return nfiContext;
+        return nativeContext;
     }
 
     public void runCApiHooks() {

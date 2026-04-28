@@ -863,7 +863,7 @@ public abstract class CExtNodes {
                 if (CApiTransitions.subNativeRefCount(pointer, 1) == 0) {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_DEALLOC);
-                    ExternalFunctionInvoker.invokePY_DEALLOC(null, C_API_TIMING, context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                    ExternalFunctionInvoker.invokePY_DEALLOC(null, C_API_TIMING, context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                     context.getThreadState(PythonLanguage.get(inliningTarget)), callable, pointer);
                 }
             }
@@ -1038,8 +1038,8 @@ public abstract class CExtNodes {
         Object module;
         if (createFunction != NULLPTR) {
             PythonThreadState threadState = context.getThreadState(context.getLanguage());
-            NativeFunctionPointer modCreate = ExternalFunctionSignature.MODCREATE.bind(context.ensureNfiContext(), createFunction);
-            long result = ExternalFunctionInvoker.invokeMODCREATE(null, TIMING_MOD_CREATE, context.ensureNfiContext(),
+            NativeFunctionPointer modCreate = ExternalFunctionSignature.MODCREATE.bind(context.ensureNativeContext(), createFunction);
+            long result = ExternalFunctionInvoker.invokeMODCREATE(null, TIMING_MOD_CREATE, context.ensureNativeContext(),
                             BoundaryCallData.getUncached(), threadState, modCreate,
                             PythonToNativeInternalNode.executeUncached(moduleSpec.originalModuleSpec, false), moduleDefPtr);
             TransformExceptionFromNativeNode.getUncached().execute(null, threadState, mName, result == NULLPTR, true,
@@ -1123,8 +1123,8 @@ public abstract class CExtNodes {
                     long execFunction = readStructArrayPtrField(slotDefinitions, i, PyModuleDef_Slot__value);
                     PythonContext context = capiContext.getContext();
                     PythonThreadState threadState = context.getThreadState(context.getLanguage());
-                    NativeFunctionPointer boundFunction = ExternalFunctionSignature.MODEXEC.bind(context.ensureNfiContext(), execFunction);
-                    int iResult = ExternalFunctionInvoker.invokeMODEXEC(null, TIMING_MOD_EXEC, context.ensureNfiContext(),
+                    NativeFunctionPointer boundFunction = ExternalFunctionSignature.MODEXEC.bind(context.ensureNativeContext(), execFunction);
+                    int iResult = ExternalFunctionInvoker.invokeMODEXEC(null, TIMING_MOD_EXEC, context.ensureNativeContext(),
                                     BoundaryCallData.getUncached(), threadState, boundFunction,
                                     PythonToNativeInternalNode.executeUncached(module, false));
                     /*
@@ -1226,7 +1226,7 @@ public abstract class CExtNodes {
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
                 var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT);
-                long result = ExternalFunctionInvoker.invokeGRAALPY_MEMORYVIEW_FROM_OBJECT(null, C_API_TIMING, context.ensureNfiContext(), BoundaryCallData.getUncached(),
+                long result = ExternalFunctionInvoker.invokeGRAALPY_MEMORYVIEW_FROM_OBJECT(null, C_API_TIMING, context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                 context.getThreadState(PythonLanguage.get(inliningTarget)), callable, bufPointer, flags);
                 return (PMemoryView) checkFunctionResultNode.execute(context, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), asPythonObjectNode.executeRaw(result));
             } finally {

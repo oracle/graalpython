@@ -49,7 +49,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class NfiContext {
+public final class NativeContext {
     public static final String UNAVAILABLE = "JEP 454 is not included on this JDK, this prevents loading native extensions modules.";
 
     private static final int LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x00000100;
@@ -68,7 +68,7 @@ public final class NfiContext {
     final Object arena;
 
     @TruffleBoundary
-    NfiContext() {
+    NativeContext() {
         arena = NfiSupport.createArena();
     }
 

@@ -102,7 +102,7 @@ public abstract class SetDictNode extends Node {
         long dictPointer = dictToNative.execute(inliningTarget, dict, false);
         PythonContext context = PythonContext.get(inliningTarget);
         var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_GENERIC_SET_DICT);
-        int result = ExternalFunctionInvoker.invokePY_OBJECT_GENERIC_SET_DICT(null, C_API_TIMING, context.ensureNfiContext(),
+        int result = ExternalFunctionInvoker.invokePY_OBJECT_GENERIC_SET_DICT(null, C_API_TIMING, context.ensureNativeContext(),
                         BoundaryCallData.getUncached(),
                         context.getThreadState(context.getLanguage(inliningTarget)), callable, objectPointer, dictPointer, NULLPTR);
         checkResult.executeLong(inliningTarget, context.getThreadState(context.getLanguage(inliningTarget)), FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);

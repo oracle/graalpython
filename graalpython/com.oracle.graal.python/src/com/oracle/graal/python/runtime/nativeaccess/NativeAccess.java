@@ -42,9 +42,9 @@ package com.oracle.graal.python.runtime.nativeaccess;
 
 public final class NativeAccess {
 
-    public static NfiContext createContext() {
+    public static NativeContext createContext() {
         // TODO(NFI2) check native access is allowed, or make callers do it explicitly.
-        return new NfiContext();
+        return new NativeContext();
     }
 
     public static NativeSignature createSignature(NfiType resType, NfiType... argTypes) {

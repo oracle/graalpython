@@ -62,7 +62,7 @@ public final class PythonCextPyLifecycleBuiltins {
 // @Override
 // @TruffleBoundary
 // public void call(PythonContext context) {
-// CALLBACK_SIGNATURE.invoke(context.ensureNfiContext(), funcPtr);
+// CALLBACK_SIGNATURE.invoke(context.ensureNativeContext(), funcPtr);
 // }
 // });
             return 0;

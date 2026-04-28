@@ -221,7 +221,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
         assert EnsurePythonObjectNode.doesNotNeedPromotion(klass);
         PythonContext context = PythonContext.get(null);
         var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_TYPE_READY);
-        int res = ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNfiContext(),
+        int res = ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNativeContext(),
                         BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
                         PythonToNativeNode.executeLongUncached(klass));
         if (res < 0) {

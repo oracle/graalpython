@@ -186,7 +186,7 @@ public abstract class TpSlotLen {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
-                long lresult = ExternalFunctionInvoker.invokeLENFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                long lresult = ExternalFunctionInvoker.invokeLENFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.executeLong(promotedSelf));
                 long l = checkResultNode.executeLong(inliningTarget, state, T___LEN__, lresult);
                 if (!PInt.isIntRange(l)) {

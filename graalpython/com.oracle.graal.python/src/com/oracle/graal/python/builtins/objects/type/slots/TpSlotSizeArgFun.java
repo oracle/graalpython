@@ -271,7 +271,7 @@ public class TpSlotSizeArgFun {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
-                long lresult = ExternalFunctionInvoker.invokeSSIZEARGFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                long lresult = ExternalFunctionInvoker.invokeSSIZEARGFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
                                 toNativeNode.executeLong(promotedSelf), index);
                 return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {

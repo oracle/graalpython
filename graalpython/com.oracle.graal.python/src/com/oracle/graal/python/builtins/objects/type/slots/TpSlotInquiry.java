@@ -180,7 +180,7 @@ public abstract class TpSlotInquiry {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
-                int iresult = ExternalFunctionInvoker.invokeINQUIRY(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                int iresult = ExternalFunctionInvoker.invokeINQUIRY(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
                                 toNativeNode.execute(inliningTarget, promotedSelf, false));
                 return checkResultNode.executeBool(inliningTarget, threadState, T___BOOL__, iresult);
             } finally {

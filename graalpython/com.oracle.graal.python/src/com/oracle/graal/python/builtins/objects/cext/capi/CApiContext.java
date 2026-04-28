@@ -108,10 +108,10 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
-import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
 import com.oracle.graal.python.runtime.nativeaccess.NfiLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NfiLoadException;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -588,7 +588,7 @@ public final class CApiContext extends CExtContext {
         String name = symbol.getName();
         PythonContext pythonContext = PythonContext.get(null);
         long nativeSymbolPtr = pythonContext.getCApiContext().getLibrary().lookupSymbol(name);
-        NativeFunctionPointer nativeSymbol = symbol.bind(pythonContext.ensureNfiContext(), nativeSymbolPtr);
+        NativeFunctionPointer nativeSymbol = symbol.bind(pythonContext.ensureNativeContext(), nativeSymbolPtr);
         VarHandle.storeStoreFence();
         return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
     }
@@ -915,8 +915,8 @@ public final class CApiContext extends CExtContext {
             context.ensureNFILanguage(node, "allowNativeAccess", "true");
             int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
-            NfiContext nfiContext = context.ensureNfiContext();
-            NfiLibrary capiLibrary = nfiContext.loadLibrary(loc.getCapiLibrary(), dlopenFlags);
+            NativeContext nativeContext = context.ensureNativeContext();
+            NfiLibrary capiLibrary = nativeContext.loadLibrary(loc.getCapiLibrary(), dlopenFlags);
             long initFunction = capiLibrary.lookupSymbol("initialize_graal_capi");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
             context.setCApiContext(cApiContext);
@@ -938,9 +938,9 @@ public final class CApiContext extends CExtContext {
                     NativeMemory.writePtrArrayElement(builtinArrayPtr, id, builtin.getNativePointer());
                 }
                 // TODO(NFI2) ENV parameter
-                long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeCAPIINIT(null, TIMING_INVOKE_CAPI_INIT, nfiContext, BoundaryCallData.getUncached(),
+                long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeCAPIINIT(null, TIMING_INVOKE_CAPI_INIT, nativeContext, BoundaryCallData.getUncached(),
                                 context.getThreadState(context.getLanguage()),
-                                ExternalFunctionSignature.CAPIINIT.bind(nfiContext, initFunction), 0L, builtinArrayPtr, gcState, nativeThreadState);
+                                ExternalFunctionSignature.CAPIINIT.bind(nativeContext, initFunction), 0L, builtinArrayPtr, gcState, nativeThreadState);
                 assert nativeThreadLocalVarPointer != NULLPTR;
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
             } finally {
@@ -960,8 +960,8 @@ public final class CApiContext extends CExtContext {
              * is skipped. For that case we set up the shutdown hook.
              */
             long finalizeFunction = capiLibrary.lookupSymbol("GraalPyPrivate_GetFinalizeCApiPointer");
-            long finalizingPointer = ExternalFunctionInvoker.invokeGETFINALIZECAPIPOINTER(null, TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER, nfiContext, BoundaryCallData.getUncached(),
-                            context.getThreadState(context.getLanguage()), ExternalFunctionSignature.GETFINALIZECAPIPOINTER.bind(nfiContext, finalizeFunction));
+            long finalizingPointer = ExternalFunctionInvoker.invokeGETFINALIZECAPIPOINTER(null, TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER, nativeContext, BoundaryCallData.getUncached(),
+                            context.getThreadState(context.getLanguage()), ExternalFunctionSignature.GETFINALIZECAPIPOINTER.bind(nativeContext, finalizeFunction));
             try {
                 cApiContext.addNativeFinalizer(context, finalizingPointer);
             } catch (RuntimeException e) {
@@ -1063,7 +1063,7 @@ public final class CApiContext extends CExtContext {
         }
 
         try {
-            library = context.ensureNfiContext().loadLibrary(loadPath, dlopenFlags);
+            library = context.ensureNativeContext().loadLibrary(loadPath, dlopenFlags);
         } catch (PException e) {
             throw e;
         } catch (NfiLoadException e) {
@@ -1225,9 +1225,9 @@ public final class CApiContext extends CExtContext {
         if (pyinitFunc == 0L) {
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
-        NfiContext nfiContext = context.ensureNfiContext();
-        long nativeResult = ExternalFunctionInvoker.invokeMODINIT(null, TIMING_INVOKE_MODULE_INIT, nfiContext, BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage()),
-                        ExternalFunctionSignature.MODINIT.bind(nfiContext, pyinitFunc));
+        NativeContext nativeContext = context.ensureNativeContext();
+        long nativeResult = ExternalFunctionInvoker.invokeMODINIT(null, TIMING_INVOKE_MODULE_INIT, nativeContext, BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage()),
+                        ExternalFunctionSignature.MODINIT.bind(nativeContext, pyinitFunc));
 
         Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonNode.executeUncached(nativeResult));
         if (!(result instanceof PythonModule)) {
@@ -1304,7 +1304,7 @@ public final class CApiContext extends CExtContext {
     public long registerClosure(String name, NativeSignature signature, MethodHandle methodHandle, Object key, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
-        long pointer = signature.createClosure(context.ensureNfiContext(), name, methodHandle);
+        long pointer = signature.createClosure(context.ensureNativeContext(), name, methodHandle);
         setClosurePointer(delegate, key, pointer);
         return pointer;
     }

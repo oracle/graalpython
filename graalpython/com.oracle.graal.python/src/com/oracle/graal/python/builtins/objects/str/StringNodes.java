@@ -189,7 +189,7 @@ public abstract class StringNodes {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(x);
                 PythonContext context = PythonContext.get(inliningTarget);
                 var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH);
-                return intValue(ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNfiContext(),
+                return intValue(ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNativeContext(),
                                 BoundaryCallData.getUncached(),
                                 context.getThreadState(context.getLanguage(inliningTarget)), callable,
                                 toNativeNode.executeLong(x)));

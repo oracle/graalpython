@@ -56,13 +56,13 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.runtime.nativeaccess.NativeAccess;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
-import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
 import com.oracle.graal.python.runtime.nativeaccess.NfiType;
 import com.oracle.graal.python.util.Function;
 
 public class TpSlotsTests {
-    private NfiContext nfiContext;
+    private NativeContext nativeContext;
 
     @BeforeClass
     public static void setUpClass() {
@@ -71,12 +71,12 @@ public class TpSlotsTests {
 
     @Before
     public void setUp() {
-        nfiContext = NativeAccess.createContext();
+        nativeContext = NativeAccess.createContext();
     }
 
     @After
     public void tearDown() {
-        nfiContext.close();
+        nativeContext.close();
     }
 
     @Test
@@ -164,7 +164,7 @@ public class TpSlotsTests {
     // verify that the slot values were properly assigned to the right fields of TpSlots
     // record
     private TpSlotNative createCExtSlot(TpSlotMeta def) {
-        return TpSlotNative.createCExtSlot(NativeFunctionPointer.create(nfiContext, def.ordinal(), NfiType.VOID));
+        return TpSlotNative.createCExtSlot(NativeFunctionPointer.create(nativeContext, def.ordinal(), NfiType.VOID));
     }
 
     private static void checkSlotValue(TpSlotMeta def, TpSlot slotValue) {

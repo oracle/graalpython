@@ -60,7 +60,7 @@ public abstract class NfiSupport {
     }
 
     protected static UnsupportedOperationException unsupported() {
-        return new UnsupportedOperationException(NfiContext.UNAVAILABLE);
+        return new UnsupportedOperationException(NativeContext.UNAVAILABLE);
     }
 
     protected static MethodHandle unsupportedDowncallHandle(MethodType methodType) {

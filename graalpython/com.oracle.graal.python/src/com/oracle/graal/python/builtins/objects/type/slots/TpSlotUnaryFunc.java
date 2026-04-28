@@ -141,7 +141,7 @@ public final class TpSlotUnaryFunc {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
             Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
             try {
-                long lresult = ExternalFunctionInvoker.invokeUNARYFUNC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                long lresult = ExternalFunctionInvoker.invokeUNARYFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.executeLong(promotedSelf));
                 return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.execute(inliningTarget, lresult, true, true));
             } finally {

@@ -207,7 +207,7 @@ public final class TpSlotIterNext {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
-                long nativeResult = ExternalFunctionInvoker.invokeITERNEXTFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                long nativeResult = ExternalFunctionInvoker.invokeITERNEXTFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.executeLong(promotedSelf));
                 Object pythonResult = toPythonNode.execute(inliningTarget, nativeResult, true);
                 if (pythonResult == PNone.NO_VALUE) {
