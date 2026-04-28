@@ -262,7 +262,7 @@ def graalpy_standalone_deps():
     include_truffle_runtime = not mx.env_var_to_bool("EXCLUDE_TRUFFLE_RUNTIME")
     deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
     if _with_bouncycastle():
-        mx.log("Including bouncycastle with GraalPy standalone")
+        mx.logv("Including bouncycastle with GraalPy standalone")
         deps += [
             "graalpython:GRAALPYTHON_BOUNCYCASTLE",
             "graalpython:BOUNCYCASTLE-PROVIDER",
@@ -832,7 +832,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     python_home = os.environ.get("GRAALPY_HOME", None)
     if python_home:
         python_home = os.path.abspath(glob.glob(python_home)[0])
-        mx.log("Using GraalPy standalone from GRAALPY_HOME: " + python_home)
+        mx.logv("Using GraalPy standalone from GRAALPY_HOME: " + python_home)
         # Try to verify that we're getting what we expect:
         has_java = os.path.exists(os.path.join(python_home, 'jvm', 'bin', mx.exe_suffix('java')))
         if has_java != (standalone_type == 'jvm'):
@@ -952,7 +952,7 @@ def graalvm_jdk(enterprise=False):
             jdk_home_subdir = os.path.join(graal_jdk_home, 'Contents', 'Home')
             if os.path.exists(jdk_home_subdir):
                 graal_jdk_home = jdk_home_subdir
-        mx.log("Using Graal from GRAAL_JDK_HOME: " + graal_jdk_home)
+        mx.logv("Using Graal from GRAAL_JDK_HOME: " + graal_jdk_home)
 
         # Try to verify that we're getting what we expect:
         has_java = os.path.exists(os.path.join(graal_jdk_home, 'bin', mx.exe_suffix('java')))
