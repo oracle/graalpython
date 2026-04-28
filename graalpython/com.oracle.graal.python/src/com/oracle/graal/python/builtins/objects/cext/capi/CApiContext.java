@@ -110,9 +110,9 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
-import com.oracle.graal.python.runtime.nativeaccess.NfiLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NfiLoadException;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -322,7 +322,7 @@ public final class CApiContext extends CExtContext {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
 
-    public CApiContext(PythonContext context, NfiLibrary library, NativeLibraryLocator locator) {
+    public CApiContext(PythonContext context, NativeLibrary library, NativeLibraryLocator locator) {
         super(context, library, locator.getCapiLibrary());
         this.nativeSymbolCache = new NativeFunctionPointer[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
@@ -916,7 +916,7 @@ public final class CApiContext extends CExtContext {
             int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
             NativeContext nativeContext = context.ensureNativeContext();
-            NfiLibrary capiLibrary = nativeContext.loadLibrary(loc.getCapiLibrary(), dlopenFlags);
+            NativeLibrary capiLibrary = nativeContext.loadLibrary(loc.getCapiLibrary(), dlopenFlags);
             long initFunction = capiLibrary.lookupSymbol("initialize_graal_capi");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
             context.setCApiContext(cApiContext);
@@ -1046,7 +1046,7 @@ public final class CApiContext extends CExtContext {
 
         // we always need to load the CPython C API
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
-        NfiLibrary library;
+        NativeLibrary library;
 
         TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
         String loadPath = cApiContext.nativeLibraryLocator.resolve(context, realPath);
@@ -1218,7 +1218,7 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object initCApiModule(Node node, NfiLibrary sharedLibrary, TruffleString initFuncName, ModuleSpec spec) throws ImportException {
+    public Object initCApiModule(Node node, NativeLibrary sharedLibrary, TruffleString initFuncName, ModuleSpec spec) throws ImportException {
         PythonContext context = getContext();
         CApiContext cApiContext = context.getCApiContext();
         long pyinitFunc = sharedLibrary.lookupOptionalSymbol(initFuncName.toJavaStringUncached());

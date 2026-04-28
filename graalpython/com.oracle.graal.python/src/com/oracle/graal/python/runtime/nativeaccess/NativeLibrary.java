@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,13 +42,12 @@ package com.oracle.graal.python.runtime.nativeaccess;
 
 import com.oracle.truffle.api.CompilerDirectives;
 
-public final class NfiLibrary {
+public final class NativeLibrary {
 
     private final NativeContext context;
     final long ptr;
 
-    @SuppressWarnings("unused")
-    NfiLibrary(NativeContext context, long ptr) {
+    NativeLibrary(NativeContext context, long ptr) {
         this.context = context;
         this.ptr = ptr;
     }

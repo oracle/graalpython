@@ -64,7 +64,7 @@ public final class NativeContext {
     private static final int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
     private static final int FORMAT_MESSAGE_BUFFER_CHARS = 2048;
 
-    private final ConcurrentLinkedQueue<NfiLibrary> libraries = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<NativeLibrary> libraries = new ConcurrentLinkedQueue<>();
     final Object arena;
 
     @TruffleBoundary
@@ -74,7 +74,7 @@ public final class NativeContext {
 
     public void close() {
         CompilerAsserts.neverPartOfCompilation();
-        for (NfiLibrary library : libraries) {
+        for (NativeLibrary library : libraries) {
             int result;
             try {
                 result = isWindows() ? (int) FREE_LIBRARY.invokeExact(freeLibraryPtr, library.ptr) : (int) DLCLOSE.invokeExact(dlclosePtr, library.ptr);
@@ -88,7 +88,7 @@ public final class NativeContext {
         NfiSupport.closeArena(arena);
     }
 
-    public NfiLibrary loadLibrary(String name, int flags) throws NfiLoadException {
+    public NativeLibrary loadLibrary(String name, int flags) throws NfiLoadException {
         CompilerAsserts.neverPartOfCompilation();
 
         // This needs to be done first and may fail if the executing JDK does not support FFM API.
@@ -115,7 +115,7 @@ public final class NativeContext {
         if (lib == 0) {
             throw createLoadLibraryException();
         }
-        NfiLibrary library = new NfiLibrary(this, lib);
+        NativeLibrary library = new NativeLibrary(this, lib);
         libraries.add(library);
         return library;
     }
