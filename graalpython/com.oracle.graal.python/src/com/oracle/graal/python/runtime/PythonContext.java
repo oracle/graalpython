@@ -2827,7 +2827,7 @@ public final class PythonContext extends Python3Core {
 
     public NativeContext ensureNativeContext() {
         if (nativeContext == null) {
-            // TODO(NFI2) check native access allowed
+            ensureNativeAccess();
             nativeContext = NativeAccess.createContext();
             CompilerDirectives.transferToInterpreterAndInvalidate();
         }
