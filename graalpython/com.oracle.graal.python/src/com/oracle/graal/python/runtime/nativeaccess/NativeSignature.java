@@ -46,10 +46,10 @@ import java.util.Arrays;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NativeSignature {
-    private final NfiType resType;
-    private final NfiType[] argTypes;
+    private final NativeSimpleType resType;
+    private final NativeSimpleType[] argTypes;
 
-    NativeSignature(NfiType resType, NfiType[] argTypes) {
+    NativeSignature(NativeSimpleType resType, NativeSimpleType[] argTypes) {
         this.resType = resType;
         this.argTypes = Arrays.copyOf(argTypes, argTypes.length);
     }

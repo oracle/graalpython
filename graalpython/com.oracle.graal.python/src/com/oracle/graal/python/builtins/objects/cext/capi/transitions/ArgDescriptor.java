@@ -52,44 +52,44 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.runtime.nativeaccess.NfiType;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
     PyObject(
-                    NfiType.RAW_POINTER,
+                    NativeSimpleType.RAW_POINTER,
                     PythonToNativeNode::create,
                     NativeToPythonNode::create,
                     NativeToPythonNode.getUncached(),
                     PythonToNativeNewRefNode::create,
                     NativeToPythonTransferNode::create,
                     NativeToPythonTransferNode.getUncached()),
-    PyObjectBorrowed(NfiType.RAW_POINTER, ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
-    PyObjectAsTruffleString(NfiType.RAW_POINTER, null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
+    PyObjectBorrowed(NativeSimpleType.RAW_POINTER, ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
+    PyObjectAsTruffleString(NativeSimpleType.RAW_POINTER, null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
     PyTypeObject(
-                    NfiType.RAW_POINTER,
+                    NativeSimpleType.RAW_POINTER,
                     PythonToNativeNode::create,
                     NativeToPythonClassNode::create,
                     NativeToPythonClassNode.getUncached(),
                     PythonToNativeNewRefNode::create,
                     NativeToPythonTransferNode::create,
                     NativeToPythonTransferNode.getUncached()),
-    Pointer(NfiType.RAW_POINTER),
-    TruffleStringPointer(NfiType.RAW_POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
-    Char8(NfiType.SINT8),
-    UChar8(NfiType.SINT8),
-    Char16(NfiType.SINT16),
-    Int32(NfiType.SINT32),
-    UInt32(NfiType.SINT32),
-    Int64(NfiType.SINT64),
-    UInt64(NfiType.SINT64),
-    Long(NfiType.SINT64, null, FromLongNode::create, FromLongNode.getUncached()),
-    Float32(NfiType.FLOAT),
-    Float64(NfiType.DOUBLE),
-    Void(NfiType.VOID),
-    Unknown(NfiType.SINT64);
+    Pointer(NativeSimpleType.RAW_POINTER),
+    TruffleStringPointer(NativeSimpleType.RAW_POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
+    Char8(NativeSimpleType.SINT8),
+    UChar8(NativeSimpleType.SINT8),
+    Char16(NativeSimpleType.SINT16),
+    Int32(NativeSimpleType.SINT32),
+    UInt32(NativeSimpleType.SINT32),
+    Int64(NativeSimpleType.SINT64),
+    UInt64(NativeSimpleType.SINT64),
+    Long(NativeSimpleType.SINT64, null, FromLongNode::create, FromLongNode.getUncached()),
+    Float32(NativeSimpleType.FLOAT),
+    Float64(NativeSimpleType.DOUBLE),
+    Void(NativeSimpleType.VOID),
+    Unknown(NativeSimpleType.SINT64);
 
-    public final NfiType nfi2Type;
+    public final NativeSimpleType nativeSimpleType;
     public final Supplier<CExtToNativeNode> pythonToNative;
     public final Supplier<CExtToJavaNode> nativeToPython;
     public final CExtToJavaNode uncachedNativeToPython;
@@ -97,9 +97,9 @@ enum ArgBehavior {
     public final Supplier<CExtToJavaNode> nativeToPythonTransfer;
     public final CExtToJavaNode uncachedNativeToPythonTransfer;
 
-    ArgBehavior(NfiType nfi2Type, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython, CExtToJavaNode uncachedNativeToPython,
+    ArgBehavior(NativeSimpleType nativeSimpleType, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython, CExtToJavaNode uncachedNativeToPython,
                     Supplier<CExtToNativeNode> pythonToNativeTransfer, Supplier<CExtToJavaNode> nativeToPythonTransfer, CExtToJavaNode uncachedNativeToPythonTransfer) {
-        this.nfi2Type = nfi2Type;
+        this.nativeSimpleType = nativeSimpleType;
         this.pythonToNative = pythonToNative;
         this.nativeToPython = nativeToPython;
         this.uncachedNativeToPython = uncachedNativeToPython;
@@ -108,12 +108,12 @@ enum ArgBehavior {
         this.uncachedNativeToPythonTransfer = uncachedNativeToPythonTransfer;
     }
 
-    ArgBehavior(NfiType nfi2Type, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython, CExtToJavaNode uncachedNativeToPython) {
-        this(nfi2Type, pythonToNative, nativeToPython, uncachedNativeToPython, null, null, null);
+    ArgBehavior(NativeSimpleType nativeSimpleType, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython, CExtToJavaNode uncachedNativeToPython) {
+        this(nativeSimpleType, pythonToNative, nativeToPython, uncachedNativeToPython, null, null, null);
     }
 
-    ArgBehavior(NfiType nfi2Type) {
-        this(nfi2Type, null, null, null, null, null, null);
+    ArgBehavior(NativeSimpleType nativeSimpleType) {
+        this(nativeSimpleType, null, null, null, null, null, null);
     }
 
 }
@@ -423,8 +423,8 @@ public enum ArgDescriptor {
         return node;
     }
 
-    public NfiType getNFI2Type() {
-        return behavior.nfi2Type;
+    public NativeSimpleType getNativeSimpleType() {
+        return behavior.nativeSimpleType;
     }
 
     public boolean isPyObjectOrPointer() {

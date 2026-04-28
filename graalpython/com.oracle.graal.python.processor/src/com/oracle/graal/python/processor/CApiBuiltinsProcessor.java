@@ -1122,10 +1122,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     /**
      * Maps an {@code com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgBehavior} to
-     * the NFI Java type.
+     * the native Java carrier type.
      */
     private String toJavaNfiType(String argDescriptor) {
-        // TODO: types should be inferred with: 'ArgDescriptor.behavior.nfi2Type'
+        // TODO: types should be inferred with: 'ArgDescriptor.behavior.nativeSimpleType'
         return switch (argDescriptor) {
             case "Void" -> "void";
             case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "int";
@@ -1445,17 +1445,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("");
         lines.add("    @Override");
         lines.add("    @SuppressWarnings(\"restricted\")");
-        lines.add("    protected long createClosureImpl(MethodHandle staticMethodHandle, NfiType resType, NfiType[] argTypes, Object arena) {");
+        lines.add("    protected long createClosureImpl(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena) {");
         lines.add("        FunctionDescriptor functionDescriptor = createFunctionDescriptor(resType, argTypes);");
         lines.add("        return Linker.nativeLinker().upcallStub(staticMethodHandle, functionDescriptor, (Arena) arena).address();");
         lines.add("    }");
         lines.add("");
-        lines.add("    private static FunctionDescriptor createFunctionDescriptor(NfiType resType, NfiType[] argTypes) {");
+        lines.add("    private static FunctionDescriptor createFunctionDescriptor(NativeSimpleType resType, NativeSimpleType[] argTypes) {");
         lines.add("        MemoryLayout[] argLayouts = new MemoryLayout[argTypes.length];");
         lines.add("        for (int i = 0; i < argTypes.length; i++) {");
         lines.add("            argLayouts[i] = asLayout(argTypes[i]);");
         lines.add("        }");
-        lines.add("        return resType == NfiType.VOID ? FunctionDescriptor.ofVoid(argLayouts) : FunctionDescriptor.of(asLayout(resType), argLayouts);");
+        lines.add("        return resType == NativeSimpleType.VOID ? FunctionDescriptor.ofVoid(argLayouts) : FunctionDescriptor.of(asLayout(resType), argLayouts);");
         lines.add("    }");
         lines.add("");
         lines.add("    private static FunctionDescriptor createFunctionDescriptor(MethodType methodType) {");
@@ -1485,7 +1485,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("        throw shouldNotReachHere(\"Unsupported layout carrier: \" + type);");
         lines.add("    }");
         lines.add("");
-        lines.add("    private static MemoryLayout asLayout(NfiType type) {");
+        lines.add("    private static MemoryLayout asLayout(NativeSimpleType type) {");
         lines.add("        return switch (type) {");
         lines.add("            case VOID -> throw shouldNotReachHere(\"VOID has no layout\");");
         lines.add("            case SINT8 -> ValueLayout.JAVA_BYTE;");
@@ -1543,7 +1543,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    }");
         lines.add("");
         lines.add("    @Override");
-        lines.add("    protected long createClosureImpl(MethodHandle staticMethodHandle, NfiType resType, NfiType[] argTypes, Object arena) {");
+        lines.add("    protected long createClosureImpl(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena) {");
         lines.add("        throw unsupported();");
         lines.add("    }");
         lines.add("}");

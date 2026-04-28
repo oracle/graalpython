@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.runtime.nativeaccess;
 
-public enum NfiType {
+public enum NativeSimpleType {
     VOID,
     SINT8,
     SINT16,

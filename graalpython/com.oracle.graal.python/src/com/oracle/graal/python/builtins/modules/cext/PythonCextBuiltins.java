@@ -170,7 +170,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.runtime.nativeaccess.NativeAccess;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
-import com.oracle.graal.python.runtime.nativeaccess.NfiType;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -634,7 +634,7 @@ public final class PythonCextBuiltins {
         }
 
         Object getErrorReturnValue() {
-            return switch (ret.getNFI2Type()) {
+            return switch (ret.getNativeSimpleType()) {
                 case VOID -> PNone.NO_VALUE;
                 case SINT8 -> (byte) -1;
                 case SINT16 -> (short) -1;
@@ -684,11 +684,11 @@ public final class PythonCextBuiltins {
             PythonContext context = PythonContext.get(null);
             long pointer = context.getCApiContext().getClosurePointer(this);
             if (pointer == -1) {
-                NfiType[] argTypes = new NfiType[args.length];
+                NativeSimpleType[] argTypes = new NativeSimpleType[args.length];
                 for (int i = 0; i < args.length; i++) {
-                    argTypes[i] = args[i].getNFI2Type();
+                    argTypes[i] = args[i].getNativeSimpleType();
                 }
-                NativeSignature signature = NativeAccess.createSignature(ret.getNFI2Type(), argTypes);
+                NativeSignature signature = NativeAccess.createSignature(ret.getNativeSimpleType(), argTypes);
                 try {
                     pointer = signature.createClosure(context.ensureNativeContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
                     context.getCApiContext().setClosurePointer(null, this, pointer);

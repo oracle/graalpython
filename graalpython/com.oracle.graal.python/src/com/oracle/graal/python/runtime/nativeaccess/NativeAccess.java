@@ -47,7 +47,7 @@ public final class NativeAccess {
         return new NativeContext();
     }
 
-    public static NativeSignature createSignature(NfiType resType, NfiType... argTypes) {
+    public static NativeSignature createSignature(NativeSimpleType resType, NativeSimpleType... argTypes) {
         return new NativeSignature(resType, argTypes);
     }
 }

@@ -69,7 +69,7 @@ final class NativeAccessSupportJdk21 extends NativeAccessSupport {
     }
 
     @Override
-    protected long createClosureImpl(MethodHandle staticMethodHandle, NfiType resType, NfiType[] argTypes, Object arena) {
+    protected long createClosureImpl(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena) {
         throw unsupported();
     }
 }

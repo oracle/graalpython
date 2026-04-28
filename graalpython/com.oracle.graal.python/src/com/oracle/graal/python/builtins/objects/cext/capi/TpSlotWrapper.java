@@ -42,9 +42,9 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.runtime.nativeaccess.NfiType.RAW_POINTER;
-import static com.oracle.graal.python.runtime.nativeaccess.NfiType.SINT32;
-import static com.oracle.graal.python.runtime.nativeaccess.NfiType.SINT64;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType.RAW_POINTER;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType.SINT32;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType.SINT64;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.lang.invoke.MethodHandle;

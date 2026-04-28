@@ -69,7 +69,7 @@ public abstract class NativeAccessSupport {
         return MethodHandles.dropArguments(methodHandle, 0, methodType.parameterList());
     }
 
-    protected static Class<?> asJavaType(NfiType type) {
+    protected static Class<?> asJavaType(NativeSimpleType type) {
         return switch (type) {
             case VOID -> void.class;
             case SINT8 -> byte.class;
@@ -102,7 +102,7 @@ public abstract class NativeAccessSupport {
         return INSTANCE.lookupDefaultImpl(name);
     }
 
-    public static MethodHandle createDowncallHandle(NfiType resType, NfiType... argTypes) {
+    public static MethodHandle createDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
         return INSTANCE.createTypedDowncallHandle(resType, argTypes);
     }
 
@@ -110,11 +110,11 @@ public abstract class NativeAccessSupport {
         return INSTANCE.createDowncallHandleImpl(methodType, critical);
     }
 
-    public static long createClosure(MethodHandle staticMethodHandle, NfiType resType, NfiType[] argTypes, Object arena) {
+    public static long createClosure(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena) {
         return INSTANCE.createClosureImpl(staticMethodHandle, resType, argTypes, arena);
     }
 
-    private MethodHandle createTypedDowncallHandle(NfiType resType, NfiType... argTypes) {
+    private MethodHandle createTypedDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
         Class<?>[] parameterTypes = new Class<?>[argTypes.length + 1];
         parameterTypes[0] = long.class;
         for (int i = 0; i < argTypes.length; i++) {
@@ -133,5 +133,5 @@ public abstract class NativeAccessSupport {
 
     protected abstract MethodHandle createDowncallHandleImpl(MethodType methodType, boolean critical);
 
-    protected abstract long createClosureImpl(MethodHandle staticMethodHandle, NfiType resType, NfiType[] argTypes, Object arena);
+    protected abstract long createClosureImpl(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena);
 }

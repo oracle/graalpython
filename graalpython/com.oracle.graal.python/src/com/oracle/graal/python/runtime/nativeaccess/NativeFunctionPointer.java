@@ -48,16 +48,16 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
  */
 public final class NativeFunctionPointer {
     private final long ptr;
-    private final NfiType resType;
-    private final NfiType[] argTypes;
+    private final NativeSimpleType resType;
+    private final NativeSimpleType[] argTypes;
 
-    private NativeFunctionPointer(long ptr, NfiType resType, NfiType[] argTypes) {
+    private NativeFunctionPointer(long ptr, NativeSimpleType resType, NativeSimpleType[] argTypes) {
         this.ptr = ptr;
         this.resType = resType;
         this.argTypes = argTypes;
     }
 
-    public static NativeFunctionPointer create(@SuppressWarnings("unused") NativeContext context, long pointer, NfiType resType, NfiType... argTypes) {
+    public static NativeFunctionPointer create(@SuppressWarnings("unused") NativeContext context, long pointer, NativeSimpleType resType, NativeSimpleType... argTypes) {
         // TODO(NFI2) if logging enabled, use context to lookup name
         return new NativeFunctionPointer(pointer, resType, argTypes.clone());
     }
