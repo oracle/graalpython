@@ -310,7 +310,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.PropertyGetter;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -1928,19 +1927,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
-    @ImportStatic({PGuards.class, TpSlots.class})
+    @ImportStatic({PGuards.class, TpSlots.class, PythonUtils.class})
     public static final class GetAttribute {
-        static PropertyGetter getPropertyGetterWithFinalAssumption(Shape shape, Object key) {
-            PropertyGetter getter = shape.makePropertyGetter(key);
-            if (getter != null) {
-                Property property = shape.getProperty(key);
-                if (property != null) {
-                    property.getLocation().getFinalAssumption();
-                }
-            }
-            return getter;
-        }
-
         // Builtin module object fast-path: we know there aren't any descriptors for other than
         // dunder (__xxx__) names
         public static Object loadModuleValue(PythonModule object, Shape cachedShape, PropertyGetter cachedPropertyGetter) {
@@ -2013,7 +2001,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return value;
         }
 
-        // Object instance field fast-path: for cases where there is no descriptor and it's just
+        // Object instance field fast-path: for cases where there is no descriptor, and it's just
         // simple DOM property read
         public static Object loadInstanceValue(Node inliningTarget, PythonObject object, LookupAttributeInMRONode getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter,
                         InlineWeakValueProfile slotsValueProfile) {
@@ -2081,13 +2069,46 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class SetAttribute {
-        @Specialization
+        public static boolean canStoreInstanceValue(Node inliningTarget, PythonObject object, Shape cachedShape, LookupAttributeInMRONode getDesc,
+                        GetObjectSlotsNode getDescSlotsNode, InlineWeakValueProfile slotsValueProfile) {
+            TpSlots slots;
+            Object type = cachedShape.getDynamicType();
+            if (type instanceof PythonBuiltinClassType pbct) {
+                slots = pbct.getSlots();
+            } else if (type instanceof PythonManagedClass klass) {
+                slots = slotsValueProfile.execute(inliningTarget, klass.getTpSlots());
+            } else {
+                return false;
+            }
+            if (slots.tp_setattro() == ObjectBuiltins.SLOTS.tp_setattro()) {
+                Object descr = getDesc.execute(type);
+                if (descr == PNone.NO_VALUE || getDescSlotsNode.execute(inliningTarget, descr).tp_descr_set() == null) {
+                    assert object.checkDictFlags();
+                    return (cachedShape.getFlags() & (PythonObject.HAS_MATERIALIZED_DICT | PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG)) == 0;
+                }
+            }
+            return false;
+        }
+
+        @ForceQuickening
+        @Specialization(guards = {"cachedShape.check(receiver)", "canStoreInstanceValue(inliningTarget, receiver, cachedShape, getDesc, getDescSlotsNode, slotsValueProfile)"}, limit = "3")
+        static void doInstanceValue(TruffleString key, Object value, PythonObject receiver,
+                        @Bind Node inliningTarget,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("create(key)") LookupAttributeInMRONode getDesc,
+                        @Cached GetObjectSlotsNode getDescSlotsNode,
+                        @Cached InlineWeakValueProfile slotsValueProfile,
+                        @Cached DynamicObject.PutNode putNode) {
+            putNode.execute(receiver, key, value);
+        }
+
+        @Specialization(replaces = "doInstanceValue")
         public static void doIt(VirtualFrame frame,
                         TruffleString key,
                         Object value,
                         Object object,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectSetAttr setAttrNode) {
+                        @Exclusive @Cached PyObjectSetAttr setAttrNode) {
             setAttrNode.execute(frame, inliningTarget, object, key, value);
         }
     }
