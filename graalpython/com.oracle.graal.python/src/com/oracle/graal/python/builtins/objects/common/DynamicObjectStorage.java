@@ -75,13 +75,18 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This storage keeps a reference to the MRO when used for a type dict. Writing to this storage will
  * cause the appropriate <it>attribute final</it> assumptions to be invalidated.
+ * <p/>
+ * This storage may wrap a {@link PythonObject}; in that case the storage and the object can be
+ * used interchangeably. If the storage is transformed to other storage, or for some other reason
+ * requires that all accesses are routed through the {@link DynamicObjectStorage}, then the
+ * {@link PythonObject}'s {@link Shape} flags must be updated to include
+ * {@link PythonObject#HAS_MATERIALIZED_DICT}.
  */
 public final class DynamicObjectStorage extends HashingStorage {
     public static final int SIZE_THRESHOLD = 100;
@@ -268,6 +273,10 @@ public final class DynamicObjectStorage extends HashingStorage {
         putNode.execute(store, key, assertNoJavaString(value));
     }
 
+    boolean setStringKeyIfPresent(TruffleString key, Object value, DynamicObject.PutNode putNode) {
+        return putNode.executeIfPresent(store, key, assertNoJavaString(value));
+    }
+
     boolean shouldTransitionOnPut() {
         // For now, we do not use SIZE_THRESHOLD condition to transition storages that wrap
         // dictionaries retrieved via object's __dict__
@@ -332,8 +341,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     public abstract static class DynamicObjectStorageSetStringKey extends SpecializedSetStringKey {
         @Specialization
         static void doIt(Node inliningTarget, HashingStorage self, TruffleString key, Object value,
-                        @Cached DynamicObject.PutNode putNode,
-                        @Cached InlinedBranchProfile invalidateMro) {
+                        @Cached DynamicObject.PutNode putNode) {
             ((DynamicObjectStorage) self).setStringKey(key, value, putNode);
         }
     }
