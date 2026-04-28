@@ -148,11 +148,13 @@ public final class NativeContext {
     private static final MethodHandle DLOPEN = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.RAW_POINTER, NativeSimpleType.SINT32);
     private static final MethodHandle DLCLOSE = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT64);
     private static final MethodHandle DLSYM = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.SINT64, NativeSimpleType.RAW_POINTER);
-    private static final MethodHandle LOAD_LIBRARY_EX = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER, NativeSimpleType.SINT32);
+    private static final MethodHandle LOAD_LIBRARY_EX = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER,
+                    NativeSimpleType.SINT32);
     private static final MethodHandle FREE_LIBRARY = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT64);
     private static final MethodHandle GET_PROC_ADDRESS = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.SINT64, NativeSimpleType.RAW_POINTER);
     private static final MethodHandle GET_LAST_ERROR = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32);
-    private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT32, NativeSimpleType.RAW_POINTER, NativeSimpleType.SINT32, NativeSimpleType.SINT32,
+    private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT32, NativeSimpleType.RAW_POINTER, NativeSimpleType.SINT32,
+                    NativeSimpleType.SINT32,
                     NativeSimpleType.RAW_POINTER, NativeSimpleType.SINT32, NativeSimpleType.RAW_POINTER);
     private static final MethodHandle DLERROR = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64);
 

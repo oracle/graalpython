@@ -159,7 +159,8 @@ public class TpSlotsTests {
         }
     }
 
-    // Use the TpSlotMeta's ordinal value as a pointer for creating a dummy native function pointer to
+    // Use the TpSlotMeta's ordinal value as a pointer for creating a dummy native function pointer
+    // to
     // verify that the slot values were properly assigned to the right fields of TpSlots
     // record
     private TpSlotNative createCExtSlot(TpSlotMeta def) {

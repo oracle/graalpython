@@ -87,7 +87,8 @@ public abstract class PyCFunctionWrapper {
 
     private static final NativeSignature SIGNATURE_1_ARG = NativeSignature.create(NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER);
     private static final NativeSignature SIGNATURE_2_ARG = NativeSignature.create(NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER);
-    private static final NativeSignature SIGNATURE_3_ARG = NativeSignature.create(NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER);
+    private static final NativeSignature SIGNATURE_3_ARG = NativeSignature.create(NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER,
+                    NativeSimpleType.RAW_POINTER);
 
     private static final MethodHandle HANDLE_UNARY;
     private static final MethodHandle HANDLE_BINARY;
