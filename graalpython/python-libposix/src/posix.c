@@ -608,6 +608,44 @@ int32_t call_raise(int32_t signal) {
     return raise(signal);
 }
 
+int32_t call_alarm(int32_t seconds) {
+    return alarm(seconds);
+}
+
+static void long_array_to_itimerval(int64_t *src, struct itimerval *dst) {
+    dst->it_value.tv_sec = src[0];
+    dst->it_value.tv_usec = src[1];
+    dst->it_interval.tv_sec = src[2];
+    dst->it_interval.tv_usec = src[3];
+}
+
+static void itimerval_to_long_array(struct itimerval *src, int64_t *dst) {
+    dst[0] = src->it_value.tv_sec;
+    dst[1] = src->it_value.tv_usec;
+    dst[2] = src->it_interval.tv_sec;
+    dst[3] = src->it_interval.tv_usec;
+}
+
+int32_t call_getitimer(int32_t which, int64_t *current_value) {
+    struct itimerval current;
+    int32_t result = getitimer(which, &current);
+    if (result == 0) {
+        itimerval_to_long_array(&current, current_value);
+    }
+    return result;
+}
+
+int32_t call_setitimer(int32_t which, int64_t *new_value, int64_t *old_value) {
+    struct itimerval new_timer;
+    struct itimerval old_timer;
+    long_array_to_itimerval(new_value, &new_timer);
+    int32_t result = setitimer(which, &new_timer, &old_timer);
+    if (result == 0) {
+        itimerval_to_long_array(&old_timer, old_value);
+    }
+    return result;
+}
+
 int32_t signal_self(int32_t signal) {
     switch (signal) {
         case SIGABRT:

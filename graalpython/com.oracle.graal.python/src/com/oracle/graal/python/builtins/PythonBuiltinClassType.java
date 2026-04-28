@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POLYGLOT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SIGNAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA1;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA2;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
@@ -63,6 +64,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_VAR_TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPING;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
+import static com.oracle.graal.python.nodes.BuiltinNames.J__SIGNAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SOCKET;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__STRUCT;
@@ -785,6 +787,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PickleError("PickleError", Exception, newBuilder().publishInModule("_pickle").basetype().addDict()),
     PicklingError("PicklingError", PickleError, newBuilder().publishInModule("_pickle").basetype().addDict()),
     UnpicklingError("UnpicklingError", PickleError, newBuilder().publishInModule("_pickle").basetype().addDict()),
+    SignalItimerError("itimer_error", OSError, newBuilder().publishInModule(J__SIGNAL).moduleName(J_SIGNAL).basetype().addDict()),
     SocketGAIError("gaierror", OSError, newBuilder().publishInModule(J__SOCKET).basetype().addDict()),
     SocketHError("herror", OSError, newBuilder().publishInModule(J__SOCKET).basetype().addDict()),
     BinasciiError("Error", ValueError, newBuilder().publishInModule("binascii").basetype().addDict()),

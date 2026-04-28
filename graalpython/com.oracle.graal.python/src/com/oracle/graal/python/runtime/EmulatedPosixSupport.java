@@ -2022,6 +2022,24 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public int alarm(int seconds) {
+        throw createUnsupportedFeature("alarm");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Timeval[] getitimer(int which) {
+        throw createUnsupportedFeature("getitimer");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Timeval[] setitimer(int which, Timeval delay, Timeval interval) {
+        throw createUnsupportedFeature("setitimer");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public void signalSelf(int signal) {
         throw createUnsupportedFeature("signalSelf");
     }

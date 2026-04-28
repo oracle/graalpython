@@ -51,11 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -63,6 +59,7 @@ import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -77,8 +74,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -86,6 +83,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -112,6 +110,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     private static final int ITIMER_REAL = 0;
     private static final int ITIMER_VIRTUAL = 1;
     private static final int ITIMER_PROF = 2;
+    private static final TruffleString T_ITIMER_ERROR = tsLiteral("ItimerError");
 
     public static final String J_DEFAULT_INT_HANDLER = "default_int_handler";
     public static final TruffleString T_DEFAULT_INT_HANDLER = tsLiteral(J_DEFAULT_INT_HANDLER);
@@ -157,6 +156,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         PythonModule signalModule = core.lookupBuiltinModule(T__SIGNAL);
         ModuleData moduleData = new ModuleData();
         signalModule.setModuleState(moduleData);
+        signalModule.setAttribute(T_ITIMER_ERROR, core.lookupType(PythonBuiltinClassType.SignalItimerError));
 
         for (int i = 0; i < Signals.PYTHON_SIGNAL_NAMES.length; i++) {
             TruffleString name = Signals.PYTHON_SIGNAL_NAMES[i];
@@ -269,31 +269,23 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "alarm", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, declaresExplicitSelf = true, parameterNames = {"$mod", "seconds"})
+    @Builtin(name = "alarm", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"seconds"})
     @ArgumentClinic(name = "seconds", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class AlarmNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class AlarmNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        int alarm(PythonModule module, int seconds) {
-            int remaining = 0;
-            ModuleData data = module.getModuleState(ModuleData.class);
-            Signals.Alarm currentAlarm = data.currentAlarm;
-            if (currentAlarm != null) {
-                if (currentAlarm.isRunning()) {
-                    remaining = currentAlarm.getRemainingSeconds();
-                    if (remaining < 0) {
-                        remaining = 0;
-                    }
-                    currentAlarm.cancel();
-                }
+        static int alarm(VirtualFrame frame, int seconds,
+                        @Bind PythonContext context,
+                        @Bind Node inliningTarget,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                return posixLib.alarm(context.getPosixSupport(), seconds);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            } catch (UnsupportedPosixFeatureException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
-            if (seconds > 0) {
-                Signals.Alarm newAlarm = new Signals.Alarm(seconds);
-                data.currentAlarm = newAlarm;
-                newAlarm.start();
-            }
-            return remaining;
         }
 
         @Override
@@ -477,10 +469,10 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "setitimer", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "which", "seconds", "interval"})
+    @Builtin(name = "setitimer", minNumOfPositionalArgs = 2, parameterNames = {"which", "seconds", "interval"})
     @ArgumentClinic(name = "which", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class SetitimerNode extends PythonQuaternaryClinicBuiltinNode {
+    abstract static class SetitimerNode extends PythonTernaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -488,68 +480,49 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doIt(VirtualFrame frame, PythonModule self, int which, Object seconds, Object interval,
+        static Object doIt(VirtualFrame frame, int which, Object seconds, Object interval,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyTimeFromObjectNode timeFromObjectNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language) {
-            ModuleData moduleData = self.getModuleState(ModuleData.class);
-            long usDelay = toMicroseconds(frame, inliningTarget, seconds, timeFromObjectNode);
-            long usInterval = toMicroseconds(frame, inliningTarget, interval, timeFromObjectNode);
-            if (which != ITIMER_REAL) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
+            Timeval delay = toTimeval(frame, inliningTarget, seconds, timeFromObjectNode);
+            Timeval intervalTimeval = toTimeval(frame, inliningTarget, interval, timeFromObjectNode);
+            try {
+                return createResultTuple(language, posixLib.setitimer(context.getPosixSupport(), which, delay, intervalTimeval));
+            } catch (PosixException e) {
+                throw raiseItimerError(frame, inliningTarget, e, constructAndRaiseNode);
+            } catch (UnsupportedPosixFeatureException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
-            PTuple resultTuple = GetitimerNode.createResultTuple(language, moduleData);
-            setitimer(moduleData, usDelay, usInterval);
-            return resultTuple;
         }
 
-        private static long toMicroseconds(VirtualFrame frame, Node inliningTarget, Object obj, PyTimeFromObjectNode timeFromObjectNode) {
+        private static Timeval toTimeval(VirtualFrame frame, Node inliningTarget, Object obj, PyTimeFromObjectNode timeFromObjectNode) {
             if (obj == PNone.NO_VALUE) {
-                return 0;
+                return new Timeval(0, 0);
             }
-            return timeFromObjectNode.execute(frame, inliningTarget, obj, RoundType.CEILING, SEC_TO_US);
+            long microseconds = timeFromObjectNode.execute(frame, inliningTarget, obj, RoundType.CEILING, SEC_TO_US);
+            return new Timeval(microseconds / SEC_TO_US, microseconds % SEC_TO_US);
         }
 
-        @TruffleBoundary
-        private void setitimer(ModuleData moduleData, long usDelay, long usInterval) {
-            if (moduleData.itimerFuture != null) {
-                moduleData.itimerFuture.cancel(false);
-                moduleData.itimerFuture = null;
-                moduleData.itimerInterval = 0;
-            }
-            if (usDelay == 0) {
-                return;
-            }
-            moduleData.itimerInterval = usInterval;
-            Runnable r = () -> Signals.raiseSignal("ALRM");
-            ScheduledExecutorService itimerService = getItimerService(moduleData);
-            if (usInterval == 0) {
-                moduleData.itimerFuture = itimerService.schedule(r, usDelay, TimeUnit.MICROSECONDS);
-            } else {
-                moduleData.itimerFuture = itimerService.scheduleAtFixedRate(r, usDelay, usInterval, TimeUnit.MICROSECONDS);
-            }
+        private static PTuple createResultTuple(PythonLanguage language, Timeval[] timeval) {
+            return PFactory.createTuple(language, new Object[]{toSeconds(timeval[0]), toSeconds(timeval[1])});
         }
 
-        @TruffleBoundary
-        private ScheduledExecutorService getItimerService(ModuleData moduleData) {
-            if (moduleData.itimerService == null) {
-                ScheduledExecutorService itimerService = Executors.newSingleThreadScheduledExecutor(runnable -> {
-                    Thread t = Executors.defaultThreadFactory().newThread(runnable);
-                    t.setDaemon(true);
-                    return t;
-                });
-                moduleData.itimerService = itimerService;
-                getContext().registerAtexitHook(ctx -> itimerService.shutdown());
-            }
-            return moduleData.itimerService;
+        private static double toSeconds(Timeval timeval) {
+            return timeval.getSeconds() + timeval.getMicroseconds() / (double) SEC_TO_US;
+        }
+
+        private static PException raiseItimerError(VirtualFrame frame, Node inliningTarget, PosixException e, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, PythonBuiltinClassType.SignalItimerError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
         }
     }
 
-    @Builtin(name = "getitimer", minNumOfPositionalArgs = 1, declaresExplicitSelf = true, parameterNames = {"$self", "which"})
+    @Builtin(name = "getitimer", minNumOfPositionalArgs = 1, parameterNames = {"which"})
     @ArgumentClinic(name = "which", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class GetitimerNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class GetitimerNode extends PythonUnaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -557,33 +530,19 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object doIt(VirtualFrame frame, PythonModule self, int which,
+        static Object doIt(VirtualFrame frame, int which,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Bind PythonLanguage language) {
-            ModuleData moduleData = self.getModuleState(ModuleData.class);
-            if (which != ITIMER_REAL) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EINVAL);
+            try {
+                return SetitimerNode.createResultTuple(language, posixLib.getitimer(context.getPosixSupport(), which));
+            } catch (PosixException e) {
+                throw SetitimerNode.raiseItimerError(frame, inliningTarget, e, constructAndRaiseNode);
+            } catch (UnsupportedPosixFeatureException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
-            return createResultTuple(language, moduleData);
-        }
-
-        static PTuple createResultTuple(PythonLanguage language, ModuleData moduleData) {
-            long oldInterval = moduleData.itimerInterval;
-            long oldDelay = getOldDelay(moduleData);
-            return PFactory.createTuple(language, new Object[]{oldDelay / (double) SEC_TO_US, oldInterval / (double) SEC_TO_US});
-        }
-
-        @TruffleBoundary
-        static long getOldDelay(ModuleData moduleData) {
-            if (moduleData.itimerFuture == null) {
-                return 0;
-            }
-            long delay = moduleData.itimerFuture.getDelay(TimeUnit.MICROSECONDS);
-            if (delay < 0) {
-                return 0;
-            }
-            return delay;
         }
     }
 
@@ -593,10 +552,6 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         final ConcurrentHashMap<Integer, SignalHandler> defaultSignalHandlers = new ConcurrentHashMap<>();
         final ConcurrentLinkedDeque<SignalTriggerAction> signalQueue = new ConcurrentLinkedDeque<>();
         final Semaphore signalSema = new Semaphore(0);
-        ScheduledExecutorService itimerService;
-        ScheduledFuture<?> itimerFuture;
-        long itimerInterval;
-        Signals.Alarm currentAlarm;
     }
 
 }
@@ -629,46 +584,6 @@ final class Signals {
                 // Ignore
             }
         }
-    }
-
-    static final class Alarm {
-        final int seconds;
-        final long startMillis;
-        private Thread thread;
-
-        public Alarm(int seconds) {
-            this.seconds = seconds;
-            startMillis = System.currentTimeMillis();
-        }
-
-        public void start() {
-            thread = new Thread(() -> {
-                try {
-                    Thread.sleep((long) seconds * 1000);
-                    sun.misc.Signal.raise(new sun.misc.Signal("ALRM"));
-                } catch (InterruptedException e) {
-                    // Cancelled
-                }
-            });
-            thread.start();
-        }
-
-        public boolean isRunning() {
-            return thread.isAlive();
-        }
-
-        public void cancel() {
-            thread.interrupt();
-        }
-
-        public int getRemainingSeconds() {
-            return seconds - (int) ((System.currentTimeMillis() - startMillis) / 1000);
-        }
-    }
-
-    @TruffleBoundary
-    static void raiseSignal(String name) {
-        sun.misc.Signal.raise(new sun.misc.Signal(name));
     }
 
     static class PythonSignalHandler implements sun.misc.SignalHandler {

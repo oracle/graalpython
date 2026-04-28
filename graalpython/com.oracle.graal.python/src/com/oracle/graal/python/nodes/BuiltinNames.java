@@ -394,7 +394,11 @@ public abstract class BuiltinNames {
 
     public static final TruffleString T_SYS = tsLiteral("sys");
 
-    public static final TruffleString T__SIGNAL = tsLiteral("_signal");
+    public static final String J_SIGNAL = "signal";
+    public static final TruffleString T_SIGNAL = tsLiteral(J_SIGNAL);
+
+    public static final String J__SIGNAL = "_signal";
+    public static final TruffleString T__SIGNAL = tsLiteral(J__SIGNAL);
 
     public static final String J__WEAKREF = "_weakref";
     public static final TruffleString T__WEAKREF = tsLiteral(J__WEAKREF);
