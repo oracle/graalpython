@@ -58,8 +58,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
-import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -67,6 +65,8 @@ import com.oracle.graal.python.nodes.call.CallDispatchers.SimpleIndirectInvokeNo
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -78,9 +78,9 @@ import com.oracle.truffle.api.strings.TruffleString;
  * difference is that this wrapper does not keep a reference to the function object but only to the
  * {@link RootCallTarget}
  * <p>
- * Since in C, function pointers are expected to valid the whole time, NFI closure must be kept
- * alive as long as the context lives. Referencing a function object like {@link TpSlotWrapper} does
- * may therefore cause significant memory leaks.
+ * Since in C, function pointers are expected to be valid the whole time, the native closure must be
+ * kept alive as long as the context lives. Referencing a function object like {@link TpSlotWrapper}
+ * does may therefore cause significant memory leaks.
  * </p>
  */
 public abstract class PyCFunctionWrapper {

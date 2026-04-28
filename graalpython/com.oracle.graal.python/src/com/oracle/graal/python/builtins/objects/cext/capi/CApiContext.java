@@ -937,10 +937,9 @@ public final class CApiContext extends CExtContext {
                     CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
                     NativeMemory.writePtrArrayElement(builtinArrayPtr, id, builtin.getNativePointer());
                 }
-                // TODO(native-access) ENV parameter
                 long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeCAPIINIT(null, TIMING_INVOKE_CAPI_INIT, nativeContext, BoundaryCallData.getUncached(),
                                 context.getThreadState(context.getLanguage()),
-                                ExternalFunctionSignature.CAPIINIT.bind(nativeContext, initFunction), 0L, builtinArrayPtr, gcState, nativeThreadState);
+                                ExternalFunctionSignature.CAPIINIT.bind(nativeContext, initFunction), builtinArrayPtr, gcState, nativeThreadState);
                 assert nativeThreadLocalVarPointer != NULLPTR;
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
             } finally {
@@ -1298,7 +1297,7 @@ public final class CApiContext extends CExtContext {
         var info = new ClosureInfo(delegate, executable, pointer);
         callableClosureByExecutable.put(executable, info);
         callableClosures.put(pointer, info);
-        LOGGER.finer(() -> PythonUtils.formatJString("new NFI closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
+        LOGGER.finer(() -> PythonUtils.formatJString("new native closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
     }
 
     public long registerClosure(String name, NativeSignature signature, MethodHandle methodHandle, Object key, Object delegate) {
