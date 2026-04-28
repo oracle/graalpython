@@ -168,9 +168,9 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.runtime.nativeaccess.Nfi;
 import com.oracle.graal.python.runtime.nativeaccess.NfiType;
-import com.oracle.graal.python.runtime.nativeaccess.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -688,7 +688,7 @@ public final class PythonCextBuiltins {
                 for (int i = 0; i < args.length; i++) {
                     argTypes[i] = args[i].getNFI2Type();
                 }
-                NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), argTypes);
+                NativeSignature signature = Nfi.createSignature(ret.getNFI2Type(), argTypes);
                 try {
                     pointer = signature.createClosure(context.ensureNfiContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
                     context.getCApiContext().setClosurePointer(null, this, pointer);

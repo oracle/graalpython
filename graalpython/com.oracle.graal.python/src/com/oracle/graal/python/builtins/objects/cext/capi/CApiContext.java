@@ -110,10 +110,10 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
 import com.oracle.graal.python.runtime.nativeaccess.NfiLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NfiLoadException;
-import com.oracle.graal.python.runtime.nativeaccess.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -1301,7 +1301,7 @@ public final class CApiContext extends CExtContext {
         LOGGER.finer(() -> PythonUtils.formatJString("new NFI closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
     }
 
-    public long registerClosure(String name, NfiUpcallSignature signature, MethodHandle methodHandle, Object key, Object delegate) {
+    public long registerClosure(String name, NativeSignature signature, MethodHandle methodHandle, Object key, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
         long pointer = signature.createClosure(context.ensureNfiContext(), name, methodHandle);

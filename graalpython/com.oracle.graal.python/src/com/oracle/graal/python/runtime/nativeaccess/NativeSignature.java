@@ -45,11 +45,11 @@ import java.util.Arrays;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class NfiUpcallSignature {
+public final class NativeSignature {
     private final NfiType resType;
     private final NfiType[] argTypes;
 
-    NfiUpcallSignature(NfiType resType, NfiType[] argTypes) {
+    NativeSignature(NfiType resType, NfiType[] argTypes) {
         this.resType = resType;
         this.argTypes = Arrays.copyOf(argTypes, argTypes.length);
     }

@@ -89,8 +89,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlo
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.runtime.nativeaccess.Nfi;
-import com.oracle.graal.python.runtime.nativeaccess.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -103,16 +103,16 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public abstract class TpSlotWrapper {
 
-    private static final NfiUpcallSignature SIGNATURE_P_P = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER);
-    private static final NfiUpcallSignature SIGNATURE_P_PP = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER);
-    private static final NfiUpcallSignature SIGNATURE_P_PPP = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER, RAW_POINTER);
-    private static final NfiUpcallSignature SIGNATURE_P_PPI = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER, SINT32);
-    private static final NfiUpcallSignature SIGNATURE_P_PL = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER, SINT64);
-    private static final NfiUpcallSignature SIGNATURE_I_P = Nfi.createUpcallSignature(SINT32, RAW_POINTER);
-    private static final NfiUpcallSignature SIGNATURE_I_PP = Nfi.createUpcallSignature(SINT32, RAW_POINTER, RAW_POINTER);
-    private static final NfiUpcallSignature SIGNATURE_I_PPP = Nfi.createUpcallSignature(SINT32, RAW_POINTER, RAW_POINTER, RAW_POINTER);
-    private static final NfiUpcallSignature SIGNATURE_I_PLP = Nfi.createUpcallSignature(SINT32, RAW_POINTER, SINT64, RAW_POINTER);
-    private static final NfiUpcallSignature SIGNATURE_L_P = Nfi.createUpcallSignature(SINT64, RAW_POINTER);
+    private static final NativeSignature SIGNATURE_P_P = Nfi.createSignature(RAW_POINTER, RAW_POINTER);
+    private static final NativeSignature SIGNATURE_P_PP = Nfi.createSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER);
+    private static final NativeSignature SIGNATURE_P_PPP = Nfi.createSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER, RAW_POINTER);
+    private static final NativeSignature SIGNATURE_P_PPI = Nfi.createSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER, SINT32);
+    private static final NativeSignature SIGNATURE_P_PL = Nfi.createSignature(RAW_POINTER, RAW_POINTER, SINT64);
+    private static final NativeSignature SIGNATURE_I_P = Nfi.createSignature(SINT32, RAW_POINTER);
+    private static final NativeSignature SIGNATURE_I_PP = Nfi.createSignature(SINT32, RAW_POINTER, RAW_POINTER);
+    private static final NativeSignature SIGNATURE_I_PPP = Nfi.createSignature(SINT32, RAW_POINTER, RAW_POINTER, RAW_POINTER);
+    private static final NativeSignature SIGNATURE_I_PLP = Nfi.createSignature(SINT32, RAW_POINTER, SINT64, RAW_POINTER);
+    private static final NativeSignature SIGNATURE_L_P = Nfi.createSignature(SINT64, RAW_POINTER);
 
     private static final MethodHandle HANDLE_GET_ATTR;
     private static final MethodHandle HANDLE_BINARY_SLOT_FUNC;
@@ -179,7 +179,7 @@ public abstract class TpSlotWrapper {
     private final long nativePointer;
 
     @SuppressWarnings("this-escape")
-    TpSlotWrapper(TpSlotManaged slot, NfiUpcallSignature upcallSignature, MethodHandle methodHandle) {
+    TpSlotWrapper(TpSlotManaged slot, NativeSignature upcallSignature, MethodHandle methodHandle) {
         this.timing = CApiTiming.create(false, slot);
         this.slot = slot;
 

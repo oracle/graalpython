@@ -47,7 +47,7 @@ public final class Nfi {
         return new NfiContext();
     }
 
-    public static NfiUpcallSignature createUpcallSignature(NfiType resType, NfiType... argTypes) {
-        return new NfiUpcallSignature(resType, argTypes);
+    public static NativeSignature createSignature(NfiType resType, NfiType... argTypes) {
+        return new NativeSignature(resType, argTypes);
     }
 }
