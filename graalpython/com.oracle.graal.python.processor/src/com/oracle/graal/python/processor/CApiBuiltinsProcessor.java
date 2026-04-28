@@ -922,17 +922,14 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
                             import java.util.TreeSet;
                             import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
-                            import com.oracle.truffle.api.CompilerDirectives;
-                            import com.oracle.truffle.api.interop.InteropLibrary;
-                            import com.oracle.truffle.api.interop.UnsupportedMessageException;
 
-                            public abstract class PythonCApiAssertions {
+                            public final class PythonCApiAssertions {
 
                                 private PythonCApiAssertions() {
                                     // no instances
                                 }
 
-                                public static boolean reallyHasMember(NativeLibrary capiLibrary, String name) {
+                                private static boolean reallyHasMember(NativeLibrary capiLibrary, String name) {
                                     return capiLibrary.lookupOptionalSymbol(name) != 0L;
                                 }
 
