@@ -149,8 +149,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.runtime.nativeaccess.NativeAccess;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
-import com.oracle.graal.python.runtime.nativeaccess.Nfi;
 import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -2828,7 +2828,7 @@ public final class PythonContext extends Python3Core {
     public NfiContext ensureNfiContext() {
         if (nfiContext == null) {
             // TODO(NFI2) check native access allowed
-            nfiContext = Nfi.createContext();
+            nfiContext = NativeAccess.createContext();
             CompilerDirectives.transferToInterpreterAndInvalidate();
         }
         return nfiContext;

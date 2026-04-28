@@ -58,8 +58,8 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.runtime.nativeaccess.NativeAccess;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
-import com.oracle.graal.python.runtime.nativeaccess.Nfi;
 import com.oracle.graal.python.runtime.nativeaccess.NfiType;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -86,9 +86,9 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 public abstract class PyCFunctionWrapper {
 
-    private static final NativeSignature SIGNATURE_1_ARG = Nfi.createSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-    private static final NativeSignature SIGNATURE_2_ARG = Nfi.createSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-    private static final NativeSignature SIGNATURE_3_ARG = Nfi.createSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
+    private static final NativeSignature SIGNATURE_1_ARG = NativeAccess.createSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER);
+    private static final NativeSignature SIGNATURE_2_ARG = NativeAccess.createSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
+    private static final NativeSignature SIGNATURE_3_ARG = NativeAccess.createSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
 
     private static final MethodHandle HANDLE_UNARY;
     private static final MethodHandle HANDLE_BINARY;

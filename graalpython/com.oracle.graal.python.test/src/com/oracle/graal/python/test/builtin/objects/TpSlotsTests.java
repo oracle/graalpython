@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotGroup;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
-import com.oracle.graal.python.runtime.nativeaccess.Nfi;
+import com.oracle.graal.python.runtime.nativeaccess.NativeAccess;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NfiContext;
 import com.oracle.graal.python.runtime.nativeaccess.NfiType;
@@ -71,7 +71,7 @@ public class TpSlotsTests {
 
     @Before
     public void setUp() {
-        nfiContext = Nfi.createContext();
+        nfiContext = NativeAccess.createContext();
     }
 
     @After
