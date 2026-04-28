@@ -69,7 +69,7 @@ public final class NativeContext {
 
     @TruffleBoundary
     NativeContext() {
-        arena = NfiSupport.createArena();
+        arena = NativeAccessSupport.createArena();
     }
 
     public void close() {
@@ -85,7 +85,7 @@ public final class NativeContext {
                 // TODO(NFI2) log error
             }
         }
-        NfiSupport.closeArena(arena);
+        NativeAccessSupport.closeArena(arena);
     }
 
     public NativeLibrary loadLibrary(String name, int flags) throws NfiLoadException {
@@ -141,16 +141,16 @@ public final class NativeContext {
     private static final int RTLD_LAZY = 1;
     private static final int RTLD_NOW = 2;
 
-    private static final MethodHandle DLOPEN = NfiSupport.createDowncallHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.SINT32);
-    private static final MethodHandle DLCLOSE = NfiSupport.createDowncallHandle(NfiType.SINT32, NfiType.SINT64);
-    private static final MethodHandle DLSYM = NfiSupport.createDowncallHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
-    private static final MethodHandle LOAD_LIBRARY_EX = NfiSupport.createDowncallHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.SINT32);
-    private static final MethodHandle FREE_LIBRARY = NfiSupport.createDowncallHandle(NfiType.SINT32, NfiType.SINT64);
-    private static final MethodHandle GET_PROC_ADDRESS = NfiSupport.createDowncallHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
-    private static final MethodHandle GET_LAST_ERROR = NfiSupport.createDowncallHandle(NfiType.SINT32);
-    private static final MethodHandle FORMAT_MESSAGE = NfiSupport.createDowncallHandle(NfiType.SINT32, NfiType.SINT32, NfiType.RAW_POINTER, NfiType.SINT32, NfiType.SINT32,
+    private static final MethodHandle DLOPEN = NativeAccessSupport.createDowncallHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.SINT32);
+    private static final MethodHandle DLCLOSE = NativeAccessSupport.createDowncallHandle(NfiType.SINT32, NfiType.SINT64);
+    private static final MethodHandle DLSYM = NativeAccessSupport.createDowncallHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
+    private static final MethodHandle LOAD_LIBRARY_EX = NativeAccessSupport.createDowncallHandle(NfiType.SINT64, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.SINT32);
+    private static final MethodHandle FREE_LIBRARY = NativeAccessSupport.createDowncallHandle(NfiType.SINT32, NfiType.SINT64);
+    private static final MethodHandle GET_PROC_ADDRESS = NativeAccessSupport.createDowncallHandle(NfiType.SINT64, NfiType.SINT64, NfiType.RAW_POINTER);
+    private static final MethodHandle GET_LAST_ERROR = NativeAccessSupport.createDowncallHandle(NfiType.SINT32);
+    private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(NfiType.SINT32, NfiType.SINT32, NfiType.RAW_POINTER, NfiType.SINT32, NfiType.SINT32,
                     NfiType.RAW_POINTER, NfiType.SINT32, NfiType.RAW_POINTER);
-    private static final MethodHandle DLERROR = NfiSupport.createDowncallHandle(NfiType.SINT64);
+    private static final MethodHandle DLERROR = NativeAccessSupport.createDowncallHandle(NfiType.SINT64);
 
     private static long dlopenPtr;
     private static long dlclosePtr;
@@ -174,20 +174,20 @@ public final class NativeContext {
                 return;
             }
             if (windowsLookup == null) {
-                windowsLookupArena = NfiSupport.createArena();
-                windowsLookup = NfiSupport.libraryLookup("kernel32", windowsLookupArena);
+                windowsLookupArena = NativeAccessSupport.createArena();
+                windowsLookup = NativeAccessSupport.libraryLookup("kernel32", windowsLookupArena);
             }
-            loadLibraryExPtr = NfiSupport.lookupSymbol(windowsLookup, "LoadLibraryExW");
-            freeLibraryPtr = NfiSupport.lookupSymbol(windowsLookup, "FreeLibrary");
-            getProcAddressPtr = NfiSupport.lookupSymbol(windowsLookup, "GetProcAddress");
-            getLastErrorPtr = NfiSupport.lookupSymbol(windowsLookup, "GetLastError");
-            formatMessagePtr = NfiSupport.lookupSymbol(windowsLookup, "FormatMessageW");
+            loadLibraryExPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "LoadLibraryExW");
+            freeLibraryPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "FreeLibrary");
+            getProcAddressPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "GetProcAddress");
+            getLastErrorPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "GetLastError");
+            formatMessagePtr = NativeAccessSupport.lookupSymbol(windowsLookup, "FormatMessageW");
             return;
         }
-        dlopenPtr = NfiSupport.lookupDefault("dlopen");
-        dlclosePtr = NfiSupport.lookupDefault("dlclose");
-        dlsymPtr = NfiSupport.lookupDefault("dlsym");
-        dlerrorPtr = NfiSupport.lookupDefault("dlerror");
+        dlopenPtr = NativeAccessSupport.lookupDefault("dlopen");
+        dlclosePtr = NativeAccessSupport.lookupDefault("dlclose");
+        dlsymPtr = NativeAccessSupport.lookupDefault("dlsym");
+        dlerrorPtr = NativeAccessSupport.lookupDefault("dlerror");
     }
 
     private static int sanitizeWindowsLoadLibraryFlags(int flags) {

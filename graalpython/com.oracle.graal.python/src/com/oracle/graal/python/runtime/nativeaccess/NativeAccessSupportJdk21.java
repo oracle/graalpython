@@ -43,7 +43,7 @@ package com.oracle.graal.python.runtime.nativeaccess;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 
-final class NfiSupportJdk21 extends NfiSupport {
+final class NativeAccessSupportJdk21 extends NativeAccessSupport {
     @Override
     protected Object createArenaImpl() {
         return null;

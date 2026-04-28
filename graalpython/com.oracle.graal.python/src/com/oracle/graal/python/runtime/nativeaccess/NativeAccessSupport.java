@@ -46,17 +46,17 @@ import java.lang.invoke.MethodType;
 
 import org.graalvm.nativeimage.ImageInfo;
 
-public abstract class NfiSupport {
-    private static final NfiSupport INSTANCE = createImpl();
+public abstract class NativeAccessSupport {
+    private static final NativeAccessSupport INSTANCE = createImpl();
 
-    protected NfiSupport() {
+    protected NativeAccessSupport() {
     }
 
-    private static NfiSupport createImpl() {
+    private static NativeAccessSupport createImpl() {
         if (!ImageInfo.inImageCode() && Runtime.version().feature() < 22) {
-            return new NfiSupportJdk21();
+            return new NativeAccessSupportJdk21();
         }
-        return new NfiSupportJdk22Gen();
+        return new NativeAccessSupportJdk22Gen();
     }
 
     protected static UnsupportedOperationException unsupported() {

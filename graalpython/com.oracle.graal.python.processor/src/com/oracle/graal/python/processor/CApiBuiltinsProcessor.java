@@ -1077,9 +1077,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private record InvokeExternalFunctionDesc(ExecutableElement origin, VariableElement signature, TypeMirror returnType, List<TypeMirror> argumentTypes) {
     }
 
-    private static final String NFI_PACKAGE = "com.oracle.graal.python.runtime.nativeaccess";
-    private static final String NFI_SUPPORT_CLASS_NAME = "NfiSupport";
-    private static final String NFI_SUPPORT_IMPL_CLASS_NAME = "NfiSupportJdk22Gen";
+    private static final String NATIVE_ACCESS_PACKAGE = "com.oracle.graal.python.runtime.nativeaccess";
+    private static final String NATIVE_ACCESS_SUPPORT_CLASS_NAME = "NativeAccessSupport";
+    private static final String NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME = "NativeAccessSupportJdk22Gen";
     private static final String EXFUNC_INVOKER_PACKAGE = "com.oracle.graal.python.builtins.objects.cext.capi";
     private static final String EXFUNC_INVOKER_CLASS_NAME = "ExternalFunctionInvoker";
 
@@ -1156,8 +1156,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return processingEnv.getTypeUtils().getPrimitiveType(TypeKind.LONG);
     }
 
-    private static String getNfiMethodHandleVarName(String signatureName) {
-        return "NFI_METHOD_HANDLE_" + signatureName;
+    private static String getNativeMethodHandleVarName(String signatureName) {
+        return "NATIVE_METHOD_HANDLE_" + signatureName;
     }
 
     private static String toClassLiteral(String javaType) {
@@ -1202,9 +1202,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;");
         lines.add("import com.oracle.graal.python.builtins.objects.function.PArguments;");
-        lines.add("import " + NFI_PACKAGE + ".NativeFunctionPointer;");
-        lines.add("import " + NFI_PACKAGE + ".NativeContext;");
-        lines.add("import " + NFI_PACKAGE + "." + NFI_SUPPORT_CLASS_NAME + ";");
+        lines.add("import " + NATIVE_ACCESS_PACKAGE + ".NativeFunctionPointer;");
+        lines.add("import " + NATIVE_ACCESS_PACKAGE + ".NativeContext;");
+        lines.add("import " + NATIVE_ACCESS_PACKAGE + "." + NATIVE_ACCESS_SUPPORT_CLASS_NAME + ";");
         lines.add("import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;");
         lines.add("import com.oracle.graal.python.runtime.GilNode;");
         lines.add("import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;");
@@ -1282,7 +1282,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             for (String argType : argTypes) {
                 methodTypeArgs.add(toClassLiteral(argType));
             }
-            lines.add("    private static final MethodHandle " + getNfiMethodHandleVarName(sig.name) + " = NfiSupport.createDowncallHandle(" +
+            lines.add("    private static final MethodHandle " + getNativeMethodHandleVarName(sig.name) + " = NativeAccessSupport.createDowncallHandle(" +
                             "MethodType.methodType(" + returnTypeLiteral + ", " + String.join(", ", methodTypeArgs) + "), false);");
 
             lines.add("");
@@ -1359,9 +1359,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("    public static " + returnType + " invoke" + sig.name + "(" + String.join(", ", rawInvokeArgs) + ") throws Throwable {");
             String directArgExpr = cArgs.isEmpty() ? "function" : "function, " + String.join(", ", cArgs);
             if (isVoidReturn) {
-                lines.add("        " + getNfiMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
+                lines.add("        " + getNativeMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
             } else {
-                lines.add("        return (" + returnType + ") " + getNfiMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
+                lines.add("        return (" + returnType + ") " + getNativeMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
             }
             lines.add("    }");
         }
@@ -1374,9 +1374,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private void generateNfiSupport(Element[] origins) throws IOException {
+    private void generateNativeAccessSupport(Element[] origins) throws IOException {
         if (Runtime.version().feature() < 22) {
-            generateDummyNfiSupport(origins);
+            generateDummyNativeAccessSupport(origins);
             return;
         }
         ArrayList<String> lines = new ArrayList<>();
@@ -1384,7 +1384,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("// @formatter:off");
         lines.add("// Checkstyle: stop");
         lines.add("// Generated by annotation processor: " + getClass().getName());
-        lines.add("package " + NFI_PACKAGE + ";");
+        lines.add("package " + NATIVE_ACCESS_PACKAGE + ";");
         lines.add("");
         lines.add("import java.lang.foreign.Arena;");
         lines.add("import java.lang.foreign.FunctionDescriptor;");
@@ -1400,7 +1400,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("");
         lines.add("import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;");
         lines.add("");
-        lines.add("public final class " + NFI_SUPPORT_IMPL_CLASS_NAME + " extends " + NFI_SUPPORT_CLASS_NAME + " {");
+        lines.add("public final class " + NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME + " extends " + NATIVE_ACCESS_SUPPORT_CLASS_NAME + " {");
         lines.add("    private static final MethodHandle OF_ADDRESS;");
         lines.add("");
         lines.add("    static {");
@@ -1499,24 +1499,24 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    }");
         lines.add("}");
 
-        var file = processingEnv.getFiler().createSourceFile(NFI_PACKAGE + "." + NFI_SUPPORT_IMPL_CLASS_NAME, origins);
+        var file = processingEnv.getFiler().createSourceFile(NATIVE_ACCESS_PACKAGE + "." + NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME, origins);
         try (var w = file.openWriter()) {
             w.append(String.join(System.lineSeparator(), lines));
         }
     }
 
-    private void generateDummyNfiSupport(Element[] origins) throws IOException {
+    private void generateDummyNativeAccessSupport(Element[] origins) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
 
         lines.add("// @formatter:off");
         lines.add("// Checkstyle: stop");
         lines.add("// Generated by annotation processor: " + getClass().getName());
-        lines.add("package " + NFI_PACKAGE + ";");
+        lines.add("package " + NATIVE_ACCESS_PACKAGE + ";");
         lines.add("");
         lines.add("import java.lang.invoke.MethodHandle;");
         lines.add("import java.lang.invoke.MethodType;");
         lines.add("");
-        lines.add("public final class " + NFI_SUPPORT_IMPL_CLASS_NAME + " extends " + NFI_SUPPORT_CLASS_NAME + " {");
+        lines.add("public final class " + NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME + " extends " + NATIVE_ACCESS_SUPPORT_CLASS_NAME + " {");
         lines.add("    @Override");
         lines.add("    protected Object createArenaImpl() {");
         lines.add("        throw unsupported();");
@@ -1548,7 +1548,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    }");
         lines.add("}");
 
-        var file = processingEnv.getFiler().createSourceFile(NFI_PACKAGE + "." + NFI_SUPPORT_IMPL_CLASS_NAME, origins);
+        var file = processingEnv.getFiler().createSourceFile(NATIVE_ACCESS_PACKAGE + "." + NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME, origins);
         try (var w = file.openWriter()) {
             w.append(String.join(System.lineSeparator(), lines));
         }
@@ -2028,7 +2028,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             return true;
         }
         try {
-            generateNfiSupport(allBuiltins.stream().map((builtin) -> builtin.origin).toArray(Element[]::new));
+            generateNativeAccessSupport(allBuiltins.stream().map((builtin) -> builtin.origin).toArray(Element[]::new));
             if (trees != null) {
                 // needs jdk.compiler
                 generateCApiSource(allBuiltins, constants, fields, structs);
