@@ -43,6 +43,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_LEAST_D_ARG
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DEEPCOPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
@@ -1019,6 +1020,16 @@ public final class ArrayBuiltins extends PythonBuiltins {
         }
         bufferLib.readIntoBuffer(self.getBuffer(), 0, newArray.getBuffer(), 0, self.getBytesLength(), bufferLib);
         return newArray;
+    }
+
+    @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object classGetItem(Object cls, Object key,
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
+        }
     }
 
     @Builtin(name = J_APPEND, minNumOfPositionalArgs = 2)

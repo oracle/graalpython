@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import copy
+import types
 from array import array
 
 from tests.util import storage_to_native
@@ -149,6 +150,14 @@ def test_deepcopy():
     a[0] = 42
     assert b == array('l', [1, 2, 3])
     assert c == array('l', [1, 2, 3])
+
+
+def test_class_getitem():
+    alias = array[int]
+    assert isinstance(alias, types.GenericAlias)
+    assert alias.__origin__ is array
+    assert alias.__args__ == (int,)
+    assert array.__class_getitem__(str).__args__ == (str,)
 
 
 def test_mul():
