@@ -11,6 +11,15 @@ GraalPy is a Python 3.12 compliant runtime.
 It has first-class support for embedding in Java and can turn Python applications into fast, standalone binaries.
 GraalPy is ready for production running pure Python code and has experimental support for many popular native extension modules.
 
+## Contributing
+
+This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](./CONTRIBUTING.md).
+
+If you’re considering contributing to this repository, you need to sign the [Oracle Contributor Agreement](https://www.graalvm.org/community/contributors/) before we can merge your changes.
+Also, review the [Code of Conduct](https://www.graalvm.org/community/conduct/) for contributors.
+
+[![Contributing to Graalpy](https://img.youtube.com/vi/qeAUgXQR1h0/0.jpg)](https://www.youtube.com/watch?v=qeAUgXQR1h0)
+
 ## Why GraalPy?
 
 **Low-overhead integration with Java and other languages**
@@ -137,13 +146,6 @@ General documentation about [polyglot programming](https://www.graalvm.org/lates
 ## Community
 
 The best way to get in touch with us is to join the `#graalpy` channel on [GraalVM Slack][slack] or [tweet us][twitter].
-
-## Contributing
-
-This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](./CONTRIBUTING.md).
-
-If you're thinking about contributing something to this repository, you will need to sign the [Oracle Contributor Agreement](https://www.graalvm.org/community/contributors/) for us to able to merge your work.
-Also take a look at the [code of conduct](https://www.graalvm.org/community/conduct/) for contributors.
 
 ## Security
 
