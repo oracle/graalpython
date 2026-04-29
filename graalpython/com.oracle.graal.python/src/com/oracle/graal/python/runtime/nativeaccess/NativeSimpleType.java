@@ -40,6 +40,13 @@
  */
 package com.oracle.graal.python.runtime.nativeaccess;
 
+/**
+ * Simple native carrier types used by native access signatures.
+ * <p>
+ * This keeps the low-level native access layer independent from C API descriptors while still
+ * preserving the information needed to derive Java carriers and FFM layouts.
+ * </p>
+ */
 public enum NativeSimpleType {
     VOID,
     SINT8,
@@ -49,17 +56,4 @@ public enum NativeSimpleType {
     FLOAT,
     DOUBLE,
     RAW_POINTER;    // arg must be long, retval is long
-
-    boolean checkType(Object value) {
-        return switch (this) {
-            case VOID -> value == null;
-            case SINT8 -> value instanceof Byte;
-            case SINT16 -> value instanceof Short;
-            case SINT32 -> value instanceof Integer;
-            case SINT64 -> value instanceof Long;
-            case FLOAT -> value instanceof Float;
-            case DOUBLE -> value instanceof Double;
-            case RAW_POINTER -> value instanceof Long;
-        };
-    }
 }
