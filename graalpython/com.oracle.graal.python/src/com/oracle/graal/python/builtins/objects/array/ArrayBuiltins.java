@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_MOST_D_ARGU
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DEEPCOPY__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
@@ -992,17 +993,32 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static PArray copy(PArray self,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language) {
-            int length = self.getLength();
-            PArray newArray;
-            try {
-                newArray = PFactory.createArray(language, self.getFormatString(), self.getFormat(), length);
-            } catch (OverflowException e) {
-                // It is a copy of an existing array, the length cannot overflow.
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            bufferLib.readIntoBuffer(self.getBuffer(), 0, newArray.getBuffer(), 0, self.getBytesLength(), bufferLib);
-            return newArray;
+            return copyArray(self, bufferLib, language);
         }
+    }
+
+    @Builtin(name = J___DEEPCOPY__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "memo"})
+    @GenerateNodeFactory
+    abstract static class DeepCopyNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static PArray copy(PArray self, @SuppressWarnings("unused") Object memo,
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+                        @Bind PythonLanguage language) {
+            return copyArray(self, bufferLib, language);
+        }
+    }
+
+    private static PArray copyArray(PArray self, PythonBufferAccessLibrary bufferLib, PythonLanguage language) {
+        int length = self.getLength();
+        PArray newArray;
+        try {
+            newArray = PFactory.createArray(language, self.getFormatString(), self.getFormat(), length);
+        } catch (OverflowException e) {
+            // It is a copy of an existing array, the length cannot overflow.
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+        bufferLib.readIntoBuffer(self.getBuffer(), 0, newArray.getBuffer(), 0, self.getBytesLength(), bufferLib);
+        return newArray;
     }
 
     @Builtin(name = J_APPEND, minNumOfPositionalArgs = 2)

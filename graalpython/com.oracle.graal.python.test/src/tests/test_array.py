@@ -137,6 +137,20 @@ def test_copy_native_storage():
     assert b == array('l', [1, 2, 3])
 
 
+def test_deepcopy():
+    a = array('l', [1, 2, 3])
+    b = a.__deepcopy__({})
+    c = copy.deepcopy(a)
+    assert type(b) is array
+    assert b == a
+    assert c == a
+    assert b is not a
+    assert c is not a
+    a[0] = 42
+    assert b == array('l', [1, 2, 3])
+    assert c == array('l', [1, 2, 3])
+
+
 def test_mul():
     a = array('l', [1, 2, 3])
     assert len(a * 0) == 0
