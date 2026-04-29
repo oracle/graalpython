@@ -1,53 +1,62 @@
 ---
 name: rota-check-periodic-jobs
-description: Analyze recent GraalPy periodic job failure Jira tickets for ROTA. Use when asked to triage, summarize, or plan work for recent periodic-job-failures issues, including date-bounded Jira searches with gdev-cli, issue detail inspection, hypotheses, reproduction commands, and implementation order.
+description: Analyze current GraalPy periodic job failures for ROTA. Use when asked to triage, summarize, or plan work for current periodic job failures, starting from scripts/rota_ci_failures.py output, validating linked Jira issues, inspecting logs, forming hypotheses, reproduction commands, and implementation order.
 ---
 
 # ROTA Periodic Job Check
 
 ## Overview
-Triage recent GraalPy periodic job failure Jira tickets and produce implementation-ready plans.
+Triage current GraalPy periodic job failures and produce implementation-ready plans.
 
 ## Workflow
-1. Verify creator identity mapping:
-- Treat `ol-automation_ww` as Jira username `olauto`.
-- If a query returns zero results unexpectedly, test both identities, then keep `creator = olauto` once verified.
-
-2. Filter to recent periodic job failures, excluding in-progress or closed issues:
-- Default to the last 14 days unless the user specifies otherwise.
-- Always state concrete start and end calendar dates in the response.
+1. Verify dashboard environment and run the periodic failure collector:
+- This workflow starts from `scripts/rota_ci_failures.py`, not from a Jira search.
+- The script requires `OTDASHBOARD_URL` and `OTDASHBOARD_TOKEN`.
+- If either variable is missing, stop and ask the user to set the missing variable(s). Do not fall back to querying Jira for the failure list.
+- Run from the repository root:
 ```bash
-gdev-cli jira search --json --max 100 \
-  -f key,summary,creator,created,status,labels,components,assignee \
-  -jql "project = GR AND component = Python AND creator = olauto AND labels = periodic-job-failures AND created >= -14d AND status != Closed AND status != 'In Progress' ORDER BY created DESC"
+scripts/rota_ci_failures.py
 ```
 
-3. Fetch shortlisted issue details with `get-issue`:
-```bash
-gdev-cli jira get-issue --json -id GR-XXXX \
-  | jq '{key, summary:.fields.summary, status:.fields.status.name, created:.fields.created, labels:.fields.labels, assignee:(.fields.assignee.name // null), description:.fields.description, comments:(.fields.comment.comments | map({author:.author.name, created, body}))}'
-```
+2. Parse the script output:
+- If it reports no failed jobs, report that there are no current failed periodic jobs and stop.
+- For each failed row, capture target, job name, last successful run, Jira ID(s), and log URL.
+- If a failed row has no Jira ID, flag it in the report and continue log analysis.
 
-4. Convert findings into an implementation-ready plan per issue:
+3. Validate every reported Jira issue:
+- Fetch each Jira issue linked by the script output:
+```bash
+gdev-cli jira get-issue --json -id GR-XXXX
+```
+- Check that the Jira matches the current failure:
+  - The issue summary or description should identify the same error signature/root cause from the current log.
+- Check that the Jira is not too broad:
+  - A generic timeout/build-failure ticket is acceptable only if it names this job or an intentionally scoped equivalent set of jobs.
+  - A ticket covering unrelated jobs, unrelated targets, or unrelated error signatures is too broad.
+- Check that the Jira has component `Python`.
+- Notify the user about every Jira that fails any of these checks. Include the Jira key and the failed check(s).
+
+4. Inspect failed job logs:
+- Use the `log URL` from the script output. For Buildbot URLs, fetch the executor log with:
+```bash
+gdev-cli buildbot get-log BUILD_ID
+```
+- Use `gdev-cli buildbot rca --build BUILD_ID --wait` when useful, but still inspect the relevant raw log lines.
+- Identify the exact failing command, error signature, first meaningful failure, and whether later errors are cleanup fallout.
+
+5. Convert findings into an implementation-ready plan per failure:
 - Extract failing job name, error signature, and log clue.
 - Map probable source area in repo.
 - Propose the first verification command.
-- Define exit criteria to close the ticket.
-- Prepare a temporary git worktree per issue with branch naming based on Jira key plus a very short hyphenated description.
+- Define exit criteria to close or update the linked ticket.
 
 ## Output Contract
-Return exactly:
-1. Query scope used: component, creator, time window, status filter.
-2. Count summary: total recent automation issues vs periodic failures.
-3. Issue list with key, created date, summary, and status.
-4. Per-issue plan with:
-- Hypothesis
-- First code locations to inspect
-- First reproducibility command
-- Exit criteria for closing ticket
-5. Recommended implementation order.
+Group the output by the Jira issue. For each, report:
+- The issue summary, status and assignee
+- The failed jobs in a table with job name, last successful run and log URL.
+- The analysis of the failure and the proposed plan
 
 ## Guardrails
-- State concrete dates for recency windows.
-- Prefer `--json` and explicit `-f` fields in searches.
-- Use `get-issue` only for shortlisted issues to keep output small.
+- If `OTDASHBOARD_URL` or `OTDASHBOARD_TOKEN` is missing, ask the user to set the missing variable(s). Do not try to set them yourself
+- Do not echo the `OTDASHBOARD_TOKEN` variable and do not leak it anywhere.
+- Prefer `--json` for Jira issue fetches.
