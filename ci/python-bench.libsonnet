@@ -240,7 +240,9 @@
         downloads: downloads(self.os, self.arch),
         name: "bisect-benchmark",
         targets: ['bench'],
-        logs +: logs(self.os, self.arch),
+        logs +: logs(self.os, self.arch) + [
+            "bisect-benchmark-result.json",
+        ],
         deploysArtifacts: true,
         packages +: packages(self.os, self.arch) + {
             "apache/ant": ">=1.9.4",
