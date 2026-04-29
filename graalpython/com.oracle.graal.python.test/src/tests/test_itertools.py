@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -104,7 +104,7 @@ class CombinationsTests(unittest.TestCase):
 
     def test_generators(self):
         # test that generators are accepted like input values
-        
+
         def g(seqn):
             for i in seqn:
                 yield i
@@ -112,7 +112,7 @@ class CombinationsTests(unittest.TestCase):
         def g2(seqn):
             for i in seqn:
                 yield (i, i)
-        
+
         self.assertEqual(list(accumulate(g([1,2]))), [1, 3])
         self.assertEqual(list(chain(g([1,2]), g([3,4]))), [1, 2, 3, 4])
         self.assertEqual(list(combinations(g([1,2]), 2)), [(1, 2)])
@@ -129,6 +129,10 @@ class CombinationsTests(unittest.TestCase):
         self.assertEqual(list(takewhile(lambda a:a, g([1,2]))), [1, 2])
         self.assertEqual(list(tee(g([1, 2]))[0]), [1, 2])
         self.assertEqual(list(zip_longest(g2([2,3]))), [((2, 2),), ((3, 3),)])
+
+    def test_islice_negative_stop(self):
+        self.assertRaises(ValueError, islice, count(), -1)
+        self.assertRaises(ValueError, islice, count(), 0, -1)
 
     @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 10), "skipping for cPython versions < 3.10")
     def test_pairwise_drained(self):
