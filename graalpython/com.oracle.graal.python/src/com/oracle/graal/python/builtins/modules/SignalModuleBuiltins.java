@@ -204,6 +204,21 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         return mod.getModuleState(ModuleData.class).signals.getOrDefault(name, -1);
     }
 
+    @TruffleBoundary
+    public static void triggerEmulatedSignal(PythonContext context, String name) {
+        PythonModule mod = context.lookupBuiltinModule(T__SIGNAL);
+        ModuleData data = mod.getModuleState(ModuleData.class);
+        if (data == null) {
+            return;
+        }
+        int signum = data.signals.getOrDefault(name, -1);
+        Object handler = data.signalHandlers.get(signum);
+        if (handler != null) {
+            data.signalQueue.add(new SignalTriggerAction(handler, signum));
+            data.signalSema.release();
+        }
+    }
+
     public static void resetSignalHandlers(PythonModule mod) {
         ModuleData data = mod.getModuleState(ModuleData.class);
         if (data != null) {
