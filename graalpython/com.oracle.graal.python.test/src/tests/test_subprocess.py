@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -74,6 +74,17 @@ class TestSubprocess(unittest.TestCase):
         output = subprocess.check_output(
                 [sys.executable, "-c", "print('BDFL')"])
         self.assertIn(b'BDFL', output)
+
+    @unittest.skipIf(sys.platform == 'win32', "POSIX argv bytes specific")
+    def test_surrogateescape_non_utf8_argv(self):
+        code = (
+            "import os, sys; "
+            "assert os.fsencode(sys.argv[-1]) == b'\\x8av'; "
+            "print(repr(sys.argv[-1]))"
+        )
+        cmd = f"{shlex.quote(sys.executable)} -c {shlex.quote(code)} \"$(printf '\\212v')\""
+        output = subprocess.check_output(cmd, shell=True, stderr=subprocess.PIPE, text=True)
+        self.assertEqual("'\\udc8av'\n", output)
 
     def test_check_output_nonzero(self):
         # check_call() function with non-zero return code

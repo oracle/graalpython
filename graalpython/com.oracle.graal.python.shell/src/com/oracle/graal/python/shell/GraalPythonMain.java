@@ -34,6 +34,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
@@ -78,6 +84,56 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
      */
     public static void main(String[] args) {
         new GraalPythonMain().launch(args);
+    }
+
+    @Override
+    protected String decodeArgument(byte[] argument) {
+        Charset charset = Charset.defaultCharset();
+        String decoded = new String(argument, charset);
+        if (decoded.indexOf('\uFFFD') < 0) {
+            return decoded;
+        }
+        return decodeArgument(argument, charset);
+    }
+
+    /*
+     * Match documented Unix sys.argv behavior:
+     * https://docs.python.org/3.12/library/sys.html#sys.argv
+     * "When you need original bytes, you can get it by `[os.fsencode(arg) for arg in sys.argv]`."
+     */
+    private static String decodeArgument(byte[] argument, Charset charset) {
+        CharsetDecoder decoder = charset.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT);
+        StringBuilder builder = new StringBuilder(argument.length);
+        ByteBuffer in = ByteBuffer.wrap(argument);
+        CharBuffer out = CharBuffer.allocate(Math.max(1, (int) Math.ceil(argument.length * decoder.maxCharsPerByte())));
+        while (true) {
+            CoderResult result = decoder.decode(in, out, true);
+            appendDecodedChars(builder, out);
+            if (result.isUnderflow()) {
+                break;
+            } else if (result.isOverflow()) {
+                continue;
+            } else if (result.isError()) {
+                int errorLength = result.length();
+                for (int i = 0; i < errorLength && in.hasRemaining(); i++) {
+                    builder.append((char) (0xDC00 + (in.get() & 0xff)));
+                }
+            }
+        }
+        while (true) {
+            CoderResult result = decoder.flush(out);
+            appendDecodedChars(builder, out);
+            if (result.isUnderflow()) {
+                break;
+            }
+        }
+        return builder.toString();
+    }
+
+    private static void appendDecodedChars(StringBuilder builder, CharBuffer out) {
+        out.flip();
+        builder.append(out);
+        out.clear();
     }
 
     private static final String LANGUAGE_ID = "python";
