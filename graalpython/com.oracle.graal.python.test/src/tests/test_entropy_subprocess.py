@@ -55,6 +55,13 @@ class EntropySubprocessTests(unittest.TestCase):
     TEMPFILE_CANDIDATE_NAME_BYTES = HASH_SECRET_BYTES + (4 * RANDOM_SEED_BYTES)
     SSL_DATA_DIR = os.path.join(os.path.dirname(__file__), "ssldata")
 
+    @staticmethod
+    def _graal_log_args():
+        args = [f"--log.file={os.devnull}"]
+        if not __graalpython__.is_native:
+            args.append(f"--vm.Djdk.graal.LogFile={os.devnull}")
+        return args
+
     def _run_with_init_pipe(self, byte_count: int, code: str):
         with tempfile.TemporaryDirectory() as temp_dir:
             path = os.path.join(temp_dir, "initrandom")
@@ -98,6 +105,7 @@ class EntropySubprocessTests(unittest.TestCase):
                 sys.executable,
                 "-S",
                 "--experimental-options=true",
+                *self._graal_log_args(),
                 f"--python.InitializationEntropySource={source}",
                 "-c",
                 code,
