@@ -103,6 +103,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     static boolean writeToDynamicStorageNoType(PythonObject object, TruffleString key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Cached WriteAttributeToPythonObjectNode writeNode) {
+        assert object.checkDictFlags(null);
         // Objects w/o dict that are not classes do not have any special handling
         writeNode.execute(object, key, value);
         return true;
@@ -137,6 +138,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @Exclusive @Cached InlinedBranchProfile updateFlags,
                     @Cached DynamicObject.PutNode putNode,
                     @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+        assert klass.checkDictFlags(null);
         if (value == PNone.NO_VALUE) {
             updateFlags.enter(inliningTarget);
             setShapeFlagsNode.executeAdd(klass, HAS_NO_VALUE_PROPERTIES);
@@ -162,6 +164,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @Bind("getDict.execute(object)") PDict dict,
                     @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
                     @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem) {
+        assert object.checkDictFlags(dict);
         return writeToDict(dict, key, value, inliningTarget, updateStorage, setHashingStorageItem);
     }
 
@@ -172,6 +175,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @Bind("getDict.execute(klass)") PDict dict,
                     @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
                     @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem) {
+        assert klass.checkDictFlags(dict);
         return writeToDictManagedClass(klass, dict, key, value, inliningTarget, updateStorage, setHashingStorageItem);
     }
 
@@ -182,6 +186,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(obj)") PDict dict,
                     @Cached HashingStorageNodes.HashingStorageDelItem hashingStorageDelItem) {
+        assert obj.checkDictFlags(dict);
         try {
             HashingStorage dictStorage = dict.getDictStorage();
             return hashingStorageDelItem.execute(inliningTarget, dictStorage, key, dict);

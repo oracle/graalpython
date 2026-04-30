@@ -76,6 +76,7 @@ public abstract class ReadAttributeFromModuleNode extends PNodeWithContext {
                     @Cached GetDictIfExistsNode getDict,
                     @Cached HashingStorageGetItemStringKey getItem) {
         var dict = getDict.execute(object);
+        assert object.checkDictFlags(dict);
         Object value = getItem.execute(inliningTarget, dict.getDictStorage(), key);
         if (value == null) {
             return PNone.NO_VALUE;

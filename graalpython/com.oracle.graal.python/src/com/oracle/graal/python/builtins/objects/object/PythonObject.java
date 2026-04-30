@@ -33,11 +33,13 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -54,19 +56,27 @@ public class PythonObject extends PythonAbstractObject {
     public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 0b1;
     /**
      * Indicates that the shape has some properties that may contain {@link PNone#NO_VALUE} and
-     * therefore the shape itself is not enough to resolve any lookups.
+     * therefore the shape itself is not enough to resolve any lookups. This flag is maintained only
+     * for types and not for all Python objects.
      */
     public static final byte HAS_NO_VALUE_PROPERTIES = 0b10;
     /**
-     * Indicates that the object has a dict in the form of an actual dictionary
+     * Indicates that the object has the dict hidden key set. Use {@link #HAS_MATERIALIZED_DICT} to
+     * determine if the dict must be used.
      */
-    public static final byte HAS_MATERIALIZED_DICT = 0b100;
+    public static final byte HAS_DICT = 0b100;
+    /**
+     * Indicates that the object has a dict in the form of an actual dictionary that is not backed
+     * by this object, i.e., is disconnected from the {@link DynamicObject} properties of this
+     * object. If this flag is set, all property accesses must operate on the dictionary object.
+     */
+    public static final byte HAS_MATERIALIZED_DICT = 0b1000;
     /**
      * Indicates that the object is a static base in the CPython's tp_new_wrapper sense.
      *
      * @see com.oracle.graal.python.nodes.function.builtins.WrapTpNew
      */
-    public static final byte IS_STATIC_BASE = 0b1000;
+    public static final byte IS_STATIC_BASE = 0b10000;
 
     private Object pythonClass;
 
@@ -82,6 +92,20 @@ public class PythonObject extends PythonAbstractObject {
         writeNode.execute(inliningTarget, this, HiddenAttr.DICT, dict);
     }
 
+    public boolean checkDictFlags() {
+        return checkDictFlags(GetDictIfExistsNode.getDictUncached(this));
+    }
+
+    public boolean checkDictFlags(PDict dict) {
+        assert dict == null || hasShapeFlag(HAS_DICT);
+        assert (dict == null || dict.getDictStorage() instanceof DynamicObjectStorage domStorage && domStorage.getStore() == this) || hasShapeFlag(HAS_MATERIALIZED_DICT);
+        return true;
+    }
+
+    private boolean hasShapeFlag(int flag) {
+        return (GetShapeFlagsNode.getUncached().execute(this) & flag) != 0;
+    }
+
     @NeverDefault
     public final Object getPythonClass() {
         return pythonClass;
@@ -89,6 +113,7 @@ public class PythonObject extends PythonAbstractObject {
 
     public final void setPythonClass(Object pythonClass) {
         assert getShape().getDynamicType() == PNone.NO_VALUE;
+        assert PGuards.isPythonClass(pythonClass);
         this.pythonClass = pythonClass;
     }
 

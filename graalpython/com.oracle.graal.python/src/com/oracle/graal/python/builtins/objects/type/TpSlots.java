@@ -1974,14 +1974,19 @@ public record TpSlots(TpSlot nb_bool, //
             return GetTpSlotsNodeGen.getUncached().execute(null, pythonClass);
         }
 
-        @Specialization
-        static TpSlots doBuiltinType(PythonBuiltinClassType type) {
-            return type.getSlots();
-        }
-
+        /*
+         * On the fast path this most likely comes from GetCachedTpSlotsNode, which already checked
+         * PythonBuiltinClassType as specialization before, so in this node we prefer to check for
+         * PythonManagedClass first.
+         */
         @Specialization
         static TpSlots doManaged(PythonManagedClass klass) {
             return klass.getTpSlots();
+        }
+
+        @Specialization
+        static TpSlots doBuiltinType(PythonBuiltinClassType type) {
+            return type.getSlots();
         }
 
         @Specialization
