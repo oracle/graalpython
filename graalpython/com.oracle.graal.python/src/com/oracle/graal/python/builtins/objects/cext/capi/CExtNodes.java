@@ -143,6 +143,7 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -164,7 +165,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1193,10 +1193,10 @@ public abstract class CExtNodes {
         // CPy-style methods
         // TODO(fa) support static and class methods
         MethodDescriptorWrapper sig = MethodDescriptorWrapper.fromMethodFlags(flags);
-        RootCallTarget callTarget = MethodDescriptorWrapper.getOrCreateCallTarget(language, sig, methodName, CExtContext.isMethStatic(flags));
+        PRootNode rootNode = MethodDescriptorWrapper.getOrCreateRootNode(language, sig, methodName, CExtContext.isMethStatic(flags));
         NativeFunctionPointer fun = CExtCommonNodes.bindFunctionPointer(mlMethObj, sig);
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
-        PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
+        PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, rootNode);
         HiddenAttr.WriteLongNode.executeUncached(function, METHOD_DEF_PTR, methodDefPtr);
 
         // write doc string; we need to directly write to the storage otherwise it is disallowed

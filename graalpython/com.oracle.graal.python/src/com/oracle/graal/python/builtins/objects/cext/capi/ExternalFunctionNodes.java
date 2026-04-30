@@ -168,7 +168,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -482,8 +481,8 @@ public abstract class ExternalFunctionNodes {
         }
 
         @TruffleBoundary
-        static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name) {
-            return language.createCachedExternalFunWrapperCallTarget(l -> WrapperDescriptorRootNodesGen.create(l, name, sig), sig.rootNodeClass, sig, name, true, false);
+        static PRootNode getOrCreateRootNode(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name) {
+            return (PRootNode) language.createCachedExternalFunWrapperRootNode(l -> WrapperDescriptorRootNodesGen.create(l, name, sig), sig.rootNodeClass, sig, name, true, false);
         }
 
         /**
@@ -495,7 +494,7 @@ public abstract class ExternalFunctionNodes {
          * @param name The name of the method.
          * @param callable A reference denoting executable code. Currently, there are two
          *            representations for that: a native function pointer or a
-         *            {@link RootCallTarget}
+         *            {@link PRootNode}
          * @param enclosingType The type the function belongs to (needed for checking of
          *            {@code self}).
          * @param sig The wrapper/signature ID as defined in {@link PExternalFunctionWrapper}.
@@ -506,7 +505,7 @@ public abstract class ExternalFunctionNodes {
         @TruffleBoundary
         public static PythonBuiltinObject createDescrWrapperFunction(TruffleString name, NativeFunctionPointer callable, Object enclosingType, PExternalFunctionWrapper sig, PythonLanguage language) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createDescrWrapperFunction(%s, %s)", name, callable));
-            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name);
+            PRootNode rootNode = getOrCreateRootNode(sig, language, name);
 
             // ensure that 'callable' is executable via InteropLibrary
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(callable);
@@ -517,9 +516,9 @@ public abstract class ExternalFunctionNodes {
 
             Object type = enclosingType == PNone.NO_VALUE ? null : enclosingType;
             if (sig == NEW) {
-                return PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, slot);
+                return PFactory.createNewWrapper(language, type, defaults, kwDefaults, rootNode, slot);
             }
-            return PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, 0, callTarget, slot, sig);
+            return PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, 0, rootNode, slot, sig);
         }
 
         @Override

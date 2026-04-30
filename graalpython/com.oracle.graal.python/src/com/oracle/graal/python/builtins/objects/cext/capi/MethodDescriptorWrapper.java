@@ -67,7 +67,6 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -125,7 +124,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(MethodDescriptorWrapper.class);
 
     @TruffleBoundary
-    static RootCallTarget getOrCreateCallTarget(PythonLanguage language, MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
+    static PRootNode getOrCreateRootNode(PythonLanguage language, MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
         Class<? extends PRootNode> nodeKlass;
         Function<PythonLanguage, RootNode> rootNodeFunction = switch (sig) {
             case KEYWORDS -> {
@@ -157,7 +156,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
                 yield (l -> new MethMethodRoot(l, name, isStatic, sig));
             }
         };
-        return language.createCachedExternalFunWrapperCallTarget(rootNodeFunction, nodeKlass, sig, name, true, isStatic);
+        return (PRootNode) language.createCachedExternalFunWrapperRootNode(rootNodeFunction, nodeKlass, sig, name, true, isStatic);
     }
 
     /**
@@ -168,7 +167,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
      * @param language The Python language object.
      * @param name The name of the method.
      * @param callable A reference denoting executable code. Currently, there are two
-     *            representations for that: a native function pointer or a {@link RootCallTarget}
+     *            representations for that: a native function pointer or a {@link PRootNode}
      * @param enclosingType The type the function belongs to (needed for checking of {@code self}).
      * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot wrapper.
      */
@@ -180,7 +179,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
             return null;
         }
 
-        RootCallTarget callTarget = getOrCreateCallTarget(language, methodDescriptorWrapper, name, CExtContext.isMethStatic(flags));
+        PRootNode rootNode = getOrCreateRootNode(language, methodDescriptorWrapper, name, CExtContext.isMethStatic(flags));
 
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(CExtCommonNodes.bindFunctionPointer(callable, methodDescriptorWrapper));
 
@@ -188,7 +187,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
         Object[] defaults = PBuiltinFunction.generateDefaults(0);
 
         Object type = enclosingType == PNone.NO_VALUE ? null : enclosingType;
-        return PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget);
+        return PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, rootNode);
     }
 
     /**
