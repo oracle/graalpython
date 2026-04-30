@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUn
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -87,6 +88,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PCode extends PythonBuiltinObject {
+    private static final AtomicInteger TRACKED_CODE_COUNT = new AtomicInteger();
+    private static final AtomicInteger TRACKED_CODE_CALL_TARGET_COUNT = new AtomicInteger();
+
     public static final int CO_OPTIMIZED = 0x1;
     public static final int CO_NEWLOCALS = 0x2;
     public static final int CO_VARARGS = 0x4;
@@ -100,8 +104,11 @@ public final class PCode extends PythonBuiltinObject {
     /* GraalPy-specific */
     public static final int CO_GRAALPYHON_MODULE = 0x1000;
 
-    private final RootCallTarget callTarget;
+    private final RootNode rootNode;
+    private volatile RootCallTarget callTarget;
     private final Signature signature;
+    private final boolean trackCallTargetInitialization;
+    private volatile boolean callTargetCounted;
 
     // number of local variables
     private int nlocals = -1;
@@ -141,8 +148,11 @@ public final class PCode extends PythonBuiltinObject {
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, TruffleString filename) {
         super(cls, instanceShape);
+        this.rootNode = callTarget.getRootNode();
         this.callTarget = callTarget;
         this.signature = Signature.fromCallTarget(callTarget);
+        this.trackCallTargetInitialization = false;
+        this.callTargetCounted = true;
         this.filename = filename;
     }
 
@@ -185,8 +195,65 @@ public final class PCode extends PythonBuiltinObject {
         this.linetable = linetable;
         this.freevars = freevars;
         this.cellvars = cellvars;
+        this.rootNode = callTarget.getRootNode();
         this.callTarget = callTarget;
         this.signature = signature;
+        this.trackCallTargetInitialization = false;
+        this.callTargetCounted = true;
+        assert signature != null;
+    }
+
+    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, TruffleString filename) {
+        super(cls, instanceShape);
+        this.rootNode = rootNode;
+        this.signature = rootNode.getSignature();
+        this.trackCallTargetInitialization = true;
+        this.filename = filename;
+        TRACKED_CODE_COUNT.incrementAndGet();
+    }
+
+    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
+        this(cls, instanceShape, rootNode, filename);
+        this.flags = flags;
+        this.firstlineno = firstlineno;
+        this.linetable = linetable;
+    }
+
+    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
+        this(cls, instanceShape, rootNode, signature, codeUnit.varnames.length, -1, -1, null, null,
+                        null, null, null, filename,
+                        codeUnit.name, codeUnit.qualname, -1, codeUnit.srcOffsetTable);
+    }
+
+    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
+        this(cls, instanceShape, rootNode, signature, codeUnit.varnames.length, -1, -1, null, null,
+                        null, null, null, filename,
+                        codeUnit.name, codeUnit.qualname, -1, null);
+    }
+
+    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, Signature signature, int nlocals,
+                    int stacksize, int flags, Object[] constants, TruffleString[] names,
+                    TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
+                    TruffleString filename, TruffleString name, TruffleString qualname,
+                    int firstlineno, byte[] linetable) {
+        super(cls, instanceShape);
+        this.nlocals = nlocals;
+        this.stacksize = stacksize;
+        this.flags = flags;
+        this.constants = constants;
+        this.names = names;
+        this.varnames = varnames;
+        this.filename = filename;
+        this.name = name;
+        this.qualname = qualname;
+        this.firstlineno = firstlineno;
+        this.linetable = linetable;
+        this.freevars = freevars;
+        this.cellvars = cellvars;
+        this.rootNode = rootNode;
+        this.signature = signature;
+        this.trackCallTargetInitialization = true;
+        TRACKED_CODE_COUNT.incrementAndGet();
         assert signature != null;
     }
 
@@ -347,7 +414,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     RootNode getRootNode() {
-        return getRootCallTarget().getRootNode();
+        return rootNode;
     }
 
     RootNode getRootNodeForExtraction() {
@@ -505,9 +572,8 @@ public final class PCode extends PythonBuiltinObject {
     private PCode createCode(BytecodeDSLCodeUnit codeUnit) {
         PBytecodeDSLRootNode outerRootNode = (PBytecodeDSLRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> codeUnit.createRootNode(l, outerRootNode.getSource()), codeUnit);
-        PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) callTarget.getRootNode();
-        return PFactory.createCode(language, callTarget, rootNode.getSignature(), codeUnit, getFilename());
+        PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) language.createCachedRootNode(l -> codeUnit.createRootNode(l, outerRootNode.getSource()), codeUnit);
+        return PFactory.createCode(language, rootNode, rootNode.getSignature(), codeUnit, getFilename());
     }
 
     public PCode getOrCreateChildCode(int index, BytecodeCodeUnit codeUnit) {
@@ -524,13 +590,13 @@ public final class PCode extends PythonBuiltinObject {
     private PCode createCode(BytecodeCodeUnit codeUnit) {
         PBytecodeRootNode outerRootNode = (PBytecodeRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
-        RootCallTarget callTarget = language.createCachedCallTarget(
+        PRootNode executableRootNode = (PRootNode) language.createCachedRootNode(
                         l -> PBytecodeRootNode.createMaybeGenerator(language, codeUnit, outerRootNode.getSource(), outerRootNode.isInternal()), codeUnit);
-        RootNode rootNode = callTarget.getRootNode();
-        if (rootNode instanceof PBytecodeGeneratorFunctionRootNode generatorRoot) {
+        RootNode rootNode = executableRootNode;
+        if (executableRootNode instanceof PBytecodeGeneratorFunctionRootNode generatorRoot) {
             rootNode = generatorRoot.getBytecodeRootNode();
         }
-        return PFactory.createCode(language, callTarget, ((PBytecodeRootNode) rootNode).getSignature(), codeUnit, getFilename());
+        return PFactory.createCode(language, executableRootNode, ((PBytecodeRootNode) rootNode).getSignature(), codeUnit, getFilename());
     }
 
     @TruffleBoundary
@@ -611,7 +677,24 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public RootCallTarget getRootCallTarget() {
-        return callTarget;
+        RootCallTarget ct = callTarget;
+        if (ct == null) {
+            ct = rootNode.getCallTarget();
+            callTarget = ct;
+            if (trackCallTargetInitialization && !callTargetCounted) {
+                callTargetCounted = true;
+                TRACKED_CODE_CALL_TARGET_COUNT.incrementAndGet();
+            }
+        }
+        return ct;
+    }
+
+    public static int getTrackedCodeCount() {
+        return TRACKED_CODE_COUNT.get();
+    }
+
+    public static int getTrackedCodeCallTargetCount() {
+        return TRACKED_CODE_CALL_TARGET_COUNT.get();
     }
 
     @ExportMessage

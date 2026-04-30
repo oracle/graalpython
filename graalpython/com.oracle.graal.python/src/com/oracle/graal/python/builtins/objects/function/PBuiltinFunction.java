@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
@@ -71,11 +72,71 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @ExportLibrary(InteropLibrary.class)
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
+    private static final AtomicInteger TRACKED_BUILTIN_FUNCTION_COUNT = new AtomicInteger();
+    private static final AtomicInteger TRACKED_BUILTIN_CALL_TARGET_COUNT = new AtomicInteger();
+
+    private static final class Executable {
+        private final RootNode functionRootNode;
+        private final Signature signature;
+        private final boolean trackCallTargetInitialization;
+        private volatile RootCallTarget callTarget;
+        private volatile boolean callTargetCounted;
+
+        private Executable(RootCallTarget callTarget, boolean trackCallTargetInitialization) {
+            this.functionRootNode = callTarget.getRootNode();
+            this.signature = ((PRootNode) functionRootNode).getSignature();
+            this.callTarget = callTarget;
+            this.trackCallTargetInitialization = trackCallTargetInitialization;
+            this.callTargetCounted = callTarget != null;
+            if (trackCallTargetInitialization) {
+                TRACKED_BUILTIN_FUNCTION_COUNT.incrementAndGet();
+                TRACKED_BUILTIN_CALL_TARGET_COUNT.incrementAndGet();
+            }
+        }
+
+        private Executable(PRootNode rootNode, boolean trackCallTargetInitialization) {
+            this.functionRootNode = rootNode;
+            this.signature = rootNode.getSignature();
+            this.trackCallTargetInitialization = trackCallTargetInitialization;
+            if (trackCallTargetInitialization) {
+                TRACKED_BUILTIN_FUNCTION_COUNT.incrementAndGet();
+            }
+        }
+
+        private synchronized RootCallTarget getCallTarget() {
+            RootCallTarget ct = callTarget;
+            if (ct == null) {
+                ct = functionRootNode.getCallTarget();
+                callTarget = ct;
+                if (trackCallTargetInitialization && !callTargetCounted) {
+                    callTargetCounted = true;
+                    TRACKED_BUILTIN_CALL_TARGET_COUNT.incrementAndGet();
+                }
+            }
+            return ct;
+        }
+
+        private RootNode getFunctionRootNode() {
+            return functionRootNode;
+        }
+
+        private NodeFactory<? extends PythonBuiltinBaseNode> getBuiltinNodeFactory() {
+            return functionRootNode instanceof BuiltinFunctionRootNode builtinRoot ? builtinRoot.getFactory() : null;
+        }
+
+        private boolean declaresExplicitSelf() {
+            return !(functionRootNode instanceof BuiltinFunctionRootNode builtinRoot) || builtinRoot.declaresExplicitSelf();
+        }
+
+        private boolean forceSplitDirectCalls() {
+            return functionRootNode instanceof BuiltinFunctionRootNode builtinRoot && builtinRoot.getBuiltin().forceSplitDirectCalls();
+        }
+    }
 
     private final PString name;
     private final TruffleString qualname;
     private final Object enclosingType;
-    private final RootCallTarget callTarget;
+    private final Executable executable;
     private final Signature signature;
     private final int flags;
     private final TpSlot slot;
@@ -83,7 +144,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget,
+    private PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, Executable executable,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         super(cls, shape);
         this.name = PythonUtils.toPString(name);
@@ -93,8 +154,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
             this.qualname = name;
         }
         this.enclosingType = enclosingType;
-        this.callTarget = callTarget;
-        this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
+        this.executable = executable;
+        this.signature = executable.signature;
         this.flags = flags;
         this.defaults = defaults;
         this.kwDefaults = kwDefaults != null ? kwDefaults : generateKwDefaults(signature);
@@ -102,8 +163,38 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.slotWrapper = slotWrapper;
     }
 
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget,
+                    TpSlot slot, PExternalFunctionWrapper slotWrapper) {
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(callTarget, false), slot, slotWrapper);
+    }
+
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
         this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, callTarget, null, null);
+    }
+
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget,
+                    boolean trackCallTargetInitialization) {
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(callTarget, trackCallTargetInitialization), null, null);
+    }
+
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
+                    PRootNode rootNode, boolean trackCallTargetInitialization) {
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode, trackCallTargetInitialization), null, null);
+    }
+
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
+                    PRootNode rootNode) {
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode, false), null, null);
+    }
+
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
+                    PRootNode rootNode, TpSlot slot, PExternalFunctionWrapper slotWrapper) {
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode, false), slot, slotWrapper);
+    }
+
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, PBuiltinFunction source,
+                    TpSlot slot, PExternalFunctionWrapper slotWrapper) {
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, source.executable, slot, slotWrapper);
     }
 
     public static PKeyword[] generateKwDefaults(Signature signature) {
@@ -129,7 +220,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public RootNode getFunctionRootNode() {
-        return callTarget.getRootNode();
+        return executable.getFunctionRootNode();
     }
 
     /**
@@ -149,12 +240,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public NodeFactory<? extends PythonBuiltinBaseNode> getBuiltinNodeFactory() {
-        RootNode functionRootNode = getFunctionRootNode();
-        if (functionRootNode instanceof BuiltinFunctionRootNode builtinRoot) {
-            return builtinRoot.getFactory();
-        } else {
-            return null;
-        }
+        return executable.getBuiltinNodeFactory();
     }
 
     public int getFlags() {
@@ -211,7 +297,23 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public RootCallTarget getCallTarget() {
-        return callTarget;
+        return executable.getCallTarget();
+    }
+
+    public boolean declaresExplicitSelf() {
+        return executable.declaresExplicitSelf();
+    }
+
+    public boolean forceSplitDirectCalls() {
+        return executable.forceSplitDirectCalls();
+    }
+
+    public static int getTrackedBuiltinFunctionCount() {
+        return TRACKED_BUILTIN_FUNCTION_COUNT.get();
+    }
+
+    public static int getTrackedBuiltinCallTargetCount() {
+        return TRACKED_BUILTIN_CALL_TARGET_COUNT.get();
     }
 
     public TruffleString getName() {

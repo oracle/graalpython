@@ -233,6 +233,7 @@ import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
 import com.oracle.graal.python.compiler.BytecodeCodeUnit;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
@@ -519,8 +520,24 @@ public final class PFactory {
                         PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget);
     }
 
+    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget,
+                    boolean trackCallTargetInitialization) {
+        return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget, trackCallTargetInitialization);
+    }
+
+    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode,
+                    boolean trackCallTargetInitialization) {
+        return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode, trackCallTargetInitialization);
+    }
+
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
         return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type, defaults, kw, flags, callTarget);
+    }
+
+    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, PRootNode rootNode) {
+        return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type, defaults, kw, flags, rootNode);
     }
 
     public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget, TpSlot slot,
@@ -535,8 +552,26 @@ public final class PFactory {
                         callTarget, slot, slotWrapper);
     }
 
+    public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode, TpSlot slot,
+                    PExternalFunctionWrapper slotWrapper) {
+        return new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type,
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode, slot, slotWrapper);
+    }
+
+    public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, PRootNode rootNode,
+                    TpSlot slot, PExternalFunctionWrapper slotWrapper) {
+        return new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, flags,
+                        rootNode, slot, slotWrapper);
+    }
+
     public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, RootCallTarget callTarget, TpSlot slot) {
         PBuiltinFunction func = createWrapperDescriptor(language, T___NEW__, type, defaults, kwdefaults, CExtContext.METH_VARARGS | CExtContext.METH_KEYWORDS, callTarget, slot,
+                        PExternalFunctionWrapper.NEW);
+        return createBuiltinMethod(language, type, func);
+    }
+
+    public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, PRootNode rootNode, TpSlot slot) {
+        PBuiltinFunction func = createWrapperDescriptor(language, T___NEW__, type, defaults, kwdefaults, CExtContext.METH_VARARGS | CExtContext.METH_KEYWORDS, rootNode, slot,
                         PExternalFunctionWrapper.NEW);
         return createBuiltinMethod(language, type, func);
     }
@@ -544,7 +579,7 @@ public final class PFactory {
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, PBuiltinFunction function, Object klass) {
         PythonBuiltinClassType type = (PythonBuiltinClassType) function.getPythonClass();
         return new PBuiltinFunction(type, type.getInstanceShape(language), function.getName(), klass,
-                        function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget(),
+                        function.getDefaults(), function.getKwDefaults(), function.getFlags(), function,
                         function.getSlot(), function.getSlotWrapper());
     }
 
@@ -1080,16 +1115,32 @@ public final class PFactory {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct, filename);
     }
 
+    public static PCode createCode(PythonLanguage language, PRootNode rootNode, TruffleString filename) {
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, filename);
+    }
+
     public static PCode createCode(PythonLanguage language, RootCallTarget ct, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct, flags, firstlineno, linetable, filename);
+    }
+
+    public static PCode createCode(PythonLanguage language, PRootNode rootNode, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, flags, firstlineno, linetable, filename);
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature, codeUnit, filename);
     }
 
+    public static PCode createCode(PythonLanguage language, PRootNode rootNode, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature, codeUnit, filename);
+    }
+
     public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature, codeUnit, filename);
+    }
+
+    public static PCode createCode(PythonLanguage language, PRootNode rootNode, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature, codeUnit, filename);
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, int nlocals,
@@ -1099,6 +1150,17 @@ public final class PFactory {
                     TruffleString filename, TruffleString name, TruffleString qualname,
                     int firstlineno, byte[] linetable) {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature,
+                        nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
+                        filename, name, qualname, firstlineno, linetable);
+    }
+
+    public static PCode createCode(PythonLanguage language, PRootNode rootNode, Signature signature, int nlocals,
+                    int stacksize, int flags, Object[] constants,
+                    TruffleString[] names, TruffleString[] varnames,
+                    TruffleString[] freevars, TruffleString[] cellvars,
+                    TruffleString filename, TruffleString name, TruffleString qualname,
+                    int firstlineno, byte[] linetable) {
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature,
                         nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
                         filename, name, qualname, firstlineno, linetable);
     }

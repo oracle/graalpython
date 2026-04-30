@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -90,7 +90,6 @@ public final class PFunction extends PythonObject {
         this.qualname = qualname;
         assert code != null;
         this.code = this.finalCode = code;
-        this.callTarget = code.getRootCallTarget();
         this.globals = globals;
         this.defaultValues = this.finalDefaultValues = defaultValues == null ? PythonUtils.EMPTY_OBJECT_ARRAY : defaultValues;
         this.kwDefaultValues = this.finalKwDefaultValues = kwDefaultValues == null ? PKeyword.EMPTY_KEYWORDS : kwDefaultValues;
@@ -171,7 +170,12 @@ public final class PFunction extends PythonObject {
     }
 
     public RootCallTarget getCallTarget() {
-        return callTarget;
+        RootCallTarget ct = callTarget;
+        if (ct == null) {
+            ct = getCode().getRootCallTarget();
+            callTarget = ct;
+        }
+        return ct;
     }
 
     @TruffleBoundary
@@ -180,7 +184,7 @@ public final class PFunction extends PythonObject {
         assert code != null : "code cannot be null";
         this.finalCode = null;
         this.code = code;
-        this.callTarget = code.getRootCallTarget();
+        this.callTarget = null;
     }
 
     public Object[] getDefaults() {

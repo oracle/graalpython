@@ -320,12 +320,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     private final EconomicMap<Object, RootCallTarget> imageBuildtimeCachedCallTargets = ImageInfo.inImageCode() ? EconomicMap.create() : null;
     /**
+     * Root nodes that are populated during native-image build time and then only read at image
+     * runtime.
+     */
+    private final EconomicMap<Object, RootNode> imageBuildtimeCachedRootNodes = ImageInfo.inImageCode() ? EconomicMap.create() : null;
+    /**
      * Call targets added after image startup, or all cached call targets when running on the JVM.
      */
     private final ConcurrentHashMap<Object, RootCallTarget> runtimeCachedCallTargets = new ConcurrentHashMap<>();
+    /**
+     * Root nodes added after image startup, or all cached root nodes when running on the JVM.
+     */
+    private final ConcurrentHashMap<Object, RootNode> runtimeCachedRootNodes = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private final RootCallTarget[] builtinSlotsCallTargets;
     @CompilationFinal(dimensions = 1) private RootCallTarget[] capiCallTargets;
+    @CompilationFinal(dimensions = 1) private final RootNode[] builtinSlotsRootNodes;
 
     /**
      * We cannot initialize call targets in language ctor and the next suitable hook is context
@@ -389,6 +399,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             throw new IllegalStateException("Slots must be initialized in PythonBuiltinClassType static initializer");
         }
         builtinSlotsCallTargets = new RootCallTarget[TpSlot.getBuiltinsCallTargetsCount()];
+        builtinSlotsRootNodes = new RootNode[TpSlot.getBuiltinsCallTargetsCount()];
     }
 
     /**
@@ -1068,12 +1079,27 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public RootCallTarget getBuiltinSlotCallTarget(int index) {
-        return builtinSlotsCallTargets[index];
+        RootCallTarget callTarget = builtinSlotsCallTargets[index];
+        if (callTarget == null) {
+            RootNode rootNode = builtinSlotsRootNodes[index];
+            if (rootNode != null) {
+                callTarget = rootNode.getCallTarget();
+                VarHandle.storeStoreFence();
+                builtinSlotsCallTargets[index] = callTarget;
+            }
+        }
+        return callTarget;
     }
 
     public void setBuiltinSlotCallTarget(int index, RootCallTarget callTarget) {
         VarHandle.storeStoreFence();
         builtinSlotsCallTargets[index] = callTarget;
+        builtinSlotsRootNodes[index] = callTarget != null ? callTarget.getRootNode() : null;
+    }
+
+    public void setBuiltinSlotRootNode(int index, RootNode rootNode) {
+        VarHandle.storeStoreFence();
+        builtinSlotsRootNodes[index] = rootNode;
     }
 
     public RootCallTarget getCapiCallTarget(int index) {
@@ -1107,12 +1133,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTargetUnsafe(rootNodeFunction, key, true);
     }
 
+    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> key) {
+        assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length <= 1;
+        assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length == 0 || key.getConstructors()[0].getParameterCount() == 0;
+        return createCachedRootNodeUnsafe(rootNodeFunction, key, true);
+    }
+
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> key) {
         return createCachedCallTargetUnsafe(rootNodeFunction, key, true);
     }
 
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, int key) {
         return createCachedCallTargetUnsafe(rootNodeFunction, key, true);
+    }
+
+    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> key) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, key, true);
     }
 
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
@@ -1123,10 +1159,20 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass, key);
     }
 
+    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, key);
+    }
+
     // Variant that should be called at most once per context, because it does not cache the target
     // in single context mode
     public RootCallTarget initBuiltinCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
         return createCachedCallTargetUnsafe(rootNodeFunction, false, nodeClass, key);
+    }
+
+    // Variant that should be called at most once per context, because it does not cache the root
+    // node in single context mode
+    public RootNode initBuiltinRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, false, nodeClass, key);
     }
 
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, TruffleString key) {
@@ -1134,8 +1180,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass, key);
     }
 
+    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, TruffleString key) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, key);
+    }
+
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, int key) {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass, key);
+    }
+
+    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, int key) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, key);
     }
 
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, String name) {
@@ -1144,13 +1198,25 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, name);
     }
 
+    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, String name) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, name);
+    }
+
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, PythonBuiltinClassType type, String name) {
         // for slot wrappers: the type is used for validation of "self" type
         return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
     }
 
+    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, PythonBuiltinClassType type, String name) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
+    }
+
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, CodeUnit key) {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, key);
+    }
+
+    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, CodeUnit key) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, true, key);
     }
 
     /**
@@ -1166,6 +1232,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion, isStatic);
     }
 
+    public RootNode createCachedExternalFunWrapperRootNode(Function<PythonLanguage, RootNode> rootNodeFunction,
+                    Class<? extends RootNode> klass, Enum<?> signature, TruffleString name,
+                    boolean doArgumentAndResultConversion, boolean isStatic) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion, isStatic);
+    }
+
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> signature, TruffleString name,
                     boolean doArgumentAndResultConversion) {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, signature, name, doArgumentAndResultConversion);
@@ -1175,13 +1247,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, signature, name);
     }
 
+    public RootNode createStructSeqIndexedMemberAccessCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, int memberIndex) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, true, StructSequence.class, memberIndex);
+    }
+
     public RootCallTarget createStructSeqIndexedMemberAccessCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, int memberIndex) {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, StructSequence.class, memberIndex);
     }
 
+    public RootNode createCachedPropAccessRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<?> nodeClass, String name, int type, int offset) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, name, type, offset);
+    }
+
     public RootCallTarget createCachedPropAccessCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<?> nodeClass, String name, int type, int offset) {
-        // For the time being, we assume finite/limited number of cext/hpy types members, their
-        // types and offsets
         return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass, name, type, offset);
     }
 
@@ -1204,8 +1282,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
+    private RootNode createCachedRootNodeUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, Object key, boolean cacheInSingleContext) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (cacheInSingleContext || !singleContext) {
+            return getOrCreateCachedRootNode(rootNodeFunction, key);
+        } else {
+            return rootNodeFunction.apply(this);
+        }
+    }
+
     private RootCallTarget createCachedCallTargetUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, boolean cacheInSingleContext, Object... cacheKeys) {
         return createCachedCallTargetUnsafe(rootNodeFunction, Arrays.asList(cacheKeys), cacheInSingleContext);
+    }
+
+    private RootNode createCachedRootNodeUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, boolean cacheInSingleContext, Object... cacheKeys) {
+        return createCachedRootNodeUnsafe(rootNodeFunction, Arrays.asList(cacheKeys), cacheInSingleContext);
     }
 
     private RootCallTarget getOrCreateCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
@@ -1228,6 +1319,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
         return runtimeCachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
+    }
+
+    private RootNode getOrCreateCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (ImageInfo.inImageRuntimeCode()) {
+            RootNode preinitialized = imageBuildtimeCachedRootNodes.get(key);
+            if (preinitialized != null) {
+                return preinitialized;
+            }
+            return runtimeCachedRootNodes.computeIfAbsent(key, k -> rootNodeFunction.apply(this));
+        }
+        if (ImageInfo.inImageBuildtimeCode()) {
+            synchronized (imageBuildtimeCachedRootNodes) {
+                RootNode cached = imageBuildtimeCachedRootNodes.get(key);
+                if (cached == null) {
+                    cached = rootNodeFunction.apply(this);
+                    imageBuildtimeCachedRootNodes.put(key, cached);
+                }
+                return cached;
+            }
+        }
+        return runtimeCachedRootNodes.computeIfAbsent(key, k -> rootNodeFunction.apply(this));
     }
 
     @Override
