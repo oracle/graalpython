@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import ast
+import linecache
 import subprocess
 import sys
 
@@ -102,6 +103,32 @@ def test_basic_traceback():
             ('foo', 'raise RuntimeError("test")'),
         ]
     )
+
+
+def test_traceback_from_ast_without_end_positions():
+    import traceback
+
+    filename = "<ast without end positions>"
+    source = "def f():\n    value = None\n    raise AssertionError\n"
+    linecache.cache[filename] = (len(source), None, source.splitlines(True), filename)
+    tree = ast.parse(source, filename)
+    for node in ast.walk(tree):
+        if hasattr(node, "end_lineno"):
+            node.end_lineno = None
+            node.end_col_offset = None
+
+    namespace = {}
+    exec(compile(tree, filename, "exec"), namespace)
+    try:
+        namespace["f"]()
+    except AssertionError:
+        stack = traceback.TracebackException(*sys.exc_info()).stack
+    else:
+        assert False, "generated function did not raise"
+
+    assert stack[-1].name == "f"
+    assert stack[-1].lineno == 3
+    assert stack[-1].line == "raise AssertionError"
 
 
 def test_basic_traceback_generator():
