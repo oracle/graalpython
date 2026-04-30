@@ -1216,6 +1216,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     while (true) { // processing subsequent lines while input is incomplete
                         try {
                             context.eval(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).buildLiteral());
+                            flushInteractiveOutput(sysModule);
                         } catch (PolyglotException e) {
                             if (ps2 == null) {
                                 ps2 = doEcho ? sysModule.getMember("ps2").asString() : null;
@@ -1261,6 +1262,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                     continue;
                                 }
                             }
+                            flushInteractiveOutput(sysModule);
                             // process the exception from eval or from the last parsing of the input
                             // + additional source
                             if (e.isExit()) {
@@ -1299,6 +1301,22 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             }
         } catch (ExitException e) {
             return e.code;
+        }
+    }
+
+    private static void flushInteractiveOutput(Value sysModule) {
+        flushInteractiveStream(sysModule, "stderr");
+        flushInteractiveStream(sysModule, "stdout");
+    }
+
+    private static void flushInteractiveStream(Value sysModule, String name) {
+        try {
+            Value stream = sysModule.getMember(name);
+            if (stream != null && !stream.isNull() && stream.canInvokeMember("flush")) {
+                stream.invokeMember("flush");
+            }
+        } catch (PolyglotException | UnsupportedOperationException e) {
+            // Match CPython's interactive flush_io: stream flush failures are ignored.
         }
     }
 
