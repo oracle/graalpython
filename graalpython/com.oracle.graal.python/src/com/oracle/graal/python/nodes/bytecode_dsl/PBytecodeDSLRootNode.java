@@ -512,6 +512,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         current.reset();
     }
 
+    private void resetInstrumentationDataForResume(VirtualFrame frame, BytecodeNode bytecode, int bci) {
+        resetInstrumentationData(frame, bytecode);
+        getInstrumentationData(frame, bytecode).setNonClearingPastLine(bciToLine(bci, bytecode));
+    }
+
     @Instrumentation(storeBytecodeIndex = false)
     public static final class EnterInstrumentedRoot {
         @Specialization
@@ -1181,7 +1186,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode,
                         @Bind("$bytecodeIndex") int bci) {
-            root.resetInstrumentationData(frame, bytecode);
+            root.resetInstrumentationDataForResume(frame, bytecode, bci);
             root.traceOrProfileCall(frame, bytecode, bci);
             return generator;
         }
@@ -3555,7 +3560,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode,
                         @Bind("$bytecodeIndex") int bci) {
-            root.resetInstrumentationData(frame, bytecode);
+            root.resetInstrumentationDataForResume(frame, bytecode, bci);
             root.traceOrProfileCall(frame, bytecode, bci);
             return sendValue;
         }
