@@ -91,7 +91,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -251,11 +250,11 @@ public class CApiMemberAccessNodes {
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, TruffleString propertyName, int type, int offset) {
             CExtToJavaNode asPythonObjectNode = getReadConverterNode(type);
-            RootCallTarget callTarget = language.createCachedPropAccessCallTarget(
+            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedPropAccessRootNode(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadMemberNodeGen.create(type, offset, asPythonObjectNode)), true),
                             ReadMemberNode.class, BUILTIN.name(), type, offset);
-            int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
-            return PFactory.createBuiltinFunction(language, propertyName, owner, 0, flags, callTarget);
+            int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
+            return PFactory.createBuiltinFunction(language, propertyName, owner, 0, flags, rootNode, false);
         }
     }
 
@@ -277,11 +276,11 @@ public class CApiMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
-            RootCallTarget builtinCt = language.createCachedCallTarget(
+            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedRootNode(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadOnlyMemberNodeGen.create(propertyName)), true),
                             ReadOnlyMemberNode.class, BUILTIN.name());
-            int flags = PBuiltinFunction.getFlags(BUILTIN, builtinCt);
-            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, builtinCt);
+            int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, rootNode, false);
         }
     }
 
@@ -301,11 +300,11 @@ public class CApiMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
-            RootCallTarget builtinCt = language.createCachedCallTarget(
+            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedRootNode(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(BadMemberDescrNodeGen.create()), true),
                             BadMemberDescrNode.class, BUILTIN.name());
-            int flags = PBuiltinFunction.getFlags(BUILTIN, builtinCt);
-            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, builtinCt);
+            int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, rootNode, false);
         }
     }
 
@@ -600,11 +599,11 @@ public class CApiMemberAccessNodes {
                 return BadMemberDescrNode.createBuiltinFunction(language, propertyName);
             }
             //
-            RootCallTarget callTarget = language.createCachedPropAccessCallTarget(
+            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedPropAccessRootNode(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(WriteMemberNodeGen.create(type, offset)), true),
                             WriteMemberNode.class, BUILTIN.name(), type, offset);
-            int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
-            return PFactory.createBuiltinFunction(language, propertyName, owner, 0, flags, callTarget);
+            int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
+            return PFactory.createBuiltinFunction(language, propertyName, owner, 0, flags, rootNode, false);
         }
     }
 }
