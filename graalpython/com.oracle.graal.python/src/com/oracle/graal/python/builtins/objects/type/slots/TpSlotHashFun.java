@@ -134,8 +134,7 @@ public abstract class TpSlotHashFun {
 
         @Override
         public void initialize(PythonLanguage language) {
-            RootCallTarget callTarget = createSlotCallTarget(language, SIGNATURE, getNodeFactory(), J___HASH__);
-            language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
+            language.setBuiltinSlotRootNode(callTargetIndex, createSlotRootNode(language, SIGNATURE, getNodeFactory(), J___HASH__));
         }
     }
 

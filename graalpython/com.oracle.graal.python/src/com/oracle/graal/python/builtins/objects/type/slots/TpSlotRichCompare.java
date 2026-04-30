@@ -137,8 +137,7 @@ public abstract class TpSlotRichCompare {
 
         @Override
         public final void initialize(PythonLanguage language) {
-            RootCallTarget callTarget = createSlotCallTarget(language, SIGNATURE, getNodeFactory(), "tp_richcompare");
-            language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
+            language.setBuiltinSlotRootNode(callTargetIndex, createSlotRootNode(language, SIGNATURE, getNodeFactory(), "tp_richcompare"));
         }
     }
 

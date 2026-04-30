@@ -123,8 +123,7 @@ public abstract class TpSlotInquiry {
 
         @Override
         public final void initialize(PythonLanguage language) {
-            RootCallTarget callTarget = createSlotCallTarget(language, SIGNATURE, getNodeFactory(), J___BOOL__);
-            language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
+            language.setBuiltinSlotRootNode(callTargetIndex, createSlotRootNode(language, SIGNATURE, getNodeFactory(), J___BOOL__));
         }
     }
 

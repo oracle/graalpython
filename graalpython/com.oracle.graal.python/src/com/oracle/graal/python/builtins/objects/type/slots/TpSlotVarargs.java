@@ -181,8 +181,7 @@ public final class TpSlotVarargs {
 
         @Override
         public final void initialize(PythonLanguage language) {
-            RootCallTarget callTarget = createSlotCallTarget(language, null, getNodeFactory(), name);
-            language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
+            language.setBuiltinSlotRootNode(callTargetIndex, createSlotRootNode(language, null, getNodeFactory(), name));
         }
 
         @Override
@@ -213,9 +212,9 @@ public final class TpSlotVarargs {
              * 'WrapTpNew' holds the type in a field and uses that to do the check. The dropping is
              * achieved by using `declaresExplicitSelf = false`.
              */
-            RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, false, builtinType),
+            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedRootNode(l -> new BuiltinFunctionRootNode(l, builtin, factory, false, builtinType),
                             nodeClass, nodeClass, builtinType, J___NEW__);
-            return PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, this);
+            return PFactory.createNewWrapper(language, type, defaults, kwDefaults, rootNode, this);
         }
     }
 
