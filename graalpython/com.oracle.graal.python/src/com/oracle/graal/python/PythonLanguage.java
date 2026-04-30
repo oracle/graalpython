@@ -1091,12 +1091,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return callTarget;
     }
 
-    public void setBuiltinSlotCallTarget(int index, RootCallTarget callTarget) {
-        VarHandle.storeStoreFence();
-        builtinSlotsCallTargets[index] = callTarget;
-        builtinSlotsRootNodes[index] = callTarget != null ? callTarget.getRootNode() : null;
-    }
-
     public void setBuiltinSlotRootNode(int index, RootNode rootNode) {
         VarHandle.storeStoreFence();
         builtinSlotsRootNodes[index] = rootNode;
@@ -1163,12 +1157,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, key);
     }
 
-    // Variant that should be called at most once per context, because it does not cache the target
-    // in single context mode
-    public RootCallTarget initBuiltinCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, false, nodeClass, key);
-    }
-
     // Variant that should be called at most once per context, because it does not cache the root
     // node in single context mode
     public RootNode initBuiltinRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
@@ -1219,19 +1207,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, key);
     }
 
-    /**
-     * Caches call targets for external C functions created by extensions at runtime.
-     * <p>
-     * For the time being, we assume finite/limited number of extensions and their external
-     * functions. This may hold onto call targets created by one extension used in a context that
-     * was closed in the meanwhile and no other context ever loads the extension.
-     */
-    public RootCallTarget createCachedExternalFunWrapperCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction,
-                    Class<? extends RootNode> klass, Enum<?> signature, TruffleString name,
-                    boolean doArgumentAndResultConversion, boolean isStatic) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion, isStatic);
-    }
-
     public RootNode createCachedExternalFunWrapperRootNode(Function<PythonLanguage, RootNode> rootNodeFunction,
                     Class<? extends RootNode> klass, Enum<?> signature, TruffleString name,
                     boolean doArgumentAndResultConversion, boolean isStatic) {
@@ -1251,16 +1226,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, StructSequence.class, memberIndex);
     }
 
-    public RootCallTarget createStructSeqIndexedMemberAccessCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, int memberIndex) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, StructSequence.class, memberIndex);
-    }
-
     public RootNode createCachedPropAccessRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<?> nodeClass, String name, int type, int offset) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, name, type, offset);
-    }
-
-    public RootCallTarget createCachedPropAccessCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<?> nodeClass, String name, int type, int offset) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass, name, type, offset);
     }
 
     /**
