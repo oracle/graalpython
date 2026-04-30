@@ -589,6 +589,34 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void raise(int signal,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        nativeLib.raise(nativePosixSupport, signal);
+    }
+
+    @ExportMessage
+    final int alarm(int seconds,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.alarm(nativePosixSupport, seconds);
+    }
+
+    @ExportMessage
+    final Timeval[] getitimer(int which,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.getitimer(nativePosixSupport, which);
+    }
+
+    @ExportMessage
+    final Timeval[] setitimer(int which, Timeval delay, Timeval interval,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.setitimer(nativePosixSupport, which, delay, interval);
+    }
+
+    @ExportMessage
     final void signalSelf(int signal,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();

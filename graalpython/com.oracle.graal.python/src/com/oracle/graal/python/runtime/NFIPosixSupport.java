@@ -230,6 +230,10 @@ public final class NFIPosixSupport extends PosixSupport {
         get_blocking("(sint32):sint32"),
         set_blocking("(sint32, sint32):sint32"),
         get_terminal_size("(sint32, [sint32]):sint32"),
+        call_raise("(sint32):sint32"),
+        call_alarm("(sint32):sint32"),
+        call_getitimer("(sint32, [sint64]):sint32"),
+        call_setitimer("(sint32, [sint64], [sint64]):sint32"),
         signal_self("(sint32):sint32"),
         call_kill("(sint64, sint32):sint32"),
         call_killpg("(sint64, sint32):sint32"),
@@ -1164,6 +1168,43 @@ public final class NFIPosixSupport extends PosixSupport {
         if (res == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
+    }
+
+    @ExportMessage
+    public void raise(int signal,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_raise, signal);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public int alarm(int seconds,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_alarm, seconds);
+    }
+
+    @ExportMessage
+    public Timeval[] getitimer(int which,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long[] currentValue = new long[4];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getitimer, which, currentValue);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return unwrapTimeval(currentValue);
+    }
+
+    @ExportMessage
+    public Timeval[] setitimer(int which, Timeval delay, Timeval interval,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        long[] oldValue = new long[4];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_setitimer, which, wrapItimerval(delay, interval), oldValue);
+        if (res == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return unwrapTimeval(oldValue);
     }
 
     @ExportMessage
@@ -2699,6 +2740,14 @@ public final class NFIPosixSupport extends PosixSupport {
         } else {
             return new long[]{timeval[0].getSeconds(), timeval[0].getMicroseconds(), timeval[1].getSeconds(), timeval[1].getMicroseconds()};
         }
+    }
+
+    private static long[] wrapItimerval(Timeval delay, Timeval interval) {
+        return new long[]{delay.getSeconds(), delay.getMicroseconds(), interval.getSeconds(), interval.getMicroseconds()};
+    }
+
+    private static Timeval[] unwrapTimeval(long[] timeval) {
+        return new Timeval[]{new Timeval(timeval[0], timeval[1]), new Timeval(timeval[2], timeval[3])};
     }
 
     private static TruffleString cStringToTruffleString(byte[] buf, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {

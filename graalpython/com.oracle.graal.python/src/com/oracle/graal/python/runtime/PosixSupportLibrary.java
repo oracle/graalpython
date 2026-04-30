@@ -258,6 +258,14 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Object readlinkat(Object receiver, int dirFd, Object path) throws PosixException;
 
+    public abstract void raise(Object receiver, int signal) throws PosixException;
+
+    public abstract int alarm(Object receiver, int seconds) throws PosixException;
+
+    public abstract Timeval[] getitimer(Object receiver, int which) throws PosixException;
+
+    public abstract Timeval[] setitimer(Object receiver, int which, Timeval delay, Timeval interval) throws PosixException;
+
     public abstract void signalSelf(Object receiver, int signal) throws PosixException;
 
     public abstract void kill(Object receiver, long pid, int signal) throws PosixException;

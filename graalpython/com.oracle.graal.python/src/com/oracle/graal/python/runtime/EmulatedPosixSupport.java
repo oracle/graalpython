@@ -44,6 +44,7 @@ import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_LINUX;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.modules.SignalModuleBuiltins.signalFromName;
+import static com.oracle.graal.python.builtins.modules.SignalModuleBuiltins.triggerEmulatedSignal;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.getThreadId;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -209,6 +210,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -349,6 +353,10 @@ public final class EmulatedPosixSupport extends PosixResources {
     private final boolean withoutIOSocket;
     // Lazily parsed content of /etc/services.
     private Map<String, List<Service>> etcServices;
+    private ScheduledExecutorService itimerService;
+    private ScheduledFuture<?> itimerFuture;
+    private long itimerInterval;
+    private Alarm currentAlarm;
 
     public EmulatedPosixSupport(PythonContext context) {
         super(context);
@@ -2011,6 +2019,138 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
         } catch (IndexOutOfBoundsException e) {
             throw posixException(OSErrorEnum.ESRCH);
+        }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void raise(int signal) {
+        throw createUnsupportedFeature("raise");
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public synchronized int alarm(int seconds) {
+        int remaining = 0;
+        if (currentAlarm != null && currentAlarm.isRunning()) {
+            remaining = currentAlarm.getRemainingSeconds();
+            if (remaining < 0) {
+                remaining = 0;
+            }
+            currentAlarm.cancel();
+        }
+        if (seconds > 0) {
+            currentAlarm = new Alarm(context, seconds);
+            currentAlarm.start();
+        } else {
+            currentAlarm = null;
+        }
+        return remaining;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public synchronized Timeval[] getitimer(int which) throws PosixException {
+        if (which != 0) {
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        return currentItimer();
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    public synchronized Timeval[] setitimer(int which, Timeval delay, Timeval interval) throws PosixException {
+        if (which != 0 || delay.getSeconds() < 0 || delay.getMicroseconds() < 0 || interval.getSeconds() < 0 || interval.getMicroseconds() < 0) {
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        Timeval[] oldValue = currentItimer();
+        long usDelay = toMicroseconds(delay);
+        long usInterval = toMicroseconds(interval);
+        if (itimerFuture != null) {
+            itimerFuture.cancel(false);
+            itimerFuture = null;
+            itimerInterval = 0;
+        }
+        if (usDelay != 0) {
+            itimerInterval = usInterval;
+            Runnable raiseAlarm = () -> triggerEmulatedSignal(context, "ALRM");
+            if (usInterval == 0) {
+                itimerFuture = getItimerService().schedule(raiseAlarm, usDelay, TimeUnit.MICROSECONDS);
+            } else {
+                itimerFuture = getItimerService().scheduleAtFixedRate(raiseAlarm, usDelay, usInterval, TimeUnit.MICROSECONDS);
+            }
+        }
+        return oldValue;
+    }
+
+    private Timeval[] currentItimer() {
+        return new Timeval[]{fromMicroseconds(currentItimerDelay()), fromMicroseconds(itimerInterval)};
+    }
+
+    private long currentItimerDelay() {
+        if (itimerFuture == null) {
+            return 0;
+        }
+        long delay = itimerFuture.getDelay(TimeUnit.MICROSECONDS);
+        return Math.max(delay, 0);
+    }
+
+    private ScheduledExecutorService getItimerService() {
+        if (itimerService == null) {
+            ScheduledExecutorService newItimerService = Executors.newSingleThreadScheduledExecutor(runnable -> {
+                Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+                thread.setDaemon(true);
+                return thread;
+            });
+            itimerService = newItimerService;
+            context.registerAtexitHook(ctx -> newItimerService.shutdown());
+        }
+        return itimerService;
+    }
+
+    private static long toMicroseconds(Timeval timeval) {
+        return TimeUnit.SECONDS.toMicros(timeval.getSeconds()) + timeval.getMicroseconds();
+    }
+
+    private static Timeval fromMicroseconds(long microseconds) {
+        return new Timeval(microseconds / TimeUnit.SECONDS.toMicros(1), microseconds % TimeUnit.SECONDS.toMicros(1));
+    }
+
+    private static final class Alarm {
+        private final PythonContext context;
+        private final int seconds;
+        private final long startMillis;
+        private Thread thread;
+
+        Alarm(PythonContext context, int seconds) {
+            this.context = context;
+            this.seconds = seconds;
+            this.startMillis = System.currentTimeMillis();
+        }
+
+        void start() {
+            thread = new Thread(() -> {
+                try {
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(seconds));
+                    triggerEmulatedSignal(context, "ALRM");
+                } catch (InterruptedException e) {
+                    // Cancelled
+                }
+            });
+            thread.setDaemon(true);
+            thread.start();
+        }
+
+        boolean isRunning() {
+            return thread.isAlive();
+        }
+
+        void cancel() {
+            thread.interrupt();
+        }
+
+        int getRemainingSeconds() {
+            return seconds - (int) TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - startMillis);
         }
     }
 
