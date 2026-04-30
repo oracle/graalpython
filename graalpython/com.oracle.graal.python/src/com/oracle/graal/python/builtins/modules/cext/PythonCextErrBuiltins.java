@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -225,7 +225,7 @@ public final class PythonCextErrBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached HashingStorageGetItem getItem,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodepointNode,
+                        @Cached TruffleString.LastIndexOfCodePointNode lastIndexOfCodepointNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached PyDictSetItem setItemNode,
@@ -241,12 +241,12 @@ public final class PythonCextErrBuiltins {
                 dict = PFactory.createDict(language);
             }
             int length = codePointLengthNode.execute(name, TS_ENCODING);
-            int dotIdx = indexOfCodepointNode.execute(name, '.', 0, length, TS_ENCODING);
+            int dotIdx = lastIndexOfCodepointNode.execute(name, '.', length, 0, TS_ENCODING);
             if (dotIdx < 0) {
                 notDotProfile.enter(inliningTarget);
                 throw raiseNode.raise(inliningTarget, SystemError, MUST_BE_MODULE_CLASS, "PyErr_NewException", "name");
             }
-            if (getItem.execute(null, inliningTarget, ((PDict) dict).getDictStorage(), base) == null) {
+            if (getItem.execute(null, inliningTarget, ((PDict) dict).getDictStorage(), T___MODULE__) == null) {
                 notModuleProfile.enter(inliningTarget);
                 setItemNode.execute(null, inliningTarget, (PDict) dict, T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
             }

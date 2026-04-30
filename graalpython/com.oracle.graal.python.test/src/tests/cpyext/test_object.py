@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@ import sys
 import unittest
 from unittest import skipIf
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, assert_raises
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, compile_module_from_string, unhandled_error_compare, assert_raises
 
 is_windows = sys.platform == "win32"
 
@@ -659,11 +659,56 @@ class TestObject(unittest.TestCase):
         assert tester.get_tp_name(int) == 'int'
         assert tester.get_tp_name(type(tester)) == 'TestTpName.TestTpName'
 
+    def test_new_exception_with_qualified_name(self):
+        module = compile_module_from_string("""
+            #include "Python.h"
+
+            static PyModuleDef testmodule = {
+                PyModuleDef_HEAD_INIT,
+                "test_new_exception_with_qualified_name",
+                NULL,
+                -1,
+                NULL,
+            };
+
+            PyMODINIT_FUNC PyInit_test_new_exception_with_qualified_name(void)
+            {
+                PyObject *exception = PyErr_NewException("pkg.sub.CustomError", NULL, NULL);
+                if (exception == NULL) {
+                    return NULL;
+                }
+                PyObject *module = PyModule_Create(&testmodule);
+                if (module == NULL) {
+                    Py_DECREF(exception);
+                    return NULL;
+                }
+                PyObject *name = PyObject_GetAttrString(exception, "__name__");
+                if (name == NULL) {
+                    Py_DECREF(exception);
+                    Py_DECREF(module);
+                    return NULL;
+                }
+                const char *name_str = PyUnicode_AsUTF8(name);
+                if (name_str == NULL || PyModule_AddObject(module, name_str, exception) < 0) {
+                    Py_DECREF(name);
+                    Py_DECREF(exception);
+                    Py_DECREF(module);
+                    return NULL;
+                }
+                Py_DECREF(name);
+                return module;
+            }
+        """, "test_new_exception_with_qualified_name")
+        assert module.CustomError.__name__ == "CustomError"
+        assert module.CustomError.__qualname__ == "CustomError"
+        assert module.CustomError.__module__ == "pkg.sub"
+        assert not hasattr(module, "pkg.sub.CustomError")
+
     def test_tp_alloc(self):
         TestTpAlloc = CPyExtType("TestTpAlloc",
                                 '''
                                 #include "objimpl.h"
-                                
+
                                 static PyObject* testslots_has_tp_alloc_and_size(PyObject* self) {
                                     if (!PyType_Type.tp_alloc) {
                                         Py_RETURN_FALSE;
