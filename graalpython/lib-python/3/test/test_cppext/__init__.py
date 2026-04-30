@@ -22,6 +22,8 @@ class TestCPPExt(unittest.TestCase):
 
     @support.requires_resource('cpu')
     def test_build_cpp03(self):
+        if sys.platform == "darwin":
+            self.skipTest("current macOS SDK libc++ headers no longer support C++03")
         self.check_build(True, '_testcpp03ext')
 
     # With MSVC, the linker fails with: cannot open file 'python311.lib'
