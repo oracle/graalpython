@@ -55,6 +55,8 @@ import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UT
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_32_LE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_INTERNED;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
@@ -114,6 +116,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.AllocateNativeObjectStubNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
@@ -122,7 +128,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.str.NativeStringData;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
@@ -159,6 +164,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.ConcurrentWeakSet;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -324,6 +330,10 @@ public final class PythonCextUnicodeBuiltins {
             }
 
             str.intern();
+            if (str.isNative()) {
+                long ptr = HandlePointerConverter.pointerToStub(str.getNativePointer());
+                CStructAccess.writeIntField(ptr, CFields.GraalPyUnicodeObject__interned, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
+            }
             /*
              * TODO this is not integrated with str.intern, pointer comparisons of two str.intern'ed
              * string may still yield failse
@@ -339,6 +349,19 @@ public final class PythonCextUnicodeBuiltins {
              * do.
              */
             return NATIVE_NULL;
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_Unicode_CheckInterned extends CApiUnaryBuiltinNode {
+        @Specialization
+        static int withPString(PString str) {
+            return PythonUtils.isInterned(str.getValueUncached()) ? 1 : 0;
+        }
+
+        @Fallback
+        static int nil(@SuppressWarnings("unused") Object obj) {
+            return 0;
         }
     }
 
@@ -826,23 +849,24 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int, Int}, call = Ignored)
-    abstract static class GraalPyPrivate_Unicode_New extends CApiQuaternaryBuiltinNode {
-        @Specialization
-        static Object doGeneric(long ptr, long elements, int charSize, int isAscii,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Cached HiddenAttr.WriteNode writeNode,
-                        @Cached PRaiseNode raiseNode) {
-            long size = elements * charSize;
-            if (!PInt.isIntRange(size)) {
-                throw raiseNode.raise(inliningTarget, MemoryError);
-            }
-            PString s = PFactory.createString(language, null);
-            NativeStringData data = NativeStringData.create(charSize, isAscii != 0, ptr, (int) size);
-            s.setNativeStringData(inliningTarget, writeNode, data);
-            return s;
+    @CApiBuiltin(ret = PyObject, args = {Py_ssize_t, Int, Int}, call = Ignored)
+    static long GraalPyPrivate_Unicode_New(long nChars, int charSize, int isAscii) {
+        if (nChars < 0 || nChars > Long.MAX_VALUE / charSize) {
+            throw PRaiseNode.raiseStatic(null, MemoryError);
         }
+        long size = nChars * charSize;
+        if (!PInt.isIntRange(size)) {
+            throw PRaiseNode.raiseStatic(null, MemoryError);
+        }
+        // the extra 'charSize' accounts for the NUL char
+        long extraSize = size + charSize;
+        PString s = PFactory.createString(PythonLanguage.get(null), null);
+        long initialRefCount = FirstToNativeNode.getInitialRefcnt(true, false);
+        long taggedPointer = AllocateNativeObjectStubNode.executeUncached(s, PythonBuiltinClassType.PString, CStructs.GraalPyUnicodeObject, initialRefCount, false, extraSize);
+        s.setNativePointer(taggedPointer);
+        long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+        CApiTransitions.initializeGraalPyUnicodeObject(realPointer, nChars, size, charSize, isAscii != 0, GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED);
+        return taggedPointer;
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int}, call = Ignored)

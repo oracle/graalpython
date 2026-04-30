@@ -127,6 +127,33 @@ extern "C" {
 #  define _PyUnicode_CHECK(op) PyUnicode_Check(op)
 #endif
 
+static inline Py_ssize_t *
+GraalPyPrivate_Unicode_LengthPtr(PyObject *op)
+{
+    if (points_to_py_handle_space(op)) {
+        return &((GraalPyUnicodeObject *) pointer_to_stub(op))->length;
+    }
+    return &_PyASCIIObject_CAST(op)->length;
+}
+
+static inline Py_hash_t *
+GraalPyPrivate_Unicode_HashPtr(PyObject *op)
+{
+    if (points_to_py_handle_space(op)) {
+        return &((GraalPyUnicodeObject *) pointer_to_stub(op))->hash;
+    }
+    return &_PyASCIIObject_CAST(op)->hash;
+}
+
+static inline void **
+GraalPyPrivate_Unicode_DataPtr(PyObject *op)
+{
+    if (points_to_py_handle_space(op)) {
+        return &((GraalPyUnicodeObject *) pointer_to_stub(op))->data;
+    }
+    return &_PyUnicodeObject_CAST(op)->data.any;
+}
+
 #define _PyUnicode_UTF8(op)                             \
     (_PyCompactUnicodeObject_CAST(op)->utf8)
 #define PyUnicode_UTF8(op)                              \
@@ -143,19 +170,19 @@ extern "C" {
          _PyUnicode_UTF8_LENGTH(op))
 
 #define _PyUnicode_LENGTH(op)                           \
-    (_PyASCIIObject_CAST(op)->length)
+    (*GraalPyPrivate_Unicode_LengthPtr(_PyObject_CAST(op)))
 #define _PyUnicode_STATE(op)                            \
     (_PyASCIIObject_CAST(op)->state)
 #define _PyUnicode_HASH(op)                             \
-    (_PyASCIIObject_CAST(op)->hash)
+    (*GraalPyPrivate_Unicode_HashPtr(_PyObject_CAST(op)))
 #define _PyUnicode_KIND(op)                             \
     (assert(_PyUnicode_CHECK(op)),                      \
-     _PyASCIIObject_CAST(op)->state.kind)
+     PyUnicode_KIND(op))
 #define _PyUnicode_GET_LENGTH(op)                       \
     (assert(_PyUnicode_CHECK(op)),                      \
-     _PyASCIIObject_CAST(op)->length)
+     PyUnicode_GET_LENGTH(op))
 #define _PyUnicode_DATA_ANY(op)                         \
-    (_PyUnicodeObject_CAST(op)->data.any)
+    (*GraalPyPrivate_Unicode_DataPtr(_PyObject_CAST(op)))
 
 #define _PyUnicode_SHARE_UTF8(op)                       \
     (assert(_PyUnicode_CHECK(op)),                      \
@@ -1358,22 +1385,24 @@ PyObject *
 PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar)
 {
     // GraalPy change: different implementation
-    /* add one to size for the null character */
+    if (size < 0) {
+        PyErr_SetString(PyExc_SystemError,
+                        "Negative size passed to PyUnicode_New");
+        return NULL;
+    }
     if (maxchar < 128) {
-        /* We intentionally use 'size' (which is one element less than the allocated array)
-         * because interop users should not see the null character. */
-        return GraalPyPrivate_Unicode_New((Py_UCS1 *) calloc(size + 1, PyUnicode_1BYTE_KIND), size, PyUnicode_1BYTE_KIND, 1);
+        return GraalPyPrivate_Unicode_New(size, PyUnicode_1BYTE_KIND, 1);
     } else if (maxchar < 256) {
-        return GraalPyPrivate_Unicode_New((Py_UCS1 *) calloc(size + 1, PyUnicode_1BYTE_KIND), size, PyUnicode_1BYTE_KIND, 0);
+        return GraalPyPrivate_Unicode_New(size, PyUnicode_1BYTE_KIND, 0);
     } else if (maxchar < 65536) {
-        return GraalPyPrivate_Unicode_New((Py_UCS2 *) calloc(size + 1, PyUnicode_2BYTE_KIND), size, PyUnicode_2BYTE_KIND, 0);
+        return GraalPyPrivate_Unicode_New(size, PyUnicode_2BYTE_KIND, 0);
     } else {
         if (maxchar > MAX_UNICODE) {
             PyErr_SetString(PyExc_SystemError,
                             "invalid maximum character passed to PyUnicode_New");
             return NULL;
         }
-        return GraalPyPrivate_Unicode_New((Py_UCS4 *) calloc(size + 1, PyUnicode_4BYTE_KIND), size, PyUnicode_4BYTE_KIND, 0);
+        return GraalPyPrivate_Unicode_New(size, PyUnicode_4BYTE_KIND, 0);
     }
     /* should never be reached */
     return NULL;
@@ -14194,7 +14223,7 @@ GraalPyPrivate_Unicode_SubtypeNew(PyTypeObject *type, PyObject *unicode)
     _PyUnicode_STATE(self).kind = kind;
     _PyUnicode_STATE(self).compact = 0;
     // GraalPy change
-    _PyUnicode_STATE(self).ascii = GET_SLOT_SPECIAL(unicode, PyASCIIObject, state_ascii, state.ascii);
+    _PyUnicode_STATE(self).ascii = PyUnicode_IS_ASCII(unicode);
     _PyUnicode_STATE(self).statically_allocated = 0;
     _PyUnicode_UTF8_LENGTH(self) = 0;
     _PyUnicode_UTF8(self) = NULL;
@@ -15243,27 +15272,49 @@ PyInit__string(void)
 
 // GraalPy additions
 unsigned int GraalPyUnicode_CHECK_INTERNED(PyObject *op) {
-    return GET_SLOT_SPECIAL(op, PyASCIIObject, state_interned, state.interned);
+    if (points_to_py_handle_space(op)) {
+        GraalPyUnicodeObject *unicode = (GraalPyUnicodeObject *) pointer_to_stub(op);
+        if (unicode->interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED) {
+            unicode->interned = GraalPyPrivate_Unicode_CheckInterned(op) ? GRAALPY_UNICODE_INTERN_STATE_INTERNED : GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
+        }
+        return unicode->interned == GRAALPY_UNICODE_INTERN_STATE_INTERNED ? SSTATE_INTERNED_MORTAL : SSTATE_NOT_INTERNED;
+    }
+    return _PyASCIIObject_CAST(op)->state.interned;
 }
 
 Py_ssize_t GraalPyUnicode_GET_LENGTH(PyObject* op) {
-	return GraalPyPrivate_GET_PyASCIIObject_length(op);
+    if (points_to_py_handle_space(op)) {
+        return ((GraalPyUnicodeObject *) pointer_to_stub(op))->length;
+    }
+    return _PyASCIIObject_CAST(op)->length;
 }
 
 unsigned int GraalPyUnicode_IS_ASCII(PyObject* op) {
-	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_ascii, state.ascii);
+    if (points_to_py_handle_space(op)) {
+        return ((GraalPyUnicodeObject *) pointer_to_stub(op))->is_ascii;
+    }
+    return _PyASCIIObject_CAST(op)->state.ascii;
 }
 
 unsigned int GraalPyUnicode_IS_COMPACT(PyObject* op) {
-	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_compact, state.compact);
+    if (points_to_py_handle_space(op)) {
+        return 0;
+    }
+    return _PyASCIIObject_CAST(op)->state.compact;
 }
 
 int GraalPyUnicode_KIND(PyObject* op) {
-	return GET_SLOT_SPECIAL(op, PyASCIIObject, state_kind, state.kind);
+    if (points_to_py_handle_space(op)) {
+        return ((GraalPyUnicodeObject *) pointer_to_stub(op))->kind;
+    }
+    return _PyASCIIObject_CAST(op)->state.kind;
 }
 
 void* GraalPyUnicode_NONCOMPACT_DATA(PyObject* op) {
-	return GET_SLOT_SPECIAL(op, PyUnicodeObject, data, data.any);
+    if (points_to_py_handle_space(op)) {
+        return ((GraalPyUnicodeObject *) pointer_to_stub(op))->data;
+    }
+    return _PyUnicodeObject_CAST(op)->data.any;
 }
 
 #ifdef __cplusplus

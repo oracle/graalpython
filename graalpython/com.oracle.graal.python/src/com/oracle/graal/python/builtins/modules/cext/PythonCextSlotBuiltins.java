@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyASCIIObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyByteArrayObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCFunctionObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCMethodObject;
@@ -66,24 +65,20 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTupleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyUnicodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getter;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setter;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.calloc;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STEP;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STOP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -99,13 +94,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
@@ -114,10 +107,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.str.NativeStringData;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -136,8 +125,6 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSlotBuiltins {
 
@@ -153,91 +140,6 @@ public final class PythonCextSlotBuiltins {
         PTuple object = (PTuple) NativeToPythonInternalNode.executeUncached(ptr, false);
         assert !(object.getSequenceStorage() instanceof NativeByteSequenceStorage);
         return PySequenceArrayWrapper.ensureNativeSequence(object);
-    }
-
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Get_PyASCIIObject_length extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static long get(Object object,
-                        @Cached StringLenNode stringLenNode) {
-            return stringLenNode.execute(object);
-        }
-    }
-
-    @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_ascii extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        int get(PString object,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile storageProfile,
-                        @Cached HiddenAttr.ReadNode readAttrNode,
-                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
-            // important: avoid materialization of native sequences
-            NativeStringData nativeData = object.getNativeStringData(inliningTarget, readAttrNode);
-            if (storageProfile.profile(inliningTarget, nativeData != null)) {
-                return nativeData.isAscii() ? 1 : 0;
-            }
-
-            TruffleString string = object.getMaterialized();
-            return PInt.intValue(getCodeRangeNode.execute(string, TS_ENCODING) == TruffleString.CodeRange.ASCII);
-        }
-    }
-
-    @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_compact extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static int get(@SuppressWarnings("unused") Object object) {
-            return 0;
-        }
-    }
-
-    @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_interned extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static int get(PString object,
-                        @Bind Node inliningTarget,
-                        @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
-            return isInternedStringNode.execute(inliningTarget, object) ? 1 : 0;
-        }
-    }
-
-    @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_kind extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static int get(PString object,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile storageProfile,
-                        @Cached HiddenAttr.ReadNode readAttrNode,
-                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
-            // important: avoid materialization of native sequences
-            NativeStringData nativeData = object.getNativeStringData(inliningTarget, readAttrNode);
-            if (storageProfile.profile(inliningTarget, nativeData != null)) {
-                return nativeData.getCharSize();
-            }
-            TruffleString string = object.getMaterialized();
-            TruffleString.CodeRange range = getCodeRangeNode.execute(string, TS_ENCODING);
-            if (range.isSubsetOf(TruffleString.CodeRange.LATIN_1)) {
-                return 1;
-            } else if (range.isSubsetOf(TruffleString.CodeRange.BMP)) {
-                return 2;
-            } else {
-                return 4;
-            }
-        }
-    }
-
-    @CApiBuiltin(ret = UNSIGNED_INT, args = {PyASCIIObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Get_PyASCIIObject_state_ready extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static int get(@SuppressWarnings("unused") Object object) {
-            return 1;
-        }
     }
 
     @CApiBuiltin(ret = PyTypeObjectBorrowed, args = {PyCMethodObject}, call = Ignored)
@@ -659,54 +561,6 @@ public final class PythonCextSlotBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetSliceField getSliceField) {
             return getSliceField.execute(inliningTarget, object, PROMOTED_STOP, object.getStop());
-        }
-    }
-
-    @CApiBuiltin(ret = Pointer, args = {PyUnicodeObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static long get(PString object,
-                        @Bind Node inliningTarget,
-                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode,
-                        @Cached HiddenAttr.ReadNode readAttrNode,
-                        @Cached HiddenAttr.WriteNode writeAttrNode) {
-            NativeStringData nativeData = object.getNativeStringData(inliningTarget, readAttrNode);
-            if (nativeData != null) {
-                // in this case, we can just return the pointer
-                return nativeData.getPtr();
-            }
-            TruffleString string = object.getMaterialized();
-            TruffleString.CodeRange range = getCodeRangeNode.execute(string, TS_ENCODING);
-            TruffleString.Encoding encoding;
-            int charSize;
-            boolean isAscii = false;
-            if (range == TruffleString.CodeRange.ASCII) {
-                isAscii = true;
-                charSize = 1;
-                encoding = TruffleString.Encoding.US_ASCII;
-            } else if (range.isSubsetOf(TruffleString.CodeRange.LATIN_1)) {
-                charSize = 1;
-                encoding = TruffleString.Encoding.ISO_8859_1;
-            } else if (range.isSubsetOf(TruffleString.CodeRange.BMP)) {
-                charSize = 2;
-                encoding = TruffleString.Encoding.UTF_16;
-            } else {
-                charSize = 4;
-                encoding = TruffleString.Encoding.UTF_32;
-            }
-            string = switchEncodingNode.execute(string, encoding);
-            int byteLength = string.byteLength(encoding);
-            long ptr = calloc(byteLength + /* null terminator */ charSize);
-            writeTruffleStringNode.write(ptr, string, encoding);
-            /*
-             * Set native data, so we can just return the pointer the next time.
-             */
-            NativeStringData data = NativeStringData.create(charSize, isAscii, ptr, byteLength);
-            object.setNativeStringData(inliningTarget, writeAttrNode, data);
-            return ptr;
         }
     }
 

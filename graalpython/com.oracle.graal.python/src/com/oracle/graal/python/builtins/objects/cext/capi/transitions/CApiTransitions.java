@@ -54,7 +54,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.calloc;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.mallocPtrArray;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtrArrayElements;
@@ -113,6 +112,8 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -157,6 +158,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
 
@@ -170,6 +172,10 @@ public abstract class CApiTransitions {
     private static int GCALotCounter = 0;
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CApiTransitions.class);
+
+    public static final int GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED = 0;
+    public static final int GRAALPY_UNICODE_INTERN_STATE_INTERNED = 1;
+    public static final int GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED = 2;
 
     enum PollingState {
         /** startup barrier not finished yet, polling must not run */
@@ -443,6 +449,22 @@ public abstract class CApiTransitions {
         NativeStorageReference ref = new NativeStorageReference(handleContext, storage);
         storage.setReference(ref);
         handleContext.nativeStorageReferences.add(ref);
+    }
+
+    public static long initializeGraalPyUnicodeObject(long rawPointer, long elements, long byteLength, int charSize, boolean isAscii, int interned) {
+        assert charSize == 1 || charSize == 2 || charSize == 4;
+        assert byteLength == elements * charSize;
+        assert interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED || interned == GRAALPY_UNICODE_INTERN_STATE_INTERNED || interned == GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
+        long data = rawPointer + CStructs.GraalPyUnicodeObject.size();
+        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__length, elements);
+        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__byte_length, byteLength);
+        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__hash, -1);
+        writeIntField(rawPointer, CFields.GraalPyUnicodeObject__kind, charSize);
+        writeIntField(rawPointer, CFields.GraalPyUnicodeObject__is_ascii, isAscii ? 1 : 0);
+        writeIntField(rawPointer, CFields.GraalPyUnicodeObject__interned, interned);
+        writePtrField(rawPointer, CFields.GraalPyUnicodeObject__data, data);
+        NativeMemory.memset(data + byteLength, (byte) 0, charSize);
+        return data;
     }
 
     public static final class PyCapsuleReference extends IdReference<PyCapsule> {
@@ -1288,7 +1310,7 @@ public abstract class CApiTransitions {
             Object type = GetClassNode.executeUncached(singletonObject);
             assert (GetTypeFlagsNode.executeUncached(type) & TypeFlags.HAVE_GC) == 0;
 
-            return AllocateNativeObjectStubNodeGen.getUncached().execute(inliningTarget, singletonObject, type, CStructs.GraalPyObject, IMMORTAL_REFCNT, false);
+            return AllocateNativeObjectStubNodeGen.getUncached().execute(inliningTarget, singletonObject, type, CStructs.GraalPyObject, IMMORTAL_REFCNT, false, 0);
         }
 
         @Specialization(guards = {"!isManagedClass(pythonObject)", "!isMemoryView(pythonObject)"})
@@ -1296,8 +1318,12 @@ public abstract class CApiTransitions {
                         @Exclusive @Cached InlinedConditionProfile isVarObjectProfile,
                         @Exclusive @Cached InlinedConditionProfile isGcProfile,
                         @Exclusive @Cached InlinedConditionProfile isFloatObjectProfile,
+                        @Exclusive @Cached InlinedConditionProfile isStringObjectProfile,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode,
                         @Exclusive @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
 
             // for types, we always need to allocate the full PyTypeObject
@@ -1309,16 +1335,47 @@ public abstract class CApiTransitions {
             Object type = getClassNode.execute(inliningTarget, pythonObject);
 
             CStructs ctype;
+            TruffleString unicodeString = null;
+            TruffleString.Encoding unicodeEncoding = null;
+            int unicodeCharSize = 0;
+            boolean unicodeIsAscii = false;
+            long unicodeByteLength = 0;
+            long extraSize = 0;
             if (isVarObjectProfile.profile(inliningTarget, pythonObject instanceof PTuple)) {
                 ctype = CStructs.GraalPyVarObject;
             } else if (isFloatObjectProfile.profile(inliningTarget, pythonObject instanceof PFloat)) {
                 ctype = CStructs.GraalPyFloatObject;
+            } else if (isStringObjectProfile.profile(inliningTarget, pythonObject instanceof PString)) {
+                ctype = CStructs.GraalPyUnicodeObject;
+                PString stringObject = (PString) pythonObject;
+                if (!stringObject.isMaterialized()) {
+                    throw CompilerDirectives.shouldNotReachHere("unmaterialized PString should already have a native unicode stub");
+                }
+                unicodeString = stringObject.getMaterialized();
+                TruffleString.CodeRange range = getCodeRangeNode.execute(unicodeString, PythonUtils.TS_ENCODING);
+                if (range == TruffleString.CodeRange.ASCII) {
+                    unicodeIsAscii = true;
+                    unicodeCharSize = 1;
+                    unicodeEncoding = TruffleString.Encoding.US_ASCII;
+                } else if (range.isSubsetOf(TruffleString.CodeRange.LATIN_1)) {
+                    unicodeCharSize = 1;
+                    unicodeEncoding = TruffleString.Encoding.ISO_8859_1;
+                } else if (range.isSubsetOf(TruffleString.CodeRange.BMP)) {
+                    unicodeCharSize = 2;
+                    unicodeEncoding = TruffleString.Encoding.UTF_16;
+                } else {
+                    unicodeCharSize = 4;
+                    unicodeEncoding = TruffleString.Encoding.UTF_32;
+                }
+                unicodeString = switchEncodingNode.execute(unicodeString, unicodeEncoding);
+                unicodeByteLength = unicodeString.byteLength(unicodeEncoding);
+                extraSize = unicodeByteLength + unicodeCharSize;
             } else {
                 ctype = CStructs.GraalPyObject;
             }
 
             boolean gc = isGcProfile.profile(inliningTarget, (getTypeFlagsNode.execute(type) & TypeFlags.HAVE_GC) != 0);
-            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, pythonObject, type, ctype, initialRefCount, gc);
+            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, pythonObject, type, ctype, initialRefCount, gc, extraSize);
 
             // allocate a native stub object (C type: GraalPy*Object)
             if (ctype == CStructs.GraalPyVarObject) {
@@ -1335,6 +1392,12 @@ public abstract class CApiTransitions {
                 assert pythonObject instanceof PFloat;
                 long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
                 writeDoubleField(realPointer, CFields.GraalPyFloatObject__ob_fval, ((PFloat) pythonObject).getValue());
+            } else if (ctype == CStructs.GraalPyUnicodeObject) {
+                assert pythonObject instanceof PString;
+                long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+                long data = initializeGraalPyUnicodeObject(realPointer, unicodeByteLength / unicodeCharSize, unicodeByteLength, unicodeCharSize, unicodeIsAscii,
+                                GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED);
+                writeTruffleStringNode.write(data, unicodeString, unicodeEncoding);
             }
 
             return taggedPointer;
@@ -1351,12 +1414,17 @@ public abstract class CApiTransitions {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    abstract static class AllocateNativeObjectStubNode extends Node {
+    public abstract static class AllocateNativeObjectStubNode extends Node {
 
-        abstract long execute(Node inliningTarget, PythonAbstractObject object, Object type, CStructs ctype, long initialRefCount, boolean gc);
+        @TruffleBoundary
+        public static long executeUncached(PythonAbstractObject object, Object type, CStructs ctype, long initialRefCount, boolean gc, long extraSize) {
+            return AllocateNativeObjectStubNodeGen.getUncached().execute(null, object, type, ctype, initialRefCount, gc, extraSize);
+        }
+
+        public abstract long execute(Node inliningTarget, PythonAbstractObject object, Object type, CStructs ctype, long initialRefCount, boolean gc, long extraSize);
 
         @Specialization
-        static long doGeneric(Node inliningTarget, PythonAbstractObject object, Object type, CStructs ctype, long initialRefCount, boolean gc,
+        static long doGeneric(Node inliningTarget, PythonAbstractObject object, Object type, CStructs ctype, long initialRefCount, boolean gc, long extraSize,
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
                         @Cached PyObjectGCTrackNode gcTrackNode) {
@@ -1369,7 +1437,9 @@ public abstract class CApiTransitions {
              * Python's GC, we will also allocate space for 'PyGC_Head'.
              */
             long presize = gc ? CStructs.PyGC_Head.size() : 0;
-            long stubPointer = calloc(ctype.size() + presize);
+            long allocationSize = ctype.size() + presize + extraSize;
+            long stubPointer = NativeMemory.malloc(allocationSize);
+            NativeMemory.memset(stubPointer, (byte) 0, ctype.size() + presize);
 
             PythonContext pythonContext = PythonContext.get(inliningTarget);
             HandleContext handleContext = pythonContext.handleContext;
@@ -2625,7 +2695,8 @@ public abstract class CApiTransitions {
                         @Cached GCListRemoveNode gcListRemoveNode,
                         @Cached InlinedConditionProfile isGcProfile,
                         @Cached GetPythonObjectClassNode getClassNode,
-                        @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode) {
+                        @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached StringMaterializeNode stringMaterializeNode) {
             assert CompilerDirectives.isPartialEvaluationConstant(release);
             assert CompilerDirectives.isPartialEvaluationConstant(keepInGcList);
 
@@ -2654,7 +2725,7 @@ public abstract class CApiTransitions {
 
                 UpdateHandleTableReferenceNode.makeDirectReferenceWeak(inliningTarget, handleContext, pythonObject, taggedPointer, handleTableIndex,
                                 release, keepInGcList, isLoggable,
-                                gcListRemoveNode, isGcProfile, getClassNode, getTypeFlagsNode);
+                                gcListRemoveNode, isGcProfile, getClassNode, getTypeFlagsNode, stringMaterializeNode);
             }
         }
     }
@@ -2736,9 +2807,10 @@ public abstract class CApiTransitions {
                 PythonObject pythonObject = (PythonObject) ref;
                 assert pythonObject.ref == null;
 
+                // note: parameter 'stringMaterializeNode' can be null because 'release' is false
                 makeDirectReferenceWeak(inliningTarget, handleContext, pythonObject, taggedPointer, handleTableIndex,
                                 false, keepInGcList, isLoggable,
-                                gcListRemoveNode, isGcProfile, getClassNode, getTypeFlagsNode);
+                                gcListRemoveNode, isGcProfile, getClassNode, getTypeFlagsNode, null);
             }
         }
 
@@ -2777,7 +2849,8 @@ public abstract class CApiTransitions {
                         GCListRemoveNode gcListRemoveNode,
                         InlinedConditionProfile isGcProfile,
                         GetPythonObjectClassNode getClassNode,
-                        GetTypeFlagsNode getTypeFlagsNode) {
+                        GetTypeFlagsNode getTypeFlagsNode,
+                        StringMaterializeNode stringMaterializeNode) {
             long untaggedPointer = HandlePointerConverter.pointerToStub(taggedPointer);
 
             if (isLoggable) {
@@ -2796,6 +2869,13 @@ public abstract class CApiTransitions {
             assert gc || pythonObject.getRefCount() == MANAGED_REFCNT;
 
             if (release) {
+                if (pythonObject instanceof PString stringObject && !stringObject.isMaterialized()) {
+                    /*
+                     * The native companion is about to be released, so materialization must not
+                     * keep a view of GraalPyUnicodeObject.data.
+                     */
+                    stringMaterializeNode.execute(inliningTarget, stringObject, true);
+                }
                 // clear all links between the managed and the native companion object
                 writeIntField(untaggedPointer, CFields.GraalPyObject__handle_table_index, 0);
                 pythonObject.clearNativePointer();

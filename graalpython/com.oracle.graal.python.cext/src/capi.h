@@ -157,6 +157,21 @@ typedef struct {
     double ob_fval;
 } GraalPyFloatObject;
 
+#define GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED 0
+#define GRAALPY_UNICODE_INTERN_STATE_INTERNED 1
+#define GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED 2
+
+typedef struct {
+    GraalPyObject ob_base;
+    Py_ssize_t length;
+    Py_ssize_t byte_length;
+    Py_hash_t hash;
+    int32_t kind;
+    int32_t is_ascii;
+    int32_t interned;
+    void *data;
+} GraalPyUnicodeObject;
+
 typedef struct gc_generation GCGeneration;
 
 // {{start CAPI_BUILTINS}}

@@ -58,7 +58,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -87,6 +90,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -116,21 +120,51 @@ public abstract class StringNodes {
     public abstract static class StringMaterializeNode extends Node {
 
         public static TruffleString executeUncached(PString s) {
-            return StringMaterializeNodeGen.getUncached().execute(null, s);
+            return executeUncached(s, false);
         }
 
-        public abstract TruffleString execute(Node inliningTarget, PString materialize);
+        public static TruffleString executeUncached(PString s, boolean copyNativeData) {
+            return StringMaterializeNodeGen.getUncached().execute(null, s, copyNativeData);
+        }
+
+        public final TruffleString execute(Node inliningTarget, PString materialize) {
+            return execute(inliningTarget, materialize, false);
+        }
+
+        public abstract TruffleString execute(Node inliningTarget, PString materialize, boolean copyNativeData);
 
         @Specialization(guards = "x.isMaterialized()")
-        static TruffleString doMaterialized(PString x) {
+        static TruffleString doMaterialized(PString x, @SuppressWarnings("unused") boolean copyNativeData) {
             return x.getMaterialized();
         }
 
         @Fallback
         @InliningCutoff
-        static TruffleString doNative(Node inliningTarget, PString x,
+        static TruffleString doNative(Node inliningTarget, PString x, boolean copyNativeData,
                         @Cached HiddenAttr.ReadNode readAttrNode,
                         @Cached TruffleString.FromNativePointerWithCompactionUTF32Node fromNativePointerNode) {
+            if (x.isNative()) {
+                long ptr = HandlePointerConverter.pointerToStub(x.getNativePointer());
+                long data = CStructAccess.readPtrField(ptr, CFields.GraalPyUnicodeObject__data);
+                if (data != 0) {
+                    int byteLength;
+                    try {
+                        byteLength = PInt.intValueExact(CStructAccess.readLongField(ptr, CFields.GraalPyUnicodeObject__byte_length));
+                    } catch (OverflowException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
+                    int kind = CStructAccess.readIntField(ptr, CFields.GraalPyUnicodeObject__kind);
+                    TruffleString.CompactionLevel compactionLevel = switch (kind) {
+                        case 1 -> TruffleString.CompactionLevel.S1;
+                        case 2 -> TruffleString.CompactionLevel.S2;
+                        case 4 -> TruffleString.CompactionLevel.S4;
+                        default -> throw CompilerDirectives.shouldNotReachHere();
+                    };
+                    TruffleString materialized = fromNativePointerNode.execute(data, 0, byteLength, compactionLevel, copyNativeData);
+                    x.setMaterialized(materialized);
+                    return materialized;
+                }
+            }
             NativeStringData nativeData = x.getNativeStringData(inliningTarget, readAttrNode);
             TruffleString materialized = nativeData.toTruffleString(fromNativePointerNode);
             x.setMaterialized(materialized);
@@ -166,6 +200,14 @@ public abstract class StringNodes {
                         @Cached StringMaterializeNode materializeNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             NativeStringData nativeData = x.getNativeStringData(inliningTarget, readAttrNode);
+            if (nativeData == null && x.isNative()) {
+                long ptr = HandlePointerConverter.pointerToStub(x.getNativePointer());
+                try {
+                    return PInt.intValueExact(CStructAccess.readLongField(ptr, CFields.GraalPyUnicodeObject__length));
+                } catch (OverflowException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
             int charSize = nativeData.getCharSize();
             assert charSize == 1 || charSize == 2 || charSize == 4;
             /*
