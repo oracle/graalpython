@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -61,6 +61,12 @@ public abstract class PythonBuiltins {
     protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
 
     private boolean initialized;
+    /**
+     * Cached during builtin setup so {@link Python3Core#postInitialize(Env)} does not need to
+     * read {@link CoreFunctions} annotations at runtime, which shows up as boot-time page faults
+     * in native startup traces.
+     */
+    private boolean needsPostInitialize;
 
     public boolean isInitialized() {
         return initialized;
@@ -68,6 +74,14 @@ public abstract class PythonBuiltins {
 
     public void setInitialized(boolean initialized) {
         this.initialized = initialized;
+    }
+
+    public boolean needsPostInitialize() {
+        return needsPostInitialize;
+    }
+
+    public void setNeedsPostInitialize(boolean needsPostInitialize) {
+        this.needsPostInitialize = needsPostInitialize;
     }
 
     /**

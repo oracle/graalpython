@@ -470,6 +470,7 @@ public abstract class Python3Core {
                 toRemove.add(builtin);
             } else {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+                builtin.setNeedsPostInitialize(annotation.isEager() || annotation.extendClasses().length != 0);
                 if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
                     toRemove.add(builtin);
                 }
@@ -1060,8 +1061,7 @@ public abstract class Python3Core {
             initialized = false;
 
             for (PythonBuiltins builtin : builtins) {
-                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (annotation.isEager() || annotation.extendClasses().length != 0) {
+                if (builtin.needsPostInitialize()) {
                     builtin.postInitialize(this);
                 }
             }
