@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CryptModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
@@ -944,6 +945,9 @@ public abstract class Python3Core {
         this.builtins = initializeBuiltins(context.getEnv());
         initializeJavaCore();
         initializeImportlib();
+        if (context.getEnv().isPreInitialization()) {
+            CodecsRegistry.initialize(context);
+        }
         context.applyModuleOptions();
         initializePython3Core(context.getCoreHomeOrFail());
         initialized = true;
