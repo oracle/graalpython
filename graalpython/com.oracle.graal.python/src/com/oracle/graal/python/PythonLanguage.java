@@ -314,20 +314,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public final Assumption noInteropTypeRegisteredAssumption = Truffle.getRuntime().createAssumption("No class for interop registered");
 
     /**
-     * Call targets that are populated during native-image build time and then only read at image
+     * Root nodes that are populated during native-image build time and then only read at image
      * runtime. Using {@link EconomicMap} avoids embedding a large number of
      * {@link java.util.concurrent.ConcurrentHashMap.Node} objects into the image heap.
      */
-    private final EconomicMap<Object, RootCallTarget> imageBuildtimeCachedCallTargets = ImageInfo.inImageCode() ? EconomicMap.create() : null;
-    /**
-     * Root nodes that are populated during native-image build time and then only read at image
-     * runtime.
-     */
     private final EconomicMap<Object, RootNode> imageBuildtimeCachedRootNodes = ImageInfo.inImageCode() ? EconomicMap.create() : null;
-    /**
-     * Call targets added after image startup, or all cached call targets when running on the JVM.
-     */
-    private final ConcurrentHashMap<Object, RootCallTarget> runtimeCachedCallTargets = new ConcurrentHashMap<>();
     /**
      * Root nodes added after image startup, or all cached root nodes when running on the JVM.
      */
@@ -1114,43 +1105,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         capiCallTargets[index] = ct;
     }
 
-    /**
-     * Caches call target that wraps a node that is not parametrized, i.e., has only a parameterless
-     * ctor and all its instances implement the same logic. Parametrized nodes must include the
-     * parameters that alter their behavior as part of the cache key.
-     */
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> key) {
-        // It's complicated with RootNodes, but regular nodes should have only parameterless ctor to
-        // be appropriate keys for the cache
-        assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length <= 1;
-        assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length == 0 || key.getConstructors()[0].getParameterCount() == 0;
-        return createCachedCallTargetUnsafe(rootNodeFunction, key, true);
-    }
-
     public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> key) {
         assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length <= 1;
         assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length == 0 || key.getConstructors()[0].getParameterCount() == 0;
         return createCachedRootNodeUnsafe(rootNodeFunction, key, true);
     }
 
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> key) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, key, true);
-    }
-
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, int key) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, key, true);
-    }
-
     public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> key) {
         return createCachedRootNodeUnsafe(rootNodeFunction, key, true);
-    }
-
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
-        // for builtins: name is needed to distinguish builtins that share the same underlying node
-        // in general: a String may be parameter of the node wrapped in the root node or the root
-        // node itself, there must be finite number of strings that can appear here (i.e., must not
-        // be dynamically generated unless their number is bounded).
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass, key);
     }
 
     public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
@@ -1163,44 +1125,20 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, false, nodeClass, key);
     }
 
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, TruffleString key) {
-        // See the String overload
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass, key);
-    }
-
     public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, TruffleString key) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, key);
-    }
-
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, int key) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass, key);
     }
 
     public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, int key) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, key);
     }
 
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, String name) {
-        // for slot call targets and wrappers: the root node may be wrapping a helper wrapper node
-        // implementing the slot wrapper logic and the bare slot node itself
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, name);
-    }
-
     public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, String name) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, name);
     }
 
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, PythonBuiltinClassType type, String name) {
-        // for slot wrappers: the type is used for validation of "self" type
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
-    }
-
     public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, PythonBuiltinClassType type, String name) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
-    }
-
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, CodeUnit key) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, key);
     }
 
     public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, CodeUnit key) {
@@ -1213,40 +1151,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion, isStatic);
     }
 
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> signature, TruffleString name,
-                    boolean doArgumentAndResultConversion) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, signature, name, doArgumentAndResultConversion);
-    }
-
-    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> signature, TruffleString name) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, true, signature, name);
-    }
-
     public RootNode createStructSeqIndexedMemberAccessCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, int memberIndex) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, StructSequence.class, memberIndex);
     }
 
     public RootNode createCachedPropAccessRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<?> nodeClass, String name, int type, int offset) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, name, type, offset);
-    }
-
-    /**
-     * Keys in any caches held by {@link PythonLanguage} must be context independent objects and
-     * there must be either finite number of their instances, or if the key is a context independent
-     * mirror of some runtime data structure, it must be cached weakly. This call targets cache is
-     * strong.
-     * <p>
-     * To avoid memory leaks, all key types must be known to have finite number of possible
-     * instances. Public methods for adding to the cache must take concrete key type(s) so that all
-     * possible cache keys are explicit and documented.
-     */
-    private RootCallTarget createCachedCallTargetUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, Object key, boolean cacheInSingleContext) {
-        CompilerAsserts.neverPartOfCompilation();
-        if (cacheInSingleContext || !singleContext) {
-            return getOrCreateCachedCallTarget(rootNodeFunction, key);
-        } else {
-            return PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this));
-        }
     }
 
     private RootNode createCachedRootNodeUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, Object key, boolean cacheInSingleContext) {
@@ -1258,34 +1168,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private RootCallTarget createCachedCallTargetUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, boolean cacheInSingleContext, Object... cacheKeys) {
-        return createCachedCallTargetUnsafe(rootNodeFunction, Arrays.asList(cacheKeys), cacheInSingleContext);
-    }
-
     private RootNode createCachedRootNodeUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, boolean cacheInSingleContext, Object... cacheKeys) {
         return createCachedRootNodeUnsafe(rootNodeFunction, Arrays.asList(cacheKeys), cacheInSingleContext);
-    }
-
-    private RootCallTarget getOrCreateCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
-        CompilerAsserts.neverPartOfCompilation();
-        if (ImageInfo.inImageRuntimeCode()) {
-            RootCallTarget preinitialized = imageBuildtimeCachedCallTargets.get(key);
-            if (preinitialized != null) {
-                return preinitialized;
-            }
-            return runtimeCachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
-        }
-        if (ImageInfo.inImageBuildtimeCode()) {
-            synchronized (imageBuildtimeCachedCallTargets) {
-                RootCallTarget cached = imageBuildtimeCachedCallTargets.get(key);
-                if (cached == null) {
-                    cached = PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this));
-                    imageBuildtimeCachedCallTargets.put(key, cached);
-                }
-                return cached;
-            }
-        }
-        return runtimeCachedCallTargets.computeIfAbsent(key, k -> PythonUtils.getOrCreateCallTarget(rootNodeFunction.apply(this)));
     }
 
     private RootNode getOrCreateCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
