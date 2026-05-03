@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -136,7 +136,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -961,8 +960,9 @@ public final class MMapBuiltins extends PythonBuiltins {
                 return;
             }
             PythonLanguage language = context.getLanguage();
-            CallTarget callTarget = language.createCachedCallTarget(MMapBuiltins.ReleaseCallback.ReleaserRootNode::new, MMapBuiltins.ReleaseCallback.ReleaserRootNode.class);
-            callTarget.call(ref);
+            ReleaserRootNode rootNode = (ReleaserRootNode) language.createCachedRootNode(MMapBuiltins.ReleaseCallback.ReleaserRootNode::new,
+                            MMapBuiltins.ReleaseCallback.ReleaserRootNode.class);
+            rootNode.getCallTarget().call(ref);
         }
 
         private static class ReleaserRootNode extends RootNode {
