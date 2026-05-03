@@ -211,6 +211,7 @@ import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
@@ -683,13 +684,13 @@ public final class PythonContext extends Python3Core {
         final Object callable;
         final Object[] arguments;
         final PKeyword[] keywords;
-        final CallTarget ct;
+        final RootNode rootNode;
 
-        AtExitHook(Object callable, Object[] arguments, PKeyword[] keywords, CallTarget ct) {
+        AtExitHook(Object callable, Object[] arguments, PKeyword[] keywords, RootNode rootNode) {
             this.callable = callable;
             this.arguments = arguments;
             this.keywords = keywords;
-            this.ct = ct;
+            this.rootNode = rootNode;
         }
     }
 
@@ -2129,8 +2130,8 @@ public final class PythonContext extends Python3Core {
     }
 
     @TruffleBoundary
-    public void registerAtexitHook(Object callable, Object[] arguments, PKeyword[] keywords, CallTarget ct) {
-        atExitHooks.add(new AtExitHook(callable, arguments, keywords, ct));
+    public void registerAtexitHook(Object callable, Object[] arguments, PKeyword[] keywords, RootNode rootNode) {
+        atExitHooks.add(new AtExitHook(callable, arguments, keywords, rootNode));
     }
 
     @TruffleBoundary
@@ -2245,7 +2246,7 @@ public final class PythonContext extends Python3Core {
         for (int i = atExitHooks.size() - 1; i >= 0; i--) {
             AtExitHook hook = atExitHooks.get(i);
             try {
-                hook.ct.call(hook.callable, hook.arguments, hook.keywords);
+                hook.rootNode.getCallTarget().call(hook.callable, hook.arguments, hook.keywords);
             } catch (PException e) {
                 lastException = e;
             }

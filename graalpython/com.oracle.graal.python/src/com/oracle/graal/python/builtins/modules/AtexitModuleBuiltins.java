@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,6 @@ import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGe
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -135,8 +134,8 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
             PythonContext context = PythonContext.get(null);
-            RootCallTarget callTarget = context.getLanguage().createCachedCallTarget(AtExitRootNode::new, AtExitRootNode.class);
-            context.registerAtexitHook(callable, arguments, keywords, callTarget);
+            RootNode rootNode = context.getLanguage().createCachedRootNode(AtExitRootNode::new, AtExitRootNode.class);
+            context.registerAtexitHook(callable, arguments, keywords, rootNode);
             return callable;
         }
     }
