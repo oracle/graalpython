@@ -303,9 +303,7 @@
     // not specified as the first arg to `bench_task`.
     local bench_task_dict = {
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ce_default"                                : {"linux:amd64:jdk-latest" : on_demand + t("08:00:00")},
             "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo},
-            "vm_name:graalpython_core"                                  : {"linux:amd64:jdk-latest" : on_demand      + t("08:00:00")},
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : daily      + t("08:00:00"),
                 "job_type:checkup"                                      : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")}
             },
@@ -316,10 +314,7 @@
         for bench in ["micro", "meso", "macro"]
     } + {
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ce_default"                                : {"linux:amd64:jdk-latest" : on_demand + t("08:00:00")},
             "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo},
-            "vm_name:graalpython_core"                                  : {"linux:amd64:jdk-latest" : on_demand      + t("08:00:00")},
-            "vm_name:graalpython_core_panama"                           : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")},
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : daily      + t("08:00:00"),
                 "job_type:checkup"                                      : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")}
             },
@@ -333,40 +328,27 @@
         // "small" benchmarks have their argument set such that they run in a resonable
         // time in the interpreter and they are used for interpreter benchmarking
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ce_default_interpreter"                    : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
             "vm_name:graalvm_ee_default_interpreter_uncached"           : {"linux:amd64:jdk-latest" : daily      + t("02:00:00") + need_pgo},
-            "vm_name:graalpython_core_interpreter"                      : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
-            "vm_name:graalpython_core_native_interpreter"               : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
-            "vm_name:graalpython_core_interpreter_multi"                : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
-            "vm_name:graalpython_core_native_interpreter_multi"         : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
         }),
         for bench in ["micro_small", "meso_small"]
     } + {
         // benchmarks executed via Java embedding driver
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:java_embedding_core_interpreter_multi_shared"      : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
+            "vm_name:java_embedding_enterprise_interpreter_multi_shared" : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
         }),
         for bench in ["java_embedding_meso"]
     } + {
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalpython_core"                                  : {"linux:amd64:jdk-latest" : on_demand      + t("05:00:00") + forks_warmup},
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : daily      + t("05:00:00") + forks_warmup},
-            "vm_name:graalvm_ce_default"                                : {"linux:amd64:jdk-latest" : on_demand      + t("05:00:00") + forks_warmup},
             "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : daily      + t("05:00:00") + forks_warmup + need_pgo},
-            "vm_name:graalpython_core_multi_tier"                       : {"linux:amd64:jdk-latest" : on_demand     + t("05:00:00") + forks_warmup},
             "vm_name:graalpython_enterprise_multi_tier"                 : {"linux:amd64:jdk-latest" : weekly     + t("05:00:00") + forks_warmup},
-            "vm_name:graalvm_ce_default_multi_tier"                     : {"linux:amd64:jdk-latest" : on_demand     + t("05:00:00") + forks_warmup},
             "vm_name:graalvm_ee_default_multi_tier"                     : {"linux:amd64:jdk-latest" : weekly     + t("05:00:00") + forks_warmup + need_pgo},
-            "vm_name:graalpython_core_3threads"                         : {"linux:amd64:jdk-latest" : on_demand     + t("05:00:00") + forks_warmup},
             "vm_name:graalpython_enterprise_3threads"                   : {"linux:amd64:jdk-latest" : weekly     + t("05:00:00") + forks_warmup},
-            "vm_name:graalvm_ce_default_3threads"                       : {"linux:amd64:jdk-latest" : on_demand     + t("05:00:00") + forks_warmup},
             "vm_name:graalvm_ee_default_3threads"                       : {"linux:amd64:jdk-latest" : weekly     + t("05:00:00") + forks_warmup + need_pgo},
-            "vm_name:graalpython_core_multi_tier_3threads"              : {"linux:amd64:jdk-latest" : on_demand     + t("05:00:00") + forks_warmup},
             "vm_name:graalpython_enterprise_multi_tier_3threads"        : {"linux:amd64:jdk-latest" : weekly     + t("05:00:00") + forks_warmup},
-            "vm_name:graalvm_ce_default_multi_tier_3threads"            : {"linux:amd64:jdk-latest" : on_demand     + t("05:00:00") + forks_warmup},
             "vm_name:graalvm_ee_default_multi_tier_3threads"            : {"linux:amd64:jdk-latest" : weekly     + t("05:00:00") + forks_warmup + need_pgo},
             "vm_name:pypy"                                              : {"linux:amd64:jdk-latest" : on_demand    + t("01:00:00")},
         }),
@@ -381,23 +363,19 @@
     } + {
         // interop benchmarks only for graalpython, weekly is enough
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:java_jmh_core"                                  : {"linux:amd64:jdk-latest" : daily     + t("04:00:00")},
             "vm_name:java_jmh_enterprise"                            : {"linux:amd64:jdk-latest" : daily     + t("04:00:00")},
         }),
         for bench in ["jmh"]
     } + {
         // benchmarks with many forks for weekly performance reports
         [bench + "-forks"]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ce_default"                                : {"linux:amd64:jdk-latest" : on_demand     + t("10:00:00") + forks_meso},
             "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : weekly     + t("10:00:00") + forks_meso + need_pgo},
         }),
         for bench in ["meso"]
     } + {
         // benchmarks with community benchmark suites for external numbers
         [bench]: bench_task(bench, PY_BENCHMARKS) + platform_spec(no_jobs) + raw_results + bench_variants({
-            "vm_name:graalpython_core"                                  : {"linux:amd64:jdk-latest" : on_demand     + t("08:00:00")},
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00")},
-            "vm_name:graalvm_ce_default"                                : {"linux:amd64:jdk-latest" : on_demand     + t("08:00:00")},
             "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00") + need_pgo},
             "vm_name:cpython_launcher"                                  : {"linux:amd64:jdk-latest" : monthly     + t("08:00:00")},
             "vm_name:pypy_launcher"                                     : {"linux:amd64:jdk-latest" : on_demand     + t("08:00:00")},
@@ -406,11 +384,8 @@
     } + {
         // benchmarks with community benchmark suites for external numbers
         [bench]: bench_task(bench, PY_BENCHMARKS) + platform_spec(no_jobs) + raw_results + bench_variants({
-            "vm_name:graalpython_core"                                  : {"linux:amd64:jdk-latest" : on_demand     + t("08:00:00")},
-            "vm_name:graalpython_core_panama"                           : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")},
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00")},
             "vm_name:graalpython_enterprise_panama"                     : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")},
-            "vm_name:graalvm_ce_default"                                : {"linux:amd64:jdk-latest" : on_demand     + t("08:00:00")},
             "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00") + need_pgo},
             "vm_name:cpython_launcher"                                  : {"linux:amd64:jdk-latest" : monthly     + t("08:00:00")},
             "vm_name:pypy_launcher"                                     : {"linux:amd64:jdk-latest" : on_demand     + t("08:00:00")},
