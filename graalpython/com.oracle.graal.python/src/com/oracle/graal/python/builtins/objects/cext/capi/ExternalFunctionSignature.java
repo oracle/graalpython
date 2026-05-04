@@ -160,8 +160,8 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     MODEXEC(false, Int, Pointer),
     // typedef PyObject *(*PyInit_mod)(void);
     MODINIT(false, Pointer),
-    // typedef PThreadState** (*initialize_graal_capi)(void *, void *, void *);
-    CAPIINIT(false, Pointer, Pointer, Pointer, Pointer),
+    // typedef PThreadState** (*initialize_graal_capi)(void *, void *, void *, void *, void *);
+    CAPIINIT(false, Pointer, Pointer, Pointer, Pointer, Pointer, Pointer),
     // PyThreadState **GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate)
     INIT_THREAD_STATE_CURRENT(true, Pointer, PyThreadState),
     // typedef void *(*GraalPyPrivate_GetFinalizeCApiPointer)(void);

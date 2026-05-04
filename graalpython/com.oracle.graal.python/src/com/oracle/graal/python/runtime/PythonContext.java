@@ -519,6 +519,11 @@ public final class PythonContext extends Python3Core {
             this.nativePointer = NATIVE_POINTER_FREED;
         }
 
+        public void resetNativePointerAfterDetach() {
+            assert this.nativePointer != NATIVE_POINTER_FREED;
+            this.nativePointer = UNINITIALIZED;
+        }
+
         public PContextVarsContext getContextVarsContext(Node node) {
             if (contextVarsContext == null) {
                 contextVarsContext = PFactory.createContextVarsContext(PythonLanguage.get(node));
@@ -532,6 +537,10 @@ public final class PythonContext extends Python3Core {
         }
 
         public void dispose(boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer) {
+            dispose(canRunGuestCode, clearNativeThreadLocalVarPointer, true);
+        }
+
+        public void dispose(boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer, boolean markShuttingDown) {
             // This method may be called twice on the same object.
 
             /*
@@ -546,7 +555,19 @@ public final class PythonContext extends Python3Core {
                 dict = null;
             }
 
-            PThreadState.dispose(this);
+            PThreadState.dispose(this, markShuttingDown);
+            if (!markShuttingDown) {
+                caughtException = null;
+                topframeref = null;
+                traceFun = null;
+                tracing = false;
+                profileFun = null;
+                profiling = false;
+                contextVarsContext = null;
+                runningEventLoop = null;
+                asyncgenFirstIter = null;
+                recursionDepth = 0;
+            }
 
             /*
              * Write 'NULL' to the native thread-local variable used to store the PyThreadState
@@ -2763,6 +2784,20 @@ public final class PythonContext extends Python3Core {
     }
 
     public void disposeThread(Thread thread, boolean canRunGuestCode) {
+        disposeThread(thread, canRunGuestCode, true);
+    }
+
+    /**
+     * Disposes GraalPy state associated with {@code thread}.
+     *
+     * {@code markShuttingDown} distinguishes final thread exit from a temporary native-thread
+     * detach. Truffle's {@link ContextThreadLocal} does not expose a way to clear one language local
+     * for a still-alive thread, so a native thread that calls {@code PyGILState_Ensure} again after
+     * {@code PyGILState_Release} may receive the same Java {@link PythonThreadState} object. Such a
+     * detach must remove the thread from {@link #threadStateMapping} and free the native
+     * {@code PyThreadState}, but it must not mark the Java thread state as shutting down.
+     */
+    public void disposeThread(Thread thread, boolean canRunGuestCode, boolean markShuttingDown) {
         CompilerAsserts.neverPartOfCompilation();
         // check if there is a live sentinel lock
         PythonThreadState ts = threadStateMapping.get(thread);
@@ -2770,9 +2805,11 @@ public final class PythonContext extends Python3Core {
             // ts already removed, that is valid during context shutdown for daemon threads
             return;
         }
-        ts.shutdown();
+        if (markShuttingDown) {
+            ts.shutdown();
+        }
         threadStateMapping.remove(thread);
-        ts.dispose(canRunGuestCode, thread == Thread.currentThread());
+        ts.dispose(canRunGuestCode, thread == Thread.currentThread(), markShuttingDown);
         releaseSentinelLock(ts.sentinelLock);
         getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }
