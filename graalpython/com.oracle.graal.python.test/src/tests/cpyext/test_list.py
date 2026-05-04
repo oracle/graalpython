@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -167,28 +167,55 @@ class TestPyList(CPyExtTestCase):
     test_PyList_SetItem = CPyExtFunction(
         _reference_setitem,
         lambda: (
-            (4, 0, 0),
-            (4, 3, 5),
+            (4, 0, 0, False),
+            (4, 3, 5, False),
+            (4, 0, 0, True),
+            (4, 3, 5, True),
         ),
-        code='''PyObject* wrap_PyList_SetItem(Py_ssize_t capacity, Py_ssize_t idx, PyObject* new_item) {
+        code='''PyObject* wrap_PyList_SetItem(Py_ssize_t capacity, Py_ssize_t idx, PyObject* new_item, int init_with_none) {
             PyObject *newList = PyList_New(capacity);
             Py_ssize_t i;
             for (i = 0; i < capacity; i++) {
-                if (i == idx) {
-                    Py_INCREF(new_item);
-                    PyList_SetItem(newList, i, new_item);
-                } else {
+                if (init_with_none || i != idx) {
                     Py_INCREF(Py_None);
                     PyList_SetItem(newList, i, Py_None);
                 }
             }
+            Py_INCREF(new_item);
+            PyList_SetItem(newList, idx, new_item);
             return newList;
         }
         ''',
         resultspec="O",
-        argspec='nnO',
-        arguments=["Py_ssize_t capacity", "Py_ssize_t size", "PyObject* new_item"],
+        argspec='nnOp',
+        arguments=["Py_ssize_t capacity", "Py_ssize_t size", "PyObject* new_item", "int init_with_none"],
         callfunction="wrap_PyList_SetItem",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_native_list_setitem_decrefs_none = CPyExtFunction(
+        lambda args: [args[0]],
+        lambda: (
+            ("new item",),
+        ),
+        code='''PyObject* wrap_native_list_setitem_decrefs_none(PyObject* new_item) {
+            PyObject *list = PyList_New(1);
+            if (list == NULL) {
+                return NULL;
+            }
+            Py_INCREF(Py_None);
+            PyList_SET_ITEM(list, 0, Py_None);
+            if (PySequence_SetItem(list, 0, new_item) < 0) {
+                Py_DECREF(list);
+                return NULL;
+            }
+            return list;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* new_item"],
+        callfunction="wrap_native_list_setitem_decrefs_none",
         cmpfunc=unhandled_error_compare
     )
 
@@ -197,6 +224,7 @@ class TestPyList(CPyExtTestCase):
         lambda: (
             ([1,2,3,4], 0, _reference_SET_ITEM),
             ([1,2,3,4], 3, _reference_SET_ITEM),
+            ([None], 0, 0),
         ),
         code='''PyObject* wrap_PyList_SET_ITEM(PyObject* op, Py_ssize_t idx, PyObject* newitem) {
             Py_INCREF(newitem);
