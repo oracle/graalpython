@@ -37,6 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from collections import UserDict, UserList
+from test.support import C_RECURSION_LIMIT
+
 
 def assert_not_raises(fnc, *args, **kwargs):
     try:
@@ -78,3 +81,25 @@ def test_repr_type_error_includes_returned_value():
         assert False
     except TypeError as e:
         assert str(e) == "__repr__ returned non-string (type int)"
+
+
+def test_repr_deep_userlist_raises_recursion_error():
+    a = UserList([])
+    for _ in range(C_RECURSION_LIMIT + 1):
+        a = UserList([a])
+    try:
+        repr(a)
+        assert False
+    except RecursionError:
+        pass
+
+
+def test_repr_deep_userdict_raises_recursion_error():
+    d = UserDict()
+    for _ in range(C_RECURSION_LIMIT + 1):
+        d = UserDict({1: d})
+    try:
+        repr(d)
+        assert False
+    except RecursionError:
+        pass

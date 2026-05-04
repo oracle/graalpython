@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
+import com.oracle.graal.python.lib.PyEnterRecursiveCallNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyFrozenSetCheckExactNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
@@ -90,6 +91,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.nodes.Node;
@@ -129,8 +131,12 @@ abstract class Obj2SstBase {
                 throw raiseValueError(FIELD_S_IS_REQUIRED_FOR_S, attrName, nodeName);
             }
         }
-        // Py_EnterRecursiveCall(" while traversing '%s' node")
-        return conversion.convert(tmp);
+        PythonThreadState threadState = PyEnterRecursiveCallNode.executeUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
+        try {
+            return conversion.convert(tmp);
+        } finally {
+            PyEnterRecursiveCallNode.leave(threadState);
+        }
     }
 
     int lookupAndConvertInt(Object obj, TruffleString attrName, TruffleString nodeName) {
@@ -141,8 +147,12 @@ abstract class Obj2SstBase {
             }
             // PNone.NONE is handled by obj2int() (produces a different error message)
         }
-        // Py_EnterRecursiveCall(" while traversing '%s' node")
-        return obj2int(tmp);
+        PythonThreadState threadState = PyEnterRecursiveCallNode.executeUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
+        try {
+            return obj2int(tmp);
+        } finally {
+            PyEnterRecursiveCallNode.leave(threadState);
+        }
     }
 
     int lookupAndConvertIntOpt(Object obj, TruffleString attrName, @SuppressWarnings("unused") TruffleString nodeName, int defaultValue) {
@@ -161,8 +171,12 @@ abstract class Obj2SstBase {
             }
             // PNone.NONE is handled by obj2boolean() (produces a different error message)
         }
-        // Py_EnterRecursiveCall(" while traversing '%s' node")
-        return obj2boolean(tmp);
+        PythonThreadState threadState = PyEnterRecursiveCallNode.executeUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
+        try {
+            return obj2boolean(tmp);
+        } finally {
+            PyEnterRecursiveCallNode.leave(threadState);
+        }
     }
 
     <T> T[] lookupAndConvertSequence(Object obj, TruffleString attrName, TruffleString nodeName, Conversion<T> conversion, IntFunction<T[]> arrayFactory) {
@@ -177,8 +191,12 @@ abstract class Obj2SstBase {
         T[] result = arrayFactory.apply(seq.length());
         for (int i = 0; i < result.length; ++i) {
             tmp = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, i);
-            // Py_EnterRecursiveCall(" while traversing '%s' node")
-            result[i] = conversion.convert(tmp);
+            PythonThreadState threadState = PyEnterRecursiveCallNode.executeUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
+            try {
+                result[i] = conversion.convert(tmp);
+            } finally {
+                PyEnterRecursiveCallNode.leave(threadState);
+            }
             if (result.length != seq.length()) {
                 throw raiseTypeError(S_FIELD_S_CHANGED_SIZE_DURING_ITERATION, nodeName, attrName);
             }
