@@ -46,6 +46,11 @@ import builtins
 import asyncio
 
 
+GRAALPY_POSIX_BACKEND_IS_JAVA = (
+    hasattr(builtins, '__graalpython__') and builtins.__graalpython__.posix_module_backend() == 'java'
+)
+
+
 def basic():
     return 'return value'
 
@@ -237,6 +242,7 @@ class TraceTests(unittest.TestCase):
 
     @unittest.skipIf(not hasattr(signal, 'SIGUSR1'), "User defined signal not present")
     @unittest.skipIf(not hasattr(builtins, '__graalpython__'), "async actions do get traced in CPython")
+    @unittest.skipIf(GRAALPY_POSIX_BACKEND_IS_JAVA, "signal.raise_signal is not supported by the Java POSIX backend")
     def test_07_async_actions_not_traced(self):
         def handler(*_): handler.called = 1
 
