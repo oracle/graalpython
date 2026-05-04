@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -50,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -59,7 +57,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.util.PythonUtils.NodeCounterWithLimit;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
@@ -67,7 +64,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.NodeField;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
@@ -142,53 +138,12 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
     }
 
     private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
-        CompilerAsserts.neverPartOfCompilation();
-        if (isAdoptable() && !isMaxSizeExceeded()) {
-            // to avoid building up AST of recursive builtin calls we check that the same builtin
-            // isn't already our parent.
-            Class<? extends PythonBuiltinBaseNode> builtinClass = builtinNode.getClass();
-            Node parent = getParent();
-            int recursiveCalls = 0;
-            PythonLanguage language = PythonLanguage.get(this);
-            while (parent != null && !(parent instanceof RootNode)) {
-                if (parent.getClass() == builtinClass) {
-                    int recursionLimit = language.getEngineOption(PythonOptions.NodeRecursionLimit);
-                    if (recursiveCalls == recursionLimit) {
-                        return true;
-                    }
-                    recursiveCalls++;
-                }
-                parent = parent.getParent();
+        if (!isMaxSizeExceeded()) {
+            BuiltinInliningPolicy.CallerSizeCheck result = BuiltinInliningPolicy.checkCallerSize(this, builtinNode);
+            if (result == BuiltinInliningPolicy.CallerSizeCheck.EXCEEDS_MAX_SIZE) {
+                setMaxSizeExceeded(true);
             }
-
-            RootNode root = getRootNode();
-            // nb: option 'BuiltinsInliningMaxCallerSize' is defined as a compatible option, i.e.,
-            // ASTs will only be shared between contexts that have the same value for this option.
-            int maxSize = language.getEngineOption(PythonOptions.BuiltinsInliningMaxCallerSize);
-            if (root instanceof PRootNode) {
-                PRootNode pRoot = (PRootNode) root;
-                int rootNodeCount = pRoot.getNodeCountForInlining();
-                if (rootNodeCount < maxSize) {
-                    NodeCounterWithLimit counter = new NodeCounterWithLimit(rootNodeCount, maxSize);
-                    builtinNode.accept(counter);
-                    if (counter.isOverLimit()) {
-                        setMaxSizeExceeded(true);
-                        return true;
-                    }
-                    pRoot.setNodeCountForInlining(counter.getCount());
-                }
-            } else {
-                NodeCounterWithLimit counter = new NodeCounterWithLimit(maxSize);
-                root.accept(counter);
-                if (!counter.isOverLimit()) {
-                    builtinNode.accept(counter);
-                }
-                if (counter.isOverLimit()) {
-                    setMaxSizeExceeded(true);
-                    return true;
-                }
-            }
-            return false;
+            return BuiltinInliningPolicy.exceedsCallerSize(result);
         }
         return true;
     }

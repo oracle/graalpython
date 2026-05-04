@@ -46,18 +46,21 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -90,14 +93,23 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     }
 
     protected final PythonUnaryBuiltinNode getUnaryBuiltin(PythonBuiltinClassType clazz) {
+        CompilerAsserts.neverPartOfCompilation();
         Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
-            if (PythonUnaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
-                return (PythonUnaryBuiltinNode) builtinFunction.getBuiltinNodeFactory().createNode();
+            NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = builtinFunction.getBuiltinNodeFactory();
+            if (builtinNodeFactory != null && PythonUnaryBuiltinNode.class.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
+                PythonUnaryBuiltinNode builtinNode = (PythonUnaryBuiltinNode) builtinNodeFactory.createNode();
+                if (!callerExceedsMaxSize(builtinNode)) {
+                    return builtinNode;
+                }
             }
         }
         return null;
+    }
+
+    private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
+        return BuiltinInliningPolicy.exceedsCallerSize(BuiltinInliningPolicy.checkCallerSize(this, builtinNode));
     }
 
     protected static PythonBuiltinClassType getBuiltinClass(Node inliningTarget, Object receiver, GetClassNode getClassNode) {
@@ -111,7 +123,7 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
 
     // Object
 
-    @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, receiver, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, receiver, getClassNode)"}, limit = "1")
     static Object callObjectBuiltin(VirtualFrame frame, Object receiver,
                     @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
@@ -120,37 +132,17 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
         return function.execute(frame, receiver);
     }
 
-    @Specialization(guards = "getObjectClass(receiver) == cachedClass", limit = "3")
-    Object callObjectGeneric(VirtualFrame frame, Object receiver,
-                    @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
-                    @Shared @Cached InlinedBranchProfile notFoundProfile,
-                    @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
-                    @Shared @Cached CallUnaryMethodNode dispatchNode) {
-        return doCallObject(frame, inliningTarget, notFoundProfile, receiver, getClassNode, getattr, dispatchNode);
-    }
-
-    @Specialization(replaces = "callObjectGeneric")
-    @Megamorphic
+    @Specialization(replaces = "callObjectBuiltin")
     @InliningCutoff
     @SuppressWarnings("truffle-static-method")
-    Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
+    Object callObject(VirtualFrame frame, Object receiver,
                     @Bind Node inliningTarget,
-                    @Shared @Cached InlinedBranchProfile notFoundProfile,
-                    @Shared @Cached GetClassNode getClassNode,
-                    @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
-                    @Shared @Cached CallUnaryMethodNode dispatchNode) {
-        return doCallObject(frame, inliningTarget, notFoundProfile, receiver, getClassNode, getattr, dispatchNode);
-    }
-
-    protected Class<?> getObjectClass(Object object) {
-        return object.getClass();
-    }
-
-    private Object doCallObject(VirtualFrame frame, Node inliningTarget, InlinedBranchProfile notFoundProfile,
-                    Object receiver, GetClassNode getClassNode, LookupSpecialMethodNode getattr, CallUnaryMethodNode dispatchNode) {
-        Object attr = getattr.execute(frame, getClassNode.execute(inliningTarget, receiver), receiver);
+                    @Cached InlinedBranchProfile notFoundProfile,
+                    @Exclusive @Cached GetClassNode getClassNode,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Cached CallUnaryMethodNode dispatchNode) {
+        Object receiverClass = getClassNode.execute(inliningTarget, receiver);
+        Object attr = getattr.execute(frame, receiverClass, receiver);
         if (attr == PNone.NO_VALUE) {
             notFoundProfile.enter(inliningTarget);
             throw SpecialMethodNotFound.INSTANCE;

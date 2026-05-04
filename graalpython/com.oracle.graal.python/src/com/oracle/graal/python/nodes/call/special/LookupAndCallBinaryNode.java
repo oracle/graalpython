@@ -44,16 +44,17 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -67,7 +68,6 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallBinaryNode extends Node {
-    @Child private CallBinaryMethodNode dispatchNode;
     protected final TruffleString name;
 
     LookupAndCallBinaryNode(TruffleString name) {
@@ -81,24 +81,24 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return LookupAndCallBinaryNodeGen.create(name);
     }
 
-    protected final CallBinaryMethodNode ensureDispatch() {
-        // this also serves as a branch profile
-        if (dispatchNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            dispatchNode = insert(CallBinaryMethodNode.create());
-        }
-        return dispatchNode;
-    }
-
     protected final PythonBinaryBuiltinNode getBinaryBuiltin(PythonBuiltinClassType clazz) {
+        CompilerAsserts.neverPartOfCompilation();
         Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
-            if (PythonBinaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
-                return (PythonBinaryBuiltinNode) builtinFunction.getBuiltinNodeFactory().createNode();
+            NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = builtinFunction.getBuiltinNodeFactory();
+            if (builtinNodeFactory != null && PythonBinaryBuiltinNode.class.isAssignableFrom(builtinNodeFactory.getNodeClass())) {
+                PythonBinaryBuiltinNode builtinNode = (PythonBinaryBuiltinNode) builtinNodeFactory.createNode();
+                if (!callerExceedsMaxSize(builtinNode)) {
+                    return builtinNode;
+                }
             }
         }
         return null;
+    }
+
+    private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
+        return BuiltinInliningPolicy.exceedsCallerSize(BuiltinInliningPolicy.checkCallerSize(this, builtinNode));
     }
 
     protected static PythonBuiltinClassType getBuiltinClass(Node inliningTarget, Object receiver, GetClassNode getClassNode) {
@@ -112,7 +112,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     // Object, Object
 
-    @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, left, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"clazz != null", "function != null", "isClazz(inliningTarget, clazz, left, getClassNode)"}, limit = "1")
     static Object callObjectBuiltin(VirtualFrame frame, Object left, Object right,
                     @SuppressWarnings("unused") @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
@@ -121,37 +121,19 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return function.execute(frame, left, right);
     }
 
-    @Specialization(guards = {"left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
-    @SuppressWarnings("truffle-static-method")
-    Object callObjectGeneric(VirtualFrame frame, Object left, Object right,
-                    @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
-                    @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                    @Exclusive @Cached InlinedBranchProfile notFoundProfile,
-                    @Exclusive @Cached GetClassNode getClassNode,
-                    @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr) {
-        return doCallObject(frame, inliningTarget, notFoundProfile, left, right, getClassNode, getattr);
-    }
-
-    @Specialization(replaces = "callObjectGeneric")
-    @Megamorphic
-    @SuppressWarnings("truffle-static-method")
-    Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
+    @Specialization(replaces = "callObjectBuiltin")
+    static Object callObject(VirtualFrame frame, Object left, Object right,
                     @Bind Node inliningTarget,
                     @Exclusive @Cached InlinedBranchProfile notFoundProfile,
                     @Exclusive @Cached GetClassNode getClassNode,
-                    @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr) {
-        return doCallObject(frame, inliningTarget, notFoundProfile, left, right, getClassNode, getattr);
-    }
-
-    private Object doCallObject(VirtualFrame frame, Node inliningTarget, InlinedBranchProfile notFoundProfile, Object left, Object right, GetClassNode getClassNode,
-                    LookupSpecialMethodNode getattr) {
+                    @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Cached CallBinaryMethodNode dispatchNode) {
         Object leftClass = getClassNode.execute(inliningTarget, left);
         Object leftCallable = getattr.execute(frame, leftClass, left);
         if (PGuards.isNoValue(leftCallable)) {
             notFoundProfile.enter(inliningTarget);
             throw SpecialMethodNotFound.INSTANCE;
         }
-        return ensureDispatch().executeObject(frame, leftCallable, left, right);
+        return dispatchNode.executeObject(frame, leftCallable, left, right);
     }
 }
