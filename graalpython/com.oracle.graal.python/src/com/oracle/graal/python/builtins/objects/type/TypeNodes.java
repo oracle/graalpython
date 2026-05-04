@@ -228,7 +228,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -2342,13 +2341,6 @@ public abstract class TypeNodes {
                                 l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class);
                 setAttribute(T___WEAKREF__, builtin, rootNode, pythonClass, language);
             }
-        }
-
-        private static void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonLanguage language) {
-            int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-            PBuiltinFunction function = PFactory.createBuiltinFunction(language, name, pythonClass, 1, flags, callTarget);
-            GetSetDescriptor desc = PFactory.createGetSetDescriptor(language, function, function, name, pythonClass, true);
-            pythonClass.setAttribute(name, desc);
         }
 
         private static void setAttribute(TruffleString name, Builtin builtin, BuiltinFunctionRootNode rootNode, PythonClass pythonClass, PythonLanguage language) {

@@ -256,11 +256,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     @TruffleBoundary
-    public static int getFlags(Builtin builtin, RootCallTarget callTarget) {
-        return getFlags(builtin, ((PRootNode) callTarget.getRootNode()).getSignature());
-    }
-
-    @TruffleBoundary
     public static int getFlags(Builtin builtin, Signature signature) {
         if (builtin == null) {
             return 0;
