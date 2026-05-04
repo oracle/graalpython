@@ -5404,9 +5404,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             case CollectionBits.ELEMENT_OBJECT: {
                 Object[] a = (Object[]) array;
-                if (list) {
-                    a = PythonUtils.arrayCopyOf(a, a.length);
-                }
+                a = PythonUtils.arrayCopyOf(a, a.length);
                 storage = new ObjectSequenceStorage(a);
                 break;
             }
