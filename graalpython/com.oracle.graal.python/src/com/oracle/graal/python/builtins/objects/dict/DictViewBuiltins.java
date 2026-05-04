@@ -52,17 +52,31 @@ import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetSetStorageForXorNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDiff;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetReverseIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIntersect;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageTransferItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltinsFactory.ContainedInNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
@@ -84,6 +98,7 @@ import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -100,6 +115,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -533,19 +549,137 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
+    static final class DictItemsXorState {
+        final PythonLanguage language;
+        final EconomicMapStorage remaining;
+        HashingStorage resultStorage = EmptyStorage.INSTANCE;
+
+        DictItemsXorState(PythonLanguage language, EconomicMapStorage remaining) {
+            this.language = language;
+            this.remaining = remaining;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class CopyToEconomicMapNode extends Node {
+        abstract EconomicMapStorage execute(Frame frame, Node inliningTarget, HashingStorage storage);
+
+        @Specialization
+        static EconomicMapStorage doEconomic(Node inliningTarget, EconomicMapStorage storage,
+                        @Cached HashingStorageCopy copyNode) {
+            return (EconomicMapStorage) copyNode.execute(inliningTarget, storage);
+        }
+
+        @Specialization(replaces = "doEconomic")
+        static EconomicMapStorage doGeneric(Frame frame, Node inliningTarget, HashingStorage storage,
+                        @Cached HashingStorageForEach forEach,
+                        @Cached HashingStorageTransferItem transferItem) {
+            EconomicMapStorage result = EconomicMapStorage.createWithSideEffects();
+            HashingStorage copied = forEach.execute(frame, inliningTarget, storage, transferItem, result);
+            assert copied == result;
+            return result;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class DictItemsXorCallback extends HashingStorageForEachCallback<DictItemsXorState> {
+        @Override
+        public abstract DictItemsXorState execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, DictItemsXorState state);
+
+        @Specialization
+        static DictItemsXorState doGeneric(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, DictItemsXorState state,
+                        @Cached HashingStorageGetItemWithHash getItem,
+                        @Cached ObjectHashMap.RemoveNode removeNode,
+                        @Cached PyObjectRichCompareBool eqNode,
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorValue iterValue,
+                        @Cached HashingStorageIteratorKeyHash iterHash) {
+            Object key = iterKey.execute(inliningTarget, storage, it);
+            long hash = iterHash.execute(frame, inliningTarget, storage, it);
+            Object rightValue = iterValue.execute(inliningTarget, storage, it);
+            Object leftValue = getItem.execute(frame, inliningTarget, state.remaining, key, hash);
+            boolean delete = leftValue != null && eqNode.execute(frame, inliningTarget, leftValue, rightValue, RichCmpOp.Py_EQ);
+            if (delete) {
+                removeNode.execute(frame, inliningTarget, state.remaining, key, hash);
+            } else {
+                PTuple pair = PFactory.createTuple(state.language, new Object[]{key, rightValue});
+                state.resultStorage = setItem.execute(frame, inliningTarget, state.resultStorage, pair, PNone.NONE);
+            }
+            return state;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class AddDictItemsToSetCallback extends HashingStorageForEachCallback<HashingStorage> {
+        @Override
+        public abstract HashingStorage execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, HashingStorage resultStorage);
+
+        @Specialization
+        static HashingStorage doGeneric(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, HashingStorage resultStorage,
+                        @Bind PythonLanguage language,
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached HashingStorageIteratorKey iterKey,
+                        @Cached HashingStorageIteratorValue iterValue) {
+            PTuple pair = PFactory.createTuple(language, new Object[]{iterKey.execute(inliningTarget, storage, it), iterValue.execute(inliningTarget, storage, it)});
+            return setItem.execute(frame, inliningTarget, resultStorage, pair, PNone.NONE);
+        }
+    }
+
     @Slot(value = SlotKind.nb_xor, isComplex = true)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class XorNode extends BinaryOpBuiltinNode {
 
         @Specialization
+        static PBaseSet doItemsViews(VirtualFrame frame, PDictItemsView self, PDictItemsView other,
+                        @Bind Node inliningTarget,
+                        @Cached CopyToEconomicMapNode copyToEconomicMapNode,
+                        @Cached HashingStorageForEach forEachRight,
+                        @Cached HashingStorageForEach forEachRemaining,
+                        @Cached DictItemsXorCallback xorCallback,
+                        @Cached AddDictItemsToSetCallback addRemainingCallback,
+                        @Bind PythonLanguage language) {
+            // CPython has a dedicated dictitems_xor helper: copy the left dict, iterate the right
+            // dict by key/hash, compare values for matching keys, and emit item tuples.
+            EconomicMapStorage remaining = copyToEconomicMapNode.execute(frame, inliningTarget, self.getWrappedStorage());
+            DictItemsXorState state = new DictItemsXorState(language, remaining);
+            forEachRight.execute(frame, inliningTarget, other.getWrappedStorage(), xorCallback, state);
+            HashingStorage result = forEachRemaining.execute(frame, inliningTarget, remaining, addRemainingCallback, state.resultStorage);
+            return PFactory.createSet(language, result);
+        }
+
+        @Specialization(guards = "isDictKeysView(self) || isAnySet(self)")
+        static PBaseSet doKeysViewOrSet(VirtualFrame frame, Object self, Object other,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached GetSetStorageForXorNode getRightStorage,
+                        @Shared @Cached HashingStorageXor xor,
+                        @Bind PythonLanguage language) {
+            HashingStorage left = getKeysViewOrSetStorage(self);
+            HashingStorage right = getRightStorage.execute(frame, inliningTarget, other);
+            return PFactory.createSet(language, xor.executePreservingLeft(frame, inliningTarget, left, right));
+        }
+
+        private static HashingStorage getKeysViewOrSetStorage(Object self) {
+            if (self instanceof PDictKeysView keysView) {
+                return keysView.getWrappedStorage();
+            }
+            return ((PBaseSet) self).getDictStorage();
+        }
+
+        @Specialization(guards = {"!isDictKeysView(self)", "!isAnySet(self)"})
         static PBaseSet doGeneric(VirtualFrame frame, Object self, Object other,
                         @Bind Node inliningTarget,
-                        @Cached GetStorageForBinopNode getStorage,
-                        @Cached HashingStorageXor xor,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Shared @Cached GetSetStorageForXorNode getRightStorage,
+                        @Shared @Cached HashingStorageXor xor,
                         @Bind PythonLanguage language) {
-            HashingStorage left = getStorage.execute(frame, inliningTarget, self);
-            HashingStorage right = getStorage.execute(frame, inliningTarget, other);
-            return PFactory.createSet(language, xor.execute(frame, inliningTarget, left, right));
+            HashingStorage left = constructSetNode.execute(frame, self).getDictStorage();
+            HashingStorage right = getRightStorage.execute(frame, inliningTarget, other);
+            return PFactory.createSet(language, xor.executeMutatingLeft(frame, inliningTarget, left, right));
         }
     }
 }

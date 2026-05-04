@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetSetStorageForXorNode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetSetStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -52,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
@@ -65,8 +67,10 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -195,15 +199,25 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
     @Builtin(name = "symmetric_difference", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class SymmetricDifferenceNode extends PythonBuiltinNode {
 
         @Specialization
-        static PFrozenSet doSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet self, Object other,
+        static PFrozenSet doHashingCollection(VirtualFrame frame, PFrozenSet self, PHashingCollection other,
                         @Bind Node inliningTarget,
-                        @Cached HashingCollectionNodes.GetSetStorageNode getHashingStorage,
-                        @Cached HashingStorageXor xorNode,
+                        @Exclusive @Cached HashingStorageXor xorNode,
                         @Bind PythonLanguage language) {
-            HashingStorage result = xorNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorage.execute(frame, inliningTarget, other));
+            HashingStorage result = xorNode.executePreservingLeft(frame, inliningTarget, other.getDictStorage(), self.getDictStorage());
+            return PFactory.createFrozenSet(language, result);
+        }
+
+        @Specialization(guards = "!isPHashingCollection(other)")
+        static PFrozenSet doGeneric(VirtualFrame frame, PFrozenSet self, Object other,
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached GetSetStorageForXorNode getHashingStorage,
+                        @Exclusive @Cached HashingStorageXor xorNode,
+                        @Bind PythonLanguage language) {
+            HashingStorage result = xorNode.executeMutatingLeft(frame, inliningTarget, getHashingStorage.execute(frame, inliningTarget, other), self.getDictStorage());
             return PFactory.createFrozenSet(language, result);
         }
     }

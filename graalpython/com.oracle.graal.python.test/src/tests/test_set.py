@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -596,27 +596,66 @@ def test_bin_ops_side_effects():
     test_op(operator.__and__, key1_eq_call)
     test_op(operator.__iand__, key1_eq_call)
 
-    # TODO: GR-42240
-    #
-    # def symmetric_difference_check(key1, key2):
-    #     assert key1.eq_calls == 0
-    #     assert key1.hash_calls == 0
-    #     assert key2.eq_calls == 2
-    #     assert key2.hash_calls == 0
-    #
-    # test_op(set.symmetric_difference, symmetric_difference_check)
-    # test_op(operator.__xor__, symmetric_difference_check)
-    # test_op(operator.__ixor__, symmetric_difference_check)
-    #
-    # def symmetric_difference_update_check(key1, key2):
-    #     assert key1.eq_calls == 2
-    #     assert key1.hash_calls == 0
-    #     assert key2.eq_calls == 0
-    #     assert key2.hash_calls == 0
-    #
-    # test_op(set.symmetric_difference_update, symmetric_difference_update_check)
-    #
+    def symmetric_difference_check(key1, key2):
+        assert key1.eq_calls == 0
+        assert key1.hash_calls == 0
+        assert key2.eq_calls == 2
+        assert key2.hash_calls == 0
+
+    test_op(set.symmetric_difference, symmetric_difference_check)
+    test_op(operator.__xor__, symmetric_difference_check)
+
+    def symmetric_difference_update_check(key1, key2):
+        assert key1.eq_calls == 2
+        assert key1.hash_calls == 0
+        assert key2.eq_calls == 0
+        assert key2.hash_calls == 0
+
+    test_op(operator.__ixor__, symmetric_difference_update_check)
+    test_op(set.symmetric_difference_update, symmetric_difference_update_check)
+
     # TODO: intersection, intersection_update
+
+
+def test_symmetric_difference_dict_keys_side_effects():
+    def test_op(op, check):
+        key1 = TrackingKey('foo', hash=42)
+        key2 = TrackingKey('bar', hash=42)
+        s = {key1}
+        d = {key2: 1}
+        key1.clear_observations()
+        key2.clear_observations()
+        op(s, d.keys())
+        check(key1, key2)
+
+    def symmetric_difference_check(key1, key2):
+        assert key1.eq_calls == 0
+        assert key1.hash_calls == 0
+        assert key2.eq_calls == 2
+        assert key2.hash_calls == 1
+
+    def symmetric_difference_update_check(key1, key2):
+        assert key1.eq_calls == 2
+        assert key1.hash_calls == 0
+        assert key2.eq_calls == 0
+        assert key2.hash_calls == 1
+
+    test_op(set.symmetric_difference, symmetric_difference_check)
+    test_op(set.symmetric_difference_update, symmetric_difference_update_check)
+
+
+def test_symmetric_difference_update_empty_side_effects():
+    key1 = TrackingKey('foo', hash=42)
+    key2 = TrackingKey('bar', hash=42)
+    s = {key1, key2}
+    key1.clear_observations()
+    key2.clear_observations()
+
+    s.symmetric_difference_update(set())
+    assert key1.eq_calls == 0
+    assert key1.hash_calls == 0
+    assert key2.eq_calls == 0
+    assert key2.hash_calls == 0
 
 
 def test_pop_side_effects():

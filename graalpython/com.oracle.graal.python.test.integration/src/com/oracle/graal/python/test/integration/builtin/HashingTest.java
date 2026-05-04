@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -197,8 +197,9 @@ public class HashingTest {
 
     @Test
     public void setAndTest() {
-        assertPrints("{2}\n", "print({2, 3} ^ {3})\n");
-        assertPrints("{'c', 'b'}\n", "print({'a', 'c'} ^ frozenset({'a', 'b'}))\n");
-        assertPrints("frozenset({'b'})\n", "print(frozenset({'a', 'c'}) ^ {'a', 'b', 'c'})\n");
+        String source = "assert {2, 3} ^ {3} == {2}\n" +
+                        "assert {'a', 'c'} ^ frozenset({'a', 'b'}) == {'b', 'c'}\n" +
+                        "assert frozenset({'a', 'c'}) ^ {'a', 'b', 'c'} == frozenset({'b'})\n";
+        assertPrints("", source);
     }
 }
