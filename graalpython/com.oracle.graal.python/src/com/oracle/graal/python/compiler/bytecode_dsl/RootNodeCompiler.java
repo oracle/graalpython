@@ -828,17 +828,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private static void beginSourceSectionInner(Builder b, SourceRange sourceRange) {
         if (sourceRange.startLine >= 1 && sourceRange != SourceRange.ARTIFICIAL_RANGE) {
             if (sourceRange.startColumn >= 0 && sourceRange.endLine >= sourceRange.startLine && sourceRange.endColumn >= 0) {
-                if (sourceRange.endColumn > 0) {
-                    b.beginSourceSection(sourceRange.startLine, sourceRange.startColumn + 1, sourceRange.endLine, sourceRange.endColumn);
-                } else {
+                int startColumn = sourceRange.startColumn + 1;
+                int endColumn = sourceRange.endColumn > 0 ? sourceRange.endColumn : 1;
+                if (sourceRange.endLine == sourceRange.startLine && endColumn < startColumn) {
                     /*
-                     * Truffle doesn't allow including an empty line with no characters, so we just
-                     * include the first character to have at least something. It's not correct, but
-                     * these cases are very rare, it occurs primarily in string consituents of
-                     * top-level multiline format strings.
+                     * Truffle doesn't allow source sections with empty or inverted ranges. These are
+                     * rare, but can occur for string constituents of top-level multiline format
+                     * strings and for AST-created code without end-position metadata.
                      */
-                    b.beginSourceSection(sourceRange.startLine, sourceRange.startColumn + 1, sourceRange.endLine, 1);
+                    b.beginSourceSection(sourceRange.startLine);
+                    return;
                 }
+                b.beginSourceSection(sourceRange.startLine, startColumn, sourceRange.endLine, endColumn);
             } else {
                 b.beginSourceSection(sourceRange.startLine);
             }

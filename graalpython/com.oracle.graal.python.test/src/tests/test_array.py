@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import copy
+import types
 from array import array
 
 from tests.util import storage_to_native
@@ -111,6 +113,52 @@ def test_array_native_storage():
     del a[2:]
     a.insert(1, -1)
     assert a == array('l', [1, -1, 3])
+
+
+def test_copy():
+    a = array('l', [1, 2, 3])
+    b = a.__copy__()
+    c = copy.copy(a)
+    assert type(b) is array
+    assert b == a
+    assert c == a
+    assert b is not a
+    assert c is not a
+    a[0] = 42
+    assert b == array('l', [1, 2, 3])
+    assert c == array('l', [1, 2, 3])
+
+
+def test_copy_native_storage():
+    a = array('l', [1, 2, 3])
+    storage_to_native(a)
+    b = a.__copy__()
+    assert b == a
+    a[1] = 42
+    assert b == array('l', [1, 2, 3])
+
+
+def test_deepcopy():
+    a = array('l', [1, 2, 3])
+    b = a.__deepcopy__({})
+    c = copy.deepcopy(a)
+    assert type(b) is array
+    assert b == a
+    assert c == a
+    assert b is not a
+    assert c is not a
+    a[0] = 42
+    assert b == array('l', [1, 2, 3])
+    assert c == array('l', [1, 2, 3])
+
+
+def test_class_getitem():
+    alias = array[int]
+    assert isinstance(alias, types.GenericAlias)
+    assert alias.__origin__ is array
+    assert alias.__args__ == (int,)
+    assert array.__class_getitem__(str).__args__ == (str,)
+
 
 def test_mul():
     a = array('l', [1, 2, 3])

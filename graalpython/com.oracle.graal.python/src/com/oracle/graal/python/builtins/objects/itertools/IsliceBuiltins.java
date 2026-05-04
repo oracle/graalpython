@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -157,10 +157,10 @@ public final class IsliceBuiltins extends PythonBuiltins {
                         stopNotInt.enter(inliningTarget);
                         throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                     }
-                }
-                if (stop < -1 || stop > SysModuleBuiltins.MAXSIZE) {
-                    stopWrongValue.enter(inliningTarget);
-                    throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                    if (stop < 0 || stop > SysModuleBuiltins.MAXSIZE) {
+                        stopWrongValue.enter(inliningTarget);
+                        throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
+                    }
                 }
             } else if (argsLen2.profile(inliningTarget, args.length == 3) || argsLen3.profile(inliningTarget, args.length == 4)) {
                 if (args[1] != PNone.NONE) {
@@ -179,6 +179,10 @@ public final class IsliceBuiltins extends PythonBuiltins {
                     } catch (PException e) {
                         stopNotInt.enter(inliningTarget);
                         throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Stop argument");
+                    }
+                    if (stop < 0 || stop > SysModuleBuiltins.MAXSIZE) {
+                        wrongValue.enter(inliningTarget);
+                        throw raiseNode.raise(inliningTarget, ValueError, S_FOR_ISLICE_MUST_BE, "Indices");
                     }
                 }
                 if (start < 0 || stop < -1 || start > SysModuleBuiltins.MAXSIZE || stop > SysModuleBuiltins.MAXSIZE) {
