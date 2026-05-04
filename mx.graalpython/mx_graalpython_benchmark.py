@@ -40,8 +40,10 @@ from pathlib import Path
 import mx
 import mx_benchmark
 import mx_polybench
+import mx_sdk_benchmark
 from mx_benchmark import StdOutRule, java_vm_registry, OutputCapturingVm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin, bm_exec_context
 from mx_graalpython_bench_param import HARNESS_PATH
+from mx_util import StageName
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -398,6 +400,445 @@ class GraalPythonJavaDriverVm(GuestVm):
 
     def get_extra_polyglot_args(self):
         return ["--experimental-options", "--python.MaxNativeMemory=%s" % (2**34), *self._extra_polyglot_args]
+
+
+class GraalPythonPolyBenchVm(GuestVm):
+    HOSTED_INSTANCE = "GraalPythonPolyBenchVm.hosted="
+    STAGED_PROGRAM = "staged-benchmark.py"
+    JAVA_MODULE_ARGS_WITH_VALUE = (
+        "--add-exports",
+        "--add-modules",
+        "--add-opens",
+        "--add-reads",
+        "--enable-native-access",
+    )
+    LAUNCHER_ARG_PREFIXES = (
+        "--python.",
+        "--engine.",
+        "--vm.",
+        "--inspect",
+        "--log.",
+        "--experimental-options",
+    )
+    PYTHONPATH_LAUNCHER_ARG = "--python.PythonPath"
+    STAGING_INCOMPATIBLE_ARG_PREFIXES = (
+        "--vm.",
+        "--inspect",
+    )
+
+    def __init__(self, config_name=CONFIGURATION_DEFAULT, host_vm=None, extra_launcher_args=None):
+        super().__init__(host_vm=host_vm)
+        self._config_name = self.canonical_config_name(config_name)
+        self._extra_launcher_args = list(extra_launcher_args or [])
+        self._guest_run_on_java_home_value = None
+        self._guest_run_on_java_home_set = False
+
+    def name(self):
+        return VM_NAME_GRAALPYTHON
+
+    def config_name(self):
+        return self._config_name
+
+    @staticmethod
+    def canonical_config_name(config_name):
+        return config_name if config_name else CONFIGURATION_DEFAULT
+
+    def hosting_registry(self):
+        return java_vm_registry
+
+    def with_host_vm(self, host_vm):
+        hosted_name = (
+            f"{self.HOSTED_INSTANCE}{self.name()}:{self.config_name()}@{host_vm.name()}:{host_vm.config_name()}"
+        )
+        if not bm_exec_context().has(hosted_name):
+            hosted_instance = self.__class__(
+                self.config_name(), host_vm=host_vm, extra_launcher_args=self._extra_launcher_args
+            )
+            bm_exec_context().add_context_value(hosted_name, mx_benchmark.ConstantContextValue(hosted_instance))
+        hosted_instance = bm_exec_context().get(hosted_name)
+        if self._guest_run_on_java_home_set:
+            hosted_instance.set_run_on_java_home(self._guest_run_on_java_home_value)
+        return hosted_instance
+
+    def set_run_on_java_home(self, value):
+        self._guest_run_on_java_home_value = value
+        self._guest_run_on_java_home_set = True
+        host = self.host_vm()
+        if host is not None and hasattr(host, "set_run_on_java_home"):
+            host.set_run_on_java_home(value)
+
+    def run_on_java_home(self):
+        if self._guest_run_on_java_home_set:
+            return self._guest_run_on_java_home_value
+        host = self.host_vm()
+        if host is not None and hasattr(host, "run_on_java_home"):
+            return host.run_on_java_home()
+        return None
+
+    def extract_vm_info(self, args=None):
+        self._host_vm_for_execution().extract_vm_info(args)
+
+    def polybench_staging_run_args(self, run_args):
+        return [arg for arg in run_args if not self._is_staging_incompatible_arg(arg)]
+
+    @classmethod
+    def _is_launcher_arg(cls, arg):
+        return arg.startswith(cls.LAUNCHER_ARG_PREFIXES)
+
+    @classmethod
+    def _is_staging_incompatible_arg(cls, arg):
+        return arg.startswith(cls.STAGING_INCOMPATIBLE_ARG_PREFIXES)
+
+    def _launcher_args(self):
+        run_args = bm_exec_context().get("bm_suite_args")
+        launcher_args = list(self._extra_launcher_args)
+        launcher_args += [arg for arg in self.bmSuite.runArgs(run_args) if self._is_launcher_arg(arg)]
+        return launcher_args
+
+    def _host_vm_for_execution(self):
+        host = self.host_vm()
+        if host is None:
+            mx.abort("GraalPy PolyBench guest VM requires a host VM; none was provided.")
+        if not isinstance(host, mx_sdk_benchmark.NativeImageVM):
+            mx.abort(f"GraalPy PolyBench guest VM requires NativeImageVM host; got {host.__class__.__name__}.")
+        if host.pgo_sampler_only or host.pgo_use_perf:
+            mx.abort("GraalPy PolyBench native launcher staging supports instrumentation PGO, but not PGO sampling.")
+        return host
+
+    def prepare_stages(self, bm_suite, bm_suite_args):
+        return self._host_vm_for_execution().prepare_stages(bm_suite, bm_suite_args)
+
+    def run(self, cwd, args):
+        host = self._host_vm_for_execution()
+        self.extract_vm_info(args)
+        args = host.post_process_command_line_args(args)
+        host.bmSuite = self.bmSuite
+        host.stages_info = self.bmSuite.stages_info
+        out = mx.TeeOutputCapture(mx.OutputCapture())
+        host.config = mx_sdk_benchmark.NativeImageBenchmarkConfig(host, self.bmSuite, args)
+        host.stages = mx_sdk_benchmark.StagesContext(
+            host, out, out, False, os.path.abspath(cwd if cwd else os.getcwd())
+        )
+        host.config.output_dir.mkdir(parents=True, exist_ok=True)
+        host.config.config_dir.mkdir(parents=True, exist_ok=True)
+        host.config.image_build_reports_directory.mkdir(parents=True, exist_ok=True)
+        code = self._run_single_stage(host)
+        output = out.underlying.data
+        return code, output, host.dimensions(cwd, args, code, output)
+
+    def _run_single_stage(self, host):
+        stage = host.stages_info.current_stage.stage_name
+        if stage == StageName.INSTRUMENT_IMAGE:
+            return self._run_stage_instrument_image(host)
+        if stage == StageName.INSTRUMENT_RUN:
+            return self._run_stage_instrument_run(host)
+        if stage == StageName.IMAGE:
+            return self._run_stage_image(host)
+        if stage == StageName.RUN:
+            return self._run_stage_run(host)
+        mx.abort(f"Unknown stage {stage}")
+
+    def _run_stage_instrument_image(self, host):
+        with host.get_stage_runner() as runner:
+            exit_code = self._build_standalone(host, runner, instrumented=True)
+            if exit_code == 0:
+                self._move_image_build_stats_file(host, StageName.INSTRUMENT_IMAGE)
+            return exit_code
+
+    def _run_stage_image(self, host):
+        with host.get_stage_runner() as runner:
+            exit_code = self._build_standalone(host, runner, instrumented=False)
+            if exit_code == 0:
+                self._move_image_build_stats_file(host, StageName.IMAGE)
+            return exit_code
+
+    def _run_stage_instrument_run(self, host):
+        launcher = self._launcher(host, instrumented=True)
+        profile_vm_args = [
+            f"--vm.XX:ProfilesDumpFile={host.config.profile_path}",
+            f"--vm.XX:ProfilesLCOVFile={host.config.output_dir / 'graalpy.info'}",
+        ]
+        with host.get_stage_runner() as runner:
+            exit_code = self._stage_harness(host, runner)
+            if exit_code != 0:
+                return exit_code
+            with self._graal_python_vm_args(*profile_vm_args):
+                with self._graalpy_launcher_env():
+                    return runner.execute_command(
+                        host, [str(launcher)] + self._profile_launcher_args(host) + [str(self._staged_program(host))]
+                    )
+
+    def _run_stage_run(self, host):
+        with host.get_stage_runner() as runner:
+            exit_code = self._stage_harness(host, runner)
+            if exit_code != 0:
+                return exit_code
+            with self._graalpy_launcher_env():
+                return runner.execute_command(
+                    host,
+                    [str(self._launcher(host, instrumented=False))]
+                    + self._run_launcher_args(host)
+                    + [str(self._staged_program(host))],
+                )
+
+    def _stage_harness(self, host, runner):
+        # Native stable PolyBench shares image stages across benchmarks, but the staged harness is benchmark-specific.
+        staging_args = [
+            "--stage-to-language",
+            "Python",
+            "--stage-to-file",
+            str(self._staged_program(host)),
+            "--log-staged-program",
+            "True",
+        ]
+        self._staged_program(host).parent.mkdir(parents=True, exist_ok=True)
+        image_run_args = self._polybench_staging_run_args(host, runner.config.image_run_args)
+        java_args = (
+            runner.config.classpath_arguments
+            + runner.config.modulepath_arguments
+            + runner.config.system_properties
+            + self._java_staging_vm_args(runner.config.image_vm_args or [])
+            + runner.config.executable
+            + image_run_args
+            + staging_args
+        )
+        return self._execute_setup_command(host, runner, host.generate_java_command(java_args))
+
+    @staticmethod
+    def _java_staging_vm_args(image_vm_args):
+        return [arg for arg in image_vm_args if not arg.startswith("-H")]
+
+    @staticmethod
+    def _execute_setup_command(host, runner, command):
+        mx.log("Running: ")
+        mx.log(" ".join(command))
+        write_output = False
+        runner.exit_code = mx.run(
+            command,
+            out=runner.stdout(write_output),
+            err=runner.stderr(write_output),
+            cwd=host.stages.cwd,
+            nonZeroIsFatal=False,
+            env=host.config.bm_suite.get_stage_env(),
+        )
+        return runner.exit_code
+
+    def _build_standalone(self, host, runner, instrumented):
+        if instrumented:
+            pgo_profile = ""
+        elif host.pgo_instrumentation:
+            pgo_profile = host.config.bm_suite.get_pgo_profile_for_image_build(host.config.profile_path)
+        else:
+            pgo_profile = None
+        if pgo_profile is not None:
+            pgo_profile = str(pgo_profile)
+
+        env_pgo_profile = pgo_profile if pgo_profile is not None else ""
+        from mx_graalpython import (
+            BUILD_NATIVE_IMAGE_WITH_ASSERTIONS,
+            GITHUB_CI,
+            _graalpy_launcher,
+            bytecode_dsl_build_args,
+            run_mx,
+            set_env,
+        )
+
+        enterprise = host.graalvm_edition == "ee"
+        standalone_dist = "GRAALPY_NATIVE_STANDALONE"
+        mx_args = ["-p", SUITE.dir, "--env", "native-ee" if enterprise else "native-ce"]
+        mx_args.append("--extra-image-builder-argument=-Ob" if GITHUB_CI else "--extra-image-builder-argument=-g")
+        if pgo_profile is not None:
+            if not enterprise:
+                mx.abort("PGO is only supported on enterprise NI")
+            if pgo_profile:
+                mx_args.append(f"--extra-image-builder-argument=--pgo={pgo_profile}")
+                mx_args.append("--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
+                mx_args.append("--extra-image-builder-argument=-H:+PGOPrintProfileQuality")
+            else:
+                mx_args.append("--extra-image-builder-argument=--pgo-instrument")
+                mx_args.append("--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
+                mx_args.append("--extra-image-builder-argument=-H:+ProfilingLCOV")
+        elif BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
+            mx_args.append("--extra-image-builder-argument=-ea")
+            mx_args.append("--extra-image-builder-argument=-J-ea")
+        mx_args += bytecode_dsl_build_args(prefix="--extra-image-builder-argument=")
+        for arg in self._mx_extra_image_builder_args(self._image_build_args(host)):
+            mx_args.append(f"--extra-image-builder-argument={arg}")
+
+        with set_env(GRAALPY_PGO_PROFILE=env_pgo_profile):
+            write_output = host.stages_info.should_produce_datapoints()
+            exit_code = run_mx(
+                mx_args + ["build", "-f", "--only", f"libpythonvm,{standalone_dist}"],
+                nonZeroIsFatal=False,
+                out=runner.stdout(write_output),
+                err=runner.stderr(write_output),
+            )
+        runner.exit_code = exit_code
+        if exit_code != 0:
+            return exit_code
+
+        standalone_home = self._platform_mxbuild_output(standalone_dist)
+        libpythonvm_home = self._platform_mxbuild_output("libpythonvm")
+        debug_info = libpythonvm_home / "libpythonvm.so.debug"
+        if debug_info.exists():
+            shutil.copy(debug_info, standalone_home / "lib")
+        destination = self._standalone_home(host, instrumented=instrumented)
+        if destination.exists():
+            shutil.rmtree(destination)
+        shutil.copytree(standalone_home, destination, symlinks=True)
+        launcher = destination / "bin" / _graalpy_launcher()
+        if not launcher.is_file():
+            mx.abort(f"GraalPy launcher was not built at expected path: {launcher}")
+        self._copy_native_image_artifact(host, destination, instrumented=instrumented)
+        return exit_code
+
+    def _copy_native_image_artifact(self, host, standalone_home, instrumented):
+        libpythonvm = standalone_home / "lib" / mx.add_lib_suffix(mx.add_lib_prefix("pythonvm"))
+        if not libpythonvm.is_file():
+            mx.abort(f"GraalPy native image artifact was not built at expected path: {libpythonvm}")
+        destination = host.config.instrumented_image_path if instrumented else host.config.image_path
+        if destination.exists():
+            destination.unlink()
+        shutil.copy2(libpythonvm, destination)
+
+    def _image_build_args(self, host):
+        stage_name = host.stages_info.current_stage.stage_name
+        args = [
+            f"-H:BuildOutputJSONFile={host.config.get_build_output_json_file(stage_name)}",
+            "-H:+CollectImageBuildStatistics",
+        ]
+        args += host.config.system_properties
+        args += self._standalone_image_vm_args(host.config.image_vm_args or [])
+        if host.gc:
+            args += ["--gc=" + host.gc, "-H:+SpawnIsolates"]
+        if host.native_architecture:
+            args.append("-march=native")
+        if host.use_string_inlining:
+            args.append("-H:+UseStringInlining")
+        if host.future_defaults_all:
+            args.append("--future-defaults=all")
+        if host.optimization_level:
+            args.append("-" + host.optimization_level)
+        if host.is_quickbuild:
+            args.append("-Ob")
+        args += host.config.extra_image_build_arguments
+        return mx_sdk_benchmark.svm_experimental_options(args)
+
+    @classmethod
+    def _mx_extra_image_builder_args(cls, args):
+        # GraalPy standalone builds receive these through mx --extra-image-builder-argument, whose suite-side
+        # filtering keeps option-like args and drops bare operands. Use the equivalent --option=value form for
+        # Java module options that NativeImageVM keeps as space-separated pairs.
+        normalized_args = []
+        i = 0
+        while i < len(args):
+            arg = args[i]
+            if arg in cls.JAVA_MODULE_ARGS_WITH_VALUE:
+                if i + 1 >= len(args):
+                    mx.abort(f"Missing value for native-image argument {arg}")
+                normalized_args.append(f"{arg}={args[i + 1]}")
+                i += 2
+            else:
+                normalized_args.append(arg)
+                i += 1
+        return normalized_args
+
+    @classmethod
+    def _standalone_image_vm_args(cls, args):
+        # These module-access arguments come from the Java PolyBench launcher command. They are valid for building
+        # that launcher image, but not for the separate GraalPy standalone/libpythonvm image build.
+        standalone_args = []
+        i = 0
+        while i < len(args):
+            arg = args[i]
+            if arg in cls.JAVA_MODULE_ARGS_WITH_VALUE:
+                i += 2
+            elif any(arg.startswith(f"{prefix}=") for prefix in cls.JAVA_MODULE_ARGS_WITH_VALUE):
+                i += 1
+            else:
+                standalone_args.append(arg)
+                i += 1
+        return standalone_args
+
+    def _move_image_build_stats_file(self, host, stage):
+        stats_file = self._platform_mxbuild_output("libpythonvm") / "reports" / "image_build_statistics.json"
+        destination = host.config.get_image_build_stats_file(stage)
+        if not stats_file.is_file():
+            # Stable PolyBench may revisit an image stage after the shared GraalPy image was already built.
+            if destination.is_file():
+                mx.log(f"Reusing image build statistics file from earlier stage execution: {destination}")
+                return
+            mx.abort(f"Could not find image build statistics file at expected path: {stats_file}")
+        if destination.exists():
+            destination.unlink()
+        mx.move(stats_file, destination)
+
+    def _extra_native_run_args(self, _host, prefix):
+        vm_args = self.bmSuite.vmArgs(bm_exec_context().get("bm_suite_args"))
+        return mx_sdk_benchmark.parse_prefixed_args(prefix, vm_args)
+
+    @staticmethod
+    def _platform_mxbuild_output(name):
+        # The native standalone may be removed from mx's active dependency graph after build; its artifacts still
+        # live in the platform-dependent mxbuild output directory.
+        return Path(SUITE.dir) / "mxbuild" / f"{mx.get_os()}-{mx.get_arch()}" / name
+
+    def _polybench_staging_run_args(self, host, image_run_args):
+        extra_run_args = self._extra_native_run_args(host, "-Dnative-image.benchmark.extra-run-arg=")
+        if extra_run_args and image_run_args[-len(extra_run_args):] == extra_run_args:
+            return image_run_args[:-len(extra_run_args)]
+        return image_run_args
+
+    def _profile_launcher_args(self, host):
+        extra_profile_args = self._extra_native_run_args(host, "-Dnative-image.benchmark.extra-profile-run-arg=")
+        if not extra_profile_args:
+            extra_profile_args = self._extra_native_run_args(host, "-Dnative-image.benchmark.extra-run-arg=")
+        return self._launcher_args() + host.config.extra_jvm_args + extra_profile_args
+
+    def _run_launcher_args(self, host):
+        return self._launcher_args() + host.config.extra_jvm_args + self._extra_native_run_args(
+            host, "-Dnative-image.benchmark.extra-run-arg="
+        )
+
+    def _launcher_pythonpath(self):
+        prefix = f"{self.PYTHONPATH_LAUNCHER_ARG}="
+        for arg in reversed(self._launcher_args()):
+            if arg.startswith(prefix):
+                return arg[len(prefix):]
+        return None
+
+    @contextmanager
+    def _graalpy_launcher_env(self):
+        pythonpath = self._launcher_pythonpath()
+        if pythonpath is None:
+            yield
+            return
+        from mx_graalpython import set_env
+
+        # GraalPy launcher reads PYTHONPATH after generic launcher option parsing, so keep it aligned
+        # with the explicit PolyBench launcher option while running the staged native standalone.
+        with set_env(PYTHONPATH=pythonpath):
+            yield
+
+    @contextmanager
+    def _graal_python_vm_args(self, *new_args):
+        from mx_graalpython import set_env
+
+        existing = os.environ.get("GRAAL_PYTHON_VM_ARGS")
+        value = "\v".join(([existing] if existing else []) + list(new_args))
+        with set_env(GRAAL_PYTHON_VM_ARGS=value):
+            yield
+
+    def _staged_program(self, host):
+        return host.config.output_dir / "graalpython" / self.STAGED_PROGRAM
+
+    def _standalone_home(self, host, instrumented):
+        return host.config.output_dir / ("graalpy-instrumented" if instrumented else "graalpy")
+
+    def _launcher(self, host, instrumented):
+        from mx_graalpython import _graalpy_launcher
+
+        return self._standalone_home(host, instrumented=instrumented) / "bin" / _graalpy_launcher()
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1087,6 +1528,17 @@ def register_vms(suite, sandboxed_options):
     add_graalpy_vm(CONFIGURATION_SANDBOXED_MULTI, '--experimental-options', '-multi-context', *sandboxed_options)
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI, '--experimental-options', '-multi-context')
     add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '--engine.Compilation=false')
+
+    # PolyBench selects VMs through the Java VM registry. Register the GraalPy entry here so it can be selected as a
+    # guest of native-image via `--jvm=native-image --guest --jvm=graalpython`.
+    java_vm_registry.add_vm(GraalPythonPolyBenchVm(CONFIGURATION_DEFAULT), suite, 10)
+    java_vm_registry.add_vm(
+        GraalPythonPolyBenchVm(
+            CONFIGURATION_INTERPRETER, extra_launcher_args=['--experimental-options', '--engine.Compilation=false']
+        ),
+        suite,
+        10,
+    )
 
     # all of the graalpy vms, but with one compiler thread
     for name, extra_polyglot_args in graalpy_vms[:]:
