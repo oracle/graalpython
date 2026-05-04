@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlo
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.RichCmpOp;
-import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -98,7 +97,9 @@ import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarar
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public abstract class TpSlotWrapper {
@@ -188,20 +189,31 @@ public abstract class TpSlotWrapper {
 
     protected final CApiTiming timing;
     private final TpSlotManaged slot;
+    private final NativeSignature upcallSignature;
+    private final MethodHandle boundMethodHandle;
     private final long nativePointer;
 
     @SuppressWarnings("this-escape")
     TpSlotWrapper(TpSlotManaged slot, NativeSignature upcallSignature, MethodHandle methodHandle) {
         this.timing = CApiTiming.create(false, slot);
         this.slot = slot;
+        this.upcallSignature = upcallSignature;
+        this.boundMethodHandle = methodHandle.bindTo(this);
 
-        CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-        long pointer = cApiContext.registerClosure(getClass().getSimpleName(), upcallSignature, methodHandle.bindTo(this), this, slot);
-        if (PythonLanguage.get(null).isSingleContext()) {
-            nativePointer = pointer;
+        if (canShareNativePointers()) {
+            nativePointer = registerClosure();
         } else {
             nativePointer = NULLPTR;
         }
+    }
+
+    private static boolean canShareNativePointers() {
+        return PythonLanguage.get(null).isSingleContext() && !PythonContext.get(null).getOption(PythonOptions.IsolateNativeModules);
+    }
+
+    private long registerClosure() {
+        CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+        return cApiContext.registerClosure(getClass().getSimpleName(), upcallSignature, boundMethodHandle, this, slot);
     }
 
     public final TpSlotManaged getSlot() {
@@ -211,10 +223,11 @@ public abstract class TpSlotWrapper {
     @TruffleBoundary
     public final long getPointer() {
         if (nativePointer != NULLPTR) {
-            assert PythonLanguage.get(null).isSingleContext();
+            assert canShareNativePointers();
             return nativePointer;
         }
-        return PythonContext.get(null).getCApiContext().getClosurePointer(this);
+        long pointer = PythonContext.get(null).getCApiContext().getClosurePointer(this);
+        return pointer == -1 ? registerClosure() : pointer;
     }
 
     public abstract TpSlotWrapper cloneWith(TpSlotManaged slot);
