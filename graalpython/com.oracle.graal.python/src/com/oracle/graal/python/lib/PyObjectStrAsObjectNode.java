@@ -115,14 +115,14 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
                     @Cached GetObjectSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callSlot,
                     @Cached PyObjectReprAsObjectNode repr,
-                    @Cached PyEnterRecursiveCallNode enterRecursiveCallNode,
+                    @Cached PyEnterRecursiveCallNode enterNode,
                     @Cached PyUnicodeCheckNode checkNode,
                     @Cached PRaiseNode raiseNode) {
         TpSlots slots = getSlots.execute(inliningTarget, obj);
         if (slots.tp_str() == null) {
             return repr.execute(frame, inliningTarget, obj);
         }
-        PythonThreadState threadState = enterRecursiveCallNode.execute(inliningTarget, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_GETTING_STR_OF_AN_OBJECT);
+        PythonThreadState threadState = enterNode.enter(inliningTarget, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_GETTING_STR_OF_AN_OBJECT);
         try {
             Object result = callSlot.execute(frame, inliningTarget, slots.tp_str(), obj);
             assertNoJavaString(result);

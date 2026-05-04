@@ -65,7 +65,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateInline(inlineByDefault = true)
 @GenerateCached(false)
 public abstract class PyEnterRecursiveCallNode extends PNodeWithContext {
-    public abstract PythonThreadState execute(Node inliningTarget, TruffleString errorMessage, Object formatArg, boolean withFormatArg);
+    protected abstract PythonThreadState execute(Node inliningTarget, TruffleString errorMessage, Object formatArg, boolean withFormatArg);
 
     @Specialization
     static PythonThreadState doIt(Node inliningTarget, TruffleString errorMessage, Object formatArg, boolean withFormatArg,
@@ -84,19 +84,19 @@ public abstract class PyEnterRecursiveCallNode extends PNodeWithContext {
         return threadState;
     }
 
-    public final PythonThreadState execute(Node inliningTarget, TruffleString errorMessage) {
+    public final PythonThreadState enter(Node inliningTarget, TruffleString errorMessage) {
         return execute(inliningTarget, errorMessage, null, false);
     }
 
-    public final PythonThreadState execute(Node inliningTarget, TruffleString errorMessage, Object formatArg) {
+    public final PythonThreadState enter(Node inliningTarget, TruffleString errorMessage, Object formatArg) {
         return execute(inliningTarget, errorMessage, formatArg, true);
     }
 
-    public static PythonThreadState executeUncached(Node inliningTarget, TruffleString errorMessage) {
+    public static PythonThreadState enterUncached(Node inliningTarget, TruffleString errorMessage) {
         return PyEnterRecursiveCallNodeGen.getUncached().execute(inliningTarget, errorMessage, null, false);
     }
 
-    public static PythonThreadState executeUncached(Node inliningTarget, TruffleString errorMessage, Object formatArg) {
+    public static PythonThreadState enterUncached(Node inliningTarget, TruffleString errorMessage, Object formatArg) {
         return PyEnterRecursiveCallNodeGen.getUncached().execute(inliningTarget, errorMessage, formatArg, true);
     }
 

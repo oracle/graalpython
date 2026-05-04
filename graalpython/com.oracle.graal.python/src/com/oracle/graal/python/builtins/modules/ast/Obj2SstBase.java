@@ -131,7 +131,7 @@ abstract class Obj2SstBase {
                 throw raiseValueError(FIELD_S_IS_REQUIRED_FOR_S, attrName, nodeName);
             }
         }
-        PythonThreadState threadState = PyEnterRecursiveCallNode.executeUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
+        PythonThreadState threadState = PyEnterRecursiveCallNode.enterUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
         try {
             return conversion.convert(tmp);
         } finally {
@@ -147,7 +147,7 @@ abstract class Obj2SstBase {
             }
             // PNone.NONE is handled by obj2int() (produces a different error message)
         }
-        PythonThreadState threadState = PyEnterRecursiveCallNode.executeUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
+        PythonThreadState threadState = PyEnterRecursiveCallNode.enterUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
         try {
             return obj2int(tmp);
         } finally {
@@ -171,7 +171,7 @@ abstract class Obj2SstBase {
             }
             // PNone.NONE is handled by obj2boolean() (produces a different error message)
         }
-        PythonThreadState threadState = PyEnterRecursiveCallNode.executeUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
+        PythonThreadState threadState = PyEnterRecursiveCallNode.enterUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
         try {
             return obj2boolean(tmp);
         } finally {
@@ -191,7 +191,7 @@ abstract class Obj2SstBase {
         T[] result = arrayFactory.apply(seq.length());
         for (int i = 0; i < result.length; ++i) {
             tmp = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, i);
-            PythonThreadState threadState = PyEnterRecursiveCallNode.executeUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
+            PythonThreadState threadState = PyEnterRecursiveCallNode.enterUncached(node, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE, nodeName);
             try {
                 result[i] = conversion.convert(tmp);
             } finally {

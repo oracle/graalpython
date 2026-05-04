@@ -98,10 +98,10 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
                     @Cached GetObjectSlotsNode getSlots,
                     @Cached CallSlotReprNode callSlot,
                     @Cached(inline = false) ObjectNodes.DefaultObjectReprNode defaultRepr,
-                    @Cached PyEnterRecursiveCallNode enterRecursiveCallNode,
+                    @Cached PyEnterRecursiveCallNode enterNode,
                     @Cached PyUnicodeCheckNode checkNode,
                     @Cached PRaiseNode raiseNode) {
-        PythonThreadState threadState = enterRecursiveCallNode.execute(inliningTarget, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_GETTING_REPR_OF_AN_OBJECT);
+        PythonThreadState threadState = enterNode.enter(inliningTarget, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_GETTING_REPR_OF_AN_OBJECT);
         TpSlots slots = getSlots.execute(inliningTarget, obj);
         try {
             if (slots.tp_repr() == null) {
