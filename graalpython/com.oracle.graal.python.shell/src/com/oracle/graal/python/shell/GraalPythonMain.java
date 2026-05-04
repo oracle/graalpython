@@ -102,6 +102,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     private boolean noSite = false;
     private boolean unbufferedIO = false;
     private boolean multiContext = false;
+    private int repeatedRuns = 1;
     private boolean snaptshotStartup = false;
     private boolean warnDefaultEncoding = false;
     private int intMaxStrDigits = -1;
@@ -229,6 +230,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                             continue;
                         case "-multi-context":
                             multiContext = true;
+                            continue;
+                        case "-repeated-run":
+                            repeatedRuns = 2;
                             continue;
                         case "-dump":
                             subprocessArgs.add("Dgraal.Dump=");
@@ -827,65 +831,69 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
 
         int rc = 1;
-        try (Context context = contextBuilder.build()) {
-            runVersionAction(versionAction, context.getEngine());
+        for (int i = 0; i < repeatedRuns; i++) {
+            try (Context context = contextBuilder.build()) {
+                runVersionAction(versionAction, context.getEngine());
 
-            if (snaptshotStartup) {
-                evalInternal(context, "__graalpython__.startup_wall_clock_ts = " + startupWallClockTime + "; __graalpython__.startup_nano = " + startupNanoTime);
-            }
-
-            Value sysModule = evalInternal(context, "import sys; sys");
-            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && tty))) {
-                print("Python " + sysModule.getMember("version").asString() + " on " + sysModule.getMember("platform"));
-                if (!noSite) {
-                    print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
+                if (snaptshotStartup) {
+                    evalInternal(context, "__graalpython__.startup_wall_clock_ts = " + startupWallClockTime + "; __graalpython__.startup_nano = " + startupNanoTime);
                 }
-            }
 
-            sysModule.putMember("_console_handler", consoleHandler);
-            if (tty && !isolateFlag && (inspectFlag || (commandString == null && inputFile == null))) {
-                evalInternal(context, "import readline, rlcompleter");
-            }
-
-            if (commandString != null || inputFile != null || !tty) {
-                try {
-                    evalNonInteractive(context, consoleHandler);
-                    rc = 0;
-                } catch (PolyglotException e) {
-                    if (e.isExit()) {
-                        rc = e.getExitStatus();
-                    } else {
-                        throw e;
+                Value sysModule = evalInternal(context, "import sys; sys");
+                if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && tty))) {
+                    print("Python " + sysModule.getMember("version").asString() + " on " + sysModule.getMember("platform"));
+                    if (!noSite) {
+                        print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
                     }
-                } catch (NoSuchFileException e) {
-                    printFileNotFoundException(e);
                 }
-            }
-            if ((tty && commandString == null && inputFile == null) || inspectFlag) {
-                inspectFlag = false;
-                rc = readEvalPrint(context, consoleHandler, sysModule);
-            }
-        } catch (RuntimeException e) {
-            if (e.getMessage() != null && e.getMessage().contains("did not complete all polyglot threads")) {
-                // Python may end up with stuck threads and code would legitimately expect those to
-                // simply die with the process. In an embedding (or CPython subinterpreters) this
-                // is a problem, so Truffle throws an IllegalStateException when closing the
-                // context if that occurs. But here we have a launcher and usually we do not care
-                // about this problem during exit. For an example and some discussion, see
-                // https://discuss.python.org/t/getting-rid-of-daemon-threads/68836/14 where NJS
-                // brings up getaddrinfo which may just block in native for an arbitrary amount of
-                // time and prevent us from shutting down the thread.
-                if (!verboseFlag) {
-                    System.exit(rc);
+
+                sysModule.putMember("_console_handler", consoleHandler);
+                if (tty && !isolateFlag && (inspectFlag || (commandString == null && inputFile == null))) {
+                    evalInternal(context, "import readline, rlcompleter");
                 }
-            } else {
-                throw e;
+
+                if (commandString != null || inputFile != null || !tty) {
+                    try {
+                        evalNonInteractive(context, consoleHandler);
+                        rc = 0;
+                    } catch (PolyglotException e) {
+                        if (e.isExit()) {
+                            rc = e.getExitStatus();
+                        } else {
+                            throw e;
+                        }
+                    } catch (NoSuchFileException e) {
+                        printFileNotFoundException(e);
+                    }
+                }
+                if ((tty && commandString == null && inputFile == null) || inspectFlag) {
+                    inspectFlag = false;
+                    rc = readEvalPrint(context, consoleHandler, sysModule);
+                }
+            } catch (RuntimeException e) {
+                if (e.getMessage() != null && e.getMessage().contains("did not complete all polyglot threads")) {
+                    // Python may end up with stuck threads and code would legitimately expect those to
+                    // simply die with the process. In an embedding (or CPython subinterpreters) this
+                    // is a problem, so Truffle throws an IllegalStateException when closing the
+                    // context if that occurs. But here we have a launcher and usually we do not care
+                    // about this problem during exit. For an example and some discussion, see
+                    // https://discuss.python.org/t/getting-rid-of-daemon-threads/68836/14 where NJS
+                    // brings up getaddrinfo which may just block in native for an arbitrary amount of
+                    // time and prevent us from shutting down the thread.
+                    if (!verboseFlag) {
+                        System.exit(rc);
+                    }
+                } else {
+                    throw e;
+                }
+            } catch (IOException e) {
+                rc = 1;
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            rc = 1;
-            e.printStackTrace();
+            if (rc != 0) {
+                System.exit(rc);
+            }
         }
-        System.exit(rc);
     }
 
     private static boolean getBoolEnv(String var) {

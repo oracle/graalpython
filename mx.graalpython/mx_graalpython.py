@@ -1248,7 +1248,7 @@ def graalpytest(args):
     python_args = []
     runner_args = []
     for arg in unknown_args:
-        if arg.startswith(('--python.', '--engine.', '--vm.', '--inspect', '--log.', '--experimental-options')):
+        if arg.startswith(('--python.', '--engine.', '--vm.', '--inspect', '--log.', '--experimental-options', '-multi-context', '-repeated-run')):
             python_args.append(arg)
         else:
             runner_args.append(arg)
@@ -1257,7 +1257,7 @@ def graalpytest(args):
     python_binary = args.python
     if not python_binary:
         is_graalpy = True
-        python_args += ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
+        python_args = ["--experimental-options=true", "--python.EnableDebuggingBuiltins", *python_args]
         if args.svm:
             python_binary = graalpy_standalone_native()
     elif 'graalpy' in os.path.basename(python_binary) or 'mxbuild' in python_binary:
@@ -1266,11 +1266,11 @@ def graalpytest(args):
         if env.get("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS") != "true":
             gp_args += ["--vm.ea", "--vm.esa"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
-        python_args += gp_args
+        python_args = [*gp_args, *python_args]
     if is_graalpy and not BYTECODE_DSL_INTERPRETER:
         python_args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=false")
 
-    runner_args.append(f'--subprocess-args={shlex.join(python_args)}')
+    runner_args.append(f'--subprocess-args={shlex.join(arg for arg in python_args if arg != "-repeated-run")}')
     if is_graalpy:
         runner_args.append(f'--append-path={os.path.join(_dev_pythonhome(), "lib-python", "3")}')
     cmd_args = [*python_args, _python_test_runner(), 'run', *runner_args]
