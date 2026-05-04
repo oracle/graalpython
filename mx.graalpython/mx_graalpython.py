@@ -118,6 +118,18 @@ SANDBOXED_OPTIONS = [
     '--python.UnicodeCharacterDatabaseNativeFallback=false',
 ]
 
+SUBPROCESS_HEAVY_TESTS = [
+    'test_entropy_subprocess',
+    'test_repl',
+    'test_reparse',
+    'test_venv',
+    'test_patched_pip',
+    'test_wheel',
+    'test_startup',
+    'cpyext/test_shutdown',
+    'cpyext/test_fatal_exit',
+]
+
 
 # Allows disabling rebuild for some mx commands such as graalpytest
 DISABLE_REBUILD = get_boolean_env('GRAALPYTHON_MX_DISABLE_REBUILD')
@@ -1368,24 +1380,22 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     return result
 
 
-def run_sandboxed_tests(python_binary, report, extra_args=None, **kwargs):
-    args = SANDBOXED_OPTIONS + (extra_args or [])
-    kwargs.setdefault("parallel", 0)
+def run_sandboxed_tests(python_binary, report, args=None, **kwargs):
+    args = SANDBOXED_OPTIONS + (args or [])
     exclude = list(kwargs.pop("exclude", []) or [])
+    if mx.get_jdk().version < mx.VersionSpec("22.0.0"):
+        # C API doesn't work on JDK 21
+        exclude += [
+            "cpyext",
+            "test_ctypes_callbacks",
+            "test_indirect_call",
+        ]
     env = dict(kwargs.pop("env", os.environ.copy()) or {})
     propagated_args = [
         "--experimental-options=true",
         *[arg for arg in args if arg.startswith(("--python.", "--vm.", "--experimental-options"))],
     ]
     env["GRAAL_PYTHON_VM_ARGS"] = "\v" + "\v".join(propagated_args)
-    exclude.append(os.path.join(_python_unittest_root(), "cpyext"))
-    exclude.append(os.path.join(_python_unittest_root(), "test_ctypes_callbacks.py"))
-    exclude.append(os.path.join(_python_unittest_root(), "test_indirect_call.py"))
-    exclude.append(os.path.join(_python_unittest_root(), "test_reparse.py"))
-    if "-multi-context" in args:
-        # GR-75097: sandboxed multi-context runs currently fail in test_class-set-attrib with
-        # an unexpected class shape mismatch; skip this combination temporarily until fixed.
-        exclude.append(os.path.join(_python_unittest_root(), "test_class-set-attrib.py"))
     run_python_unittests(python_binary, args=args, env=env, report=report, exclude=exclude, **kwargs)
     # TODO the test runner doesn't even find the tests on Darwin
     if sys.platform == "darwin":
@@ -1601,7 +1611,7 @@ def graalpython_gate_runner(_, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_sandboxed_tests(graalpy_standalone_jvm_enterprise(), report=report())
+            run_sandboxed_tests(graalpy_standalone_jvm(), report=report())
 
     with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
         if task:
@@ -1609,11 +1619,41 @@ def graalpython_gate_runner(_, tasks):
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm(), args=["-multi-context"], nonZeroIsFatal=nonZeroIsFatal, report=report())
+            env = os.environ.copy()
+            env['PATH'] = get_path_with_patchelf()
+            graalpy = graalpy_standalone_jvm()
+            mx.log("1. Running twice without shared engine")
+            run_python_unittests(
+                graalpy,
+                args=["-repeated-run", "--python.IsolateNativeModules=true"],
+                parallel=0,
+                exclude=SUBPROCESS_HEAVY_TESTS,
+                env=env,
+                nonZeroIsFatal=nonZeroIsFatal,
+                report=report(),
+            )
+            mx.log("2. Running twice with shared engine")
+            run_python_unittests(
+                graalpy,
+                args=["-repeated-run", "-multi-context", "--python.IsolateNativeModules=true"],
+                parallel=0,
+                exclude=SUBPROCESS_HEAVY_TESTS,
+                env=env,
+                nonZeroIsFatal=nonZeroIsFatal,
+                report=report(),
+            )
 
     with Task('GraalPython sandboxed multi-context tests', tasks, tags=[GraalPythonTags.unittest_multi_sandboxed]) as task:
         if task:
-            run_sandboxed_tests(graalpy_standalone_jvm_enterprise(), extra_args=["-multi-context"], parallel=0, report=report())
+            mx.log("Running twice with shared engine")
+            run_sandboxed_tests(
+                graalpy_standalone_jvm(),
+                args=["-repeated-run", "-multi-context"],
+                parallel=0,
+                exclude=SUBPROCESS_HEAVY_TESTS,
+                nonZeroIsFatal=nonZeroIsFatal,
+                report=report(),
+            )
 
     with Task('GraalPython Jython emulation tests', tasks, tags=[GraalPythonTags.unittest_jython]) as task:
         if task:
