@@ -2,7 +2,7 @@ test.test_time.TestAsctime4dyear.test_large_year @ darwin-arm64,linux-aarch64,li
 test.test_time.TestAsctime4dyear.test_negative @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TestAsctime4dyear.test_year @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_time.TestLocale.test_bug_3061 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_time.TestPytime.test_localtime_timezone @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_time.TestPytime.test_localtime_timezone @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 # Can fail in specific timezones in CI
 !test.test_time.TestPytime.test_localtime_timezone, at line 757 with AssertionError: 3600 != 0
 test.test_time.TestPytime.test_short_times @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
