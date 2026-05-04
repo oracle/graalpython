@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import tempfile
 import unittest
 from tests import util
 from dataclasses import dataclass
+from functools import wraps
 from textwrap import dedent
 
 if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() != 'aarch64')) and (
@@ -54,6 +55,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
 
     # The terminal tests can be flaky
     def autoretry(fn):
+        @wraps(fn)
         def decorated(*args, **kwargs):
             retries = 3
             while retries:
@@ -77,7 +79,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
 
 
     @autoretry
-    def validate_repl(stdin, python_args=(), ignore_preamble=True):
+    def validate_repl(stdin, python_args=(), ignore_preamble=True, extra_input_and_output=()):
         env = os.environ.copy()
         env['TERM'] = 'ansi'
         env['PYTHONIOENCODING'] = 'utf-8'
@@ -103,6 +105,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 expected_input = match.group(2)
                 expected_output = stdin[match.end():in_matches[i + 1].start() - 1 if i + 1 < len(in_matches) else -1]
                 input_and_output.append(ExpectedInOutItem(prompt, expected_input, expected_output))
+            input_and_output.extend(extra_input_and_output)
             index = -1
             whole_out = ''
             while True:
@@ -111,9 +114,12 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 out += os.read(pty_parent, 1024).decode('utf-8')
                 out = re.sub(r'\x1b\[(?:\?2004[hl]|\d+[A-G])', '', out)
                 out = re.sub(r'\r+\n', '\n', out)
-                if out == '>>> ' or out.endswith(('\n>>> ', '\n... ')):
+                if out.endswith(('\n... ', '>>> ')):
                     prompt = out[:3]
-                    actual = out[:-5]
+                    actual_end = len(out) - 4
+                    if actual_end > 0 and out[actual_end - 1] == '\n':
+                        actual_end -= 1
+                    actual = out[:actual_end]
                     if index >= 0:
                         current = input_and_output[index]
                         assert prompt == current.prompt, f"Actual prompt: {prompt}\nExpected prompt: {current.prompt}"
@@ -126,7 +132,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                     whole_out += out[:-4]
                     out = out[-4:]
                     if index >= len(input_and_output):
-                        os.write(pty_parent, b'\x04')  # CTRL-D
+                        os.write(pty_parent, b'\x04')  # Ctrl-D / EOF
                         proc.wait(timeout=60)
                         out = os.read(pty_parent, 1024).decode('utf-8')
                         out = re.sub(r'\x1b\[\?2004[hl]', '', out)
@@ -163,6 +169,15 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             >>> _
             'hello'
         """), python_args=['-I'])
+
+
+    @autoretry
+    def test_repl_flushes_std_streams():
+        validate_repl("", extra_input_and_output=[
+            ExpectedInOutItem('>>>', '40 + 2', '\n42'),
+            ExpectedInOutItem('>>>', '_ = __import__("sys").stderr.write("stderr")', '\nstderr'),
+            ExpectedInOutItem('>>>', '_ = __import__("sys").stdout.write("stdout")', '\nstdout'),
+        ])
 
 
     def test_continuation():
