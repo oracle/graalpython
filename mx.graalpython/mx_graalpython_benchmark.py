@@ -69,11 +69,9 @@ CONFIGURATION_NATIVE_INTERPRETER = "native-interpreter"
 CONFIGURATION_DEFAULT_MULTI = "default-multi"
 CONFIGURATION_INTERPRETER_MULTI = "interpreter-multi"
 CONFIGURATION_NATIVE_INTERPRETER_MULTI = "native-interpreter-multi"
-CONFIGURATION_DEFAULT_MULTI_TIER = "default-multi-tier"
 CONFIGURATION_NATIVE = "native"
 CONFIGURATION_UNCACHED = "interpreter-uncached"
 CONFIGURATION_NATIVE_MULTI = "native-multi"
-CONFIGURATION_NATIVE_MULTI_TIER = "native-multi-tier"
 CONFIGURATION_SANDBOXED = "sandboxed"
 CONFIGURATION_SANDBOXED_MULTI = "sandboxed-multi"
 
@@ -328,9 +326,6 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
             "platform.graalvm-version": graalvm_version_match[2],
             "platform.graalvm-version-string": graalvm_version_match[1],
         }
-        if dims['guest-vm-config'].endswith('-3-compiler-threads'):
-            dims['guest-vm-config'] = dims['guest-vm-config'].replace('-3-compiler-threads', '')
-            dims['host-vm-config'] += '-3-compiler-threads'
         self._dims = dims
 
     def run(self, *args, **kwargs):
@@ -1085,7 +1080,6 @@ def register_vms(suite, sandboxed_options):
     add_graalpy_vm(CONFIGURATION_INTERPRETER, '--experimental-options', '--engine.Compilation=false')
     add_graalpy_vm(CONFIGURATION_DEFAULT_MULTI, '--experimental-options', '-multi-context')
     add_graalpy_vm(CONFIGURATION_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '--engine.Compilation=false')
-    add_graalpy_vm(CONFIGURATION_DEFAULT_MULTI_TIER, '--experimental-options', '--engine.MultiTier=true')
     add_graalpy_vm(CONFIGURATION_SANDBOXED, *sandboxed_options)
     add_graalpy_vm(CONFIGURATION_NATIVE)
     add_graalpy_vm(CONFIGURATION_UNCACHED, '--experimental-options', '--engine.Compilation=false', '--python.ForceUncachedInterpreter=true')
@@ -1093,12 +1087,10 @@ def register_vms(suite, sandboxed_options):
     add_graalpy_vm(CONFIGURATION_SANDBOXED_MULTI, '--experimental-options', '-multi-context', *sandboxed_options)
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI, '--experimental-options', '-multi-context')
     add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '--engine.Compilation=false')
-    add_graalpy_vm(CONFIGURATION_NATIVE_MULTI_TIER, '--experimental-options', '--engine.MultiTier=true')
 
-    # all of the graalpy vms, but with different numbers of compiler threads
+    # all of the graalpy vms, but with one compiler thread
     for name, extra_polyglot_args in graalpy_vms[:]:
         add_graalpy_vm(f'{name}-1-compiler-threads', *['--engine.CompilerThreads=1', *extra_polyglot_args])
-        add_graalpy_vm(f'{name}-3-compiler-threads', *['--engine.CompilerThreads=3', *extra_polyglot_args])
 
     # java embedding driver
     python_java_embedding_vm_registry.add_vm(
