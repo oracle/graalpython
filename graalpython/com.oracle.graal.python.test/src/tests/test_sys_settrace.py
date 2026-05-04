@@ -37,7 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
 import unittest
 import difflib
 import sys
@@ -45,6 +44,11 @@ import signal
 from tests import util
 import builtins
 import asyncio
+
+
+GRAALPY_POSIX_BACKEND_IS_JAVA = (
+    hasattr(builtins, '__graalpython__') and builtins.__graalpython__.posix_module_backend() == 'java'
+)
 
 
 def basic():
@@ -138,6 +142,32 @@ generator_example.events = [((), [(0, 'generator_example', 'call', None),
                                   (4, 'generator_example', 'line', None),
                                   (4, 'generator_example', 'return', False)])]
 
+def gen_same_line(): # line -4
+    yield 1; x = 2; yield x
+
+
+def generator_same_line_example():
+    x = gen_same_line()
+    a = next(x)
+    b = next(x)
+    c = next(x, None)
+    return a, b, c
+
+generator_same_line_example.events = [((), [(0, 'generator_same_line_example', 'call', None),
+                                            (1, 'generator_same_line_example', 'line', None),
+                                            (2, 'generator_same_line_example', 'line', None),
+                                            (-4, 'gen_same_line', 'call', None),
+                                            (-3, 'gen_same_line', 'line', None),
+                                            (-3, 'gen_same_line', 'return', 1),
+                                            (3, 'generator_same_line_example', 'line', None),
+                                            (-3, 'gen_same_line', 'call', None),
+                                            (-3, 'gen_same_line', 'return', 2),
+                                            (4, 'generator_same_line_example', 'line', None),
+                                            (-3, 'gen_same_line', 'call', None),
+                                            (-3, 'gen_same_line', 'return', None),
+                                            (5, 'generator_same_line_example', 'line', None),
+                                            (5, 'generator_same_line_example', 'return', (1, 2, None))])]
+
 def f_trace_delete():
     del sys._getframe().f_trace
     return 1
@@ -162,7 +192,6 @@ def make_test_method(fun, name):
     return test_case
 
 
-@unittest.skipUnless(os.environ.get('BYTECODE_DSL_INTERPRETER') == 'false', "TODO: FrameSlotTypeException with reparsing")
 class TraceTests(unittest.TestCase):
     def trace(self, frame, event, arg):
         code = frame.f_code
@@ -178,6 +207,7 @@ class TraceTests(unittest.TestCase):
     # test_03_oneline_loop = make_test_method(oneline_loop, 'test_03_oneline_loop')
     test_04_two_functions = make_test_method(two_functions, 'test_04_two_functions')
     test_05_generator_example = make_test_method(generator_example, 'test_05_generator_example')
+    test_05_generator_same_line_example = make_test_method(generator_same_line_example, 'test_05_generator_same_line_example')
     def test_06_f_trace_preserved(self):
         def erroring_trace(*_):
             raise ValueError
@@ -212,6 +242,7 @@ class TraceTests(unittest.TestCase):
 
     @unittest.skipIf(not hasattr(signal, 'SIGUSR1'), "User defined signal not present")
     @unittest.skipIf(not hasattr(builtins, '__graalpython__'), "async actions do get traced in CPython")
+    @unittest.skipIf(GRAALPY_POSIX_BACKEND_IS_JAVA, "signal.raise_signal is not supported by the Java POSIX backend")
     def test_07_async_actions_not_traced(self):
         def handler(*_): handler.called = 1
 

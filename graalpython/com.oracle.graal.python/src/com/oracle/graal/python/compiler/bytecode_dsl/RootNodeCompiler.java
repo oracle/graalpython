@@ -664,16 +664,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         checkForbiddenArgs(ctx.errorCallback, node.getSourceRange(), args);
         setUpFrame(args, b);
 
-        b.emitTraceOrProfileCall();
-        if (node instanceof ClassDef cls) {
-            if (cls.decoratorList != null && cls.decoratorList.length > 0) {
-                b.emitTraceLine(cls.decoratorList[0].getSourceRange().startLine);
-            } else {
-                b.emitTraceLine(node.getSourceRange().startLine);
-            }
-        } else if (node instanceof FunctionDef fn) {
-            if (fn.decoratorList != null && fn.decoratorList.length > 0) {
-                b.emitTraceLine(fn.decoratorList[0].getSourceRange().startLine);
+        if (!scope.isGenerator() && !scope.isCoroutine()) {
+            b.emitTraceOrProfileCall();
+            if (node instanceof ClassDef cls) {
+                if (cls.decoratorList != null && cls.decoratorList.length > 0) {
+                    b.emitTraceLine(cls.decoratorList[0].getSourceRange().startLine);
+                } else {
+                    b.emitTraceLine(node.getSourceRange().startLine);
+                }
+            } else if (node instanceof FunctionDef fn) {
+                if (fn.decoratorList != null && fn.decoratorList.length > 0) {
+                    b.emitTraceLine(fn.decoratorList[0].getSourceRange().startLine);
+                }
             }
         }
     }
