@@ -2921,6 +2921,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 RootNode rootNode = language.createCachedRootNode(
                                 l -> PBytecodeRootNode.createMaybeGenerator(language, codeUnit, getSource(), isInternal()),
                                 codeUnit);
+                rootNode.getCallTarget(); // make sure the calltarget is initialized
                 if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
                     rootNode = ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
                 }
