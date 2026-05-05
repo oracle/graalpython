@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -145,7 +145,7 @@ public final class TupleBuiltins extends PythonBuiltins {
             } else if (subtypeNode.execute(cls, PythonBuiltinClassType.PTuple)) {
                 if (needsNativeAllocationNode.execute(inliningTarget, cls)) {
                     // delegate to tuple_subtype_new(PyTypeObject *type, PyObject *x)
-                    return subtypeNew.call(cls, iterable);
+                    return subtypeNew.execute(inliningTarget, cls, iterable);
                 } else {
                     PTuple tuple = constructTupleNode.execute(frame, iterable);
                     return PFactory.createTuple(cls, getInstanceShape.execute(cls), tuple.getSequenceStorage());

@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.referencetype;
 
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.objectHashCode;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAKLIST;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAK_REF_QUEUE;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -66,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltinsFactory.ReferenceTypeNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -120,7 +120,6 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
     @SlotSignature(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
-        @Child private CStructAccess.ReadI64Node getTpWeaklistoffsetNode;
 
         public abstract PReferenceType execute(Object cls, Object object, Object callback);
 
@@ -190,11 +189,7 @@ public final class ReferenceTypeBuiltins extends PythonBuiltins {
                 if (PGuards.isNativeClass(clazz) || clazz instanceof PythonClass && ((PythonClass) clazz).needsNativeAllocation()) {
                     for (Object base : getMroNode.execute(inliningTarget, clazz)) {
                         if (PGuards.isNativeClass(base)) {
-                            if (getTpWeaklistoffsetNode == null) {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                getTpWeaklistoffsetNode = insert(CStructAccess.ReadI64Node.create());
-                            }
-                            long tpWeaklistoffset = getTpWeaklistoffsetNode.readFromObj((PythonNativeClass) base, PyTypeObject__tp_weaklistoffset);
+                            long tpWeaklistoffset = readLongField(((PythonNativeClass) base).getPtr(), PyTypeObject__tp_weaklistoffset);
                             if (tpWeaklistoffset != 0) {
                                 allowed = true;
                                 break;

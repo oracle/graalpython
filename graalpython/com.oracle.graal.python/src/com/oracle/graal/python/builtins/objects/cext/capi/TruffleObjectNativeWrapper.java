@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,39 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(InteropLibrary.class)
-public final class TruffleObjectNativeWrapper extends PythonAbstractObjectNativeWrapper {
+public final class TruffleObjectNativeWrapper extends PythonObject {
 
-    public TruffleObjectNativeWrapper(Object foreignObject) {
-        super(foreignObject);
+    private final Object foreignObject;
+
+    public TruffleObjectNativeWrapper(Object pythonClass, Shape instanceShape, Object foreignObject) {
+        super(pythonClass, instanceShape);
+        this.foreignObject = foreignObject;
     }
 
-    public static TruffleObjectNativeWrapper wrap(Object foreignObject) {
-        assert foreignObject != null : "attempting to wrap Java null";
-        assert !CApiGuards.isNativeWrapper(foreignObject) : "attempting to wrap a native wrapper";
-        return new TruffleObjectNativeWrapper(foreignObject);
-    }
-
-    @ExportMessage
-    boolean isPointer() {
-        return isNative();
-    }
-
-    @ExportMessage
-    long asPointer() {
-        return getNativePointer();
-    }
-
-    @ExportMessage
-    void toNative() {
-        if (!isNative()) {
-            setNativePointer(CApiTransitions.FirstToNativeNode.executeUncached(this, false));
-        }
+    public Object getForeignObject() {
+        return foreignObject;
     }
 }

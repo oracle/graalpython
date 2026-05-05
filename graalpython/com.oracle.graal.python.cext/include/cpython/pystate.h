@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -104,6 +104,12 @@ typedef struct _err_stackitem {
     struct _err_stackitem *previous_item;
 
 } _PyErr_StackItem;
+
+typedef struct {
+    PyObject **items;
+    int len;
+    int capacity;
+} GraalPyDeallocState;
 
 typedef struct _stack_chunk {
     struct _stack_chunk *previous;
@@ -262,6 +268,9 @@ struct _ts {
     /* GraalPy change: We add field 'gc' which corresponds to field
        '&interp->gc'. */
     struct _gc_runtime_state *gc;
+
+    /* GraalPy change: stack of native objects currently being deallocated. */
+    GraalPyDeallocState graalpy_deallocating;
 };
 
 /* WASI has limited call stack. Python's recursion limit depends on code

@@ -63,9 +63,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.TimeDeltaValue;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -76,9 +76,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.builtins.modules.datetime.TemporalValueNodes.TimeDeltaValue;
-import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyDeltaCheckNode;
+import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
@@ -654,9 +653,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getDays(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadI32Node readNode) {
-            return TimeDeltaNodes.FromNative.getDays(self, readNode);
+        static int getDays(PythonAbstractNativeObject self) {
+            return TimeDeltaNodes.FromNative.getDays(self);
         }
     }
 
@@ -670,9 +668,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getSeconds(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadI32Node readNode) {
-            return TimeDeltaNodes.FromNative.getSeconds(self, readNode);
+        static int getSeconds(PythonAbstractNativeObject self) {
+            return TimeDeltaNodes.FromNative.getSeconds(self);
         }
     }
 
@@ -686,9 +683,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getMicroseconds(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadI32Node readNode) {
-            return TimeDeltaNodes.FromNative.getMicroseconds(self, readNode);
+        static int getMicroseconds(PythonAbstractNativeObject self) {
+            return TimeDeltaNodes.FromNative.getMicroseconds(self);
         }
     }
 

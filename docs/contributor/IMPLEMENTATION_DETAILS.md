@@ -199,24 +199,27 @@ Below is a rough draft of the types and memory layouts involved and how they con
 ```
     Managed Heap                                        Native Heap
                                                           Stub allocated to represent managed object
-    +------------------------+                          +-------------------------------+
-    | PInt                   |<---+                     | struct PyGC_Head {            |
-    +------------------------+    |                     |    uintptr_t _gc_next         |
-    | BigInteger value       |    |                     |    uintptr_t _gc_prev         |
-    +------------------------+    |                     | }                             |
-                                  |       +------------>| struct GraalPyObject {        |
-    +------------------------+    |       |             |    Py_ssize_t ob_refcnt       |
-    | PythonNativeWrapper    |<---+       |     +------>|    PyObject *ob_type          |
-    +------------------------+------------+     |       |    int32_t handle_table_index |---+
-    |                        +<---+             |       | }                             |   |
-    +------------------------+    |             |       +-------------------------------+   |
-                                  |             |                                           |
-                                  |             |                                           |
-    +------------------------+    |             |                                           |
-+---| PythonObjectReference  |<---+             |                                           |
-|   +------------------------+------------------+                                           |
-|   | boolean gc             |                                                              |
-|   | boolean freeAtCollect  |                         -                                    |
+    +---------------------------+                       +-------------------------------+
++-->| PInt                      |                       | struct PyGC_Head {            |
+|   +---------------------------+                       |    uintptr_t _gc_next         |
+|   | long nativePointer        |---------------+       |    uintptr_t _gc_prev         |
+|   | PythonObjectReference ref |----+          |       | }                             |
+|   | BigInteger value          |    |          +------>| struct GraalPyObject {        |
+|   +---------------------------+    |          |       |    Py_ssize_t ob_refcnt       |
+|                                    |          |       |    PyObject *ob_type          |
+|                                    |          |       |    int32_t handle_table_index |---+
+|                                    |          |       | }                             |   |
+|                                    |          |       +-------------------------------+   |
+|                                    |          |                                           |
+|                                    |          |                                           |
+|                                    |          |                                           |
+|                                    |          |                                           |
+|   +------------------------+       |          |                                           |
++---| PythonObjectReference  |<------+          |                                           |
+    +------------------------+                  |                                           |
+    | long pointer           |------------------+                                           |
+    | boolean gc             |                                                              |
++---| boolean freeAtCollect  |                                                              |
 |   +------------------------+                                                              |
 |                                                                                           |
 |   +------------------------+                                                              |
@@ -244,7 +247,7 @@ Below is a rough draft of the types and memory layouts involved and how they con
 
 ```
 
-Managed objects are associated with `PythonNativeWrapper` subinstances when
+Managed objects store a pointer to native `GraalPyObject` subinstances when
 they go to native, native objects are represented throughout the interpreters
 as `PythonAbstractNativeObject`. Both have associated weak references,
 `PythonObjectReference` and `NativeObjectReference`, respectively.
@@ -261,14 +264,14 @@ Java code and is, for example, passed as an argument.
 
 When a managed object is passed to a native extension code:
 
-* We create  `PythonNativeWrapper`. We create `PythonNativeWrapper` to
-  provide a different interop protocol, and not expose `toNative` and
-  `asPointer` on Python objects. The wrapper is stored inside the
+* We allocate a `GraalPyObject`, `GraalPyVarObject`, or `GraalPyFloatObject` in
+  off-heap memory. The native pointer is stored inside the
   `PythonAbstractObject`, because pointer identity is relied upon by some
   extensions we saw in the wild. (See PythonToNativeNode)
     * If the object was a "primitive" (TruffleString, int, long, boolean) we must
-      box it first into a `PythonAbstractObject`, so we create a `PString` or
-      `PInt` wrapper (or retrieve one for the singletons).
+      first promote the object to an appropriate instance of
+      `PythonAbstractObject` (e.g. `PString` is the promoted object for
+      `TruffleString` and `PInt` for Java `int`, `long`, `boolean`).
     * For container types (such as tuples, lists), when their elements are
       accessed any primitive elements are (like the previous step) boxed into a
       `PythonAbstractObject`.

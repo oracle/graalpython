@@ -110,7 +110,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -864,9 +863,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getHour(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readByteNode) {
-            return DateTimeNodes.FromNative.getHour(self, readByteNode);
+        static int getHour(PythonAbstractNativeObject self) {
+            return DateTimeNodes.FromNative.getHour(self);
         }
 
         @Specialization
@@ -887,9 +885,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getMinute(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return DateTimeNodes.FromNative.getMinute(self, readNode);
+        static int getMinute(PythonAbstractNativeObject self) {
+            return DateTimeNodes.FromNative.getMinute(self);
         }
 
         @Specialization
@@ -910,9 +907,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getSecond(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return DateTimeNodes.FromNative.getSecond(self, readNode);
+        static int getSecond(PythonAbstractNativeObject self) {
+            return DateTimeNodes.FromNative.getSecond(self);
         }
 
         @Specialization
@@ -933,9 +929,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getMicrosecond(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return DateTimeNodes.FromNative.getMicrosecond(self, readNode);
+        static int getMicrosecond(PythonAbstractNativeObject self) {
+            return DateTimeNodes.FromNative.getMicrosecond(self);
         }
 
         @Specialization
@@ -969,9 +964,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getFold(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return DateTimeNodes.FromNative.getFold(self, readNode);
+        static int getFold(PythonAbstractNativeObject self) {
+            return DateTimeNodes.FromNative.getFold(self);
         }
 
         @Specialization

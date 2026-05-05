@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -522,12 +521,6 @@ public abstract class PGuards {
     @InliningCutoff
     public static boolean isIndexOrSlice(Node inliningTarget, PyIndexCheckNode indexCheckNode, Object key) {
         return indexCheckNode.execute(inliningTarget, key) || isPSlice(key);
-    }
-
-    @InliningCutoff
-    public static boolean isNativeWrapper(PythonAbstractObject object) {
-        PythonNativeWrapper wrapper = object.getNativeWrapper();
-        return wrapper != null && wrapper.isNative();
     }
 
     public static boolean isNullOrZero(Object value, InteropLibrary lib) {

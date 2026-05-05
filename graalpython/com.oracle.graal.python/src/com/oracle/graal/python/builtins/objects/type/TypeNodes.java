@@ -54,6 +54,8 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_subclasses;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
@@ -107,16 +109,19 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltinsFactory;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.GraalPyPrivate_Type_AddMember;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -203,6 +208,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassP
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
@@ -239,7 +245,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
@@ -294,9 +299,8 @@ public abstract class TypeNodes {
 
         @Specialization
         @InliningCutoff
-        static long doNative(PythonNativeClass clazz,
-                        @Cached CStructAccess.ReadI64Node getTpFlagsNode) {
-            return getTpFlagsNode.readFromObj(clazz, PyTypeObject__tp_flags);
+        static long doNative(PythonNativeClass clazz) {
+            return readLongField(clazz.getPtr(), PyTypeObject__tp_flags);
         }
 
         @TruffleBoundary
@@ -327,7 +331,7 @@ public abstract class TypeNodes {
                     mroEntry = context.getCore().lookupType((PythonBuiltinClassType) mroEntry);
                 }
                 if (mroEntry instanceof PythonAbstractNativeObject) {
-                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, CStructAccess.ReadI64Node.getUncached()));
+                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry));
                 } else if (mroEntry != clazz && mroEntry instanceof PythonManagedClass) {
                     long flags = doManaged((PythonManagedClass) mroEntry, null, HiddenAttr.ReadNode.getUncached(), HiddenAttr.WriteNode.getUncached(),
                                     InlinedCountingConditionProfile.getUncached());
@@ -506,9 +510,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static void doNative(PythonNativeClass clazz, long flags,
-                        @Cached(inline = false) CStructAccess.WriteLongNode write) {
-            write.writeToObject(clazz, PyTypeObject__tp_flags, flags);
+        static void doNative(PythonNativeClass clazz, long flags) {
+            writeLongField(clazz.getPtr(), PyTypeObject__tp_flags, flags);
         }
     }
 
@@ -556,6 +559,7 @@ public abstract class TypeNodes {
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
     public abstract static class GetMroStorageNode extends PNodeWithContext {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_PY_TYPE_READY);
 
         public abstract MroSequenceStorage execute(Node inliningTarget, Object obj);
 
@@ -627,7 +631,11 @@ public abstract class TypeNodes {
             CompilerDirectives.transferToInterpreter();
 
             // call 'PyType_Ready' on the type
-            int res = (int) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNodeGen.getUncached().execute(obj));
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(obj);
+            PythonContext context = PythonContext.get(null);
+            var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_TYPE_READY);
+            int res = ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNativeContext(),
+                            BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, PythonToNativeNode.executeLongUncached(obj));
             if (res < 0) {
                 throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, obj);
             }
@@ -702,6 +710,7 @@ public abstract class TypeNodes {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.LastIndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
+            assert IsTypeNode.executeUncached(obj);
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
             TruffleString tpName = getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
             int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
@@ -746,6 +755,7 @@ public abstract class TypeNodes {
         @Specialization
         TruffleString doNativeClass(PythonNativeClass obj,
                         @Cached(inline = false) CStructAccess.ReadCharPtrNode getTpNameNode) {
+            assert IsTypeNode.executeUncached(obj);
             return getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
         }
     }
@@ -1275,9 +1285,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static boolean doNativeObject(PythonAbstractNativeObject type,
-                        @Cached CStructAccess.ReadI64Node getMember) {
-            return getMember.readFromObj(type, PyTypeObject__tp_dictoffset) != 0;
+        static boolean doNativeObject(PythonAbstractNativeObject type) {
+            return readLongField(type.getPtr(), PyTypeObject__tp_dictoffset) != 0;
         }
 
         @Fallback
@@ -1499,16 +1508,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        @InliningCutoff
-        static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            if (left == right) {
-                return true;
-            }
-            if (left.getPtr() instanceof Long && right.getPtr() instanceof Long) {
-                return (long) left.getPtr() == (long) right.getPtr();
-            }
-            return lib.isIdentical(left.getPtr(), right.getPtr(), lib);
+        static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
+            return left == right || left.getPtr() == right.getPtr();
         }
 
         @Fallback
@@ -1577,18 +1578,28 @@ public abstract class TypeNodes {
             return cachedClassType;
         }
 
-        @Specialization(guards = {"isSingleContext()", "isPythonAbstractClass(object)"}, rewriteOn = NotSameTypeException.class)
-        static Object doPythonAbstractClass(Object object,
-                        @Cached(value = "object", weak = true) Object cachedObject,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) throws NotSameTypeException {
-            if (lib.isIdentical(object, cachedObject, lib)) {
+        @Specialization(guards = {"isSingleContext()"}, rewriteOn = NotSameTypeException.class)
+        static Object doPythonNativeClass(PythonAbstractNativeObject object,
+                        @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject) throws NotSameTypeException {
+            if (object.getPtr() == cachedObject.getPtr()) {
                 return cachedObject;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw NotSameTypeException.INSTANCE;
         }
 
-        @Specialization(replaces = {"doPythonBuiltinClassType", "doPythonAbstractClass"})
+        @Specialization(guards = {"isSingleContext()"}, rewriteOn = NotSameTypeException.class)
+        static Object doPythonManagedClass(PythonManagedClass object,
+                        @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
+                        @Cached IsNode isNode) throws NotSameTypeException {
+            if (object == cachedObject || isNode.execute(object, cachedObject)) {
+                return cachedObject;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw NotSameTypeException.INSTANCE;
+        }
+
+        @Specialization(replaces = {"doPythonBuiltinClassType", "doPythonNativeClass", "doPythonManagedClass"})
         static Object doDisabled(Object object) {
             return object;
         }
@@ -1772,8 +1783,7 @@ public abstract class TypeNodes {
         @Specialization
         static boolean doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
                         @Cached IsBuiltinClassProfile profile,
-                        @Cached GetPythonObjectClassNode getClassNode,
-                        @Cached CStructAccess.ReadI64Node getTpFlagsNode) {
+                        @Cached GetPythonObjectClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
             if (profile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {
                 return true;
@@ -1781,7 +1791,7 @@ public abstract class TypeNodes {
 
             if (PythonNativeClass.isInstance(type)) {
                 // Equivalent of PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
-                long tp_flags = getTpFlagsNode.readFromObj(PythonNativeClass.cast(type), PyTypeObject__tp_flags);
+                long tp_flags = readLongField(PythonNativeClass.cast(type).getPtr(), PyTypeObject__tp_flags);
                 return (tp_flags & TYPE_SUBCLASS) != 0;
             }
             return false;
@@ -2412,7 +2422,7 @@ public abstract class TypeNodes {
         private static long installMemberDescriptors(PythonManagedClass pythonClass, TruffleString[] slotNames, long slotOffset) {
             PDict typeDict = GetOrCreateDictNode.executeUncached(pythonClass);
             for (TruffleString slotName : slotNames) {
-                GraalPyPrivate_Type_AddMember.addMember(pythonClass, typeDict, slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE);
+                PythonCextTypeBuiltins.addMember(pythonClass, typeDict, slotName, CApiMemberAccessNodes.T_OBJECT_EX, slotOffset, 1, PNone.NO_VALUE);
                 slotOffset += SIZEOF_PY_OBJECT_PTR;
             }
             return slotOffset;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,7 +52,7 @@ static PyObject* demo_system(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s", &command)) {
         return NULL;
     }
-    retval = (char*)calloc(sizeof(char), strlen(command) + strlen(ANSWER));
+    retval = (char*)calloc(sizeof(char), strlen(command) + strlen(ANSWER) + 1);
     sprintf(retval, "%s%s", command, ANSWER);
     return Py_BuildValue("s", retval);
 }

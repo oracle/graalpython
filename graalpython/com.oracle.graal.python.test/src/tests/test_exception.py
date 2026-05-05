@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -6,6 +6,8 @@ import os
 import unittest
 import sys
 import errno
+
+from tests.util import skip_if_sandboxed
 
 GRAALPYTHON = sys.implementation.name == "graalpy"
 
@@ -678,6 +680,7 @@ class ExceptionTests(unittest.TestCase):
 
 
 @unittest.skipUnless(GRAALPYTHON, "There is no simple way to restrict memory for CPython process")
+@skip_if_sandboxed("Sandboxed runs use a restricted runtime configuration for subprocess memory tests")
 def test_memory_error():
     import subprocess
     compiler_options = []

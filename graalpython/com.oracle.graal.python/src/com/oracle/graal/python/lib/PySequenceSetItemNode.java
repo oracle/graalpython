@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -73,6 +74,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic(PGuards.class)
 public abstract class PySequenceSetItemNode extends Node {
     public abstract void execute(Frame frame, Node inliningTarget, Object container, int index, Object item);
+
+    @TruffleBoundary
+    public static void executeUncached(Object container, int index, Object item) {
+        PySequenceSetItemNodeGen.getUncached().execute(null, null, container, index, item);
+    }
 
     @Specialization(guards = "isBuiltinList(object)", excludeForUncached = true)
     static void doList(VirtualFrame frame, PList object, int key, Object value,

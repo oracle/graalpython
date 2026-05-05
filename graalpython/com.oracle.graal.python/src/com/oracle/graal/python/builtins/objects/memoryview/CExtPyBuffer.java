@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,7 +71,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ValueType
 public final class CExtPyBuffer implements TruffleObject {
     /** An object behaving like a {@code void*} pointer. */
-    private final Object buf;
+    private final long buf;
     private final Object obj;
     private final int len;
     private final int itemSize;
@@ -83,7 +83,7 @@ public final class CExtPyBuffer implements TruffleObject {
     private final int[] suboffsets;
     private final Object internal;
 
-    public CExtPyBuffer(Object buf, Object obj, int len, int itemSize, boolean readOnly, int dims, TruffleString format, int[] shape, int[] strides, int[] suboffsets, Object internal) {
+    public CExtPyBuffer(long buf, Object obj, int len, int itemSize, boolean readOnly, int dims, TruffleString format, int[] shape, int[] strides, int[] suboffsets, Object internal) {
         this.buf = buf;
         this.obj = obj;
         this.len = len;
@@ -97,7 +97,7 @@ public final class CExtPyBuffer implements TruffleObject {
         this.internal = internal;
     }
 
-    public Object getBuf() {
+    public long getBuf() {
         return buf;
     }
 

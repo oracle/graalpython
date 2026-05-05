@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime.object;
 
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
@@ -93,9 +94,8 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
+import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -272,12 +272,8 @@ public final class PFactory {
         return new PythonObject(cls, shape);
     }
 
-    public static PythonNativeVoidPtr createNativeVoidPtr(Object obj) {
-        return new PythonNativeVoidPtr(obj);
-    }
-
-    public static PythonNativeVoidPtr createNativeVoidPtr(Object obj, long nativePtr) {
-        return new PythonNativeVoidPtr(obj, nativePtr);
+    public static TruffleObjectNativeWrapper createPythonForeignObject(PythonLanguage language, Object clazz, Object foreignObject) {
+        return new TruffleObjectNativeWrapper(clazz, PythonBuiltinClassType.ForeignObject.getInstanceShape(language), foreignObject);
     }
 
     public static SuperObject createSuperObject(PythonLanguage language) {
@@ -462,7 +458,7 @@ public final class PFactory {
     }
 
     public static PMemoryView createMemoryView(PythonLanguage language, PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
-                    int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, Object bufPointer,
+                    int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, long bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return new PMemoryView(cls, cls.getInstanceShape(language), context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize, format, formatString,
@@ -473,7 +469,7 @@ public final class PFactory {
                     TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexUTF32Node atIndexNode) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return new PMemoryView(cls, cls.getInstanceShape(language), null, null, buffer, owner, length, readonly, itemsize,
-                        BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, 1, null, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
+                        BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, 1, NULLPTR, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
                         PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
     }
 
@@ -857,7 +853,7 @@ public final class PFactory {
         return new PFrame(language, frameInfo, location, functionOrCode, hasCustomLocals);
     }
 
-    public static PFrame createPFrame(PythonLanguage language, Object threadState, PCode code, PythonObject globals, Object localsDict) {
+    public static PFrame createPFrame(PythonLanguage language, long threadState, PCode code, PythonObject globals, Object localsDict) {
         return new PFrame(language, threadState, code, globals, localsDict);
     }
 
@@ -1532,12 +1528,8 @@ public final class PFactory {
         return DigestObject.create(type, type.getInstanceShape(language), name, digest);
     }
 
-    public static PyCapsule createCapsuleNativeName(PythonLanguage language, Object pointer, Object name) {
+    public static PyCapsule createCapsuleNativeName(PythonLanguage language, long pointer, long name) {
         return createCapsule(language, new PyCapsule.CapsuleData(pointer, name));
-    }
-
-    public static PyCapsule createCapsuleJavaName(PythonLanguage language, Object pointer, byte[] name) {
-        return createCapsule(language, new PyCapsule.CapsuleData(pointer, new CArrayWrappers.CByteArrayWrapper(name)));
     }
 
     public static PyCapsule createCapsule(PythonLanguage language, PyCapsule.CapsuleData data) {

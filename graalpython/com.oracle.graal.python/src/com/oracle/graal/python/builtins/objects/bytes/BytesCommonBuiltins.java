@@ -245,7 +245,13 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.sq_concat, isComplex = true)
     @GenerateNodeFactory
+    @GenerateUncached
     public abstract static class ConcatNode extends SqConcatBuiltinNode {
+
+        @TruffleBoundary
+        public static PBytesLike executeUncached(Object self, Object other) {
+            return (PBytesLike) BytesCommonBuiltinsFactory.ConcatNodeFactory.getInstance().getUncachedInstance().execute(null, self, other);
+        }
 
         @Specialization
         static PBytesLike add(PBytesLike self, PBytesLike other,

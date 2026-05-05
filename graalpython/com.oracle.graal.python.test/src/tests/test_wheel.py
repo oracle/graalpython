@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import importlib
+import importlib.machinery
 from pathlib import Path
 
 from tests.testlib_helper import build_testlib
@@ -141,6 +143,30 @@ class TestWheelBuildAndRun(unittest.TestCase):
             ).strip()
 
             self.assertEqual(result, "42")
+
+    @unittest.skipUnless(sys.platform == "win32", "Windows-specific native loader regression test")
+    def test_bad_native_module_reports_import_error(self):
+        with tempfile.TemporaryDirectory(prefix="testwheel_badext_") as tmpdir:
+            tmpdir = Path(tmpdir)
+            module_name = "badext"
+            badext = tmpdir / f"{module_name}{importlib.machinery.EXTENSION_SUFFIXES[0]}"
+            badext.write_bytes(b"")
+
+            sys.path.insert(0, str(tmpdir))
+            importlib.invalidate_caches()
+            sys.modules.pop(module_name, None)
+            try:
+                with self.assertRaises(ImportError) as ctx:
+                    importlib.import_module(module_name)
+            finally:
+                sys.path.pop(0)
+                sys.modules.pop(module_name, None)
+
+            message = str(ctx.exception)
+            self.assertIn("cannot load", message)
+            self.assertIn("Windows error 193", message)
+            self.assertNotIn("ShouldNotReachHere", message)
+            self.assertNotIn("CompilerDirectives", message)
 
 
 if __name__ == "__main__":

@@ -43,10 +43,12 @@ package com.oracle.graal.python.builtins.modules.datetime;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETINITARGS__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -58,10 +60,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -78,6 +83,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -102,6 +108,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
     @SlotSignature(name = "datetime.tzinfo", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonBuiltinNode {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW);
 
         @Specialization
         static Object newTzInfo(Object cls, Object[] arguments, PKeyword[] keywords,
@@ -111,11 +118,18 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
                 return new PTzInfo(cls, getInstanceShape.execute(cls));
             } else {
-                PythonContext context = PythonContext.get(null);
                 CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
-                Object nativeResult = CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW, toNative.execute(cls), context.getNativeNull(), context.getNativeNull());
-                ExternalFunctionNodes.DefaultCheckFunctionResultNode.getUncached().execute(context, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), nativeResult);
-                return CApiTransitions.NativeToPythonTransferNode.executeUncached(nativeResult);
+                long clsPointer = toNative.executeLong(cls);
+                try {
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW);
+                    long nativeResult = ExternalFunctionInvoker.invokePY_TYPE_GENERIC_NEW(null, C_API_TIMING,
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(),
+                                    context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer, NULLPTR, NULLPTR);
+                    return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
+                } finally {
+                    Reference.reachabilityFence(cls);
+                }
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,21 +44,20 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_meth;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_name;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.HiddenAttr;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -69,8 +68,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -86,7 +83,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@code PyMethodDef} we *MUST NOT* keep a reference to any runtime objects because they would
  * leak.
  * </p>
- * 
+ *
  * @param name The name of the function or method object.
  * @param meth A reference to the executable function. In CPython, this is a function pointer of
  *            type {@code PyCFunction}. In our case, it can either be a native function pointer or a
@@ -98,10 +95,15 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PyMethodDefHelper.class);
 
+    public PyMethodDefHelper {
+        assert meth instanceof NativeFunctionPointer || meth instanceof PyCFunctionWrapper;
+    }
+
     private static Object getMethFromBuiltinFunction(CApiContext cApiContext, PBuiltinFunction object) {
         PKeyword[] kwDefaults = object.getKwDefaults();
         for (int i = 0; i < kwDefaults.length; i++) {
             if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
+                assert kwDefaults[i].getValue() instanceof NativeFunctionPointer;
                 // This can happen for slot wrapper methods of native slots
                 return kwDefaults[i].getValue();
             }
@@ -110,7 +112,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
     }
 
     @TruffleBoundary
-    public static Object create(CApiContext cApiContext, PBuiltinFunction builtinFunction) {
+    public static long create(CApiContext cApiContext, PBuiltinFunction builtinFunction) {
         Object docObj = builtinFunction.getAttribute(SpecialAttributeNames.T___DOC__);
         TruffleString doc;
         if (docObj instanceof PNone) {
@@ -123,14 +125,10 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
             }
         }
         PyMethodDefHelper pyMethodDef = new PyMethodDefHelper(builtinFunction.getName(), getMethFromBuiltinFunction(cApiContext, builtinFunction), builtinFunction.getFlags(), doc);
-        Object result = cApiContext.getOrAllocateNativePyMethodDef(pyMethodDef);
+        long result = cApiContext.getOrAllocateNativePyMethodDef(pyMethodDef);
         // store the PyMethodDef pointer to the built-in function object for fast access
-        HiddenAttr.WriteNode.executeUncached(builtinFunction, HiddenAttr.METHOD_DEF_PTR, result);
+        HiddenAttr.WriteLongNode.executeUncached(builtinFunction, HiddenAttr.METHOD_DEF_PTR, result);
         return result;
-    }
-
-    public static Object create(CApiContext cApiContext, PBuiltinMethod builtinMethod) {
-        return create(cApiContext, builtinMethod.getBuiltinFunction());
     }
 
     /**
@@ -148,86 +146,44 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
      * @return The pointer object of the allocated struct.
      */
     @TruffleBoundary
-    Object allocate() {
-        CStructAccess.AllocateNode allocNode = CStructAccessFactory.AllocateNodeGen.getUncached();
-        CStructAccess.WritePointerNode writePointerNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
-        CStructAccess.WriteIntNode writeIntNode = CStructAccessFactory.WriteIntNodeGen.getUncached();
-
+    long allocate() {
         assert name != null;
-        CStringWrapper nameWrapper;
-        try {
-            nameWrapper = new CStringWrapper(name.switchEncodingUncached(TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
-        } catch (CannotCastException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
+        PythonContext pythonContext = PythonContext.get(null);
+        long nativeName = pythonContext.stringToNativeUtf8Bytes(name, false);
+        long nativeDoc = doc != null ? pythonContext.stringToNativeUtf8Bytes(doc, false) : 0L;
+        long nativeMeth = meth instanceof NativeFunctionPointer f ? f.getAddress() : ((PyCFunctionWrapper) meth).getPointer();
 
-        Object docWrapper;
-        if (doc == null) {
-            docWrapper = PythonContext.get(null).getNativeNull();
-        } else {
-            try {
-                docWrapper = new CStringWrapper(doc.switchEncodingUncached(TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
-            } catch (CannotCastException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-        Object mem = allocNode.alloc(CStructs.PyMethodDef);
-        writePointerNode.write(mem, PyMethodDef__ml_name, nameWrapper);
-        writePointerNode.write(mem, PyMethodDef__ml_meth, meth);
-        writeIntNode.write(mem, PyMethodDef__ml_flags, flags);
-        writePointerNode.write(mem, PyMethodDef__ml_doc, docWrapper);
+        long mem = CStructAccess.allocate(CStructs.PyMethodDef);
+        CStructAccess.writePtrField(mem, PyMethodDef__ml_name, nativeName);
+        CStructAccess.writePtrField(mem, PyMethodDef__ml_meth, nativeMeth);
+        CStructAccess.writeIntField(mem, PyMethodDef__ml_flags, flags);
+        CStructAccess.writePtrField(mem, PyMethodDef__ml_doc, nativeDoc);
         LOGGER.fine(() -> String.format("Allocated PyMethodDef(%s, %s, %d, %s) at %s", name, meth, flags, doc, PythonUtils.formatPointer(mem)));
         return mem;
     }
 
-    static void free(Object pointer) {
+    static void free(long pointer) {
         CompilerAsserts.neverPartOfCompilation();
-        CStructAccess.ReadPointerNode readPointerNode = CStructAccess.ReadPointerNode.getUncached();
-
         LOGGER.fine(() -> "Freeing PyMethodDef at " + PythonUtils.formatPointer(pointer));
 
-        Object namePointer = readPointerNode.read(pointer, PyMethodDef__ml_name);
-        Object docPointer = readPointerNode.read(pointer, PyMethodDef__ml_doc);
+        long namePointer = CStructAccess.readPtrField(pointer, PyMethodDef__ml_name);
+        long docPointer = CStructAccess.readPtrField(pointer, PyMethodDef__ml_doc);
 
         // we only read the other fields and decode strings for logging
         if (LOGGER.isLoggable(Level.FINER)) {
-            CStructAccess.ReadI32Node readIntNode = CStructAccessFactory.ReadI32NodeGen.getUncached();
-            assert !PGuards.isNullOrZero(namePointer, InteropLibrary.getUncached());
-            TruffleString name = FromCharPointerNodeGen.getUncached().execute(namePointer, false);
+            assert namePointer != NULLPTR;
+            TruffleString name = FromCharPointerNode.executeUncached(namePointer, false);
             TruffleString doc = null;
-            if (PGuards.isNullOrZero(namePointer, InteropLibrary.getUncached())) {
-                doc = FromCharPointerNodeGen.getUncached().execute(docPointer, false);
+            if (docPointer != NULLPTR) {
+                doc = FromCharPointerNode.executeUncached(docPointer, false);
             }
-            int flags = readIntNode.read(pointer, PyMethodDef__ml_flags);
-            Object methPointer = readPointerNode.read(pointer, PyMethodDef__ml_meth);
-            Object meth;
-            InteropLibrary methPointerLib = InteropLibrary.getUncached(methPointer);
-            if (methPointerLib.isPointer(methPointer)) {
-                try {
-                    meth = PythonContext.get(null).getCApiContext().getClosureDelegate(methPointerLib.asPointer(methPointer));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            } else {
-                // managed case: it is still the wrapper
-                assert methPointer instanceof PythonNativeWrapper;
-                meth = methPointer;
-            }
+            int flags = CStructAccess.readIntField(pointer, PyMethodDef__ml_flags);
+            long methPointer = CStructAccess.readPtrField(pointer, PyMethodDef__ml_meth);
+            Object meth = PythonContext.get(null).getCApiContext().getClosureDelegate(methPointer);
             LOGGER.finer(String.format("PyMethodDef(%s, %s, %d, %s) at %s freed.", name, meth, flags, doc, PythonUtils.formatPointer(pointer)));
         }
-        // managed case: 'const char *' is represented by CStringWrapper
-        if (namePointer instanceof CStringWrapper nameWrapper) {
-            nameWrapper.free();
-        } else {
-            FreeNode.executeUncached(namePointer);
-        }
-        if (docPointer instanceof CStringWrapper docWrapper) {
-            docWrapper.free();
-        } else {
-            if (PGuards.isNullOrZero(docPointer, InteropLibrary.getUncached())) {
-                FreeNode.executeUncached(docPointer);
-            }
-        }
-        FreeNode.executeUncached(pointer);
+        NativeMemory.free(namePointer);
+        NativeMemory.free(docPointer);
+        NativeMemory.free(pointer);
     }
 }

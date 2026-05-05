@@ -42,18 +42,22 @@ package com.oracle.graal.python.builtins.modules.datetime;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 
+import java.lang.ref.Reference;
 import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
@@ -64,6 +68,7 @@ import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -135,6 +140,8 @@ public class TimeDeltaNodes {
             return createTimeDeltaFromMicroseconds(inliningTarget, cls, shape, accumulator.getTotalMicroseconds());
         }
 
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW);
+
         @TruffleBoundary
         private static Object createTimeDeltaFromMicroseconds(Node inliningTarget, Object cls, Shape shape, BigInteger microseconds) {
             BigInteger[] res = microseconds.divideAndRemainder(BIG_US_PER_SECOND);
@@ -172,10 +179,17 @@ public class TimeDeltaNodes {
                                 secondsNormalized,
                                 microsecondsNormalized);
             } else {
-                Object nativeResult = CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW,
-                                CApiTransitions.PythonToNativeNode.executeUncached(cls), daysNormalized, secondsNormalized, microsecondsNormalized);
-                ExternalFunctionNodes.DefaultCheckFunctionResultNode.getUncached().execute(PythonContext.get(null), NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW.getTsName(), nativeResult);
-                return CApiTransitions.NativeToPythonTransferNode.executeUncached(nativeResult);
+                long clsPointer = CApiTransitions.PythonToNativeNode.executeLongUncached(cls);
+                try {
+                    PythonContext context = PythonContext.get(null);
+                    var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW);
+                    long nativeResult = ExternalFunctionInvoker.invokeTIMEDELTA_SUBTYPE_NEW(null, C_API_TIMING,
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
+                                    clsPointer, daysNormalized, secondsNormalized, microsecondsNormalized);
+                    return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
+                } finally {
+                    Reference.reachabilityFence(cls);
+                }
             }
         }
 
@@ -236,16 +250,16 @@ public class TimeDeltaNodes {
     }
 
     public static final class FromNative {
-        static int getDays(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Delta__days);
+        static int getDays(PythonAbstractNativeObject self) {
+            return readIntField(self.getPtr(), CFields.PyDateTime_Delta__days);
         }
 
-        static int getSeconds(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Delta__seconds);
+        static int getSeconds(PythonAbstractNativeObject self) {
+            return readIntField(self.getPtr(), CFields.PyDateTime_Delta__seconds);
         }
 
-        static int getMicroseconds(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Delta__microseconds);
+        static int getMicroseconds(PythonAbstractNativeObject self) {
+            return readIntField(self.getPtr(), CFields.PyDateTime_Delta__microseconds);
         }
     }
 }

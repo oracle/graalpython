@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,8 @@
 # SOFTWARE.
 import types
 import unittest
+import gc
+import time
 
 from . import CPyExtType, CPyExtTestCase, unhandled_error_compare, CPyExtFunction, assert_raises
 
@@ -168,6 +170,126 @@ class TestMethod(unittest.TestCase):
         assert_raises(TypeError, obj.meth_static_o, 1, 2)
         assert_raises(TypeError, obj.meth_static_varargs, 1, 2, a=1)
         assert_raises(TypeError, obj.meth_static_fastcall, 1, 2, a=1)
+
+
+    def test_meth_varargs_with_escaping_args_tuple(self):
+        TestEscapingArgsTuple = CPyExtType(
+            "TestEscapingArgsTuple",
+            """
+            static int init(PyObject *selfObj, PyObject *args, PyObject *kwargs) {
+                TestEscapingArgsTupleObject *self = (TestEscapingArgsTupleObject *) selfObj;
+                if (PyArg_ParseTuple(args, "OO", &self->container, &self->appender) == 0) {
+                    return -1;
+                }
+                Py_INCREF(self->container);
+                self->object = NULL;
+                return 0;
+            }
+            
+            static int force_native_storage(PyObject *args) {
+                PyObject *first = PyTuple_GET_ITEM(args, 0);
+                if (!first) {
+                    PyErr_SetString(PyExc_ValueError, "first item must not be null");
+                    return -1;
+                }
+                return 0;
+            }
+            
+            static PyObject* hold(TestEscapingArgsTupleObject *self, PyObject *args) {
+                if (force_native_storage(args) == -1) {
+                    return NULL;
+                }
+                Py_XSETREF(self->object, Py_NewRef(args));
+                Py_RETURN_NONE;
+            }
+            
+            static PyObject* steal(TestEscapingArgsTupleObject *self, PyObject *args) {
+                if (force_native_storage(args) == -1) {
+                    return NULL;
+                }
+                Py_INCREF(args);
+                PyList_SetItem(self->container, 0, args);
+                Py_RETURN_NONE;
+            }
+            
+            static PyObject* give_to_managed(TestEscapingArgsTupleObject *self, PyObject *args) {
+                if (force_native_storage(args) == -1) {
+                    return NULL;
+                }
+                self->stolen = args;
+                self->stolen_element = PyTuple_GET_ITEM(args, 0);
+                return PyObject_CallOneArg(self->appender, args);
+            }
+            
+            static PyObject* recursive(TestEscapingArgsTupleObject *self, PyObject *args) {
+                if (force_native_storage(args) == -1) {
+                    return NULL;
+                }
+                Py_ssize_t nargs = PyTuple_GET_SIZE(args);
+                if (nargs > 1) {
+                    return PyLong_FromSsize_t(nargs);
+                }
+                return PyObject_CallNoArgs(PyTuple_GET_ITEM(args, 0));
+            }
+            """,
+            cmembers="""
+            PyObject *container;
+            PyObject *appender;
+            PyObject *object;
+            PyObject *stolen;
+            PyObject *stolen_element;
+            """,
+            tp_methods="""
+            {"hold", _PyCFunction_CAST(hold), METH_VARARGS, ""},
+            {"steal", _PyCFunction_CAST(steal), METH_VARARGS, ""},
+            {"give_to_managed", _PyCFunction_CAST(give_to_managed), METH_VARARGS, ""},
+            {"recursive", _PyCFunction_CAST(recursive), METH_VARARGS, ""}
+            """,
+            tp_members='''
+            {"object", T_OBJECT, offsetof(TestEscapingArgsTupleObject, object), 0, NULL},
+            {"stolen", T_OBJECT, offsetof(TestEscapingArgsTupleObject, stolen), 0, NULL},
+            {"stolen_element", T_OBJECT, offsetof(TestEscapingArgsTupleObject, stolen_element), 0, NULL}
+            ''',
+            tp_basicsize="sizeof(TestEscapingArgsTupleObject)",
+            tp_new="PyType_GenericNew",
+            tp_init="init",
+        )
+
+        appender_list = []
+        def append_to_list(item):
+            appender_list.append(item)
+            return None
+
+        def recursive_call():
+            return tester.recursive('x', 'y', 'z')
+
+        container = [None]
+        tester = TestEscapingArgsTuple(container, append_to_list)
+
+        # the first time, the args tuple will be passed with a managed storage
+        tester.hold("hello", "world")
+        tester.steal(1, 2, 3)
+        assert container[0] == (1, 2, 3)
+        tester.give_to_managed('a', 'b', 'c')
+        assert appender_list[0] == ('a', 'b', 'c')
+        recursive_result = tester.recursive(recursive_call)
+        assert recursive_result == 3
+
+        # the second time, the args tuple will be passed with native storage
+        tester.hold("hello", "beautiful", "world")
+        tester.steal(4, 5, 6)
+        tester.give_to_managed('d', 'e', 'f')
+
+        for _ in range(3):
+            gc.collect()
+            time.sleep(0.5)
+
+        assert tester.object == ("hello", "beautiful", "world")
+        assert container[0] == (4, 5, 6)
+        assert appender_list[1] == ('d', 'e', 'f')
+        assert tester.stolen == ('d', 'e', 'f')
+        assert tester.stolen_element == 'd'
+        assert tester.stolen[0] is tester.stolen_element
 
 
 class TestPyMethod(CPyExtTestCase):

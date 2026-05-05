@@ -41,11 +41,9 @@
 package com.oracle.graal.python.builtins.modules.cjkcodecs;
 
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecUtil.findCodec;
-import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.PyMultibyteCodec_CAPSULE_NAME;
+import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.createCodec;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.registerCodec;
-import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.CreateCodecNode.createCodec;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS_TW;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_TW;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_NAME_MUST_BE_A_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_SUCH_CODEC_IS_SUPPORTED;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
@@ -60,14 +58,11 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
-import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -95,11 +90,9 @@ public final class CodecsTWModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonLanguage language = core.getLanguage();
-        PythonModule codec = core.lookupBuiltinModule(T__CODECS_TW);
-        registerCodec("big5", 0, CodecType.STATELESS, 0, MappingType.ENCDEC, MAPPING_LIST, CODEC_LIST, codec, language);
-        registerCodec("cp950", 1, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, language);
-        registerCodec("cp950ext", -1, null, 1, MappingType.ENCDEC, MAPPING_LIST, null, codec, language);
+        registerCodec("big5", 0, CodecType.STATELESS, 0, MappingType.ENCDEC, MAPPING_LIST, CODEC_LIST);
+        registerCodec("cp950", 1, CodecType.STATELESS, -1, null, null, CODEC_LIST);
+        registerCodec("cp950ext", -1, null, 1, MappingType.ENCDEC, MAPPING_LIST, null);
     }
 
     @Override
@@ -129,8 +122,7 @@ public final class CodecsTWModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
             }
 
-            PyCapsule codecobj = PFactory.createCapsuleJavaName(language, codec, PyMultibyteCodec_CAPSULE_NAME);
-            return createCodec(inliningTarget, codecobj, raiseNode);
+            return createCodec(inliningTarget, codec);
         }
     }
 

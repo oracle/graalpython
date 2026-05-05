@@ -41,11 +41,9 @@
 package com.oracle.graal.python.builtins.modules.cjkcodecs;
 
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecUtil.findCodec;
-import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.PyMultibyteCodec_CAPSULE_NAME;
+import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.createCodec;
 import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.registerCodec;
-import static com.oracle.graal.python.builtins.modules.cjkcodecs.MultibytecodecModuleBuiltins.CreateCodecNode.createCodec;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CODECS_CN;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__CODECS_CN;
 import static com.oracle.graal.python.nodes.ErrorMessages.ENCODING_NAME_MUST_BE_A_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.NO_SUCH_CODEC_IS_SUPPORTED;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
@@ -53,21 +51,17 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
-import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -104,15 +98,13 @@ public final class CodecsCNModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonLanguage language = core.getLanguage();
-        PythonModule codec = core.lookupBuiltinModule(T__CODECS_CN);
-        registerCodec("gb2312", 0, CodecType.STATELESS, 0, MappingType.DECONLY, MAPPING_LIST, CODEC_LIST, codec, language);
-        registerCodec("gbk", 1, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, language);
-        registerCodec("gb18030", 2, CodecType.STATELESS, -1, null, null, CODEC_LIST, codec, language);
-        registerCodec("hz", 3, CodecType.STATEFUL, -1, null, null, CODEC_LIST, codec, language);
-        registerCodec("gbkext", -1, null, 1, MappingType.DECONLY, MAPPING_LIST, null, codec, language);
-        registerCodec("gbcommon", -1, null, 2, MappingType.ENCONLY, MAPPING_LIST, null, codec, language);
-        registerCodec("gb18030ext", -1, null, 3, MappingType.ENCDEC, MAPPING_LIST, null, codec, language);
+        registerCodec("gb2312", 0, CodecType.STATELESS, 0, MappingType.DECONLY, MAPPING_LIST, CODEC_LIST);
+        registerCodec("gbk", 1, CodecType.STATELESS, -1, null, null, CODEC_LIST);
+        registerCodec("gb18030", 2, CodecType.STATELESS, -1, null, null, CODEC_LIST);
+        registerCodec("hz", 3, CodecType.STATEFUL, -1, null, null, CODEC_LIST);
+        registerCodec("gbkext", -1, null, 1, MappingType.DECONLY, MAPPING_LIST, null);
+        registerCodec("gbcommon", -1, null, 2, MappingType.ENCONLY, MAPPING_LIST, null);
+        registerCodec("gb18030ext", -1, null, 3, MappingType.ENCDEC, MAPPING_LIST, null);
     }
 
     @Builtin(name = "getcodec", minNumOfPositionalArgs = 1)
@@ -125,7 +117,6 @@ public final class CodecsCNModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode isEqual,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode asUTF8Node,
-                        @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
 
             if (!unicodeCheckNode.execute(inliningTarget, encoding)) {
@@ -137,8 +128,7 @@ public final class CodecsCNModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, LookupError, NO_SUCH_CODEC_IS_SUPPORTED);
             }
 
-            PyCapsule codecobj = PFactory.createCapsuleJavaName(language, codec, PyMultibyteCodec_CAPSULE_NAME);
-            return createCodec(inliningTarget, codecobj, raiseNode);
+            return createCodec(inliningTarget, codec);
         }
     }
 

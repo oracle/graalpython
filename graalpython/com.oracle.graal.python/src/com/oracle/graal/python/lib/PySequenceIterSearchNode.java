@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -80,6 +81,11 @@ public abstract class PySequenceIterSearchNode extends PNodeWithContext {
     }
 
     public abstract int execute(Frame frame, Node inliningTarget, Object container, Object key, int operation);
+
+    @TruffleBoundary
+    public static int executeUncached(Object container, Object key, int operation) {
+        return PySequenceIterSearchNodeGen.getUncached().execute(null, null, container, key, operation);
+    }
 
     @Specialization
     static int search(Frame frame, Node inliningTarget, Object container, Object key, int operation,

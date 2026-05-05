@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -2741,14 +2741,13 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
     Py_FatalError("_PyObject_AssertFailed");
 }
 
-
 void
 _Py_Dealloc(PyObject *op)
 {
+    PyThreadState *tstate = _PyThreadState_GET();
     PyTypeObject *type = Py_TYPE(op);
     destructor dealloc = type->tp_dealloc;
 #ifdef Py_DEBUG
-    PyThreadState *tstate = _PyThreadState_GET();
     PyObject *old_exc = tstate != NULL ? tstate->current_exception : NULL;
     // Keep the old exception type alive to prevent undefined behavior
     // on (tstate->curexc_type != old_exc_type) below
@@ -2760,7 +2759,13 @@ _Py_Dealloc(PyObject *op)
 #ifdef Py_TRACE_REFS
     _Py_ForgetReference(op);
 #endif
+    if (tstate != NULL) {
+        graalpy_dealloc_stack_push(tstate, op);
+    }
     (*dealloc)(op);
+    if (tstate != NULL) {
+        graalpy_dealloc_stack_pop(tstate, op);
+    }
 
 #ifdef Py_DEBUG
     // gh-89373: The tp_dealloc function must leave the current exception
@@ -2855,7 +2860,7 @@ Py_ssize_t Py_REFCNT(PyObject *obj) {
         }
         res = pointer_to_stub(obj)->ob_refcnt;
 #ifndef NDEBUG
-        if (GraalPyPrivate_Debug_CAPI() && GraalPyPrivate_GET_PyObject_ob_refcnt(obj) != res)
+        if (GraalPyPrivate_Debug_CAPI() && GraalPyPrivate_Get_PyObject_ob_refcnt(obj) != res)
         {
             Py_FatalError("Refcount of native stub and managed object differ");
         }
@@ -2998,8 +3003,7 @@ _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
             GraalPyPrivate_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
         }
 #else
-        PyObject *nonConstOp = (PyObject *)op;
-        GraalPyPrivate_BulkNotifyRefCount(&nonConstOp, 1);
+        GraalPyPrivate_NotifyRefCount((PyObject *) op, updated_refcnt);
 #endif
     }
 }

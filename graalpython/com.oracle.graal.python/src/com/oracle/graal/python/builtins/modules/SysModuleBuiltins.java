@@ -60,7 +60,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_MODE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_R;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_W;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.lib.PyTraceBackPrint.castToString;
 import static com.oracle.graal.python.lib.PyTraceBackPrint.classNameNoDot;
@@ -139,6 +138,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
+import java.lang.ref.Reference;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -168,9 +168,11 @@ import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -238,12 +240,14 @@ import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
@@ -961,23 +965,34 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     public abstract static class GetrefcountNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static long doGeneric(PythonAbstractObject object,
-                        @Cached CStructAccess.ReadI64Node read) {
-            if (object instanceof PythonAbstractNativeObject nativeKlass) {
-                return read.readFromObj(nativeKlass, PyObject__ob_refcnt);
+        @TruffleBoundary
+        static long doGeneric(Object object,
+                        @Bind PythonContext context) {
+            if (!context.isNativeAccessAllowed()) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
             }
-
-            PythonAbstractObjectNativeWrapper wrapper = object.getNativeWrapper();
-            if (wrapper == null) {
-                return -1;
-            } else {
-                return wrapper.getRefCount();
+            if (context.getCApiState() != CApiState.INITIALIZED) {
+                if (object instanceof PythonAbstractObject pythonAbstractObject) {
+                    return FirstToNativeNode.getInitialRefcnt(false, PythonToNativeInternalNode.isImmortal(context, pythonAbstractObject));
+                }
+                return PythonObject.MANAGED_REFCNT;
             }
-        }
-
-        @Fallback
-        protected long doGeneric(@SuppressWarnings("unused") Object object) {
-            return -1;
+            /*
+             * Treat PythonObject separately. We don't want to transform it to native just for
+             * reading the refcount. If it is not native, then the refcount is MANAGED_REFCNT.
+             */
+            if (object instanceof PythonObject pythonObject) {
+                return pythonObject.getRefCount();
+            }
+            Object promotedObject = EnsurePythonObjectNode.executeUncached(context, object, false);
+            long pointer = PythonToNativeInternalNode.executeUncached(promotedObject, false);
+            if (HandlePointerConverter.pointsToPyIntHandle(pointer) || HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
+                return PythonObject.IMMORTAL_REFCNT;
+            }
+            long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointsToPyHandleSpace(pointer) ? HandlePointerConverter.pointerToStub(pointer) : pointer);
+            Reference.reachabilityFence(promotedObject);
+            return refCount;
         }
     }
 

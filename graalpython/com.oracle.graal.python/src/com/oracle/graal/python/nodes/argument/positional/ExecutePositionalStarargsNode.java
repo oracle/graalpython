@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.ArrayBuilder;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -78,6 +79,11 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline(false) // footprint reduction 40 -> 24
 public abstract class ExecutePositionalStarargsNode extends Node {
     public abstract Object[] executeWith(Frame frame, Object starargs);
+
+    @TruffleBoundary
+    public static Object[] executeUncached(Object starargs) {
+        return getUncached().executeWith(null, starargs);
+    }
 
     @Specialization
     static Object[] doObjectArray(Object[] starargs) {

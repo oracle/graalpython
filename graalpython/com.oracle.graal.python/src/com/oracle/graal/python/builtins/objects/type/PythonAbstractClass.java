@@ -40,20 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 public interface PythonAbstractClass extends TruffleObject {
 
-    public static final PythonAbstractClass[] EMPTY_ARRAY = {};
+    PythonAbstractClass[] EMPTY_ARRAY = {};
 
     static boolean isInstance(Object object) {
         return PythonManagedClass.isInstance(object) || PythonNativeClass.isInstance(object);
     }
 
     static PythonAbstractClass cast(Object object) {
-        if (PythonNativeClass.isInstance(object)) {
-            return PythonNativeClass.cast(object);
+        if (object instanceof PythonAbstractNativeObject nativeObject) {
+            return nativeObject;
         } else {
             return PythonManagedClass.cast(object);
         }

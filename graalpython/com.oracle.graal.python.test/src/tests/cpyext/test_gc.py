@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -120,6 +120,99 @@ GCTestClass = CPyExtType("GCTestClass",
         tp_methods='{"getCounters", (PyCFunction)getCounters, METH_NOARGS | METH_STATIC, ""}, {"resetCounters", (PyCFunction)resetCounters, METH_NOARGS | METH_STATIC, ""}',
 )
 
+GCTestDeallocUpcall = CPyExtType("GCTestDeallocUpcall",
+        '''
+        #include <stdint.h>
+
+        static PyObject *gtd_callback = NULL;
+
+        #if GRAALVM_PYTHON
+        extern PyAPI_FUNC(int) (*GraalPyPrivate_DisableReferenceQueuePolling)(void);
+        extern PyAPI_FUNC(void) (*GraalPyPrivate_EnableReferenceQueuePolling)(void);
+        extern PyAPI_FUNC(void) (*GraalPyPrivate_TriggerGC)(size_t);
+        #endif
+
+        static GCTestDeallocUpcallObject* gtd_new_instance(PyTypeObject* cls) {
+            return PyObject_New(GCTestDeallocUpcallObject, cls);
+        }
+
+        static int gtd_init(GCTestDeallocUpcallObject* self, PyObject* args, PyObject* kwargs) {
+            return 0;
+        }
+
+        static void gtd_dealloc(GCTestDeallocUpcallObject* self) {
+            PyObject *result;
+
+            Py_INCREF((PyObject*) self);
+            if (gtd_callback != NULL) {
+                result = PyObject_CallFunctionObjArgs(gtd_callback, (PyObject*) self, NULL);
+                if (result == NULL) {
+                    PyErr_WriteUnraisable(gtd_callback);
+                } else {
+                    Py_DECREF(result);
+                }
+            }
+            /* On GraalPy, here is: 'Py_REFCNT(self) > MANAGED_REFCNT'.
+             * Don't use Py_DECREF to avoid recursive dealloc on CPython.
+             */
+            Py_SET_REFCNT((PyObject*) self, Py_REFCNT(self) - 1);
+            Py_TYPE(self)->tp_free((PyObject*) self);
+        }
+
+        static PyObject* gtd_create_decref_and_reuse(PyObject* cls, PyObject* unused) {
+            PyTypeObject* type = (PyTypeObject*) cls;
+            GCTestDeallocUpcallObject* original = NULL;
+        #if GRAALVM_PYTHON
+            int polling_disabled = 0;
+        #endif
+
+        #if GRAALVM_PYTHON
+            if (GraalPyPrivate_DisableReferenceQueuePolling()) {
+                PyErr_SetString(PyExc_RuntimeError, "reference queue polling is already active");
+                return NULL;
+            }
+            polling_disabled = 1;
+        #endif
+
+            original = gtd_new_instance(type);
+            if (original == NULL) {
+                goto error;
+            }
+            Py_DECREF((PyObject*) original);
+        #if GRAALVM_PYTHON
+            GraalPyPrivate_EnableReferenceQueuePolling();
+            polling_disabled = 0;
+            GraalPyPrivate_TriggerGC(0);
+        #endif
+            Py_RETURN_NONE;
+
+        error:
+        #if GRAALVM_PYTHON
+            if (polling_disabled) {
+                GraalPyPrivate_EnableReferenceQueuePolling();
+            }
+        #endif
+            return NULL;
+        }
+
+        static PyObject* gtd_set_callback(PyObject* cls, PyObject* arg) {
+            if (arg == Py_None) {
+                Py_CLEAR(gtd_callback);
+            } else {
+                Py_XSETREF(gtd_callback, Py_NewRef(arg));
+            }
+            Py_RETURN_NONE;
+        }
+
+        ''',
+        tp_init='(initproc)gtd_init',
+        tp_methods="""
+        {"set_callback", (PyCFunction)gtd_set_callback, METH_O | METH_STATIC, ""},
+        {"create_decref_and_reuse", (PyCFunction)gtd_create_decref_and_reuse, METH_NOARGS | METH_CLASS, ""}
+        """,
+        tp_dealloc='(destructor)gtd_dealloc',
+)
+
 class TestGC1(unittest.TestCase):
 
     def test_native_class(self):
@@ -221,6 +314,22 @@ class TestGCRefCycles(unittest.TestCase):
         for i in range(4 if GRAALPY and RELY_ON_GC else 1):
             time.sleep(0.25)
             gc.collect()
+
+    def test_dealloc_upcall_with_temporary_refcnt_does_not_double_dealloc(self):
+        seen = []
+
+        def dealloc_callback(obj):
+            seen.append(type(obj).__name__)
+            # This dealloc_callback must not keep 'obj' alive past 'type(obj).__name__'
+            if GRAALPY:
+                assert not __graalpython__.has_id_reference(obj)
+            return None
+
+        GCTestDeallocUpcall.set_callback(dealloc_callback)
+        GCTestDeallocUpcall.create_decref_and_reuse()
+        assert seen == ["GCTestDeallocUpcall"]
+        self._trigger_gc()
+        GCTestDeallocUpcall.set_callback(None)
 
     def test_cycle_with_native_objects(self):
         TestCycle0 = CPyExtType("TestCycle0",

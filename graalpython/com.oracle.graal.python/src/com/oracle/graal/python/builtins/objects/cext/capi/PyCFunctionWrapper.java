@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,19 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -55,48 +61,59 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.call.CallDispatchers;
+import com.oracle.graal.python.nodes.call.CallDispatchers.SimpleIndirectInvokeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * A wrapper class for managed functions such that they can be called with native function pointers
- * (like C type {@code PyCFunction}). This is very similar to {@link PyProcsWrapper} but the main
+ * (like C type {@code PyCFunction}). This is very similar to {@link TpSlotWrapper} but the main
  * difference is that this wrapper does not keep a reference to the function object but only to the
  * {@link RootCallTarget}
  * <p>
- * Since in C, function pointers are expected to valid the whole time, NFI closure must be kept
- * alive as long as the context lives. Referencing a function object like {@link PyProcsWrapper}
+ * Since in C, function pointers are expected to be valid the whole time, the native closure must be
+ * kept alive as long as the context lives. Referencing a function object like {@link TpSlotWrapper}
  * does may therefore cause significant memory leaks.
  * </p>
  */
-@ExportLibrary(InteropLibrary.class)
-public abstract class PyCFunctionWrapper implements TruffleObject {
+public abstract class PyCFunctionWrapper {
+
+    private static final NativeSignature SIGNATURE_1_ARG = NativeSignature.create(NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER);
+    private static final NativeSignature SIGNATURE_2_ARG = NativeSignature.create(NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER);
+    private static final NativeSignature SIGNATURE_3_ARG = NativeSignature.create(NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER,
+                    NativeSimpleType.RAW_POINTER);
+
+    private static final MethodHandle HANDLE_UNARY;
+    private static final MethodHandle HANDLE_BINARY;
+    private static final MethodHandle HANDLE_VARARGS;
+    private static final MethodHandle HANDLE_KEYWORDS;
+
+    static {
+        try {
+            HANDLE_UNARY = MethodHandles.lookup().findStatic(PyCFunctionUnaryWrapper.class, "executeUnary", MethodType.methodType(long.class, PyCFunctionUnaryWrapper.class, long.class));
+            HANDLE_BINARY = MethodHandles.lookup().findStatic(PyCFunctionBinaryWrapper.class, "executeBinary",
+                            MethodType.methodType(long.class, PyCFunctionBinaryWrapper.class, long.class, long.class));
+            HANDLE_VARARGS = MethodHandles.lookup().findStatic(PyCFunctionVarargsWrapper.class, "executeVarargs",
+                            MethodType.methodType(long.class, PyCFunctionVarargsWrapper.class, long.class, long.class));
+            HANDLE_KEYWORDS = MethodHandles.lookup().findStatic(PyCFunctionKeywordsWrapper.class, "executeKeywords",
+                            MethodType.methodType(long.class, PyCFunctionKeywordsWrapper.class, long.class, long.class, long.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     protected final RootCallTarget callTarget;
     protected final Signature signature;
     protected final TruffleString callTargetName;
     protected final CApiTiming timing;
-    private long pointer;
+    private final long pointer;
 
     /**
      * Built-in functions may appear as {@link CExtContext#METH_VARARGS} etc. but we implement them
@@ -110,7 +127,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
      */
     protected final Object[] defaults;
 
-    protected PyCFunctionWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults) {
+    @SuppressWarnings("this-escape")
+    protected PyCFunctionWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults, NativeSignature upcallSignature, MethodHandle methodHandle) {
         assert callTarget != null;
         assert signature != null;
         this.callTarget = callTarget;
@@ -119,6 +137,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         String ctName = callTarget.getRootNode().getName();
         this.callTargetName = PythonUtils.toTruffleStringUncached(ctName);
         this.timing = CApiTiming.create(false, ctName);
+        CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+        this.pointer = cApiContext.registerClosure(getClass().getSimpleName(), upcallSignature, methodHandle.bindTo(this), this, getDelegate());
     }
 
     public final RootCallTarget getCallTarget() {
@@ -130,36 +150,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         return callTarget;
     }
 
-    abstract String getSignature();
-
-    @ExportMessage
-    boolean isExecutable() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    protected Object execute(Object[] arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-        throw CompilerDirectives.shouldNotReachHere("abstract class");
-    }
-
-    @ExportMessage
-    @TruffleBoundary
-    protected void toNative(
-                    @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
-        if (pointer == 0) {
-            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-            pointer = cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary);
-        }
-    }
-
-    @ExportMessage
-    protected boolean isPointer() {
-        return pointer != 0;
-    }
-
-    @ExportMessage
-    protected long asPointer() {
+    public final long getPointer() {
         return pointer;
     }
 
@@ -198,59 +189,35 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
             return cApiContext.getOrCreatePyCFunctionWrapper(ct, k -> new PyCFunctionKeywordsWrapper(k, signature, defaults));
         } else {
-            throw CompilerDirectives.shouldNotReachHere("other signature " + Integer.toHexString(flags));
+            throw shouldNotReachHere("other signature " + Integer.toHexString(flags));
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     static final class PyCFunctionUnaryWrapper extends PyCFunctionWrapper {
 
         PyCFunctionUnaryWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults) {
-            super(callTarget, signature, defaults);
+            super(callTarget, signature, defaults, SIGNATURE_1_ARG, HANDLE_UNARY);
         }
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CreateArgumentsNode createArgsNode,
-                        @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                /*
-                 * Accept a second argument here, since these functions are sometimes called using
-                 * METH_O with a "NULL" value.
-                 */
-                if (arguments.length > 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(1, 2, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static long executeUnary(PyCFunctionUnaryWrapper self, long arg0) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    Object result;
-                    Object jArg0 = toJavaNode.execute(arguments[0]);
-                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
-                                    defaults, PKeyword.EMPTY_KEYWORDS, false);
-                    result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    return toNativeNode.execute(result);
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, self.signature, jArg0, null,
+                                    self.defaults, PKeyword.EMPTY_KEYWORDS, false);
+                    Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, toString(), "");
+                    throw checkThrowableBeforeNative(t, self.toString(), "");
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected String getSignature() {
-            return "(POINTER):POINTER";
         }
 
         @Override
@@ -259,52 +226,32 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     static final class PyCFunctionBinaryWrapper extends PyCFunctionWrapper {
 
         PyCFunctionBinaryWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults) {
-            super(callTarget, signature, defaults);
+            super(callTarget, signature, defaults, SIGNATURE_2_ARG, HANDLE_BINARY);
         }
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
-                        @Cached CreateArgumentsNode createArgsNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, 2, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static long executeBinary(PyCFunctionBinaryWrapper self, long arg0, long arg1) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    Object result;
-                    Object jArg0 = toJavaNode.execute(arguments[0]);
-                    Object jArg1 = toJavaNode.execute(arguments[1]);
-                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
-                                    defaults, PKeyword.EMPTY_KEYWORDS, false);
-                    result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    return toNativeNode.execute(result);
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, self.signature, jArg0, null,
+                                    self.defaults, PKeyword.EMPTY_KEYWORDS, false);
+                    Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, toString(), "");
+                    throw checkThrowableBeforeNative(t, self.toString(), "");
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
         }
 
         @Override
@@ -313,54 +260,33 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     static final class PyCFunctionVarargsWrapper extends PyCFunctionWrapper {
 
         PyCFunctionVarargsWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults) {
-            super(callTarget, signature, defaults);
+            super(callTarget, signature, defaults, SIGNATURE_2_ARG, HANDLE_VARARGS);
         }
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached ExecutePositionalStarargsNode posStarargsNode,
-                        @Cached CreateArgumentsNode createArgsNode,
-                        @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, 2, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static long executeVarargs(PyCFunctionVarargsWrapper self, long arg0, long arg1) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    Object result;
-                    Object receiver = toJavaNode.execute(arguments[0]);
-                    Object starArgs = toJavaNode.execute(arguments[1]);
-                    Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null,
-                                    defaults, PKeyword.EMPTY_KEYWORDS, false);
-                    result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    return toNativeNode.execute(result);
+                    Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object starArgs = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
+                    Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, self.signature, receiver, null,
+                                    self.defaults, PKeyword.EMPTY_KEYWORDS, false);
+                    Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, toString(), "");
+                    throw checkThrowableBeforeNative(t, self.toString(), "");
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
         }
 
         @Override
@@ -369,57 +295,35 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     static final class PyCFunctionKeywordsWrapper extends PyCFunctionWrapper {
 
         PyCFunctionKeywordsWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults) {
-            super(callTarget, signature, defaults);
+            super(callTarget, signature, defaults, SIGNATURE_3_ARG, HANDLE_KEYWORDS);
         }
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached ExecutePositionalStarargsNode posStarargsNode,
-                        @Cached CreateArgumentsNode createArgsNode,
-                        @Cached CallDispatchers.CallTargetCachedInvokeNode invokeNode,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 3) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(3, 3, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static long executeKeywords(PyCFunctionKeywordsWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    Object receiver = toJavaNode.execute(arguments[0]);
-                    Object starArgs = toJavaNode.execute(arguments[1]);
-                    Object kwArgs = toJavaNode.execute(arguments[2]);
-
-                    Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                    PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-                    Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, kwArgsArray, signature, receiver, null,
-                                    defaults, PKeyword.EMPTY_KEYWORDS, false);
-                    Object result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    return toNativeNode.execute(result);
+                    Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object starArgs = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object kwArgs = NativeToPythonInternalNode.executeUncached(arg2, false);
+                    Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
+                    PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.getUncached().execute(null, kwArgs);
+                    Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, starArgsArray, kwArgsArray, self.signature, receiver, null,
+                                    self.defaults, PKeyword.EMPTY_KEYWORDS, false);
+                    Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, toString(), "");
+                    throw checkThrowableBeforeNative(t, self.toString(), "");
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):POINTER";
         }
 
         @Override

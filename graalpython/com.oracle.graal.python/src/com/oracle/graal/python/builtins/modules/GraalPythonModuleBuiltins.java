@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -105,12 +106,12 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -216,6 +217,7 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @CoreFunctions(defineModule = J___GRAALPYTHON__, isEager = true)
 public final class GraalPythonModuleBuiltins extends PythonBuiltins {
@@ -303,13 +305,14 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("get_handle_table_id"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_strong_handle_table_ref"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("has_id_reference"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("clear_interop_type_registry"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("foreign_number_list"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("foreign_wrapper"), PNone.NO_VALUE);
         } else {
-            mod.setAttribute(tsLiteral("using_native_primitive_storage_strategy"), context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy));
             mod.setAttribute(tsLiteral("interop_has_gil"), new InteropGilTester());
         }
+        addBuiltinConstant("using_native_primitive_storage_strategy", context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy));
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {
             mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
         }
@@ -668,15 +671,19 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         public abstract Object execute(Object[] args);
 
-        @Specialization
         @TruffleBoundary
-        public Object doIt(Object[] args) {
-            PrintWriter stdout = new PrintWriter(getContext().getStandardOut());
+        public static Object tdebug(PythonContext context, Object[] args) {
+            PrintWriter stdout = new PrintWriter(context.getStandardOut());
             for (int i = 0; i < args.length; i++) {
                 stdout.println(args[i]);
             }
             stdout.flush();
             return PNone.NONE;
+        }
+
+        @Specialization
+        public Object doIt(Object[] args) {
+            return tdebug(getContext(), args);
         }
 
         @NeverDefault
@@ -1231,12 +1238,11 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (object instanceof PythonAbstractNativeObject) {
                 return -1;
             }
-            Object nativeWrapper = GetNativeWrapperNode.executeUncached(object);
-            if (nativeWrapper instanceof PythonNativeWrapper pn) {
-                return pn.ref.getHandleTableIndex();
-            } else {
-                return -1;
+            if (object instanceof PythonObject pythonObject) {
+                long untagged = HandlePointerConverter.pointerToStub(pythonObject.getNativePointer());
+                return CStructAccess.readIntField(untagged, CFields.GraalPyObject__handle_table_index);
             }
+            return -1;
         }
     }
 
@@ -1246,8 +1252,19 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doGeneric(int id) {
-            PythonObjectReference ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).nativeContext, 0, id);
-            return ref != null && ref.isStrongReference();
+            Object ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).handleContext, 0, id);
+            assert ref == null || ref instanceof PythonAbstractObject || ref instanceof PythonObjectReference;
+            return ref instanceof PythonAbstractObject || ref != null && ((PythonObjectReference) ref).isStrongReference();
+        }
+    }
+
+    @Builtin(name = "has_id_reference", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class HasIdReference extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static boolean doGeneric(Object object) {
+            return object instanceof PythonAbstractNativeObject nativeObject && nativeObject.ref != null;
         }
     }
 
@@ -1521,16 +1538,20 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PTuple doCreate(long arrowArrayAddr, long arrowSchemaAddr,
                         @Bind Node inliningTarget,
-                        @Cached PythonCextCapsuleBuiltins.PyCapsuleNewNode pyCapsuleNewNode) {
-            var ctx = getContext(inliningTarget);
-
+                        @Cached PythonCextCapsuleBuiltins.PyCapsuleNewNode pyCapsuleNewNode,
+                        @Cached TruffleString.AsNativeNode asNativeNode,
+                        @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            PythonContext ctx = getContext(inliningTarget);
             long arrayDestructor = ctx.arrowSupport.getArrowArrayDestructor(inliningTarget);
-            var arrayCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowArray.CAPSULE_NAME);
-            PyCapsule arrowArrayCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowArrayAddr, arrayCapsuleName, arrayDestructor);
+            TruffleString arrayCapsuleName = asNativeNode.execute(ArrowArray.CAPSULE_NAME, ctx::allocateContextMemory, Encoding.UTF_8, false, true);
+            long arrayCapsuleNamePointer = PythonUtils.coerceToLong(getInternalNativePointerNode.execute(arrayCapsuleName, Encoding.UTF_8), lib);
+            PyCapsule arrowArrayCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowArrayAddr, arrayCapsuleNamePointer, arrayDestructor);
 
             long schemaDestructor = ctx.arrowSupport.getArrowSchemaDestructor(inliningTarget);
-            var schemaCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME);
-            PyCapsule arrowSchemaCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowSchemaAddr, schemaCapsuleName, schemaDestructor);
+            TruffleString schemaCapsuleName = asNativeNode.execute(ArrowSchema.CAPSULE_NAME, ctx::allocateContextMemory, Encoding.UTF_8, false, true);
+            long schemaCapsuleNamePointer = PythonUtils.coerceToLong(getInternalNativePointerNode.execute(schemaCapsuleName, Encoding.UTF_8), lib);
+            PyCapsule arrowSchemaCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowSchemaAddr, schemaCapsuleNamePointer, schemaDestructor);
             return PFactory.createTuple(ctx.getLanguage(inliningTarget), new Object[]{arrowSchemaCapsule, arrowArrayCapsule});
         }
     }

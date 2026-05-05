@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 
-import java.util.Objects;
-
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -58,7 +56,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -78,16 +75,17 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.utilities.TriState;
 
+/**
+ * A simple wrapper around objects created through the Python C API that can be cast to PyObject*.
+ */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     /**
-     * A reference to the native object. This usually is a pointer object (i.e. responds to
-     * {@link InteropLibrary#isPointer(Object)} with {@code true}) but can also be something the
-     * emulates native memory.
+     * A pointer to the native object ({@code PyObject *}).
      */
-    public final Object object;
+    public final long pointer;
     public TpSlots slots;
     public NativeObjectReference ref;
 
@@ -102,13 +100,12 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
      */
     private Object[] replicatedNativeReferences;
 
-    public PythonAbstractNativeObject(Object object) {
+    public PythonAbstractNativeObject(long pointer) {
         // GR-50245
         // Fails in
         // graalpython/com.oracle.graal.python.hpy.test/src/hpytest/test_slots_legacy.py::TestCustomLegacySlotsFeatures::test_legacy_slots_getsets[hybrid]
-        // assert !(object instanceof Number || object instanceof PythonNativeWrapper || object
-        // instanceof String || object instanceof TruffleString);
-        this.object = object;
+        assert pointer != UNINITIALIZED;
+        this.pointer = pointer;
     }
 
     @Override
@@ -128,15 +125,15 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     }
 
     @Override
-    public Object getPtr() {
-        return object;
+    public long getPtr() {
+        return pointer;
     }
 
     @Override
     public int hashCode() {
         CompilerAsserts.neverPartOfCompilation();
         // this is important for the default '__hash__' implementation
-        return Objects.hashCode(object);
+        return Long.hashCode(pointer);
     }
 
     @Ignore
@@ -149,27 +146,23 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             return false;
         }
         PythonAbstractNativeObject other = (PythonAbstractNativeObject) obj;
-        return Objects.equals(object, other.object);
+        return pointer == other.pointer;
     }
 
     @TruffleBoundary
     public String toStringWithContext() {
-        return "PythonAbstractNativeObject(" + PythonUtils.formatPointer(object) + ')';
+        return toString();
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "PythonAbstractNativeObject(" + object + ')';
+        return String.format("PythonAbstractNativeObject(0x%x)", pointer);
     }
 
     @ExportMessage
-    int identityHashCode(@CachedLibrary("this.object") InteropLibrary lib) throws UnsupportedMessageException {
-        if (lib.isPointer(object)) {
-            return Long.hashCode(lib.asPointer(object));
-        } else {
-            return lib.identityHashCode(object);
-        }
+    int identityHashCode() {
+        return Long.hashCode(pointer);
     }
 
     @ExportMessage
@@ -177,31 +170,12 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
                     @Bind Node inliningTarget,
                     @Cached InlinedExactClassProfile otherProfile,
                     @Exclusive @CachedLibrary(limit = "1") InteropLibrary thisLib,
-                    @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib1,
-                    @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib2,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             Object profiled = otherProfile.profile(inliningTarget, other);
-            if (profiled instanceof PythonAbstractNativeObject) {
-                Object otherPtr = ((PythonAbstractNativeObject) other).getPtr();
-                if (lib1.isPointer(getPtr())) {
-                    if (lib2.isPointer(otherPtr)) {
-                        try {
-                            return lib1.asPointer(getPtr()) == lib2.asPointer(otherPtr);
-                        } catch (UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
-                        }
-                    } else {
-                        return false;
-                    }
-                } else {
-                    if (lib2.isPointer(otherPtr)) {
-                        return false;
-                    } else {
-                        return lib1.isIdentical(getPtr(), otherPtr, lib2);
-                    }
-                }
+            if (profiled instanceof PythonAbstractNativeObject otherNativeObject) {
+                return pointer == otherNativeObject.pointer;
             }
             return otherInterop.isIdentical(profiled, this, thisLib);
         } finally {

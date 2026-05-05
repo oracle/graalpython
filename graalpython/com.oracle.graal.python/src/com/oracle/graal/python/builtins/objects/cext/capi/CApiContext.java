@@ -41,10 +41,13 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
-import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
@@ -52,7 +55,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.io.PrintStream;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -73,7 +76,6 @@ import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
@@ -81,13 +83,14 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -95,23 +98,31 @@ import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -120,7 +131,6 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.SuppressFBWarnings;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -133,23 +143,14 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 import sun.misc.Unsafe;
 
@@ -159,22 +160,23 @@ public final class CApiContext extends CExtContext {
 
     public static final String LOGGER_CAPI_NAME = "capi";
 
-    /**
-     * NFI source for Python module init functions (i.e. {@code "PyInit_modname"}).
-     */
-    private static final Source MODINIT_SRC = Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "modinit").build();
+    private static final CApiTiming TIMING_INVOKE_MODULE_INIT = CApiTiming.create(true, "invokeModuleInit");
+    private static final CApiTiming TIMING_INVOKE_CAPI_INIT = CApiTiming.create(true, "invokeCApiInit");
+    private static final CApiTiming TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER = CApiTiming.create(true, "invokeGetFinalizeCApiPointer");
+    private static final TruffleString C_API_UNSUPPORTED = tsLiteral(
+                    "The C API is unsupported on this JDK and/or platform, either because JEP 454 is not supported here or native access was expressly forbidden.");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
 
-    /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
-    @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs;
+    /** Native pointers for context-insensitive singletons like {@link PNone#NONE}. */
+    @CompilationFinal(dimensions = 1) private final long[] singletonNativePtrs;
 
     /**
      * Pointer to the native {@code GCState GC state}. This corresponds to CPython's
      * {@code PyInterpreterState.gc}.
      */
-    private Object gcState;
+    private long gcState;
 
     /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
     private final HashMap<Pair<TruffleString, TruffleString>, PythonModule> extensions = new HashMap<>(4);
@@ -183,13 +185,13 @@ public final class CApiContext extends CExtContext {
     private final ConcurrentWeakSet<PString> pstringInterningCache = new ConcurrentWeakSet<>();
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
 
-    public final HashMap<Long, PLock> locks = new HashMap<>();
+    public final ConcurrentHashMap<Long, PLock> locks = new ConcurrentHashMap<>();
     public final AtomicLong lockId = new AtomicLong();
 
     /**
      * Thread local storage for PyThread_tss_* APIs
      */
-    private final ConcurrentHashMap<Long, ThreadLocal<Object>> tssStorage = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, ThreadLocal<Long>> tssStorage = new ConcurrentHashMap<>();
     /**
      * Next key that will be allocated byt PyThread_tss_create
      */
@@ -202,15 +204,19 @@ public final class CApiContext extends CExtContext {
      * Same as {@link #nativeSymbolCache} if there is only one context per JVM (i.e. just one engine
      * in single-context mode). Will be {@code null} in case of multiple contexts.
      */
-    @CompilationFinal(dimensions = 1) private static Object[] nativeSymbolCacheSingleContext;
+    @CompilationFinal(dimensions = 1) private static NativeFunctionPointer[] nativeSymbolCacheSingleContext;
     private static boolean nativeSymbolCacheSingleContextUsed;
 
     /**
      * A private (i.e. per-context) cache of C API symbols (usually helper functions).
      */
-    private final Object[] nativeSymbolCache;
+    private final NativeFunctionPointer[] nativeSymbolCache;
 
-    private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
+    public static boolean isSpecialSingleton(Object delegate) {
+        return getSingletonNativeWrapperIdx(delegate) != -1;
+    }
+
+    private record ClosureInfo(Object delegate, Object executable, long pointer) {
     }
 
     /**
@@ -290,7 +296,7 @@ public final class CApiContext extends CExtContext {
      * CPython, those are usually statically allocated (or at least immortal) and once hand out a
      * pointer for a {@code PyMethodDef}, we need to ensure that it stays valid until the end.
      */
-    private final HashMap<PyMethodDefHelper, Object> methodDefinitions = new HashMap<>(4);
+    private final HashMap<PyMethodDefHelper, Long> methodDefinitions = new HashMap<>(4);
 
     /**
      * This list holds a strong reference to all loaded extension libraries to keep the library
@@ -316,9 +322,9 @@ public final class CApiContext extends CExtContext {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
 
-    public CApiContext(PythonContext context, Object library, NativeLibraryLocator locator) {
+    public CApiContext(PythonContext context, NativeLibrary library, NativeLibraryLocator locator) {
         super(context, library, locator.getCapiLibrary());
-        this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
+        this.nativeSymbolCache = new NativeFunctionPointer[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
 
         /*
@@ -350,21 +356,9 @@ public final class CApiContext extends CExtContext {
             CApiContext.nativeSymbolCacheSingleContextUsed = true;
         }
 
-        // initialize singleton native wrappers
-        singletonNativePtrs = new PythonAbstractObjectNativeWrapper[CONTEXT_INSENSITIVE_SINGLETONS.length];
-        // Other threads must see the nativeWrapper fully initialized once it becomes non-null
-        for (int i = 0; i < singletonNativePtrs.length; i++) {
-            assert CApiGuards.isSpecialSingleton(CONTEXT_INSENSITIVE_SINGLETONS[i]);
-            /*
-             * Note: this does intentionally not use 'PythonObjectNativeWrapper.wrap' because the
-             * wrapper must not be reachable from the Python object since the singletons are shared.
-             */
-            singletonNativePtrs[i] = new PythonObjectNativeWrapper(CONTEXT_INSENSITIVE_SINGLETONS[i]);
-        }
-
-        // initialize Py_True and Py_False
-        context.getTrue().setNativeWrapper(PrimitiveNativeWrapper.createBool(true));
-        context.getFalse().setNativeWrapper(PrimitiveNativeWrapper.createBool(false));
+        // initialize singleton native pointers array
+        singletonNativePtrs = new long[CONTEXT_INSENSITIVE_SINGLETONS.length];
+        Arrays.fill(singletonNativePtrs, UNINITIALIZED);
 
         this.gcTask = new BackgroundGCTask(context);
     }
@@ -406,17 +400,17 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object tssGet(long key) {
-        ThreadLocal<Object> local = tssStorage.get(key);
+    public long tssGet(long key) {
+        ThreadLocal<Long> local = tssStorage.get(key);
         if (local != null) {
             return local.get();
         }
-        return null;
+        return NULLPTR;
     }
 
     @TruffleBoundary
-    public void tssSet(long key, Object object) {
-        tssStorage.computeIfAbsent(key, (k) -> new ThreadLocal<>()).set(object);
+    public void tssSet(long key, long ptr) {
+        tssStorage.computeIfAbsent(key, (k) -> new ThreadLocal<>()).set(ptr);
     }
 
     @TruffleBoundary
@@ -434,12 +428,35 @@ public final class CApiContext extends CExtContext {
         return -1;
     }
 
-    public PythonAbstractObjectNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
+    public long getNonePtr() {
+        return getSingletonNativeWrapper(PNone.NONE);
+    }
+
+    public long getSingletonNativeWrapper(PythonAbstractObject obj) {
         int singletonNativePtrIdx = CApiContext.getSingletonNativeWrapperIdx(obj);
         if (singletonNativePtrIdx != -1) {
-            return singletonNativePtrs[singletonNativePtrIdx];
+            long singletonNativePtr = singletonNativePtrs[singletonNativePtrIdx];
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, singletonNativePtr == UNINITIALIZED)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                initializeSingletonNativePtrs();
+                singletonNativePtr = singletonNativePtrs[singletonNativePtrIdx];
+            }
+            return singletonNativePtr;
         }
-        return null;
+        return 0;
+    }
+
+    private void initializeSingletonNativePtrs() {
+        CompilerAsserts.neverPartOfCompilation();
+        assert getContext().getCApiState() == CApiState.INITIALIZING || getContext().getCApiState() == CApiState.INITIALIZED;
+        for (int i = 0; i < singletonNativePtrs.length; i++) {
+            assert isSpecialSingleton(CONTEXT_INSENSITIVE_SINGLETONS[i]);
+            assert !PythonToNativeInternalNode.mapsToNull(CONTEXT_INSENSITIVE_SINGLETONS[i]);
+            assert singletonNativePtrs[i] == UNINITIALIZED;
+            singletonNativePtrs[i] = FirstToNativeNode.executeUncached(CONTEXT_INSENSITIVE_SINGLETONS[i], IMMORTAL_REFCNT);
+            assert singletonNativePtrs[i] != NULLPTR;
+            assert singletonNativePtrs[i] != UNINITIALIZED;
+        }
     }
 
     /**
@@ -452,22 +469,18 @@ public final class CApiContext extends CExtContext {
         // TODO(fa): this should not require the GIL (GR-51314)
         assert getContext().ownsGil();
         for (int i = 0; i < singletonNativePtrs.length; i++) {
-            PythonAbstractObjectNativeWrapper singletonNativeWrapper = singletonNativePtrs[i];
-            singletonNativePtrs[i] = null;
-            assert singletonNativeWrapper != null;
-            assert getSingletonNativeWrapperIdx(singletonNativeWrapper.getDelegate()) != -1;
-            assert !singletonNativeWrapper.isNative() || singletonNativeWrapper.getRefCount() == IMMORTAL_REFCNT;
-            if (singletonNativeWrapper.ref != null) {
-                CApiTransitions.nativeStubLookupRemove(handleContext, singletonNativeWrapper.ref);
+            long pointer = singletonNativePtrs[i];
+            assert pointer == PythonObject.UNINITIALIZED || CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(pointer)) == IMMORTAL_REFCNT;
+            singletonNativePtrs[i] = PythonObject.NATIVE_POINTER_FREED;
+            // It may be that the singleton was never used in native and there is nothing to free.
+            if (pointer != PythonObject.UNINITIALIZED) {
+                assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
+                int handleTableIndex = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+                assert CApiTransitions.nativeStubLookupGet(handleContext, pointer, handleTableIndex) instanceof PythonAbstractObject : "immortal objects should not have a weak ref";
+                CApiTransitions.nativeStubLookupRemove(handleContext, handleTableIndex);
+                CApiTransitions.releaseNativeWrapper(pointer);
             }
-            CApiTransitions.releaseNativeWrapperUncached(singletonNativeWrapper);
         }
-    }
-
-    public PrimitiveNativeWrapper getCachedBooleanPrimitiveNativeWrapper(boolean b) {
-        PythonAbstractObjectNativeWrapper wrapper = b ? getContext().getTrue().getNativeWrapper() : getContext().getFalse().getNativeWrapper();
-        assert wrapper.getRefCount() > 0;
-        return (PrimitiveNativeWrapper) wrapper;
     }
 
     /**
@@ -476,16 +489,16 @@ public final class CApiContext extends CExtContext {
      * in the GC) is sent to native. This could, e.g., be the thread-state dict that is allocated
      * when creating the {@link PThreadState native thread state}.
      */
-    public Object createGCState() {
+    public long createGCState() {
         CompilerAsserts.neverPartOfCompilation();
-        assert gcState == null;
+        assert gcState == 0L;
         PythonContext.GCState state = getContext().getGcState();
-        Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.GCState);
-        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__enabled, PInt.intValue(state.isEnabled()));
-        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__debug, state.getDebug());
-        Object generations = CStructAccess.GetElementPtrNode.getUncached().getElementPtr(ptr, CFields.GCState__generations);
+        long ptr = CStructAccess.allocate(CStructs.GCState);
+        CStructAccess.writeIntField(ptr, CFields.GCState__enabled, PInt.intValue(state.isEnabled()));
+        CStructAccess.writeIntField(ptr, CFields.GCState__debug, state.getDebug());
+        long generations = CStructAccess.getFieldPtr(ptr, CFields.GCState__generations);
         for (int i = 0; i < state.getThresholds().length; i++) {
-            CStructAccess.WriteIntNode.getUncached().writeStructArrayElement(generations, i, CFields.GCGeneration__threshold, state.getThresholds()[i]);
+            CStructAccess.writeStructArrayIntField(generations, i, CFields.GCGeneration__threshold, state.getThresholds()[i]);
         }
         gcState = ptr;
         return gcState;
@@ -496,8 +509,8 @@ public final class CApiContext extends CExtContext {
      * {@link #createGCState()} was called the first time which should happen very early during C
      * API context initialization.
      */
-    public Object getGCState() {
-        assert gcState != null;
+    public long getGCState() {
+        assert gcState != 0L;
         return gcState;
     }
 
@@ -506,9 +519,10 @@ public final class CApiContext extends CExtContext {
      */
     private void freeGCState() {
         CompilerAsserts.neverPartOfCompilation();
-        if (gcState != null) {
-            FreeNode.executeUncached(gcState);
-            gcState = null;
+        if (gcState != 0L) {
+            LOGGER.fine(String.format("Freeing GC state at 0x%x", gcState));
+            NativeMemory.free(gcState);
+            gcState = 0L;
         }
     }
 
@@ -529,8 +543,8 @@ public final class CApiContext extends CExtContext {
      *            {@link CApiContext} instance (if necessary).
      * @return The C API symbol cache.
      */
-    private static Object[] getSymbolCache(Node caller) {
-        Object[] cache = nativeSymbolCacheSingleContext;
+    private static NativeFunctionPointer[] getSymbolCache(Node caller) {
+        NativeFunctionPointer[] cache = nativeSymbolCacheSingleContext;
         if (cache != null) {
             return cache;
         }
@@ -550,19 +564,13 @@ public final class CApiContext extends CExtContext {
 
     public static boolean isIdenticalToSymbol(long ptr, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
-        Object nativeSymbol = getNativeSymbol(null, symbol);
-        InteropLibrary lib = InteropLibrary.getUncached(nativeSymbol);
-        lib.toNative(nativeSymbol);
-        try {
-            return lib.asPointer(nativeSymbol) == ptr;
-        } catch (UnsupportedMessageException e) {
-            throw new RuntimeException(e);
-        }
+        NativeFunctionPointer nativeSymbol = getNativeSymbol(null, symbol);
+        return nativeSymbol.getAddress() == ptr;
     }
 
-    public static Object getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
-        Object[] nativeSymbolCache = getSymbolCache(caller);
-        Object result = nativeSymbolCache[symbol.ordinal()];
+    public static NativeFunctionPointer getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
+        NativeFunctionPointer[] nativeSymbolCache = getSymbolCache(caller);
+        NativeFunctionPointer result = nativeSymbolCache[symbol.ordinal()];
         if (result == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             result = lookupNativeSymbol(nativeSymbolCache, symbol);
@@ -575,26 +583,23 @@ public final class CApiContext extends CExtContext {
      * Lookup the given C API symbol in the library, store it to the provided cache, and return the
      * callable symbol.
      */
-    private static Object lookupNativeSymbol(Object[] nativeSymbolCache, NativeCAPISymbol symbol) {
+    private static NativeFunctionPointer lookupNativeSymbol(NativeFunctionPointer[] nativeSymbolCache, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
         String name = symbol.getName();
-        try {
-            Object nativeSymbol = InteropLibrary.getUncached().readMember(PythonContext.get(null).getCApiContext().getLibrary(), name);
-            nativeSymbol = EnsureExecutableNode.executeUncached(nativeSymbol, symbol);
-            VarHandle.storeStoreFence();
-            return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
-        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
+        PythonContext pythonContext = PythonContext.get(null);
+        long nativeSymbolPtr = pythonContext.getCApiContext().getLibrary().lookupSymbol(name);
+        NativeFunctionPointer nativeSymbol = symbol.bind(pythonContext.ensureNativeContext(), nativeSymbolPtr);
+        VarHandle.storeStoreFence();
+        return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
     }
 
     @SuppressWarnings("unused")
-    public void trackObject(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {
+    public void trackObject(long ptr, PFrame.Reference curFrame, TruffleString clazzName) {
         // TODO(fa): implement tracking of container objects for cycle detection
     }
 
     @SuppressWarnings("unused")
-    public void untrackObject(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {
+    public void untrackObject(long ptr, PFrame.Reference curFrame, TruffleString clazzName) {
         // TODO(fa): implement untracking of container objects
     }
 
@@ -608,8 +613,7 @@ public final class CApiContext extends CExtContext {
             this.gcRSSMinimum = context.getOption(PythonOptions.BackgroundGCTaskMinimum);
         }
 
-        Object nativeSymbol = null;
-        InteropLibrary callNative = null;
+        NativeFunctionPointer nativeSymbol = null;
 
         long currentRSS = -1;
         long previousRSS = -1;
@@ -642,12 +646,11 @@ public final class CApiContext extends CExtContext {
         Long getCurrentRSS() {
             if (nativeSymbol == null) {
                 nativeSymbol = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_GET_CURRENT_RSS);
-                callNative = InteropLibrary.getUncached(nativeSymbol);
             }
             Long rss = 0L;
             try {
-                rss = (Long) callNative.execute(nativeSymbol);
-            } catch (Exception ignored) {
+                rss = ExternalFunctionInvoker.invokeGET_CURRENT_RSS(nativeSymbol.getAddress());
+            } catch (Throwable ignored) {
             }
             return rss;
         }
@@ -697,7 +700,7 @@ public final class CApiContext extends CExtContext {
             }
 
             // skip GC if no new native weakrefs have been created.
-            int currentWeakrefCount = context.nativeContext.nativeLookup.size();
+            int currentWeakrefCount = context.handleContext.nativeLookup.size();
             if (currentWeakrefCount < this.previousWeakrefCount || this.previousWeakrefCount == -1) {
                 this.previousWeakrefCount = currentWeakrefCount;
                 return;
@@ -813,6 +816,9 @@ public final class CApiContext extends CExtContext {
                 if (state == PythonContext.CApiState.INITIALIZED || state == PythonContext.CApiState.INITIALIZING) {
                     return context.getCApiContext();
                 }
+                if (state == PythonContext.CApiState.CANNOT_IMPORT) {
+                    throw new ImportException(null, name, path, C_API_UNSUPPORTED);
+                }
                 if (state == PythonContext.CApiState.FAILED) {
                     throw new ApiInitException(toTruffleStringUncached("The C API initialization has previously failed."));
                 }
@@ -826,7 +832,7 @@ public final class CApiContext extends CExtContext {
                     CApiContext cApiContext = loadCApi(node, context, name, path, reason);
                     assert context.getCApiState() == PythonContext.CApiState.INITIALIZING;
                     initializeThreadStateCurrentForAttachedThreads(context);
-                    CApiTransitions.initializeReferenceQueuePolling(context.nativeContext);
+                    CApiTransitions.initializeReferenceQueuePolling(context.handleContext);
                     context.runCApiHooks();
                     context.setCApiState(PythonContext.CApiState.INITIALIZED); // volatile write
                     try {
@@ -835,6 +841,9 @@ public final class CApiContext extends CExtContext {
                         // This can happen when other languages restrict multithreading
                         LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
                     }
+                } catch (ImportException e) {
+                    context.setCApiState(PythonContext.CApiState.CANNOT_IMPORT);
+                    throw e;
                 } catch (Throwable t) {
                     context.setCApiState(PythonContext.CApiState.FAILED);
                     throw t;
@@ -875,14 +884,12 @@ public final class CApiContext extends CExtContext {
 
     private static CApiContext loadCApi(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
         Env env = context.getEnv();
-        InteropLibrary U = InteropLibrary.getUncached();
 
         TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
         // e.g. "libpython-native.so"
         String libName = PythonContext.getSupportLibName("python-native");
         final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
         try {
-            SourceBuilder capiSrcBuilder;
             boolean useNative = true;
             boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
             final NativeLibraryLocator loc;
@@ -906,36 +913,39 @@ public final class CApiContext extends CExtContext {
             }
             loc = new NativeLibraryLocator(context, capiFile, isolateNative);
             context.ensureNFILanguage(node, "allowNativeAccess", "true");
-            String dlopenFlags = isolateNative ? "RTLD_LOCAL" : "RTLD_GLOBAL";
-            capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, String.format("load(%s) \"%s\"", dlopenFlags, loc.getCapiLibrary()), "<libpython>");
+            int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
-            if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
-                capiSrcBuilder.internal(true);
-            }
-            CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
-
-            Object capiLibrary = capiLibraryCallTarget.call();
-            Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
+            NativeContext nativeContext = context.ensureNativeContext();
+            NativeLibrary capiLibrary = nativeContext.loadLibrary(loc.getCapiLibrary(), dlopenFlags);
+            long initFunction = capiLibrary.lookupSymbol("initialize_graal_capi");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
             context.setCApiContext(cApiContext);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
 
-            try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
-                /*
-                 * The GC state needs to be created before the first managed object is sent to
-                 * native. This is because the native object stub could take part in GC and will
-                 * then already require the GC state.
-                 */
-                Object gcState = cApiContext.createGCState();
-                PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
-                Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
-                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER,POINTER):POINTER", "exec").build()).call();
-                initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                Object nativeThreadLocalVarPointer = U.execute(initFunction, builtinArrayWrapper, gcState, nativeThreadState);
-                assert U.isPointer(nativeThreadLocalVarPointer);
-                assert !U.isNull(nativeThreadLocalVarPointer);
+            /*
+             * The GC state needs to be created before the first managed object is sent to native.
+             * This is because the native object stub could take part in GC and will then already
+             * require the GC state.
+             */
+            long gcState = cApiContext.createGCState();
+            PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
+            long nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
+
+            long builtinArrayPtr = NativeMemory.mallocPtrArray(PythonCextBuiltinRegistry.builtins.length);
+            try {
+                for (int id = 0; id < PythonCextBuiltinRegistry.builtins.length; id++) {
+                    CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
+                    NativeMemory.writePtrArrayElement(builtinArrayPtr, id, builtin.getNativePointer());
+                }
+                long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeCAPIINIT(null, TIMING_INVOKE_CAPI_INIT, nativeContext, BoundaryCallData.getUncached(),
+                                context.getThreadState(context.getLanguage()),
+                                ExternalFunctionSignature.CAPIINIT.bind(nativeContext, initFunction), builtinArrayPtr, gcState, nativeThreadState);
+                assert nativeThreadLocalVarPointer != NULLPTR;
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
+            } finally {
+                NativeMemory.free(builtinArrayPtr);
             }
+            CApiTransitions.initializeThreadStateDeallocatingOffsets();
 
             assert PythonCApiAssertions.assertBuiltins(capiLibrary);
             cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
@@ -948,9 +958,9 @@ public final class CApiContext extends CExtContext {
              * it during context exit, but when the VM is terminated by a signal, the context exit
              * is skipped. For that case we set up the shutdown hook.
              */
-            Object finalizeFunction = U.readMember(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
-            Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
-            Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
+            long finalizeFunction = capiLibrary.lookupSymbol("GraalPyPrivate_GetFinalizeCApiPointer");
+            long finalizingPointer = ExternalFunctionInvoker.invokeGETFINALIZECAPIPOINTER(null, TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER, nativeContext, BoundaryCallData.getUncached(),
+                            context.getThreadState(context.getLanguage()), ExternalFunctionSignature.GETFINALIZECAPIPOINTER.bind(nativeContext, finalizeFunction));
             try {
                 cApiContext.addNativeFinalizer(context, finalizingPointer);
             } catch (RuntimeException e) {
@@ -964,7 +974,15 @@ public final class CApiContext extends CExtContext {
              * Python exceptions that occur during the C API initialization are just passed through
              */
             throw e;
-        } catch (RuntimeException | UnsupportedMessageException | ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
+        } catch (UnsupportedOperationException e) {
+            assert e.getMessage() != null : "We missed an UnsupportedOperationException that might occur during C API initialization";
+            throw new ImportException(null, name, path, toTruffleStringUncached(e.getMessage()));
+        } catch (NativeLibraryLoadException e) {
+            if (!context.isNativeAccessAllowed()) {
+                throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+            }
+            throw new ApiInitException(ErrorMessages.CANNOT_LOAD, libName, e.getMessage());
+        } catch (RuntimeException e) {
             // we cannot really check if we truly need native access, so
             // when the abi contains "managed" we assume we do not
             if (!libName.contains("managed") && !context.isNativeAccessAllowed()) {
@@ -1027,8 +1045,7 @@ public final class CApiContext extends CExtContext {
 
         // we always need to load the CPython C API
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
-        Object library;
-        InteropLibrary interopLib;
+        NativeLibrary library;
 
         TruffleFile realPath = context.getPublicTruffleFileRelaxed(spec.path, context.getSoAbi()).getCanonicalFile();
         String loadPath = cApiContext.nativeLibraryLocator.resolve(context, realPath);
@@ -1043,20 +1060,18 @@ public final class CApiContext extends CExtContext {
             }
             dlopenFlags |= PosixConstants.RTLD_LOCAL.value;
         }
-        String dlopenFlagsString = dlopenFlagsToString(dlopenFlags);
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            dlopenFlagsString += "| LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR";
-        }
-        String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsString, loadPath);
-        if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
-            loadExpr = "with panama " + loadExpr;
-        }
+
         try {
-            Source librarySource = Source.newBuilder(J_NFI_LANGUAGE, loadExpr, "load " + spec.name).build();
-            library = context.getEnv().parseInternal(librarySource).call();
-            interopLib = InteropLibrary.getUncached(library);
+            library = context.ensureNativeContext().loadLibrary(loadPath, dlopenFlags);
         } catch (PException e) {
             throw e;
+        } catch (NativeLibraryLoadException e) {
+            if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
+                getLogger(CApiContext.class).severe(String.format("could not load module %s (real path: %s) from virtual file system.\n\n" +
+                                "!!! Please try to run with java system property org.graalvm.python.vfs.extractOnStartup=true !!!\n" +
+                                "See also: https://www.graalvm.org/python/docs/#graalpy-troubleshooting", spec.path, realPath));
+            }
+            throw new ImportException(null, spec.name, spec.path, ErrorMessages.CANNOT_LOAD, spec.path, e.getMessage());
         } catch (AbstractTruffleException e) {
             if (!realPath.exists() && realPath.toString().contains("org.graalvm.python.vfsx")) {
                 // file does not exist and it is from VirtualFileSystem
@@ -1069,12 +1084,7 @@ public final class CApiContext extends CExtContext {
 
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_LOAD_M, spec.path, e);
         }
-
-        try {
-            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, interopLib);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
-        }
+        return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec);
     }
 
     /**
@@ -1088,21 +1098,15 @@ public final class CApiContext extends CExtContext {
      * triggered a dlclose that dropped the refcount of the python-native library to 0. We leak 1
      * byte of memory and this shutdown hook for each context that ever initialized the C API.
      */
-    private void addNativeFinalizer(PythonContext context, Object finalizingPointerObj) {
+    private void addNativeFinalizer(PythonContext context, long finalizingPointer) {
         final Unsafe unsafe = context.getUnsafe();
-        InteropLibrary lib = InteropLibrary.getUncached(finalizingPointerObj);
-        if (!lib.isNull(finalizingPointerObj) && lib.isPointer(finalizingPointerObj)) {
-            try {
-                long finalizingPointer = lib.asPointer(finalizingPointerObj);
-                // We are writing off heap memory and registering a VM shutdown hook, there is no
-                // point in creating this thread via Truffle sandbox at this point
-                nativeFinalizerRunnable = () -> unsafe.putByte(finalizingPointer, (byte) 1);
-                context.registerAtexitHook((c) -> nativeFinalizerRunnable.run());
-                nativeFinalizerShutdownHook = new Thread(nativeFinalizerRunnable);
-                Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
-            } catch (UnsupportedMessageException e) {
-                throw new RuntimeException(e);
-            }
+        if (finalizingPointer != 0L) {
+            // We are writing off heap memory and registering a VM shutdown hook, there is no
+            // point in creating this thread via Truffle sandbox at this point
+            nativeFinalizerRunnable = () -> unsafe.putByte(finalizingPointer, (byte) 1);
+            context.registerAtexitHook((c) -> nativeFinalizerRunnable.run());
+            nativeFinalizerShutdownHook = new Thread(nativeFinalizerRunnable);
+            Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
         }
     }
 
@@ -1126,21 +1130,15 @@ public final class CApiContext extends CExtContext {
              * interpreter.
              */
             pollReferenceQueue();
-            PythonThreadState threadState = getContext().getThreadState(getContext().getLanguage());
-            Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-            if (nativeThreadState != null) {
-                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_GC_COLLECT_NO_FAIL, nativeThreadState);
-                pollReferenceQueue();
-            }
             CApiTransitions.deallocateNativeWeakRefs(getContext());
         }
     }
 
     @SuppressWarnings("try")
-    public void finalizeCApi() {
+    public void finalizeCApi(boolean cancelling) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
-        HandleContext handleContext = context.nativeContext;
+        HandleContext handleContext = context.handleContext;
         if (backgroundGCTaskThread != null && backgroundGCTaskThread.isAlive()) {
             context.killSystemThread(backgroundGCTaskThread);
             try {
@@ -1163,9 +1161,15 @@ public final class CApiContext extends CExtContext {
         try {
             // TODO(fa): remove GIL acquisition (GR-51314)
             try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
-                // First we want to free all replacements for which we have to call tp_dealloc,
-                // while all our stubs are still available for the tp_dealloc code to run.
-                CApiTransitions.deallocNativeReplacements(context, handleContext);
+                /*
+                 * First we want to free all replacements for which we have to call tp_dealloc,
+                 * while all our stubs are still available for the tp_dealloc code to run. Since
+                 * tp_dealloc may run arbitrary user code, we must not do that if the context was
+                 * canceled.
+                 */
+                if (!cancelling) {
+                    CApiTransitions.deallocNativeReplacements(context, handleContext);
+                }
                 // The singletons can be freed now
                 freeSingletonNativeWrappers(handleContext);
                 // Now we can clear all native memory that was simply allocated from Java. This
@@ -1179,7 +1183,7 @@ public final class CApiContext extends CExtContext {
                 PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
             }
             // free all allocated PyMethodDef structures
-            for (Object pyMethodDefPointer : methodDefinitions.values()) {
+            for (Long pyMethodDefPointer : methodDefinitions.values()) {
                 PyMethodDefHelper.free(pyMethodDefPointer);
             }
         } finally {
@@ -1213,33 +1217,18 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object initCApiModule(Node node, Object sharedLibrary, TruffleString initFuncName, ModuleSpec spec, InteropLibrary llvmInteropLib)
-                    throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+    public Object initCApiModule(Node node, NativeLibrary sharedLibrary, TruffleString initFuncName, ModuleSpec spec) throws ImportException {
         PythonContext context = getContext();
         CApiContext cApiContext = context.getCApiContext();
-        Object pyinitFunc;
-        try {
-            pyinitFunc = llvmInteropLib.readMember(sharedLibrary, initFuncName.toJavaStringUncached());
-        } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+        long pyinitFunc = sharedLibrary.lookupOptionalSymbol(initFuncName.toJavaStringUncached());
+        if (pyinitFunc == 0L) {
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
-        Object nativeResult;
-        try {
-            nativeResult = InteropLibrary.getUncached().execute(pyinitFunc);
-        } catch (UnsupportedMessageException e) {
-            Object signature = context.getEnv().parseInternal(MODINIT_SRC).call();
-            nativeResult = SignatureLibrary.getUncached().call(signature, pyinitFunc);
-        } catch (ArityException e) {
-            // In case of multi-phase init, the init function may take more than one argument.
-            // However, CPython gracefully ignores that. So, we pass just NULL pointers.
-            Object[] arguments = new Object[e.getExpectedMinArity()];
-            Arrays.fill(arguments, PNone.NO_VALUE);
-            nativeResult = InteropLibrary.getUncached().execute(pyinitFunc, arguments);
-        }
+        NativeContext nativeContext = context.ensureNativeContext();
+        long nativeResult = ExternalFunctionInvoker.invokeMODINIT(null, TIMING_INVOKE_MODULE_INIT, nativeContext, BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage()),
+                        ExternalFunctionSignature.MODINIT.bind(nativeContext, pyinitFunc));
 
-        ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, nativeResult);
-
-        Object result = NativeToPythonNode.executeUncached(nativeResult);
+        Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonNode.executeUncached(nativeResult));
         if (!(result instanceof PythonModule)) {
             // Multi-phase extension module initialization
 
@@ -1255,7 +1244,7 @@ public final class CApiContext extends CExtContext {
                 throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
 
-            return CExtNodes.createModule(node, cApiContext, spec, result, sharedLibrary);
+            return CExtNodes.createModule(node, cApiContext, spec, nativeResult, sharedLibrary);
         } else {
             // see: 'import.c: _PyImport_FixupExtensionObject'
             PythonModule module = (PythonModule) result;
@@ -1267,8 +1256,8 @@ public final class CApiContext extends CExtContext {
             sysModules.setItem(spec.name, result);
 
             // _PyState_AddModule
-            Object moduleDef = module.getNativeModuleDef();
-            int mIndex = PythonUtils.toIntError(CStructAccess.ReadI64Node.getUncached().read(moduleDef, CFields.PyModuleDef_Base__m_index));
+            long moduleDef = module.getNativeModuleDef();
+            int mIndex = PythonUtils.toIntError(readLongField(moduleDef, CFields.PyModuleDef_Base__m_index));
             while (modulesByIndex.size() <= mIndex) {
                 modulesByIndex.add(null);
             }
@@ -1285,112 +1274,10 @@ public final class CApiContext extends CExtContext {
         return extensions.get(Pair.create(filename, name));
     }
 
-    /**
-     * An array wrapper around {@link PythonCextBuiltinRegistry#builtins} which also implements
-     * {@link InteropLibrary#toNative(Object)}. This is intended to be passed to the C API
-     * initialization function. In order to avoid memory leaks if the wrapper receives
-     * {@code toNative}, it should be used in a try-with-resources.
-     */
-    @ExportLibrary(InteropLibrary.class)
-    @SuppressWarnings("static-method")
-    static final class BuiltinArrayWrapper implements TruffleObject, AutoCloseable {
-        private long pointer;
-
-        @ExportMessage
-        boolean hasArrayElements() {
-            return true;
-        }
-
-        @ExportMessage
-        long getArraySize() {
-            return PythonCextBuiltinRegistry.builtins.length;
-        }
-
-        @ExportMessage
-        boolean isArrayElementReadable(long index) {
-            return 0 <= index && index < PythonCextBuiltinRegistry.builtins.length;
-        }
-
-        @ExportMessage
-        @TruffleBoundary
-        Object readArrayElement(long index) throws InvalidArrayIndexException {
-            if (!isArrayElementReadable(index)) {
-                throw InvalidArrayIndexException.create(index);
-            }
-            // cast is guaranteed by 'isArrayElementReadable'
-            return getCAPIBuiltinExecutable((int) index);
-        }
-
-        private static CApiBuiltinExecutable getCAPIBuiltinExecutable(int id) {
-            CompilerAsserts.neverPartOfCompilation();
-            try {
-                CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                LOGGER.finer("CApiContext.BuiltinArrayWrapper.get " + id + " / " + builtin.name());
-                return builtin;
-            } catch (Throwable e) {
-                // this is a fatal error, so print it to stderr:
-                e.printStackTrace(new PrintStream(PythonContext.get(null).getEnv().err()));
-                throw new RuntimeException(e);
-            }
-        }
-
-        @ExportMessage
-        boolean isPointer() {
-            return pointer != 0;
-        }
-
-        @ExportMessage
-        long asPointer() throws UnsupportedMessageException {
-            if (pointer != 0) {
-                return pointer;
-            }
-            throw UnsupportedMessageException.create();
-        }
-
-        @ExportMessage
-        @TruffleBoundary
-        void toNative() {
-            if (pointer == 0) {
-                assert PythonContext.get(null).isNativeAccessAllowed();
-                Object ptr = CStructAccess.AllocateNode.callocUncached(PythonCextBuiltinRegistry.builtins.length, CStructAccess.POINTER_SIZE);
-                pointer = CExtCommonNodes.CoerceNativePointerToLongNode.executeUncached(ptr);
-                if (pointer != 0) {
-                    InteropLibrary lib = null;
-                    for (int i = 0; i < PythonCextBuiltinRegistry.builtins.length; i++) {
-                        CApiBuiltinExecutable capiBuiltinExecutable = getCAPIBuiltinExecutable(i);
-                        if (lib == null || !lib.accepts(capiBuiltinExecutable)) {
-                            lib = InteropLibrary.getUncached(capiBuiltinExecutable);
-                        }
-                        assert lib.accepts(capiBuiltinExecutable);
-                        lib.toNative(capiBuiltinExecutable);
-                        try {
-                            CStructAccess.WritePointerNode.writeArrayElementUncached(pointer, i, lib.asPointer(capiBuiltinExecutable));
-                        } catch (UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
-                        }
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void close() {
-            if (pointer != 0) {
-                FreeNode.executeUncached(pointer);
-            }
-        }
-    }
-
     public long getClosurePointer(Object executable) {
         CompilerAsserts.neverPartOfCompilation();
         ClosureInfo info = callableClosureByExecutable.get(executable);
         return info == null ? -1 : info.pointer;
-    }
-
-    public Object getClosureForExecutable(Object executable) {
-        CompilerAsserts.neverPartOfCompilation();
-        ClosureInfo info = callableClosureByExecutable.get(executable);
-        return info == null ? null : info.closure;
     }
 
     public Object getClosureDelegate(long pointer) {
@@ -1405,36 +1292,25 @@ public final class CApiContext extends CExtContext {
         return info == null ? null : info.executable;
     }
 
-    public void setClosurePointer(Object closure, Object delegate, Object executable, long pointer) {
+    public void setClosurePointer(Object delegate, Object executable, long pointer) {
         CompilerAsserts.neverPartOfCompilation();
-        var info = new ClosureInfo(closure, delegate, executable, pointer);
+        var info = new ClosureInfo(delegate, executable, pointer);
         callableClosureByExecutable.put(executable, info);
         callableClosures.put(pointer, info);
-        LOGGER.finer(() -> PythonUtils.formatJString("new NFI closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
+        LOGGER.finer(() -> PythonUtils.formatJString("new native closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
     }
 
-    private static Source buildNFISource(Object srcObj) {
-        return Source.newBuilder(J_NFI_LANGUAGE, (String) srcObj, "exec").build();
-    }
-
-    public long registerClosure(String nfiSignature, Object executable, Object delegate, SignatureLibrary signatureLibrary) {
+    public long registerClosure(String name, NativeSignature signature, MethodHandle methodHandle, Object key, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
-        boolean panama = context.getOption(PythonOptions.UsePanama);
-        String srcString = (panama ? "with panama " : "") + nfiSignature;
-        Source nfiSource = context.getLanguage().getOrCreateSource(CApiContext::buildNFISource, srcString);
-        Object signature = context.getEnv().parseInternal(nfiSource).call();
-        Object closure = signatureLibrary.createClosure(signature, executable);
-        long pointer = PythonUtils.coerceToLong(closure, InteropLibrary.getUncached());
-        setClosurePointer(closure, delegate, executable, pointer);
+        long pointer = signature.createClosure(context.ensureNativeContext(), name, methodHandle);
+        setClosurePointer(delegate, key, pointer);
         return pointer;
     }
 
     @TruffleBoundary
-    public Object getOrAllocateNativePyMethodDef(PyMethodDefHelper pyMethodDef) {
-        Object pyMethodDefPointer = methodDefinitions.computeIfAbsent(pyMethodDef, PyMethodDefHelper::allocate);
-        assert CApiContext.isPointerObject(pyMethodDefPointer);
-        return pyMethodDefPointer;
+    public long getOrAllocateNativePyMethodDef(PyMethodDefHelper pyMethodDef) {
+        return methodDefinitions.computeIfAbsent(pyMethodDef, PyMethodDefHelper::allocate);
     }
 
     /**

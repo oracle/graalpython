@@ -8,7 +8,7 @@ import unittest
 
 from tests import list_tests
 from tests.compare import CompareTest
-from tests.util import storage_to_native
+from tests.util import skip_if_sandboxed, storage_to_native
 
 LONG_NUMBER = 6227020800
 
@@ -78,6 +78,10 @@ class ListTest(list_tests.CommonTest):
         self.assertEqual(len([]), 0)
         self.assertEqual(len([0]), 1)
         self.assertEqual(len([0, 1, 2]), 3)
+
+    @skip_if_sandboxed("Needs native storage support in sandboxed runs")
+    def test_reverse(self):
+        super().test_reverse()
 
     def test_overflow(self):
         lst = [4, 5, 6, 7]
@@ -835,6 +839,7 @@ class ListCompareTest(CompareTest):
         l += [0x100000000, 'a']
         self.assertEqual([1, 0x100000000, 'a'], l)
 
+    @skip_if_sandboxed("Needs native storage support in sandboxed runs")
     def test_reverse(self):
         l = [1, 2, 3]
         self.assertEqual(None, l.reverse())
@@ -866,6 +871,7 @@ class TestObject:
         return self.name
 
 
+@skip_if_sandboxed("Needs native storage support in sandboxed runs")
 class NativeStorageTests(unittest.TestCase):
     def setUp(self):
         self.o1 = TestObject('o1')

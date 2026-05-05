@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,14 +45,16 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
 
+import java.lang.ref.Reference;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -66,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.FixNegativeIndex;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItemFactory.CallSlotSqAssItemNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItemFactory.WrapSqDelItemBuiltinNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItemFactory.WrapSqSetItemBuiltinNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -75,10 +78,13 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -120,9 +126,9 @@ public final class TpSlotSqAssItem {
         @Override
         public PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
             return switch (wrapper) {
-                case SETITEM -> createBuiltin(core, type, T___SETITEM__, SET_SIGNATURE, wrapper,
+                case SQ_SETITEM -> createBuiltin(core, type, T___SETITEM__, SET_SIGNATURE, wrapper,
                                 WrapperNodeFactory.wrap(getNodeFactory(), WrapSqSetItemBuiltinNode.class, WrapSqSetItemBuiltinNodeGen::create));
-                case DELITEM -> createBuiltin(core, type, T___DELITEM__, BuiltinSlotWrapperSignature.BINARY, wrapper,
+                case SQ_DELITEM -> createBuiltin(core, type, T___DELITEM__, BuiltinSlotWrapperSignature.BINARY, wrapper,
                                 WrapperNodeFactory.wrap(getNodeFactory(), WrapSqDelItemBuiltinNode.class, WrapSqDelItemBuiltinNodeGen::create));
                 default ->
                     throw new IllegalStateException(Objects.toString(wrapper));
@@ -257,6 +263,11 @@ public final class TpSlotSqAssItem {
     public abstract static class CallSlotSqAssItemNode extends Node {
         public abstract void execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, int key, Object value);
 
+        @TruffleBoundary
+        public static void executeUncached(TpSlot slot, Object self, int key, Object value) {
+            CallSlotSqAssItemNodeGen.getUncached().execute(null, null, slot, self, key, value);
+        }
+
         @Specialization
         static void callManagedSlot(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, int key, Object value,
                         @Cached CallManagedSlotSqAssItemNode slotNode) {
@@ -281,16 +292,24 @@ public final class TpSlotSqAssItem {
         @Specialization
         static void callNative(VirtualFrame frame, TpSlotNative slot, Object self, long key, Object value,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeNode selfToNativeNode,
                         @Cached PythonToNativeNode valueToNativeNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CheckInquiryResultNode checkResultNode) {
-            Object result;
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-            result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SETITEM__, slot.callable,
-                            selfToNativeNode.execute(self), key, valueToNativeNode.execute(value));
-            checkResultNode.execute(threadState, T___SETITEM__, result);
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
+            Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
+            Object promotedValue = ensurePythonObjectNode.execute(context, value, false);
+            try {
+                int iresult = ExternalFunctionInvoker.invokeSSIZEOBJARGPROC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
+                                selfToNativeNode.executeLong(promotedSelf), key, valueToNativeNode.executeLong(promotedValue));
+                checkResultNode.executeBool(inliningTarget, threadState, T___SETITEM__, iresult);
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+                Reference.reachabilityFence(promotedValue);
+            }
         }
     }
 

@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -192,11 +191,6 @@ public abstract class GetClassNode extends PNodeWithContext {
     @Specialization
     static Object getCell(@SuppressWarnings("unused") PCell object) {
         return PythonBuiltinClassType.PCell;
-    }
-
-    @Specialization
-    static Object getNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
-        return PythonBuiltinClassType.PInt;
     }
 
     @InliningCutoff

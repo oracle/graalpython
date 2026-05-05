@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,11 @@ package com.oracle.graal.python.test.builtin.objects;
 
 import java.util.EnumSet;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -51,16 +55,34 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotGroup;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.util.Function;
 
 public class TpSlotsTests {
+    private NativeContext nativeContext;
+
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeTrue(Runtime.version().feature() >= 22);
+    }
+
+    @Before
+    public void setUp() {
+        nativeContext = NativeContext.create();
+    }
+
+    @After
+    public void tearDown() {
+        nativeContext.close();
+    }
+
     @Test
     public void testBuilderBasic() {
         Builder builder = TpSlots.newBuilder();
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
-            // Use the TpSlotMeta as dummy "callable" object to verify that the slot values were
-            // properly assigned to the right fields of TpSlots record
-            builder.set(def, TpSlotNative.createCExtSlot(def));
+            builder.set(def, createCExtSlot(def));
         }
 
         TpSlots slots = builder.build();
@@ -95,9 +117,9 @@ public class TpSlotsTests {
     @Test
     public void testBuilderOptimizations1() {
         Builder builder = TpSlots.newBuilder();
-        builder.set(TpSlotMeta.MP_LENGTH, TpSlotNative.createCExtSlot(TpSlotMeta.MP_LENGTH));
-        builder.set(TpSlotMeta.TP_GETATTR, TpSlotNative.createCExtSlot(TpSlotMeta.TP_GETATTR));
-        builder.set(TpSlotMeta.TP_SETATTR, TpSlotNative.createCExtSlot(TpSlotMeta.TP_SETATTR));
+        builder.set(TpSlotMeta.MP_LENGTH, createCExtSlot(TpSlotMeta.MP_LENGTH));
+        builder.set(TpSlotMeta.TP_GETATTR, createCExtSlot(TpSlotMeta.TP_GETATTR));
+        builder.set(TpSlotMeta.TP_SETATTR, createCExtSlot(TpSlotMeta.TP_SETATTR));
 
         TpSlots slots = builder.build();
         verifySlots(slots, def -> def == TpSlotMeta.MP_LENGTH || def == TpSlotMeta.TP_GETATTR || def == TpSlotMeta.TP_SETATTR);
@@ -111,7 +133,7 @@ public class TpSlotsTests {
     @Test
     public void testBuilderOptimizations2() {
         Builder builder = TpSlots.newBuilder();
-        builder.set(TpSlotMeta.SQ_LENGTH, TpSlotNative.createCExtSlot(TpSlotMeta.SQ_LENGTH));
+        builder.set(TpSlotMeta.SQ_LENGTH, createCExtSlot(TpSlotMeta.SQ_LENGTH));
 
         TpSlots slots = builder.build();
         verifySlots(slots, def -> def == TpSlotMeta.SQ_LENGTH);
@@ -137,8 +159,16 @@ public class TpSlotsTests {
         }
     }
 
+    // Use the TpSlotMeta's ordinal value as a pointer for creating a dummy native function pointer
+    // to
+    // verify that the slot values were properly assigned to the right fields of TpSlots
+    // record
+    private TpSlotNative createCExtSlot(TpSlotMeta def) {
+        return TpSlotNative.createCExtSlot(NativeFunctionPointer.create(nativeContext, def.ordinal(), NativeSimpleType.VOID));
+    }
+
     private static void checkSlotValue(TpSlotMeta def, TpSlot slotValue) {
-        Assert.assertTrue(def.name(), slotValue instanceof TpSlotNative slotNative && slotNative.getCallable() == def);
+        Assert.assertTrue(def.name(), slotValue instanceof TpSlotNative slotNative && slotNative.getCallable().getAddress() == def.ordinal());
     }
 
     private static boolean getGroup(TpSlots slots, TpSlotGroup group) {

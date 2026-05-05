@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,11 +45,20 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import java.util.Map;
+
+import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.test.PythonTests;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -57,6 +66,27 @@ public class SlotWrapperTests {
     // Doesn't really need to be a real callable or type
     private static final Object DUMMY_CALLABLE = new Object();
     private static final Object DUMMY_TYPE = new Object();
+
+    private GilNode.UncachedAcquire gil;
+
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
+        Assume.assumeTrue(Runtime.version().feature() >= 22);
+    }
+
+    @Before
+    public void setUp() {
+        PythonTests.enterContext(Map.of("python.IsolateNativeModules", "true"), new String[0]);
+        gil = GilNode.uncachedAcquire();
+        CApiContext.ensureCapiWasLoaded("test slot wrapper");
+    }
+
+    @After
+    public void tearDown() {
+        gil.close();
+        PythonTests.closeContext();
+    }
 
     @Test
     public void testCloneContract() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,8 +47,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -98,11 +102,17 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    private static final CApiTiming TIMING_MMAP_INIT_BUFFERPROTOCOL = CApiTiming.create(true, NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL);
+
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         core.getContext().registerCApiHook(() -> {
-            CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL, PythonToNativeNode.executeUncached(PythonBuiltinClassType.PMMap));
+            PythonAbstractObject promoted = EnsurePythonObjectNode.executeUncached(core.getContext(), PythonBuiltinClassType.PMMap);
+            ExternalFunctionInvoker.invokeMMAP_INIT_BUFFERPROTOCOL(
+                            TIMING_MMAP_INIT_BUFFERPROTOCOL,
+                            CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL),
+                            PythonToNativeNode.executeLongUncached(promoted));
         });
     }
 }

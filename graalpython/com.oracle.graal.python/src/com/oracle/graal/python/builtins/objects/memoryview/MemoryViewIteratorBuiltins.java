@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,8 +48,6 @@ import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -86,16 +84,15 @@ public final class MemoryViewIteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.isExhausted()")
         static Object memoryiterNext(VirtualFrame frame, MemoryViewIterator self,
                         @Bind Node inliningTarget,
-                        @Cached CExtNodes.PCallCapiFunction capiFunction,
                         @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode,
                         @Cached PRaiseNode raiseNode) {
             PMemoryView seq = self.getSeq();
             if (self.getIndex() < self.getLength()) {
                 seq.checkReleased(inliningTarget, raiseNode);
-                Object ptr = seq.getBufferPointer();
+                long ptr = seq.getBufferPointer();
                 int offset = seq.getOffset() + seq.getBufferStrides()[0] * self.index++;
                 if (seq.getBufferSuboffsets() != null && seq.getBufferSuboffsets()[0] >= 0) {
-                    ptr = capiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, ptr, offset, seq.getBufferSuboffsets()[0]);
+                    ptr = MemoryViewNodes.addSuboffset(ptr, offset, seq.getBufferSuboffsets()[0]);
                     offset = 0;
                 }
                 return readItemAtNode.execute(frame, seq, ptr, offset);

@@ -625,7 +625,7 @@ public abstract class ErrorMessages {
     public static final TruffleString REQUIRES_STR_OBJECT_BUT_RECEIVED_P = tsLiteral("'%s' requires a 'str' object but received a '%p'");
     public static final TruffleString REQUIRED_FIELD_S_MISSING_FROM_S = tsLiteral("required field \"%s\" missing from %s");
     public static final TruffleString S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT = tsLiteral("%s returned base with unsuitable layout ('%p')");
-    public static final TruffleString RETURNED_NON_FLOAT = tsLiteral("%p.%s returned non-float (type %p)");
+    public static final TruffleString RETURNED_NON_FLOAT = tsLiteral("%p.__float__() returned non-float (type %p)");
     public static final TruffleString RETURNED_NON_INT = tsLiteral("%s returned non-int (type %p)");
     public static final TruffleString S_RETURNED_NON_CLASS = tsLiteral("%s returned a non-class ('%p')");
     public static final TruffleString RETURNED_NON_INTEGER = tsLiteral("%s returned a non-integer");
@@ -1588,4 +1588,5 @@ public abstract class ErrorMessages {
     public static final TruffleString WEAKREF_PROXY_REFERENCED_A_NON_ITERATOR_S_OBJECT = tsLiteral("Weakref proxy referenced a non-iterator '%s' object");
 
     public static final TruffleString S_MUST_BE_CALLABLE = tsLiteral("%s must be callable");
+    public static final TruffleString METHOD_CANNOT_BE_BOTH_CLASS_AND_STATIC = tsLiteral("method cannot be both class and static");
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,15 +48,14 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 /**
- * This class can be used to bridge between JNI and LLVM. In particular, we use it to wrap native
- * pointers received from JNI. In this way, the pointers can be used with code written for LLVM.
- * Ultimately, this class should go away once JNI and LLVM backends are untangled.
+ * Currently only used for wrapping pointers to call TruffleString, see GR-71311 and in
+ * InvokeArrowReleaseCallbackNode which still uses original NFI.
  */
 @ExportLibrary(InteropLibrary.class)
 public final class NativePointer implements TruffleObject {
     private final long ptr;
 
-    public NativePointer(long ptr) {
+    private NativePointer(long ptr) {
         /*
          * Instances of this type may only be created if native access is allowed because other code
          * relies on that and may use Unsafe without further checking.
@@ -65,16 +64,8 @@ public final class NativePointer implements TruffleObject {
         this.ptr = ptr;
     }
 
-    private NativePointer() {
-        this.ptr = 0;
-    }
-
-    /**
-     * Returns an object representing a {@code NULL} pointer. This may also be used if
-     * {@link PythonContext#isNativeAccessAllowed()} is {@code false}.
-     */
-    public static NativePointer createNull() {
-        return new NativePointer();
+    public static NativePointer wrap(long ptr) {
+        return new NativePointer(ptr);
     }
 
     @ExportMessage

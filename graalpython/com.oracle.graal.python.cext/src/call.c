@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -833,6 +833,7 @@ _PyObject_CallMethodId_SizeT(PyObject *obj, _Py_Identifier *name,
     Py_DECREF(callable);
     return retval;
 }
+#endif // GraalPy change
 
 
 /* --- Call with "..." arguments ---------------------------------- */
@@ -898,7 +899,59 @@ object_vacall(PyThreadState *tstate, PyObject *base,
     }
     return result;
 }
-#endif // GraalPy change
+
+static PyObject *
+method_vacall(PyObject *receiver, PyObject *method_name, va_list vargs)
+{
+    PyObject *small_stack[_PY_FASTCALL_SMALL_STACK];
+    PyObject **stack;
+    Py_ssize_t nargs;
+    PyObject *result;
+    Py_ssize_t i;
+    va_list countva;
+
+    /* Count the number of arguments */
+    va_copy(countva, vargs);
+    nargs = 0;
+    while (1) {
+        PyObject *arg = va_arg(countva, PyObject *);
+        if (arg == NULL) {
+            break;
+        }
+        nargs++;
+    }
+    va_end(countva);
+
+    /* Copy arguments */
+    if (nargs <= (Py_ssize_t)Py_ARRAY_LENGTH(small_stack)) {
+        stack = small_stack;
+    }
+    else {
+        stack = PyMem_Malloc(nargs * sizeof(stack[0]));
+        if (stack == NULL) {
+            PyErr_NoMemory();
+            return NULL;
+        }
+    }
+
+    i = 0;
+    for (; i < nargs; ++i) {
+        stack[i] = va_arg(vargs, PyObject *);
+    }
+
+#ifdef Py_STATS
+    if (PyFunction_Check(callable)) {
+        EVAL_CALL_STAT_INC(EVAL_CALL_API);
+    }
+#endif
+    /* Call the function */
+    result = GraalPyPrivate_Object_CallMethodObjArgs(receiver, method_name, stack, nargs);
+
+    if (stack != small_stack) {
+        PyMem_Free(stack);
+    }
+    return result;
+}
 
 
 PyObject *
@@ -940,12 +993,34 @@ PyObject_VectorcallMethod(PyObject *name, PyObject *const *args,
 PyObject *
 PyObject_CallMethodObjArgs(PyObject *obj, PyObject *name, ...)
 {
-    // GraalPy change: different implementation
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    /* GraalPy change: If the receiver is a managed object, we only collect
+       the va_list arguments in native and do everything else in managed. */
+    if (points_to_py_handle_space(obj)) {
+        va_list vargs;
+        va_start(vargs, name);
+        PyObject *result = method_vacall(obj, name, vargs);
+        va_end(vargs);
+        return result;
+    }
+
+    PyObject *callable = NULL;
+    int is_method = _PyObject_GetMethod(obj, name, &callable);
+    if (callable == NULL) {
+        return NULL;
+    }
+    obj = is_method ? obj : NULL;
+
     va_list vargs;
     va_start(vargs, name);
-    // the arguments are given as a variable list followed by NULL
-    PyObject *result = GraalPyPrivate_Object_CallMethodObjArgs(obj, name, &vargs);
+    PyObject *result = object_vacall(tstate, obj, callable, vargs);
     va_end(vargs);
+
+    Py_DECREF(callable);
     return result;
 }
 
@@ -953,12 +1028,39 @@ PyObject_CallMethodObjArgs(PyObject *obj, PyObject *name, ...)
 PyObject *
 _PyObject_CallMethodIdObjArgs(PyObject *obj, _Py_Identifier *name, ...)
 {
-    // GraalPy change: different implementation
+    PyThreadState *tstate = _PyThreadState_GET();
+    if (obj == NULL || name == NULL) {
+        return null_error(tstate);
+    }
+
+    PyObject *oname = _PyUnicode_FromId(name); /* borrowed */
+    if (!oname) {
+        return NULL;
+    }
+
+    /* GraalPy change: If the receiver is a managed object, we only collect
+       the va_list arguments in native and do everything else in managed. */
+    if (points_to_py_handle_space(obj)) {
+        va_list vargs;
+        va_start(vargs, name);
+        PyObject *result = method_vacall(obj, oname, vargs);
+        va_end(vargs);
+        return result;
+    }
+
+    PyObject *callable = NULL;
+    int is_method = _PyObject_GetMethod(obj, oname, &callable);
+    if (callable == NULL) {
+        return NULL;
+    }
+    obj = is_method ? obj : NULL;
+
     va_list vargs;
     va_start(vargs, name);
-    // the arguments are given as a variable list followed by NULL
-    PyObject *result = GraalPyPrivate_Object_CallMethodObjArgs(obj, _PyUnicode_FromId(name), &vargs);
+    PyObject *result = object_vacall(tstate, obj, callable, vargs);
     va_end(vargs);
+
+    Py_DECREF(callable);
     return result;
 }
 
@@ -966,12 +1068,14 @@ _PyObject_CallMethodIdObjArgs(PyObject *obj, _Py_Identifier *name, ...)
 PyObject *
 PyObject_CallFunctionObjArgs(PyObject *callable, ...)
 {
-    // GraalPy change: different implementation
+    PyThreadState *tstate = _PyThreadState_GET();
     va_list vargs;
+    PyObject *result;
+
     va_start(vargs, callable);
-    // the arguments are given as a variable list followed by NULL
-    PyObject *result = GraalPyPrivate_Object_CallFunctionObjArgs(callable, &vargs);
+    result = object_vacall(tstate, NULL, callable, vargs);
     va_end(vargs);
+
     return result;
 }
 

@@ -666,6 +666,10 @@ unicode_check_encoding_errors(const char *encoding, const char *errors)
 int
 _PyUnicode_CheckConsistency(PyObject *op, int check_content)
 {
+    // GraalPy change: do not access managed unicode objects
+    if (points_to_py_handle_space(op))
+        return 1;
+
 #define CHECK(expr) \
     do { if (!(expr)) { _PyObject_ASSERT_FAILED_MSG(op, Py_STRINGIFY(expr)); } } while (0)
 

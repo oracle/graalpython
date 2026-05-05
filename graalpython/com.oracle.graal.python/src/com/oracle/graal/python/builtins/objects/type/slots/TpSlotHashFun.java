@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,11 +43,14 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -67,11 +70,13 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -96,7 +101,7 @@ public abstract class TpSlotHashFun {
     /**
      * Mirror of the {@code PyObject_HashNotImplemented} slot on the managed side. We translate this
      * slot singleton instance to a pointer to the {@code PyObject_HashNotImplemented} C function in
-     * {@link TpSlot#toNative(TpSlotMeta, TpSlot, Object)} and vice versa in
+     * {@link TpSlot#toNative(TpSlotMeta, TpSlot, long)} and vice versa in
      * {@code TpSlot#fromNative(PythonContext, Object, InteropLibrary)}.
      */
     public static class PyObjectHashNotImplemented extends TpSlotHashBuiltin<HashNotImplementedNode> {
@@ -152,6 +157,11 @@ public abstract class TpSlotHashFun {
 
         public abstract long execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self);
 
+        @TruffleBoundary
+        public static long executeUncached(TpSlot slot, Object self) {
+            return CallSlotHashFunNodeGen.getUncached().execute(null, null, slot, self);
+        }
+
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static long callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotHashBuiltin<?> slot, Object self,
                         @SuppressWarnings("unused") @Cached("slot") TpSlotHashBuiltin<?> cachedSlot,
@@ -169,12 +179,19 @@ public abstract class TpSlotHashFun {
         static long callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Exclusive @Cached CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___HASH__, slot.callable, toNativeNode.execute(self));
-            return checkResultNode.executeLong(state, T___HASH__, result);
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            try {
+                long lresult = ExternalFunctionInvoker.invokeHASHFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
+                                toNativeNode.executeLong(promotedSelf));
+                return checkResultNode.executeLong(inliningTarget, state, T___HASH__, lresult);
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+            }
         }
 
         @Specialization(replaces = "callCachedBuiltin")

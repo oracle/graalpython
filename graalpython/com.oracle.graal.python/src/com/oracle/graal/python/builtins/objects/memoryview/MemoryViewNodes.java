@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,10 +47,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -58,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycle
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -66,6 +66,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -93,6 +94,12 @@ import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class MemoryViewNodes {
+    /** {@code *(int8_t**)(ptr + offset) + suboffset} */
+    static long addSuboffset(long ptr, int offset, int suboffset) {
+        assert PythonContext.get(null).isNativeAccessAllowed();
+        return NativeMemory.readPtr(ptr + offset) + suboffset;
+    }
+
     static boolean isByteFormat(BufferFormat format) {
         return format == BufferFormat.UINT_8 || format == BufferFormat.INT_8 || format == BufferFormat.CHAR;
     }
@@ -114,6 +121,11 @@ public class MemoryViewNodes {
     @GenerateUncached
     public abstract static class InitFlagsNode extends Node {
         public abstract int execute(Node inliningTarget, int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets);
+
+        @TruffleBoundary
+        public static int executeUncached(int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets) {
+            return MemoryViewNodesFactory.InitFlagsNodeGen.getUncached().execute(null, ndim, itemsize, shape, strides, suboffsets);
+        }
 
         @Specialization
         static int compute(int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets) {
@@ -194,18 +206,18 @@ public class MemoryViewNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(NativeMemory.class)
     abstract static class ReadBytesAtNode extends Node {
-        public abstract void execute(Node inliningTarget, byte[] dest, int destOffset, int len, PMemoryView self, Object ptr, int offset);
+        public abstract void execute(Node inliningTarget, byte[] dest, int destOffset, int len, PMemoryView self, long ptr, int offset);
 
-        @Specialization(guards = "ptr != null")
-        static void doNativeCached(Node inliningTarget, byte[] dest, int destOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @Exclusive @Cached InlinedIntValueProfile lengthProfile,
-                        @Cached(inline = false) CStructAccess.ReadByteNode readNode) {
-            readNode.readByteArray(ptr, dest, lengthProfile.profile(inliningTarget, len), offset, destOffset);
+        @Specialization(guards = "ptr != NULLPTR")
+        static void doNativeCached(Node inliningTarget, byte[] dest, int destOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, long ptr, int offset,
+                        @Exclusive @Cached InlinedIntValueProfile lengthProfile) {
+            NativeMemory.readByteArrayElements(ptr, offset, dest, destOffset, lengthProfile.profile(inliningTarget, len));
         }
 
-        @Specialization(guards = "ptr == null", limit = "3")
-        static void doManagedCached(Node inliningTarget, byte[] dest, int destOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        @Specialization(guards = "ptr == NULLPTR", limit = "3")
+        static void doManagedCached(Node inliningTarget, byte[] dest, int destOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") long ptr, int offset,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached InlinedIntValueProfile lenProfile) {
             int cachedLen = lenProfile.profile(inliningTarget, len);
@@ -217,18 +229,18 @@ public class MemoryViewNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(NativeMemory.class)
     abstract static class WriteBytesAtNode extends Node {
-        public abstract void execute(Node inliningTarget, byte[] src, int srcOffset, int len, PMemoryView self, Object ptr, int offset);
+        public abstract void execute(Node inliningTarget, byte[] src, int srcOffset, int len, PMemoryView self, long ptr, int offset);
 
-        @Specialization(guards = "ptr != null")
-        static void doNativeCached(Node inliningTarget, byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @Exclusive @Cached InlinedIntValueProfile lenProfile,
-                        @Cached(inline = false) CStructAccess.WriteByteNode writeNode) {
-            writeNode.writeByteArray(ptr, src, lenProfile.profile(inliningTarget, len), srcOffset, offset);
+        @Specialization(guards = "ptr != NULLPTR")
+        static void doNativeCached(Node inliningTarget, byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, long ptr, int offset,
+                        @Exclusive @Cached InlinedIntValueProfile lenProfile) {
+            NativeMemory.writeByteArrayElements(ptr, offset, src, srcOffset, lenProfile.profile(inliningTarget, len));
         }
 
-        @Specialization(guards = "ptr == null", limit = "3")
-        static void doManagedCached(Node inliningTarget, byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        @Specialization(guards = "ptr == NULLPTR", limit = "3")
+        static void doManagedCached(Node inliningTarget, byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") long ptr, int offset,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached InlinedIntValueProfile lenProfile) {
             int cachedLen = lenProfile.profile(inliningTarget, len);
@@ -238,11 +250,12 @@ public class MemoryViewNodes {
     }
 
     @GenerateInline(false)       // footprint reduction 48 -> 29
+    @ImportStatic(NativeMemory.class)
     abstract static class ReadItemAtNode extends Node {
-        public abstract Object execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset);
+        public abstract Object execute(VirtualFrame frame, PMemoryView self, long ptr, int offset);
 
-        @Specialization(guards = "ptr != null")
-        static Object doNative(PMemoryView self, Object ptr, int offset,
+        @Specialization(guards = "ptr != NULLPTR")
+        static Object doNative(PMemoryView self, long ptr, int offset,
                         @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached UnpackValueNode unpackValueNode) {
@@ -252,8 +265,8 @@ public class MemoryViewNodes {
             return unpackValueNode.execute(inliningTarget, self.getFormat(), self.getFormatString(), buffer, offset);
         }
 
-        @Specialization(guards = "ptr == null")
-        static Object doManaged(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        @Specialization(guards = "ptr == NULLPTR")
+        static Object doManaged(PMemoryView self, @SuppressWarnings("unused") long ptr, int offset,
                         @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached UnpackValueNode unpackValueNode) {
@@ -269,11 +282,12 @@ public class MemoryViewNodes {
     }
 
     @GenerateInline(false)       // footprint reduction 48 -> 29
+    @ImportStatic(NativeMemory.class)
     abstract static class WriteItemAtNode extends Node {
-        public abstract void execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object);
+        public abstract void execute(VirtualFrame frame, PMemoryView self, long ptr, int offset, Object object);
 
-        @Specialization(guards = "ptr != null")
-        static void doNative(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
+        @Specialization(guards = "ptr != NULLPTR")
+        static void doNative(VirtualFrame frame, PMemoryView self, long ptr, int offset, Object object,
                         @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PackValueNode packValueNode) {
@@ -283,8 +297,8 @@ public class MemoryViewNodes {
             packValueNode.execute(frame, inliningTarget, self.getFormat(), self.getFormatString(), object, buffer, offset);
         }
 
-        @Specialization(guards = "ptr == null")
-        static void doManaged(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+        @Specialization(guards = "ptr == NULLPTR")
+        static void doManaged(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") long ptr, int offset, Object object,
                         @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PackValueNode packValueNode) {
@@ -296,10 +310,10 @@ public class MemoryViewNodes {
 
     @ValueType
     static class MemoryPointer {
-        public Object ptr;
+        public long ptr;
         public int offset;
 
-        public MemoryPointer(Object ptr, int offset) {
+        public MemoryPointer(long ptr, int offset) {
             this.ptr = ptr;
             this.offset = offset;
         }
@@ -307,7 +321,6 @@ public class MemoryViewNodes {
 
     @ImportStatic(PGuards.class)
     abstract static class PointerLookupNode extends Node {
-        @Child private CExtNodes.PCallCapiFunction callCapiFunction;
         @Child private PyNumberAsSizeNode asSizeNode;
 
         // index can be a tuple, int or int-convertible
@@ -332,7 +345,7 @@ public class MemoryViewNodes {
             if (hasSuboffsetsProfile.profile(inliningTarget, suboffsets != null) && suboffsets[dim] >= 0) {
                 // The length may be out of bounds, but sulong shouldn't care if we don't
                 // access the out-of-bound part
-                ptr.ptr = getCallCapiFunction().call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, ptr.ptr, ptr.offset, suboffsets[dim]);
+                ptr.ptr = addSuboffset(ptr.ptr, ptr.offset, suboffsets[dim]);
                 ptr.offset = 0;
             }
         }
@@ -440,13 +453,6 @@ public class MemoryViewNodes {
             return asSizeNode;
         }
 
-        private CExtNodes.PCallCapiFunction getCallCapiFunction() {
-            if (callCapiFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callCapiFunction = insert(CExtNodes.PCallCapiFunction.create());
-            }
-            return callCapiFunction;
-        }
     }
 
     @GenerateUncached
@@ -460,14 +466,13 @@ public class MemoryViewNodes {
                         @Bind Node inliningTarget,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Shared @Cached ReadBytesAtNode readBytesAtNode,
-                        @Shared @Cached CExtNodes.PCallCapiFunction callCapiFunction,
                         @Shared @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (cachedDimensions == 0) {
                 readBytesAtNode.execute(inliningTarget, bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
             } else {
-                convert(inliningTarget, bytes, self, cachedDimensions, readBytesAtNode, callCapiFunction);
+                convert(inliningTarget, bytes, self, cachedDimensions, readBytesAtNode);
             }
             return bytes;
         }
@@ -476,43 +481,42 @@ public class MemoryViewNodes {
         byte[] tobytesGeneric(PMemoryView self,
                         @Bind Node inliningTarget,
                         @Shared @Cached ReadBytesAtNode readBytesAtNode,
-                        @Shared @Cached CExtNodes.PCallCapiFunction callCapiFunction,
                         @Shared @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             byte[] bytes = new byte[self.getLength()];
             if (self.getDimensions() == 0) {
                 readBytesAtNode.execute(inliningTarget, bytes, 0, self.getItemSize(), self, self.getBufferPointer(), self.getOffset());
             } else {
-                convertBoundary(inliningTarget, bytes, self, self.getDimensions(), readBytesAtNode, callCapiFunction);
+                convertBoundary(inliningTarget, bytes, self, self.getDimensions(), readBytesAtNode);
             }
             return bytes;
         }
 
         @TruffleBoundary
-        private void convertBoundary(Node inliningTarget, byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
-            convert(inliningTarget, dest, self, ndim, readBytesAtNode, callCapiFunction);
+        private void convertBoundary(Node inliningTarget, byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode) {
+            convert(inliningTarget, dest, self, ndim, readBytesAtNode);
         }
 
-        protected void convert(Node inliningTarget, byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
-            recursive(inliningTarget, dest, 0, self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode, callCapiFunction);
+        protected void convert(Node inliningTarget, byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode) {
+            recursive(inliningTarget, dest, 0, self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode);
         }
 
-        private static int recursive(Node inliningTarget, byte[] dest, int initialDestOffset, PMemoryView self, int dim, int ndim, Object ptr, int initialOffset, ReadBytesAtNode readBytesAtNode,
-                        CExtNodes.PCallCapiFunction callCapiFunction) {
+        private static int recursive(Node inliningTarget, byte[] dest, int initialDestOffset, PMemoryView self, int dim, int ndim, long ptr, int initialOffset,
+                        ReadBytesAtNode readBytesAtNode) {
             int offset = initialOffset;
             int destOffset = initialDestOffset;
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
-                Object xptr = ptr;
+                long xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim]);
+                    xptr = addSuboffset(ptr, offset, self.getBufferSuboffsets()[dim]);
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
                     readBytesAtNode.execute(inliningTarget, dest, destOffset, self.getItemSize(), self, xptr, xoffset);
                     destOffset += self.getItemSize();
                 } else {
-                    destOffset = recursive(inliningTarget, dest, destOffset, self, dim + 1, ndim, xptr, xoffset, readBytesAtNode, callCapiFunction);
+                    destOffset = recursive(inliningTarget, dest, destOffset, self, dim + 1, ndim, xptr, xoffset, readBytesAtNode);
                 }
                 offset += self.getBufferStrides()[dim];
             }
@@ -529,26 +533,25 @@ public class MemoryViewNodes {
     @GenerateInline(false)
     public abstract static class ToJavaBytesFortranOrderNode extends ToJavaBytesNode {
         @Override
-        protected void convert(Node inliningTarget, byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode, CExtNodes.PCallCapiFunction callCapiFunction) {
-            recursive(inliningTarget, dest, 0, self.getItemSize(), self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode, callCapiFunction);
+        protected void convert(Node inliningTarget, byte[] dest, PMemoryView self, int ndim, ReadBytesAtNode readBytesAtNode) {
+            recursive(inliningTarget, dest, 0, self.getItemSize(), self, 0, ndim, self.getBufferPointer(), self.getOffset(), readBytesAtNode);
         }
 
-        private static void recursive(Node inliningTarget, byte[] dest, int initialDestOffset, int destStride, PMemoryView self, int dim, int ndim, Object ptr, int initialOffset,
-                        ReadBytesAtNode readBytesAtNode,
-                        CExtNodes.PCallCapiFunction callCapiFunction) {
+        private static void recursive(Node inliningTarget, byte[] dest, int initialDestOffset, int destStride, PMemoryView self, int dim, int ndim, long ptr, int initialOffset,
+                        ReadBytesAtNode readBytesAtNode) {
             int offset = initialOffset;
             int destOffset = initialDestOffset;
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
-                Object xptr = ptr;
+                long xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim]);
+                    xptr = addSuboffset(ptr, offset, self.getBufferSuboffsets()[dim]);
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
                     readBytesAtNode.execute(inliningTarget, dest, destOffset, self.getItemSize(), self, xptr, xoffset);
                 } else {
-                    recursive(inliningTarget, dest, destOffset, destStride * self.getBufferShape()[dim], self, dim + 1, ndim, xptr, xoffset, readBytesAtNode, callCapiFunction);
+                    recursive(inliningTarget, dest, destOffset, destStride * self.getBufferShape()[dim], self, dim + 1, ndim, xptr, xoffset, readBytesAtNode);
                 }
                 destOffset += destStride;
                 offset += self.getBufferStrides()[dim];
@@ -613,8 +616,13 @@ public class MemoryViewNodes {
 
         @Specialization
         static void doCApiCached(NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType buffer,
-                        @Cached(inline = false) PCallCapiFunction callReleaseNode) {
-            callReleaseNode.call(NativeCAPISymbol.FUN_GRAALPY_RELEASE_BUFFER, buffer.bufferStructPointer);
+                        @Bind Node inliningTarget) {
+            try {
+                ExternalFunctionInvoker.invokeGRAALPY_RELEASE_BUFFER(CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_GRAALPY_RELEASE_BUFFER).getAddress(),
+                                buffer.bufferStructPointer);
+            } catch (Throwable t) {
+                throw CompilerDirectives.shouldNotReachHere(t);
+            }
         }
 
         @Specialization

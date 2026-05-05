@@ -53,8 +53,8 @@ public final class PythonModule extends PythonObject {
      * Stores the native {@code PyModuleDef *} structure if this module was created via the
      * multiphase extension module initialization mechanism.
      */
-    private Object nativeModuleDef;
-    private Object nativeModuleState;
+    private long nativeModuleDef;
+    private long nativeModuleState;
 
     /**
      * Replicates the native references of this module's native state in Java.
@@ -139,19 +139,19 @@ public final class PythonModule extends PythonObject {
         return "<module '" + (PGuards.isNoValue(attribute) ? "?" : attribute) + "'>";
     }
 
-    public Object getNativeModuleDef() {
+    public long getNativeModuleDef() {
         return nativeModuleDef;
     }
 
-    public void setNativeModuleDef(Object nativeModuleDef) {
+    public void setNativeModuleDef(long nativeModuleDef) {
         this.nativeModuleDef = nativeModuleDef;
     }
 
-    public Object getNativeModuleState() {
+    public long getNativeModuleState() {
         return nativeModuleState;
     }
 
-    public void setNativeModuleState(Object nativeModuleState) {
+    public void setNativeModuleState(long nativeModuleState) {
         this.nativeModuleState = nativeModuleState;
     }
 

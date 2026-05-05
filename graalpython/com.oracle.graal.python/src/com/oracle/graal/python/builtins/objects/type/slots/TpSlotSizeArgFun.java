@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,16 +42,18 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 
+import java.lang.ref.Reference;
 import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -63,16 +65,19 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.CallSlotSizeArgFunNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.FixNegativeIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.WrapIndexArgFuncBuiltinNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.WrapSqItemBuiltinNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -114,9 +119,9 @@ public class TpSlotSizeArgFun {
         @Override
         public PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
             return switch (wrapper) {
-                case GETITEM -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
+                case SQ_ITEM -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
                                 WrapperNodeFactory.wrap(getNodeFactory(), WrapSqItemBuiltinNode.class, WrapSqItemBuiltinNodeGen::create));
-                case SSIZE_ARG -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
+                case INDEXARGFUNC -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
                                 WrapperNodeFactory.wrap(getNodeFactory(), WrapIndexArgFuncBuiltinNode.class,
                                                 WrapIndexArgFuncBuiltinNodeGen::create));
                 default ->
@@ -236,6 +241,11 @@ public class TpSlotSizeArgFun {
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, int index);
 
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, int index) {
+            return CallSlotSizeArgFunNodeGen.getUncached().execute(null, null, slot, self, index);
+        }
+
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotSizeArgFunBuiltin<?> slot, Object self, int index,
                         @SuppressWarnings("unused") @Cached("slot") TpSlotSizeArgFunBuiltin<?> cachedSlot,
@@ -252,14 +262,21 @@ public class TpSlotSizeArgFun {
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, int index,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETITEM__, slot.callable, toNativeNode.execute(self), index);
-            return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(result));
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            try {
+                long lresult = ExternalFunctionInvoker.invokeSSIZEARGFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
+                                toNativeNode.executeLong(promotedSelf), index);
+                return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(inliningTarget, lresult, true));
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+            }
         }
 
         @Specialization(replaces = "callCachedBuiltin")

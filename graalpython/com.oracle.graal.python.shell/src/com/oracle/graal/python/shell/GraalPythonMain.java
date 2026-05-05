@@ -274,7 +274,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                             matchesPythonOption(arg, "PosixModuleBackend") ||
                                             matchesPythonOption(arg, "Sha3ModuleBackend") ||
                                             matchesPythonOption(arg, "CompressionModulesBackend") ||
-                                            matchesPythonOption(arg, "PyExpatModuleBackend")) {
+                                            matchesPythonOption(arg, "PyExpatModuleBackend") ||
+                                            matchesPythonOption(arg, "UnicodeCharacterDatabaseNativeFallback")) {
                                 addRelaunchArg(arg);
                             }
                             if (matchesPythonOption(arg, "PosixModuleBackend")) {

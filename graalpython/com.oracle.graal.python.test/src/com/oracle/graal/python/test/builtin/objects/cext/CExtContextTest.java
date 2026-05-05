@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -80,7 +81,7 @@ public class CExtContextTest {
     }
 
     private static class TestCExtContext extends CExtContext {
-        public TestCExtContext(PythonContext context, Object library) {
+        public TestCExtContext(PythonContext context, NativeLibrary library) {
             super(context, library, null);
         }
 

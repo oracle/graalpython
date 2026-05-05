@@ -31,10 +31,11 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -284,8 +285,14 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         for (PythonAbstractClass base : getBaseClasses()) {
             if (base != null) {
                 if (PGuards.isNativeClass(base)) {
-                    Object nativeBase = PythonToNativeNodeGen.getUncached().execute(base);
-                    PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY, nativeBase);
+                    assert EnsurePythonObjectNode.doesNotNeedPromotion(base);
+                    try {
+                        ExternalFunctionInvoker.invokeTRUFFLE_CHECK_TYPE_READY(
+                                        CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY).getAddress(),
+                                        PythonToNativeNode.executeLongUncached(base));
+                    } catch (Throwable t) {
+                        throw CompilerDirectives.shouldNotReachHere(t);
+                    }
                 }
                 GetSubclassesNode.addSubclass(base, this);
             }
@@ -366,10 +373,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     public final PythonAbstractClass[] getBaseClasses() {
         return baseClasses;
-    }
-
-    public PythonClassNativeWrapper getClassNativeWrapper() {
-        return (PythonClassNativeWrapper) super.getNativeWrapper();
     }
 
     public boolean needsNativeAllocation() {

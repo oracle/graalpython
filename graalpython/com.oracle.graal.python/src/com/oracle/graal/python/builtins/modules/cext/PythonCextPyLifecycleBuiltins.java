@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,14 +46,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 
 public final class PythonCextPyLifecycleBuiltins {
 
@@ -62,17 +56,15 @@ public final class PythonCextPyLifecycleBuiltins {
 
         @Specialization
         @TruffleBoundary
-        int doGeneric(Object funcPtr) {
-            getContext().registerAtexitHook(new ShutdownHook() {
-                @Override
-                public void call(@SuppressWarnings("unused") PythonContext context) {
-                    try {
-                        InteropLibrary.getUncached().execute(funcPtr);
-                    } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                        // ignored
-                    }
-                }
-            });
+        int doGeneric(@SuppressWarnings("unused") long funcPtr) {
+            // TODO(native-access) implement and test this once GR-72092 is fixed
+// getContext().registerAtexitHook(new ShutdownHook() {
+// @Override
+// @TruffleBoundary
+// public void call(PythonContext context) {
+// CALLBACK_SIGNATURE.invoke(context.ensureNativeContext(), funcPtr);
+// }
+// });
             return 0;
         }
     }

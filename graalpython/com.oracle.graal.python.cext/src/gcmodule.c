@@ -1348,6 +1348,7 @@ handle_legacy_finalizers(PyThreadState *tstate,
                          GCState *gcstate,
                          PyGC_Head *finalizers, PyGC_Head *old)
 {
+#if 0 // GraalPy change: uncollectable objects are not supported
     assert(!_PyErr_Occurred(tstate));
     // GraalPy change: we do not use this field
     // assert(gcstate->garbage != NULL);
@@ -1363,6 +1364,7 @@ handle_legacy_finalizers(PyThreadState *tstate,
             }
         }
     }
+#endif // GraalPy change
 
     gc_list_merge(finalizers, old);
 }
@@ -1421,10 +1423,12 @@ delete_garbage(PyThreadState *tstate, GCState *gcstate,
                                   "refcount is too small");
 
         if (gcstate->debug & DEBUG_SAVEALL) {
+#if 0 // GraalPy change: uncollectable objects are not supported
             assert(gcstate->garbage != NULL);
             if (PyList_Append(gcstate->garbage, op) < 0) {
                 _PyErr_Clear(tstate);
             }
+#endif // GraalPy change
         }
         else {
             inquiry clear;
@@ -1640,15 +1644,16 @@ gc_collect_main(PyThreadState *tstate, int generation,
     // _PyTime_t t1 = 0;   /* initialize to prevent a compiler warning */
     GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
 
-    if (GraalPyPrivate_DisableReferneceQueuePolling()) {
+    if (GraalPyPrivate_DisableReferenceQueuePolling()) {
         // reference queue polling is currently active; cannot proceed
         return m + n;
     }
 
+#if 0 // GraalPy change: uncollectable objects are not supported
     // gc_collect_main() must not be called before _PyGC_Init
     // or after _PyGC_Fini()
-    // GraalPy change: we are not using the gcstate->garbage field
-    // assert(gcstate->garbage != NULL);
+    assert(gcstate->garbage != NULL);
+#endif // GraalPy change
     assert(!_PyErr_Occurred(tstate));
 
     if (gcstate->debug & DEBUG_STATS) {
@@ -1798,7 +1803,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
         PyDTrace_GC_DONE(n + m);
     }
 
-    GraalPyPrivate_EnableReferneceQueuePolling();
+    GraalPyPrivate_EnableReferenceQueuePolling();
 
     assert(!_PyErr_Occurred(tstate));
     return n + m;

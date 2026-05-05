@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,16 @@
 package com.oracle.graal.python.cext.test;
 
 import org.graalvm.polyglot.Context;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class MultithreadedImportTestNative extends MultithreadedImportTestBase {
+    @BeforeClass
+    public static void setUpClass() {
+        Assume.assumeTrue(Runtime.version().feature() >= 22);
+    }
+
     @Test
     public void testImportOnMultipleThreads() {
         Context context = Context.newBuilder().allowAllAccess(true).option("python.PosixModuleBackend", "native").build();

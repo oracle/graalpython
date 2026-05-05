@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElements;
+
 import com.oracle.graal.python.annotations.CApiStructs;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -89,6 +92,7 @@ public enum CStructs {
     PyGetSetDef,
     PyMemberDef,
     PyThreadState,
+    GraalPyDeallocState,
     wchar_t,
     long__long,
     Py_ssize_t,
@@ -113,8 +117,14 @@ public enum CStructs {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object sizesPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES);
-        long[] sizes = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(sizesPointer, VALUES.length);
+        long sizesPointer;
+        try {
+            sizesPointer = ExternalFunctionInvoker.invokePYTRUFFLE_STRUCT_SIZES(
+                            CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES).getAddress());
+        } catch (Throwable t) {
+            throw CompilerDirectives.shouldNotReachHere(t);
+        }
+        long[] sizes = readLongArrayElements(sizesPointer, 0L, VALUES.length);
         for (CStructs struct : VALUES) {
             long size = sizes[struct.ordinal()];
             assert size > 0 && size < 1024;

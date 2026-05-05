@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,16 +47,16 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
@@ -74,9 +75,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
@@ -90,14 +88,14 @@ public abstract class TpSlot {
     /**
      * Transforms the slot object to an interop object that can be sent to native.
      */
-    public static Object toNative(TpSlotMeta slotMeta, TpSlot slot, Object defaultValue) {
+    public static long toNative(TpSlotMeta slotMeta, TpSlot slot, long defaultValue) {
         if (slot == null) {
             return defaultValue;
         } else if (slot instanceof TpSlotNative nativeSlot) {
-            return nativeSlot.getCallable();
+            return nativeSlot.getCallable().getAddress();
         } else if (slot instanceof TpSlotManaged managedSlot) {
-            // This returns PyProcsWrapper, which will, in its toNative message, register the
-            // pointer in C API context, such that we can map back from a pointer that we get from C
+            // This constructs PyProcsWrapper, which will register its pointer in C API context,
+            // such that we can map back from a pointer that we get from C
             // to the PyProcsWrapper and from that to the slot instance again in TpSlots#fromNative
             return getNativeWrapper(slotMeta, managedSlot);
         } else {
@@ -105,21 +103,21 @@ public abstract class TpSlot {
         }
     }
 
-    private static Object getNativeWrapper(TpSlotMeta slotMeta, TpSlotManaged slot) {
+    private static long getNativeWrapper(TpSlotMeta slotMeta, TpSlotManaged slot) {
         if (slot == TpSlotHashFun.HASH_NOT_IMPLEMENTED) {
             // If there are more such cases, we should add generic mapping mechanism
             // This translation other way around is also done in TpSlots.fromNative
             // We must not cache this in the singleton slot object, it would hold onto and leak
             // Python objects
-            return CApiContext.getNativeSymbol(null, FUN_PYOBJECT_HASH_NOT_IMPLEMENTED);
+            return CApiContext.getNativeSymbol(null, FUN_PYOBJECT_HASH_NOT_IMPLEMENTED).getAddress();
         } else if (slot == TpSlotIterNext.NEXT_NOT_IMPLEMENTED) {
-            return CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED);
+            return CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED).getAddress();
         }
         assert PythonContext.get(null).ownsGil(); // without GIL: use AtomicReference & CAS
         if (slot.slotWrapper == null) {
             slot.slotWrapper = slotMeta.createNativeWrapper(slot);
         }
-        return slot.slotWrapper;
+        return slot.slotWrapper.getPointer();
     }
 
     /**
@@ -139,9 +137,8 @@ public abstract class TpSlot {
         }
 
         @Specialization
-        static boolean nativeSlots(TpSlotNative a, TpSlotNative b,
-                        @CachedLibrary(limit = "1") InteropLibrary interop) {
-            return a.isSameCallable(b, interop);
+        static boolean nativeSlots(TpSlotNative a, TpSlotNative b) {
+            return a.isSameCallable(b);
         }
 
         @Fallback
@@ -164,7 +161,7 @@ public abstract class TpSlot {
          * Represents native callable that delegates to this slot. Should be {@link TpSlotWrapper}
          * most of the time, but we allow overriding those wrappers with native implementation.
          */
-        private Object slotWrapper;
+        private TpSlotWrapper slotWrapper;
     }
 
     /**
@@ -206,36 +203,24 @@ public abstract class TpSlot {
      * array and cannot optimize for specific signature.
      */
     public abstract static sealed class TpSlotNative extends TpSlot permits TpSlotCExtNative {
-        final Object callable;
+        final NativeFunctionPointer callable;
 
-        public TpSlotNative(Object callable) {
+        public TpSlotNative(NativeFunctionPointer callable) {
             this.callable = callable;
         }
 
-        public static TpSlotNative createCExtSlot(Object callable) {
+        public static TpSlotNative createCExtSlot(NativeFunctionPointer callable) {
             return new TpSlotCExtNative(callable);
         }
 
-        public final boolean isSameCallable(TpSlotNative other, InteropLibrary interop) {
-            if (this == other || this.callable == other.callable) {
-                return true;
-            }
-            // NFISymbols do not implement isIdentical interop message, so we compare the pointers
-            // Interop is going to be quite slow (in interpreter), should we eagerly request the
-            // pointer in the ctor?
-            interop.toNative(callable);
-            interop.toNative(other.callable);
-            try {
-                return interop.asPointer(callable) == interop.asPointer(other.callable);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+        public final boolean isSameCallable(TpSlotNative other) {
+            return this == other || this.callable == other.callable || callable.getAddress() == other.callable.getAddress();
         }
 
         /**
-         * Bound callable that supports the execute interop message.
+         * The native function that implements the slot.
          */
-        public final Object getCallable() {
+        public final NativeFunctionPointer getCallable() {
             return callable;
         }
     }
@@ -244,7 +229,7 @@ public abstract class TpSlot {
      * Standard CPython C API slot that takes {@code PyObject*} arguments.
      */
     public static final class TpSlotCExtNative extends TpSlotNative {
-        public TpSlotCExtNative(Object callable) {
+        public TpSlotCExtNative(NativeFunctionPointer callable) {
             super(callable);
         }
     }

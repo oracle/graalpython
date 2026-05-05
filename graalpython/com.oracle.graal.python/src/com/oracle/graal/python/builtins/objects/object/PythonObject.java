@@ -33,6 +33,9 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -43,6 +46,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -78,7 +82,18 @@ public class PythonObject extends PythonAbstractObject {
      */
     public static final byte IS_STATIC_BASE = 0b10000;
 
+    /**
+     * Reference count of an object that is only referenced by the Java heap - this is larger than 1
+     * since native code sometimes special cases for low refcounts.
+     */
+    public static final long MANAGED_REFCNT = 10;
+
+    public static final long IMMORTAL_REFCNT = 0xFFFFFFFFL; // from include/object.h
+
     private Object pythonClass;
+
+    private long nativePointer = UNINITIALIZED;
+    public PythonObjectReference ref;
 
     @SuppressWarnings("this-escape") // escapes in the assertion
     public PythonObject(Object pythonClass, Shape instanceShape) {
@@ -168,5 +183,57 @@ public class PythonObject extends PythonAbstractObject {
     /* needed for some guards in exported messages of subclasses */
     public static int getCallSiteInlineCacheMaxDepth() {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
+    }
+
+    public final long getNativePointer() {
+        return nativePointer;
+    }
+
+    public final void setNativePointer(long nativePointer) {
+        assert nativePointer != UNINITIALIZED;
+        // we should set the pointer just once
+        assert this.nativePointer == UNINITIALIZED || this.nativePointer == nativePointer;
+        this.nativePointer = nativePointer;
+    }
+
+    public final void clearNativePointer() {
+        this.nativePointer = UNINITIALIZED;
+    }
+
+    @InliningCutoff
+    public final boolean isNative() {
+        return nativePointer != UNINITIALIZED;
+    }
+
+    public final long getRefCount() {
+        if (isNative()) {
+            return CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(nativePointer));
+        }
+        return MANAGED_REFCNT;
+    }
+
+    public final long incRef() {
+        assert isNative();
+        long pointer = HandlePointerConverter.pointerToStub(nativePointer);
+        long refCount = CApiTransitions.readNativeRefCount(pointer);
+        assert refCount >= MANAGED_REFCNT : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(nativePointer);
+        if (refCount != IMMORTAL_REFCNT) {
+            CApiTransitions.writeNativeRefCount(pointer, refCount + 1);
+            return refCount + 1;
+        }
+        return IMMORTAL_REFCNT;
+    }
+
+    public final long decRef() {
+        assert isNative();
+        long pointer = HandlePointerConverter.pointerToStub(nativePointer);
+        long refCount = CApiTransitions.readNativeRefCount(pointer);
+        if (refCount != IMMORTAL_REFCNT) {
+            long updatedRefCount = refCount - 1;
+            CApiTransitions.writeNativeRefCount(pointer, updatedRefCount);
+            assert updatedRefCount >= MANAGED_REFCNT : "invalid refcnt " + updatedRefCount + " during decRef in " + Long.toHexString(nativePointer);
+            return updatedRefCount;
+        }
+        return refCount;
     }
 }

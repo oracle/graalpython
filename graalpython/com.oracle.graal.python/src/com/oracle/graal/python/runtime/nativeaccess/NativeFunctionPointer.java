@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,59 +38,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// skip GIL
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.runtime.nativeaccess;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
- * Represents the value of a native pointer as Python int.<br/>
- * Such objects are created using C API function {@code PyLong_FromVoidPtr} and semantics are best
- * explained by looking at how CPython constructs the value:
- * {@code PyLong_FromUnsignedLong((unsigned long)(uintptr_t)p)}. CPython casts the {@code (void *)}
- * to an integer and this will be the value for the Python int. In our case, to get a numeric
- * representation of a pointer, we would need to send a to-native message. However, we try to avoid
- * this eager transformation using this wrapper.
+ * A native function pointer represented by its raw address and function pointer type. The type is
+ * stored as the native return type plus the native argument types.
  */
-public class PythonNativeVoidPtr extends PythonAbstractObject {
-    private final Object object;
-    private final long nativePointerValue;
-    private final boolean hasNativePointer;
+public final class NativeFunctionPointer {
+    private final long ptr;
+    private final NativeSimpleType resType;
+    private final NativeSimpleType[] argTypes;
 
-    public PythonNativeVoidPtr(Object object) {
-        this.object = object;
-        this.nativePointerValue = 0;
-        this.hasNativePointer = false;
+    private NativeFunctionPointer(long ptr, NativeSimpleType resType, NativeSimpleType[] argTypes) {
+        this.ptr = ptr;
+        this.resType = resType;
+        this.argTypes = argTypes;
     }
 
-    public PythonNativeVoidPtr(Object object, long nativePointerValue) {
-        this.object = object;
-        this.nativePointerValue = nativePointerValue;
-        this.hasNativePointer = true;
+    public static NativeFunctionPointer create(@SuppressWarnings("unused") NativeContext context, long pointer, NativeSimpleType resType, NativeSimpleType... argTypes) {
+        // TODO(native-access) if logging enabled, use context to lookup name
+        return new NativeFunctionPointer(pointer, resType, argTypes.clone());
     }
 
-    public Object getPointerObject() {
-        return object;
-    }
-
-    public long getNativePointer() {
-        return nativePointerValue;
-    }
-
-    public boolean isNativePointer() {
-        return hasNativePointer;
+    public long getAddress() {
+        return ptr;
     }
 
     @Override
-    public int compareTo(Object o) {
-        return 0;
-    }
-
-    @Override
+    @TruffleBoundary
     public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        return PythonUtils.formatJString("PythonNativeVoidPtr(%s)", object);
+        return "NativeFunctionPointer[" +
+                        "ptr=" + ptr + ", " +
+                        "signature=" + toSignatureString() + ']';
+    }
+
+    @TruffleBoundary
+    private String toSignatureString() {
+        StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < argTypes.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(argTypes[i]);
+        }
+        sb.append("): ");
+        sb.append(resType);
+        return sb.toString();
     }
 }

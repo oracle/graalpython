@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,11 +50,13 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.getByteArray;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
-
-import java.util.Arrays;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -66,19 +68,14 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
@@ -89,7 +86,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -97,58 +94,37 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextBytesBuiltins {
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    abstract static class PyBytes_Size extends CApiUnaryBuiltinNode {
-        @Specialization
-        static long doPBytes(PBytes obj,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectSizeNode sizeNode) {
-            return sizeNode.execute(null, inliningTarget, obj);
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Direct)
+    static long PyBytes_Size(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        if (obj instanceof PBytes bytes) {
+            return PyObjectSizeNode.executeUncached(bytes);
         }
-
-        @Specialization
-        static long doOther(PythonAbstractNativeObject obj,
-                        @Bind Node inliningTarget,
-                        @Cached PyBytesCheckNode check,
-                        @Cached CStructAccess.ReadI64Node readI64Node) {
-            if (check.execute(inliningTarget, obj)) {
-                return readI64Node.readFromObj(obj, PyVarObject__ob_size);
-            }
-            return fallback(obj, inliningTarget);
+        if (obj instanceof PythonAbstractNativeObject nativeObj && PyBytesCheckNode.executeUncached(nativeObj)) {
+            return readLongField(nativeObj.getPtr(), PyVarObject__ob_size);
         }
-
-        @Fallback
-        @TruffleBoundary
-        static long fallback(Object obj,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
-        }
+        throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.EXPECTED_BYTES_P_FOUND, obj);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Bytes_Concat extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object concat(Object original, Object newPart,
-                        @Cached BytesCommonBuiltins.ConcatNode addNode) {
-            return addNode.execute(null, original, newPart);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored)
+    static long GraalPyPrivate_Bytes_Concat(long originalPtr, long newPartPtr) {
+        Object original = NativeToPythonNode.executeRawUncached(originalPtr);
+        Object newPart = NativeToPythonNode.executeRawUncached(newPartPtr);
+        Object result = BytesCommonBuiltins.ConcatNode.executeUncached(original, newPart);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
+    // TODO(CAPI STATIC): uses nodes without @GenerateUncached
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class _PyBytes_Join extends CApiBinaryBuiltinNode {
         @Specialization
@@ -158,6 +134,7 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
+    // TODO(CAPI STATIC): uses nodes without @GenerateUncached
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Bytes_FromFormat extends CApiBinaryBuiltinNode {
         @Specialization
@@ -169,6 +146,7 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
+    // TODO(CAPI STATIC): uses nodes without @GenerateUncached
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyBytes_FromObject extends CApiUnaryBuiltinNode {
         @Specialization(guards = "isBuiltinBytes(bytes)")
@@ -185,246 +163,97 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
-    @ImportStatic(CApiGuards.class)
-    abstract static class GraalPyPrivate_Bytes_FromStringAndSize extends CApiBinaryBuiltinNode {
-        // n.b.: the specializations for PIBytesLike are quite common on
-        // managed, when the PySequenceArrayWrapper that we used never went
-        // native, and during the upcall to here it was simply unwrapped again
-        // with the ToJava (rather than mapped from a native pointer back into a
-        // PythonNativeObject)
-
-        @Specialization
-        static Object doGeneric(PythonNativeWrapper object, long size,
-                        @Bind PythonLanguage language,
-                        @Cached NativeToPythonNode asPythonObjectNode,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
-            byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
-            if (size >= 0 && size < ary.length) {
-                // cast to int is guaranteed because of 'size < ary.length'
-                return PFactory.createBytes(language, Arrays.copyOf(ary, (int) size));
-            } else {
-                return PFactory.createBytes(language, ary);
-            }
-        }
-
-        @Specialization(guards = "!isNativeWrapper(nativePointer)")
-        static Object doNativePointer(Object nativePointer, long size,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                return PFactory.createBytes(language, getByteArrayNode.execute(inliningTarget, nativePointer, size));
-            } catch (InteropException e) {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
-            }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
+    static long GraalPyPrivate_Bytes_FromStringAndSize(long nativePointer, long size) {
+        try {
+            byte[] bytes = getByteArray(nativePointer, size);
+            Object result = PFactory.createBytes(PythonLanguage.get(null), bytes);
+            return PythonToNativeNewRefNode.executeLongUncached(result);
+        } catch (OverflowException e) {
+            throw PRaiseNode.raiseStatic(null, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
-    @ImportStatic(CApiGuards.class)
-    abstract static class GraalPyPrivate_ByteArray_FromStringAndSize extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object doGeneric(PythonNativeWrapper object, long size,
-                        @Bind PythonLanguage language,
-                        @Cached NativeToPythonNode asPythonObjectNode,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
-            byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
-            if (size >= 0 && size < ary.length) {
-                // cast to int is guaranteed because of 'size < ary.length'
-                return PFactory.createByteArray(language, Arrays.copyOf(ary, (int) size));
-            } else {
-                return PFactory.createByteArray(language, ary);
-            }
-        }
-
-        @Specialization(guards = "!isNativeWrapper(nativePointer)")
-        static Object doNativePointer(Object nativePointer, long size,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                return PFactory.createByteArray(language, getByteArrayNode.execute(inliningTarget, nativePointer, size));
-            } catch (InteropException e) {
-                return raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
-            } catch (OverflowException e) {
-                return raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
-            }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
+    static long GraalPyPrivate_ByteArray_FromStringAndSize(long nativePointer, long size) {
+        try {
+            byte[] bytes = getByteArray(nativePointer, size);
+            Object result = PFactory.createByteArray(PythonLanguage.get(null), bytes);
+            return PythonToNativeNewRefNode.executeLongUncached(result);
+        } catch (OverflowException e) {
+            throw PRaiseNode.raiseStatic(null, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
         }
     }
 
-    @CApiBuiltin(name = "PyByteArray_Resize", ret = Int, args = {PyObject, Py_ssize_t}, call = Direct)
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Ignored)
-    abstract static class GraalPyPrivate_Bytes_Resize extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static int resize(PBytesLike self, long newSizeL,
-                        @Bind Node inliningTarget,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached CastToByteNode castToByteNode) {
-
-            SequenceStorage storage = self.getSequenceStorage();
-            int newSize = asSizeNode.executeExact(null, inliningTarget, newSizeL);
-            int len = storage.length();
-            byte[] smaller = new byte[newSize];
-            for (int i = 0; i < newSize && i < len; i++) {
-                smaller[i] = castToByteNode.execute(null, getItemNode.execute(storage, i));
-            }
-            self.setSequenceStorage(new ByteSequenceStorage(smaller));
-            return 0;
+    @CApiBuiltin(name = "PyByteArray_Resize", ret = Int, args = {PyObjectRawPointer, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t}, call = Ignored)
+    static int GraalPyPrivate_Bytes_Resize(long selfPtr, long newSizeL) {
+        Object self = NativeToPythonNode.executeRawUncached(selfPtr);
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !(self instanceof PBytesLike))) {
+            throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
         }
+        PBytesLike bytesLike = (PBytesLike) self;
+        SequenceStorage storage = bytesLike.getSequenceStorage();
+        int newSize = PyNumberAsSizeNode.executeExactUncached(newSizeL);
+        int len = storage.length();
+        byte[] resized = new byte[newSize];
+        CastToByteNode castToByteNode = CastToByteNode.getUncached();
+        for (int i = 0; i < newSize && i < len; i++) {
+            resized[i] = castToByteNode.execute(null, GetItemScalarNode.executeUncached(storage, i));
+        }
+        bytesLike.setSequenceStorage(new ByteSequenceStorage(resized));
+        return 0;
+    }
 
-        @Fallback
-        static int fallback(Object self, @SuppressWarnings("unused") Object o,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {ArgDescriptor.Long}, call = Ignored)
+    static long GraalPyPrivate_Bytes_EmptyWithCapacity(long size) {
+        try {
+            Object result = PFactory.createBytes(PythonLanguage.get(null), new byte[PInt.intValueExact(size)]);
+            return PythonToNativeNewRefNode.executeLongUncached(result);
+        } catch (OverflowException e) {
+            throw PRaiseNode.raiseStatic(null, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Long}, call = Ignored)
-    abstract static class GraalPyPrivate_Bytes_EmptyWithCapacity extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static PBytes doInt(int size,
-                        @Bind PythonLanguage language) {
-            return PFactory.createBytes(language, new byte[size]);
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        static PBytes doLong(long size,
-                        @Bind PythonLanguage language) throws OverflowException {
-            return doInt(PInt.intValueExact(size), language);
-        }
-
-        @Specialization(replaces = "doLong")
-        static PBytes doLongOvf(long size,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                return doInt(PInt.intValueExact(size), language);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
-            }
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        static PBytes doPInt(PInt size,
-                        @Bind PythonLanguage language) throws OverflowException {
-            return doInt(size.intValueExact(), language);
-        }
-
-        @Specialization(replaces = "doPInt")
-        static PBytes doPIntOvf(PInt size,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                return doInt(size.intValueExact(), language);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
-            }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {Py_ssize_t}, call = Ignored)
+    static long GraalPyPrivate_ByteArray_EmptyWithCapacity(long size) {
+        try {
+            Object result = PFactory.createByteArray(PythonLanguage.get(null), new byte[PInt.intValueExact(size)]);
+            return PythonToNativeNewRefNode.executeLongUncached(result);
+        } catch (OverflowException e) {
+            throw PRaiseNode.raiseStatic(null, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Ignored)
-    abstract static class GraalPyPrivate_ByteArray_EmptyWithCapacity extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static PByteArray doInt(int size,
-                        @Bind PythonLanguage language) {
-            return PFactory.createByteArray(language, new byte[size]);
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        static PByteArray doLong(long size,
-                        @Bind PythonLanguage language) throws OverflowException {
-            return doInt(PInt.intValueExact(size), language);
-        }
-
-        @Specialization(replaces = "doLong")
-        static PByteArray doLongOvf(long size,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                return doInt(PInt.intValueExact(size), language);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
-            }
-        }
-
-        @Specialization(rewriteOn = OverflowException.class)
-        static PByteArray doPInt(PInt size,
-                        @Bind PythonLanguage language) throws OverflowException {
-            return doInt(size.intValueExact(), language);
-        }
-
-        @Specialization(replaces = "doPInt")
-        static PByteArray doPIntOvf(PInt size,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            try {
-                return doInt(size.intValueExact(), language);
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
-            }
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = CApiCallPath.Ignored)
-    abstract static class GraalPyPrivate_Bytes_CheckEmbeddedNull extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static int doBytes(Object bytes,
-                        @Bind Node inliningTarget,
-                        @Cached GetBytesStorage getBytesStorage,
-                        @Cached GetItemScalarNode getItemScalarNode) {
-            SequenceStorage sequenceStorage = getBytesStorage.execute(inliningTarget, bytes);
-            int len = sequenceStorage.length();
-            try {
-                for (int i = 0; i < len; i++) {
-                    if (getItemScalarNode.executeInt(inliningTarget, sequenceStorage, i) == 0) {
-                        return -1;
-                    }
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = CApiCallPath.Ignored)
+    static int GraalPyPrivate_Bytes_CheckEmbeddedNull(long bytesPtr) {
+        Object bytes = NativeToPythonNode.executeRawUncached(bytesPtr);
+        SequenceStorage sequenceStorage = GetBytesStorage.executeUncached(bytes);
+        int len = sequenceStorage.length();
+        try {
+            for (int i = 0; i < len; i++) {
+                if (GetItemScalarNode.executeIntUncached(sequenceStorage, i) == 0) {
+                    return -1;
                 }
-            } catch (UnexpectedResultException e) {
-                throw CompilerDirectives.shouldNotReachHere("bytes object contains non-int value");
             }
-            return 0;
+        } catch (UnexpectedResultException e) {
+            throw CompilerDirectives.shouldNotReachHere("bytes object contains non-int value");
         }
+        return 0;
     }
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
-    abstract static class PyBytes_AsString extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object doBytes(PBytes bytes) {
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Direct)
+    static long PyBytes_AsString(long bytesPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(bytesPtr);
+        if (obj instanceof PBytes bytes) {
             return PySequenceArrayWrapper.ensureNativeSequence(bytes);
         }
-
-        @Specialization
-        static Object doNative(PythonAbstractNativeObject obj,
-                        @Bind Node inliningTarget,
-                        @Cached GetPythonObjectClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached CStructAccess.GetElementPtrNode getArray,
-                        @Cached PRaiseNode raiseNode) {
-            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
-                return getArray.getElementPtr(obj.getPtr(), CFields.PyBytesObject__ob_sval);
+        if (obj instanceof PythonAbstractNativeObject nativeObj) {
+            Object type = GetClassNode.executeUncached(nativeObj);
+            if (IsSubtypeNode.getUncached().execute(type, PythonBuiltinClassType.PBytes)) {
+                return getFieldPtr(nativeObj.getPtr(), CFields.PyBytesObject__ob_sval);
             }
-            return doError(obj, raiseNode);
         }
-
-        @Fallback
-        static Object doError(Object obj,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
-        }
+        throw PRaiseNode.raiseStatic(null, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
     }
 }

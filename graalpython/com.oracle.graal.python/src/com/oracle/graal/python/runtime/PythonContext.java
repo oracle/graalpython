@@ -34,6 +34,8 @@ import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.NATIVE_POINTER_FREED;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
@@ -65,6 +67,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_SITE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SLASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_WARNINGS;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -115,14 +118,13 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -169,6 +171,8 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.locale.PythonLocale;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.Consumer;
@@ -198,6 +202,7 @@ import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -207,6 +212,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
@@ -215,14 +221,27 @@ import sun.misc.Unsafe;
 
 @Bind.DefaultExpression("get($node)")
 public final class PythonContext extends Python3Core {
+    /**
+     * A `PythonAbstractObject` that gets converted to native `nullptr`.
+     */
+    public static final PNone NATIVE_NULL = PNone.NO_VALUE;
+
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
     public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
+    public static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
+    private static final long SIZEOF_INT64 = 8;
 
-    public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
+    public final HandleContext handleContext = new HandleContext(DEBUG_CAPI);
     public final NativeBufferContext nativeBufferContext = new NativeBufferContext();
     public final ArrowSupport arrowSupport = new ArrowSupport(this);
+
+    /**
+     * List of native memory that should be free'd if this context is finalized.
+     */
+    private List<NativePointer> nativeResources;
+
     private volatile boolean finalizing;
 
     // Used for testing only.
@@ -246,6 +265,39 @@ public final class PythonContext extends Python3Core {
                         "Ensure that native access is disallowed for this context and configure GraalPy to use Java backends where possible. " +
                         "Refer to https://www.graalvm.org/python/docs/ for more information on native and Java module backends.");
         return getSupportLibName(getPythonOS(), libName);
+    }
+
+    /**
+     * Encodes the provided {@link TruffleString} as UTF-8 bytes and copies the bytes (and an
+     * additional NUL char) to a freshly allocated off-heap {@code int8*} (using {@code Unsafe}).
+     *
+     * @param string The string to copy to native.
+     * @param contextMemory If {@code true}, the allocated memory will automatically be released at
+     *            context finalization. Otherwise, the caller needs to manually free the memory.
+     */
+    @TruffleBoundary
+    public long stringToNativeUtf8Bytes(TruffleString string, boolean contextMemory) {
+        if (!isNativeAccessAllowed()) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+        TruffleString utf8String = string.switchEncodingUncached(Encoding.UTF_8);
+        NativePointer mem;
+        int byteLength = utf8String.byteLength(Encoding.UTF_8);
+        if (contextMemory) {
+            mem = allocateContextMemory(byteLength + 1);
+            NativeMemory.writeByte(mem.asPointer() + byteLength, (byte) 0);
+        } else {
+            mem = NativePointer.wrap(NativeMemory.callocByteArray(byteLength + 1));
+        }
+        utf8String.copyToNativeMemoryUncached(0, mem, 0, byteLength, Encoding.UTF_8);
+        return mem.asPointer();
+    }
+
+    public void ensureNativeAccess() {
+        if (!nativeAccessAllowed) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new RuntimeException("Native access not allowed, cannot manipulate native memory");
+        }
     }
 
     /**
@@ -338,19 +390,14 @@ public final class PythonContext extends Python3Core {
         /* corresponds to 'PyThreadState.dict' */
         PDict dict;
 
-        /*
-         * This is the native wrapper object if we need to expose the thread state as PyThreadState
-         * object. We need to store it here because the wrapper may receive 'toNative' in which case
-         * a handle is allocated. In order to avoid leaks, the handle needs to be free'd when the
-         * owning thread (or the whole context) is disposed.
-         */
-        PThreadState nativeWrapper;
+        /* The native pointer if we need to expose the thread state as PyThreadState struct. */
+        long nativePointer = UNINITIALIZED;
 
         /*
          * Pointer to the native thread-local variable used to store the native PyThreadState struct
          * for this thread.
          */
-        Object nativeThreadLocalVarPointer;
+        long nativeThreadLocalVarPointer;
 
         /* The global tracing function, set by sys.settrace and returned by sys.gettrace. */
         Object traceFun;
@@ -457,12 +504,19 @@ public final class PythonContext extends Python3Core {
             this.dict = dict;
         }
 
-        public PThreadState getNativeWrapper() {
-            return nativeWrapper;
+        public long getNativePointer() {
+            return nativePointer;
         }
 
-        public void setNativeWrapper(PThreadState nativeWrapper) {
-            this.nativeWrapper = nativeWrapper;
+        public void setNativePointer(long pointer) {
+            assert this.nativePointer == UNINITIALIZED;
+            assert pointer != NATIVE_POINTER_FREED;
+            this.nativePointer = pointer;
+        }
+
+        public void clearNativePointer() {
+            assert this.nativePointer != NATIVE_POINTER_FREED;
+            this.nativePointer = NATIVE_POINTER_FREED;
         }
 
         public PContextVarsContext getContextVarsContext(Node node) {
@@ -477,7 +531,7 @@ public final class PythonContext extends Python3Core {
             this.contextVarsContext = contextVarsContext;
         }
 
-        public void dispose(PythonContext context, boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer) {
+        public void dispose(boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer) {
             // This method may be called twice on the same object.
 
             /*
@@ -486,29 +540,24 @@ public final class PythonContext extends Python3Core {
              * 'CApiTransitions.pollReferenceQueue'.
              */
             if (dict != null) {
-                PythonAbstractObjectNativeWrapper dictNativeWrapper = dict.getNativeWrapper();
-                if (dictNativeWrapper != null && dictNativeWrapper.ref == null) {
-                    CApiTransitions.releaseNativeWrapperUncached(dictNativeWrapper);
+                if (dict.isNative() && dict.ref == null) {
+                    CApiTransitions.releaseNativeWrapper(dict.getNativePointer());
                 }
+                dict = null;
             }
-            dict = null;
-            if (nativeWrapper != null) {
-                if (nativeWrapper.ref == null) {
-                    // There is no PythonObjectReference, this will not be collected anywhere else
-                    CApiTransitions.releaseNativeWrapperUncached(nativeWrapper);
-                }
-                nativeWrapper = null;
-            }
+
+            PThreadState.dispose(this);
+
             /*
              * Write 'NULL' to the native thread-local variable used to store the PyThreadState
              * struct such that it cannot accidentally be reused. Since this is done as a
              * precaution, we just skip this if we cannot run guest code, because it may invoke
              * LLVM.
              */
-            if (nativeThreadLocalVarPointer != null && canRunGuestCode && clearNativeThreadLocalVarPointer) {
-                CStructAccess.WritePointerNode.writeUncached(nativeThreadLocalVarPointer, 0, context.getNativeNull());
+            if (nativeThreadLocalVarPointer != NULLPTR && canRunGuestCode && clearNativeThreadLocalVarPointer) {
+                NativeMemory.writePtr(nativeThreadLocalVarPointer, NULLPTR);
             }
-            nativeThreadLocalVarPointer = null;
+            nativeThreadLocalVarPointer = NULLPTR;
         }
 
         public Object getTraceFun() {
@@ -588,10 +637,9 @@ public final class PythonContext extends Python3Core {
             this.asyncgenFirstIter = asyncgenFirstIter;
         }
 
-        public void setNativeThreadLocalVarPointer(Object ptr) {
+        public void setNativeThreadLocalVarPointer(long ptr) {
             // either unset or same
-            assert nativeThreadLocalVarPointer == null || nativeThreadLocalVarPointer == ptr ||
-                            InteropLibrary.getUncached().isIdentical(nativeThreadLocalVarPointer, ptr, InteropLibrary.getUncached()) : //
+            assert nativeThreadLocalVarPointer == NULLPTR || nativeThreadLocalVarPointer == ptr : //
                             String.format("ptr = %s; nativeThreadLocalVarPointer = %s", ptr, nativeThreadLocalVarPointer);
             this.nativeThreadLocalVarPointer = ptr;
         }
@@ -601,7 +649,7 @@ public final class PythonContext extends Python3Core {
         }
 
         public boolean isNativeThreadStateInitialized() {
-            return nativeThreadLocalVarPointer != null;
+            return nativeThreadLocalVarPointer != NULLPTR;
         }
     }
 
@@ -623,6 +671,11 @@ public final class PythonContext extends Python3Core {
     @GenerateInline(inlineByDefault = true)
     public abstract static class GetThreadStateNode extends Node {
 
+        @NeverDefault
+        public static GetThreadStateNode create() {
+            return GetThreadStateNodeGen.create();
+        }
+
         public static GetThreadStateNode getUncached() {
             return GetThreadStateNodeGen.getUncached();
         }
@@ -630,7 +683,7 @@ public final class PythonContext extends Python3Core {
         public abstract PythonThreadState execute(Node inliningTarget, PythonContext context);
 
         public final PythonThreadState execute(Node inliningTarget) {
-            return execute(inliningTarget, null);
+            return execute(inliningTarget, PythonContext.get(inliningTarget));
         }
 
         public final PythonThreadState executeCached(PythonContext context) {
@@ -638,7 +691,7 @@ public final class PythonContext extends Python3Core {
         }
 
         public final PythonThreadState executeCached() {
-            return executeCached(null);
+            return executeCached(PythonContext.get(this));
         }
 
         public final void setTopFrameInfoCached(PythonContext context, PFrame.Reference topframeref) {
@@ -647,23 +700,6 @@ public final class PythonContext extends Python3Core {
 
         public final void clearTopFrameInfoCached(PythonContext context) {
             executeCached(context).topframeref = null;
-        }
-
-        @Specialization(guards = {"noContext == null", "!curThreadState.isShuttingDown()"})
-        @SuppressWarnings("unused")
-        static PythonThreadState doNoShutdown(Node inliningTarget, PythonContext noContext,
-                        @Bind("getThreadState(inliningTarget)") PythonThreadState curThreadState) {
-            return curThreadState;
-        }
-
-        @Specialization(guards = {"noContext == null"}, replaces = "doNoShutdown")
-        @InliningCutoff
-        PythonThreadState doGeneric(@SuppressWarnings("unused") Node inliningTarget, PythonContext noContext) {
-            PythonThreadState curThreadState = PythonLanguage.get(inliningTarget).getThreadStateLocal().get();
-            if (curThreadState.isShuttingDown()) {
-                throw PythonContext.get(this).killThread();
-            }
-            return curThreadState;
         }
 
         @Specialization(guards = "!curThreadState.isShuttingDown()")
@@ -675,7 +711,7 @@ public final class PythonContext extends Python3Core {
 
         @Specialization(replaces = "doNoShutdownWithContext")
         @InliningCutoff
-        PythonThreadState doGenericWithContext(Node inliningTarget, PythonContext context) {
+        static PythonThreadState doGenericWithContext(Node inliningTarget, PythonContext context) {
             PythonThreadState curThreadState = context.getLanguage(inliningTarget).getThreadStateLocal().get(context.env.getContext());
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
                 throw context.killThread();
@@ -684,7 +720,7 @@ public final class PythonContext extends Python3Core {
         }
 
         @NonIdempotent
-        PythonThreadState getThreadState(Node n) {
+        static PythonThreadState getThreadState(Node n) {
             return PythonLanguage.get(n).getThreadStateLocal().get();
         }
     }
@@ -741,7 +777,8 @@ public final class PythonContext extends Python3Core {
         UNINITIALIZED,
         INITIALIZING,
         INITIALIZED,
-        FAILED
+        FAILED,
+        CANNOT_IMPORT
     }
 
     /** Initialization state of the C API context. */
@@ -749,6 +786,7 @@ public final class PythonContext extends Python3Core {
     private final ReentrantLock cApiInitializationLock = new ReentrantLock(false);
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private boolean nativeAccessAllowed;
+    @CompilationFinal private NativeContext nativeContext;
 
     private TruffleString soABI;
 
@@ -810,8 +848,6 @@ public final class PythonContext extends Python3Core {
 
     // the full module name for package imports
     private TruffleString pyPackageContext;
-
-    private final NativePointer nativeNull = NativePointer.createNull();
 
     public RootCallTarget signatureContainer;
 
@@ -1213,10 +1249,6 @@ public final class PythonContext extends Python3Core {
 
     public static PythonContext get(Node node) {
         return REFERENCE.get(node);
-    }
-
-    public NativePointer getNativeNull() {
-        return nativeNull;
     }
 
     public boolean isChildContext() {
@@ -2108,12 +2140,16 @@ public final class PythonContext extends Python3Core {
             // shut down async actions threads
             handler.shutdown();
             finalizing = true;
+            if (cApiContext != null) {
+                cApiContext.finalizeCApi(cancelling);
+            }
             // interrupt and join or kill python threads
             joinPythonThreads();
             stdioFlushFailed = flushStdFiles();
-            if (cApiContext != null) {
-                cApiContext.finalizeCApi();
+            if (nativeContext != null) {
+                nativeContext.close();
             }
+            freeContextMemory();
             // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();
         }
@@ -2215,7 +2251,7 @@ public final class PythonContext extends Python3Core {
     private void disposeThreadStates() {
         Thread currentThread = Thread.currentThread();
         for (Map.Entry<Thread, PythonThreadState> entry : threadStateMapping.entrySet()) {
-            entry.getValue().dispose(this, true, entry.getKey() == currentThread);
+            entry.getValue().dispose(true, entry.getKey() == currentThread);
         }
         threadStateMapping.clear();
     }
@@ -2712,13 +2748,16 @@ public final class PythonContext extends Python3Core {
         initializeNativeThreadState(getThreadState(getLanguage()));
     }
 
+    private static final CApiTiming TIMING_INIT_THREAD_STATE_CURRENT = CApiTiming.create(true, NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT);
+
     @SuppressWarnings("try")
     public void initializeNativeThreadState(PythonThreadState pythonThreadState) {
         CompilerAsserts.neverPartOfCompilation();
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             assert getCApiContext() != null;
-            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(pythonThreadState);
-            Object nativeThreadLocalVarPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT, nativeThreadState);
+            long nativeThreadState = PThreadState.getOrCreateNativeThreadState(pythonThreadState);
+            var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_INIT_THREAD_STATE_CURRENT);
+            long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeINIT_THREAD_STATE_CURRENT(TIMING_INIT_THREAD_STATE_CURRENT, callable, nativeThreadState);
             pythonThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
         }
     }
@@ -2733,7 +2772,7 @@ public final class PythonContext extends Python3Core {
         }
         ts.shutdown();
         threadStateMapping.remove(thread);
-        ts.dispose(this, canRunGuestCode, thread == Thread.currentThread());
+        ts.dispose(canRunGuestCode, thread == Thread.currentThread());
         releaseSentinelLock(ts.sentinelLock);
         getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }
@@ -2749,28 +2788,29 @@ public final class PythonContext extends Python3Core {
     }
 
     public CApiState getCApiState() {
-        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED : cApiState;
+        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED || cApiState == CApiState.CANNOT_IMPORT : cApiState;
         return cApiState;
     }
 
     public void setCApiState(CApiState state) {
         /*- Allowed transitions:
-         * UNINITIALIZED -> INITIALIZING, FAILED
-         * INITIALIZING -> INITIALIZED, FAILED
+         * UNINITIALIZED -> INITIALIZING, FAILED, CANNOT_IMPORT
+         * INITIALIZING -> INITIALIZED, FAILED, CANNOT_IMPORT
          */
         assert state != CApiState.UNINITIALIZED;
         assert cApiInitializationLock.isHeldByCurrentThread();
         assert state != CApiState.INITIALIZING || cApiContext != null;
         assert state != CApiState.INITIALIZED || cApiContext != null;
-        assert cApiState != CApiState.UNINITIALIZED || state == CApiState.INITIALIZING || state == CApiState.FAILED;
-        assert cApiState != CApiState.INITIALIZING || state == CApiState.INITIALIZED || state == CApiState.FAILED;
+        assert cApiState != CApiState.UNINITIALIZED || state == CApiState.INITIALIZING || state == CApiState.FAILED || state == CApiState.CANNOT_IMPORT;
+        assert cApiState != CApiState.INITIALIZING || state == CApiState.INITIALIZED || state == CApiState.FAILED || state == CApiState.CANNOT_IMPORT;
         assert cApiState != CApiState.INITIALIZED;
         assert cApiState != CApiState.FAILED;
+        assert cApiState != CApiState.CANNOT_IMPORT;
         cApiState = state;
     }
 
     public CApiContext getCApiContext() {
-        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED;
+        assert cApiContext != null || cApiState == CApiState.UNINITIALIZED || cApiState == CApiState.FAILED || cApiState == CApiState.CANNOT_IMPORT;
         return cApiContext;
     }
 
@@ -2782,6 +2822,15 @@ public final class PythonContext extends Python3Core {
         assert this.cApiContext == null : "tried to create new C API context but it was already created";
         assert getCApiState() == CApiState.UNINITIALIZED;
         this.cApiContext = capiContext;
+    }
+
+    public NativeContext ensureNativeContext() {
+        if (nativeContext == null) {
+            ensureNativeAccess();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            nativeContext = NativeContext.create();
+        }
+        return nativeContext;
     }
 
     public void runCApiHooks() {
@@ -2882,52 +2931,40 @@ public final class PythonContext extends Python3Core {
         throw new RuntimeException("Native access not allowed, cannot manipulate native memory");
     }
 
-    public long allocateNativeMemory(long size) {
-        return allocateNativeMemoryBoundary(getUnsafe(), size);
-    }
-
-    @TruffleBoundary
-    private static long allocateNativeMemoryBoundary(Unsafe unsafe, long size) {
-        return unsafe.allocateMemory(size);
-    }
-
-    public void freeNativeMemory(long address) {
-        freeNativeMemoryBoundary(getUnsafe(), address);
-    }
-
-    @TruffleBoundary
-    private static void freeNativeMemoryBoundary(Unsafe unsafe, long address) {
-        unsafe.freeMemory(address);
-    }
-
-    public void copyNativeMemory(long dst, byte[] src, int srcOffset, int size) {
-        copyNativeMemoryBoundary(getUnsafe(), null, dst, src, byteArrayOffset(srcOffset), size);
-    }
-
-    public void copyNativeMemory(byte[] dst, int dstOffset, long src, int size) {
-        copyNativeMemoryBoundary(getUnsafe(), dst, byteArrayOffset(dstOffset), null, src, size);
-    }
-
-    private static long byteArrayOffset(int offset) {
-        return (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) Unsafe.ARRAY_BYTE_INDEX_SCALE * (long) offset;
-    }
-
-    @TruffleBoundary
-    private static void copyNativeMemoryBoundary(Unsafe unsafe, Object dst, long dstOffset, Object src, long srcOffset, int size) {
-        unsafe.copyMemory(src, srcOffset, dst, dstOffset, size);
-    }
-
-    public void setNativeMemory(long pointer, int size, byte value) {
-        setNativeMemoryBoundary(getUnsafe(), pointer, size, value);
-    }
-
-    @TruffleBoundary
-    private static void setNativeMemoryBoundary(Unsafe unsafe, long pointer, int size, byte value) {
-        unsafe.setMemory(pointer, size, value);
-    }
-
     @SuppressWarnings("AssertWithSideEffects")
     public static void setWasStackWalk() {
         assert (PythonContext.get(null).wasStackWalk = true);
+    }
+
+    /**
+     * Allocates native memory that will be free'd if the context is disposed.
+     *
+     * @param byteSize Number of bytes to allocate.
+     * @return An interop pointer.
+     */
+    @TruffleBoundary
+    public NativePointer allocateContextMemory(int byteSize) {
+        ensureNativeAccess();
+        if (nativeResources == null) {
+            nativeResources = new LinkedList<>();
+        }
+        NativePointer nativePointer = NativePointer.wrap(NativeMemory.malloc(byteSize));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(String.format("Allocated %d bytes of context memory: %s", byteSize, nativePointer));
+        }
+        nativeResources.add(nativePointer);
+        return nativePointer;
+    }
+
+    private void freeContextMemory() {
+        if (nativeResources != null) {
+            ensureNativeAccess();
+            for (NativePointer nativePointer : nativeResources) {
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine(String.format("Freeing context memory: %s", nativePointer));
+                }
+                NativeMemory.free(nativePointer.asPointer());
+            }
+        }
     }
 }

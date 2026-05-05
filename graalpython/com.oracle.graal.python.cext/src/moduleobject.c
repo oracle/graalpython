@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -167,10 +167,11 @@ check_api_version(const char *name, int module_api_version)
     return 1;
 }
 
-#if 0 // GraalPy change
 static int
 _add_methods_to_object(PyObject *module, PyObject *name, PyMethodDef *functions)
 {
+    return  GraalPyPrivate_AddMethodsToObject(module, name, functions);
+#if 0 // GraalPy change
     PyObject *func;
     PyMethodDef *fdef;
 
@@ -194,8 +195,8 @@ _add_methods_to_object(PyObject *module, PyObject *name, PyMethodDef *functions)
     }
 
     return 0;
-}
 #endif // GraalPy change
+}
 
 PyObject *
 PyModule_Create2(PyModuleDef* module, int module_api_version)
@@ -408,16 +409,10 @@ PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_versio
     }
 
     if (def->m_methods != NULL) {
-        // GraalPy change: use PyModule_AddFunctions instead of _add_methods_to_object
-        if (PyModule_AddFunctions(m, def->m_methods) != 0) {
-            Py_DECREF(m);
-            return NULL;
+        ret = _add_methods_to_object(m, nameobj, def->m_methods);
+        if (ret != 0) {
+            goto error;
         }
-        // End of GraalPy change, original code below
-        // ret = _add_methods_to_object(m, nameobj, def->m_methods);
-        // if (ret != 0) {
-        //     goto error;
-        // }
     }
 
     if (def->m_doc != NULL) {
@@ -519,19 +514,11 @@ int
 PyModule_AddFunctions(PyObject *m, PyMethodDef *functions)
 {
     // GraalPy change: different implementation
-    if (!functions) {
+    if (!PyModule_Check(m)) {
+        PyErr_BadArgument();
         return -1;
     }
-    for (PyMethodDef* def = functions; def->ml_name != NULL; def++) {
-        GraalPyPrivate_Module_AddFunctionToModule(def,
-                       m,
-                       def->ml_name,
-                       def->ml_meth,
-                       def->ml_flags,
-                       get_method_flags_wrapper(def->ml_flags),
-					   def->ml_doc);
-    }
-    return 0;
+    return GraalPyPrivate_Module_AddFunctions(m, functions);
 }
 
 #if 0 // GraalPy change

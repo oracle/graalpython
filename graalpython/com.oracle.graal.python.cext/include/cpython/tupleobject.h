@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,8 +12,7 @@ typedef struct {
     /* ob_item contains space for 'ob_size' elements.
        Items must normally not be NULL, except during construction when
        the tuple is not yet visible outside the function that builds it. */
-    // Truffle change: PyObject *ob_item[1] doesn't work for us in Sulong
-    PyObject **Py_HIDE_IMPL_FIELD(ob_item);
+    PyObject *ob_item[1];
 } PyTupleObject;
 
 PyAPI_FUNC(int) _PyTuple_Resize(PyObject **, Py_ssize_t);

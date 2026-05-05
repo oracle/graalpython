@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,25 +38,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.capi;
+package com.oracle.graal.python.runtime.nativeaccess;
 
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 
-public abstract class CApiGuards {
-
-    public static boolean isPrimitiveNativeWrapper(Object object) {
-        return object instanceof PrimitiveNativeWrapper;
+final class NativeAccessSupportJdk21 extends NativeAccessSupport {
+    @Override
+    protected Object createArenaImpl() {
+        return null;
     }
 
-    public static boolean isNativeWrapper(Object object) {
-        return object instanceof PythonNativeWrapper || object instanceof PyCFunctionWrapper;
+    @Override
+    protected void closeArenaImpl(Object arena) {
     }
 
-    public static boolean isNativeNull(Object object) {
-        return object instanceof NativePointer nativePointer && nativePointer.isNull();
+    @Override
+    protected NativeLibraryLookup libraryLookupImpl(String name, Object arena) {
+        throw unsupported();
     }
 
-    public static boolean isSpecialSingleton(Object delegate) {
-        return CApiContext.getSingletonNativeWrapperIdx(delegate) != -1;
+    @Override
+    protected long lookupDefaultImpl(String name) {
+        throw unsupported();
+    }
+
+    @Override
+    protected MethodHandle createDowncallHandleImpl(MethodType methodType, boolean critical) {
+        return unsupportedDowncallHandle(methodType);
+    }
+
+    @Override
+    protected long createClosureImpl(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena) {
+        throw unsupported();
     }
 }

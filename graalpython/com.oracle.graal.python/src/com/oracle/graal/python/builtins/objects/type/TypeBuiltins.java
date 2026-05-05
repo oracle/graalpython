@@ -30,6 +30,7 @@ import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
@@ -894,7 +895,6 @@ public final class TypeBuiltins extends PythonBuiltins {
             @Specialization
             static void set(Node inliningTarget, PythonAbstractNativeObject type, TruffleString value,
                             @Bind PythonLanguage language,
-                            @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                             @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject,
                             @Cached HiddenAttr.WriteNode writeAttrNode,
                             @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -902,7 +902,8 @@ public final class TypeBuiltins extends PythonBuiltins {
                 value = switchEncodingNode.execute(value, TruffleString.Encoding.UTF_8);
                 byte[] bytes = copyToByteArrayNode.execute(value, TruffleString.Encoding.UTF_8);
                 PBytes utf8Bytes = PFactory.createBytes(language, bytes);
-                writePointerNode.writeToObj(type, PyTypeObject__tp_name, PySequenceArrayWrapper.ensureNativeSequence(utf8Bytes));
+                long typeRawPtr = type.getPtr();
+                writePtrField(typeRawPtr, PyTypeObject__tp_name, PySequenceArrayWrapper.ensureNativeSequence(utf8Bytes));
                 PString pString = PFactory.createString(language, value);
                 writeAttrNode.execute(inliningTarget, pString, HiddenAttr.PSTRING_UTF8, utf8Bytes);
                 writeObject.writeToObject(type, PyHeapTypeObject__ht_name, pString);
@@ -982,6 +983,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SubstringNode substringNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             // see function 'typeobject.c: type_module'
+            assert IsTypeNode.executeUncached(cls);
             if ((getFlags.execute(cls) & TypeFlags.HEAPTYPE) != 0) {
                 Object module = readAttrNode.execute(cls, T___MODULE__);
                 if (module == NO_VALUE) {
@@ -1066,6 +1068,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             @Specialization
             static void set(PythonAbstractNativeObject type, TruffleString value,
                             @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject) {
+                assert IsTypeNode.executeUncached(type);
                 writeObject.writeToObject(type, PyHeapTypeObject__ht_qualname, value);
             }
         }

@@ -423,13 +423,13 @@ public final class PArray extends PythonBuiltinObject {
         return isInBounds(idx);
     }
 
-    @ExportMessage
-    boolean isNative() {
+    @ExportMessage(library = PythonBufferAccessLibrary.class, name = "isNative")
+    boolean isNativeStorage() {
         return storage instanceof NativeByteSequenceStorage;
     }
 
     @ExportMessage
-    Object getNativePointer(
+    long getNativePointer(
                     @Bind Node inliningTarget,
                     @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
         NativeSequenceStorage newStorage = toNativeStorageNode.execute(inliningTarget, storage, true);

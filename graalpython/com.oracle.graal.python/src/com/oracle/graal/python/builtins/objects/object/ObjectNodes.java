@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,8 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
+
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -83,8 +85,9 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -142,7 +145,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -158,8 +160,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -316,10 +316,8 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        static Object id(PythonAbstractNativeObject self,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
-            return PythonUtils.coerceToLong(self.getPtr(), lib);
+        static Object id(PythonAbstractNativeObject self) {
+            return self.getPtr();
         }
 
         @Specialization
@@ -380,11 +378,6 @@ public abstract class ObjectNodes {
                 return id(self.getMaterialized(), inliningTarget);
             }
             return getObjectIdNode.execute(inliningTarget, self);
-        }
-
-        @Specialization
-        Object id(PythonNativeVoidPtr self) {
-            return self.getNativePointer();
         }
 
         @Specialization
@@ -635,10 +628,19 @@ public abstract class ObjectNodes {
 
         @Specialization
         static boolean doNative(@SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
-                        @Cached(inline = false) PythonToNativeNode toSulongNode,
-                        @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
-            Object result = callCapiFunction.call(FUN_CHECK_BASICSIZE_FOR_GETSTATE, toSulongNode.execute(type), slotNum);
-            return (int) result == 0;
+                        @Bind Node inliningTarget,
+                        @Cached(inline = false) PythonToNativeNode toNativeNode) {
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(type);
+            long typePointer = toNativeNode.executeLong(type);
+            try {
+                return ExternalFunctionInvoker.invokeCHECK_BASICSIZE_FOR_GETSTATE(
+                                CApiContext.getNativeSymbol(inliningTarget, FUN_CHECK_BASICSIZE_FOR_GETSTATE).getAddress(), typePointer,
+                                slotNum) == 0;
+            } catch (Throwable t) {
+                throw com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere(t);
+            } finally {
+                Reference.reachabilityFence(type);
+            }
         }
 
         @Fallback

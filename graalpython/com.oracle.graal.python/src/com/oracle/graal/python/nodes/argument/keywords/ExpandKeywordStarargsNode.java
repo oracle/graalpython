@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -61,6 +62,11 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
 
     public final PKeyword[] executeCached(Object starargs) {
         return execute(null, this, starargs);
+    }
+
+    @TruffleBoundary
+    public static PKeyword[] executeUncached(Object starargs) {
+        return getUncached().execute(null, null, starargs);
     }
 
     public final PKeyword[] execute(Node inliningTarget, Object starargs) {

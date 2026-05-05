@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,22 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import java.lang.ref.Reference;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
@@ -63,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinB
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttrFactory.CallManagedSlotGetAttrNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -70,11 +74,16 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -235,6 +244,7 @@ public class TpSlotGetAttr {
     @GenerateInline(false) // Used lazily
     @GenerateUncached
     abstract static class CallNativeSlotGetAttrNode extends Node {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(CallNativeSlotGetAttrNode.class);
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "tp_getattr");
 
         abstract Object execute(VirtualFrame frame, TpSlots slots, TpSlotNative tp_get_attro_attr, Object self, Object name);
@@ -242,34 +252,43 @@ public class TpSlotGetAttr {
         @Specialization
         static Object callNative(VirtualFrame frame, TpSlots slots, TpSlotNative slot, Object self, Object name,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached InlinedConditionProfile isGetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,
-                        @Cached FreeNode freeNode,
                         @Cached PythonToNativeNode nameToNativeNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeNode selfToNativeNode,
                         @Cached NativeToPythonTransferNode toPythonNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PyObjectCheckFunctionResultNode checkResultNode) {
             boolean isGetAttr = isGetAttrProfile.profile(inliningTarget, slots.tp_getattr() == slot);
-            Object nameArg;
+            Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
+            Object promotedName = null;
+            long nameArg;
             if (isGetAttr) {
                 nameArg = asCharPointerNode.execute(name);
             } else {
-                nameArg = nameToNativeNode.execute(name);
+                promotedName = ensurePythonObjectNode.execute(context, name, false);
+                nameArg = nameToNativeNode.executeLong(promotedName);
             }
-            Object result;
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, null);
+            long lresult;
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
             try {
-                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETATTR__, slot.callable, selfToNativeNode.execute(self), nameArg);
+                lresult = ExternalFunctionInvoker.invokeGETATTRFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
+                                selfToNativeNode.executeLong(promotedSelf), nameArg);
             } finally {
+                Reference.reachabilityFence(promotedSelf);
                 if (isGetAttr) {
-                    freeNode.free(nameArg);
+                    if (LOGGER.isLoggable(Level.FINE)) {
+                        LOGGER.fine(PythonUtils.formatJString("Freeing name (const char *)0x%x", nameArg));
+                    }
+                    free(nameArg);
                 } else {
-                    Reference.reachabilityFence(nameArg);
+                    Reference.reachabilityFence(promotedName);
                 }
             }
-            return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.execute(result));
+            return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.executeRaw(lresult));
         }
     }
 
@@ -282,6 +301,11 @@ public class TpSlotGetAttr {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, Object name);
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, TruffleString name);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlotManaged slot, Object self, Object name) {
+            return CallManagedSlotGetAttrNodeGen.getUncached().execute(null, null, slot, self, name);
+        }
 
         @Specialization(guards = "slot == cachedSlot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotGetAttrBuiltin slot, Object self, TruffleString name,

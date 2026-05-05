@@ -408,9 +408,6 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Record a lightweight rolling history of GraalPy raw native memory allocation sites for allocator debugging.", stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<Boolean> SampleNativeMemoryAllocSites = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Use the panama backend for NFI.", stability = OptionStability.EXPERIMENTAL) //
-    public static final OptionKey<Boolean> UsePanama = new OptionKey<>(false); // see [GR-67358]
-
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Set by the launcher to true (false means that GraalPy is being embedded in an application).") //
     public static final OptionKey<Boolean> RunViaLauncher = new OptionKey<>(false);
 

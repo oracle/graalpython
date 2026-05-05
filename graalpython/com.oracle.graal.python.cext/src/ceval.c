@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1790,8 +1790,8 @@ fail:
     Py_DECREF(defaults);
     return res;
 #else // GraalPy change
-    if (globals == NULL) {
-        PyErr_SetString(PyExc_SystemError, "PyEval_EvalCodeEx: NULL globals");
+    if (!PyDict_Check(globals)) {
+        PyErr_BadInternalCall();
         return NULL;
     }
     return GraalPyPrivate_Eval_EvalCodeEx(_co, globals, locals != NULL ? locals : Py_None,

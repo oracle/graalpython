@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,9 +101,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.unaryfunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElements;
 
 import com.oracle.graal.python.annotations.CApiFields;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -354,9 +356,14 @@ public enum CFields {
     PyThreadState__dict(PyObject),
     PyThreadState__small_ints(PyObjectPtr),
     PyThreadState__gc(Pointer),
+    PyThreadState__graalpy_deallocating(Pointer),
     PyThreadState__py_recursion_limit(Int),
     PyThreadState__py_recursion_remaining(Int),
     PyThreadState__c_recursion_remaining(Int),
+
+    GraalPyDeallocState__items(PyObjectPtr),
+    GraalPyDeallocState__len(Int),
+    GraalPyDeallocState__capacity(Int),
 
     GCState__enabled(Int),
     GCState__debug(Int),
@@ -398,7 +405,7 @@ public enum CFields {
 
     @CompilationFinal private long offset = -1;
 
-    long offset() {
+    public long offset() {
         long o = offset;
         if (o == -1) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -414,8 +421,14 @@ public enum CFields {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object offsetsPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS);
-        long[] offsets = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(offsetsPointer, VALUES.length);
+        long offsetsPointer;
+        try {
+            offsetsPointer = ExternalFunctionInvoker.invokePYTRUFFLE_STRUCT_OFFSETS(
+                            CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS).getAddress());
+        } catch (Throwable t) {
+            throw CompilerDirectives.shouldNotReachHere(t);
+        }
+        long[] offsets = readLongArrayElements(offsetsPointer, 0L, VALUES.length);
         for (CFields field : VALUES) {
             field.offset = offsets[field.ordinal()];
             assert field.offset >= 0 && field.offset < 1024;

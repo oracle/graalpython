@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequence
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodesFactory.GetInternalIteratorSequenceStorageNodeGen;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodesFactory.GetLengthNodeGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -117,6 +118,11 @@ public abstract class IteratorNodes {
     public abstract static class GetLength extends PNodeWithContext {
 
         public abstract int execute(VirtualFrame frame, Node inliningTarget, Object iterable);
+
+        @TruffleBoundary
+        public static int executeUncached(Object iterable) {
+            return GetLengthNodeGen.getUncached().execute(null, null, iterable);
+        }
 
         // Note: these fast-paths are duplicated in PyObjectSizeNode, because there is no simple
         // way to share them effectively without unnecessary indirections and overhead in the

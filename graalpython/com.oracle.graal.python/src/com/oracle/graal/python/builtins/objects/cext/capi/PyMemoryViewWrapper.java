@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,22 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__exports;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.calloc;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.mallocLongArray;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeLongArrayElement;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.AllocateNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.GetElementPtrNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -63,111 +64,77 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 
 /**
  * Wrapper object for {@code PMemoryView}.
  */
-public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper {
-    private NativePointer replacement;
+public abstract class PyMemoryViewWrapper {
 
-    public PyMemoryViewWrapper(PythonObject delegate) {
-        super(delegate);
-        assert delegate instanceof PMemoryView;
+    private PyMemoryViewWrapper() {
     }
 
-    private static Object intArrayToNativePySSizeArray(int[] intArray) {
-        Object mem = CStructAccess.AllocateNode.allocUncached(intArray.length * Long.BYTES);
-        CStructAccess.WriteLongNode.getUncached().writeIntArray(mem, intArray);
+    private static long intArrayToNativePySSizeArray(int[] intArray) {
+        long mem = mallocLongArray(intArray.length);
+        for (int i = 0; i < intArray.length; i++) {
+            writeLongArrayElement(mem, i, intArray[i]);
+        }
         return mem;
     }
 
     @TruffleBoundary
-    private static long allocate(PMemoryView object) {
-        GetElementPtrNode getElementNode = GetElementPtrNode.getUncached();
-        CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        CStructAccess.WriteLongNode writeI64Node = CStructAccess.WriteLongNode.getUncached();
-        CStructAccess.WriteIntNode writeI32Node = CStructAccess.WriteIntNode.getUncached();
+    public static long allocate(PMemoryView object) {
         CExtNodes.AsCharPointerNode asCharPointerNode = CExtNodes.AsCharPointerNode.getUncached();
 
         Object type = GetPythonObjectClassNode.executeUncached(object);
         boolean gc = (GetTypeFlagsNode.executeUncached(type) & TypeFlags.HAVE_GC) != 0;
         long presize = gc ? CStructs.PyGC_Head.size() : 0;
-        long memWithHead = PythonUtils.coerceToLong(AllocateNode.allocUncached(CStructs.PyMemoryViewObject.size() + presize), InteropLibrary.getUncached());
+        long memWithHead = calloc(CStructs.PyMemoryViewObject.size() + presize);
         long mem = memWithHead + presize;
 
-        writePointerNode.write(mem, PyObject__ob_type, PythonToNativeNewRefNode.executeUncached(type));
-        writeI64Node.write(mem, PyObject__ob_refcnt, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
-        writeI32Node.write(mem, PyMemoryViewObject__flags, object.getFlags());
-        writeI64Node.write(mem, PyMemoryViewObject__exports, object.getExports().get());
+        writePtrField(mem, PyObject__ob_type, PythonToNativeNewRefNode.executeLongUncached(type));
+        writeLongField(mem, PyObject__ob_refcnt, PythonObject.IMMORTAL_REFCNT);
+        writeIntField(mem, PyMemoryViewObject__flags, object.getFlags());
+        writeLongField(mem, PyMemoryViewObject__exports, object.getExports().get());
         // TODO: ignoring mbuf, hash and weakreflist for now
 
-        Object view = getElementNode.getElementPtr(mem, CFields.PyMemoryViewObject__view);
+        long view = getFieldPtr(mem, CFields.PyMemoryViewObject__view);
 
         if (object.getBuffer() != null) {
-            Object buf = object.getBufferPointer();
-            if (buf == null) {
+            long buf = object.getBufferPointer();
+            if (buf == NULLPTR) {
                 buf = PythonBufferAccessLibrary.getUncached().getNativePointer(object.getBuffer());
-                if (buf == null) {
+                if (buf == NULLPTR) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw shouldNotReachHere("Cannot convert managed object to native storage: " + object.getBuffer().getClass().getSimpleName());
                 }
             }
             if (object.getOffset() != 0) {
-                if (buf instanceof Long ptr) {
-                    buf = ptr + object.getOffset();
-                } else {
-                    InteropLibrary ptrLib = InteropLibrary.getUncached(buf);
-                    if (ptrLib.isPointer(buf)) {
-                        try {
-                            buf = ptrLib.asPointer(buf) + object.getOffset();
-                        } catch (UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
-                        }
-                    } else {
-                        buf = CExtNodes.PCallCapiFunction.callUncached(FUN_PTR_ADD, buf, (long) object.getOffset());
-                    }
-                }
+                buf = buf + object.getOffset();
             }
-            writePointerNode.write(view, CFields.Py_buffer__buf, buf);
+            writePtrField(view, CFields.Py_buffer__buf, buf);
         }
 
         if (object.getOwner() != null) {
-            writePointerNode.write(view, CFields.Py_buffer__obj, PythonToNativeNewRefNode.executeUncached(object.getOwner()));
+            writePtrField(view, CFields.Py_buffer__obj, PythonToNativeNewRefNode.executeLongUncached(object.getOwner()));
         }
-        writeI64Node.write(view, CFields.Py_buffer__len, object.getLength());
-        writeI64Node.write(view, CFields.Py_buffer__itemsize, object.getItemSize());
-        writeI32Node.write(view, CFields.Py_buffer__readonly, PInt.intValue(object.isReadOnly()));
-        writeI32Node.write(view, CFields.Py_buffer__ndim, object.getDimensions());
+        writeLongField(view, CFields.Py_buffer__len, object.getLength());
+        writeLongField(view, CFields.Py_buffer__itemsize, object.getItemSize());
+        writeIntField(view, CFields.Py_buffer__readonly, PInt.intValue(object.isReadOnly()));
+        writeIntField(view, CFields.Py_buffer__ndim, object.getDimensions());
         if (object.getFormatString() != null) {
-            writePointerNode.write(view, CFields.Py_buffer__format, asCharPointerNode.execute(object.getFormatString()));
+            writePtrField(view, CFields.Py_buffer__format, asCharPointerNode.execute(object.getFormatString()));
         }
         if (object.getBufferShape() != null) {
-            writePointerNode.write(view, CFields.Py_buffer__shape, intArrayToNativePySSizeArray(object.getBufferShape()));
+            writePtrField(view, CFields.Py_buffer__shape, intArrayToNativePySSizeArray(object.getBufferShape()));
         }
         if (object.getBufferStrides() != null) {
-            writePointerNode.write(view, CFields.Py_buffer__strides, intArrayToNativePySSizeArray(object.getBufferStrides()));
+            writePtrField(view, CFields.Py_buffer__strides, intArrayToNativePySSizeArray(object.getBufferStrides()));
         }
         if (object.getBufferSuboffsets() != null) {
-            writePointerNode.write(view, CFields.Py_buffer__suboffsets, intArrayToNativePySSizeArray(object.getBufferSuboffsets()));
+            writePtrField(view, CFields.Py_buffer__suboffsets, intArrayToNativePySSizeArray(object.getBufferSuboffsets()));
         }
         return mem;
-    }
-
-    public Object getReplacement() {
-        if (replacement == null) {
-            long ptr = allocate((PMemoryView) getDelegate());
-            // TODO: need to convert to interop pointer for NFI for now
-            replacement = new NativePointer(ptr);
-            // TODO: this passes "false" for allocatedFromJava, although it actually is. The
-            // problem, however, is that this struct contains nested allocations from Java. This
-            // needs to be cleaned up...
-            CApiTransitions.createReference(this, ptr, false);
-        }
-        return replacement;
     }
 }

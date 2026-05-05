@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,17 +41,22 @@
 package com.oracle.graal.python.nodes.object;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GENERIC_SET_DICT;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+
+import java.lang.ref.Reference;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -65,7 +70,9 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 @GenerateUncached
 @GenerateInline
 @GenerateCached(false)
-public abstract class SetDictNode extends PNodeWithContext {
+public abstract class SetDictNode extends Node {
+    private static final CApiTiming C_API_TIMING = CApiTiming.create(true, FUN_PY_OBJECT_GENERIC_SET_DICT);
+
     public abstract void execute(Node inliningTarget, Object object, PDict dict);
 
     public static void executeUncached(Object object, PDict dict) {
@@ -86,15 +93,21 @@ public abstract class SetDictNode extends PNodeWithContext {
     }
 
     @Specialization
-    void doNativeObject(PythonAbstractNativeObject object, PDict dict,
-                    @Cached(inline = false) PythonToNativeNode objectToSulong,
-                    @Cached(inline = false) PythonToNativeNode dictToSulong,
-                    @Cached(inline = false) CExtNodes.PCallCapiFunction callGetDictNode,
-                    @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResult) {
+    static void doNativeObject(Node inliningTarget, PythonAbstractNativeObject object, PDict dict,
+                    @Cached PythonToNativeInternalNode objectToNative,
+                    @Cached PythonToNativeInternalNode dictToNative,
+                    @Cached CheckPrimitiveFunctionResultNode checkResult) {
         assert !IsTypeNode.executeUncached(object);
-        PythonContext context = getContext();
-        Object result = callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToSulong.execute(object), dictToSulong.execute(dict), context.getNativeNull());
-        checkResult.execute(context, FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
+        long objectPointer = objectToNative.execute(inliningTarget, object, false);
+        long dictPointer = dictToNative.execute(inliningTarget, dict, false);
+        PythonContext context = PythonContext.get(inliningTarget);
+        var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_GENERIC_SET_DICT);
+        int result = ExternalFunctionInvoker.invokePY_OBJECT_GENERIC_SET_DICT(null, C_API_TIMING, context.ensureNativeContext(),
+                        BoundaryCallData.getUncached(),
+                        context.getThreadState(context.getLanguage(inliningTarget)), callable, objectPointer, dictPointer, NULLPTR);
+        checkResult.executeLong(inliningTarget, context.getThreadState(context.getLanguage(inliningTarget)), FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
+        Reference.reachabilityFence(object);
+        Reference.reachabilityFence(dict);
     }
 
     protected static boolean isPythonClass(Object object) {

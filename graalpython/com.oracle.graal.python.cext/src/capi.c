@@ -100,6 +100,44 @@ typedef struct {
 // defined in 'unicodeobject.c'
 void unicode_dealloc(PyObject *unicode);
 
+NO_INLINE void
+graalpy_dealloc_stack_grow(PyThreadState *tstate)
+{
+    size_t old_capacity;
+    size_t new_capacity;
+
+    assert(tstate != NULL);
+
+    old_capacity = (size_t)tstate->graalpy_deallocating.capacity;
+    new_capacity = old_capacity > 0 ? old_capacity * 2 : 3;
+    if (new_capacity <= old_capacity || new_capacity > INT_MAX) {
+        Py_FatalError("GraalPy deallocating stack capacity overflow");
+    }
+
+    if (GraalPyPrivate_DeallocStack_Grow(tstate, new_capacity) != 0) {
+        Py_FatalError("out of memory while growing GraalPy deallocating stack");
+    }
+}
+
+void
+graalpy_dealloc_stack_push(PyThreadState *tstate, PyObject *op)
+{
+    assert(tstate != NULL);
+    if (UNLIKELY(tstate->graalpy_deallocating.len >= tstate->graalpy_deallocating.capacity)) {
+        graalpy_dealloc_stack_grow(tstate);
+    }
+    tstate->graalpy_deallocating.items[tstate->graalpy_deallocating.len++] = op;
+}
+
+void
+graalpy_dealloc_stack_pop(PyThreadState *tstate, PyObject *op)
+{
+    assert(tstate != NULL);
+    assert(tstate->graalpy_deallocating.len > 0);
+    assert(tstate->graalpy_deallocating.items[tstate->graalpy_deallocating.len - 1] == op);
+    tstate->graalpy_deallocating.items[--tstate->graalpy_deallocating.len] = NULL;
+}
+
 static void object_dealloc(PyObject *self) {
     Py_TYPE(self)->tp_free(self);
 }
@@ -502,108 +540,6 @@ PyAPI_FUNC(size_t) GraalPyPrivate_GetCurrentRSS() {
 }
 
 
-#define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
-
-PyAPI_FUNC(int) GraalPyPrivate_ReadShortMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, short);
-}
-
-PyAPI_FUNC(int) GraalPyPrivate_ReadIntMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, int);
-}
-
-PyAPI_FUNC(long) GraalPyPrivate_ReadLongMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, long);
-}
-
-PyAPI_FUNC(double) GraalPyPrivate_ReadFloatMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, float);
-}
-
-PyAPI_FUNC(double) GraalPyPrivate_ReadDoubleMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, double);
-}
-
-PyAPI_FUNC(void*) GraalPyPrivate_ReadPointerMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, void*);
-}
-
-PyAPI_FUNC(int) GraalPyPrivate_ReadCharMember(void* object, Py_ssize_t offset) {
-    return ReadMember(object, offset, char);
-}
-
-#define WriteMember(object, offset, value, T) *(T*)(((char*)object) + offset) = (T)(value)
-
-PyAPI_FUNC(int) GraalPyPrivate_WriteShortMember(void* object, Py_ssize_t offset, short value) {
-    WriteMember(object, offset, value, short);
-    return 0;
-}
-
-PyAPI_FUNC(int) GraalPyPrivate_WriteIntMember(void* object, Py_ssize_t offset, int value) {
-    WriteMember(object, offset, value, int);
-    return 0;
-}
-
-PyAPI_FUNC(int) GraalPyPrivate_WriteLongMember(void* object, Py_ssize_t offset, long value) {
-    WriteMember(object, offset, value, long);
-    return 0;
-}
-
-PyAPI_FUNC(int) GraalPyPrivate_WriteFloatMember(void* object, Py_ssize_t offset, double value) {
-    WriteMember(object, offset, value, float);
-    return 0;
-}
-
-PyAPI_FUNC(int) GraalPyPrivate_WriteDoubleMember(void* object, Py_ssize_t offset, double value) {
-    WriteMember(object, offset, value, double);
-    return 0;
-}
-
-PyAPI_FUNC(int) GraalPyPrivate_WriteObjectMember(void* object, Py_ssize_t offset, PyObject* value) {
-    /* We first need to decref the old value. */
-    PyObject *oldv = ReadMember(object, offset, PyObject*);
-    Py_XINCREF(value);
-    WriteMember(object, offset, value, PyObject*);
-    Py_XDECREF(oldv);
-    return 0;
-}
-
-PyAPI_FUNC(int) GraalPyPrivate_WritePointerMember(void* object, Py_ssize_t offset, void* value) {
-    WriteMember(object, offset, value, void*);
-    return 0;
-}
-
-PyAPI_FUNC(int) GraalPyPrivate_WriteCharMember(void* object, Py_ssize_t offset, char value) {
-    WriteMember(object, offset, value, char);
-    return 0;
-}
-
-#undef ReadMember
-#undef WriteMember
-
-PyAPI_FUNC(int) GraalPyPrivate_PointerCompare(void* x, void* y, int op) {
-    switch (op) {
-    case Py_LT:
-        return x < y;
-    case Py_LE:
-        return x <= y;
-    case Py_EQ:
-        return x == y;
-    case Py_NE:
-        return x != y;
-    case Py_GT:
-        return x > y;
-    case Py_GE:
-        return x >= y;
-    default:
-        return -1;
-    }
-}
-
-PyAPI_FUNC(void*) GraalPyPrivate_PointerAddOffset(void* x, Py_ssize_t y) {
-    return (char *)x + y;
-}
-
 // Implements the basesisze check in typeobject.c:_PyObject_GetState
 PyAPI_FUNC(int) GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject* type, int slot_num) {
     Py_ssize_t basicsize = PyBaseObject_Type.tp_basicsize;
@@ -620,10 +556,6 @@ PyAPI_FUNC(void) GraalPyPrivate_CheckTypeReady(PyTypeObject* type) {
     if (!(type->tp_flags & Py_TPFLAGS_READY)) {
         PyType_Ready(type);
     }
-}
-
-PyAPI_FUNC(void*) GraalPyPrivate_VaArgPointer(va_list* va) {
-	return va_arg(*va, void*);
 }
 
 PyAPI_FUNC(int) GraalPyPrivate_NoOpClear(PyObject* o) {
@@ -671,12 +603,8 @@ Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
  */
 Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing = NULL;
 
-PyAPI_FUNC(PyThreadState **) initialize_graal_capi(TruffleEnv* env, void **builtin_closures, GCState *gc, PyThreadState *tstate) {
+PyAPI_FUNC(PyThreadState **) initialize_graal_capi(void **builtin_closures, GCState *gc, PyThreadState *tstate) {
     clock_t t = clock();
-
-    if (env) {
-        TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
-    }
 
     _PyGC_InitState(gc);
 

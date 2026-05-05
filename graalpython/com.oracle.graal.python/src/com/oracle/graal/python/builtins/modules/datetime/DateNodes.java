@@ -44,22 +44,28 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
 import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
 
+import java.lang.ref.Reference;
 import java.time.YearMonth;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -127,6 +133,7 @@ public class DateNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class NewUnsafeNode extends Node {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW);
 
         public abstract Object execute(Node inliningTarget, Object cls, int year, int month, int day);
 
@@ -138,17 +145,24 @@ public class DateNodes {
         static Object newDate(Node inliningTarget, Object cls, int year, int month, int day,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode,
+                        @Cached ExternalFunctionNodes.PyObjectCheckFunctionResultNode checkFunctionResultNode,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached CApiTransitions.NativeToPythonTransferNode fromNativeNode) {
             if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
                 Shape shape = getInstanceShape.execute(cls);
                 return new PDate(cls, shape, year, month, day);
             } else {
-                Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW, toNativeNode.execute(cls), year, month, day);
-                checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), nativeResult);
-                return fromNativeNode.execute(nativeResult);
+                long clsPointer = toNativeNode.executeLong(cls);
+                try {
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW);
+                    long nativeResult = ExternalFunctionInvoker.invokeDATE_SUBTYPE_NEW(null, C_API_TIMING,
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, clsPointer,
+                                    year, month, day);
+                    return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), fromNativeNode.execute(nativeResult));
+                } finally {
+                    Reference.reachabilityFence(cls);
+                }
             }
         }
     }
@@ -182,18 +196,21 @@ public class DateNodes {
     }
 
     public static final class FromNative {
-        static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 0);
-            int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 1);
+        static int getYear(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Date__data);
+            int b0 = NativeMemory.readByteArrayElement(ptr, 0) & 0xFF;
+            int b1 = NativeMemory.readByteArrayElement(ptr, 1) & 0xFF;
             return b0 << 8 | b1;
         }
 
-        static int getMonth(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 2);
+        static int getMonth(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Date__data);
+            return NativeMemory.readByteArrayElement(ptr, 2) & 0xFF;
         }
 
-        static int getDay(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 3);
+        static int getDay(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Date__data);
+            return NativeMemory.readByteArrayElement(ptr, 3) & 0xFF;
         }
     }
 

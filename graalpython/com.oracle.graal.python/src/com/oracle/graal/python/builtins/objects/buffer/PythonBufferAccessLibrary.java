@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.buffer;
 
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
 
 import java.nio.ByteOrder;
@@ -646,8 +647,8 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * interop pointer or a long.
      */
     @Abstract(ifExported = "isNative")
-    public Object getNativePointer(@SuppressWarnings("unused") Object receiver) {
-        return null;
+    public long getNativePointer(@SuppressWarnings("unused") Object receiver) {
+        return NULLPTR;
     }
 
     static final LibraryFactory<PythonBufferAccessLibrary> FACTORY = LibraryFactory.resolve(PythonBufferAccessLibrary.class);

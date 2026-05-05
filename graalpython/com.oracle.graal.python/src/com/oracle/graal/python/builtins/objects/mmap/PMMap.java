@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.mmap;
 
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -220,13 +221,13 @@ public final class PMMap extends PythonObject {
     }
 
     @ExportMessage
-    Object getNativePointer(
+    long getNativePointer(
                     @Bind Node inliningTarget,
                     @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib) {
         try {
             return posixLib.mmapGetPointer(PythonContext.get(inliningTarget).getPosixSupport(), getPosixSupportHandle());
         } catch (PosixSupportLibrary.UnsupportedPosixFeatureException e) {
-            return null;
+            return NULLPTR;
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
@@ -54,11 +55,15 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLong;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeLong;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import java.util.logging.Level;
 
@@ -75,7 +80,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteB
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
@@ -108,6 +114,7 @@ import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -116,6 +123,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -126,14 +134,13 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 public final class PythonCextDictBuiltins {
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextDictBuiltins.class);
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct)
     abstract static class PyDict_New extends CApiNullaryBuiltinNode {
@@ -149,12 +156,8 @@ public final class PythonCextDictBuiltins {
     abstract static class _PyDict_Next extends CApi5BuiltinNode {
 
         @Specialization
-        static int next(PDict dict, Object posPtr, Object keyPtr, Object valuePtr, Object hashPtr,
+        static int next(PDict dict, long posPtr, long keyPtr, long valuePtr, long hashPtr,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Cached CStructAccess.ReadI64Node readI64Node,
-                        @Cached CStructAccess.WriteLongNode writeLongNode,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached InlinedBranchProfile needsRewriteProfile,
                         @Cached InlinedBranchProfile economicMapProfile,
@@ -173,7 +176,7 @@ public final class PythonCextDictBuiltins {
              * whole dict at once in the first call (which is required to start with position 0). In
              * order to not violate the ordering, we construct a completely new storage.
              */
-            long pos = readI64Node.read(posPtr);
+            long pos = readLong(posPtr);
             if (pos == 0) {
                 HashingStorage storage = dict.getDictStorage();
                 int len = lenNode.execute(inliningTarget, storage);
@@ -231,22 +234,22 @@ public final class PythonCextDictBuiltins {
                 return 0;
             }
             long newPos = it.getState() + 1;
-            writeLongNode.write(posPtr, newPos);
-            if (!lib.isNull(keyPtr)) {
+            writeLong(posPtr, newPos);
+            if (keyPtr != NULLPTR) {
                 Object key = itKey.execute(inliningTarget, storage, it);
                 assert promoteKeyNode.execute(inliningTarget, key) == null;
                 // Borrowed reference
-                writePointerNode.write(keyPtr, toNativeNode.execute(key));
+                NativeMemory.writePtr(keyPtr, toNativeNode.executeLong(key));
             }
-            if (!lib.isNull(valuePtr)) {
+            if (valuePtr != NULLPTR) {
                 Object value = itValue.execute(inliningTarget, storage, it);
                 assert promoteValueNode.execute(inliningTarget, value) == null;
                 // Borrowed reference
-                writePointerNode.write(valuePtr, toNativeNode.execute(value));
+                NativeMemory.writePtr(valuePtr, toNativeNode.executeLong(value));
             }
-            if (!lib.isNull(hashPtr)) {
+            if (hashPtr != NULLPTR) {
                 long hash = itKeyHash.execute(null, inliningTarget, storage, it);
-                writeLongNode.write(hashPtr, hash);
+                NativeMemory.writeLong(hashPtr, hash);
             }
             return 1;
         }
@@ -275,14 +278,14 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
     abstract static class PyDict_Size extends CApiUnaryBuiltinNode {
         @Specialization
-        static int size(PDict dict,
+        static long size(PDict dict,
                         @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, dict.getDictStorage());
         }
 
         @Fallback
-        public int fallback(Object dict) {
+        public long fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -317,7 +320,7 @@ public final class PythonCextDictBuiltins {
                 Object res = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
                 if (res == null) {
                     noResultProfile.enter(inliningTarget);
-                    return getNativeNull(inliningTarget);
+                    return NATIVE_NULL;
                 }
                 Object promotedValue = promoteNode.execute(inliningTarget, res);
                 if (promotedValue != null) {
@@ -327,7 +330,7 @@ public final class PythonCextDictBuiltins {
                 return res;
             } catch (PException e) {
                 // PyDict_GetItem suppresses all exceptions for historical reasons
-                return getNativeNull(inliningTarget);
+                return NATIVE_NULL;
             }
         }
 
@@ -355,7 +358,7 @@ public final class PythonCextDictBuiltins {
             Object res = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
             if (res == null) {
                 noResultProfile.enter(inliningTarget);
-                return getNativeNull(inliningTarget);
+                return NATIVE_NULL;
             }
             Object promotedValue = promoteNode.execute(inliningTarget, res);
             if (promotedValue != null) {
@@ -647,12 +650,12 @@ public final class PythonCextDictBuiltins {
             }
 
             Object key = nextKey.execute(inliningTarget, storage, it);
-            if (isTracked(key, null)) {
+            if (isTracked(key)) {
                 return false;
             }
 
             Object value = nextValue.execute(inliningTarget, storage, it);
-            if (isTracked(value, null)) {
+            if (isTracked(value)) {
                 return false;
             }
             return true;
@@ -662,7 +665,7 @@ public final class PythonCextDictBuiltins {
          * #define _PyObject_GC_MAY_BE_TRACKED(obj) \ (PyObject_IS_GC(obj) && \
          * (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj)))
          */
-        static boolean isTracked(Object object, CStructAccess.ReadI64Node readI64Node) {
+        static boolean isTracked(Object object) {
             // TODO(fa): implement properly
             return true;
             // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
@@ -700,6 +703,37 @@ public final class PythonCextDictBuiltins {
                 }
             }
             return 1;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
+    abstract static class GraalPyPrivate_Dict_UnlinkNativePart extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static Object doLong(long pointer,
+                        @Bind Node inliningTarget,
+                        @Cached GcNativePtrToPythonNode nativeToPythonNode) {
+            assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+            Object resolved = nativeToPythonNode.execute(inliningTarget, pointer);
+            if (resolved == null) {
+                /*
+                 * This is fine because the managed object was already collected and deallocation
+                 * was triggered from managed side (e.g. context finalization). We don't need to do
+                 * anything.
+                 */
+                return PNone.NO_VALUE;
+            }
+            if (!(resolved instanceof PDict self)) {
+                LOGGER.severe(PythonUtils.formatJString("Expected pointer 0x%x to be linked to a managed dict but was %s", pointer, resolved));
+                return PNone.NO_VALUE;
+            }
+            assert self.isNative();
+            assert self.getNativePointer() == pointer;
+            if (LOGGER.isLoggable(Level.FINER)) {
+                LOGGER.finer(PythonUtils.formatJString("Unlinking managed dict %s from native part 0x%x", self, self.getNativePointer()));
+            }
+            self.clearNativePointer();
+            return PNone.NO_VALUE;
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,36 +38,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.common;
+package com.oracle.graal.python.runtime.nativeaccess;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.CompilerDirectives;
 
-/**
- * Gets the pointer to the outVar at the given index. This is basically an access to the varargs
- * like {@code va_arg(*valist, void *)}
- */
-@GenerateInline
-@GenerateCached(false)
-@GenerateUncached
-public abstract class GetNextVaArgNode extends Node {
+public final class NativeLibrary {
 
-    public abstract Object execute(Node inliningTarget, Object valist) throws InteropException;
+    private final NativeContext context;
+    final long ptr;
 
-    public static Object executeUncached(Object valist) throws InteropException {
-        return GetNextVaArgNodeGen.getUncached().execute(null, valist);
+    NativeLibrary(NativeContext context, long ptr) {
+        this.context = context;
+        this.ptr = ptr;
     }
 
-    @Specialization
-    static Object doGeneric(Object valist,
-                    @Cached(inline = false) PCallCapiFunction nextNode) {
-        return nextNode.call(NativeCAPISymbol.FUN_VA_ARG_POINTER, valist);
+    public long lookupSymbol(String name) {
+        long symbol = lookupOptionalSymbol(name);
+        if (symbol == 0) {
+            throw CompilerDirectives.shouldNotReachHere("symbol not found: " + name);
+        }
+        return symbol;
+    }
+
+    public long lookupOptionalSymbol(String name) {
+        return context.lookupOptionalSymbol(ptr, name);
     }
 }

@@ -45,6 +45,8 @@ import os
 import sys
 import time
 
+from tests.util import skip_if_sandboxed
+
 
 if sys.implementation.name == 'graalpy':
     def graalpy_multiprocessing(test):
@@ -71,6 +73,7 @@ if sys.implementation.name == 'graalpy':
 
 
     @graalpy_multiprocessing
+    @skip_if_sandboxed("Sandboxed runs use an emulated backend for multiprocessing wait")
     def test_wait_timeout():
         timeout = 3
         a, b = multiprocessing.Pipe()
@@ -87,6 +90,7 @@ if sys.implementation.name == 'graalpy':
 
 
     @graalpy_multiprocessing
+    @skip_if_sandboxed("Sandboxed runs use an emulated backend for multiprocessing wait")
     def test_wait():
         a, b = multiprocessing.Pipe()
         x, y = multiprocessing.connection.Pipe(False)  # Truffle multiprocessing pipe

@@ -158,13 +158,13 @@ public abstract class PBytesLike extends PSequence {
         return bufferLib.readDoubleByteOrder(store, byteOffset, byteOrder);
     }
 
-    @ExportMessage
-    boolean isNative() {
+    @ExportMessage(library = PythonBufferAccessLibrary.class, name = "isNative")
+    boolean isNativeStorage() {
         return store instanceof NativeByteSequenceStorage;
     }
 
     @ExportMessage
-    Object getNativePointer(
+    long getNativePointer(
                     @Bind Node inliningTarget,
                     @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
         NativeSequenceStorage newStorage = toNativeStorageNode.execute(inliningTarget, store, true);

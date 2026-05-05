@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,11 @@
 package com.oracle.graal.python.builtins.objects.capsule;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Capsule;
-
-import java.nio.charset.StandardCharsets;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -58,31 +56,23 @@ import com.oracle.truffle.api.library.ExportMessage;
 @ExportLibrary(InteropLibrary.class)
 public final class PyCapsule extends PythonBuiltinObject {
 
-    public static byte[] capsuleName(String string) {
-        return string.getBytes(StandardCharsets.US_ASCII);
-    }
-
-    public static boolean capsuleJavaNameIs(PyCapsule capsule, byte[] name) {
-        return capsule.getNamePtr() instanceof CArrayWrappers.CByteArrayWrapper wrapper && wrapper.getByteArray() == name;
-    }
-
     /*
      * This class provides indirection to all the data members. Capsule destructors take the
      * capsule, so we use this to recreate a temporary "resurrected" capsule for the destructor
      * call.
      */
     public static class CapsuleData {
-        private Object pointer;
-        private Object namePtr;
-        private Object context;
-        private Object destructor;
+        private long pointer;
+        private long namePtr;
+        private long context;
+        private long destructor;
 
-        public CapsuleData(Object pointer, Object namePtr) {
+        public CapsuleData(long pointer, long namePtr) {
             this.pointer = pointer;
             this.namePtr = namePtr;
         }
 
-        public Object getDestructor() {
+        public long getDestructor() {
             return destructor;
         }
     }
@@ -104,37 +94,36 @@ public final class PyCapsule extends PythonBuiltinObject {
         return data;
     }
 
-    public Object getPointer() {
+    public long getPointer() {
         return data.pointer;
     }
 
-    public void setPointer(Object pointer) {
+    public void setPointer(long pointer) {
         data.pointer = pointer;
     }
 
-    public Object getNamePtr() {
+    public long getNamePtr() {
         return data.namePtr;
     }
 
-    public void setNamePtr(Object name) {
+    public void setNamePtr(long name) {
         data.namePtr = name;
     }
 
-    public Object getContext() {
+    public long getContext() {
         return data.context;
     }
 
-    public void setContext(Object context) {
+    public void setContext(long context) {
         data.context = context;
     }
 
-    public Object getDestructor() {
+    public long getDestructor() {
         return data.destructor;
     }
 
-    public void registerDestructor(Object destructor) {
-        assert destructor == null || !InteropLibrary.getUncached().isNull(destructor);
-        if (reference == null && destructor != null) {
+    public void registerDestructor(long destructor) {
+        if (reference == null && destructor != NULLPTR) {
             reference = CApiTransitions.registerPyCapsuleDestructor(this);
         }
         data.destructor = destructor;
@@ -144,9 +133,9 @@ public final class PyCapsule extends PythonBuiltinObject {
     @TruffleBoundary
     public String toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
         String quote, n;
-        if (data.namePtr != null) {
+        if (data.namePtr != NULLPTR) {
             quote = "\"";
-            n = CastToJavaStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(data.namePtr, false));
+            n = CastToJavaStringNode.getUncached().execute(FromCharPointerNode.executeUncached(data.namePtr));
         } else {
             quote = "";
             n = "NULL";

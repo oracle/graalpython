@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenS
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_INVALID;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_NOT_FOUND;
 import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenStatus.FROZEN_OKAY;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
@@ -125,7 +126,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
@@ -260,8 +260,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
-            Object nativeModuleDef = extensionModule.getNativeModuleDef();
-            if (nativeModuleDef == null) {
+            long nativeModuleDef = extensionModule.getNativeModuleDef();
+            if (nativeModuleDef == NULLPTR) {
                 return 0;
             }
             PythonLanguage language = context.getLanguage(inliningTarget);
@@ -274,13 +274,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static int doExec(Node node, PythonContext context, PythonModule extensionModule, Object nativeModuleDef) {
+        private static int doExec(Node node, PythonContext context, PythonModule extensionModule, long nativeModuleDef) {
             /*
              * Check if module is already initialized. CPython does that by testing if 'md_state !=
              * NULL'. So, we do the same.
              */
-            Object mdState = extensionModule.getNativeModuleState();
-            if (mdState != null && !InteropLibrary.getUncached().isNull(mdState)) {
+            long mdState = extensionModule.getNativeModuleState();
+            if (mdState != NULLPTR) {
                 return 0;
             }
 

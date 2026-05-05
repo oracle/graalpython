@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,8 +56,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -71,9 +71,9 @@ public final class PythonCextHashBuiltins {
     abstract static class GraalPyPrivate_Hash_InitSecret extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object get(Object secretPtr,
-                        @Cached CStructAccess.WriteByteNode writeNode) {
-            writeNode.writeByteArray(secretPtr, getContext().getHashSecret());
+        Object get(long secretPtr) {
+            byte[] hashSecret = getContext().getHashSecret();
+            NativeMemory.writeByteArrayElements(secretPtr, 0L, hashSecret, 0, hashSecret.length);
             return PNone.NO_VALUE;
         }
     }
@@ -113,11 +113,10 @@ public final class PythonCextHashBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static long doI(Object value, long size,
-                        @Cached CStructAccess.ReadByteNode readNode,
+        static long doI(long value, long size,
                         @Cached TruffleString.FromByteArrayNode toString,
                         @Cached HashCodeNode hashNode) {
-            byte[] array = readNode.readByteArray(value, (int) size);
+            byte[] array = NativeMemory.readByteArrayElements(value, 0, (int) size);
             TruffleString string = toString.execute(array, TS_ENCODING_BINARY, false);
             return PyObjectHashNode.hash(string, hashNode);
         }

@@ -54,8 +54,12 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadLongNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadNodeGen;
+import com.oracle.graal.python.nodes.HiddenAttrFactory.WriteLongNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.WriteNodeGen;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -65,6 +69,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 
@@ -117,6 +122,12 @@ public final class HiddenAttr {
         return key.getName();
     }
 
+    boolean hasLongValue() {
+        return this == ALLOC || this == AS_BUFFER || this == CLEAR || this == DEALLOC ||
+                        this == DEL || this == FREE || this == IS_GC || this == TRAVERSE ||
+                        this == METHOD_DEF_PTR;
+    }
+
     @Override
     public String toString() {
         return getName();
@@ -139,6 +150,7 @@ public final class HiddenAttr {
         @Specialization
         static Object doGeneric(PythonAbstractObject self, HiddenAttr attr, Object defaultValue,
                         @Cached DynamicObject.GetNode getNode) {
+            assert !attr.hasLongValue();
             return getNode.execute(self, attr.key, defaultValue);
         }
 
@@ -172,6 +184,7 @@ public final class HiddenAttr {
         static void doPythonObjectDict(PythonObject self, HiddenAttr attr, Object value,
                         @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode,
                         @Shared @Cached DynamicObject.PutNode putNode) {
+            assert !attr.hasLongValue();
             setShapeFlagsNode.executeAdd(self, HAS_DICT);
             if (isGenericDict(self, value)) {
                 setShapeFlagsNode.executeAdd(self, HAS_MATERIALIZED_DICT);
@@ -189,6 +202,7 @@ public final class HiddenAttr {
         @Specialization(guards = "attr != DICT || !isPythonObject(self)")
         static void doGeneric(PythonAbstractObject self, HiddenAttr attr, Object value,
                         @Shared @Cached DynamicObject.PutNode putNode) {
+            assert !attr.hasLongValue();
             putNode.execute(self, attr.key, value);
         }
 
@@ -204,6 +218,76 @@ public final class HiddenAttr {
         @NeverDefault
         public static WriteNode getUncached() {
             return WriteNodeGen.getUncached();
+        }
+    }
+
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
+    @GenerateUncached
+    public abstract static class ReadLongNode extends Node {
+        public abstract long execute(Node inliningTarget, PythonAbstractObject self, HiddenAttr attr, long defaultValue);
+
+        public final long executeCached(PythonAbstractObject self, HiddenAttr attr, long defaultValue) {
+            return execute(this, self, attr, defaultValue);
+        }
+
+        public static long executeUncached(PythonAbstractObject self, HiddenAttr attr, long defaultValue) {
+            return ReadLongNodeGen.getUncached().execute(null, self, attr, defaultValue);
+        }
+
+        @Specialization
+        static long doGeneric(PythonAbstractObject self, HiddenAttr attr, long defaultValue,
+                        @Cached DynamicObject.GetNode getNode) {
+            assert attr.hasLongValue();
+            try {
+                return getNode.executeLong(self, attr.key, defaultValue);
+            } catch (UnexpectedResultException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @NeverDefault
+        public static ReadLongNode create() {
+            return ReadLongNodeGen.create();
+        }
+
+        @NeverDefault
+        public static ReadLongNode getUncached() {
+            return ReadLongNodeGen.getUncached();
+        }
+    }
+
+    @GenerateInline(inlineByDefault = true)
+    @GenerateCached
+    @GenerateUncached
+    @ImportStatic(HiddenAttr.class)
+    public abstract static class WriteLongNode extends Node {
+        public abstract void execute(Node inliningTarget, PythonAbstractObject self, HiddenAttr attr, long value);
+
+        public final void executeCached(PythonAbstractObject self, HiddenAttr attr, long value) {
+            execute(this, self, attr, value);
+        }
+
+        @TruffleBoundary
+        public static void executeUncached(PythonAbstractObject self, HiddenAttr attr, long value) {
+            WriteLongNodeGen.getUncached().execute(null, self, attr, value);
+        }
+
+        @Specialization
+        static void doGeneric(PythonAbstractObject self, HiddenAttr attr, long value,
+                        @Cached DynamicObject.PutNode putNode) {
+            assert attr.hasLongValue();
+            putNode.execute(self, attr.key, value);
+        }
+
+        @NeverDefault
+        public static WriteLongNode create() {
+            return WriteLongNodeGen.create();
+        }
+
+        @NeverDefault
+        public static WriteLongNode getUncached() {
+            return WriteLongNodeGen.getUncached();
         }
     }
 }

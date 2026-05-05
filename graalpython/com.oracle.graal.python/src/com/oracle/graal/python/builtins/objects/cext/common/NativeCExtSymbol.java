@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public interface NativeCExtSymbol {
@@ -47,8 +51,20 @@ public interface NativeCExtSymbol {
 
     TruffleString getTsName();
 
-    /**
-     * Returns the NFI signature.
-     */
-    String getSignature();
+    ArgDescriptor getReturnValue();
+
+    ArgDescriptor[] getArguments();
+
+    default NativeFunctionPointer bind(NativeContext context, long pointer) {
+        ArgDescriptor returnValue = getReturnValue();
+        if (returnValue == null) {
+            throw new UnsupportedOperationException("No signature for " + getName());
+        }
+        ArgDescriptor[] arguments = getArguments();
+        NativeSimpleType[] argTypes = new NativeSimpleType[arguments.length];
+        for (int i = 0; i < arguments.length; i++) {
+            argTypes[i] = arguments[i].getNativeSimpleType();
+        }
+        return NativeFunctionPointer.create(context, pointer, returnValue.getNativeSimpleType(), argTypes);
+    }
 }

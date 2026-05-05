@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -307,7 +307,7 @@ class TestPyDict(CPyExtTestCase):
     # PyDict_Next
     test_PyDict_Next = CPyExtFunctionOutVars(
         _reference_next,
-        lambda: (({'a': "hello"}, 1), ({'a': "hello"}, 0), ({'a': "hello", 'b': 'world'}, 1), ({'a': "hello"}, 1)),
+        lambda: (({'a': "hello"}, 1), ({'a': "hello"}, 0), ({'a': "hello", 'b': 'world'}, 1), ({'a': "hello"}, 1), ({True: False}, 0)),
         code='''int wrap_PyDict_Next(PyObject* dict, Py_ssize_t* ppos, PyObject** key, PyObject** value) {
             int res = 0;
             Py_ssize_t iterations = *ppos;

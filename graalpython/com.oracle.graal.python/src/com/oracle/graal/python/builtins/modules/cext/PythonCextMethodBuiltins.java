@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,26 +48,26 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_METHOD;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi9BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextMethodBuiltins {
@@ -79,46 +79,41 @@ public final class PythonCextMethodBuiltins {
      */
     public static final HiddenAttr METHOD_DEF_PTR = HiddenAttr.METHOD_DEF_PTR;
 
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class CFunctionNewExMethodNode extends Node {
-
-        abstract Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc);
-
-        final Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object doc) {
-            return execute(inliningTarget, methodDefPtr, name, methObj, flags, wrapper, self, module, PNone.NO_VALUE, doc);
+    static PythonBuiltinObject cFunctionNewExMethodNode(PythonLanguage language, long methodDefPtr, TruffleString name, long methPtr, int flags, Object self, Object moduleName, Object cls,
+                    Object doc) {
+        PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, PNone.NO_VALUE, flags);
+        HiddenAttr.WriteLongNode.executeUncached(func, METHOD_DEF_PTR, methodDefPtr);
+        WriteAttributeToPythonObjectNode.executeUncached(func, T___NAME__, name);
+        WriteAttributeToPythonObjectNode.executeUncached(func, T___DOC__, doc);
+        PBuiltinMethod method;
+        if (cls != PNone.NO_VALUE) {
+            method = PFactory.createBuiltinMethod(language, self, func, cls);
+        } else {
+            method = PFactory.createBuiltinMethod(language, self, func);
         }
-
-        @Specialization
-        static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
-                        @Bind PythonLanguage language,
-                        @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
-                        @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode) {
-            Object f = ExternalFunctionNodes.PExternalFunctionWrapper.createWrapperFunction(name, methObj, PNone.NO_VALUE, flags, wrapper, language);
-            assert f instanceof PBuiltinFunction;
-            PBuiltinFunction func = (PBuiltinFunction) f;
-            writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
-            writeAttrNode.execute(func, T___NAME__, name);
-            writeAttrNode.execute(func, T___DOC__, doc);
-            PBuiltinMethod method;
-            if (cls != PNone.NO_VALUE) {
-                method = PFactory.createBuiltinMethod(language, self, func, cls);
-            } else {
-                method = PFactory.createBuiltinMethod(language, self, func);
-            }
-            writeAttrNode.execute(method, T___MODULE__, module);
-            return method;
-        }
+        assert moduleName == PNone.NO_VALUE || PyUnicodeCheckNode.executeUncached(moduleName);
+        WriteAttributeToPythonObjectNode.executeUncached(method, T___MODULE__, moduleName);
+        return method;
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyMethodDef, ConstCharPtrAsTruffleString, Pointer, Int, Int, PyObject, PyObject, PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class GraalPyPrivate_CMethod_NewEx extends CApi9BuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyMethodDef, ConstCharPtrAsTruffleString, Pointer, Int, PyObject, PyObject, PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)
+    public static long GraalPyPrivate_CMethod_NewEx(long methodDefPtr, long nameRaw, long methPtr, int flags, long selfRaw, long moduleRaw, long clsRaw, long docRaw) {
+        // errors are expected to be thrown already in native code
+        assert verifyFlags(flags, clsRaw);
 
-        @Specialization
-        static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
-                        @Bind Node inliningTarget,
-                        @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
-            return cFunctionNewExMethodNode.execute(inliningTarget, methodDefPtr, name, methObj, flags, wrapper, self, module, cls, doc);
-        }
+        TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(nameRaw);
+        Object self = NativeToPythonInternalNode.executeUncached(selfRaw, false);
+        Object module = NativeToPythonInternalNode.executeUncached(moduleRaw, false);
+        Object cls = NativeToPythonInternalNode.executeUncached(clsRaw, false);
+        Object doc = CharPtrToPythonNode.getUncached().execute(docRaw);
+        assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
+
+        PythonBuiltinObject result = cFunctionNewExMethodNode(PythonLanguage.get(null), methodDefPtr, name, methPtr, flags, self, module, cls, doc);
+        return PythonToNativeInternalNode.executeUncached(result, true);
+    }
+
+    private static boolean verifyFlags(int flags, long clsRaw) {
+        boolean isMethod = (flags & METH_METHOD) != 0;
+        return (!isMethod || clsRaw != NULLPTR) && (isMethod || clsRaw == NULLPTR);
     }
 }

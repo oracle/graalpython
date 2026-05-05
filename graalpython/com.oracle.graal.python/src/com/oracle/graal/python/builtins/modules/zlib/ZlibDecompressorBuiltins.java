@@ -204,7 +204,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
         abstract static class DecompressBufInnerNode extends Node {
             abstract byte[] execute(VirtualFrame frame, Node inliningTarget, Object self, byte[] bytes, int length, int maxLength);
 
-            @Specialization(guards = {"self.isNative()"})
+            @Specialization(guards = {"self.isNativeDecompressor()"})
             static byte[] doNative(Node inliningTarget, ZlibDecompressorObject self, byte[] bytes, int length, int maxLength,
                             @Cached ZlibNodes.ZlibNativeDecompressor decompress) {
                 synchronized (self) {
@@ -212,7 +212,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
                 }
             }
 
-            @Specialization(guards = {"!self.isNative()"})
+            @Specialization(guards = {"!self.isNativeDecompressor()"})
             static byte[] doJava(VirtualFrame frame, Node inliningTarget, ZlibDecompressorObject self, byte[] bytes, int length, int maxLength,
                             @Cached(inline = false) BytesNodes.ToBytesNode toBytes) {
                 byte[] ret = self.getStream().decompress(frame, bytes, length, maxLength, DEF_BUF_SIZE, inliningTarget, toBytes);
@@ -231,7 +231,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
     @Builtin(name = "unused_data", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class UnusedDataNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = {"self.isInitialized()", "self.isNative()"})
+        @Specialization(guards = {"self.isInitialized()", "self.isNativeDecompressor()"})
         static PBytes doit(ZlibDecompressorObject self,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
@@ -242,12 +242,12 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!self.isInitialized()", "self.isNative()"})
+        @Specialization(guards = {"!self.isInitialized()", "self.isNativeDecompressor()"})
         static PBytes doeof(ZlibDecompressorObject self) {
             return self.getUnusedData();
         }
 
-        @Specialization(guards = "!self.isNative()")
+        @Specialization(guards = "!self.isNativeDecompressor()")
         static PBytes doit(ZlibDecompressorObject self) {
             return self.getUnusedData();
         }
@@ -256,12 +256,12 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
     @Builtin(name = "eof", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class EOFNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = {"self.isEof() || !self.isInitialized()", "self.isNative()"})
+        @Specialization(guards = {"self.isEof() || !self.isInitialized()", "self.isNativeDecompressor()"})
         static boolean doit(ZlibDecompressorObject self) {
             return self.isEof();
         }
 
-        @Specialization(guards = {"!self.isEof()", "self.isInitialized()", "self.isNative()"})
+        @Specialization(guards = {"!self.isEof()", "self.isInitialized()", "self.isNativeDecompressor()"})
         boolean doNative(ZlibDecompressorObject self,
                         @Cached NativeLibrary.InvokeNativeFunction getEOF) {
             synchronized (self) {
@@ -272,7 +272,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!self.isNative()")
+        @Specialization(guards = "!self.isNativeDecompressor()")
         static boolean doJava(ZlibDecompressorObject self) {
             return self.isEof();
         }

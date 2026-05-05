@@ -68,8 +68,12 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.getByteArray;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.PRECISION_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND;
@@ -79,6 +83,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode.castLong;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32LE;
@@ -98,7 +103,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5Bui
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -106,11 +110,12 @@ import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -135,6 +140,7 @@ import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
@@ -164,12 +170,10 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.interop.InteropException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
+import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.FromNativePointerNode;
@@ -316,7 +320,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {
             if (!unicodeCheckExactNode.execute(inliningTarget, str)) {
-                return getNativeNull(inliningTarget);
+                return NATIVE_NULL;
             }
 
             str.intern();
@@ -334,7 +338,7 @@ public final class PythonCextUnicodeBuiltins {
              * If it's a subclass, we don't really know what putting it in the interned dict might
              * do.
              */
-            return getNativeNull();
+            return NATIVE_NULL;
         }
     }
 
@@ -457,27 +461,27 @@ public final class PythonCextUnicodeBuiltins {
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_FindChar extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction > 0"})
-        static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
+        static long find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared @Cached ChrNode chrNode,
                         @Cached FindNode findNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return findNode.execute(null, string, chrNode.execute(null, c), start, end);
+            return (Integer) findNode.execute(null, string, chrNode.execute(null, c), start, end);
         }
 
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction <= 0"})
-        static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
+        static long find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared @Cached ChrNode chrNode,
                         @Cached RFindNode rFindNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return rFindNode.execute(null, string, chrNode.execute(null, c), start, end);
+            return (Integer) rFindNode.execute(null, string, chrNode.execute(null, c), start, end);
         }
 
         @Specialization(guards = {"!isTruffleString(string)", "!isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)"})
-        static Object find(Object string, @SuppressWarnings("unused") Object c, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
+        static long find(Object string, @SuppressWarnings("unused") Object c, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
                         @SuppressWarnings("unused") Object direction,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
@@ -562,13 +566,48 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, ConstCharPtrAsTruffleString}, call = Direct)
-    abstract static class PyUnicode_CompareWithASCIIString extends CApiBinaryBuiltinNode {
+    private static final CApiTiming TIMING_PYUNICODE_COMPAREWITHASCIISTRING = CApiTiming.create(false, "PyUnicode_CompareWithASCIIString");
 
-        @Specialization
-        static int compare(TruffleString left, TruffleString right,
-                        @Cached TruffleString.CompareIntsUTF32Node compare) {
-            return compare.execute(left, right);
+    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, ConstCharPtr}, call = Direct)
+    public static int PyUnicode_CompareWithASCIIString(long uniPtr, long str) {
+        /*
+         * This method cannot throw Python exceptions and doesn't need a GIL since both, the unicode
+         * object and the ASCII string are assumed to be immutable.
+         */
+        CApiTiming.enter();
+        try {
+            Object uniObj = NativeToPythonInternalNode.executeUncached(uniPtr, false);
+            /*
+             * This unchecked cast is fine because CPython will also just assume that the first
+             * argument is a unicode object and will crash otherwise.
+             */
+            TruffleString left = CastToTruffleStringNode.castKnownStringUncached(uniObj);
+            if (left.isCompatibleToUncached(Encoding.US_ASCII)) {
+                InternalByteArray internalByteArray = left.switchEncodingUncached(Encoding.US_ASCII).getInternalByteArrayUncached(Encoding.US_ASCII);
+
+                int len1 = internalByteArray.getLength();
+
+                // len2 = strlen(str)
+                int len2 = 0;
+                while (readByteArrayElement(str, len2) != 0) {
+                    len2++;
+                }
+
+                int len = Math.min(len1, len2);
+                for (int i = 0; i < len; i++) {
+                    int cmp = (internalByteArray.get(i) & 0xFF) - (NativeMemory.readByteArrayElement(str, i) & 0xFF);
+                    if (cmp != 0) {
+                        return cmp < 0 ? -1 : 1;
+                    }
+                }
+                return Integer.compare(len1, len2);
+            }
+
+            TruffleString asciiString = FromCharPointerNode.executeUncached(str, false);
+            assert asciiString.isCompatibleToUncached(Encoding.US_ASCII);
+            return left.compareIntsUTF32Uncached(asciiString);
+        } finally {
+            CApiTiming.exit(TIMING_PYUNICODE_COMPAREWITHASCIISTRING);
         }
     }
 
@@ -602,7 +641,7 @@ public final class PythonCextUnicodeBuiltins {
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Tailmatch extends CApi5BuiltinNode {
         @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction > 0"})
-        static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
+        static long tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
                         @Bind Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttrNode,
                         @Shared @Cached PySliceNew sliceNode,
@@ -616,7 +655,7 @@ public final class PythonCextUnicodeBuiltins {
         }
 
         @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
-        static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
+        static long tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
                         @Bind Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttrNode,
                         @Shared @Cached PySliceNew sliceNode,
@@ -631,7 +670,7 @@ public final class PythonCextUnicodeBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isAnyString(inliningTarget, string, getClassNode, isSubtypeNode) || !isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)"})
-        static Object find(Object string, Object substring, Object start, Object end, Object direction,
+        static long find(Object string, Object substring, Object start, Object end, Object direction,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Bind Node inliningTarget) {
@@ -690,7 +729,7 @@ public final class PythonCextUnicodeBuiltins {
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return getNativeNull(inliningTarget);
+            return NATIVE_NULL;
         }
     }
 
@@ -699,7 +738,7 @@ public final class PythonCextUnicodeBuiltins {
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class _PyUnicode_JoinArray extends CApiTernaryBuiltinNode {
         @Specialization
-        static Object join(Object separatorObj, Object itemsObj, long seqlenlong,
+        static Object join(Object separatorObj, long itemsObj, long seqlenlong,
                         @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -790,7 +829,7 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_New extends CApiQuaternaryBuiltinNode {
         @Specialization
-        static Object doGeneric(Object ptr, long elements, int charSize, int isAscii,
+        static Object doGeneric(long ptr, long elements, int charSize, int isAscii,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached HiddenAttr.WriteNode writeNode,
@@ -819,7 +858,7 @@ public final class PythonCextUnicodeBuiltins {
         }
 
         @Specialization
-        static Object doNative(Object ptr, long byteLength, int kind,
+        static Object doNative(long ptr, long byteLength, int kind,
                         @Bind Node inliningTarget,
                         @Cached FromNativePointerWithCompactionUTF32Node fromNativePointerNode,
                         @Cached PRaiseNode raiseNode) {
@@ -857,7 +896,7 @@ public final class PythonCextUnicodeBuiltins {
         }
 
         @Specialization
-        static Object doNative(Object ptr, long byteLength, int kind,
+        static Object doNative(long ptr, long byteLength, int kind,
                         @Bind Node inliningTarget,
                         @Cached FromNativePointerNode fromNativePointerNode,
                         @Cached SwitchEncodingNode switchEncodingNode,
@@ -908,19 +947,16 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, ConstCharPtrAsTruffleString, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_DecodeUTF8Stateful extends CApiQuaternaryBuiltinNode {
         @Specialization
-        static Object doUtf8Decode(Object cByteArray, long size, TruffleString errors, int reportConsumed,
+        static Object doUtf8Decode(long cByteArray, long size, TruffleString errors, int reportConsumed,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached GetByteArrayNode getByteArrayNode,
                         @Cached CodecsModuleBuiltins.CodecsDecodeNode decode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                PBytes bytes = PFactory.createBytes(language, getByteArrayNode.execute(inliningTarget, cByteArray, size));
+                PBytes bytes = PFactory.createBytes(language, getByteArray(cByteArray, size));
                 return decode.call(null, bytes, T_UTF8, errors, reportConsumed == 0);
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
-            } catch (InteropException e) {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
             }
         }
     }
@@ -929,14 +965,13 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class GraalPyPrivate_Unicode_DecodeUTF16Stateful extends CApi5BuiltinNode {
 
         @Specialization
-        static Object decode(Object cByteArray, long size, TruffleString errors, int byteorder, int reportConsumed,
+        static Object decode(long cByteArray, long size, TruffleString errors, int byteorder, int reportConsumed,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached GetByteArrayNode getByteArrayNode,
                         @Cached CodecsModuleBuiltins.CodecsDecodeNode decode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                PBytes bytes = PFactory.createBytes(language, getByteArrayNode.execute(inliningTarget, cByteArray, size));
+                PBytes bytes = PFactory.createBytes(language, getByteArray(cByteArray, size));
                 TruffleString encoding;
                 if (byteorder == 0) {
                     encoding = T_UTF_16;
@@ -948,8 +983,6 @@ public final class PythonCextUnicodeBuiltins {
                 return decode.call(null, bytes, encoding, errors, reportConsumed == 0);
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
-            } catch (InteropException e) {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
             }
         }
     }
@@ -958,14 +991,13 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class GraalPyPrivate_Unicode_DecodeUTF32Stateful extends CApi5BuiltinNode {
 
         @Specialization
-        static Object decode(Object cByteArray, long size, TruffleString errors, int byteorder, int reportConsumed,
+        static Object decode(long cByteArray, long size, TruffleString errors, int byteorder, int reportConsumed,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached GetByteArrayNode getByteArrayNode,
                         @Cached CodecsModuleBuiltins.CodecsDecodeNode decode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                PBytes bytes = PFactory.createBytes(language, getByteArrayNode.execute(inliningTarget, cByteArray, size));
+                PBytes bytes = PFactory.createBytes(language, getByteArray(cByteArray, size));
                 TruffleString encoding;
                 if (byteorder == 0) {
                     encoding = T_UTF_32;
@@ -977,8 +1009,6 @@ public final class PythonCextUnicodeBuiltins {
                 return decode.call(null, bytes, encoding, errors, reportConsumed == 0);
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.INPUT_TOO_LONG);
-            } catch (InteropException e) {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
             }
         }
     }
@@ -1021,7 +1051,7 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_WCHAR_PTR, Py_ssize_t}, call = Direct)
     abstract static class PyUnicode_FromWideChar extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doInt(Object arr, long size,
+        Object doInt(long arr, long size,
                         @Bind Node inliningTarget,
                         @Cached ReadUnicodeArrayNode readArray,
                         @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
@@ -1089,12 +1119,10 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class GraalPyPrivate_Unicode_AsUTF8AndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doUnicode(PString s, Object sizePtr,
+        static long doUnicode(PString s, long sizePtr,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached InlinedConditionProfile hasSizeProfile,
                         @Cached InlinedConditionProfile hasUtf8Profile,
-                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached _PyUnicode_AsUTF8String asUTF8String,
                         @Cached HiddenAttr.ReadNode readAttrNode,
                         @Cached HiddenAttr.WriteNode writeAttrNode) {
@@ -1103,15 +1131,15 @@ public final class PythonCextUnicodeBuiltins {
                 utf8bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
                 s.setUtf8Bytes(inliningTarget, writeAttrNode, utf8bytes);
             }
-            if (hasSizeProfile.profile(inliningTarget, !lib.isNull(sizePtr))) {
-                writeLongNode.write(sizePtr, utf8bytes.getSequenceStorage().length());
+            if (hasSizeProfile.profile(inliningTarget, sizePtr != NULLPTR)) {
+                NativeMemory.writeLong(sizePtr, utf8bytes.getSequenceStorage().length());
             }
             return PySequenceArrayWrapper.ensureNativeSequence(utf8bytes);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        static Object doError(Object s, Object sizePtr,
+        static long doError(Object s, Object sizePtr,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
@@ -1122,17 +1150,14 @@ public final class PythonCextUnicodeBuiltins {
 
         @Specialization
         static Object doNative(PythonAbstractNativeObject s,
-                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @Cached CStructAccess.AllocateNode allocateNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
             TruffleString utf8Str = encodeNativeStringNode.execute(UTF_8, s, T_STRICT);
             int len = utf8Str.byteLength(UTF_8);
-            Object mem = allocateNode.alloc(len + 1, true);
+            long mem = CStructAccess.allocatePyMem(len + 1);
             writeTruffleStringNode.write(mem, utf8Str, UTF_8);
-            writePointerNode.writeToObj(s, CFields.PyCompactUnicodeObject__utf8, mem);
-            writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__utf8_length, len);
+            writePtrField(s.getPtr(), CFields.PyCompactUnicodeObject__utf8, mem);
+            writeLongField(s.getPtr(), CFields.PyCompactUnicodeObject__utf8_length, len);
             return 0;
         }
     }
@@ -1141,12 +1166,10 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class GraalPyPrivate_Unicode_AsUnicodeAndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doUnicode(PString s, Object sizePtr,
+        static long doUnicode(PString s, long sizePtr,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached InlinedConditionProfile hasSizeProfile,
                         @Cached InlinedConditionProfile hasUnicodeProfile,
-                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Cached HiddenAttr.ReadNode readAttrNode,
                         @Cached HiddenAttr.WriteNode writeAttrNode) {
@@ -1156,8 +1179,8 @@ public final class PythonCextUnicodeBuiltins {
                 wcharBytes = asWideCharNode.executeNativeOrder(inliningTarget, s, wcharSize);
                 s.setWCharBytes(inliningTarget, writeAttrNode, wcharBytes);
             }
-            if (hasSizeProfile.profile(inliningTarget, !lib.isNull(sizePtr))) {
-                writeLongNode.write(sizePtr, wcharBytes.getSequenceStorage().length() / wcharSize);
+            if (hasSizeProfile.profile(inliningTarget, sizePtr != NULLPTR)) {
+                NativeMemory.writeLong(sizePtr, wcharBytes.getSequenceStorage().length() / wcharSize);
             }
             return PySequenceArrayWrapper.ensureNativeSequence(wcharBytes);
         }
@@ -1184,6 +1207,7 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    // TODO(native-access) Remove or fix and add test for GraalPyPrivate_Unicode_FillUnicode
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_FillUnicode extends CApiUnaryBuiltinNode {
         public static final int WCHAR_T_SIZE = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? 2 : 4;
@@ -1194,16 +1218,17 @@ public final class PythonCextUnicodeBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached CStructAccess.AllocateNode allocateNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
             TruffleString str = switchEncodingNode.execute(cast.castKnownString(inliningTarget, s), WCHAR_T_ENCODING);
             int len = str.byteLength(WCHAR_T_ENCODING);
-            Object mem = allocateNode.alloc(len + WCHAR_T_SIZE, true);
+            long mem = CStructAccess.allocatePyMem(len + WCHAR_T_SIZE);
             writeTruffleStringNode.write(mem, str, WCHAR_T_ENCODING);
+            // writePtrField(s.getPtr(), CFields.PyASCIIObject__wstr, mem);
             return 0;
         }
     }
 
+    // TODO(native-access) Remove GraalPyPrivate_Unicode_AsWideChar
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_AsWideChar extends CApiBinaryBuiltinNode {
         @Specialization
@@ -1226,16 +1251,6 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, VA_LIST_PTR}, call = CApiCallPath.Ignored)
-    abstract static class GraalPyPrivate_Unicode_FromFormat extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object doGeneric(TruffleString format, Object vaList,
-                        @Bind Node inliningTarget,
-                        @Cached UnicodeFromFormatNode unicodeFromFormatNode) {
-            return unicodeFromFormatNode.execute(inliningTarget, format, vaList);
-        }
-    }
-
     @CApiBuiltin(ret = _PY_ERROR_HANDLER, args = {ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class _Py_GetErrorHandler extends CApiUnaryBuiltinNode {
         @Specialization
@@ -1254,16 +1269,13 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtr, Py_ssize_t, Py_ssize_t, Py_ssize_t, ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class PyUnicodeDecodeError_Create extends CApi6BuiltinNode {
         @Specialization
-        static Object doit(Object encoding, Object object, long length, long start, long end, Object reason,
+        static Object doit(Object encoding, long object, long length, long start, long end, Object reason,
                         @Bind Node inliningTarget,
-                        @Cached GetByteArrayNode getByteArrayNode,
                         @Cached CallNode callNode,
                         @Cached PRaiseNode raiseNode) {
             PBytes bytes;
             try {
-                bytes = PFactory.createBytes(PythonLanguage.get(inliningTarget), getByteArrayNode.execute(inliningTarget, object, length));
-            } catch (InteropException e) {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
+                bytes = PFactory.createBytes(PythonLanguage.get(inliningTarget), getByteArray(object, length));
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }

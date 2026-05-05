@@ -53,8 +53,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -76,6 +79,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -137,6 +142,7 @@ public abstract class StringNodes {
     @ImportStatic(StringNodes.class)
     @GenerateInline(false)       // footprint reduction 40 -> 21
     public abstract static class StringLenNode extends PNodeWithContext {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH);
 
         public abstract int execute(Object str);
 
@@ -160,11 +166,14 @@ public abstract class StringNodes {
                         @Cached StringMaterializeNode materializeNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             NativeStringData nativeData = x.getNativeStringData(inliningTarget, readAttrNode);
-            if (oneByteProfile.profile(inliningTarget, nativeData.getCharSize() == 1)) {
-                return nativeData.length();
-            } else {
-                return doString(materializeNode.execute(inliningTarget, x), codePointLengthNode);
-            }
+            int charSize = nativeData.getCharSize();
+            assert charSize == 1 || charSize == 2 || charSize == 4;
+            /*
+             * Avoid materialization of strings backed by native memory. It is correct to use the
+             * 'length / charSize' because native data always contains characters with fixed byte
+             * size (i.e. Py_UCS1, Py_UCS2, or Py_UCS4).
+             */
+            return nativeData.length() / nativeData.getCharSize();
         }
 
         @Specialization
@@ -173,14 +182,17 @@ public abstract class StringNodes {
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
-                        @Cached PythonToNativeNode toSulongNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Cached PRaiseNode raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PString)) {
                 // read the native data
-                Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
-                assert result instanceof Number;
-                return intValue((Number) result);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(x);
+                PythonContext context = PythonContext.get(inliningTarget);
+                var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH);
+                return intValue(ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNativeContext(),
+                                BoundaryCallData.getUncached(),
+                                context.getThreadState(context.getLanguage(inliningTarget)), callable,
+                                toNativeNode.executeLong(x)));
             }
             // the object's type is not a subclass of 'str'
             throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);

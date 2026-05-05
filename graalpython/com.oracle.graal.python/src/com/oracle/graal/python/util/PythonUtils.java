@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -844,6 +845,10 @@ public final class PythonUtils {
         return value instanceof Integer || value instanceof Long || value instanceof Boolean || value instanceof Double;
     }
 
+    public static Object normalizeNone(ConditionProfile profile, Object o) {
+        return profile.profile(PGuards.isNone(o)) ? PNone.NO_VALUE : o;
+    }
+
     public static final class NodeCounterWithLimit implements NodeVisitor {
         private int count;
         private final int limit;
@@ -1006,6 +1011,11 @@ public final class PythonUtils {
             }
         }
         return String.valueOf(pointer);
+    }
+
+    public static String formatPointer(long pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("0x%016x", pointer);
     }
 
     public static long coerceToLong(Object allocated, InteropLibrary lib) {

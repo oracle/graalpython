@@ -47,41 +47,51 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.bindFunctionPointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nodes.ErrorMessages.NAMELESS_MODULE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi7BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins.CFunctionNewExMethodNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionSignature;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -91,9 +101,9 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -101,8 +111,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -243,38 +251,63 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class GraalPyPrivate_Module_AddFunctionToModule extends CApi7BuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject, PyMethodDef}, call = Ignored)
+    public static int GraalPyPrivate_Module_AddFunctions(long moduleRaw, long functions) {
+        CompilerAsserts.neverPartOfCompilation();
+        Object module = NativeToPythonInternalNode.executeUncached(moduleRaw, false);
 
-        @Specialization
-        static Object moduleFunction(Object methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
-                        @Bind Node inliningTarget,
-                        @Cached ObjectBuiltins.SetattrNode setattrNode,
-                        @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttrNode,
-                        @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
-            Object modName = readAttrNode.execute(inliningTarget, mod, T___NAME__, null);
-            assert modName != null : "module name is missing!";
-            Object func = cFunctionNewExMethodNode.execute(inliningTarget, methodDefPtr, name, cfunc, flags, wrapper, mod, modName, doc);
-            setattrNode.executeSetAttr(null, mod, name, func);
-            return 0;
+        // the necessary type check is done in the C function
+        assert module instanceof PythonModule;
+        Object modName = ReadAttributeFromPythonObjectNode.executeUncached((PythonModule) module, T___NAME__, PNone.NO_VALUE);
+        if (!PyUnicodeCheckNode.executeUncached(modName)) {
+            return PRaiseNativeNodeGen.getUncached().raiseIntWithoutFrame(-1, SystemError, NAMELESS_MODULE, EMPTY_OBJECT_ARRAY);
+        }
+
+        addMethodsToObject(functions, module, modName);
+        return 0;
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyMethodDef}, call = Ignored)
+    public static int GraalPyPrivate_AddMethodsToObject(long moduleRaw, long nameRaw, long functions) {
+        CompilerAsserts.neverPartOfCompilation();
+        Object module = NativeToPythonInternalNode.executeUncached(moduleRaw, false);
+        Object name = NativeToPythonInternalNode.executeUncached(nameRaw, false);
+        addMethodsToObject(functions, module, name);
+        return 0;
+    }
+
+    /**
+     * Implementation of {@code moduleobject.c: _add_methods_to_object}.
+     *
+     * TODO(fa): overlaps with
+     * {@link com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes#createLegacyMethod}
+     */
+    private static void addMethodsToObject(long functions, Object module, Object modName) {
+        PythonLanguage language = PythonLanguage.get(null);
+        long nameRaw;
+
+        // iterate over a native array of PyModuleDef elements
+        for (long def = functions; (nameRaw = readPtrField(def, CFields.PyMethodDef__ml_name)) != NULLPTR; def += CStructs.PyMethodDef.size()) {
+            long cfunc = readPtrField(def, CFields.PyMethodDef__ml_meth);
+            int flags = readIntField(def, CFields.PyMethodDef__ml_flags);
+            long docRaw = readPtrField(def, CFields.PyMethodDef__ml_doc);
+
+            TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(nameRaw);
+            Object doc = CharPtrToPythonNode.getUncached().execute(docRaw);
+            assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
+
+            PythonBuiltinObject func = PythonCextMethodBuiltins.cFunctionNewExMethodNode(language, def, name, cfunc, flags, module, modName, PNone.NO_VALUE, doc);
+            WriteAttributeToObjectNode.getUncached().execute(module, name, func);
         }
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Module_Traverse extends CApiTernaryBuiltinNode {
-        private static final String J__M_TRAVERSE = "m_traverse";
-        private static final TruffleString T__M_TRAVERSE = tsLiteral(J__M_TRAVERSE);
-        private static final CApiTiming TIMING = CApiTiming.create(true, J__M_TRAVERSE);
+        private static final CApiTiming TIMING_INVOKE_TRAVERSE_PROC = CApiTiming.create(true, "invokeTraverseProc");
 
         @Specialization
-        static int doGeneric(PythonModule self, Object visitFun, Object arg,
+        static int doGeneric(PythonModule self, long visitFun, long arg,
                         @Bind Node inliningTarget,
-                        @Cached CStructAccess.ReadPointerNode readPointerNode,
-                        @Cached CStructAccess.ReadI64Node readI64Node,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached EnsureExecutableNode ensureExecutableNode,
-                        @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
                         @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
                         @Cached PythonToNativeNode toNativeNode) {
 
@@ -282,20 +315,19 @@ public final class PythonCextModuleBuiltins {
              * As in 'moduleobject.c: module_traverse': 'if (m->md_def && m->md_def->m_traverse &&
              * (m->md_def->m_size <= 0 || m->md_state != NULL))'
              */
-            Object mdDef = self.getNativeModuleDef();
-            if (mdDef != null) {
-                Object mTraverse = readPointerNode.read(mdDef, CFields.PyModuleDef__m_traverse);
-                if (!lib.isNull(mTraverse)) {
-                    long mSize = readI64Node.read(mdDef, CFields.PyModuleDef__m_size);
-                    Object mdState = self.getNativeModuleState();
-                    if (mSize <= 0 || (mdState != null && !lib.isNull(mdState))) {
-                        PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-                        Object traverseExecutable = ensureExecutableNode.execute(inliningTarget, mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
-                        Object res = externalFunctionInvokeNode.call(null, inliningTarget, threadState, TIMING, T__M_TRAVERSE, traverseExecutable, toNativeNode.execute(self), visitFun, arg);
-                        int ires = (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, res);
-                        if (ires != 0) {
-                            return ires;
-                        }
+            long mdDef = self.getNativeModuleDef();
+            if (mdDef != NULLPTR) {
+                long mTraverse = readPtrField(mdDef, CFields.PyModuleDef__m_traverse);
+                if (mTraverse != NULLPTR) {
+                    long mSize = readLongField(mdDef, CFields.PyModuleDef__m_size);
+                    long mdState = self.getNativeModuleState();
+                    if (mSize <= 0 || mdState != NULLPTR) {
+                        PythonContext ctx = PythonContext.get(inliningTarget);
+                        NativeFunctionPointer traverseExecutable = bindFunctionPointer(mTraverse, ExternalFunctionSignature.TRAVERSEPROC);
+                        int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING_INVOKE_TRAVERSE_PROC, ctx.ensureNativeContext(), BoundaryCallData.getUncached(),
+                                        ctx.getThreadState(PythonLanguage.get(inliningTarget)), traverseExecutable, toNativeNode.executeLong(self), visitFun, arg);
+                        checkPrimitiveFunctionResultNode.executeLong(inliningTarget, ctx.getThreadState(PythonLanguage.get(inliningTarget)), StringLiterals.T_VISIT, ires);
+                        return ires;
                     }
                 }
             }
@@ -328,7 +360,7 @@ public final class PythonCextModuleBuiltins {
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDef}, call = Ignored)
     abstract static class GraalPyPrivate_Module_SetDef extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object set(PythonModule object, Object value) {
+        static Object set(PythonModule object, long value) {
             object.setNativeModuleDef(value);
             return PNone.NO_VALUE;
         }
@@ -337,7 +369,7 @@ public final class PythonCextModuleBuiltins {
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Module_SetState extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object set(PythonModule object, Object value) {
+        static Object set(PythonModule object, long value) {
             object.setNativeModuleState(value);
             return PNone.NO_VALUE;
         }

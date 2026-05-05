@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,9 +45,12 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -57,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.Una
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLenFactory.CallSlotLenNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -65,10 +69,12 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -150,6 +156,11 @@ public abstract class TpSlotLen {
 
         public abstract int execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self);
 
+        @TruffleBoundary
+        public static int executeUncached(TpSlot slot, Object self) {
+            return CallSlotLenNodeGen.getUncached().execute(null, null, slot, self);
+        }
+
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static int callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotLenBuiltin<?> slot, Object self,
                         @SuppressWarnings("unused") @Cached("slot") TpSlotLenBuiltin<?> cachedSlot,
@@ -166,18 +177,25 @@ public abstract class TpSlotLen {
         @Specialization
         static int callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Exclusive @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
+                        @Exclusive @Cached CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___LEN__, slot.callable, toNativeNode.execute(self));
-            long l = checkResultNode.executeLong(state, T___LEN__, result);
-            if (!PInt.isIntRange(l)) {
-                raiseOverflow(inliningTarget, raiseNode, l);
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            try {
+                long lresult = ExternalFunctionInvoker.invokeLENFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
+                                toNativeNode.executeLong(promotedSelf));
+                long l = checkResultNode.executeLong(inliningTarget, state, T___LEN__, lresult);
+                if (!PInt.isIntRange(l)) {
+                    raiseOverflow(inliningTarget, raiseNode, l);
+                }
+                return (int) l;
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
             }
-            return (int) l;
         }
 
         @InliningCutoff

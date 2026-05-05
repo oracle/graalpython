@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,53 +42,36 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextByteArrayBuiltins {
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
-    abstract static class PyByteArray_AsString extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object doByteArray(PByteArray bytes) {
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Direct)
+    static long PyByteArray_AsString(long bytesPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(bytesPtr);
+        if (obj instanceof PByteArray bytes) {
             return PySequenceArrayWrapper.ensureNativeSequence(bytes);
         }
-
-        @Specialization
-        static Object doNative(PythonAbstractNativeObject obj,
-                        @Bind Node inliningTarget,
-                        @Cached GetPythonObjectClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached CStructAccess.GetElementPtrNode getArray,
-                        @Cached PRaiseNode raiseNode) {
-            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PByteArray)) {
-                return getArray.getElementPtr(obj.getPtr(), CFields.PyByteArrayObject__ob_start);
+        if (obj instanceof PythonAbstractNativeObject nativeObj) {
+            Object type = GetClassNode.executeUncached(nativeObj);
+            if (IsSubtypeNode.getUncached().execute(type, PythonBuiltinClassType.PByteArray)) {
+                return getFieldPtr(nativeObj.getPtr(), CFields.PyByteArrayObject__ob_start);
             }
-            return doError(obj, raiseNode);
         }
-
-        @Fallback
-        static Object doError(Object obj,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytearray", obj);
-        }
+        throw PRaiseNode.raiseStatic(null, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytearray", obj);
     }
 }

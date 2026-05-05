@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
@@ -49,7 +50,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseBufferNode;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -91,7 +91,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     private final int ndim;
     // We cannot easily add numbers to pointers in Java, so the actual pointer is bufPointer +
     // offset
-    private final Object bufPointer;
+    private final long bufPointer;
     private final int offset;
     private final int[] shape;
     private final int[] strides;
@@ -107,7 +107,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     private int cachedHash = -1;
 
     public PMemoryView(Object cls, Shape instanceShape, PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
-                    int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, Object bufPointer,
+                    int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, long bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
         PythonBufferAccessLibrary.assertIsBuffer(buffer);
@@ -128,7 +128,6 @@ public final class PMemoryView extends PythonBuiltinObject {
         if (bufferLifecycleManager != null) {
             this.reference = BufferReference.createBufferReference(this, bufferLifecycleManager, context);
         }
-        setNativeWrapper(new PyMemoryViewWrapper(this));
     }
 
     // From CPython init_strides_from_shape
@@ -180,7 +179,7 @@ public final class PMemoryView extends PythonBuiltinObject {
         return ndim;
     }
 
-    public Object getBufferPointer() {
+    public long getBufferPointer() {
         return bufPointer;
     }
 
@@ -473,7 +472,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     boolean isNative(
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        if (getBufferPointer() != null) {
+        if (getBufferPointer() != NULLPTR) {
             return true;
         } else {
             return bufferLib.isNative(buffer);
@@ -481,9 +480,9 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    Object getNativePointer(
+    long getNativePointer(
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
-        if (getBufferPointer() != null) {
+        if (getBufferPointer() != NULLPTR) {
             return getBufferPointer();
         } else {
             return bufferLib.getNativePointer(buffer);

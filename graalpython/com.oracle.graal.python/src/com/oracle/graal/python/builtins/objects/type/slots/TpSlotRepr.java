@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,11 +42,14 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -59,6 +62,8 @@ import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.util.PythonUtils;
@@ -106,14 +111,21 @@ public final class TpSlotRepr {
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
-            PythonThreadState state = getThreadStateNode.execute(inliningTarget);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___REPR__, slot.callable,
-                            toNativeNode.execute(self));
-            return checkResultNode.execute(state, T___REPR__, toPythonNode.execute(result));
+            PythonContext ctx = PythonContext.get(inliningTarget);
+            PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            try {
+                long lresult = ExternalFunctionInvoker.invokeREPRFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
+                                toNativeNode.executeLong(promotedSelf));
+                return checkResultNode.execute(state, T___REPR__, toPythonNode.execute(inliningTarget, lresult, true));
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+            }
         }
 
         @Specialization(replaces = "callCachedBuiltin")

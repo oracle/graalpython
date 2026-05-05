@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
@@ -119,7 +122,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.getUncachedInterop;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -135,38 +137,35 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinaryOpSlotFuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinarySlotFuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.CallWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrGetFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSetFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.HashfuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.IterNextWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbInPlacePowerWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbPowerWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NewWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetattrWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SqContainsWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncSlotWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargprocWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.BinaryOpSlotFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.BinarySlotFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.CallWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.DescrGetFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.DescrSetFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.GetAttrWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.HashfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.InitWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.InquiryWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.IterNextWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.LenfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.NbInPlacePowerWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.NbPowerWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.NewWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.ObjobjargWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.RichcmpFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SetAttrWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SqContainsWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SsizeargfuncSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SsizeobjargprocWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.UnaryFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WritePointerNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -211,6 +210,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotVarargsBuiltin;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -231,8 +231,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.DenyReplace;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnadoptableNode;
@@ -275,10 +273,10 @@ import com.oracle.truffle.api.strings.TruffleString;
  *              - it has some quirks, so we follow the same algorithm using the the slotdefs ({@link #SLOTDEFS}).
  *              - This is not called for native types: nor static, neither heap types
  *      - When Python class goes to native (in ToNativeTypeNode) we convert the slots to native in
- *          {@link TpSlot#toNative(TpSlotMeta, TpSlot, Object)}
+ *          {@link TpSlot#toNative(TpSlotMeta, TpSlot, long)}
  *          - TpSlotNative slots are unwrapped
- *          - For managed slots we create corresponding {@link PyProcsWrapper}
- *              - when {@link PyProcsWrapper} goes to native, it registers itself in a map in context, so
+ *          - For managed slots we create corresponding {@link TpSlotWrapper}
+ *              - when {@link TpSlotWrapper} goes to native, it registers itself in a map in context, so
  *              that when it comes back from native in {@link #fromNative(PythonAbstractNativeObject, PythonContext)}
  *              we can recognize it and use the managed TpSlot object.
  *
@@ -449,8 +447,8 @@ public record TpSlots(TpSlot nb_bool, //
         }
 
         public boolean readFromNative(PythonAbstractNativeObject pythonClass) {
-            Object ptr = ReadPointerNode.getUncached().readFromObj(pythonClass, cField);
-            return !InteropLibrary.getUncached().isNull(ptr);
+            long ptr = readPtrField(pythonClass.getPtr(), cField);
+            return ptr != NULLPTR;
         }
     }
 
@@ -469,7 +467,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotInquiryBuiltin.class,
                         TpSlotGroup.AS_NUMBER,
                         CFields.PyNumberMethods__nb_bool,
-                        PExternalFunctionWrapper.INQUIRY,
+                        PExternalFunctionWrapper.INQUIRYPRED,
                         InquiryWrapper::new),
         NB_INDEX(
                         TpSlots::nb_index,
@@ -765,7 +763,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotSizeArgFunBuiltin.class,
                         TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_item,
-                        PExternalFunctionWrapper.GETITEM,
+                        PExternalFunctionWrapper.SQ_ITEM,
                         SsizeargfuncSlotWrapper::new),
         SQ_ASS_ITEM(
                         TpSlots::sq_ass_item,
@@ -773,7 +771,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotSqAssItemBuiltin.class,
                         TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_ass_item,
-                        PExternalFunctionWrapper.SETITEM,
+                        PExternalFunctionWrapper.SQ_SETITEM,
                         SsizeobjargprocWrapper::new),
         SQ_REPEAT(
                         TpSlots::sq_repeat,
@@ -781,7 +779,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotSizeArgFunBuiltin.class,
                         TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_repeat,
-                        PExternalFunctionWrapper.SSIZE_ARG,
+                        PExternalFunctionWrapper.INDEXARGFUNC,
                         SsizeargfuncSlotWrapper::new),
         SQ_INPLACE_CONCAT(
                         TpSlots::sq_inplace_concat,
@@ -797,7 +795,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotSizeArgFunBuiltin.class,
                         TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_inplace_repeat,
-                        PExternalFunctionWrapper.SSIZE_ARG,
+                        PExternalFunctionWrapper.INDEXARGFUNC,
                         SsizeargfuncSlotWrapper::new),
         SQ_CONTAINS(
                         TpSlots::sq_contains,
@@ -886,7 +884,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_setattro,
                         PExternalFunctionWrapper.SETATTRO,
-                        SetattrWrapper::new),
+                        SetAttrWrapper::new),
         TP_SETATTR(
                         TpSlots::tp_setattr,
                         null,
@@ -933,7 +931,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotVarargsBuiltin.class,
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_init,
-                        PExternalFunctionWrapper.INITPROC,
+                        PExternalFunctionWrapper.INIT,
                         InitWrapper::new),
         TP_NEW(
                         TpSlots::tp_new,
@@ -1039,11 +1037,11 @@ public record TpSlots(TpSlot nb_bool, //
             return getter.get(slots);
         }
 
-        public Object getNativeValue(TpSlots slots, Object defaultValue) {
+        public long getNativeValue(TpSlots slots, long defaultValue) {
             return TpSlot.toNative(this, getter.get(slots), defaultValue);
         }
 
-        private Object getNativeValue(TpSlot slot, Object defaultValue) {
+        private long getNativeValue(TpSlot slot, long defaultValue) {
             return TpSlot.toNative(this, slot, defaultValue);
         }
 
@@ -1051,19 +1049,14 @@ public record TpSlots(TpSlot nb_bool, //
          * Returns Java {@code null} if the native value is NULL, otherwise interop object
          * representing the native value.
          */
-        public Object readFromNative(PythonAbstractNativeObject pythonClass) {
-            Object field = ReadPointerNode.getUncached().readFromObj(pythonClass, nativeGroupOrField);
-            InteropLibrary ptrInterop = null;
+        public long readFromNative(PythonAbstractNativeObject pythonClass) {
+            long field = readPtrField(pythonClass.getPtr(), nativeGroupOrField);
             if (nativeField != null) {
-                ptrInterop = InteropLibrary.getUncached(field);
-                if (!ptrInterop.isNull(field)) {
-                    field = ReadPointerNode.getUncached().read(field, nativeField);
+                if (field != NULLPTR) {
+                    field = readPtrField(field, nativeField);
                 } else {
-                    return null;
+                    return NULLPTR;
                 }
-            }
-            if (getUncachedInterop(ptrInterop, field).isNull(field)) {
-                return null;
             }
             return field;
         }
@@ -1158,7 +1151,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.TP_ITERNEXT, TpSlotDef.withSimpleFunction(T___NEXT__, PExternalFunctionWrapper.ITERNEXT));
         addSlotDef(s, TpSlotMeta.TP_STR, TpSlotDef.withSimpleFunction(T___STR__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_REPR, TpSlotDef.withSimpleFunction(T___REPR__, PExternalFunctionWrapper.UNARYFUNC));
-        addSlotDef(s, TpSlotMeta.TP_INIT, TpSlotDef.withSimpleFunction(T___INIT__, PExternalFunctionWrapper.INITPROC));
+        addSlotDef(s, TpSlotMeta.TP_INIT, TpSlotDef.withSimpleFunction(T___INIT__, PExternalFunctionWrapper.INIT));
         addSlotDef(s, TpSlotMeta.TP_NEW, TpSlotDef.withSimpleFunction(T___NEW__, PExternalFunctionWrapper.NEW));
         addSlotDef(s, TpSlotMeta.TP_CALL, TpSlotDef.withSimpleFunction(T___CALL__, PExternalFunctionWrapper.CALL));
         addSlotDef(s, TpSlotMeta.NB_ADD,
@@ -1216,7 +1209,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.NB_INPLACE_TRUE_DIVIDE, TpSlotDef.withSimpleFunction(T___ITRUEDIV__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_MATRIX_MULTIPLY, TpSlotDef.withSimpleFunction(T___IMATMUL__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_POWER, TpSlotDef.withSimpleFunction(T___IPOW__, PExternalFunctionWrapper.TERNARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRY));
+        addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRYPRED));
         addSlotDef(s, TpSlotMeta.NB_INDEX, TpSlotDef.withSimpleFunction(T___INDEX__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INT, TpSlotDef.withSimpleFunction(T___INT__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_FLOAT, TpSlotDef.withSimpleFunction(T___FLOAT__, PExternalFunctionWrapper.UNARYFUNC));
@@ -1236,14 +1229,14 @@ public record TpSlots(TpSlot nb_bool, //
         // see test_sq_repeat_mul_without_rmul_inheritance
         addSlotDef(s, TpSlotMeta.SQ_CONCAT, TpSlotDef.withNoFunction(T___ADD__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.SQ_REPEAT,
-                        TpSlotDef.withNoFunction(T___MUL__, PExternalFunctionWrapper.SSIZE_ARG),
-                        TpSlotDef.withNoFunction(T___RMUL__, PExternalFunctionWrapper.SSIZE_ARG));
-        addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.GETITEM));
+                        TpSlotDef.withNoFunction(T___MUL__, PExternalFunctionWrapper.INDEXARGFUNC),
+                        TpSlotDef.withNoFunction(T___RMUL__, PExternalFunctionWrapper.INDEXARGFUNC));
+        addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.SQ_ITEM));
         addSlotDef(s, TpSlotMeta.SQ_ASS_ITEM,
-                        TpSlotDef.create(T___SETITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SETITEM),
-                        TpSlotDef.create(T___DELITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.DELITEM));
+                        TpSlotDef.create(T___SETITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SQ_SETITEM),
+                        TpSlotDef.create(T___DELITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SQ_DELITEM));
         addSlotDef(s, TpSlotMeta.SQ_INPLACE_CONCAT, TpSlotDef.withNoFunction(T___IADD__, PExternalFunctionWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.SQ_INPLACE_REPEAT, TpSlotDef.withNoFunction(T___IMUL__, PExternalFunctionWrapper.SSIZE_ARG));
+        addSlotDef(s, TpSlotMeta.SQ_INPLACE_REPEAT, TpSlotDef.withNoFunction(T___IMUL__, PExternalFunctionWrapper.INDEXARGFUNC));
         addSlotDef(s, TpSlotMeta.SQ_CONTAINS, TpSlotDef.withSimpleFunction(T___CONTAINS__, PExternalFunctionWrapper.OBJOBJPROC));
         addSlotDef(s, TpSlotMeta.AM_AWAIT, TpSlotDef.withSimpleFunction(T___AWAIT__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.AM_ANEXT, TpSlotDef.withSimpleFunction(T___ANEXT__, PExternalFunctionWrapper.UNARYFUNC));
@@ -1279,42 +1272,32 @@ public record TpSlots(TpSlot nb_bool, //
             if (!def.hasNativeWrapperFactory()) {
                 continue;
             }
-            Object field = def.readFromNative(pythonClass);
-            if (field == null) {
+            long fieldPtr = def.readFromNative(pythonClass);
+            if (fieldPtr == NULLPTR) {
                 continue;
             }
 
             // Is this pointer representing some TpSlot that we transferred to native?
-            InteropLibrary interop = InteropLibrary.getUncached(field);
             TpSlotWrapper existingSlotWrapper = null;
-            if (interop.isPointer(field)) {
-                try {
-                    long fieldPointer = interop.asPointer(field);
-                    Object executable = ctx.getCApiContext().getClosureExecutable(fieldPointer);
-                    if (executable instanceof TpSlotWrapper execWrapper) {
-                        existingSlotWrapper = execWrapper;
-                    } else if (executable != null) {
-                        // This can happen for legacy slots where the delegate would be a PFunction
-                        LOGGER.fine(() -> String.format("Unexpected executable for slot pointer: %s", executable));
-                    } else if (def == TpSlotMeta.TP_HASH) {
-                        // If the slot is not tp_iternext, but the value is
-                        // PyObject_HashNotImplemented, we still assign it to the slot as wrapped
-                        // native executable later on
-                        if (CApiContext.isIdenticalToSymbol(fieldPointer, NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED)) {
-                            builder.set(def, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
-                            continue;
-                        }
-                    } else if (def == TpSlotMeta.TP_ITERNEXT) {
-                        if (CApiContext.isIdenticalToSymbol(fieldPointer, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED)) {
-                            builder.set(def, TpSlotIterNext.NEXT_NOT_IMPLEMENTED);
-                            continue;
-                        }
-                    }
-                } catch (UnsupportedMessageException e) {
-                    throw new IllegalStateException(e);
-                }
-            } else if (field instanceof TpSlotWrapper execWrapper) {
+            Object closureExecutable = ctx.getCApiContext().getClosureExecutable(fieldPtr);
+            if (closureExecutable instanceof TpSlotWrapper execWrapper) {
                 existingSlotWrapper = execWrapper;
+            } else if (closureExecutable != null) {
+                // This can happen for legacy slots where the delegate would be a PFunction
+                LOGGER.fine(() -> String.format("Unexpected executable for slot pointer: %s", closureExecutable));
+            } else if (def == TpSlotMeta.TP_HASH) {
+                // If the slot is not tp_iternext, but the value is
+                // PyObject_HashNotImplemented, we still assign it to the slot as wrapped
+                // native executable later on
+                if (CApiContext.isIdenticalToSymbol(fieldPtr, NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED)) {
+                    builder.set(def, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
+                    continue;
+                }
+            } else if (def == TpSlotMeta.TP_ITERNEXT) {
+                if (CApiContext.isIdenticalToSymbol(fieldPtr, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED)) {
+                    builder.set(def, TpSlotIterNext.NEXT_NOT_IMPLEMENTED);
+                    continue;
+                }
             }
 
             if (existingSlotWrapper != null) {
@@ -1334,9 +1317,9 @@ public record TpSlots(TpSlot nb_bool, //
                         // processed slot field, because user could have assigned some incompatible
                         // existing slot value into the slots field we're reading here
                         TpSlotWrapper newWrapper = existingSlotWrapper.cloneWith(newPythonSlot);
-                        toNative(pythonClass.getPtr(), def, newWrapper, ctx.getNativeNull());
+                        toNative(pythonClass.getPtr(), def, newWrapper.getPointer());
                         // we need to continue with the new closure pointer
-                        field = def.readFromNative(pythonClass);
+                        fieldPtr = def.readFromNative(pythonClass);
                     }
                 }
                 if (def.isValidSlotValue(newSlot)) {
@@ -1352,7 +1335,7 @@ public record TpSlots(TpSlot nb_bool, //
             }
             // There is no mapping from this pointer to existing TpSlot, we create a new
             // TpSlotNative wrapping the executable
-            Object executable = EnsureExecutableNode.executeUncached(field, def.nativeSignature);
+            NativeFunctionPointer executable = CExtCommonNodes.bindFunctionPointer(fieldPtr, def.nativeSignature);
             builder.set(def, TpSlotNative.createCExtSlot(executable));
         }
         return builder.build();
@@ -1391,7 +1374,7 @@ public record TpSlots(TpSlot nb_bool, //
                 } else if (value instanceof TpSlotBuiltin<?> builtinSlot) {
                     wrapperDescriptor = builtinSlot.createBuiltin(context, type, tpSlotDef.name, tpSlotDef.wrapper);
                 } else if (value instanceof TpSlotNative nativeSlot) {
-                    wrapperDescriptor = PExternalFunctionWrapper.createWrapperFunction(tpSlotDef.name, nativeSlot.getCallable(), type, 0, tpSlotDef.wrapper, language);
+                    wrapperDescriptor = PExternalFunctionWrapper.createDescrWrapperFunction(tpSlotDef.name, nativeSlot.getCallable(), type, tpSlotDef.wrapper, language);
                 } else if (value instanceof TpSlotPython) {
                     // There should already be a python method somewhere in the MRO or this doesn't
                     // make sense
@@ -1404,25 +1387,24 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
-    public static void toNative(Object ptrToWrite, TpSlotMeta def, TpSlot value, Object nullValue) {
-        assert !(ptrToWrite instanceof PythonAbstractNativeObject); // this should be the pointer
-        Object slotNativeValue = def.getNativeValue(value, nullValue);
-        toNative(ptrToWrite, def, slotNativeValue, nullValue);
+    public static void toNative(long ptrToWrite, TpSlotMeta def, TpSlot value) {
+        assert ptrToWrite != PythonAbstractObject.UNINITIALIZED; // this should be the pointer
+        long slotNativeValue = def.getNativeValue(value, NULLPTR);
+        toNative(ptrToWrite, def, slotNativeValue);
     }
 
     /**
      * Writes back given managed slot to the native klass slots. This should be called any time we
      * update the slots on the managed side to reflect that change in native.
      */
-    private static void toNative(Object prtToWrite, TpSlotMeta def, Object slotNativeValue, Object nullValue) {
-        assert !(slotNativeValue instanceof TpSlot); // this should be the native representation
-        assert !(prtToWrite instanceof PythonAbstractNativeObject); // this should be the pointer
+    private static void toNative(long prtToWrite, TpSlotMeta def, long slotNativeValue) {
         CompilerAsserts.neverPartOfCompilation();
         CFields fieldToWrite = def.nativeGroupOrField;
+        long dest = prtToWrite;
         if (def.nativeField != null) {
-            prtToWrite = ReadPointerNode.getUncached().read(prtToWrite, def.nativeGroupOrField);
-            if (InteropLibrary.getUncached().isNull(prtToWrite)) {
-                if (slotNativeValue == nullValue) {
+            dest = readPtrField(prtToWrite, def.nativeGroupOrField);
+            if (prtToWrite == NULLPTR) {
+                if (slotNativeValue == NULLPTR) {
                     return;
                 } else {
                     throw new IllegalStateException("Trying to write a native slot whose group is not allocated. " +
@@ -1431,7 +1413,7 @@ public record TpSlots(TpSlot nb_bool, //
             }
             fieldToWrite = def.nativeField;
         }
-        WritePointerNode.getUncached().write(prtToWrite, fieldToWrite, slotNativeValue);
+        writePtrField(dest, fieldToWrite, slotNativeValue);
     }
 
     @TruffleBoundary
@@ -1561,7 +1543,6 @@ public record TpSlots(TpSlot nb_bool, //
     private static Builder updateSlots(PythonAbstractClass klass, Builder slots, Set<Entry<TpSlotMeta, TpSlotDef[]>> slotdefGroups) {
         LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.getUncached();
         IsSubtypeNode isSubType = IsSubtypeNode.getUncached();
-        Object nativeNull = PythonContext.get(null).getNativeNull();
         for (var slotdefGroup : slotdefGroups) {
             TpSlotMeta slot = slotdefGroup.getKey(); // ~ "ptr" in CPython algorithm
             if (slot.hasGroup() && !slots.hasGroup(slot.getGroup())) {
@@ -1687,17 +1668,13 @@ public record TpSlots(TpSlot nb_bool, //
             slots.set(slot, newValue);
             if (klass instanceof PythonAbstractNativeObject nativeClass) {
                 // Update the slots on the native side if this is a native class
-                toNative(nativeClass.getPtr(), slot, newValue, nativeNull);
+                toNative(nativeClass.getPtr(), slot, newValue);
             }
             if (klass instanceof PythonManagedClass managedClass) {
                 // Update the slots on the native side if this is a managed class that has a
                 // native mirror allocated already
-                PythonClassNativeWrapper classNativeWrapper = managedClass.getClassNativeWrapper();
-                if (classNativeWrapper != null) {
-                    Object replacement = classNativeWrapper.getReplacementIfInitialized();
-                    if (replacement != null) {
-                        toNative(replacement, slot, newValue, nativeNull);
-                    }
+                if (managedClass.isNative()) {
+                    toNative(managedClass.getNativePointer(), slot, newValue);
                 }
             }
         }
@@ -1705,7 +1682,7 @@ public record TpSlots(TpSlot nb_bool, //
     }
 
     private static boolean areSameNativeCallables(TpSlot a, TpSlot b) {
-        return a instanceof TpSlotNative na && b instanceof TpSlotNative nb && na.isSameCallable(nb, InteropLibrary.getUncached());
+        return a instanceof TpSlotNative na && b instanceof TpSlotNative nb && na.isSameCallable(nb);
     }
 
     public static void setSlots(PythonAbstractClass klass, TpSlots slots) {

@@ -62,8 +62,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -274,10 +274,9 @@ public final class TemporalValueNodes {
 
         @Specialization(guards = "checkNode.execute(inliningTarget, value)", limit = "1")
         static TimeDeltaValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
-                        @SuppressWarnings("unused") @Cached PyDeltaCheckNode checkNode,
-                        @Cached CStructAccess.ReadI32Node readIntNode) {
-            return new TimeDeltaValue(TimeDeltaNodes.FromNative.getDays(value, readIntNode), TimeDeltaNodes.FromNative.getSeconds(value, readIntNode),
-                            TimeDeltaNodes.FromNative.getMicroseconds(value, readIntNode));
+                        @SuppressWarnings("unused") @Cached PyDeltaCheckNode checkNode) {
+            return new TimeDeltaValue(TimeDeltaNodes.FromNative.getDays(value), TimeDeltaNodes.FromNative.getSeconds(value),
+                            TimeDeltaNodes.FromNative.getMicroseconds(value));
         }
 
         @Fallback
@@ -304,9 +303,8 @@ public final class TemporalValueNodes {
 
         @Specialization(guards = "checkNode.execute(inliningTarget, value)", limit = "1")
         static DateValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
-                        @SuppressWarnings("unused") @Cached PyDateCheckNode checkNode,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return new DateValue(DateNodes.FromNative.getYear(value, readNode), DateNodes.FromNative.getMonth(value, readNode), DateNodes.FromNative.getDay(value, readNode));
+                        @SuppressWarnings("unused") @Cached PyDateCheckNode checkNode) {
+            return new DateValue(DateNodes.FromNative.getYear(value), DateNodes.FromNative.getMonth(value), DateNodes.FromNative.getDay(value));
         }
 
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, value)", "interop.isDate(value)"}, limit = "1")
@@ -346,11 +344,10 @@ public final class TemporalValueNodes {
         @Specialization(guards = "checkNode.execute(inliningTarget, value)", limit = "1")
         static TimeValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
                         @SuppressWarnings("unused") @Cached PyTimeCheckNode checkNode,
-                        @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            return new TimeValue(TimeNodes.FromNative.getHour(value, readByteNode), TimeNodes.FromNative.getMinute(value, readByteNode),
-                            TimeNodes.FromNative.getSecond(value, readByteNode), TimeNodes.FromNative.getMicrosecond(value, readByteNode),
-                            TimeNodes.FromNative.getTzInfo(value, readByteNode, readObjectNode), null, TimeNodes.FromNative.getFold(value, readByteNode));
+            return new TimeValue(TimeNodes.FromNative.getHour(value), TimeNodes.FromNative.getMinute(value),
+                            TimeNodes.FromNative.getSecond(value), TimeNodes.FromNative.getMicrosecond(value),
+                            TimeNodes.FromNative.getTzInfo(value, readObjectNode), null, TimeNodes.FromNative.getFold(value));
         }
 
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, value)", "interop.isTime(value)"}, limit = "1")
@@ -391,13 +388,12 @@ public final class TemporalValueNodes {
         @Specialization(guards = "checkNode.execute(inliningTarget, value)", limit = "1")
         static DateTimeValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject value,
                         @SuppressWarnings("unused") @Cached PyDateTimeCheckNode checkNode,
-                        @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            return new DateTimeValue(DateTimeNodes.FromNative.getYear(value, readByteNode), DateTimeNodes.FromNative.getMonth(value, readByteNode),
-                            DateTimeNodes.FromNative.getDay(value, readByteNode), DateTimeNodes.FromNative.getHour(value, readByteNode),
-                            DateTimeNodes.FromNative.getMinute(value, readByteNode), DateTimeNodes.FromNative.getSecond(value, readByteNode),
-                            DateTimeNodes.FromNative.getMicrosecond(value, readByteNode), DateTimeNodes.FromNative.getTzInfo(value, readByteNode, readObjectNode), null,
-                            DateTimeNodes.FromNative.getFold(value, readByteNode));
+            return new DateTimeValue(DateTimeNodes.FromNative.getYear(value), DateTimeNodes.FromNative.getMonth(value),
+                            DateTimeNodes.FromNative.getDay(value), DateTimeNodes.FromNative.getHour(value),
+                            DateTimeNodes.FromNative.getMinute(value), DateTimeNodes.FromNative.getSecond(value),
+                            DateTimeNodes.FromNative.getMicrosecond(value), DateTimeNodes.FromNative.getTzInfo(value, readObjectNode), null,
+                            DateTimeNodes.FromNative.getFold(value));
         }
 
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, value)", "interop.isDate(value)", "interop.isTime(value)"}, limit = "1")

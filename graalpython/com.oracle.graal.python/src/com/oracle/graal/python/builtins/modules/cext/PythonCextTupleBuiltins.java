@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.callocPtrArray;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -58,7 +60,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.EnsureCapacityNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
@@ -93,8 +94,7 @@ public final class PythonCextTupleBuiltins {
         static PTuple doGeneric(long longSize,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached CStructAccess.AllocateNode alloc) {
+                        @Cached PRaiseNode raiseNode) {
             int size = (int) longSize;
             if (longSize != size) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.MemoryError);
@@ -103,7 +103,7 @@ public final class PythonCextTupleBuiltins {
              * Already allocate the tuple with native memory, since it has to be populated from the
              * native side
              */
-            Object mem = alloc.alloc((longSize + 1) * CStructAccess.POINTER_SIZE);
+            long mem = callocPtrArray(longSize + 1);
             NativeObjectSequenceStorage storage = NativeObjectSequenceStorage.create(mem, size, size, true);
             return PFactory.createTuple(language, storage);
         }
@@ -153,7 +153,7 @@ public final class PythonCextTupleBuiltins {
                 return promotedValue;
             }
             if (result == null) {
-                return getNativeNull(inliningTarget);
+                return NATIVE_NULL;
             }
             return result;
         }
@@ -175,7 +175,7 @@ public final class PythonCextTupleBuiltins {
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
     abstract static class PyTuple_Size extends CApiUnaryBuiltinNode {
         @Specialization
-        public static int size(Object tuple,
+        public static long size(Object tuple,
                         @Bind Node inliningTarget,
                         @Cached PyTupleSizeNode pyTupleSizeNode) {
             return pyTupleSizeNode.execute(inliningTarget, tuple);
@@ -215,7 +215,7 @@ public final class PythonCextTupleBuiltins {
     @CApiBuiltin(ret = PyObjectPtr, args = {PyObject, Py_ssize_t, PyObjectPtr}, call = Ignored)
     abstract static class GraalPyPrivate_Tuple_Resize extends CApiTernaryBuiltinNode {
         @Specialization
-        public static Object size(PTuple tuple, long size, Object obItemsPtr,
+        public static long size(PTuple tuple, long size, long obItemsPtr,
                         @Bind Node inliningTarget,
                         @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached SetLenNode setLenNode) {

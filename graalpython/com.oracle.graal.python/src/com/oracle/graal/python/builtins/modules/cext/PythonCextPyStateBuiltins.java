@@ -50,6 +50,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -124,7 +126,7 @@ public final class PythonCextPyStateBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static Object get(Object tstateCurrentPtr) {
+        static long get(long tstateCurrentPtr) {
             PythonContext context = PythonContext.get(null);
             PythonThreadState threadState = context.getThreadState(context.getLanguage());
 
@@ -136,14 +138,14 @@ public final class PythonCextPyStateBuiltins {
              */
             if (threadState.isNativeThreadStateInitialized()) {
                 LOGGER.fine(() -> String.format("Lazy initialization attempt of native thread state for thread %s aborted. Was initialized in the meantime.", Thread.currentThread()));
-                Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-                assert nativeThreadState != null;
+                long nativeThreadState = threadState.getNativePointer();
+                assert nativeThreadState != NULLPTR;
                 return nativeThreadState;
             }
 
             LOGGER.fine(() -> "Lazy (fallback) initialization of native thread state for thread " + Thread.currentThread());
-            assert PThreadState.getNativeThreadState(threadState) == null;
-            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
+            assert threadState.getNativePointer() == NULLPTR;
+            long nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
             threadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
             return nativeThreadState;
         }
@@ -227,10 +229,10 @@ public final class PythonCextPyStateBuiltins {
     @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState}, call = Direct)
     abstract static class PyThreadState_GetFrame extends CApiUnaryBuiltinNode {
         @Specialization
-        Object get(@SuppressWarnings("unused") Object threadState,
+        Object get(@SuppressWarnings("unused") long threadState,
                         @Cached ReadFrameNode readFrameNode) {
             PFrame pFrame = readFrameNode.getCurrentPythonFrame(null);
-            return pFrame != null ? pFrame : getNativeNull();
+            return pFrame != null ? pFrame : NATIVE_NULL;
         }
     }
 
@@ -243,11 +245,11 @@ public final class PythonCextPyStateBuiltins {
                 int i = PInt.intValueExact(mIndex);
                 Object result = getCApiContext().getModuleByIndex(i);
                 if (result == null) {
-                    return getNativeNull();
+                    return NATIVE_NULL;
                 }
                 return result;
             } catch (CannotCastException | OverflowException e) {
-                return getNativeNull();
+                return NATIVE_NULL;
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,13 +41,16 @@
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElements;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTERNAL_INT_OVERFLOW;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.annotations.CApiConstants;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -99,8 +102,14 @@ public enum CConstants {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object constantsPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
-        long[] constants = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(constantsPointer, VALUES.length);
+        long constantsPointer;
+        try {
+            NativeFunctionPointer constants = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
+            constantsPointer = ExternalFunctionInvoker.invokePYTRUFFLE_CONSTANTS(constants.getAddress());
+        } catch (Throwable t) {
+            throw CompilerDirectives.shouldNotReachHere(t);
+        }
+        long[] constants = readLongArrayElements(constantsPointer, 0L, VALUES.length);
         for (CConstants constant : VALUES) {
             constant.longValue = constants[constant.ordinal()];
             if (constant.longValue == -1) {

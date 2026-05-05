@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,12 +45,12 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextCodeBuiltins.PyCode_NewEmpty;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
@@ -73,10 +73,10 @@ public final class PythonCextTracebackBuiltins {
     abstract static class _PyTraceback_Add extends CApiTernaryBuiltinNode {
         @Specialization
         static Object tbHere(TruffleString funcname, TruffleString filename, int lineno,
-                        @Cached PyCode_NewEmpty newCode,
                         @Cached PyTraceBack_Here pyTraceBackHereNode,
                         @Bind PythonLanguage language) {
-            PFrame frame = PFactory.createPFrame(language, null, newCode.execute(filename, funcname, lineno), PFactory.createDict(language), PFactory.createDict(language));
+            PFrame frame = PFactory.createPFrame(language, NULLPTR, PythonCextCodeBuiltins.createCodeNewEmpty(filename, funcname, lineno), PFactory.createDict(language),
+                            PFactory.createDict(language));
             pyTraceBackHereNode.execute(frame);
             return PNone.NONE;
         }

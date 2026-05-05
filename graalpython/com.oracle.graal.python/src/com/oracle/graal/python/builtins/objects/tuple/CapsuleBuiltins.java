@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Collections;
@@ -52,7 +54,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -60,7 +61,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Capsule)
@@ -81,13 +81,13 @@ public class CapsuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object repr(PyCapsule self) {
             String name;
-            if (self.getNamePtr() == null || InteropLibrary.getUncached().isNull(self.getNamePtr())) {
+            if (self.getNamePtr() == NULLPTR) {
                 name = "NULL";
             } else {
                 StringBuilder builder = new StringBuilder("\"");
                 int i = 0;
                 byte b;
-                while ((b = CStructAccess.ReadByteNode.getUncached().readArrayElement(self.getNamePtr(), i++)) != 0) {
+                while ((b = readByteArrayElement(self.getNamePtr(), i++)) != 0) {
                     builder.append((char) b);
                 }
                 builder.append('"');

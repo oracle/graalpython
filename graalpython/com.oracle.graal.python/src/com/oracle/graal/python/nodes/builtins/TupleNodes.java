@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTupleObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
@@ -144,12 +145,11 @@ public abstract class TupleNodes {
         public abstract NativeObjectSequenceStorage execute(PythonAbstractNativeObject tuple);
 
         @Specialization
-        NativeObjectSequenceStorage getNative(PythonAbstractNativeObject tuple,
-                        @Cached CStructAccess.ReadPointerNode getContents,
-                        @Cached CStructAccess.ReadI64Node readI64Node) {
+        NativeObjectSequenceStorage getNative(PythonAbstractNativeObject tuple) {
             assert PyTupleCheckNode.executeUncached(tuple);
-            Object array = getContents.readFromObj(tuple, PyTupleObject__ob_item);
-            int size = (int) readI64Node.readFromObj(tuple, PyVarObject__ob_size);
+            long tupleRawPtr = tuple.getPtr();
+            long array = CStructAccess.getFieldPtr(tupleRawPtr, CFields.PyTupleObject__ob_item);
+            int size = (int) readLongField(tupleRawPtr, PyVarObject__ob_size);
             return NativeObjectSequenceStorage.create(array, size, size, false);
         }
     }

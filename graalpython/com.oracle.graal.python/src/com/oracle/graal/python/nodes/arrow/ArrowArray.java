@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.nodes.arrow;
 
-import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.util.PythonUtils;
-import sun.misc.Unsafe;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.POINTER_SIZE;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.POINTER_SIZE;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+
+import sun.misc.Unsafe;
 
 /**
  * C Data Interface ArrowArray.
@@ -73,7 +75,11 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 public class ArrowArray {
 
     private static final Unsafe unsafe = PythonUtils.initUnsafe();
-    public static final byte[] CAPSULE_NAME = PyCapsule.capsuleName("arrow_array");
+    /**
+     * This name is used for a PyCapsule which requires a {@code const char *} as name. We therefore
+     * use encoding UTF8. The TruffleString is later transformed to a native string.
+     */
+    public static final TruffleString CAPSULE_NAME = TruffleString.fromConstant("arrow_array", Encoding.UTF_8);
 
     public static final byte NULL = 0;
     private static final byte SIZE_OF = 80;

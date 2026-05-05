@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,17 +42,19 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadI64Node;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
@@ -66,6 +68,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -86,6 +89,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateCached(false)
 @GenerateInline
 public abstract class PyObjectHashNode extends PNodeWithContext {
+    private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_PY_TYPE_READY);
+
     public static long executeUncached(Object value) {
         return PyObjectHashNodeGen.getUncached().execute(null, null, value);
     }
@@ -171,7 +176,6 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     static long genericHash(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
                     @Cached GetCachedTpSlotsNode getSlotsNode,
-                    @Cached CStructAccess.ReadI64Node readTypeObjectFieldNode,
                     @Cached InlinedConditionProfile typeIsNotReadyProfile,
                     @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                     @Cached CallSlotHashFunNode callHashFun,
@@ -179,15 +183,13 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
         Object klass = getClassNode.execute(inliningTarget, object);
         TpSlots slots = getSlotsNode.execute(inliningTarget, klass);
         if (slots.tp_hash() == null) {
-            slots = handleNoHash(frame, inliningTarget, object, readTypeObjectFieldNode,
-                            typeIsNotReadyProfile, boundaryCallData, raiseNode, klass, slots);
+            slots = handleNoHash(frame, inliningTarget, object, typeIsNotReadyProfile, boundaryCallData, raiseNode, klass, slots);
         }
         return callHashFun.execute(frame, inliningTarget, slots.tp_hash(), object);
     }
 
     @InliningCutoff
-    private static TpSlots handleNoHash(VirtualFrame frame, Node inliningTarget, Object object, ReadI64Node readTypeObjectFieldNode,
-                    InlinedConditionProfile typeIsNotReadyProfile,
+    private static TpSlots handleNoHash(VirtualFrame frame, Node inliningTarget, Object object, InlinedConditionProfile typeIsNotReadyProfile,
                     BoundaryCallData boundaryCallData, PRaiseNode raiseNode, Object klass, TpSlots slots) {
         boolean initialized = false;
         if (klass instanceof PythonAbstractNativeObject nativeKlass) {
@@ -197,7 +199,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
              * work without an explicit call to PyType_Ready, we implicitly call PyType_Ready here
              * and then check the tp_hash slot again
              */
-            long flags = readTypeObjectFieldNode.readFromObj(nativeKlass, CFields.PyTypeObject__tp_flags);
+            long flags = readLongField(nativeKlass.getPtr(), CFields.PyTypeObject__tp_flags);
             if (typeIsNotReadyProfile.profile(inliningTarget, (flags & TypeFlags.READY) == 0)) {
                 Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
                 try {
@@ -216,7 +218,12 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
 
     @TruffleBoundary
     private static TpSlots callTypeReady(Node inliningTarget, Object object, PythonAbstractNativeObject klass) {
-        int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNode.executeUncached(klass));
+        assert EnsurePythonObjectNode.doesNotNeedPromotion(klass);
+        PythonContext context = PythonContext.get(null);
+        var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_TYPE_READY);
+        int res = ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNativeContext(),
+                        BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
+                        PythonToNativeNode.executeLongUncached(klass));
         if (res < 0) {
             throw raiseSystemError(inliningTarget, klass);
         }

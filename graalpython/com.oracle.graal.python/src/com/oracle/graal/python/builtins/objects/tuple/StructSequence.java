@@ -204,7 +204,7 @@ public class StructSequence {
              * about tp_new in TpSlots.updateSlots. We have to write it manually
              */
             nativeClass.setTpSlots(nativeClass.getTpSlots().copy().set(TpSlots.TpSlotMeta.TP_NEW, newSlot).build());
-            TpSlots.toNative(nativeClass.getPtr(), TpSlots.TpSlotMeta.TP_NEW, newSlot, context.getNativeNull());
+            TpSlots.toNative(nativeClass.getPtr(), TpSlots.TpSlotMeta.TP_NEW, newSlot);
             TpSlotBuiltin<?> reprSlot = (TpSlotBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_repr();
             writeAttrNode.execute(klass, T___REPR__, reprSlot.createBuiltin(context, klass, T___REPR__, TpSlots.TpSlotMeta.TP_REPR.getNativeSignature()));
             PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFloatInfo);

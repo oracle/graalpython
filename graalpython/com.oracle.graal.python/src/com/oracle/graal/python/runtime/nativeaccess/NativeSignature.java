@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,11 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.common;
+package com.oracle.graal.python.runtime.nativeaccess;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import java.lang.invoke.MethodHandle;
+import java.util.Arrays;
 
-public abstract class CExtAsPythonObjectNode extends PNodeWithContext {
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-    public abstract Object execute(Object object);
+public final class NativeSignature {
+    private final NativeSimpleType resType;
+    private final NativeSimpleType[] argTypes;
+
+    public static NativeSignature create(NativeSimpleType resType, NativeSimpleType... argTypes) {
+        return new NativeSignature(resType, argTypes);
+    }
+
+    NativeSignature(NativeSimpleType resType, NativeSimpleType[] argTypes) {
+        this.resType = resType;
+        this.argTypes = Arrays.copyOf(argTypes, argTypes.length);
+    }
+
+    @SuppressWarnings("unused")
+    public long createClosure(NativeContext context, String name, MethodHandle staticMethodHandle) {
+        // TODO(native-access) if logging enabled, wrap the handle in a method that logs the name
+        // and args.
+        return NativeAccessSupport.createClosure(staticMethodHandle, resType, argTypes, context.arena);
+    }
+
+    @Override
+    @TruffleBoundary
+    public String toString() {
+        StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < argTypes.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(argTypes[i]);
+        }
+        sb.append("): ");
+        sb.append(resType);
+        return sb.toString();
+    }
 }

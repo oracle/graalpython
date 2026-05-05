@@ -44,15 +44,18 @@ import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWra
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -64,14 +67,15 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGetFactory.CallSlotDescrGetNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
@@ -160,14 +164,10 @@ public abstract class TpSlotDescrGet {
             this.wrapped = wrapped;
         }
 
-        private static Object normalizeNone(ConditionProfile profile, Object o) {
-            return profile.profile(PGuards.isNone(o)) ? PNone.NO_VALUE : o;
-        }
-
         @Override
         public Object execute(VirtualFrame frame, Object self, Object objIn, Object typeIn) {
-            Object obj = normalizeNone(objIsNoneProfile, objIn);
-            Object type = normalizeNone(typeIsNoneProfile, typeIn);
+            Object obj = PythonUtils.normalizeNone(objIsNoneProfile, objIn);
+            Object type = PythonUtils.normalizeNone(typeIsNoneProfile, typeIn);
             if (obj == PNone.NO_VALUE && type == PNone.NO_VALUE) {
                 errorProfile.enter();
                 throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.GET_NONE_NONE_IS_INVALID);
@@ -197,6 +197,11 @@ public abstract class TpSlotDescrGet {
             return execute(frame, this, slot, self, obj, type);
         }
 
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, Object obj, Object type) {
+            return CallSlotDescrGetNodeGen.getUncached().execute(null, null, slot, self, obj, type);
+        }
+
         @NeverDefault
         public static CallSlotDescrGet create() {
             return CallSlotDescrGetNodeGen.create();
@@ -219,19 +224,29 @@ public abstract class TpSlotDescrGet {
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self, Object obj, Object value,
                         @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode objToNativeNode,
                         @Cached(inline = false) PythonToNativeNode valueToNativeNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GET__, slot.callable, //
-                            selfToNativeNode.execute(self), //
-                            objToNativeNode.execute(obj), //
-                            valueToNativeNode.execute(value));
-            return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(result));
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            Object promotedObj = ensurePythonObjectNode.execute(ctx, obj, false);
+            Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
+            try {
+                long lresult = ExternalFunctionInvoker.invokeDESCRGETFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
+                                selfToNativeNode.executeLong(promotedSelf), //
+                                objToNativeNode.executeLong(promotedObj), //
+                                valueToNativeNode.executeLong(promotedValue));
+                return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(inliningTarget, lresult, true));
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+                Reference.reachabilityFence(promotedObj);
+                Reference.reachabilityFence(promotedValue);
+            }
         }
 
         @TruffleBoundary

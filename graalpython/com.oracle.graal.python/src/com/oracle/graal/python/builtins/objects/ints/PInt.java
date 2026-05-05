@@ -124,10 +124,7 @@ public final class PInt extends PythonBuiltinObject {
                     @Shared("isBoolean") @Cached InlinedConditionProfile isBoolean,
                     @CachedLibrary("this") InteropLibrary self) {
         PythonContext context = PythonContext.get(self);
-        if (isBoolean.profile(inliningTarget, this == context.getTrue() || this == context.getFalse())) {
-            return false;
-        }
-        return true;
+        return !isBoolean.profile(inliningTarget, this == context.getTrue() || this == context.getFalse());
     }
 
     @ExportMessage

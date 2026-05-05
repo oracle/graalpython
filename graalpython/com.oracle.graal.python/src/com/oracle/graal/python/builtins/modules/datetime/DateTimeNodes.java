@@ -44,27 +44,33 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
 import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readByteField;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
 import java.time.YearMonth;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyTZInfoCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyTZInfoCheckNode;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -209,6 +215,7 @@ public class DateTimeNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class NewUnsafeNode extends Node {
+        private static final CApiTiming C_API_TIMING = CApiTiming.create(true, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW);
 
         public abstract Object execute(Node inliningTarget, Object cls, int year, int month, int day, int hour, int minute, int second, int microsecond, Object tzInfoObject, int fold);
 
@@ -222,8 +229,7 @@ public class DateTimeNodes {
                         @Cached PyTZInfoCheckNode tzInfoCheckNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode,
+                        @Cached ExternalFunctionNodes.PyObjectCheckFunctionResultNode checkFunctionResultNode,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached CApiTransitions.NativeToPythonTransferNode fromNativeNode) {
             // create DateTime without thorough validation
@@ -244,10 +250,20 @@ public class DateTimeNodes {
                 Shape shape = getInstanceShape.execute(cls);
                 return new PDateTime(cls, shape, year, month, day, hour, minute, second, microsecond, tzInfo, fold);
             } else {
-                Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW,
-                                toNativeNode.execute(cls), year, month, day, hour, minute, second, microsecond, toNativeNode.execute(tzInfo != null ? tzInfo : PNone.NO_VALUE), fold);
-                checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW.getTsName(), nativeResult);
-                return fromNativeNode.execute(nativeResult);
+                long clsPointer = toNativeNode.executeLong(cls);
+                Object effectiveTzInfo = tzInfo != null ? tzInfo : PNone.NO_VALUE;
+                long tzInfoPointer = toNativeNode.executeLong(effectiveTzInfo);
+                try {
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW);
+                    long nativeResult = ExternalFunctionInvoker.invokeDATETIME_SUBTYPE_NEW(null, C_API_TIMING,
+                                    context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer,
+                                    year, month, day, hour, minute, second, microsecond, tzInfoPointer, fold);
+                    return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW.getTsName(), fromNativeNode.execute(nativeResult));
+                } finally {
+                    Reference.reachabilityFence(cls);
+                    Reference.reachabilityFence(effectiveTzInfo);
+                }
             }
         }
     }
@@ -291,42 +307,49 @@ public class DateTimeNodes {
     }
 
     public static final class FromNative {
-        static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 0);
-            int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 1);
+        static int getYear(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            int b0 = NativeMemory.readByteArrayElement(ptr, 0) & 0xFF;
+            int b1 = NativeMemory.readByteArrayElement(ptr, 1) & 0xFF;
             return (b0 << 8) | b1;
         }
 
-        static int getMonth(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 2);
+        static int getMonth(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 2) & 0xFF;
         }
 
-        static int getDay(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 3);
+        static int getDay(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 3) & 0xFF;
         }
 
-        static int getHour(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 4);
+        static int getHour(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 4) & 0xFF;
         }
 
-        static int getMinute(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 5);
+        static int getMinute(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 5) & 0xFF;
         }
 
-        static int getSecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 6);
+        static int getSecond(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 6) & 0xFF;
         }
 
-        static int getMicrosecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            int b3 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 7);
-            int b4 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 8);
-            int b5 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 9);
+        static int getMicrosecond(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            int b3 = NativeMemory.readByteArrayElement(ptr, 7) & 0xFF;
+            int b4 = NativeMemory.readByteArrayElement(ptr, 8) & 0xFF;
+            int b5 = NativeMemory.readByteArrayElement(ptr, 9) & 0xFF;
             return (b3 << 16) | (b4 << 8) | b5;
         }
 
-        static Object getTzInfo(PythonAbstractNativeObject obj, CStructAccess.ReadByteNode readByteNode, CStructAccess.ReadObjectNode readObjectNode) {
+        static Object getTzInfo(PythonAbstractNativeObject obj, CStructAccess.ReadObjectNode readObjectNode) {
             Object tzInfo = null;
-            if (readByteNode.readFromObj(obj, CFields.PyDateTime_DateTime__hastzinfo) != 0) {
+            if (readByteField(obj.getPtr(), CFields.PyDateTime_DateTime__hastzinfo) != 0) {
                 Object tzinfoObj = readObjectNode.readFromObj(obj, CFields.PyDateTime_DateTime__tzinfo);
                 if (tzinfoObj != PNone.NO_VALUE) {
                     tzInfo = tzinfoObj;
@@ -335,8 +358,8 @@ public class DateTimeNodes {
             return tzInfo;
         }
 
-        static int getFold(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__fold);
+        static int getFold(PythonAbstractNativeObject self) {
+            return readByteField(self.getPtr(), CFields.PyDateTime_DateTime__fold);
         }
     }
 
@@ -358,9 +381,8 @@ public class DateTimeNodes {
 
         @Specialization
         static Object getTzInfo(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            return FromNative.getTzInfo(self, readByteNode, readObjectNode);
+            return FromNative.getTzInfo(self, readObjectNode);
         }
 
         @Specialization

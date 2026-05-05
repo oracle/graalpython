@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,16 +69,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 
+import java.lang.ref.Reference;
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -92,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.TpSlotBinaryFuncBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOpFactory.CallSlotBinaryOpNodeGen;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PGuards;
@@ -99,9 +102,11 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -345,6 +350,11 @@ public class TpSlotBinaryOp {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes,
                         ReversibleSlot op);
 
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op) {
+            return CallSlotBinaryOpNodeGen.getUncached().execute(null, null, slot, self, selfType, other, otherSlot, otherType, sameTypes, op);
+        }
+
         @SuppressWarnings("unused")
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, TpSlotBinaryOpBuiltin<?> slot, Object self,
@@ -365,16 +375,24 @@ public class TpSlotBinaryOp {
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         Object selfType, Object arg, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode argToNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, op.name, slot.callable,
-                            selfToNativeNode.execute(self), argToNativeNode.execute(arg));
-            return checkResultNode.execute(state, op.name, toPythonNode.execute(result));
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            Object promotedArg = ensurePythonObjectNode.execute(ctx, arg, false);
+            try {
+                long lresult = ExternalFunctionInvoker.invokeBINARYFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
+                                selfToNativeNode.executeLong(promotedSelf), argToNativeNode.executeLong(promotedArg));
+                return checkResultNode.execute(state, op.name, toPythonNode.execute(inliningTarget, lresult, true));
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+                Reference.reachabilityFence(promotedArg);
+            }
         }
 
         @SuppressWarnings("unused")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -67,6 +68,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -75,8 +77,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateInline
 @GenerateCached(false)
+@GenerateUncached
 public abstract class PySequenceConcatNode extends PNodeWithContext {
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object v, Object w);
+
+    @TruffleBoundary
+    public static Object executeUncached(Object v, Object w) {
+        return PySequenceConcatNodeGen.getUncached().execute(null, null, v, w);
+    }
 
     @Specialization(guards = {"isBuiltinList(left)", "isBuiltinList(right)"})
     static PList doPList(Node inliningTarget, PList left, PList right,
