@@ -304,26 +304,6 @@ public final class PythonCextLongBuiltins {
         return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
     }
 
-    @CApiBuiltin(name = "PyLong_FromSize_t", ret = PyObjectTransfer, args = {SIZE_T}, call = Direct)
-    abstract static class PyLong_FromSize_t extends CApiUnaryBuiltinNode {
-
-        @Specialization(guards = "n >= 0")
-        static Object doUnsignedLongPositive(long n) {
-            return n;
-        }
-
-        @Specialization(guards = "n < 0")
-        static Object doUnsignedLongNegative(long n,
-                        @Bind PythonLanguage language) {
-            return PFactory.createInt(language, convertToBigInteger(n));
-        }
-
-        @TruffleBoundary
-        private static BigInteger convertToBigInteger(long n) {
-            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
-        }
-    }
-
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
     public abstract static class PyLong_AsVoidPtr extends CApiUnaryBuiltinNode {
         @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;

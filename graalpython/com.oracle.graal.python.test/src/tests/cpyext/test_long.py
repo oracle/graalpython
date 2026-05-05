@@ -49,6 +49,8 @@ min_long = -2 ** (long_bits - 1)
 max_ulong = 2 ** long_bits
 ulonglong_bits = struct.calcsize('Q') * 8
 max_ulonglong = 2 ** ulonglong_bits
+size_t_bits = struct.calcsize('P') * 8
+max_size_t = 2 ** size_t_bits
 ssize_t_bits = struct.calcsize('n') * 8
 max_ssize_t = 2 ** (ssize_t_bits - 1) - 1
 min_ssize_t = -2 ** (ssize_t_bits - 1)
@@ -304,15 +306,31 @@ class TestPyLong(CPyExtTestCase):
     )
 
     test_PyLong_FromSize_t = CPyExtFunction(
-        lambda args: int(args[0]),
-        lambda: (
-            (0,),
-            (1,),
-            (0xffffffff,),
-        ),
+        lambda args: (0, 1, max_size_t - 1),
+        lambda: ((),),
+        code="""
+        PyObject* wrap_PyLong_FromSize_t() {
+            PyObject* small = PyLong_FromSize_t(0);
+            PyObject* one = PyLong_FromSize_t(1);
+            PyObject* large = PyLong_FromSize_t((size_t)-1);
+            PyObject* result;
+            if (small == NULL || one == NULL || large == NULL) {
+                Py_XDECREF(small);
+                Py_XDECREF(one);
+                Py_XDECREF(large);
+                return NULL;
+            }
+            result = PyTuple_Pack(3, small, one, large);
+            Py_DECREF(small);
+            Py_DECREF(one);
+            Py_DECREF(large);
+            return result;
+        }
+        """,
         resultspec="O",
-        argspec='n',
-        arguments=["size_t n"],
+        argspec='',
+        arguments=[],
+        callfunction="wrap_PyLong_FromSize_t",
         cmpfunc=unhandled_error_compare
     )
 

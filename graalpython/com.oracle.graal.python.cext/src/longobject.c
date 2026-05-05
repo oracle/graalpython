@@ -385,7 +385,6 @@ PyLong_FromUnsignedLongLong(unsigned long long ival)
     PYLONG_FROM_UINT(unsigned long long, ival);
 }
 
-#if 0 // GraalPy change
 /* Create a new int object from a C size_t. */
 
 PyObject *
@@ -394,6 +393,7 @@ PyLong_FromSize_t(size_t ival)
     PYLONG_FROM_UINT(size_t, ival);
 }
 
+#if 0 // GraalPy change
 /* Create a new int object from a C double */
 
 PyObject *
