@@ -250,6 +250,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyDict_DelItemString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyDict_GetItemString", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyDict_Next", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr}, call = CImpl)
+    @CApiBuiltin(name = "PyDict_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyDict_SetItemString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyErr_BadArgument", ret = Int, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyErr_BadInternalCall", ret = Void, args = {}, call = CImpl)
