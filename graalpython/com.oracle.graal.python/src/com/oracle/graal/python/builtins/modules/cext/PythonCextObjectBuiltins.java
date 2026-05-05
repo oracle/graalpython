@@ -92,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -675,14 +676,11 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyObject_GetIter extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object iter(Object object,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetIter getIter) {
-            return getIter.execute(null, inliningTarget, object);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored)
+    static long GraalPyPrivate_Object_GetIter(long objectPtr) {
+        Object object = NativeToPythonNode.executeRawUncached(objectPtr);
+        Object result = PyObjectGetIter.executeUncached(object);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject}, call = Direct)

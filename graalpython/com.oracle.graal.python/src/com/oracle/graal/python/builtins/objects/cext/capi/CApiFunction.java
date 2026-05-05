@@ -443,6 +443,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyObject_GetAttr", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_GetAttrString", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyObject_GetBuffer", ret = Int, args = {PyObject, PY_BUFFER_PTR, Int}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_GetIter", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Init", ret = PyObject, args = {PyObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_InitVar", ret = PyVarObject, args = {PyVarObject, PyTypeObject, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyObject_IS_GC", ret = Int, args = {PyObject}, call = CImpl)

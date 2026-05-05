@@ -2880,10 +2880,14 @@ _PyObject_RealIsSubclass(PyObject *derived, PyObject *cls)
     return recursive_issubclass(derived, cls);
 }
 
-
+#endif // GraalPy change
 PyObject *
 PyObject_GetIter(PyObject *o)
 {
+    if (points_to_py_handle_space(o)) {
+        return GraalPyPrivate_Object_GetIter(o);
+    }
+
     PyTypeObject *t = Py_TYPE(o);
     getiterfunc f;
 
@@ -2905,7 +2909,7 @@ PyObject_GetIter(PyObject *o)
         return res;
     }
 }
-
+#if 0 // GraalPy change
 PyObject *
 PyObject_GetAIter(PyObject *o) {
     PyTypeObject *t = Py_TYPE(o);
