@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.modules.CmathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CryptModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
@@ -469,6 +470,7 @@ public abstract class Python3Core {
                 toRemove.add(builtin);
             } else {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+                builtin.setNeedsPostInitialize(annotation.isEager() || annotation.extendClasses().length != 0);
                 if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
                     toRemove.add(builtin);
                 }
@@ -944,6 +946,9 @@ public abstract class Python3Core {
         this.builtins = initializeBuiltins(context.getEnv());
         initializeJavaCore();
         initializeImportlib();
+        if (context.getEnv().isPreInitialization()) {
+            CodecsRegistry.initialize(context);
+        }
         context.applyModuleOptions();
         initializePython3Core(context.getCoreHomeOrFail());
         initialized = true;
@@ -1056,8 +1061,7 @@ public abstract class Python3Core {
             initialized = false;
 
             for (PythonBuiltins builtin : builtins) {
-                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
-                if (annotation.isEager() || annotation.extendClasses().length != 0) {
+                if (builtin.needsPostInitialize()) {
                     builtin.postInitialize(this);
                 }
             }
