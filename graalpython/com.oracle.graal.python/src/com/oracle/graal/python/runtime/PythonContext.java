@@ -2641,8 +2641,8 @@ public final class PythonContext extends Python3Core {
             // This deliberately uses 'getAbsoluteFile' and not 'getCanonicalFile' because if, e.g.,
             // 'path' is a symlink outside of the language home, the user should not be able to read
             // the symlink if 'allowIO' is false.
-            TruffleFile coreHomePath = getEnv().getInternalTruffleFile(langHome.toJavaStringUncached()).getAbsoluteFile();
-            TruffleFile absolutePath = path.getAbsoluteFile();
+            TruffleFile coreHomePath = getEnv().getInternalTruffleFile(langHome.toJavaStringUncached()).getAbsoluteFile().normalize();
+            TruffleFile absolutePath = path.getAbsoluteFile().normalize();
             return absolutePath.startsWith(coreHomePath);
         }
         LOGGER.log(Level.FINE, () -> "Cannot access file " + path + " because there is no language home.");
