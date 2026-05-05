@@ -82,14 +82,14 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElement;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_SLOTS;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -168,8 +168,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
-import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -192,6 +190,8 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -220,11 +220,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
@@ -590,8 +585,7 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class CApiBuiltinExecutable implements TruffleObject {
+    public static final class CApiBuiltinExecutable {
 
         private final CApiTiming timing;
         private final ArgDescriptor ret;
@@ -653,29 +647,6 @@ public final class PythonCextBuiltins {
             CApiBuiltinNode node = PythonCextBuiltinRegistry.createBuiltinNode(id);
             node.ret = ret;
             return node;
-        }
-
-        @ExportMessage
-        @TruffleBoundary
-        boolean isPointer() {
-            long pointer = PythonContext.get(null).getCApiContext().getClosurePointer(this);
-            return pointer != -1;
-        }
-
-        @ExportMessage
-        @TruffleBoundary
-        long asPointer() throws UnsupportedMessageException {
-            long pointer = PythonContext.get(null).getCApiContext().getClosurePointer(this);
-            if (pointer == -1) {
-                throw UnsupportedMessageException.create();
-            }
-            return pointer;
-        }
-
-        @ExportMessage
-        @TruffleBoundary
-        void toNative() {
-            getNativePointer();
         }
 
         @TruffleBoundary

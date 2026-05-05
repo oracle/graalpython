@@ -61,11 +61,11 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.NodeFactoryBase;
-import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.RootCallTarget;
@@ -94,8 +94,8 @@ public abstract class TpSlot {
         } else if (slot instanceof TpSlotNative nativeSlot) {
             return nativeSlot.getCallable().getAddress();
         } else if (slot instanceof TpSlotManaged managedSlot) {
-            // This returns PyProcsWrapper, which will, in its toNative message, register the
-            // pointer in C API context, such that we can map back from a pointer that we get from C
+            // This constructs PyProcsWrapper, which will register its pointer in C API context,
+            // such that we can map back from a pointer that we get from C
             // to the PyProcsWrapper and from that to the slot instance again in TpSlots#fromNative
             return getNativeWrapper(slotMeta, managedSlot);
         } else {

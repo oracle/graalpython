@@ -47,16 +47,11 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -154,43 +149,6 @@ public abstract class CExtContext {
             return T_EMPTY_STRING;
         }
         return name.substringUncached(idx + 1, len - idx - 1, TS_ENCODING, true);
-    }
-
-    @TruffleBoundary
-    protected static PException reportImportError(RuntimeException e, TruffleString name, TruffleString path) throws ImportException {
-        StringBuilder sb = new StringBuilder();
-        Object pythonCause = null;
-        PException pcause = null;
-        if (e instanceof PException) {
-            Object excObj = ((PException) e).getEscapedException();
-            pythonCause = excObj;
-            pcause = (PException) e;
-            sb.append(LookupAndCallUnaryDynamicNode.getUncached().executeObject(excObj, SpecialMethodNames.T___REPR__));
-        } else {
-            // that call will cause problems if the format string contains '%p'
-            sb.append(e.getMessage());
-        }
-        Throwable cause = e;
-        while ((cause = cause.getCause()) != null) {
-            if (e instanceof PException) {
-                Object pythonException = ((PException) e).getEscapedException();
-                if (pythonCause != null) {
-                    ExceptionNodes.SetCauseNode.executeUncached(pythonCause, pythonException);
-                }
-                pythonCause = pythonException;
-                pcause = (PException) e;
-            }
-            if (cause.getMessage() != null) {
-                sb.append(", ");
-                sb.append(cause.getMessage());
-            }
-        }
-        Object[] args = new Object[]{path, sb.toString()};
-        if (pythonCause != null) {
-            throw new ImportException(pcause, name, path, ErrorMessages.CANNOT_LOAD, args);
-        } else {
-            throw new ImportException(null, name, path, ErrorMessages.CANNOT_LOAD, args);
-        }
     }
 
     @TruffleBoundary

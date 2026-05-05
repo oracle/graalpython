@@ -1086,8 +1086,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public void setCapiCallTarget(int index, RootCallTarget ct) {
         CompilerAsserts.neverPartOfCompilation();
         if (capiCallTargets == null) {
-            capiCallTargets = new RootCallTarget[PythonCextBuiltinRegistry.builtins.length];
+            RootCallTarget[] callTargets = new RootCallTarget[PythonCextBuiltinRegistry.builtins.length];
+            VarHandle.storeStoreFence();
+            capiCallTargets = callTargets;
         }
+        VarHandle.storeStoreFence();
         capiCallTargets[index] = ct;
     }
 
