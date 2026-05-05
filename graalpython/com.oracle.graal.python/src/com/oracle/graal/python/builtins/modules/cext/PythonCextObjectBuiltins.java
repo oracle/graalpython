@@ -104,7 +104,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
-import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
@@ -695,16 +694,6 @@ public abstract class PythonCextObjectBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyObjectHashNode hashNode) {
             return hashNode.execute(null, inliningTarget, object);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyCallable_Check extends CApiUnaryBuiltinNode {
-        @Specialization
-        static int doGeneric(Object object,
-                        @Bind Node inliningTarget,
-                        @Cached PyCallableCheckNode callableCheck) {
-            return intValue(callableCheck.execute(inliningTarget, object));
         }
     }
 

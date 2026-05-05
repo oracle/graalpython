@@ -130,6 +130,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectReturn;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySendResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
@@ -234,6 +235,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCFunction_New", ret = PyObject, args = {PyMethodDef, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCFunction_NewEx", ret = PyObject, args = {PyMethodDef, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCMethod_New", ret = PyObject, args = {PyMethodDef, PyObject, PyObject, PyTypeObject}, call = CImpl)
+    @CApiBuiltin(name = "PyCallable_Check", ret = PrimitiveResult32, args = {PyObjectReturn}, call = CImpl)
     @CApiBuiltin(name = "PyUnstable_Code_New", ret = PyCodeObject, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int,
                     PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCodec_StrictErrors", ret = PyObject, args = {PyObject}, call = CImpl)

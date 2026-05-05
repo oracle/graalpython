@@ -1819,7 +1819,6 @@ PyObject_Not(PyObject *v)
     return res == 0;
 }
 
-#if 0 // GraalPy change
 /* Test whether an object can be called */
 
 int
@@ -1830,6 +1829,7 @@ PyCallable_Check(PyObject *x)
     return Py_TYPE(x)->tp_call != NULL;
 }
 
+#if 0 // GraalPy change
 
 /* Helper for PyObject_Dir without arguments: returns the local scope. */
 static PyObject *
