@@ -2,107 +2,179 @@ name: Post Merge Actions
 on:
   pull_request:
     types: [closed]
+  workflow_run:
+    workflows: ["Run CI unittests"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: read
 
 jobs:
-  check-ci-and-notify:
+  notify-ci-failure:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event.workflow_run.conclusion != 'success'
     steps:
-      - name: Wait for CI
-        id: wait-for-ci
+      - name: Find failed CI run
+        id: failed-ci
         uses: actions/github-script@v8
         with:
           script: |
             const GRAALVMBOT_LOGIN = "graalvmbot";
-            const pr = context.payload.pull_request;
-            if (!pr || !pr.number || pr.state !== "closed") {
-              console.log("Not a closed pull request event.");
+            const TARGET_WORKFLOW_NAME = "Run CI unittests";
+
+            async function getPullRequest(prNumber) {
+              const {data: pr} = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+              return pr;
+            }
+
+            async function wasClosedByGraalVmBot(prNumber) {
+              for await (const response of github.paginate.iterator(github.rest.issues.listEvents, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                per_page: 100,
+              })) {
+                for (const event of response.data) {
+                  if (event.event === "closed" && event.actor && event.actor.login === GRAALVMBOT_LOGIN) {
+                    return true;
+                  }
+                }
+              }
+              return false;
+            }
+
+            async function isEligiblePullRequest(pr, checkCloseActor) {
+              if (!pr || !pr.number || pr.state !== "closed") {
+                console.log("PR is not closed. Skipping CI failure notification.");
+                return false;
+              }
+              if (checkCloseActor && !(await wasClosedByGraalVmBot(pr.number))) {
+                console.log(`PR #${pr.number} was not closed by ${GRAALVMBOT_LOGIN}. Skipping CI failure notification.`);
+                return false;
+              }
+
+              const assignees = pr.assignees || [];
+              if (assignees.length !== 1) {
+                console.log(`Expected exactly 1 assignee, found ${assignees.length}. Skipping CI failure notification.`);
+                return false;
+              }
+              return true;
+            }
+
+            async function alreadyCommented(prNumber, marker) {
+              for await (const response of github.paginate.iterator(github.rest.issues.listComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                per_page: 100,
+              })) {
+                if (response.data.some(comment => comment.body && comment.body.includes(marker))) {
+                  return true;
+                }
+              }
+              return false;
+            }
+
+            let pr = null;
+            let failedRun = null;
+            let checkCloseActor = false;
+
+            if (context.eventName === "pull_request") {
+              pr = context.payload.pull_request;
+              const sender = context.payload.sender;
+              if (!sender || sender.login !== GRAALVMBOT_LOGIN) {
+                console.log(`PR closed by ${sender ? sender.login : "unknown"}, not ${GRAALVMBOT_LOGIN}. Skipping CI check.`);
+                return;
+              }
+              if (!(await isEligiblePullRequest(pr, false))) {
+                return;
+              }
+
+              const runsResp = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: "ci-unittests.yml",
+                head_sha: pr.head.sha,
+              });
+              failedRun = runsResp.data.workflow_runs.find(run =>
+                run.name === TARGET_WORKFLOW_NAME &&
+                run.head_sha === pr.head.sha &&
+                run.status === "completed" &&
+                run.conclusion !== "success"
+              );
+              if (!failedRun) {
+                console.log("No completed failed CI workflow found for the PR yet. The workflow_run trigger will handle a later failure.");
+                return;
+              }
+            } else if (context.eventName === "workflow_run") {
+              const run = context.payload.workflow_run;
+              if (!run || run.name !== TARGET_WORKFLOW_NAME) {
+                console.log("Not the target workflow_run event.");
+                return;
+              }
+              if (run.conclusion === "success") {
+                console.log("CI workflow succeeded. No notification needed.");
+                return;
+              }
+              if (!run.pull_requests || run.pull_requests.length === 0) {
+                console.log("Workflow run has no associated pull request.");
+                return;
+              }
+
+              pr = await getPullRequest(run.pull_requests[0].number);
+              checkCloseActor = true;
+              failedRun = run;
+            } else {
+              console.log(`Unsupported event: ${context.eventName}`);
               return;
             }
 
-            const sender = context.payload.sender;
+            if (!(await isEligiblePullRequest(pr, checkCloseActor))) {
+              return;
+            }
+
+            const marker = `<!-- graalpy-ci-post-merge-failure:${pr.head.sha} -->`;
+            if (await alreadyCommented(pr.number, marker)) {
+              console.log(`Failure notification was already posted for PR #${pr.number} and SHA ${pr.head.sha}.`);
+              return;
+            }
+
             const assignees = pr.assignees || [];
-            if (!sender || sender.login !== GRAALVMBOT_LOGIN) {
-              console.log(`PR closed by ${sender.login}, not ${GRAALVMBOT_LOGIN}. Skipping CI check.`);
-              return;
-            }
-            if (assignees.length !== 1) {
-              console.log(`Expected exactly 1 assignee, found ${assignees.length}. Skipping CI check.`);
-              return;
-            }
-
-            const sha = pr.head.sha;
-
-            // Wait for CI workflow to complete
-            const maxWaitMs = 4* 60 * 60 * 1000;
-            const intervalMs = 15 * 60 * 1000;
-            const startMs = Date.now();
-            let runsResp = null;
-            while (Date.now() - startMs < maxWaitMs) {
-              console.log(`Waiting for workflow with SHA ${sha} to complete...`);
-              try {
-                runsResp = await github.rest.actions.listWorkflowRunsForRepo({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  head_sha: sha,
-                });
-              } catch (err) {
-                console.log(`warning: failed to fetch workflow runs: ${err}`);
-                await new Promise(r => setTimeout(r, intervalMs));
-                continue;
-              }
-
-              const hasCompleted = runsResp.data.workflow_runs.some(run => run.head_sha === sha && run.status === "completed");
-              if (hasCompleted) break;
-
-              const hasInProgress = runsResp.data.workflow_runs.some(run => run.head_sha === sha && run.status !== "completed");
-              if (!hasInProgress && runsResp.data.workflow_runs.length === 0) {
-                await new Promise(r => setTimeout(r, intervalMs));
-                continue;
-              }
-
-              await new Promise(r => setTimeout(r, intervalMs));
-            }
-
-            if (!runsResp) {
-              console.log("No workflow runs found for this SHA.");
-              return;
-            }
-
-            const failedRun = runsResp.data.workflow_runs.find(run =>
-              run.head_sha === sha &&
-              run.status === "completed" &&
-              run.conclusion !== "success"
-            );
-
-            if (!failedRun) {
-              console.log("No failed CI workflow found for the PR.");
-              return;
-            }
-
-            core.setOutput('assignee', assignees[0] ? assignees[0].login : '');
+            core.setOutput('assignee', assignees[0].login);
             core.setOutput('failed_run_url', failedRun.html_url);
             core.setOutput('failed_run_id', failedRun.id);
+            core.setOutput('pr_number', pr.number);
+            core.setOutput('comment_marker', marker);
             console.log(`Found failed CI workflow: ${failedRun.html_url}`);
       - name: Download merged test report
-        if: ${{ steps.wait-for-ci.outputs.failed_run_url != '' }}
+        if: ${{ steps.failed-ci.outputs.failed_run_url != '' }}
         uses: actions/download-artifact@v5
         with:
           name: merged_test_reports
           path: report
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ steps.wait-for-ci.outputs.failed_run_id }}
+          run-id: ${{ steps.failed-ci.outputs.failed_run_id }}
         continue-on-error: true
       - name: Post failure comment
-        if: ${{ steps.wait-for-ci.outputs.failed_run_url != '' }}
+        if: ${{ steps.failed-ci.outputs.failed_run_url != '' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const assignee = '${{ steps.wait-for-ci.outputs.assignee }}';
-            const runUrl = '${{ steps.wait-for-ci.outputs.failed_run_url }}';
+            const assignee = '${{ steps.failed-ci.outputs.assignee }}';
+            const runUrl = '${{ steps.failed-ci.outputs.failed_run_url }}';
+            const prNumber = Number('${{ steps.failed-ci.outputs.pr_number }}');
+            const marker = '${{ steps.failed-ci.outputs.comment_marker }}';
 
-            let body = `@${assignee} - CI workflow failed: [View workflow](${runUrl})`;
+            let body = `${marker}\n@${assignee} - CI workflow failed: [View workflow](${runUrl})`;
             try {
               const reportPath = 'report/merged_test_reports.json';
               if (fs.existsSync(reportPath)) {
@@ -110,16 +182,15 @@ jobs:
                 const failed = data.map(t => t.name);
                 if (failed.length) {
                   const list = failed.map(n => `- ${n}`).join('\n');
-                  body = `@${assignee} - CI workflow failed: [View workflow](${runUrl})\nFailed tests:\n\n${list}`;
+                  body = `${marker}\n@${assignee} - CI workflow failed: [View workflow](${runUrl})\nFailed tests:\n\n${list}`;
                 }
               }
             } catch (e) {
               console.log(`Error parsing test report: ${e}`);
             }
 
-            const pr = context.payload.pull_request;
             await github.rest.issues.createComment({
-              issue_number: pr.number,
+              issue_number: prNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body,
