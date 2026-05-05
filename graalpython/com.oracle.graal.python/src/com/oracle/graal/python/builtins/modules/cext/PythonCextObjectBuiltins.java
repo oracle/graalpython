@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -484,13 +485,10 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyObject_IsTrue extends CApiUnaryBuiltinNode {
-        @Specialization
-        static int isTrue(Object obj,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
-            return isTrueNode.execute(null, obj) ? 1 : 0;
-        }
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored)
+    static int GraalPyPrivate_Object_IsTrue(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        return PyObjectIsTrueNode.executeUncached(obj) ? 1 : 0;
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)

@@ -445,6 +445,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyObject_Init", ret = PyObject, args = {PyObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_InitVar", ret = PyVarObject, args = {PyVarObject, PyTypeObject, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyObject_IS_GC", ret = Int, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyObject_IsTrue", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Malloc", ret = Pointer, args = {SIZE_T}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Not", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyObject_Print", ret = Int, args = {PyObject, FILE_PTR, Int}, call = CImpl)
