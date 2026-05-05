@@ -97,6 +97,9 @@
     local manual_interpreter_bench = manual_interpreter_env + task_spec({
         name_suffix +:: ["manual-interpreter"],
     }),
+    local with_compiler = task_spec({
+        dynamic_imports +:: ["/compiler"],
+    }),
 
     // -----------------------------------------------------------------------------------------------------------------
     //
@@ -162,13 +165,13 @@
             "linux:aarch64:jdk21"        : daily     + t("01:30:00"),
             "darwin:aarch64:jdk21"       : daily     + t("01:30:00"),
             "windows:amd64:jdk21"        : daily     + t("01:00:00"),
-            "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST),
-            "linux:aarch64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
-            "darwin:aarch64:jdk-latest"  : tier3                      + require(GRAAL_JDK_LATEST),
-            "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
+            "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST) + with_compiler,
+            "linux:aarch64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST) + with_compiler,
+            "darwin:aarch64:jdk-latest"  : tier3                      + require(GRAAL_JDK_LATEST) + with_compiler,
+            "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST) + with_compiler,
         }),
         "python-junit-manual-interpreter": gpgate + platform_spec(no_jobs) + manual_interpreter_gate("python-junit") + platform_spec({
-            "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST),
+            "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST) + with_compiler,
         }),
         "python-junit-maven": gpgate_maven + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("00:30:00"),

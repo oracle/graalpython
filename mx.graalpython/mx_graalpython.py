@@ -668,7 +668,10 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     if is_collecting_coverage():
         skip_leak_tests = True
 
-    vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false'] + bytecode_dsl_build_args()
+    vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
+    if mx.suite('compiler', fatalIfMissing=False):
+        vm_args.append('-Dpolyglot.engine.CompilationFailureAction=ExitVM')
+    vm_args += bytecode_dsl_build_args()
 
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
@@ -720,6 +723,30 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     run_leak_launcher(["--code", '[10, 20]', "--python.UseNativePrimitiveStorageStrategy=true",
                        "--forbidden-class", "com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage",
                        "--forbidden-class", "com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference"])
+
+
+def verify_junit_compilation_failure():
+    compiler_failure_exit_test = 'com.oracle.graal.python.test.advanced.CompilerFailureExitTest'
+    enable_flag_env_name = 'GRAALPYTHON_JUNIT_COMPILER_FAILURE_EXIT_TEST'
+    if not mx.suite('compiler', fatalIfMissing=False):
+        mx.warn(f"Skipping {compiler_failure_exit_test}: the compiler suite is not imported.")
+        return
+
+    args = [
+        'unittest',
+        '--suite', 'graalpython',
+        '--verbose',
+        '-Dpolyglot.engine.CompilationFailureAction=ExitVM',
+    ] + bytecode_dsl_build_args() + [
+        compiler_failure_exit_test,
+    ]
+    output = mx.OutputCapture()
+    exit_code = run_mx(args, nonZeroIsFatal=False, out=mx.TeeOutputCapture(output),
+                       err=mx.TeeOutputCapture(output), env={**os.environ, enable_flag_env_name: 'true'})
+    if exit_code == 0:
+        mx.abort(f"Expected {compiler_failure_exit_test} to exit the VM with a compiler failure, but it passed.")
+    if 'Graal compilation failure' not in output.data:
+        mx.abort(f"{compiler_failure_exit_test} failed, but not with the expected compiler-failure exit.")
 
 
 PYTHON_ARCHIVES = ["GRAALPYTHON_GRAALVM_SUPPORT"]
@@ -1468,6 +1495,7 @@ def graalpython_gate_runner(_, tasks):
                         pass # Sometimes this fails on windows
             else:
                 mx.command_function('tck')([])
+            verify_junit_compilation_failure()
 
     # JUnit tests with Maven
     with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:

@@ -297,6 +297,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
             mod.setAttribute(tsLiteral("dump_truffle_ast"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("compiler_bailout_for_tests"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("tdebug"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("set_storage_strategy"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("get_storage_strategy"), PNone.NO_VALUE);
@@ -661,6 +662,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doIt(Object value) {
             CompilerDirectives.blackhole(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "compiler_bailout_for_tests", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class CompilerBailoutForTests extends PythonBuiltinNode {
+        @Specialization
+        Object doIt() {
+            CompilerDirectives.bailout("test bailout requested by compiler_bailout_for_tests");
             return PNone.NONE;
         }
     }
