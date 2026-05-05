@@ -205,12 +205,13 @@ public abstract class CExtNodes {
         static Object doGeneric(Object object, double arg,
                         @Bind Node inliningTarget,
                         @Cached PythonToNativeNode toNativeNode,
-                        @Cached NativeToPythonTransferNode toJavaNode) {
+                        @Cached NativeToPythonTransferNode toJavaNode,
+                        @Cached PyObjectCheckFunctionResultNode checkFunctionResultNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW);
             try {
                 long result = ExternalFunctionInvoker.invokeFLOAT_SUBTYPE_NEW(callable.getAddress(), toNativeNode.executeLong(object), arg);
-                return toJavaNode.execute(result);
+                return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW.getTsName(), toJavaNode.execute(result));
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }

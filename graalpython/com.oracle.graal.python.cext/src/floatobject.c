@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -2689,7 +2689,6 @@ GraalPyPrivate_Float_SubtypeNew(PyTypeObject *type, double x)
 {
     PyObject* newobj = type->tp_alloc(type, 0);
     if (newobj == NULL) {
-        Py_DECREF(newobj);
         return NULL;
     }
     ((PyFloatObject *)newobj)->ob_fval = x;
