@@ -1,3 +1,50 @@
+# Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# The Universal Permissive License (UPL), Version 1.0
+#
+# Subject to the condition set forth below, permission is hereby granted to any
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
+#
+# (a) the Software, and
+#
+# (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
+#
+# without restriction, including without limitation the rights to copy, create
+# derivative works of, display, perform, and distribute the Software and make,
+# use, sell, offer for sale, import, export, have made, and have sold the
+# Software and the Larger Work(s), and to sublicense the foregoing rights on
+# either these or other terms.
+#
+# This license is subject to the following condition:
+#
+# The above copyright notice and either this complete permission notice or at a
+# minimum a reference to the UPL must be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "openai-codex-sdk==0.1.11",
+#     "termcolor==3.3.0",
+# ]
+# ///
+
 import argparse
 import asyncio
 import json
@@ -8,11 +55,26 @@ import sys
 import urllib.parse
 import urllib.request
 
-from openai_codex_sdk import Codex, Thread
-from openai_codex_sdk.errors import ThreadRunError
-from openai_codex_sdk import parsing as codex_parsing
-from openai_codex_sdk.types import UnknownThreadItem
-from termcolor import cprint, colored
+
+def _exit_for_missing_script_dependency(exc: ImportError) -> None:
+    print(
+        "Missing dependency for scripts/gh-issues.py. "
+        "Run it with a PEP 723-aware runner so inline dependencies are installed:\n"
+        "  uv run scripts/gh-issues.py ...\n"
+        f"Details: {exc}",
+        file=sys.stderr,
+    )
+    raise SystemExit(1) from exc
+
+
+try:
+    from termcolor import cprint, colored
+    from openai_codex_sdk import Codex, Thread
+    from openai_codex_sdk.errors import ThreadRunError
+    from openai_codex_sdk import parsing as codex_parsing
+    from openai_codex_sdk.types import UnknownThreadItem
+except ImportError as exc:
+    _exit_for_missing_script_dependency(exc)
 
 REPO = "oracle/graalpython"
 PROJECT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,7 +93,8 @@ def _log_info(message: str) -> None:
 
 def _log_success(message: str) -> None:
     cprint(message, "green", attrs=["bold"])
-    
+
+
 def _log_secondary(message: str) -> None:
     cprint(message, "dark_grey")
 
@@ -104,7 +167,7 @@ def print_usage(token_usage: dict, total: int) -> None:
         )
     )
 
-### Ayncio subprocess limit patching and codex issue preparation
+### Asyncio subprocess limit patching and codex issue preparation
 def _patch_codex_stdio_limit(limit: int = CODEX_STDIO_READ_LIMIT) -> None:
     """Raise asyncio subprocess stream limit used by openai_codex_sdk.
 
@@ -195,9 +258,18 @@ def _candidate_files_for_issue(issue: dict, max_files: int = 5) -> list[str]:
         "-RIlE",
         "--exclude-dir=.git",
         "--exclude-dir=venv",
+        "--exclude-dir=.venv",
+        "--exclude-dir=env",
         "--exclude-dir=build",
         "--exclude-dir=dist",
+        "--exclude-dir=mxbuild",
+        "--exclude-dir=.mxbuild",
+        "--exclude-dir=.tox",
+        "--exclude-dir=.mypy_cache",
+        "--exclude-dir=.pytest_cache",
+        "--exclude-dir=.ruff_cache",
         "--exclude-dir=__pycache__",
+        "--exclude=*.dist",
         "--binary-files=without-match",
         pattern,
         PROJECT_DIRECTORY,
@@ -210,7 +282,12 @@ def _candidate_files_for_issue(issue: dict, max_files: int = 5) -> list[str]:
     return [line.replace(f"{PROJECT_DIRECTORY}/", "") for line in result.stdout.splitlines()[:max_files]]
 
 
-async def _codex_prompt_async(prompt: str, thread: Thread, stream_live: bool = False, prefix: str = "") -> tuple[str, dict[str, int]]:
+async def _codex_prompt_async(
+    prompt: str,
+    thread: Thread,
+    stream_live: bool = False,
+    prefix: str = "",
+) -> tuple[str, dict[str, int]]:
     if not stream_live:
         try:
             turn = await thread.run(prompt)
@@ -321,7 +398,7 @@ def codex_sort_issues(
                 f"Read at most {max_files_to_read} files, and skim only minimal relevant sections."
             )
             candidate_files = _candidate_files_for_issue(batch[0], max_files=max_files_to_read)
-            
+
             prompt = (
                 "Classify each issue into one of: easy-ai-fix, good-first-issue, non-relevant, ignore. "
                 "Use short reasoning (<=120 chars). "
@@ -405,16 +482,22 @@ def _parse_issue_ids(issue_ids: list[str]) -> list[int]:
     return valid_issue_ids
 
 
-def codex_fix_issues(issue_ids: list[str], codex_workers: int, print_token_usage: bool = False) -> None:
+def codex_fix_issues(
+    issue_ids: list[str],
+    codex_workers: int,
+    print_token_usage: bool = False,
+    max_rounds: int = 1,
+) -> None:
     valid_issue_ids = _parse_issue_ids(issue_ids)
     if not valid_issue_ids:
         _log_secondary("No valid issue IDs provided.")
         return
+    max_rounds = max(1, max_rounds)
 
     async def _run_all() -> list[tuple[int, str]]:
         sem = asyncio.Semaphore(max(1, codex_workers))
         tasks = [
-            asyncio.create_task(codex_fix_issue(issue_id, print_token_usage, sem))
+            asyncio.create_task(codex_fix_issue(issue_id, print_token_usage, sem, max_rounds))
             for issue_id in valid_issue_ids
         ]
         try:
@@ -439,7 +522,12 @@ def codex_fix_issues(issue_ids: list[str], codex_workers: int, print_token_usage
             print(fix)
 
 
-async def codex_fix_issue(issue_id: int, print_token_usage: bool, sem: asyncio.Semaphore) -> tuple[int, str]:
+async def codex_fix_issue(
+    issue_id: int,
+    print_token_usage: bool,
+    sem: asyncio.Semaphore,
+    max_rounds: int,
+) -> tuple[int, str]:
     async with sem:
         _log_info(f"Attempting to fix issue #{issue_id} with Codex...")
         thread = _new_codex_thread(sandbox_mode="workspace-write", web_search=True, network_access=True)
@@ -454,22 +542,37 @@ async def codex_fix_issue(issue_id: int, print_token_usage: bool, sem: asyncio.S
             "{\"fixed\": boolean, \"summary\": string}."
         )
 
-        response, usage = await _codex_prompt_async(prompt, thread, stream_live=True, prefix=str(issue_id))
-        _log_secondary(f"[{issue_id}] Codex response:")
-        print(response)
+        total_usage = _token_usage_dict(None)
+        response = ""
+        for round_index in range(1, max_rounds + 1):
+            _log_info(f"[{issue_id}] Codex fix round {round_index}/{max_rounds}")
+            response, usage = await _codex_prompt_async(prompt, thread, stream_live=True, prefix=str(issue_id))
+            _accumulate_token_usage(total_usage, usage)
+            _log_secondary(f"[{issue_id}] Codex response:")
+            print(response)
 
-        try:
-            payload = json.loads(_extract_json_payload(response))
-            fixed = bool(payload.get("fixed", False))
-        except (json.JSONDecodeError, TypeError):
-            fixed = False
+            try:
+                payload = json.loads(_extract_json_payload(response))
+                fixed = bool(payload.get("fixed", False))
+            except (json.JSONDecodeError, TypeError):
+                fixed = False
 
-        if fixed:
-            _log_success(f"Codex marked issue #{issue_id} as fixed.")
-            
+            if fixed:
+                _log_success(f"Codex marked issue #{issue_id} as fixed.")
+                break
+
+            prompt = (
+                f"Continue working on github {REPO} issue #{issue_id}. "
+                "Review your previous attempt and the current local changes. "
+                "If more changes are needed, make them and run relevant tests. "
+                "If the issue cannot be fixed in this repository, say so. "
+                "At the end of your response, return ONLY JSON with this schema: "
+                "{\"fixed\": boolean, \"summary\": string}."
+            )
+
         if print_token_usage:
             _log_info(f"[{issue_id}]")
-            print_usage(usage, _token_usage_total(usage))
+            print_usage(total_usage, _token_usage_total(total_usage))
     return issue_id, response
 
 
@@ -733,12 +836,27 @@ def main() -> None:
     issues_parser = subparsers.add_parser("get-issues", help="Fetch and sort GitHub issues")
     issues_parser.add_argument("--limit", type=int, default=30, help="Maximum number of issues to fetch")
     issues_parser.add_argument("--label", type=str, help="Filter issues by label")
-    issues_parser.add_argument("--codex-max-files", type=int, default=5, help="Max local files Codex should read per issue")
+    issues_parser.add_argument(
+        "--codex-max-files",
+        type=int,
+        default=5,
+        help="Max local files Codex should read per issue",
+    )
     issues_parser.add_argument("--apply-labels", action="store_true", help="Prompt to apply labels to sorted issues")
-    issues_parser.add_argument("--fix-easy-issues", type=bool, nargs="?", const=True, help="Attempt to fix easy-ai-fix issues with Codex")
+    issues_parser.add_argument(
+        "--fix-easy-issues",
+        action="store_true",
+        help="Attempt to fix easy-ai-fix issues with Codex",
+    )
+    issues_parser.add_argument("--max-rounds", type=int, default=1, help="Maximum iterative Codex fix rounds")
 
     fix_issues_parser = subparsers.add_parser("fix-issues", help="Attempt to fix issue(s) with Codex")
-    fix_issues_parser.add_argument("--issues-ids", type=str, required=True, help="Comma separated list of issue IDs to attempt fixing")
+    fix_issues_parser.add_argument(
+        "--issues-ids",
+        type=str,
+        required=True,
+        help="Comma separated list of issue IDs to attempt fixing",
+    )
     fix_issues_parser.add_argument("--max-rounds", type=int, default=8, help="Maximum iterative Codex fix rounds")
 
     gen_repro_parser = subparsers.add_parser("gen-repro", help="Generate minimal reproduction harness for issue(s)")
@@ -749,11 +867,21 @@ def main() -> None:
         issues = json.loads(sort_issues(args))
         if args.fix_easy_issues:
             issues_ids = [str(issue["issue_id"]) for issue in issues.get("easy-ai-fix", [])]
-            codex_fix_issues(issues_ids, codex_workers=args.codex_workers, print_token_usage=args.print_token_usage)
+            codex_fix_issues(
+                issues_ids,
+                codex_workers=args.codex_workers,
+                print_token_usage=args.print_token_usage,
+                max_rounds=args.max_rounds,
+            )
 
     elif args.command == "fix-issues":
         issues_ids = args.issues_ids.split(",")
-        codex_fix_issues(issues_ids, codex_workers=args.codex_workers, print_token_usage=args.print_token_usage)
+        codex_fix_issues(
+            issues_ids,
+            codex_workers=args.codex_workers,
+            print_token_usage=args.print_token_usage,
+            max_rounds=args.max_rounds,
+        )
     elif args.command == "gen-repro":
         issues_ids = args.issues_ids.split(",")
         codex_gen_repros(issues_ids, codex_workers=args.codex_workers, print_token_usage=args.print_token_usage)
