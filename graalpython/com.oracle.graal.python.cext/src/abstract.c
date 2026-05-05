@@ -2924,7 +2924,7 @@ PyObject_GetAIter(PyObject *o) {
     }
     return it;
 }
-
+#endif // GraalPy change
 int
 PyIter_Check(PyObject *obj)
 {
@@ -2932,7 +2932,7 @@ PyIter_Check(PyObject *obj)
     return (tp->tp_iternext != NULL &&
             tp->tp_iternext != &_PyObject_NextNotImplemented);
 }
-
+#if 0 // GraalPy change
 int
 PyAIter_Check(PyObject *obj)
 {
