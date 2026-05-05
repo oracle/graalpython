@@ -252,11 +252,26 @@ def downstream_test_oracledb(graalpy, testdir):
     env.setdefault('PYO_TEST_PROXY_PASSWORD', "testpasswordAx3")
     run([graalpy, '-m', 'venv', str(venv)])
     run_in_venv(venv, ['pip', 'install', '.[test]'], cwd=src)
+    run_in_venv(venv, ['pip', 'install', 'pytest-rerunfailures'], cwd=src)
     run_in_venv(venv, ['pytest', '--tb=short', 'tests/create_schema.py'], cwd=src, env=env)
     try:
         for mode_arg in ([], ['--use-thick-mode']):
-            run_in_venv(venv, ['pytest', '--tb=short', '-v', '-rs', 'tests', '--ignore', 'tests/ext', *mode_arg],
-                        cwd=src, env=env)
+            run_in_venv(venv, [
+                'pytest',
+                '--tb=short',
+                '-v',
+                '-rs',
+                '--reruns',
+                '1',
+                '--reruns-delay',
+                '3',
+                '--only-rerun',
+                'Listener refused connection',
+                'tests',
+                '--ignore',
+                'tests/ext',
+                *mode_arg,
+            ], cwd=src, env=env)
     finally:
         run_in_venv(venv, ['pytest', '--tb=short', 'tests/drop_schema.py'], cwd=src, env=env)
 

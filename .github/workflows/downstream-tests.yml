@@ -60,4 +60,3 @@ jobs:
     uses: ./.github/workflows/_downstream-test-oracledb.yml
     with:
       package: oracledb
-      needs_rust: true

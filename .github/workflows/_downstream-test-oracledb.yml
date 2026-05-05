@@ -20,7 +20,141 @@ on:
         default: false
 
 jobs:
+  build-numpy-wheels:
+    runs-on: ubuntu-latest
+    env:
+      PACKAGES_TO_BUILD: numpy==2.2.6
+    steps:
+      - uses: actions/checkout@v6
+      - name: Get GraalPy build artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: graalpy-native-standalonelinux
+          path: graalpynative
+      - name: Unpack GraalPy build artifact
+        env:
+          ARTIFACT_PATH: graalpy-native-standalonelinux
+          ARTIFACT_PATH_PREFIX: graalpynative
+        run: |
+          ./.github/scripts/unpack-artifact graalpy-native-standalonelinux
+          mv $ARTIFACT_PATH_PREFIX/main/mxbuild/linux-amd64/GRAALPY_NATIVE_STANDALONE/ graalpy-native-standalone
+      - name: Build numpy wheels
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran libopenblas-dev
+          graalpy-native-standalone/bin/graalpy -m venv graalpy
+          graalpy/bin/pip install wheel
+          graalpy/bin/pip wheel -w wheelhouse "$PACKAGES_TO_BUILD"
+      - name: Store numpy wheels
+        uses: actions/upload-artifact@v5
+        with:
+          name: wheels-numpy
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+  build-pandas-wheels:
+    needs: build-numpy-wheels
+    runs-on: ubuntu-latest
+    env:
+      PACKAGES_TO_BUILD: pandas==2.2.3
+      PIP_FIND_LINKS: ${{ github.workspace }}/dependency-wheels
+      PIP_PREFER_BINARY: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Get GraalPy build artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: graalpy-native-standalonelinux
+          path: graalpynative
+      - name: Get dependency wheels
+        uses: actions/download-artifact@v5
+        with:
+          name: wheels-numpy
+          path: dependency-wheels
+      - name: Unpack GraalPy build artifact
+        env:
+          ARTIFACT_PATH: graalpy-native-standalonelinux
+          ARTIFACT_PATH_PREFIX: graalpynative
+        run: |
+          ./.github/scripts/unpack-artifact graalpy-native-standalonelinux
+          mv $ARTIFACT_PATH_PREFIX/main/mxbuild/linux-amd64/GRAALPY_NATIVE_STANDALONE/ graalpy-native-standalone
+      - name: Build pandas wheels
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenblas-dev
+          graalpy-native-standalone/bin/graalpy -m venv graalpy
+          graalpy/bin/pip install wheel
+          graalpy/bin/pip install --no-index --find-links dependency-wheels numpy==2.2.6
+          graalpy/bin/pip wheel -w wheelhouse "$PACKAGES_TO_BUILD"
+      - name: Store pandas wheels
+        uses: actions/upload-artifact@v5
+        with:
+          name: wheels-pandas
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+  build-pyarrow-wheels:
+    needs: build-numpy-wheels
+    runs-on: ubuntu-latest
+    env:
+      PACKAGES_TO_BUILD: pyarrow==20.0.0
+      PIP_FIND_LINKS: ${{ github.workspace }}/dependency-wheels
+      PIP_PREFER_BINARY: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Get GraalPy build artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: graalpy-native-standalonelinux
+          path: graalpynative
+      - name: Get dependency wheels
+        uses: actions/download-artifact@v5
+        with:
+          name: wheels-numpy
+          path: dependency-wheels
+      - name: Unpack GraalPy build artifact
+        env:
+          ARTIFACT_PATH: graalpy-native-standalonelinux
+          ARTIFACT_PATH_PREFIX: graalpynative
+        run: |
+          ./.github/scripts/unpack-artifact graalpy-native-standalonelinux
+          mv $ARTIFACT_PATH_PREFIX/main/mxbuild/linux-amd64/GRAALPY_NATIVE_STANDALONE/ graalpy-native-standalone
+      - name: Build pyarrow wheels
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi-dev \
+            libboost-all-dev \
+            libopenblas-dev \
+            libsnappy-dev \
+            libbrotli-dev \
+            libssl-dev \
+            libthrift-dev \
+            libjemalloc-dev \
+            libxsimd-dev \
+            libzstd-dev \
+            libre2-dev \
+            libmimalloc-dev \
+            liblz4-dev \
+            libbz2-dev \
+            llvm llvm-dev \
+            lld liblld-dev \
+            clang libclang-dev \
+            cmake
+          graalpy-native-standalone/bin/graalpy -m venv graalpy
+          graalpy/bin/pip install wheel
+          graalpy/bin/pip install --no-index --find-links dependency-wheels numpy==2.2.6
+          graalpy/bin/pip wheel -w wheelhouse "$PACKAGES_TO_BUILD"
+      - name: Store pyarrow wheels
+        uses: actions/upload-artifact@v5
+        with:
+          name: wheels-pyarrow
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
   downstream:
+    needs:
+      - build-pandas-wheels
+      - build-pyarrow-wheels
     strategy:
       fail-fast: false
       matrix:
@@ -32,6 +166,9 @@ jobs:
     runs-on: ${{ matrix.os.id }}
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ORACLE_CLIENT_DIR: /opt/oracle/instantclient
+      PIP_FIND_LINKS: /tmp/oracledb-wheels
+      PIP_PREFER_BINARY: "1"
       PYO_TEST_CONNECT_STRING: "127.0.0.1:1521/FREEPDB1"
       PYO_TEST_ADMIN_PASSWORD: "asdf12345678"
 
@@ -45,6 +182,42 @@ jobs:
           - 5500:5500
 
     steps:
+      - uses: actions/checkout@v6
+      - name: Get package wheels
+        uses: actions/download-artifact@v5
+        with:
+          pattern: wheels-*
+          path: /tmp/oracledb-wheels
+          merge-multiple: true
+      - name: Install wheel runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip libffi-dev \
+            libboost-all-dev \
+            libopenblas-dev \
+            libsnappy-dev \
+            libbrotli-dev \
+            libssl-dev \
+            libthrift-dev \
+            libjemalloc-dev \
+            libxsimd-dev \
+            libzstd-dev \
+            libre2-dev \
+            libmimalloc-dev \
+            liblz4-dev \
+            libbz2-dev \
+            llvm llvm-dev \
+            lld liblld-dev \
+            clang libclang-dev \
+            cmake
+      - name: Install Oracle Instant Client
+        run: |
+          curl -fL https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip -o instantclient-basiclite.zip
+          sudo mkdir -p "$ORACLE_CLIENT_DIR"
+          sudo unzip -q instantclient-basiclite.zip -d /opt/oracle
+          sudo mv /opt/oracle/instantclient_*/* "$ORACLE_CLIENT_DIR"
+          sudo rmdir /opt/oracle/instantclient_*
+          echo "LD_LIBRARY_PATH=$ORACLE_CLIENT_DIR" >> "$GITHUB_ENV"
       - name: Run downstream test
         uses: ./.github/actions/downstream-test
         with:
