@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -240,6 +240,35 @@ class TestPyLong(CPyExtTestCase):
         resultspec="O",
         argspec='n',
         arguments=["Py_ssize_t n"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_FromUnsignedLong = CPyExtFunction(
+        lambda args: (0, 1, max_ulong - 1),
+        lambda: ((),),
+        code="""
+        PyObject* wrap_PyLong_FromUnsignedLong() {
+            PyObject* small = PyLong_FromUnsignedLong(0);
+            PyObject* one = PyLong_FromUnsignedLong(1);
+            PyObject* large = PyLong_FromUnsignedLong(ULONG_MAX);
+            PyObject* result;
+            if (small == NULL || one == NULL || large == NULL) {
+                Py_XDECREF(small);
+                Py_XDECREF(one);
+                Py_XDECREF(large);
+                return NULL;
+            }
+            result = PyTuple_Pack(3, small, one, large);
+            Py_DECREF(small);
+            Py_DECREF(one);
+            Py_DECREF(large);
+            return result;
+        }
+        """,
+        resultspec="O",
+        argspec='',
+        arguments=[],
+        callfunction="wrap_PyLong_FromUnsignedLong",
         cmpfunc=unhandled_error_compare
     )
 

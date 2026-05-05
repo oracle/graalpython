@@ -335,8 +335,16 @@ PyLong_FromLong(long ival)
     return PyLong_FromLongLong((long long) ival);
 }
 
-#if 0 // GraalPy change
 #define PYLONG_FROM_UINT(INT_TYPE, ival) \
+    do { \
+        if ((ival) <= INT32_MAX) { \
+            return int32_to_pointer((int)(ival)); \
+        } \
+        return GraalPyPrivate_Long_FromUnsignedLong((unsigned long)(ival)); \
+    } while(0)
+
+#if 0 // GraalPy change
+#define PYLONG_FROM_UINT_CPYTHON(INT_TYPE, ival) \
     do { \
         if (IS_SMALL_UINT(ival)) { \
             return get_small_int((sdigit)(ival)); \
@@ -359,6 +367,7 @@ PyLong_FromLong(long ival)
         } \
         return (PyObject *)v; \
     } while(0)
+#endif // GraalPy change
 
 /* Create a new int object from a C unsigned long int */
 
@@ -368,6 +377,7 @@ PyLong_FromUnsignedLong(unsigned long ival)
     PYLONG_FROM_UINT(unsigned long, ival);
 }
 
+#if 0 // GraalPy change
 /* Create a new int object from a C unsigned long long int. */
 
 PyObject *
