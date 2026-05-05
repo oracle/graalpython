@@ -56,6 +56,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonFileDetector;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -255,8 +256,8 @@ public abstract class PyTraceBackPrint {
         final PythonContext context = PythonContext.get(null);
         TruffleFile file = null;
         try {
-            file = context.getEnv().getInternalTruffleFile(fileName.toJavaStringUncached());
-        } catch (Exception e) {
+            file = context.getPublicTruffleFileRelaxed(fileName, PythonLanguage.T_DEFAULT_PYTHON_EXTENSIONS);
+        } catch (IllegalArgumentException | SecurityException | UnsupportedOperationException e) {
             return null;
         }
         String line = null;
@@ -278,7 +279,7 @@ public abstract class PyTraceBackPrint {
                     i++;
                 }
             }
-        } catch (IOException ioe) {
+        } catch (IllegalArgumentException | IOException | SecurityException | UnsupportedOperationException e) {
             line = null;
         }
         return line;
