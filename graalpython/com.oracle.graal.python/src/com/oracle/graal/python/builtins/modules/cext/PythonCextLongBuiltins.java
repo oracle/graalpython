@@ -56,7 +56,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -294,8 +293,8 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {UNSIGNED_LONG}, call = Ignored, acquireGil = false)
-    static long GraalPyPrivate_Long_FromUnsignedLong(long n) {
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {UNSIGNED_LONG_LONG}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_Long_FromUnsignedLongLong(long n) {
         Object result = n >= 0 ? n : PFactory.createInt(PythonLanguage.get(null), convertToBigInteger(n));
         return PythonToNativeNewRefNode.executeLongUncached(result);
     }
@@ -306,8 +305,7 @@ public final class PythonCextLongBuiltins {
     }
 
     @CApiBuiltin(name = "PyLong_FromSize_t", ret = PyObjectTransfer, args = {SIZE_T}, call = Direct)
-    @CApiBuiltin(ret = PyObjectTransfer, args = {UNSIGNED_LONG_LONG}, call = Direct)
-    abstract static class PyLong_FromUnsignedLongLong extends CApiUnaryBuiltinNode {
+    abstract static class PyLong_FromSize_t extends CApiUnaryBuiltinNode {
 
         @Specialization(guards = "n >= 0")
         static Object doUnsignedLongPositive(long n) {

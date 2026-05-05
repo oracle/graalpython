@@ -341,6 +341,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyLong_FromLongLong", ret = PyObjectTransfer, args = {LONG_LONG}, call = CImpl)
     @CApiBuiltin(name = "PyLong_FromSsize_t", ret = PyObjectTransfer, args = {Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyLong_FromUnsignedLong", ret = PyObjectTransfer, args = {UNSIGNED_LONG}, call = CImpl)
+    @CApiBuiltin(name = "PyLong_FromUnsignedLongLong", ret = PyObjectTransfer, args = {UNSIGNED_LONG_LONG}, call = CImpl)
     @CApiBuiltin(name = "PyLong_FromVoidPtr", ret = PyObject, args = {Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyMapping_Check", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyMapping_GetItemString", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)

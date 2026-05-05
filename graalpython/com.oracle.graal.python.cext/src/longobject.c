@@ -340,7 +340,7 @@ PyLong_FromLong(long ival)
         if ((ival) <= INT32_MAX) { \
             return int32_to_pointer((int)(ival)); \
         } \
-        return GraalPyPrivate_Long_FromUnsignedLong((unsigned long)(ival)); \
+        return GraalPyPrivate_Long_FromUnsignedLongLong((unsigned long long)(ival)); \
     } while(0)
 
 #if 0 // GraalPy change
@@ -377,7 +377,6 @@ PyLong_FromUnsignedLong(unsigned long ival)
     PYLONG_FROM_UINT(unsigned long, ival);
 }
 
-#if 0 // GraalPy change
 /* Create a new int object from a C unsigned long long int. */
 
 PyObject *
@@ -386,6 +385,7 @@ PyLong_FromUnsignedLongLong(unsigned long long ival)
     PYLONG_FROM_UINT(unsigned long long, ival);
 }
 
+#if 0 // GraalPy change
 /* Create a new int object from a C size_t. */
 
 PyObject *

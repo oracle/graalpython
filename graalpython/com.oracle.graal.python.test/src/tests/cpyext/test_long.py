@@ -47,6 +47,8 @@ long_bits = struct.calcsize('l') * 8
 max_long = 2 ** (long_bits - 1) - 1
 min_long = -2 ** (long_bits - 1)
 max_ulong = 2 ** long_bits
+ulonglong_bits = struct.calcsize('Q') * 8
+max_ulonglong = 2 ** ulonglong_bits
 ssize_t_bits = struct.calcsize('n') * 8
 max_ssize_t = 2 ** (ssize_t_bits - 1) - 1
 min_ssize_t = -2 ** (ssize_t_bits - 1)
@@ -269,6 +271,35 @@ class TestPyLong(CPyExtTestCase):
         argspec='',
         arguments=[],
         callfunction="wrap_PyLong_FromUnsignedLong",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_FromUnsignedLongLong = CPyExtFunction(
+        lambda args: (0, 1, max_ulonglong - 1),
+        lambda: ((),),
+        code="""
+        PyObject* wrap_PyLong_FromUnsignedLongLong() {
+            PyObject* small = PyLong_FromUnsignedLongLong(0);
+            PyObject* one = PyLong_FromUnsignedLongLong(1);
+            PyObject* large = PyLong_FromUnsignedLongLong(ULLONG_MAX);
+            PyObject* result;
+            if (small == NULL || one == NULL || large == NULL) {
+                Py_XDECREF(small);
+                Py_XDECREF(one);
+                Py_XDECREF(large);
+                return NULL;
+            }
+            result = PyTuple_Pack(3, small, one, large);
+            Py_DECREF(small);
+            Py_DECREF(one);
+            Py_DECREF(large);
+            return result;
+        }
+        """,
+        resultspec="O",
+        argspec='',
+        arguments=[],
+        callfunction="wrap_PyLong_FromUnsignedLongLong",
         cmpfunc=unhandled_error_compare
     )
 
