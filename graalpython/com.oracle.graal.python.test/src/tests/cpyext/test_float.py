@@ -246,6 +246,7 @@ class TestNativeFloatSubclass(unittest.TestCase):
         assert is_native_object(f)
 
     def test_alloc_failure(self):
+        """A native float subtype must propagate tp_alloc failure instead of crashing on NULL."""
         FailingAllocFloatSubclass = CPyExtType(
             'FailingAllocFloatSubclass',
             r'''
