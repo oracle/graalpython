@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallS
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
@@ -114,18 +115,24 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
                     @Cached GetObjectSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callSlot,
                     @Cached PyObjectReprAsObjectNode repr,
+                    @Cached PyEnterRecursiveCallNode enterNode,
                     @Cached PyUnicodeCheckNode checkNode,
                     @Cached PRaiseNode raiseNode) {
         TpSlots slots = getSlots.execute(inliningTarget, obj);
         if (slots.tp_str() == null) {
             return repr.execute(frame, inliningTarget, obj);
         }
-        Object result = callSlot.execute(frame, inliningTarget, slots.tp_str(), obj);
-        assertNoJavaString(result);
-        if (checkNode.execute(inliningTarget, result)) {
-            return result;
-        } else {
-            throw raiseTypeError(inliningTarget, raiseNode, result);
+        PythonThreadState threadState = enterNode.enter(inliningTarget, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_GETTING_STR_OF_AN_OBJECT);
+        try {
+            Object result = callSlot.execute(frame, inliningTarget, slots.tp_str(), obj);
+            assertNoJavaString(result);
+            if (checkNode.execute(inliningTarget, result)) {
+                return result;
+            } else {
+                throw raiseTypeError(inliningTarget, raiseNode, result);
+            }
+        } finally {
+            PyEnterRecursiveCallNode.leave(threadState);
         }
     }
 

@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRepr.CallSlotRe
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
@@ -97,18 +98,24 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
                     @Cached GetObjectSlotsNode getSlots,
                     @Cached CallSlotReprNode callSlot,
                     @Cached(inline = false) ObjectNodes.DefaultObjectReprNode defaultRepr,
+                    @Cached PyEnterRecursiveCallNode enterNode,
                     @Cached PyUnicodeCheckNode checkNode,
                     @Cached PRaiseNode raiseNode) {
+        PythonThreadState threadState = enterNode.enter(inliningTarget, ErrorMessages.MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_GETTING_REPR_OF_AN_OBJECT);
         TpSlots slots = getSlots.execute(inliningTarget, obj);
-        if (slots.tp_repr() == null) {
-            return defaultRepr.execute(frame, inliningTarget, obj);
-        }
-        Object result = callSlot.execute(frame, inliningTarget, slots.tp_repr(), obj);
-        assertNoJavaString(result);
-        if (checkNode.execute(inliningTarget, result)) {
-            return result;
-        } else {
-            throw raiseTypeError(inliningTarget, result, raiseNode);
+        try {
+            if (slots.tp_repr() == null) {
+                return defaultRepr.execute(frame, inliningTarget, obj);
+            }
+            Object result = callSlot.execute(frame, inliningTarget, slots.tp_repr(), obj);
+            assertNoJavaString(result);
+            if (checkNode.execute(inliningTarget, result)) {
+                return result;
+            } else {
+                throw raiseTypeError(inliningTarget, result, raiseNode);
+            }
+        } finally {
+            PyEnterRecursiveCallNode.leave(threadState);
         }
     }
 

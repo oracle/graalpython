@@ -828,6 +828,9 @@ public abstract class ErrorMessages {
     public static final TruffleString LINE_BUFFERING_ISNT_SUPPORTED = tsLiteral("line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used");
     public static final TruffleString UNCLOSED_FILE = tsLiteral("unclosed file %r");
     public static final TruffleString MAXIMUM_RECURSION_DEPTH_EXCEEDED = tsLiteral("maximum recursion depth exceeded");
+    public static final TruffleString MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_GETTING_REPR_OF_AN_OBJECT = tsLiteral("maximum recursion depth exceeded while getting the repr of an object");
+    public static final TruffleString MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_GETTING_STR_OF_AN_OBJECT = tsLiteral("maximum recursion depth exceeded while getting the str of an object");
+    public static final TruffleString MAXIMUM_RECURSION_DEPTH_EXCEEDED_WHILE_TRAVERSING_S_NODE = tsLiteral("maximum recursion depth exceeded while traversing '%s' node");
     public static final TruffleString S_IS_LESS_THAN_MINIMUM = tsLiteral("%s is less than minimum");
     public static final TruffleString S_IS_GREATER_THAN_MAXIUMUM = tsLiteral("%s is greater than maxiumum");
     public static final TruffleString S_SHOULD_BE_INTEGER_NOT_P = tsLiteral("%s should be integer, not %p");
