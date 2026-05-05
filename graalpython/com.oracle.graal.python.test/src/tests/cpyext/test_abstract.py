@@ -90,6 +90,12 @@ def _reference_index(args):
     return result
 
 
+def _reference_index_exact(args):
+    result = _reference_index(args)
+    result = result.__index__()
+    return type(result).__name__, result
+
+
 def _reference_private_index(args):
     if isinstance(args[0], int):
         return type(args[0]).__name__, args[0]
@@ -242,6 +248,12 @@ class DummyIndexable():
 
     def __index__(self):
         return 0xCAFE
+
+
+class DummyIndexableIntSubclass():
+
+    def __index__(self):
+        return DummyIntSubclass()
 
 
 class DummyIntSubclass(int):
@@ -1013,9 +1025,10 @@ class TestAbstract(CPyExtTestCase):
     )
 
     test_PyNumber_Index = CPyExtFunction(
-        _reference_index,
+        _reference_index_exact,
         lambda: (
             (0,),
+            (True,),
             (1,),
             (-1,),
             (1.0,),
@@ -1023,12 +1036,27 @@ class TestAbstract(CPyExtTestCase):
             (0x7FFFFFFF,),
             (0x7FFFFFFFFFFFFFFF,),
             (DummyIntable(),),
+            (DummyIndexableIntSubclass(),),
             (DummyIntSubclass(),),
             (NoNumber(),),
         ),
         resultspec="O",
         argspec='O',
         arguments=["PyObject* v"],
+        code='''
+        PyObject* wrap_PyNumber_Index(PyObject* v) {
+            PyObject* result = PyNumber_Index(v);
+            if (result == NULL) {
+                return NULL;
+            }
+            PyObject* type_name = PyUnicode_FromString(Py_TYPE(result)->tp_name);
+            PyObject* tuple = PyTuple_Pack(2, type_name, result);
+            Py_DECREF(type_name);
+            Py_DECREF(result);
+            return tuple;
+        }
+        ''',
+        callfunction="wrap_PyNumber_Index",
         cmpfunc=unhandled_error_compare
     )
 

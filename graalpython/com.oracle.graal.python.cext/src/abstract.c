@@ -1505,7 +1505,6 @@ _PyNumber_Index(PyObject *item)
     return result;
 }
 
-#if 0 // GraalPy change
 /* Return an exact Python int from the object item.
    Raise TypeError if the result is not an int
    or if the object cannot be interpreted as an index.
@@ -1515,11 +1514,14 @@ PyNumber_Index(PyObject *item)
 {
     PyObject *result = _PyNumber_Index(item);
     if (result != NULL && !PyLong_CheckExact(result)) {
-        Py_SETREF(result, _PyLong_Copy((PyLongObject *)result));
+        if (points_to_py_handle_space(result)) {
+            Py_SETREF(result, GraalPyPrivate_PyNumber_IndexCopy(result));
+        } else {
+            Py_SETREF(result, _PyLong_Copy((PyLongObject *)result));
+        }
     }
     return result;
 }
-#endif // GraalPy change
 
 /* Return an error on Overflow only if err is not NULL*/
 

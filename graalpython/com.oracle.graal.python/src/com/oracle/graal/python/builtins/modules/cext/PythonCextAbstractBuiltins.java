@@ -100,6 +100,7 @@ import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyLongCopyNodeGen;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberDivmodNode;
@@ -173,14 +174,6 @@ public final class PythonCextAbstractBuiltins {
     private static final TruffleLogger PY_OBJECT_SET_DOC_LOGGER = CApiContext.getLogger(PythonCextAbstractBuiltins.class);
     /////// PyNumber ///////
 
-    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
-    static long PyNumber_Index(long objPtr) {
-        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
-        checkNonNullArgUncached(obj);
-        Object result = PyNumberIndexNode.executeUncached(obj);
-        return PythonToNativeNewRefNode.executeLongUncached(result);
-    }
-
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
     static long GraalPyPrivate_PyNumber_Index(long objPtr) {
         Object obj = NativeToPythonNode.executeRawUncached(objPtr);
@@ -201,6 +194,13 @@ public final class PythonCextAbstractBuiltins {
         }
         WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, DeprecationWarning, 1,
                         ErrorMessages.WARN_P_RETURNED_NON_P, obj, T___INDEX__, "int", result, "int");
+        return PythonToNativeNewRefNode.executeLongUncached(result);
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_IndexCopy(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object result = PyLongCopyNodeGen.getUncached().execute(null, obj);
         return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
