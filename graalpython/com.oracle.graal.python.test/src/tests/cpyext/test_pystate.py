@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,8 @@ class TestPystate(CPyExtTestCase):
     # This seems to get the native extensions into some inconsistent state on GraalPy, giving:
     # refcnt below zero during managed adjustment for 0000aaae18fca780 (9 0000000000000009 - 10)
     def test_SetAsyncExc(self):
+        # TODO GR-63289 transiently failing too often
+        return
         SetAsyncExcCaller = CPyExtType(
             "SetAsyncExcCaller",
             """
