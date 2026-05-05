@@ -35,16 +35,16 @@ You get better performance, the ability to compile to native binaries, and acces
 These guides cover everything you need to know:
 
 - **[Getting Started](Standalone-Getting-Started.md)** - Installation and basic usage
-- **[Runtime Guide](Python-Runtime.md)** - Runtime options and compatibility
 - **[Standalone Applications](Python-Standalone-Applications.md)** - Compile Python to native binaries
 - **[Native Extensions](Native-Extensions.md)** - Working with C extensions and native packages
+- **[Interoperability](Interoperability.md)** - Use Java and other Graal languages from Python
 - **[Performance](Performance.md)** - Optimization tips and benchmarks
 - **[Tooling](Tooling.md)** - IDE integration and development tools
 
 ## General Information
 
 - **[Test Tiers](Test-Tiers.md)** - Platform compatibility and testing information
-- **[Troubleshooting](Troubleshooting.md)** - Common issues and solutions
+- **[Troubleshooting](Troubleshooting.md)** - Common embedding issues and solutions
 
 ## Version Compatibility
 

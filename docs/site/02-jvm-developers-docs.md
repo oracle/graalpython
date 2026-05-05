@@ -22,6 +22,7 @@ These guides cover everything you need to know:
 {% gfm_docs ../user/Embedding-Getting-Started.md %}
 {% gfm_docs ../user/Embedding-Build-Tools.md %}
 {% gfm_docs ../user/Embedding-Permissions.md %}
+{% gfm_docs ../user/Embedding-Native-Extensions.md %}
 {% gfm_docs ../user/Interoperability.md %}
 {% gfm_docs ../user/Native-Images-with-Python.md %}
 {% gfm_docs ../user/Python-on-JVM.md %}

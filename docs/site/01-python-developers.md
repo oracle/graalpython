@@ -251,12 +251,6 @@ docker run --rm ghcr.io/graalvm/graalpy-community:{{ site.language_version }} py
           <div class="guides__column">
             <div class="guides__card">
               <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
-              <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-freeze-dependencies-guide/" target="_blank">
-                <div class="guides__topics">Freeze Transitive Python Dependencies for Reproducible Builds</div>
-              </a>
-            </div>
-            <div class="guides__card">
-              <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
               <a href="{{ '/python-developers/docs/' | relative_url }}">
                 <div class="guides__topics">Choose the Right GraalPy Runtime Distribution</div>
               </a>
@@ -273,52 +267,6 @@ docker run --rm ghcr.io/graalvm/graalpy-community:{{ site.language_version }} py
               <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
               <a href="{{ '/python-developers/docs/#using-graalpy-as-a-standalone-python-runtime' | relative_url }}">
                 <div class="guides__topics">Use GraalPy as a Standalone Python Runtime</div>
-              </a>
-            </div>
-            <div class="guides__card">
-              <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
-              <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-custom-venv-guide/" target="_blank">
-                <div class="guides__topics">Manually Install Python Packages</div>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="boxes">
-  <div class="wrapper">
-    <div class="guides">
-      <div class="container guides-box build all">
-        <h3 class="truffle__subtitle">Demos</h3>
-        <div class="guides__row">
-          <div class="guides__column">
-            <div class="guides__card">
-              <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
-              <a href="https://github.com/graalvm/graal-languages-demos/tree/main/graalpy/graalpy-scripts-debug-guide" target="_blank">
-                <div class="guides__topics">Debug Python Scripts in VS Code with GraalPy</div>
-              </a>
-            </div>
-            <div class="guides__card">
-              <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
-              <a href="https://github.com/graalvm/graal-languages-demos/tree/main/graalpy/graalpy-jbang-qrcode" target="_blank">
-                <div class="guides__topics">Generate QR Codes with the Python qrcode Package</div>
-              </a>
-            </div>
-          </div>
-          <div class="guides__column">
-            <div class="guides__card">
-              <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
-              <a href="https://github.com/graalvm/graal-languages-demos/tree/main/graalpy/graalpy-openai-starter" target="_blank">
-                <div class="guides__topics">Run the Official OpenAI Python SDK with GraalPy</div>
-              </a>
-            </div>
-            <div class="guides__card">
-              <img src='{{ "/assets/img/downloads/miscellaneous-book.svg" | relative_url }}' alt="book icon">
-              <a href="https://github.com/graalvm/graal-languages-demos/tree/main/graalpy/graalpy-custom-venv-guide" target="_blank">
-                <div class="guides__topics">Install Packages in a Custom GraalPy Virtual Environment</div>
               </a>
             </div>
           </div>

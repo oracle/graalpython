@@ -1,9 +1,59 @@
 # Using GraalPy as a Standalone Python Runtime
 
 GraalPy can be used as a standalone Python runtime, providing a drop-in replacement for CPython.
-This guide covers installation, basic usage, and deployment options for standalone GraalPy applications.
+This guide covers choosing a distribution, installation, package management, basic usage, and deployment options for standalone GraalPy applications.
 
-> **Choosing a Distribution**: For detailed information about GraalPy distributions and runtime options, see [Python Runtime](Python-Runtime.md#choosing-a-graalpy-distribution).
+## Choosing a GraalPy Distribution
+
+GraalPy is available in multiple distributions:
+
+### Distribution Options
+
+- **GraalPy built on Oracle GraalVM** provides the best experience with additional optimizations, significantly faster performance, and better memory efficiency. It is licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html), which permits use by any user including commercial and production use. Redistribution is permitted as long as it is not for a fee.
+- **GraalPy Community** is built on top of GraalVM Community Edition and is fully open source.
+
+### Runtime Options
+
+Two language runtime options are available for both distributions:
+
+- **Native** (recommended for standalone use)
+  - GraalPy is compiled ahead-of-time to a native executable
+  - You do not need a JVM to run GraalPy and it is compact in size
+  - Faster startup time
+  - Faster time to reach peak performance
+- **JVM**
+  - You can easily exploit Java interoperability
+  - Peak performance may be higher than the native option
+  - Slower startup time
+
+### Distribution Identification
+
+The GraalPy runtimes are identified using the pattern _graalpy(-community)(-jvm)-&lt;version&gt;-&lt;os&gt;-&lt;arch&gt;_:
+
+| Distribution  | Native                                    | JVM |
+| ------------- | ----------------------------------------- | ---- |
+| **Oracle**    | `graalpy-<version>-<os>-<arch>`           | `graalpy-jvm-<version>-<os>-<arch>` |
+| **Community** | `graalpy-community-<version>-<os>-<arch>` | `graalpy-community-jvm-<version>-<os>-<arch>` |
+
+### Runtime Comparison
+
+| Runtime | Native (default) | JVM |
+|:-------|:-----------------|:----|
+| Time to start | faster | slower |
+| Time to reach peak performance | faster | slower |
+| Peak performance (also considering GC) | good | best |
+| Java interoperability | needs configuration | works |
+
+## GraalPy Capabilities
+
+GraalPy provides a Python 3.12 compliant runtime.
+A primary goal is to support PyTorch, SciPy, and their constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
+
+GraalPy provides the following capabilities:
+
+- CPython-compatible distribution for testing Python code on GraalPy.
+- A [single native binary packaging mode](Python-Standalone-Applications.md) for Python applications.
+- Access to GraalVM language ecosystems and tools.
 
 ## Installation
 
