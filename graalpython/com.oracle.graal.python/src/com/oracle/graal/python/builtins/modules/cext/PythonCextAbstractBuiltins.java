@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -63,12 +64,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INDEX__;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -91,9 +94,12 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript.CallSlotMpAssSubscriptNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
+import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
 import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberDivmodNode;
@@ -167,12 +173,34 @@ public final class PythonCextAbstractBuiltins {
     private static final TruffleLogger PY_OBJECT_SET_DOC_LOGGER = CApiContext.getLogger(PythonCextAbstractBuiltins.class);
     /////// PyNumber ///////
 
-    @CApiBuiltin(name = "_PyNumber_Index", ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
     static long PyNumber_Index(long objPtr) {
         Object obj = NativeToPythonNode.executeRawUncached(objPtr);
         checkNonNullArgUncached(obj);
         Object result = PyNumberIndexNode.executeUncached(obj);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Index(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        checkNonNullArgUncached(obj);
+        if (PyLongCheckNode.executeUncached(obj)) {
+            return PythonToNativeNewRefNode.executeLongUncached(obj);
+        }
+        TpSlots slots = GetObjectSlotsNode.executeUncached(obj);
+        if (slots.nb_index() == null) {
+            throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, obj);
+        }
+        Object result = CallSlotUnaryNode.executeUncached(slots.nb_index(), obj);
+        if (PyLongCheckExactNode.executeUncached(result)) {
+            return PythonToNativeNewRefNode.executeLongUncached(result);
+        }
+        if (!PyLongCheckNode.executeUncached(result)) {
+            throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
+        }
+        WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, DeprecationWarning, 1,
+                        ErrorMessages.WARN_P_RETURNED_NON_P, obj, T___INDEX__, "int", result, "int");
         return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 

@@ -381,6 +381,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyNumber_Divmod", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyNumber_Float", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyNumber_Long", ret = PyObject, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "_PyNumber_Index", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyNumber_FloorDivide", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyNumber_InPlaceAdd", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyNumber_InPlaceAnd", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)

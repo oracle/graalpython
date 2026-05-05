@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -88,6 +88,13 @@ def _reference_index(args):
     if not isinstance(result, int):
         raise TypeError
     return result
+
+
+def _reference_private_index(args):
+    if isinstance(args[0], int):
+        return type(args[0]).__name__, args[0]
+    result = _reference_index(args)
+    return type(result).__name__, result
 
 
 def _reference_asssize_t(args):
@@ -1022,6 +1029,35 @@ class TestAbstract(CPyExtTestCase):
         resultspec="O",
         argspec='O',
         arguments=["PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test__PyNumber_Index = CPyExtFunction(
+        _reference_private_index,
+        lambda: (
+            (0,),
+            (True,),
+            (DummyIndexable(),),
+            (DummyIntSubclass(),),
+            (NoNumber(),),
+        ),
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* v"],
+        code='''
+        PyObject* wrap__PyNumber_Index(PyObject* v) {
+            PyObject* result = _PyNumber_Index(v);
+            if (result == NULL) {
+                return NULL;
+            }
+            PyObject* type_name = PyUnicode_FromString(Py_TYPE(result)->tp_name);
+            PyObject* tuple = PyTuple_Pack(2, type_name, result);
+            Py_DECREF(type_name);
+            Py_DECREF(result);
+            return tuple;
+        }
+        ''',
+        callfunction="wrap__PyNumber_Index",
         cmpfunc=unhandled_error_compare
     )
 

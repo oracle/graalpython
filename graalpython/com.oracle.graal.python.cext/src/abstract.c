@@ -1453,8 +1453,6 @@ PyIndex_Check(PyObject *obj)
     return _PyIndex_Check(obj);
 }
 
-
-#if 0 // GraalPy change
 /* Return a Python int from the object item.
    Can return an instance of int subclass.
    Raise TypeError if the result is not an int
@@ -1465,6 +1463,11 @@ _PyNumber_Index(PyObject *item)
 {
     if (item == NULL) {
         return null_error();
+    }
+
+    // GraalPy change: upcall for managed objects
+    if (points_to_py_handle_space(item)) {
+        return GraalPyPrivate_PyNumber_Index(item);
     }
 
     if (PyLong_Check(item)) {
@@ -1502,6 +1505,7 @@ _PyNumber_Index(PyObject *item)
     return result;
 }
 
+#if 0 // GraalPy change
 /* Return an exact Python int from the object item.
    Raise TypeError if the result is not an int
    or if the object cannot be interpreted as an index.
