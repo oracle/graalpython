@@ -61,6 +61,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -119,6 +120,8 @@ public final class TopLevelExceptionHandler extends RootNode {
         this.source = source;
         if (child instanceof PBytecodeRootNode) {
             instrumentationForwarder = ((PBytecodeRootNode) child).createInstrumentationMaterializationForwarder();
+        } else if (child instanceof PBytecodeDSLRootNode) {
+            instrumentationForwarder = ((PBytecodeDSLRootNode) child).createInstrumentationMaterializationForwarder();
         }
         this.newGlobals = source.getOptions(language).get(PythonSourceOptions.NewGlobals);
     }
