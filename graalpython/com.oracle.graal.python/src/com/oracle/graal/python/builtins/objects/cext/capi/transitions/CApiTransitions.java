@@ -220,7 +220,7 @@ public abstract class CApiTransitions {
 
         public HandleContext(boolean useShadowTable) {
             nativeStubLookupShadowTable = useShadowTable ? new HashMap<>() : null;
-            nativeStubLookup = new Object[DEFAULT_CAPACITY];
+            nativeStubLookup = new CApiNativeStub[DEFAULT_CAPACITY];
             nativeStubLookupFreeStack = new HandleStack(DEFAULT_CAPACITY);
             nativeStubLookupFreeStack.pushRange(FIRST_VALID_INDEX, DEFAULT_CAPACITY);
             nativeTypeLookup = new IdReference<?>[DEFAULT_CAPACITY];
@@ -232,8 +232,8 @@ public abstract class CApiTransitions {
 
         public IdReference<?>[] nativeTypeLookup;
 
-        private final HashMap<Long, Object> nativeStubLookupShadowTable;
-        public Object[] nativeStubLookup;
+        private final HashMap<Long, CApiNativeStub> nativeStubLookupShadowTable;
+        public CApiNativeStub[] nativeStubLookup;
         public final HandleStack nativeStubLookupFreeStack;
 
         public final Set<NativeStorageReference> nativeStorageReferences = new HashSet<>();
@@ -282,9 +282,15 @@ public abstract class CApiTransitions {
     }
 
     /**
+     * Marker interface for types that can be looked up.
+     */
+    public interface CApiNativeStub {
+    }
+
+    /**
      * A weak and unique reference to a native wrapper of a reference counted managed object.
      */
-    public static final class PythonObjectReference extends IdReference<PythonObject> {
+    public static final class PythonObjectReference extends IdReference<PythonObject> implements CApiNativeStub {
         /**
          * This reference forces the wrapper to remain alive, and can be set to null when the
          * refcount falls to {@link PythonObject#MANAGED_REFCNT}.
@@ -931,7 +937,7 @@ public abstract class CApiTransitions {
         assert PythonContext.get(null).ownsGil();
         assert PythonContext.get(null).isFinalizing();
         for (int i = HandleContext.FIRST_VALID_INDEX; i < handleContext.nativeStubLookup.length; i++) {
-            Object ref = handleContext.nativeStubLookup[i];
+            CApiNativeStub ref = handleContext.nativeStubLookup[i];
             // not all slots of the handle table are currently used
             if (ref == null) {
                 continue;
@@ -1152,14 +1158,14 @@ public abstract class CApiTransitions {
                         entry instanceof PythonNativeClass nativeClass && nativeClass.getPtr() == ptr;
     }
 
-    public static Object nativeStubLookupGet(HandleContext context, long pointer, int idx) {
+    public static CApiNativeStub nativeStubLookupGet(HandleContext context, long pointer, int idx) {
         if (idx <= 0) {
             if (PythonContext.DEBUG_CAPI && HandleContext.getShadowTable(context.nativeStubLookupShadowTable, pointer) != null) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
             return null;
         }
-        Object result = context.nativeStubLookup[idx];
+        CApiNativeStub result = context.nativeStubLookup[idx];
         if (PythonContext.DEBUG_CAPI && HandleContext.getShadowTable(context.nativeStubLookupShadowTable, pointer) != result) {
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -1197,14 +1203,14 @@ public abstract class CApiTransitions {
         return context.nativeStubLookupFreeStack.pop();
     }
 
-    private static int nativeStubLookupPut(HandleContext context, int idx, Object value, long pointer) {
+    private static int nativeStubLookupPut(HandleContext context, int idx, CApiNativeStub value, long pointer) {
         assert idx > 0;
         assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
         assert value instanceof PythonObject || value instanceof PythonObjectReference || CApiContext.isSpecialSingleton(value);
         assert context.nativeStubLookup[idx] == null || context.nativeStubLookup[idx] == value;
         context.nativeStubLookup[idx] = value;
         if (PythonContext.DEBUG_CAPI) {
-            Object prev = HandleContext.putShadowTable(context.nativeStubLookupShadowTable, pointer, value);
+            CApiNativeStub prev = HandleContext.putShadowTable(context.nativeStubLookupShadowTable, pointer, value);
             if (prev != null && prev != value) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -1219,7 +1225,7 @@ public abstract class CApiTransitions {
         assert context.nativeStubLookup[idx] == value.get();
         context.nativeStubLookup[idx] = value;
         if (PythonContext.DEBUG_CAPI) {
-            Object prev = HandleContext.putShadowTable(context.nativeStubLookupShadowTable, pointer, value);
+            CApiNativeStub prev = HandleContext.putShadowTable(context.nativeStubLookupShadowTable, pointer, value);
             if (prev != value.get()) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -1232,9 +1238,9 @@ public abstract class CApiTransitions {
         nativeStubLookupRemove(context, ref.handleTableIndex);
     }
 
-    public static Object nativeStubLookupRemove(HandleContext context, int idx) {
+    public static CApiNativeStub nativeStubLookupRemove(HandleContext context, int idx) {
         assert idx >= HandleContext.FIRST_VALID_INDEX;
-        Object result = context.nativeStubLookup[idx];
+        CApiNativeStub result = context.nativeStubLookup[idx];
         assert result instanceof PythonObjectReference || result instanceof PythonObject || CApiContext.isSpecialSingleton(result);
         context.nativeStubLookup[idx] = null;
         context.nativeStubLookupFreeStack.push(idx);
@@ -1540,7 +1546,7 @@ public abstract class CApiTransitions {
                 // accidentally maps to some valid object.
                 assert idx > 0;
                 CStructAccess.writeIntField(stubPointer, CFields.GraalPyObject__handle_table_index, idx);
-                Object ref;
+                CApiNativeStub ref;
                 if (initialRefCount > MANAGED_REFCNT) {
                     ref = object;
 
@@ -2133,7 +2139,7 @@ public abstract class CApiTransitions {
                     return HandlePointerConverter.pointerToDouble(pointer);
                 }
                 int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
-                Object reference = nativeStubLookupGet(handleContext, pointer, idx);
+                CApiNativeStub reference = nativeStubLookupGet(handleContext, pointer, idx);
                 if (reference instanceof PythonAbstractObject) {
                     result = (PythonAbstractObject) reference;
                 } else if (reference instanceof PythonObjectReference pythonObjectReference) {
@@ -2331,7 +2337,7 @@ public abstract class CApiTransitions {
                     return HandlePointerConverter.pointerToDouble(pointer);
                 }
                 int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
-                Object reference = nativeStubLookupGet(handleContext, pointer, idx);
+                CApiNativeStub reference = nativeStubLookupGet(handleContext, pointer, idx);
                 if (reference instanceof PythonAbstractObject) {
                     pythonAbstractObject = (PythonAbstractObject) reference;
                 } else if (reference instanceof PythonObjectReference pythonObjectReference) {
@@ -2411,7 +2417,7 @@ public abstract class CApiTransitions {
                 }
                 int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonObject pythonObject;
-                Object reference = nativeStubLookupGet(handleContext, pointer, idx);
+                CApiNativeStub reference = nativeStubLookupGet(handleContext, pointer, idx);
                 if (reference instanceof PythonObject) {
                     pythonObject = (PythonObject) reference;
                 } else if (reference instanceof PythonObjectReference pythonObjectReference) {
@@ -2810,7 +2816,7 @@ public abstract class CApiTransitions {
             assert !HandlePointerConverter.pointsToPyIntHandle(taggedPointer);
             assert !HandlePointerConverter.pointsToPyFloatHandle(taggedPointer);
 
-            Object ref = nativeStubLookupGet(handleContext, taggedPointer, handleTableIndex);
+            CApiNativeStub ref = nativeStubLookupGet(handleContext, taggedPointer, handleTableIndex);
             if (ref instanceof PythonObjectReference pythonObjectReference) {
                 hasWeakRef.enter(inliningTarget);
                 handlePythonObjectReference(inliningTarget, pythonObjectReference, taggedPointer, handleTableIndex,

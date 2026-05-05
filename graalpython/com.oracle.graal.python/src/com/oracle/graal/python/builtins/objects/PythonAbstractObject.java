@@ -67,6 +67,7 @@ import java.util.HashSet;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CApiNativeStub;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -186,7 +187,7 @@ import com.oracle.truffle.api.utilities.TriState;
 
 @ImportStatic(SpecialMethodNames.class)
 @ExportLibrary(InteropLibrary.class)
-public abstract class PythonAbstractObject extends DynamicObject implements TruffleObject, Comparable<Object> {
+public abstract class PythonAbstractObject extends DynamicObject implements TruffleObject, CApiNativeStub, Comparable<Object> {
     public static final long UNINITIALIZED = -1;
     public static final long NATIVE_POINTER_FREED = 0;
 
