@@ -116,6 +116,15 @@ def _reference_fromvoidptr(args):
     return n
 
 
+def _reference_asvoidptr_roundtrip(args):
+    n = args[0]
+    if n < min_long or n >= max_ulonglong:
+        raise OverflowError("Python int too large to convert")
+    if n < 0:
+        return _reference_fromvoidptr(args)
+    return n
+
+
 def _reference_fromlong(args):
     n = args[0]
     return n
@@ -360,6 +369,31 @@ class TestPyLong(CPyExtTestCase):
         resultspec="O",
         argspec='n',
         arguments=["void* ptr"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_AsVoidPtr = CPyExtFunction(
+        _reference_asvoidptr_roundtrip,
+        lambda: (
+            (0,),
+            (42,),
+            (-1,),
+            (0xffffffff,),
+            (0xffffffffffffffff,),
+            (0x10000000000000000,),
+        ),
+        code="""PyObject* wrap_PyLong_AsVoidPtr(PyObject* obj) {
+            void* ptr = PyLong_AsVoidPtr(obj);
+            if (ptr == NULL && PyErr_Occurred()) {
+                return NULL;
+            }
+            return PyLong_FromVoidPtr(ptr);
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        callfunction="wrap_PyLong_AsVoidPtr",
         cmpfunc=unhandled_error_compare
     )
 

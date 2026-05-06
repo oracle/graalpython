@@ -224,8 +224,8 @@ public final class PythonCextLongBuiltins {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
-    public abstract static class PyLong_AsVoidPtr extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_Long_AsVoidPtr extends CApiUnaryBuiltinNode {
         @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
         @Child private TransformPExceptionToNativeCachedNode transformExceptionToNativeNode;
 
@@ -247,13 +247,12 @@ public final class PythonCextLongBuiltins {
             try {
                 return n.longValueExact();
             } catch (OverflowException e) {
-                overflowProfile.enter(inliningTarget);
-                try {
-                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
-                } catch (PException pe) {
-                    ensureTransformExcNode().execute(pe);
-                    return 0;
+                if (!n.isNegative() && n.bitLength() <= Long.SIZE) {
+                    return n.longValue();
                 }
+                overflowProfile.enter(inliningTarget);
+                transformOverflow(inliningTarget, raiseNode);
+                return 0;
             }
         }
 
@@ -269,11 +268,20 @@ public final class PythonCextLongBuiltins {
                 try {
                     return asPrimitiveNode.executeLongCached(n, 0, Long.BYTES);
                 } catch (UnexpectedResultException e) {
-                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                    transformOverflow(inliningTarget, raiseNode);
+                    return 0;
                 }
             } catch (PException e) {
                 ensureTransformExcNode().execute(e);
                 return 0;
+            }
+        }
+
+        private void transformOverflow(Node inliningTarget, PRaiseNode raiseNode) {
+            try {
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+            } catch (PException pe) {
+                ensureTransformExcNode().execute(pe);
             }
         }
 

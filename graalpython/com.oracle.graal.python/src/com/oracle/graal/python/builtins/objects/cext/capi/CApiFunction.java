@@ -332,6 +332,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyLong_AsLongLongAndOverflow", ret = LONG_LONG, args = {PyObject, INT_LIST}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsSize_t", ret = SIZE_T, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsSsize_t", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyLong_AsVoidPtr", ret = Pointer, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsUnsignedLong", ret = UNSIGNED_LONG, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsUnsignedLongLong", ret = UNSIGNED_LONG_LONG, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsUnsignedLongLongMask", ret = UNSIGNED_LONG_LONG, args = {PyObject}, call = CImpl)

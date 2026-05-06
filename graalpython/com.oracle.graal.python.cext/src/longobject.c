@@ -958,9 +958,9 @@ PyLong_FromVoidPtr(void *p)
     return PyLong_FromUnsignedLongLong((uint64_t)p);
 }
 
-#if 0 // GraalPy change
 /* Get a C pointer from an int object. */
 
+#if 0 // GraalPy change
 void *
 PyLong_AsVoidPtr(PyObject *vv)
 {
@@ -992,6 +992,16 @@ PyLong_AsVoidPtr(PyObject *vv)
     if (x == -1 && PyErr_Occurred())
         return NULL;
     return (void *)x;
+}
+#else
+void *
+PyLong_AsVoidPtr(PyObject *vv)
+{
+    if (points_to_py_int_handle(vv)) {
+        return (void *)(uintptr_t)pointer_to_int64(vv);
+    }
+
+    return (void *)GraalPyPrivate_Long_AsVoidPtr(vv);
 }
 #endif // GraalPy change
 
