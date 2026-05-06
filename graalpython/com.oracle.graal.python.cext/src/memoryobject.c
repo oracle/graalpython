@@ -3413,7 +3413,12 @@ GraalPyPrivate_MemoryViewFromObject(PyObject *v, int flags)
 {
     if (PyObject_CheckBuffer(v)) {
         Py_buffer* buffer = malloc(sizeof(Py_buffer));
+        if (buffer == NULL) {
+            PyErr_NoMemory();
+            return NULL;
+        }
         if (PyObject_GetBuffer(v, buffer, flags) < 0) {
+            free(buffer);
             return NULL;
         }
         int needs_release = 0;
@@ -3436,6 +3441,11 @@ GraalPyPrivate_MemoryViewFromObject(PyObject *v, int flags)
                 buffer->shape,
                 buffer->strides,
                 buffer->suboffsets);
+        if (mv == NULL) {
+            PyBuffer_Release(buffer);
+            free(buffer);
+            return NULL;
+        }
         if (!needs_release) {
             free(buffer);
         }
