@@ -130,6 +130,7 @@ def test_copy():
     assert c == array('l', [1, 2, 3])
 
 
+@skip_if_sandboxed("Needs native storage support in sandboxed runs")
 def test_copy_native_storage():
     a = array('l', [1, 2, 3])
     storage_to_native(a)
