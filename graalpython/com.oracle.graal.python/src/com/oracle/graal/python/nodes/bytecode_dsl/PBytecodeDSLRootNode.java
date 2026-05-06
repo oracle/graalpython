@@ -59,7 +59,6 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.math.BigInteger;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -301,7 +300,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
@@ -487,30 +485,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         if (parserErrorCallback != null) {
             parserErrorCallback.triggerDeprecationWarnings();
         }
-    }
-
-    @TruffleBoundary
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void materializeInstrumentableNodesForInstrumentation(Set<Class<? extends Tag>> materializedTags) {
-        prepareForInstrumentation((Set) materializedTags);
-        materializeContainedFunctionsForInstrumentation(materializedTags);
-    }
-
-    @TruffleBoundary
-    private void materializeContainedFunctionsForInstrumentation(Set<Class<? extends Tag>> materializedTags) {
-        Object[] constants = co.constants;
-        for (Object constant : constants) {
-            if (constant instanceof BytecodeDSLCodeUnit codeUnit) {
-                PythonLanguage language = getLanguage();
-                PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) language.createCachedRootNode(l -> codeUnit.createRootNode(l, getSource()), codeUnit);
-                rootNode.getCallTarget();
-                rootNode.materializeInstrumentableNodesForInstrumentation(materializedTags);
-            }
-        }
-    }
-
-    public Node createInstrumentationMaterializationForwarder() {
-        return new InstrumentationMaterializationForwarder(this);
     }
 
     @Override
