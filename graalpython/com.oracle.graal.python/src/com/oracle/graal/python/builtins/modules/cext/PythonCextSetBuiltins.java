@@ -287,6 +287,10 @@ public final class PythonCextSetBuiltins {
         }
     }
 
+    /*
+     * A pure-C implementation regressed a mixed managed/native set/frozenset workload by about
+     * 1.16x.
+     */
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
     abstract static class PySet_Size extends CApiUnaryBuiltinNode {
         @Specialization

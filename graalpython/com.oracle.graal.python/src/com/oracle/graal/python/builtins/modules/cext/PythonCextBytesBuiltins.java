@@ -104,6 +104,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextBytesBuiltins {
 
+    /*
+     * Moving this to native regresses median time by about 1.84x, so leaving it here.
+     */
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Direct)
     static long PyBytes_Size(long objPtr) {
         Object obj = NativeToPythonNode.executeRawUncached(objPtr);

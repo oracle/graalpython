@@ -477,6 +477,10 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
+    /*
+     * Moving this to pure-C regresses, because creating the TypeError through the C error API is
+     * slower than upcalling and raising from Java.
+     */
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject}, call = Direct)
     abstract static class PyObject_HashNotImplemented extends CApiUnaryBuiltinNode {
         @Specialization
@@ -683,6 +687,10 @@ public abstract class PythonCextObjectBuiltins {
         return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
+    /*
+     * Moving this to pure C is much faster (100x) for true native tp_hash, but hashing managed
+     * objects (e.g. Strings) regresses (also by ~100x).
+     */
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject}, call = Direct)
     abstract static class PyObject_Hash extends CApiUnaryBuiltinNode {
         @Specialization

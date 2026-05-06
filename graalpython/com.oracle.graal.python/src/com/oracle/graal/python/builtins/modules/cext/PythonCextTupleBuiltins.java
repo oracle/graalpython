@@ -172,6 +172,9 @@ public final class PythonCextTupleBuiltins {
         }
     }
 
+    /*
+     * The best attempt at moving this to pure C regressed by about 1.09x by median time.
+     */
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
     abstract static class PyTuple_Size extends CApiUnaryBuiltinNode {
         @Specialization
