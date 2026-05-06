@@ -619,6 +619,16 @@ license = 'BSD-3-Clause'
 subdir = 'src'
 
 [[pyarrow.rules]]
+version = '== 24.0.0'
+patch = 'pyarrow-24.0.0.patch'
+license = 'Apache-2.0'
+
+[[pyarrow.rules]]
+version = '>= 21.0.0, < 24.0.0'
+patch = 'pyarrow-22.0.0.patch'
+license = 'Apache-2.0'
+
+[[pyarrow.rules]]
 version = '== 15.0.0'
 patch = 'pyarrow-15.0.0.patch'
 license = 'Apache-2.0'
