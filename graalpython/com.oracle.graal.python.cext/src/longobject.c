@@ -626,20 +626,27 @@ PyLong_AsUnsignedLongMask(PyObject *op)
     return (unsigned long) GraalPyPrivate_Long_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long));
 }
 
-#if 0 // GraalPy change
 int
 _PyLong_Sign(PyObject *vv)
 {
+    assert(vv != NULL);
+    if (points_to_py_int_handle(vv)) {
+        int64_t value = pointer_to_int64(vv);
+        return (value > 0) - (value < 0);
+    }
+
     PyLongObject *v = (PyLongObject *)vv;
 
     assert(v != NULL);
     assert(PyLong_Check(v));
+#if 0 // GraalPy change
     if (_PyLong_IsCompact(v)) {
         return _PyLong_CompactSign(v);
     }
     return _PyLong_NonCompactSign(v);
-}
 #endif // GraalPy change
+    return 1 - (GraalPyPrivate_Long_lv_tag(v) & SIGN_MASK);
+}
 
 static int
 bit_length_digit(digit x)
