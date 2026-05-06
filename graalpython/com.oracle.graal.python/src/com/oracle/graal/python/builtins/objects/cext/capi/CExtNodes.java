@@ -209,12 +209,14 @@ public abstract class CExtNodes {
                         @Cached PyObjectCheckFunctionResultNode checkFunctionResultNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW);
+            long result;
             try {
-                long result = ExternalFunctionInvoker.invokeFLOAT_SUBTYPE_NEW(callable.getAddress(), toNativeNode.executeLong(object), arg);
-                return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW.getTsName(), toJavaNode.execute(result));
+                result = ExternalFunctionInvoker.invokeFLOAT_SUBTYPE_NEW(callable.getAddress(), toNativeNode.executeLong(object), arg);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
+            return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW.getTsName(),
+                            toJavaNode.execute(result));
         }
     }
 
