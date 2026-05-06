@@ -337,6 +337,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyLong_AsUnsignedLongLong", ret = UNSIGNED_LONG_LONG, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsUnsignedLongLongMask", ret = UNSIGNED_LONG_LONG, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyLong_AsUnsignedLongMask", ret = UNSIGNED_LONG, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyUnstable_Long_IsCompact", ret = Int, args = {ConstPyLongObject}, call = CImpl)
     @CApiBuiltin(name = "_PyLong_NumBits", ret = SIZE_T, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyLong_Sign", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyLong_FromString", ret = PyObject, args = {ConstCharPtrAsTruffleString, CHAR_PTR_LIST, Int}, call = CImpl)

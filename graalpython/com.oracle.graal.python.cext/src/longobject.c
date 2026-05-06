@@ -6217,6 +6217,13 @@ PyUnstable_Long_CompactValue(const PyLongObject* op) {
 
 #endif // GraalPy change
 
+#undef PyUnstable_Long_IsCompact
+
+int
+PyUnstable_Long_IsCompact(const PyLongObject* op) {
+    return GraalPyPrivate_Long_lv_tag(op) < (2 << NON_SIZE_BITS);
+}
+
 #undef PyUnstable_Long_CompactValue
 
 Py_ssize_t PyUnstable_Long_CompactValue(const PyLongObject *op) {
