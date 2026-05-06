@@ -434,6 +434,48 @@ dist-type = 'sdist'
 version = '1.22.1'
 url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.22.1.tar.gz'
 
+[[onnxruntime.rules]]
+version = '>= 1.23, < 1.26'
+patch = 'onnxruntime-1.25.1.patch'
+license = 'MIT'
+dist-type = 'sdist'
+
+[[onnxruntime.add-sources]]
+version = '1.23.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.23.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.23.1'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.23.1.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.23.2'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.23.2.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.24.1'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.24.1.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.24.2'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.24.2.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.24.3'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.24.3.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.24.4'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.24.4.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.25.0'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.25.0.tar.gz'
+
+[[onnxruntime.add-sources]]
+version = '1.25.1'
+url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.25.1.tar.gz'
+
 [[optree.rules]]
 patch = 'optree.patch'
 license = 'Apache-2.0'
