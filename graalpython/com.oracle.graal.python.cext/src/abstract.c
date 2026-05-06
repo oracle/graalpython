@@ -1465,14 +1465,15 @@ _PyNumber_Index(PyObject *item)
         return null_error();
     }
 
+    if (PyLong_Check(item)) {
+        return Py_NewRef(item);
+    }
+
     // GraalPy change: upcall for managed objects
     if (points_to_py_handle_space(item)) {
         return GraalPyPrivate_PyNumber_Index(item);
     }
 
-    if (PyLong_Check(item)) {
-        return Py_NewRef(item);
-    }
     if (!_PyIndex_Check(item)) {
         PyErr_Format(PyExc_TypeError,
                      "'%.200s' object cannot be interpreted "
@@ -2890,6 +2891,7 @@ _PyObject_RealIsSubclass(PyObject *derived, PyObject *cls)
 PyObject *
 PyObject_GetIter(PyObject *o)
 {
+    // GraalPy change: upcall for managed objects
     if (points_to_py_handle_space(o)) {
         return GraalPyPrivate_Object_GetIter(o);
     }

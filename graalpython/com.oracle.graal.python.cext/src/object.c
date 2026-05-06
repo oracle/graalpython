@@ -1789,6 +1789,7 @@ PyObject_IsTrue(PyObject *v)
         return 0;
     if (v == Py_None)
         return 0;
+    // GraalPy change: upcall for managed objects
     if (points_to_py_handle_space(v))
         return GraalPyPrivate_Object_IsTrue(v);
     else if (Py_TYPE(v)->tp_as_number != NULL &&

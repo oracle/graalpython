@@ -59,8 +59,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
-import java.math.BigInteger;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
@@ -92,7 +90,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -185,13 +182,8 @@ public final class PythonCextLongBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {UNSIGNED_LONG_LONG}, call = Ignored, acquireGil = false)
     static long GraalPyPrivate_Long_FromUnsignedLongLong(long n) {
-        Object result = n >= 0 ? n : PFactory.createInt(PythonLanguage.get(null), convertToBigInteger(n));
+        Object result = n >= 0 ? n : PFactory.createInt(PythonLanguage.get(null), PInt.longToUnsignedBigInteger(n));
         return PythonToNativeNewRefNode.executeLongUncached(result);
-    }
-
-    @TruffleBoundary
-    private static BigInteger convertToBigInteger(long n) {
-        return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
     }
 
     @CApiBuiltin(ret = SIZE_T, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
