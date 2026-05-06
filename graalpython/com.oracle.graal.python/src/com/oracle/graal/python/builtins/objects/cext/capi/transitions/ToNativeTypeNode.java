@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBasicSizeNode;
@@ -193,7 +194,7 @@ public abstract class ToNativeTypeNode {
 
         // TODO(fa): the allocated 'char *' will be free'd at context finalization. It should be
         // free'd if the type is free'd.
-        long namePointer = ctx.stringToNativeUtf8Bytes(clazz.getName(), true);
+        long namePointer = ctx.stringToNativeUtf8Bytes(TypeNodes.GetTpNameNode.executeUncached(clazz), true);
 
         writePtrField(mem, CFields.PyTypeObject__tp_name, namePointer);
         writeLongField(mem, CFields.PyTypeObject__tp_basicsize, GetBasicSizeNode.executeUncached(clazz));
