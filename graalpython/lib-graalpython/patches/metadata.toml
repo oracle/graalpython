@@ -517,6 +517,18 @@ patch = 'packaging.patch'
 license = 'Apache-2.0 OR BSD-2-Clause'
 
 [[pandas.rules]]
+version = '>= 3.0, < 3.0.3'
+patch = 'pandas-3.0.2.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[pandas.rules]]
+version = '>= 2.3, < 2.4'
+patch = 'pandas-2.3.3.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[pandas.rules]]
 version = '== 2.2.2'
 patch = 'pandas-2.2.2.patch'
 license = 'BSD-3-Clause'
