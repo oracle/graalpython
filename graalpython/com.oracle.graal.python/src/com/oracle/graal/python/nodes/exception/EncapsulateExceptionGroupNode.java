@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.exception;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.BaseExceptionGroupBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -102,9 +103,7 @@ public abstract class EncapsulateExceptionGroupNode extends Node {
                     if (isBaseExceptionGroupProfile.profile(inliningTarget, exceptionObj instanceof PBaseExceptionGroup)) {
                         PBaseExceptionGroup group = (PBaseExceptionGroup) exceptionObj;
                         if (groupContainsReraisesProfile.profile(inliningTarget, group.getContainsReraises())) {
-                            for (Object e : group.getExceptions()) {
-                                reraisedUnhandledExceptions.add(e);
-                            }
+                            reraisedUnhandledExceptions.add(group);
                         } else {
                             exceptionGroupList.add(group);
                         }
@@ -117,12 +116,8 @@ public abstract class EncapsulateExceptionGroupNode extends Node {
                 return PException.fromExceptionInfo(exceptionGroup, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
             if (reraisedOrUnhandledSizeProfile.profile(inliningTarget, reraisedUnhandledExceptions.size() != 0)) {
-                PBaseExceptionGroup reraisedGroup = (PBaseExceptionGroup) deriveExceptionGroup.execute(
-                                frame,
-                                inliningTarget,
-                                exceptionOrigUnreified,
-                                T_DERIVE,
-                                PFactory.createTuple(language, reraisedUnhandledExceptions.toArray(new Object[0])));
+                PBaseExceptionGroup reraisedGroup = BaseExceptionGroupBuiltins.exceptionGroupProjection(
+                                inliningTarget, (PBaseExceptionGroup) exceptionOrigUnreified, reraisedUnhandledExceptions.toArray(new Object[0]));
                 reraisedGroup.setParent(exceptionGroup.getParent());
                 exceptionGroupList.add(reraisedGroup);
             }
