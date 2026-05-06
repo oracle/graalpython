@@ -847,6 +847,7 @@ public abstract class CExtNodes {
         static void doDecref(Node inliningTarget, long pointer,
                         @Cached CApiTransitions.NativeToPythonInternalNode toPythonNode,
                         @Cached InlinedBranchProfile isWrapperProfile,
+                        @Cached InlinedBranchProfile isSpecialSingletonProfile,
                         @Cached UpdateStrongRefNode updateRefNode) {
             if (pointer == NULLPTR) {
                 return;
@@ -858,6 +859,8 @@ public abstract class CExtNodes {
             if (object instanceof PythonObject pythonObject) {
                 isWrapperProfile.enter(inliningTarget);
                 updateRefNode.execute(inliningTarget, pythonObject, pythonObject.decRef());
+            } else if (CApiContext.isSpecialSingleton(object)) {
+                isSpecialSingletonProfile.enter(inliningTarget);
             } else {
                 assert object instanceof PythonAbstractNativeObject;
                 if (CApiTransitions.subNativeRefCount(pointer, 1) == 0) {
