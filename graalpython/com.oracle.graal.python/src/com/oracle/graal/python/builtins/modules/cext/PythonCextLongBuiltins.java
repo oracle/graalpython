@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -208,6 +209,21 @@ public final class PythonCextLongBuiltins {
         return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
     }
 
+    @CApiBuiltin(ret = SIZE_T, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_Long_NumBits(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        if (obj instanceof Integer value) {
+            return Integer.SIZE - Integer.numberOfLeadingZeros(Math.abs(value));
+        } else if (obj instanceof Long value) {
+            return Long.SIZE - Long.numberOfLeadingZeros(Math.abs(value));
+        } else if (obj instanceof PInt value) {
+            return value.bitLength();
+        } else if (obj instanceof Boolean value) {
+            return value ? 1 : 0;
+        }
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
     @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
     public abstract static class PyLong_AsVoidPtr extends CApiUnaryBuiltinNode {
         @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
@@ -339,12 +355,4 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = SIZE_T, args = {PyObject}, call = Direct)
-    abstract static class _PyLong_NumBits extends CApiUnaryBuiltinNode {
-        @Specialization
-        static long numBits(Object obj,
-                        @Cached IntBuiltins.BitLengthNode bitLengthNode) {
-            return bitLengthNode.execute(obj);
-        }
-    }
 }

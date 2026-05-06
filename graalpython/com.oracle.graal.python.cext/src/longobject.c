@@ -658,10 +658,19 @@ bit_length_digit(digit x)
     return _Py_bit_length((unsigned long)x);
 }
 
-#if 0 // GraalPy change
 size_t
 _PyLong_NumBits(PyObject *vv)
 {
+    assert(vv != NULL);
+    if (points_to_py_int_handle(vv)) {
+        int64_t value = pointer_to_int64(vv);
+        unsigned long magnitude = value < 0 ? (unsigned long)-value : (unsigned long)value;
+        return (size_t)_Py_bit_length(magnitude);
+    }
+
+    return GraalPyPrivate_Long_NumBits(vv);
+
+#if 0 // GraalPy change
     PyLongObject *v = (PyLongObject *)vv;
     size_t result = 0;
     Py_ssize_t ndigits;
@@ -687,8 +696,10 @@ _PyLong_NumBits(PyObject *vv)
     PyErr_SetString(PyExc_OverflowError, "int has too many bits "
                     "to express in a platform size_t");
     return (size_t)-1;
+#endif // GraalPy change
 }
 
+#if 0 // GraalPy change
 PyObject *
 _PyLong_FromByteArray(const unsigned char* bytes, size_t n,
                       int little_endian, int is_signed)
