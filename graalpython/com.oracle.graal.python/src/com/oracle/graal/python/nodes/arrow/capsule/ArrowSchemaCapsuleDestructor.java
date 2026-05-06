@@ -47,7 +47,6 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
 import com.oracle.graal.python.nodes.arrow.InvokeArrowReleaseCallbackNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -57,8 +56,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @ExportLibrary(InteropLibrary.class)
 public class ArrowSchemaCapsuleDestructor implements TruffleObject {
@@ -74,9 +71,7 @@ public class ArrowSchemaCapsuleDestructor implements TruffleObject {
                     @CachedLibrary(limit = "1") InteropLibrary lib,
                     @Cached NativeToPythonNode nativeToPythonNode,
                     @Cached PyCapsuleGetPointerNode pyCapsuleGetPointerNode,
-                    @Cached InvokeArrowReleaseCallbackNode.Lazy invokeReleaseCallbackNode,
-                    @Cached TruffleString.AsNativeNode asNativeNode,
-                    @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode) {
+                    @Cached InvokeArrowReleaseCallbackNode.Lazy invokeReleaseCallbackNode) {
         if (args.length != 1 || !lib.isPointer(args[0])) {
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -84,8 +79,7 @@ public class ArrowSchemaCapsuleDestructor implements TruffleObject {
         Object capsule = nativeToPythonNode.execute(args[0]);
         PythonContext ctx = PythonContext.get(inliningTarget);
         ctx.ensureNativeAccess();
-        TruffleString capsuleName = asNativeNode.execute(ArrowSchema.CAPSULE_NAME, ctx::allocateContextMemory, Encoding.UTF_8, false, true);
-        long capsuleNamePointer = PythonUtils.coerceToLong(getInternalNativePointerNode.execute(capsuleName, Encoding.UTF_8), lib);
+        long capsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowSchema.CAPSULE_NAME, true);
         var arrowSchema = ArrowSchema.wrap(pyCapsuleGetPointerNode.execute(inliningTarget, capsule, capsuleNamePointer));
 
         if (!arrowSchema.isReleased()) {
