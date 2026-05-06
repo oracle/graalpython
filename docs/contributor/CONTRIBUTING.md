@@ -294,10 +294,9 @@ This is intended for focused reproducer runs on a branch.
 
 Note that there may be a little confusion about the configuration names of benchmarks.
 
-#### GraalVM Community Edition and Oracle GraalVM configurations
+#### Oracle GraalVM configurations
 
-We have benchmarks for GraalVM Community Edition and Oracle GraalVM.
-For historical reasons, these are sometimes referred to in some config files as *CE* and *EE*; *core* and *enterprise*; *graalvm_ce* and *graalvm_ee*; or *graalpython_core* and *graalpython_enterprise*, respectively.
+Benchmark CI jobs use Oracle GraalVM configurations. For historical reasons, these are sometimes referred to in config files as *EE*, *enterprise*, *graalvm_ee*, or *graalpython_enterprise*.
 
 ### Different GraalVM Python configurations
 

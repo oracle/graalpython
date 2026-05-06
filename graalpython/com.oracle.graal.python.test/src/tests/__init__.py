@@ -52,7 +52,10 @@ def find_rootdir():
     cur_dir = Path(__file__).parent
     while cur_dir.name != 'graalpython':
         cur_dir = cur_dir.parent
-    rootdir = cur_dir.parent / "mxbuild" / "cpyexts"
+    if (cur_dir / "mx.graalpython").exists():
+        rootdir = cur_dir / "mxbuild" / "cpyexts"
+    else:
+        rootdir = cur_dir.parent / "mxbuild" / "cpyexts"
     rootdir.mkdir(parents=True, exist_ok=True)
     return rootdir
 
@@ -60,7 +63,16 @@ def find_rootdir():
 DIR = find_rootdir()
 
 
+def _venv_python(venv_dir: Path) -> Path:
+    if sys.platform.startswith('win32'):
+        return venv_dir / 'Scripts' / 'python.exe'
+    return venv_dir / 'bin' / 'python3'
+
+
 def _venv_site_packages(venv_dir: Path) -> Path:
+    existing_site_packages = list(venv_dir.glob("lib/python*/site-packages"))
+    if len(existing_site_packages) == 1:
+        return existing_site_packages[0]
     if sys.platform.startswith('win32'):
         return venv_dir / 'Lib' / 'site-packages'
     return venv_dir / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages'
@@ -77,16 +89,14 @@ def ensure_packages(**package_specs):
     import site
     package_names = "-".join(package_specs.keys())
     venv_dir = find_rootdir() / f'{sys.implementation.name}-{package_names}-venv'
+    py_executable = _venv_python(venv_dir)
     site_packages_dir = _venv_site_packages(venv_dir)
     if any(not _package_present(site_packages_dir, p, v) for p, v in package_specs.items()):
         import subprocess
         package_specs = [f'{p}=={v}' for p, v in package_specs.items()]
         print(f'installing {package_specs} in {venv_dir}')
         system_python = install_venv(venv_dir)
-        if sys.platform.startswith('win32'):
-            py_executable = venv_dir / 'Scripts' / 'python.exe'
-        else:
-            py_executable = venv_dir / 'bin' / 'python3'
+        site_packages_dir = _venv_site_packages(venv_dir)
         extra_args = []
         if system_python or sys.implementation.name != "graalpy":
             pass

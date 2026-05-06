@@ -35,16 +35,12 @@
     NOTIFY_GROUPS:: ["tim.felgentreff@oracle.com"],
 
     local ENV = {
-        graalpy_svm_ce: ["--env", "native-ce"],
         graalpy_svm_ee: ["--env", "native-ee"],
-        graalpy_jvm_ce: ["--env", "jvm-ce-libgraal"],
         graalpy_jvm_ee: ["--env", "jvm-ee-libgraal"],
-        libgraal_ce: ["--env", "../../graal/vm/mx.vm/libgraal"],
         libgraal_ee: ["--env", "../../graal-enterprise/vm-enterprise/mx.vm-enterprise/libgraal-enterprise"],
     },
 
     local DY = {
-      ce: "/vm",
       ee: "/vm-enterprise,/graalpython-enterprise",
     },
 
@@ -66,12 +62,10 @@
       native_interpreter_manual: "native-interpreter-manual",
       interpreter_multi: "interpreter-multi",
       native_interpreter_multi: "native-interpreter-multi",
-      default_multi_tier: "default-multi-tier",
       native: "native",
       native_manual: "native-manual",
       native_multi: "native-multi",
       launcher: "launcher",
-      panama: "panama",
     },
 
     local JAVA_EMBEDDING_VM_CONFIG = {
@@ -81,32 +75,15 @@
 
     // the host VMs
     local JVM_VM = {
-      graaljdk_ce: {
-        dy: ["--dynamicimports", DY.ce],
-        env: ENV.graalpy_jvm_ce,
-        edition: 'ce',
-      },
       graaljdk_ee: {
         dy: ["--dynamicimports", DY.ee],
         env: ENV.graalpy_jvm_ee,
         edition: 'ee',
       },
-      graal_native_image_ce: {
-        dy: ["--dynamicimports", DY.ce],
-        env: ENV.graalpy_svm_ce,
-        edition: 'ce',
-      },
       graal_native_image_ee: {
         dy: ["--dynamicimports", DY.ee],
         env: ENV.graalpy_svm_ee,
         edition: 'ee',
-      },
-      server_libgraal_ce: {
-        jvm: 'server',
-        jvm_config: 'graal-core-libgraal',
-        dy: ["--dynamicimports", DY.ce],
-        env: ENV.libgraal_ce,
-        edition: 'ce',
       },
       server_libgraal_ee: {
         jvm: 'server',
@@ -165,10 +142,6 @@
         python_vm: PYVM.graalpython,
         python_vm_config: PYVM_CONFIG.native_interpreter_multi,
       },
-      graalpython_multi_tier: {
-        python_vm: PYVM.graalpython,
-        python_vm_config: PYVM_CONFIG.default_multi_tier,
-      },
       graalpython_native: {
         python_vm: PYVM.graalpython,
         python_vm_config: PYVM_CONFIG.native,
@@ -180,10 +153,6 @@
       graalpython_native_multi: {
         python_vm: PYVM.graalpython,
         python_vm_config: PYVM_CONFIG.native_multi,
-      },
-      graalpython_panama: {
-        python_vm: PYVM.graalpython,
-        python_vm_config: PYVM_CONFIG.panama,
       },
       java_embedding_multi_shared: {
         python_vm: PYVM.graalpython,
@@ -213,56 +182,25 @@
 
     local VM = {
         // graalpy jvm standalones
-        graalpython_core: PYTHON_VM.graalpython + JVM_VM.graaljdk_ce,
-        graalpython_core_manual: PYTHON_VM.graalpython_manual + JVM_VM.graaljdk_ce,
-        graalpython_core_interpreter: PYTHON_VM.graalpython_interpreter + JVM_VM.graaljdk_ce,
-        graalpython_core_interpreter_manual: PYTHON_VM.graalpython_interpreter_manual + JVM_VM.graaljdk_ce,
-        graalpython_core_multi: PYTHON_VM.graalpython_multi + JVM_VM.graaljdk_ce,
-        graalpython_core_interpreter_multi: PYTHON_VM.graalpython_interpreter_multi + JVM_VM.graaljdk_ce,
-        graalpython_core_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graaljdk_ce,
         graalpython_enterprise: PYTHON_VM.graalpython + JVM_VM.graaljdk_ee,
         graalpython_enterprise_manual: PYTHON_VM.graalpython_manual + JVM_VM.graaljdk_ee,
         graalpython_enterprise_multi: PYTHON_VM.graalpython_multi + JVM_VM.graaljdk_ee,
-        graalpython_enterprise_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graaljdk_ee,
         graalpython_enterprise_interpreter: PYTHON_VM.graalpython_interpreter + JVM_VM.graaljdk_ee,
         graalpython_enterprise_interpreter_manual: PYTHON_VM.graalpython_interpreter_manual + JVM_VM.graaljdk_ee,
-        graalpython_core_native: PYTHON_VM.graalpython_native + JVM_VM.graaljdk_ce,
-        graalpython_core_native_manual: PYTHON_VM.graalpython_native_manual + JVM_VM.graaljdk_ce,
-        graalpython_core_native_interpreter: PYTHON_VM.graalpython_native_interpreter + JVM_VM.graaljdk_ce,
-        graalpython_core_native_interpreter_manual: PYTHON_VM.graalpython_native_interpreter_manual + JVM_VM.graaljdk_ce,
-        graalpython_core_native_multi: PYTHON_VM.graalpython_native_multi + JVM_VM.graaljdk_ce,
-        graalpython_core_native_interpreter_multi: PYTHON_VM.graalpython_native_interpreter_multi + JVM_VM.graaljdk_ce,
         graalpython_enterprise_native: PYTHON_VM.graalpython_native + JVM_VM.graaljdk_ee,
         graalpython_enterprise_native_manual: PYTHON_VM.graalpython_native_manual + JVM_VM.graaljdk_ee,
         graalpython_enterprise_native_multi: PYTHON_VM.graalpython_native_multi + JVM_VM.graaljdk_ee,
-        graalpython_core_panama: PYTHON_VM.graalpython_panama + JVM_VM.graaljdk_ce,
-        graalpython_enterprise_panama: PYTHON_VM.graalpython_panama + JVM_VM.graaljdk_ee,
 
         // graalpy native standalones
-        graalvm_ce_default: PYTHON_VM.graalpython + JVM_VM.graal_native_image_ce,
-        graalvm_ce_default_interpreter: PYTHON_VM.graalpython_interpreter + JVM_VM.graal_native_image_ce,
         graalvm_ee_default: PYTHON_VM.graalpython + JVM_VM.graal_native_image_ee,
         graalvm_ee_default_manual: PYTHON_VM.graalpython_manual + JVM_VM.graal_native_image_ee,
         graalvm_ee_default_interpreter: PYTHON_VM.graalpython_interpreter + JVM_VM.graal_native_image_ee,
         graalvm_ee_default_interpreter_uncached: PYTHON_VM.graalpython_interpreter_uncached + JVM_VM.graal_native_image_ee,
         graalvm_ee_default_interpreter_manual: PYTHON_VM.graalpython_interpreter_manual + JVM_VM.graal_native_image_ee,
-        graalvm_ce_default_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graal_native_image_ce,
-        graalvm_ee_default_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graal_native_image_ee,
-
-        // only 3 compiler threads
-        graalpython_core_3threads: PYTHON_VM.graalpython + JVM_VM.graaljdk_ce + {python_vm_config: super.python_vm_config + "-3-compiler-threads"},
-        graalpython_enterprise_3threads: PYTHON_VM.graalpython + JVM_VM.graaljdk_ee + {python_vm_config: super.python_vm_config + "-3-compiler-threads"},
-        graalvm_ce_default_3threads: PYTHON_VM.graalpython + JVM_VM.graal_native_image_ce + {python_vm_config: super.python_vm_config + "-3-compiler-threads"},
-        graalvm_ee_default_3threads: PYTHON_VM.graalpython + JVM_VM.graal_native_image_ee + {python_vm_config: super.python_vm_config + "-3-compiler-threads"},
-        graalpython_core_multi_tier_3threads: PYTHON_VM.graalpython_multi_tier + JVM_VM.graaljdk_ce + {python_vm_config: super.python_vm_config + "-3-compiler-threads"},
-        graalpython_enterprise_multi_tier_3threads: PYTHON_VM.graalpython_multi_tier + JVM_VM.graaljdk_ee + {python_vm_config: super.python_vm_config + "-3-compiler-threads"},
-        graalvm_ce_default_multi_tier_3threads: PYTHON_VM.graalpython_multi_tier + JVM_VM.graal_native_image_ce + {python_vm_config: super.python_vm_config + "-3-compiler-threads"},
-        graalvm_ee_default_multi_tier_3threads: PYTHON_VM.graalpython_multi_tier + JVM_VM.graal_native_image_ee + {python_vm_config: super.python_vm_config + "-3-compiler-threads"},
 
         // Java embedding
-        java_embedding_core_multi_shared: PYTHON_VM.java_embedding_multi_shared + JVM_VM.server_libgraal_ce,
-        java_embedding_core_interpreter_multi_shared: PYTHON_VM.java_embedding_interpreter_multi_shared + JVM_VM.server_libgraal_ce,
-        java_jmh_core: JVM_VM.server_libgraal_ce,
+        java_embedding_enterprise_multi_shared: PYTHON_VM.java_embedding_multi_shared + JVM_VM.server_libgraal_ee,
+        java_embedding_enterprise_interpreter_multi_shared: PYTHON_VM.java_embedding_interpreter_multi_shared + JVM_VM.server_libgraal_ee,
         java_jmh_enterprise: JVM_VM.server_libgraal_ee,
 
         // basline vms

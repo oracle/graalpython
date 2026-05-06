@@ -57,7 +57,7 @@ test.test_socket.GeneralModuleTests.testCrucialIpProtoConstants @ darwin-arm64,l
 test.test_socket.GeneralModuleTests.testDefaultTimeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testGetServBy @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_socket.GeneralModuleTests.testGetSockOpt @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_socket.GeneralModuleTests.testHostnameRes @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_socket.GeneralModuleTests.testHostnameRes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testIPv4_inet_aton_fourbytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testIPv4toString @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_socket.GeneralModuleTests.testIPv6toString @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -68,7 +68,7 @@ test.test_socket.GeneralModuleTests.testRefCountGetNameInfo @ darwin-arm64,linux
 test.test_socket.GeneralModuleTests.testSendAfterClose @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testSendtoErrors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testSetSockOpt @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_socket.GeneralModuleTests.testSockName @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_socket.GeneralModuleTests.testSockName @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_socket.GeneralModuleTests.testSocketError @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testStringToIPv4 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_socket.GeneralModuleTests.testStringToIPv6 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

@@ -86,4 +86,5 @@ git diff --stat GOOD..BAD
 
 ## Guardrails
 - If the script or you can't find `bench-cli`, ask the user to provide it from the `bench-server` repo.
+  - You may offer to clone the repo and create the cli for the user. The repo is on the same bitbucket as graalpython, the project is `INFRA` and the repo is called `bench-server`
 - Don't submit more than 5 bisect jobs. If there are more in the "to bisect" list, pick 5 that look the most serious and leave the rest as "to bisect".

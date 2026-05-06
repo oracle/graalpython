@@ -2480,6 +2480,10 @@ else:
         C_RECURSION_LIMIT = 4000
     else:
         C_RECURSION_LIMIT = 10000
+# GraalPy change: our Java-side recursion checks use sys.getrecursionlimit(),
+# not CPython's separate platform-specific C stack limit.
+if sys.implementation.name == 'graalpy':
+    C_RECURSION_LIMIT = sys.getrecursionlimit()
 
 # Windows doesn't have os.uname() but it doesn't support s390x.
 is_s390x = hasattr(os, 'uname') and os.uname().machine == 's390x'
