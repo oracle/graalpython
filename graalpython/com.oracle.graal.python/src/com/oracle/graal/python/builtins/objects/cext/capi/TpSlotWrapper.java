@@ -52,6 +52,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.CApiUpcallTarget;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -137,37 +138,49 @@ public abstract class TpSlotWrapper {
 
     static {
         try {
-            HANDLE_GET_ATTR = MethodHandles.lookup().findStatic(GetAttrWrapper.class, "executeGetAttr", MethodType.methodType(long.class, GetAttrWrapper.class, long.class, long.class));
-            HANDLE_BINARY_SLOT_FUNC = MethodHandles.lookup().findStatic(BinarySlotFuncWrapper.class, "executeBinarySlot",
-                            MethodType.methodType(long.class, BinarySlotFuncWrapper.class, long.class, long.class));
-            HANDLE_BINARY_OP_SLOT_FUNC = MethodHandles.lookup().findStatic(BinaryOpSlotFuncWrapper.class, "executeBinaryOpSlot",
-                            MethodType.methodType(long.class, BinaryOpSlotFuncWrapper.class, long.class, long.class));
-            HANDLE_UNARY_FUNC = MethodHandles.lookup().findStatic(UnaryFuncWrapper.class, "executeUnary", MethodType.methodType(long.class, UnaryFuncWrapper.class, long.class));
-            HANDLE_ITER_NEXT = MethodHandles.lookup().findStatic(IterNextWrapper.class, "executeIterNext", MethodType.methodType(long.class, IterNextWrapper.class, long.class));
-            HANDLE_INQUIRY = MethodHandles.lookup().findStatic(InquiryWrapper.class, "executeInquiry", MethodType.methodType(int.class, InquiryWrapper.class, long.class));
-            HANDLE_SQ_CONTAINS = MethodHandles.lookup().findStatic(SqContainsWrapper.class, "executeSqContains", MethodType.methodType(int.class, SqContainsWrapper.class, long.class, long.class));
-            HANDLE_OBJ_OBJ_ARG = MethodHandles.lookup().findStatic(ObjobjargWrapper.class, "executeObjobjarg",
-                            MethodType.methodType(int.class, ObjobjargWrapper.class, long.class, long.class, long.class));
-            HANDLE_SET_ATTR = MethodHandles.lookup().findStatic(SetAttrWrapper.class, "executeSetAttr",
-                            MethodType.methodType(int.class, SetAttrWrapper.class, long.class, long.class, long.class));
-            HANDLE_DESCR_SET_FUNCTION = MethodHandles.lookup().findStatic(DescrSetFunctionWrapper.class, "executeDescrSetFunction",
-                            MethodType.methodType(int.class, DescrSetFunctionWrapper.class, long.class, long.class, long.class));
-            HANDLE_INIT = MethodHandles.lookup().findStatic(InitWrapper.class, "executeInit", MethodType.methodType(int.class, InitWrapper.class, long.class, long.class, long.class));
-            HANDLE_NEW = MethodHandles.lookup().findStatic(NewWrapper.class, "executeNew", MethodType.methodType(long.class, NewWrapper.class, long.class, long.class, long.class));
-            HANDLE_CALL = MethodHandles.lookup().findStatic(CallWrapper.class, "executeCall", MethodType.methodType(long.class, CallWrapper.class, long.class, long.class, long.class));
-            HANDLE_NB_POWER = MethodHandles.lookup().findStatic(NbPowerWrapper.class, "executeNbPower", MethodType.methodType(long.class, NbPowerWrapper.class, long.class, long.class, long.class));
-            HANDLE_NB_IN_PLACE_POWER = MethodHandles.lookup().findStatic(NbInPlacePowerWrapper.class, "executeNbInPlacePower",
-                            MethodType.methodType(long.class, NbInPlacePowerWrapper.class, long.class, long.class, long.class));
-            HANDLE_RICHCMP_FUNCTION = MethodHandles.lookup().findStatic(RichcmpFunctionWrapper.class, "executeRichcmpFunction",
-                            MethodType.methodType(long.class, RichcmpFunctionWrapper.class, long.class, long.class, int.class));
-            HANDLE_SSIZEARGFUNC_SLOT = MethodHandles.lookup().findStatic(SsizeargfuncSlotWrapper.class, "executeSsizeargfuncSlot",
-                            MethodType.methodType(long.class, SsizeargfuncSlotWrapper.class, long.class, long.class));
-            HANDLE_SSIZEOBJARGPROC = MethodHandles.lookup().findStatic(SsizeobjargprocWrapper.class, "executeSsizeobjargproc",
-                            MethodType.methodType(int.class, SsizeobjargprocWrapper.class, long.class, long.class, long.class));
-            HANDLE_LENFUNC = MethodHandles.lookup().findStatic(LenfuncWrapper.class, "executeLenfunc", MethodType.methodType(long.class, LenfuncWrapper.class, long.class));
-            HANDLE_HASHFUNC = MethodHandles.lookup().findStatic(HashfuncWrapper.class, "executeHashfunc", MethodType.methodType(long.class, HashfuncWrapper.class, long.class));
-            HANDLE_DESCR_GET_FUNCTION = MethodHandles.lookup().findStatic(DescrGetFunctionWrapper.class, "executeDescrGetFunction",
-                            MethodType.methodType(long.class, DescrGetFunctionWrapper.class, long.class, long.class, long.class));
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            HANDLE_GET_ATTR = lookup.findVirtual(GetAttrWrapper.class, "executeGetAttr",
+                            MethodType.methodType(long.class, long.class, long.class));
+            HANDLE_BINARY_SLOT_FUNC = lookup.findVirtual(BinarySlotFuncWrapper.class, "executeBinarySlot",
+                            MethodType.methodType(long.class, long.class, long.class));
+            HANDLE_BINARY_OP_SLOT_FUNC = lookup.findVirtual(BinaryOpSlotFuncWrapper.class, "executeBinaryOpSlot",
+                            MethodType.methodType(long.class, long.class, long.class));
+            HANDLE_UNARY_FUNC = lookup.findVirtual(UnaryFuncWrapper.class, "executeUnary",
+                            MethodType.methodType(long.class, long.class));
+            HANDLE_ITER_NEXT = lookup.findVirtual(IterNextWrapper.class, "executeIterNext",
+                            MethodType.methodType(long.class, long.class));
+            HANDLE_INQUIRY = lookup.findVirtual(InquiryWrapper.class, "executeInquiry",
+                            MethodType.methodType(int.class, long.class));
+            HANDLE_SQ_CONTAINS = lookup.findVirtual(SqContainsWrapper.class, "executeSqContains",
+                            MethodType.methodType(int.class, long.class, long.class));
+            HANDLE_OBJ_OBJ_ARG = lookup.findVirtual(ObjobjargWrapper.class, "executeObjobjarg",
+                            MethodType.methodType(int.class, long.class, long.class, long.class));
+            HANDLE_SET_ATTR = lookup.findVirtual(SetAttrWrapper.class, "executeSetAttr",
+                            MethodType.methodType(int.class, long.class, long.class, long.class));
+            HANDLE_DESCR_SET_FUNCTION = lookup.findVirtual(DescrSetFunctionWrapper.class, "executeDescrSetFunction",
+                            MethodType.methodType(int.class, long.class, long.class, long.class));
+            HANDLE_INIT = lookup.findVirtual(InitWrapper.class, "executeInit",
+                            MethodType.methodType(int.class, long.class, long.class, long.class));
+            HANDLE_NEW = lookup.findVirtual(NewWrapper.class, "executeNew",
+                            MethodType.methodType(long.class, long.class, long.class, long.class));
+            HANDLE_CALL = lookup.findVirtual(CallWrapper.class, "executeCall",
+                            MethodType.methodType(long.class, long.class, long.class, long.class));
+            HANDLE_NB_POWER = lookup.findVirtual(NbPowerWrapper.class, "executeNbPower",
+                            MethodType.methodType(long.class, long.class, long.class, long.class));
+            HANDLE_NB_IN_PLACE_POWER = lookup.findVirtual(NbInPlacePowerWrapper.class, "executeNbInPlacePower",
+                            MethodType.methodType(long.class, long.class, long.class, long.class));
+            HANDLE_RICHCMP_FUNCTION = lookup.findVirtual(RichcmpFunctionWrapper.class, "executeRichcmpFunction",
+                            MethodType.methodType(long.class, long.class, long.class, int.class));
+            HANDLE_SSIZEARGFUNC_SLOT = lookup.findVirtual(SsizeargfuncSlotWrapper.class, "executeSsizeargfuncSlot",
+                            MethodType.methodType(long.class, long.class, long.class));
+            HANDLE_SSIZEOBJARGPROC = lookup.findVirtual(SsizeobjargprocWrapper.class, "executeSsizeobjargproc",
+                            MethodType.methodType(int.class, long.class, long.class, long.class));
+            HANDLE_LENFUNC = lookup.findVirtual(LenfuncWrapper.class, "executeLenfunc",
+                            MethodType.methodType(long.class, long.class));
+            HANDLE_HASHFUNC = lookup.findVirtual(HashfuncWrapper.class, "executeHashfunc",
+                            MethodType.methodType(long.class, long.class));
+            HANDLE_DESCR_GET_FUNCTION = lookup.findVirtual(DescrGetFunctionWrapper.class, "executeDescrGetFunction",
+                            MethodType.methodType(long.class, long.class, long.class, long.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -211,23 +224,24 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_PP, HANDLE_GET_ATTR);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeGetAttr(GetAttrWrapper self, long arg0, long arg1) {
+        private long executeGetAttr(long arg0, long arg1) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
-                    Object result = CallManagedSlotGetAttrNode.executeUncached(self.getSlot(), jArg0, jArg1);
+                    Object result = CallManagedSlotGetAttrNode.executeUncached(getSlot(), jArg0, jArg1);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "GetAttrWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "GetAttrWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -243,23 +257,24 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_PP, HANDLE_BINARY_SLOT_FUNC);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeBinarySlot(BinarySlotFuncWrapper self, long arg0, long arg1) {
+        private long executeBinarySlot(long arg0, long arg1) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
-                    Object result = CallSlotBinaryFuncNode.executeUncached(self.getSlot(), jArg0, jArg1);
+                    Object result = CallSlotBinaryFuncNode.executeUncached(getSlot(), jArg0, jArg1);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "BinarySlotFuncWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "BinarySlotFuncWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -329,8 +344,9 @@ public abstract class TpSlotWrapper {
             return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_MATRIX_MULTIPLY);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeBinaryOpSlot(BinaryOpSlotFuncWrapper self, long arg0, long arg1) {
+        private long executeBinaryOpSlot(long arg0, long arg1) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
@@ -338,18 +354,18 @@ public abstract class TpSlotWrapper {
                     Object other = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object otherType = GetClassNode.executeUncached(other);
                     Object receiverType = GetClassNode.executeUncached(receiver);
-                    TpSlot otherSlot = self.binaryOp.getSlotValue(GetTpSlotsNode.executeUncached(otherType));
+                    TpSlot otherSlot = binaryOp.getSlotValue(GetTpSlotsNode.executeUncached(otherType));
                     boolean sameTypes = IsSameTypeNode.executeUncached(receiverType, otherType);
-                    Object result = CallSlotBinaryOpNode.executeUncached(self.getSlot(), receiver, receiverType, other, otherSlot, otherType, sameTypes, self.binaryOp);
+                    Object result = CallSlotBinaryOpNode.executeUncached(getSlot(), receiver, receiverType, other, otherSlot, otherType, sameTypes, binaryOp);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "BinaryOpSlotFuncWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "BinaryOpSlotFuncWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -365,22 +381,23 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_P, HANDLE_UNARY_FUNC);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeUnary(UnaryFuncWrapper self, long arg0) {
+        private long executeUnary(long arg0) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                    Object result = CallSlotUnaryNode.executeUncached(self.getSlot(), jArg0);
+                    Object result = CallSlotUnaryNode.executeUncached(getSlot(), jArg0);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -396,27 +413,28 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_P, HANDLE_ITER_NEXT);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeIterNext(IterNextWrapper self, long arg0) {
+        private long executeIterNext(long arg0) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object result;
                     try {
                         Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                        result = CallSlotTpIterNextNode.executeUncached(self.getSlot(), jArg0);
+                        result = CallSlotTpIterNextNode.executeUncached(getSlot(), jArg0);
                     } catch (IteratorExhausted e) {
                         return NULLPTR;
                     }
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "IterNextWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "IterNextWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -431,21 +449,22 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_I_P, HANDLE_INQUIRY);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static int executeInquiry(InquiryWrapper self, long arg0) {
+        private int executeInquiry(long arg0) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                    return CallSlotNbBoolNode.executeUncached(self.getSlot(), jArg0) ? 1 : 0;
+                    return CallSlotNbBoolNode.executeUncached(getSlot(), jArg0) ? 1 : 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "InquiryWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "InquiryWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -460,22 +479,23 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_I_PP, HANDLE_SQ_CONTAINS);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static int executeSqContains(SqContainsWrapper self, long arg0, long arg1) {
+        private int executeSqContains(long arg0, long arg1) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
-                    return CallSlotSqContainsNode.executeUncached(self.getSlot(), jArg0, jArg1) ? 1 : 0;
+                    return CallSlotSqContainsNode.executeUncached(getSlot(), jArg0, jArg1) ? 1 : 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SqContainsWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "SqContainsWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -491,24 +511,25 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_I_PPP, HANDLE_OBJ_OBJ_ARG);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static int executeObjobjarg(ObjobjargWrapper self, long arg0, long arg1, long arg2) {
+        private int executeObjobjarg(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    CallSlotMpAssSubscriptNode.executeUncached(self.getSlot(), jArg0, jArg1, jArg2);
+                    CallSlotMpAssSubscriptNode.executeUncached(getSlot(), jArg0, jArg1, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "ObjobjargWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "ObjobjargWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -523,24 +544,25 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_I_PPP, HANDLE_SET_ATTR);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static int executeSetAttr(SetAttrWrapper self, long arg0, long arg1, long arg2) {
+        private int executeSetAttr(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    CallManagedSlotSetAttrNode.executeUncached(self.getSlot(), jArg0, jArg1, jArg2);
+                    CallManagedSlotSetAttrNode.executeUncached(getSlot(), jArg0, jArg1, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -555,24 +577,25 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_I_PPP, HANDLE_DESCR_SET_FUNCTION);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static int executeDescrSetFunction(DescrSetFunctionWrapper self, long arg0, long arg1, long arg2) {
+        private int executeDescrSetFunction(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    CallSlotDescrSet.executeUncached(self.getSlot(), jArg0, jArg1, jArg2);
+                    CallSlotDescrSet.executeUncached(getSlot(), jArg0, jArg1, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "DescrSetFunctionWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "DescrSetFunctionWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -588,8 +611,9 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_I_PPP, HANDLE_INIT);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static int executeInit(InitWrapper self, long arg0, long arg1, long arg2) {
+        private int executeInit(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
@@ -600,16 +624,16 @@ public abstract class TpSlotWrapper {
 
                     Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
-                    CallSlotTpInitNode.executeUncached(self.getSlot(), receiver, starArgsArray, kwArgsArray);
+                    CallSlotTpInitNode.executeUncached(getSlot(), receiver, starArgsArray, kwArgsArray);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "InitWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "InitWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -625,8 +649,9 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_PPP, HANDLE_NEW);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeNew(NewWrapper self, long arg0, long arg1, long arg2) {
+        private long executeNew(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 try {
                     // convert args
@@ -642,10 +667,10 @@ public abstract class TpSlotWrapper {
                     }
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
 
-                    Object result = CallSlotTpNewNode.executeUncached(self.getSlot(), receiver, pArgs, kwArgsArray);
+                    Object result = CallSlotTpNewNode.executeUncached(getSlot(), receiver, pArgs, kwArgsArray);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "NewWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "NewWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -665,8 +690,9 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_PPP, HANDLE_CALL);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeCall(CallWrapper self, long arg0, long arg1, long arg2) {
+        private long executeCall(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
@@ -677,16 +703,16 @@ public abstract class TpSlotWrapper {
 
                     Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
-                    Object result = CallSlotTpCallNode.executeUncached(self.getSlot(), receiver, starArgsArray, kwArgsArray);
+                    Object result = CallSlotTpCallNode.executeUncached(getSlot(), receiver, starArgsArray, kwArgsArray);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "CallWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "CallWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -702,8 +728,9 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_PPP, HANDLE_NB_POWER);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeNbPower(NbPowerWrapper self, long arg0, long arg1, long arg2) {
+        private long executeNbPower(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
@@ -715,16 +742,16 @@ public abstract class TpSlotWrapper {
                     Object wType = GetClassNode.executeUncached(w);
                     TpSlots wSlots = GetTpSlotsNode.executeUncached(wType);
                     boolean sameTypes = IsSameTypeNode.executeUncached(vType, wType);
-                    Object result = CallSlotNbPowerNode.executeUncached(self.getSlot(), v, vType, w, wSlots.nb_power(), wType, z, sameTypes);
+                    Object result = CallSlotNbPowerNode.executeUncached(getSlot(), v, vType, w, wSlots.nb_power(), wType, z, sameTypes);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "NbPowerWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "NbPowerWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -740,8 +767,9 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_PPP, HANDLE_NB_IN_PLACE_POWER);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeNbInPlacePower(NbInPlacePowerWrapper self, long arg0, long arg1, long arg2) {
+        private long executeNbInPlacePower(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
@@ -749,16 +777,16 @@ public abstract class TpSlotWrapper {
                     Object v = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object w = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object z = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    Object result = CallSlotNbInPlacePowerNode.executeUncached(self.getSlot(), v, w, z);
+                    Object result = CallSlotNbInPlacePowerNode.executeUncached(getSlot(), v, w, z);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "NbInPlacePowerWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "NbInPlacePowerWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -774,8 +802,9 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_PPI, HANDLE_RICHCMP_FUNCTION);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeRichcmpFunction(RichcmpFunctionWrapper self, long arg0, long arg1, int arg2) {
+        private long executeRichcmpFunction(long arg0, long arg1, int arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
@@ -783,16 +812,16 @@ public abstract class TpSlotWrapper {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     RichCmpOp op = RichCmpOp.fromNative(arg2);
-                    Object result = CallSlotRichCmpNode.executeUncached(self.getSlot(), jArg0, jArg1, op);
+                    Object result = CallSlotRichCmpNode.executeUncached(getSlot(), jArg0, jArg1, op);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "RichcmpFunctionWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "RichcmpFunctionWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -808,23 +837,24 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_PL, HANDLE_SSIZEARGFUNC_SLOT);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeSsizeargfuncSlot(SsizeargfuncSlotWrapper self, long arg0, long arg1) {
+        private long executeSsizeargfuncSlot(long arg0, long arg1) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     int index = ssizeAsIntUncached(arg1);
-                    Object result = CallSlotSizeArgFun.executeUncached(self.getSlot(), jArg0, index);
+                    Object result = CallSlotSizeArgFun.executeUncached(getSlot(), jArg0, index);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -853,24 +883,25 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_I_PLP, HANDLE_SSIZEOBJARGPROC);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static int executeSsizeobjargproc(SsizeobjargprocWrapper self, long arg0, long arg1, long arg2) {
+        private int executeSsizeobjargproc(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     int key = ssizeAsIntUncached(arg1);
                     Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    CallSlotSqAssItemNode.executeUncached(self.getSlot(), jArg0, key, jArg2);
+                    CallSlotSqAssItemNode.executeUncached(getSlot(), jArg0, key, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SsizeobjargprocWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "SsizeobjargprocWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -885,21 +916,22 @@ public abstract class TpSlotWrapper {
             super(managedSlot, SIGNATURE_L_P, HANDLE_LENFUNC);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeLenfunc(LenfuncWrapper self, long arg0) {
+        private long executeLenfunc(long arg0) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                    return CallSlotLenNode.executeUncached(self.getSlot(), jArg0);
+                    return CallSlotLenNode.executeUncached(getSlot(), jArg0);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "LenfuncWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "LenfuncWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -915,21 +947,22 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_L_P, HANDLE_HASHFUNC);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeHashfunc(HashfuncWrapper self, long arg0) {
+        private long executeHashfunc(long arg0) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                    return CallSlotHashFunNode.executeUncached(self.getSlot(), jArg0);
+                    return CallSlotHashFunNode.executeUncached(getSlot(), jArg0);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "HashfuncWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "HashfuncWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -944,8 +977,9 @@ public abstract class TpSlotWrapper {
             super(slot, SIGNATURE_P_PPP, HANDLE_DESCR_GET_FUNCTION);
         }
 
+        @CApiUpcallTarget
         @SuppressWarnings("try")
-        private static long executeDescrGetFunction(DescrGetFunctionWrapper self, long arg0, long arg1, long arg2) {
+        private long executeDescrGetFunction(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
@@ -953,16 +987,16 @@ public abstract class TpSlotWrapper {
                     Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object obj = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object cls = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    Object result = CallSlotDescrGet.executeUncached(self.getSlot(), receiver, obj, cls);
+                    Object result = CallSlotDescrGet.executeUncached(getSlot(), receiver, obj, cls);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", self.getSlot());
+                    throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 

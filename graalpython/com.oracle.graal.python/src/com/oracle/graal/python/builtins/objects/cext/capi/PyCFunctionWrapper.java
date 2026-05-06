@@ -49,6 +49,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.CApiUpcallTarget;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
@@ -97,13 +98,14 @@ public abstract class PyCFunctionWrapper {
 
     static {
         try {
-            HANDLE_UNARY = MethodHandles.lookup().findStatic(PyCFunctionUnaryWrapper.class, "executeUnary", MethodType.methodType(long.class, PyCFunctionUnaryWrapper.class, long.class));
-            HANDLE_BINARY = MethodHandles.lookup().findStatic(PyCFunctionBinaryWrapper.class, "executeBinary",
-                            MethodType.methodType(long.class, PyCFunctionBinaryWrapper.class, long.class, long.class));
-            HANDLE_VARARGS = MethodHandles.lookup().findStatic(PyCFunctionVarargsWrapper.class, "executeVarargs",
-                            MethodType.methodType(long.class, PyCFunctionVarargsWrapper.class, long.class, long.class));
-            HANDLE_KEYWORDS = MethodHandles.lookup().findStatic(PyCFunctionKeywordsWrapper.class, "executeKeywords",
-                            MethodType.methodType(long.class, PyCFunctionKeywordsWrapper.class, long.class, long.class, long.class));
+            HANDLE_UNARY = MethodHandles.lookup().findVirtual(PyCFunctionUnaryWrapper.class,
+                            "executeUnary", MethodType.methodType(long.class, long.class));
+            HANDLE_BINARY = MethodHandles.lookup().findVirtual(PyCFunctionBinaryWrapper.class,
+                            "executeBinary", MethodType.methodType(long.class, long.class, long.class));
+            HANDLE_VARARGS = MethodHandles.lookup().findVirtual(PyCFunctionVarargsWrapper.class,
+                            "executeVarargs", MethodType.methodType(long.class, long.class, long.class));
+            HANDLE_KEYWORDS = MethodHandles.lookup().findVirtual(PyCFunctionKeywordsWrapper.class,
+                            "executeKeywords", MethodType.methodType(long.class, long.class, long.class, long.class));
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -193,30 +195,31 @@ public abstract class PyCFunctionWrapper {
         }
     }
 
-    static final class PyCFunctionUnaryWrapper extends PyCFunctionWrapper {
+    public static final class PyCFunctionUnaryWrapper extends PyCFunctionWrapper {
 
         PyCFunctionUnaryWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults) {
             super(callTarget, signature, defaults, SIGNATURE_1_ARG, HANDLE_UNARY);
         }
 
-        @SuppressWarnings("try")
-        private static long executeUnary(PyCFunctionUnaryWrapper self, long arg0) {
+        @CApiUpcallTarget
+        @SuppressWarnings({"try", "unused"})
+        public long executeUnary(long arg0) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                    Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, self.signature, jArg0, null,
-                                    self.defaults, PKeyword.EMPTY_KEYWORDS, false);
-                    Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
+                    Object[] pArgs = CreateArgumentsNode.executeUncached(callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
+                                    defaults, PKeyword.EMPTY_KEYWORDS, false);
+                    Object result = SimpleIndirectInvokeNode.executeUncached(callTarget, pArgs);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, self.toString(), "");
+                    throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -226,31 +229,32 @@ public abstract class PyCFunctionWrapper {
         }
     }
 
-    static final class PyCFunctionBinaryWrapper extends PyCFunctionWrapper {
+    public static final class PyCFunctionBinaryWrapper extends PyCFunctionWrapper {
 
         PyCFunctionBinaryWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults) {
             super(callTarget, signature, defaults, SIGNATURE_2_ARG, HANDLE_BINARY);
         }
 
-        @SuppressWarnings("try")
-        private static long executeBinary(PyCFunctionBinaryWrapper self, long arg0, long arg1) {
+        @CApiUpcallTarget
+        @SuppressWarnings({"try", "unused"})
+        public long executeBinary(long arg0, long arg1) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
-                    Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, self.signature, jArg0, null,
-                                    self.defaults, PKeyword.EMPTY_KEYWORDS, false);
-                    Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
+                    Object[] pArgs = CreateArgumentsNode.executeUncached(callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
+                                    defaults, PKeyword.EMPTY_KEYWORDS, false);
+                    Object result = SimpleIndirectInvokeNode.executeUncached(callTarget, pArgs);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, self.toString(), "");
+                    throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -260,32 +264,33 @@ public abstract class PyCFunctionWrapper {
         }
     }
 
-    static final class PyCFunctionVarargsWrapper extends PyCFunctionWrapper {
+    public static final class PyCFunctionVarargsWrapper extends PyCFunctionWrapper {
 
         PyCFunctionVarargsWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults) {
             super(callTarget, signature, defaults, SIGNATURE_2_ARG, HANDLE_VARARGS);
         }
 
-        @SuppressWarnings("try")
-        private static long executeVarargs(PyCFunctionVarargsWrapper self, long arg0, long arg1) {
+        @CApiUpcallTarget
+        @SuppressWarnings({"try", "unused"})
+        public long executeVarargs(long arg0, long arg1) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
                     Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object starArgs = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
-                    Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, self.signature, receiver, null,
-                                    self.defaults, PKeyword.EMPTY_KEYWORDS, false);
-                    Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
+                    Object[] pArgs = CreateArgumentsNode.executeUncached(callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null,
+                                    defaults, PKeyword.EMPTY_KEYWORDS, false);
+                    Object result = SimpleIndirectInvokeNode.executeUncached(callTarget, pArgs);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, self.toString(), "");
+                    throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
@@ -295,14 +300,15 @@ public abstract class PyCFunctionWrapper {
         }
     }
 
-    static final class PyCFunctionKeywordsWrapper extends PyCFunctionWrapper {
+    public static final class PyCFunctionKeywordsWrapper extends PyCFunctionWrapper {
 
         PyCFunctionKeywordsWrapper(RootCallTarget callTarget, Signature signature, Object[] defaults) {
             super(callTarget, signature, defaults, SIGNATURE_3_ARG, HANDLE_KEYWORDS);
         }
 
-        @SuppressWarnings("try")
-        private static long executeKeywords(PyCFunctionKeywordsWrapper self, long arg0, long arg1, long arg2) {
+        @CApiUpcallTarget
+        @SuppressWarnings({"try", "unused"})
+        public long executeKeywords(long arg0, long arg1, long arg2) {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
@@ -311,18 +317,18 @@ public abstract class PyCFunctionWrapper {
                     Object kwArgs = NativeToPythonInternalNode.executeUncached(arg2, false);
                     Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.getUncached().execute(null, kwArgs);
-                    Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, starArgsArray, kwArgsArray, self.signature, receiver, null,
-                                    self.defaults, PKeyword.EMPTY_KEYWORDS, false);
-                    Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
+                    Object[] pArgs = CreateArgumentsNode.executeUncached(callTargetName, starArgsArray, kwArgsArray, signature, receiver, null,
+                                    defaults, PKeyword.EMPTY_KEYWORDS, false);
+                    Object result = SimpleIndirectInvokeNode.executeUncached(callTarget, pArgs);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, self.toString(), "");
+                    throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(self.timing);
+                CApiTiming.exit(timing);
             }
         }
 
