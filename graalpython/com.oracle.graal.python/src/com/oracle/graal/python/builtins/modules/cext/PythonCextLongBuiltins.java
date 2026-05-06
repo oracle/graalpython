@@ -208,15 +208,10 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Direct)
-    abstract static class PyLong_FromDouble extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object fromDouble(double d,
-                        @Bind Node inliningTarget,
-                        @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
-            return pyLongFromDoubleNode.execute(inliningTarget, d);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {ArgDescriptor.Double}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_Long_FromDouble(double d) {
+        Object result = PyLongFromDoubleNode.executeUncached(d);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int}, call = Ignored)

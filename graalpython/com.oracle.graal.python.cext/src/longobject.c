@@ -393,7 +393,6 @@ PyLong_FromSize_t(size_t ival)
     PYLONG_FROM_UINT(size_t, ival);
 }
 
-#if 0 // GraalPy change
 /* Create a new int object from a C double */
 
 PyObject *
@@ -414,6 +413,7 @@ PyLong_FromDouble(double dval)
         return PyLong_FromLong((long)dval);
     }
 
+#if 0 // GraalPy change
     PyLongObject *v;
     double frac;
     int i, ndig, expo, neg;
@@ -449,8 +449,9 @@ PyLong_FromDouble(double dval)
         _PyLong_FlipSign(v);
     }
     return (PyObject *)v;
-}
 #endif // GraalPy change
+    return GraalPyPrivate_Long_FromDouble(dval);
+}
 
 /* Checking for overflow in PyLong_AsLong is a PITA since C doesn't define
  * anything about what happens when a signed integer operation overflows,

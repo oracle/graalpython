@@ -340,6 +340,7 @@ class TestPyLong(CPyExtTestCase):
             (0.0,),
             (-1.0,),
             (-11.123456789123456789,),
+            (1.0e100,),
         ),
         resultspec="O",
         argspec='d',
