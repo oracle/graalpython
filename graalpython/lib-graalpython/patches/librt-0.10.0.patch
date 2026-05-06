@@ -1,0 +1,196 @@
+diff --git a/CPy.h b/CPy.h
+index 89ef4d0..a763914 100644
+--- a/CPy.h
++++ b/CPy.h
+@@ -333,6 +333,7 @@ static inline bool CPyTagged_IsLe(CPyTagged left, CPyTagged right) {
+ }
+ 
+ static inline int64_t CPyLong_AsInt64(PyObject *o) {
++#ifndef GRAALPY_VERSION_NUM
+     if (likely(PyLong_Check(o))) {
+         PyLongObject *lobj = (PyLongObject *)o;
+     #if CPY_3_12_FEATURES
+@@ -349,11 +350,13 @@ static inline int64_t CPyLong_AsInt64(PyObject *o) {
+         }
+     #endif
+     }
++#endif
+     // Slow path
+     return CPyLong_AsInt64_(o);
+ }
+ 
+ static inline int32_t CPyLong_AsInt32(PyObject *o) {
++#ifndef GRAALPY_VERSION_NUM
+     if (likely(PyLong_Check(o))) {
+     #if CPY_3_12_FEATURES
+         PyLongObject *lobj = (PyLongObject *)o;
+@@ -375,11 +378,13 @@ static inline int32_t CPyLong_AsInt32(PyObject *o) {
+         }
+     #endif
+     }
++#endif
+     // Slow path
+     return CPyLong_AsInt32_(o);
+ }
+ 
+ static inline int16_t CPyLong_AsInt16(PyObject *o) {
++#ifndef GRAALPY_VERSION_NUM
+     if (likely(PyLong_Check(o))) {
+     #if CPY_3_12_FEATURES
+         PyLongObject *lobj = (PyLongObject *)o;
+@@ -405,11 +410,13 @@ static inline int16_t CPyLong_AsInt16(PyObject *o) {
+         }
+     #endif
+     }
++#endif
+     // Slow path
+     return CPyLong_AsInt16_(o);
+ }
+ 
+ static inline uint8_t CPyLong_AsUInt8(PyObject *o) {
++#ifndef GRAALPY_VERSION_NUM
+     if (likely(PyLong_Check(o))) {
+     #if CPY_3_12_FEATURES
+         PyLongObject *lobj = (PyLongObject *)o;
+@@ -435,6 +442,7 @@ static inline uint8_t CPyLong_AsUInt8(PyObject *o) {
+         }
+     #endif
+     }
++#endif
+     // Slow path
+     return CPyLong_AsUInt8_(o);
+ }
+diff --git a/mypyc_util.h b/mypyc_util.h
+index 6309ed5..2851067 100644
+--- a/mypyc_util.h
++++ b/mypyc_util.h
+@@ -82,21 +82,17 @@
+ 
+ static inline void CPy_INCREF_NO_IMM(PyObject *op)
+ {
+-    Py_REFCNT(op)++;
++    Py_INCREF(op);
+ }
+ 
+ static inline void CPy_DECREF_NO_IMM(PyObject *op)
+ {
+-    if ((Py_SET_REFCNT(op, Py_REFCNT(op) - 1), Py_REFCNT(op)) == 0) {
+-        _Py_Dealloc(op);
+-    }
++    Py_DECREF(op);
+ }
+ 
+ static inline void CPy_XDECREF_NO_IMM(PyObject *op)
+ {
+-    if (op != NULL && (Py_SET_REFCNT(op, Py_REFCNT(op) - 1), Py_REFCNT(op)) == 0) {
+-        _Py_Dealloc(op);
+-    }
++    Py_XDECREF(op);
+ }
+ 
+ #define CPy_INCREF_NO_IMM(op) CPy_INCREF_NO_IMM((PyObject *)(op))
+diff --git a/pythonsupport.c b/pythonsupport.c
+index 0a99f0a..1a442bb 100644
+--- a/pythonsupport.c
++++ b/pythonsupport.c
+@@ -108,7 +108,46 @@ init_subclass(PyTypeObject *type, PyObject *kwds)
+     return 0;
+ }
+ 
+-#if CPY_3_12_FEATURES
++#ifdef GRAALPY_VERSION_NUM
++
++Py_ssize_t
++CPyLong_AsSsize_tAndOverflow_(PyObject *vv, int *overflow)
++{
++    Py_ssize_t res;
++
++    *overflow = 0;
++
++    res = PyLong_AsSsize_t(vv);
++    if (res == -1 && PyErr_Occurred()) {
++        PyObject *zero;
++        int is_negative;
++
++        if (!PyErr_ExceptionMatches(PyExc_OverflowError)) {
++            return -1;
++        }
++        PyErr_Clear();
++
++        zero = PyLong_FromLong(0);
++        if (zero == NULL) {
++            return -1;
++        }
++        is_negative = PyObject_RichCompareBool(vv, zero, Py_LT);
++        Py_DECREF(zero);
++        if (is_negative < 0) {
++            return -1;
++        }
++        *overflow = is_negative ? -1 : 1;
++        return -1;
++    }
++
++    if ((size_t)res > CPY_TAGGED_MAX && (res >= 0 || res < CPY_TAGGED_MIN)) {
++        *overflow = res < 0 ? -1 : 1;
++        return -1;
++    }
++    return res;
++}
++
++#elif CPY_3_12_FEATURES
+ 
+ // Slow path of CPyLong_AsSsize_tAndOverflow (non-inlined)
+ Py_ssize_t
+diff --git a/pythonsupport.h b/pythonsupport.h
+index 6f38a9b..0e89511 100644
+--- a/pythonsupport.h
++++ b/pythonsupport.h
+@@ -40,7 +40,15 @@ int init_subclass(PyTypeObject *type, PyObject *kwds);
+ Py_ssize_t
+ CPyLong_AsSsize_tAndOverflow_(PyObject *vv, int *overflow);
+ 
+-#if CPY_3_12_FEATURES
++#ifdef GRAALPY_VERSION_NUM
++
++static inline Py_ssize_t
++CPyLong_AsSsize_tAndOverflow(PyObject *vv, int *overflow)
++{
++    return CPyLong_AsSsize_tAndOverflow_(vv, overflow);
++}
++
++#elif CPY_3_12_FEATURES
+ 
+ static inline Py_ssize_t
+ CPyLong_AsSsize_tAndOverflow(PyObject *vv, int *overflow)
+@@ -117,6 +125,7 @@ CPyLong_AsSsize_tAndOverflow(PyObject *vv, int *overflow)
+ #endif
+ 
+ // Adapted from listobject.c in Python 3.7.0
++#if 0 // GraalPy change
+ static int
+ list_resize(PyListObject *self, Py_ssize_t newsize)
+ {
+@@ -162,6 +171,7 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
+     self->allocated = new_allocated;
+     return 0;
+ }
++#endif
+ 
+ // Changed to use PyList_SetSlice instead of the internal list_ass_slice
+ static PyObject *
+@@ -182,6 +192,7 @@ list_pop_impl(PyListObject *self, Py_ssize_t index)
+         return NULL;
+     }
+     v = PySequence_Fast_ITEMS((PyObject*)self)[index];
++#if 0 // GraalPy change
+     if (index == Py_SIZE(self) - 1) {
+         status = list_resize(self, Py_SIZE(self) - 1);
+         if (status >= 0)
+@@ -189,6 +200,7 @@ list_pop_impl(PyListObject *self, Py_ssize_t index)
+         else
+             return NULL;
+     }
++#endif
+     Py_INCREF(v);
+     status = PyList_SetSlice((PyObject *)self, index, index+1, (PyObject *)NULL);
+     if (status < 0) {
