@@ -1776,7 +1776,6 @@ PyObject_GenericSetDict(PyObject *obj, PyObject *value, void *context)
 }
 
 
-#if 0 // GraalPy change
 /* Test a value used as condition, e.g., in a while or if statement.
    Return -1 if an error occurred */
 
@@ -1790,6 +1789,9 @@ PyObject_IsTrue(PyObject *v)
         return 0;
     if (v == Py_None)
         return 0;
+    // GraalPy change: upcall for managed objects
+    if (points_to_py_handle_space(v))
+        return GraalPyPrivate_Object_IsTrue(v);
     else if (Py_TYPE(v)->tp_as_number != NULL &&
              Py_TYPE(v)->tp_as_number->nb_bool != NULL)
         res = (*Py_TYPE(v)->tp_as_number->nb_bool)(v);
@@ -1804,7 +1806,6 @@ PyObject_IsTrue(PyObject *v)
     /* if it is negative, it should be either -1 or -2 */
     return (res > 0) ? 1 : Py_SAFE_DOWNCAST(res, Py_ssize_t, int);
 }
-#endif // GraalPy change
 
 /* equivalent of 'not v'
    Return -1 if an error occurred */
@@ -1819,7 +1820,6 @@ PyObject_Not(PyObject *v)
     return res == 0;
 }
 
-#if 0 // GraalPy change
 /* Test whether an object can be called */
 
 int
@@ -1830,6 +1830,7 @@ PyCallable_Check(PyObject *x)
     return Py_TYPE(x)->tp_call != NULL;
 }
 
+#if 0 // GraalPy change
 
 /* Helper for PyObject_Dir without arguments: returns the local scope. */
 static PyObject *

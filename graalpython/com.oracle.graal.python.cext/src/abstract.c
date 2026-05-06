@@ -1453,8 +1453,6 @@ PyIndex_Check(PyObject *obj)
     return _PyIndex_Check(obj);
 }
 
-
-#if 0 // GraalPy change
 /* Return a Python int from the object item.
    Can return an instance of int subclass.
    Raise TypeError if the result is not an int
@@ -1470,6 +1468,12 @@ _PyNumber_Index(PyObject *item)
     if (PyLong_Check(item)) {
         return Py_NewRef(item);
     }
+
+    // GraalPy change: upcall for managed objects
+    if (points_to_py_handle_space(item)) {
+        return GraalPyPrivate_PyNumber_Index(item);
+    }
+
     if (!_PyIndex_Check(item)) {
         PyErr_Format(PyExc_TypeError,
                      "'%.200s' object cannot be interpreted "
@@ -1511,11 +1515,14 @@ PyNumber_Index(PyObject *item)
 {
     PyObject *result = _PyNumber_Index(item);
     if (result != NULL && !PyLong_CheckExact(result)) {
-        Py_SETREF(result, _PyLong_Copy((PyLongObject *)result));
+        if (points_to_py_handle_space(result)) {
+            Py_SETREF(result, GraalPyPrivate_PyNumber_IndexCopy(result));
+        } else {
+            Py_SETREF(result, _PyLong_Copy((PyLongObject *)result));
+        }
     }
     return result;
 }
-#endif // GraalPy change
 
 /* Return an error on Overflow only if err is not NULL*/
 
@@ -2880,10 +2887,15 @@ _PyObject_RealIsSubclass(PyObject *derived, PyObject *cls)
     return recursive_issubclass(derived, cls);
 }
 
-
+#endif // GraalPy change
 PyObject *
 PyObject_GetIter(PyObject *o)
 {
+    // GraalPy change: upcall for managed objects
+    if (points_to_py_handle_space(o)) {
+        return GraalPyPrivate_Object_GetIter(o);
+    }
+
     PyTypeObject *t = Py_TYPE(o);
     getiterfunc f;
 
@@ -2905,7 +2917,7 @@ PyObject_GetIter(PyObject *o)
         return res;
     }
 }
-
+#if 0 // GraalPy change
 PyObject *
 PyObject_GetAIter(PyObject *o) {
     PyTypeObject *t = Py_TYPE(o);
@@ -2924,7 +2936,7 @@ PyObject_GetAIter(PyObject *o) {
     }
     return it;
 }
-
+#endif // GraalPy change
 int
 PyIter_Check(PyObject *obj)
 {
@@ -2932,7 +2944,7 @@ PyIter_Check(PyObject *obj)
     return (tp->tp_iternext != NULL &&
             tp->tp_iternext != &_PyObject_NextNotImplemented);
 }
-
+#if 0 // GraalPy change
 int
 PyAIter_Check(PyObject *obj)
 {

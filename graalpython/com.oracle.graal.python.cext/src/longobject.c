@@ -335,8 +335,16 @@ PyLong_FromLong(long ival)
     return PyLong_FromLongLong((long long) ival);
 }
 
-#if 0 // GraalPy change
 #define PYLONG_FROM_UINT(INT_TYPE, ival) \
+    do { \
+        if ((ival) <= INT32_MAX) { \
+            return int32_to_pointer((int)(ival)); \
+        } \
+        return GraalPyPrivate_Long_FromUnsignedLongLong((unsigned long long)(ival)); \
+    } while(0)
+
+#if 0 // GraalPy change
+#define PYLONG_FROM_UINT_CPYTHON(INT_TYPE, ival) \
     do { \
         if (IS_SMALL_UINT(ival)) { \
             return get_small_int((sdigit)(ival)); \
@@ -359,6 +367,7 @@ PyLong_FromLong(long ival)
         } \
         return (PyObject *)v; \
     } while(0)
+#endif // GraalPy change
 
 /* Create a new int object from a C unsigned long int */
 
@@ -404,6 +413,7 @@ PyLong_FromDouble(double dval)
         return PyLong_FromLong((long)dval);
     }
 
+#if 0 // GraalPy change
     PyLongObject *v;
     double frac;
     int i, ndig, expo, neg;
@@ -439,8 +449,9 @@ PyLong_FromDouble(double dval)
         _PyLong_FlipSign(v);
     }
     return (PyObject *)v;
-}
 #endif // GraalPy change
+    return GraalPyPrivate_Long_FromDouble(dval);
+}
 
 /* Checking for overflow in PyLong_AsLong is a PITA since C doesn't define
  * anything about what happens when a signed integer operation overflows,
@@ -615,20 +626,27 @@ PyLong_AsUnsignedLongMask(PyObject *op)
     return (unsigned long) GraalPyPrivate_Long_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long));
 }
 
-#if 0 // GraalPy change
 int
 _PyLong_Sign(PyObject *vv)
 {
+    assert(vv != NULL);
+    if (points_to_py_int_handle(vv)) {
+        int64_t value = pointer_to_int64(vv);
+        return (value > 0) - (value < 0);
+    }
+
     PyLongObject *v = (PyLongObject *)vv;
 
     assert(v != NULL);
     assert(PyLong_Check(v));
+#if 0 // GraalPy change
     if (_PyLong_IsCompact(v)) {
         return _PyLong_CompactSign(v);
     }
     return _PyLong_NonCompactSign(v);
-}
 #endif // GraalPy change
+    return 1 - (GraalPyPrivate_Long_lv_tag(v) & SIGN_MASK);
+}
 
 static int
 bit_length_digit(digit x)
@@ -640,10 +658,19 @@ bit_length_digit(digit x)
     return _Py_bit_length((unsigned long)x);
 }
 
-#if 0 // GraalPy change
 size_t
 _PyLong_NumBits(PyObject *vv)
 {
+    assert(vv != NULL);
+    if (points_to_py_int_handle(vv)) {
+        int64_t value = pointer_to_int64(vv);
+        unsigned long magnitude = value < 0 ? (unsigned long)-value : (unsigned long)value;
+        return (size_t)_Py_bit_length(magnitude);
+    }
+
+    return GraalPyPrivate_Long_NumBits(vv);
+
+#if 0 // GraalPy change
     PyLongObject *v = (PyLongObject *)vv;
     size_t result = 0;
     Py_ssize_t ndigits;
@@ -669,8 +696,10 @@ _PyLong_NumBits(PyObject *vv)
     PyErr_SetString(PyExc_OverflowError, "int has too many bits "
                     "to express in a platform size_t");
     return (size_t)-1;
+#endif // GraalPy change
 }
 
+#if 0 // GraalPy change
 PyObject *
 _PyLong_FromByteArray(const unsigned char* bytes, size_t n,
                       int little_endian, int is_signed)
@@ -929,9 +958,9 @@ PyLong_FromVoidPtr(void *p)
     return PyLong_FromUnsignedLongLong((uint64_t)p);
 }
 
-#if 0 // GraalPy change
 /* Get a C pointer from an int object. */
 
+#if 0 // GraalPy change
 void *
 PyLong_AsVoidPtr(PyObject *vv)
 {
@@ -963,6 +992,16 @@ PyLong_AsVoidPtr(PyObject *vv)
     if (x == -1 && PyErr_Occurred())
         return NULL;
     return (void *)x;
+}
+#else
+void *
+PyLong_AsVoidPtr(PyObject *vv)
+{
+    if (points_to_py_int_handle(vv)) {
+        return (void *)(uintptr_t)pointer_to_int64(vv);
+    }
+
+    return (void *)GraalPyPrivate_Long_AsVoidPtr(vv);
 }
 #endif // GraalPy change
 
@@ -6177,6 +6216,13 @@ PyUnstable_Long_CompactValue(const PyLongObject* op) {
 }
 
 #endif // GraalPy change
+
+#undef PyUnstable_Long_IsCompact
+
+int
+PyUnstable_Long_IsCompact(const PyLongObject* op) {
+    return GraalPyPrivate_Long_lv_tag(op) < (2 << NON_SIZE_BITS);
+}
 
 #undef PyUnstable_Long_CompactValue
 

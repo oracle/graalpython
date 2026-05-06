@@ -53,7 +53,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLong;
@@ -271,21 +270,6 @@ public final class PythonCextDictBuiltins {
 
         @Fallback
         public Object fallback(Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue) {
-            throw raiseFallback(dict, PythonBuiltinClassType.PDict);
-        }
-    }
-
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    abstract static class PyDict_Size extends CApiUnaryBuiltinNode {
-        @Specialization
-        static long size(PDict dict,
-                        @Bind Node inliningTarget,
-                        @Cached HashingStorageLen lenNode) {
-            return lenNode.execute(inliningTarget, dict.getDictStorage());
-        }
-
-        @Fallback
-        public long fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }

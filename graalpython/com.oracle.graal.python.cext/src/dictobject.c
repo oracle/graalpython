@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -3086,7 +3086,7 @@ PyDict_Copy(PyObject *o)
     Py_DECREF(copy);
     return NULL;
 }
-
+#endif // GraalPy change
 Py_ssize_t
 PyDict_Size(PyObject *mp)
 {
@@ -3094,9 +3094,12 @@ PyDict_Size(PyObject *mp)
         PyErr_BadInternalCall();
         return -1;
     }
+    if (points_to_py_handle_space(mp)) {
+        return GraalPyPrivate_Object_Size(mp);
+    }
     return ((PyDictObject *)mp)->ma_used;
 }
-
+#if 0 // GraalPy change
 PyObject *
 PyDict_Keys(PyObject *mp)
 {

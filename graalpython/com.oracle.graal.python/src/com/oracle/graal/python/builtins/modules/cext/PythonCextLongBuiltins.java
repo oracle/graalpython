@@ -45,22 +45,19 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstPyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-
-import java.math.BigInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -72,6 +69,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
@@ -91,7 +90,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -105,97 +103,6 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public final class PythonCextLongBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class _PyLong_Sign extends CApiUnaryBuiltinNode {
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n == 0")
-        static int sign(int n) {
-            return 0;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n < 0")
-        static int signNeg(int n) {
-            return -1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n > 0")
-        static int signPos(int n) {
-            return 1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n == 0")
-        static int sign(long n) {
-            return 0;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n < 0")
-        static int signNeg(long n) {
-            return -1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "n > 0")
-        static int signPos(long n) {
-            return 1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "b")
-        static int signTrue(boolean b) {
-            return 1;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!b")
-        static int signFalse(boolean b) {
-            return 0;
-        }
-
-        @Specialization
-        static int sign(PInt n,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedBranchProfile zeroProfile,
-                        @Cached InlinedBranchProfile negProfile) {
-            if (n.isNegative()) {
-                negProfile.enter(inliningTarget);
-                return -1;
-            } else if (n.isZero()) {
-                zeroProfile.enter(inliningTarget);
-                return 0;
-            } else {
-                return 1;
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!canBeInteger(obj)", "isPIntSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
-        static Object signNative(Object obj,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            // function returns int, but -1 is expected result for 'n < 0'
-            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
-        }
-
-        @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)", "!isPIntSubtype(inliningTarget, obj,getClassNode,isSubtypeNode)"})
-        static Object sign(@SuppressWarnings("unused") Object obj,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            // assert(PyLong_Check(v));
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        protected boolean isPIntSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PInt);
-        }
-    }
-
     @CApiBuiltin(ret = Py_ssize_t, args = {PyLongObject}, call = Ignored)
     abstract static class GraalPyPrivate_Long_DigitCount extends CApiUnaryBuiltinNode {
 
@@ -207,15 +114,10 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Direct)
-    abstract static class PyLong_FromDouble extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object fromDouble(double d,
-                        @Bind Node inliningTarget,
-                        @Cached PyLongFromDoubleNode pyLongFromDoubleNode) {
-            return pyLongFromDoubleNode.execute(inliningTarget, d);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {ArgDescriptor.Double}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_Long_FromDouble(double d) {
+        Object result = PyLongFromDoubleNode.executeUncached(d);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, Int}, call = Ignored)
@@ -226,20 +128,6 @@ public final class PythonCextLongBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyLongFromUnicodeObject fromUnicodeObject) {
             return fromUnicodeObject.execute(inliningTarget, s, base);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {ConstPyLongObject}, call = Direct)
-    abstract static class PyUnstable_Long_IsCompact extends CApiUnaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static int doI(Object value) {
-            if (value instanceof Integer || value instanceof Long) {
-                return 1;
-            } else if (value instanceof PInt pInt) {
-                return pInt.fitsIn(PInt.MIN_LONG, PInt.MAX_LONG) ? 1 : 0;
-            }
-            return 0;
         }
     }
 
@@ -292,30 +180,29 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "PyLong_FromSize_t", ret = PyObjectTransfer, args = {SIZE_T}, call = Direct)
-    @CApiBuiltin(name = "PyLong_FromUnsignedLong", ret = PyObjectTransfer, args = {UNSIGNED_LONG}, call = Direct)
-    @CApiBuiltin(ret = PyObjectTransfer, args = {UNSIGNED_LONG_LONG}, call = Direct)
-    abstract static class PyLong_FromUnsignedLongLong extends CApiUnaryBuiltinNode {
-
-        @Specialization(guards = "n >= 0")
-        static Object doUnsignedLongPositive(long n) {
-            return n;
-        }
-
-        @Specialization(guards = "n < 0")
-        static Object doUnsignedLongNegative(long n,
-                        @Bind PythonLanguage language) {
-            return PFactory.createInt(language, convertToBigInteger(n));
-        }
-
-        @TruffleBoundary
-        private static BigInteger convertToBigInteger(long n) {
-            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(Long.SIZE));
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {UNSIGNED_LONG_LONG}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_Long_FromUnsignedLongLong(long n) {
+        Object result = n >= 0 ? n : PFactory.createInt(PythonLanguage.get(null), PInt.longToUnsignedBigInteger(n));
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
-    public abstract static class PyLong_AsVoidPtr extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = SIZE_T, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_Long_NumBits(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        if (obj instanceof Integer value) {
+            return Integer.SIZE - Integer.numberOfLeadingZeros(Math.abs(value));
+        } else if (obj instanceof Long value) {
+            return Long.SIZE - Long.numberOfLeadingZeros(Math.abs(value));
+        } else if (obj instanceof PInt value) {
+            return value.bitLength();
+        } else if (obj instanceof Boolean value) {
+            return value ? 1 : 0;
+        }
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_Long_AsVoidPtr extends CApiUnaryBuiltinNode {
         @Child private ConvertPIntToPrimitiveNode asPrimitiveNode;
         @Child private TransformPExceptionToNativeCachedNode transformExceptionToNativeNode;
 
@@ -337,13 +224,12 @@ public final class PythonCextLongBuiltins {
             try {
                 return n.longValueExact();
             } catch (OverflowException e) {
-                overflowProfile.enter(inliningTarget);
-                try {
-                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
-                } catch (PException pe) {
-                    ensureTransformExcNode().execute(pe);
-                    return 0;
+                if (!n.isNegative() && n.bitLength() <= Long.SIZE) {
+                    return n.longValue();
                 }
+                overflowProfile.enter(inliningTarget);
+                transformOverflow(inliningTarget, raiseNode);
+                return 0;
             }
         }
 
@@ -359,11 +245,20 @@ public final class PythonCextLongBuiltins {
                 try {
                     return asPrimitiveNode.executeLongCached(n, 0, Long.BYTES);
                 } catch (UnexpectedResultException e) {
-                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                    transformOverflow(inliningTarget, raiseNode);
+                    return 0;
                 }
             } catch (PException e) {
                 ensureTransformExcNode().execute(e);
                 return 0;
+            }
+        }
+
+        private void transformOverflow(Node inliningTarget, PRaiseNode raiseNode) {
+            try {
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+            } catch (PException pe) {
+                ensureTransformExcNode().execute(pe);
             }
         }
 
@@ -445,12 +340,4 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = SIZE_T, args = {PyObject}, call = Direct)
-    abstract static class _PyLong_NumBits extends CApiUnaryBuiltinNode {
-        @Specialization
-        static long numBits(Object obj,
-                        @Cached IntBuiltins.BitLengthNode bitLengthNode) {
-            return bitLengthNode.execute(obj);
-        }
-    }
 }

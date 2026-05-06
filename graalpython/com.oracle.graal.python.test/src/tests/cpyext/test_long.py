@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,10 @@ long_bits = struct.calcsize('l') * 8
 max_long = 2 ** (long_bits - 1) - 1
 min_long = -2 ** (long_bits - 1)
 max_ulong = 2 ** long_bits
+ulonglong_bits = struct.calcsize('Q') * 8
+max_ulonglong = 2 ** ulonglong_bits
+size_t_bits = struct.calcsize('P') * 8
+max_size_t = 2 ** size_t_bits
 ssize_t_bits = struct.calcsize('n') * 8
 max_ssize_t = 2 ** (ssize_t_bits - 1) - 1
 min_ssize_t = -2 ** (ssize_t_bits - 1)
@@ -109,6 +113,15 @@ def _reference_fromvoidptr(args):
     n = args[0]
     if n < 0:
         return ((~abs(n)) & 0xffffffffffffffff) + 1
+    return n
+
+
+def _reference_asvoidptr_roundtrip(args):
+    n = args[0]
+    if n < min_long or n >= max_ulonglong:
+        raise OverflowError("Python int too large to convert")
+    if n < 0:
+        return _reference_fromvoidptr(args)
     return n
 
 
@@ -243,16 +256,90 @@ class TestPyLong(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PyLong_FromSize_t = CPyExtFunction(
-        lambda args: int(args[0]),
-        lambda: (
-            (0,),
-            (1,),
-            (0xffffffff,),
-        ),
+    test_PyLong_FromUnsignedLong = CPyExtFunction(
+        lambda args: (0, 1, max_ulong - 1),
+        lambda: ((),),
+        code="""
+        PyObject* wrap_PyLong_FromUnsignedLong() {
+            PyObject* small = PyLong_FromUnsignedLong(0);
+            PyObject* one = PyLong_FromUnsignedLong(1);
+            PyObject* large = PyLong_FromUnsignedLong(ULONG_MAX);
+            PyObject* result;
+            if (small == NULL || one == NULL || large == NULL) {
+                Py_XDECREF(small);
+                Py_XDECREF(one);
+                Py_XDECREF(large);
+                return NULL;
+            }
+            result = PyTuple_Pack(3, small, one, large);
+            Py_DECREF(small);
+            Py_DECREF(one);
+            Py_DECREF(large);
+            return result;
+        }
+        """,
         resultspec="O",
-        argspec='n',
-        arguments=["size_t n"],
+        argspec='',
+        arguments=[],
+        callfunction="wrap_PyLong_FromUnsignedLong",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_FromUnsignedLongLong = CPyExtFunction(
+        lambda args: (0, 1, max_ulonglong - 1),
+        lambda: ((),),
+        code="""
+        PyObject* wrap_PyLong_FromUnsignedLongLong() {
+            PyObject* small = PyLong_FromUnsignedLongLong(0);
+            PyObject* one = PyLong_FromUnsignedLongLong(1);
+            PyObject* large = PyLong_FromUnsignedLongLong(ULLONG_MAX);
+            PyObject* result;
+            if (small == NULL || one == NULL || large == NULL) {
+                Py_XDECREF(small);
+                Py_XDECREF(one);
+                Py_XDECREF(large);
+                return NULL;
+            }
+            result = PyTuple_Pack(3, small, one, large);
+            Py_DECREF(small);
+            Py_DECREF(one);
+            Py_DECREF(large);
+            return result;
+        }
+        """,
+        resultspec="O",
+        argspec='',
+        arguments=[],
+        callfunction="wrap_PyLong_FromUnsignedLongLong",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_FromSize_t = CPyExtFunction(
+        lambda args: (0, 1, max_size_t - 1),
+        lambda: ((),),
+        code="""
+        PyObject* wrap_PyLong_FromSize_t() {
+            PyObject* small = PyLong_FromSize_t(0);
+            PyObject* one = PyLong_FromSize_t(1);
+            PyObject* large = PyLong_FromSize_t((size_t)-1);
+            PyObject* result;
+            if (small == NULL || one == NULL || large == NULL) {
+                Py_XDECREF(small);
+                Py_XDECREF(one);
+                Py_XDECREF(large);
+                return NULL;
+            }
+            result = PyTuple_Pack(3, small, one, large);
+            Py_DECREF(small);
+            Py_DECREF(one);
+            Py_DECREF(large);
+            return result;
+        }
+        """,
+        resultspec="O",
+        argspec='',
+        arguments=[],
+        callfunction="wrap_PyLong_FromSize_t",
         cmpfunc=unhandled_error_compare
     )
 
@@ -262,6 +349,7 @@ class TestPyLong(CPyExtTestCase):
             (0.0,),
             (-1.0,),
             (-11.123456789123456789,),
+            (1.0e100,),
         ),
         resultspec="O",
         argspec='d',
@@ -281,6 +369,31 @@ class TestPyLong(CPyExtTestCase):
         resultspec="O",
         argspec='n',
         arguments=["void* ptr"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_AsVoidPtr = CPyExtFunction(
+        _reference_asvoidptr_roundtrip,
+        lambda: (
+            (0,),
+            (42,),
+            (-1,),
+            (0xffffffff,),
+            (0xffffffffffffffff,),
+            (0x10000000000000000,),
+        ),
+        code="""PyObject* wrap_PyLong_AsVoidPtr(PyObject* obj) {
+            void* ptr = PyLong_AsVoidPtr(obj);
+            if (ptr == NULL && PyErr_Occurred()) {
+                return NULL;
+            }
+            return PyLong_FromVoidPtr(ptr);
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        callfunction="wrap_PyLong_AsVoidPtr",
         cmpfunc=unhandled_error_compare
     )
 

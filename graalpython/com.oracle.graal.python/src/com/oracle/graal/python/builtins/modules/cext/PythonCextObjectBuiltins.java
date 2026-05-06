@@ -90,7 +90,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -104,7 +106,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
-import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
@@ -476,6 +477,10 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
+    /*
+     * Moving this to pure-C regresses, because creating the TypeError through the C error API is
+     * slower than upcalling and raising from Java.
+     */
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject}, call = Direct)
     abstract static class PyObject_HashNotImplemented extends CApiUnaryBuiltinNode {
         @Specialization
@@ -485,13 +490,10 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyObject_IsTrue extends CApiUnaryBuiltinNode {
-        @Specialization
-        static int isTrue(Object obj,
-                        @Cached PyObjectIsTrueNode isTrueNode) {
-            return isTrueNode.execute(null, obj) ? 1 : 0;
-        }
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored)
+    static int GraalPyPrivate_Object_IsTrue(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        return PyObjectIsTrueNode.executeUncached(obj) ? 1 : 0;
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
@@ -678,16 +680,17 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyObject_GetIter extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object iter(Object object,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetIter getIter) {
-            return getIter.execute(null, inliningTarget, object);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored)
+    static long GraalPyPrivate_Object_GetIter(long objectPtr) {
+        Object object = NativeToPythonNode.executeRawUncached(objectPtr);
+        Object result = PyObjectGetIter.executeUncached(object);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
+    /*
+     * Moving this to pure C is much faster (100x) for true native tp_hash, but hashing managed
+     * objects (e.g. Strings) regresses (also by ~100x).
+     */
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject}, call = Direct)
     abstract static class PyObject_Hash extends CApiUnaryBuiltinNode {
         @Specialization
@@ -695,16 +698,6 @@ public abstract class PythonCextObjectBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyObjectHashNode hashNode) {
             return hashNode.execute(null, inliningTarget, object);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
-    abstract static class PyCallable_Check extends CApiUnaryBuiltinNode {
-        @Specialization
-        static int doGeneric(Object object,
-                        @Bind Node inliningTarget,
-                        @Cached PyCallableCheckNode callableCheck) {
-            return intValue(callableCheck.execute(inliningTarget, object));
         }
     }
 

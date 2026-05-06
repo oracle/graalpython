@@ -239,6 +239,10 @@ public final class PythonCextListBuiltins {
         }
     }
 
+    /*
+     * A pure-C Py_SIZE implementation regressed mixed managed/native/list-subclass workload by
+     * about 1.26x.
+     */
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
     abstract static class PyList_Size extends CApiUnaryBuiltinNode {
 
