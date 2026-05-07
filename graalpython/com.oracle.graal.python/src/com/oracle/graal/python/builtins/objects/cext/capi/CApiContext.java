@@ -609,7 +609,7 @@ public final class CApiContext extends CExtContext {
             super("Python GC", LOGGER);
             this.ctx = new WeakReference<>(context);
             this.rssInterval = context.getOption(PythonOptions.BackgroundGCTaskInterval);
-            this.gcRSSThreshold = context.getOption(PythonOptions.BackgroundGCTaskThreshold) / (double) 100;
+            this.gcGrowthThreshold = context.getOption(PythonOptions.BackgroundGCTaskThreshold) / (double) 100;
             this.gcRSSMinimum = context.getOption(PythonOptions.BackgroundGCTaskMinimum);
         }
 
@@ -624,7 +624,7 @@ public final class CApiContext extends CExtContext {
         // RSS monitor interval in ms
         final int rssInterval;
         /**
-         * RSS percentage increase between System.gc() calls. Low percentage will trigger
+         * Resources percentage increase between System.gc() calls. Low percentage will trigger
          * System.gc() more often which can cause unnecessary overhead.
          *
          * <ul>
@@ -636,7 +636,7 @@ public final class CApiContext extends CExtContext {
          *
          * <pre>
          */
-        final double gcRSSThreshold;
+        final double gcGrowthThreshold;
 
         /**
          * RSS minimum memory (in megabytes) start calling System.gc(). Default is 4GB.
@@ -695,10 +695,6 @@ public final class CApiContext extends CExtContext {
                 return;
             }
 
-            if (rss < gcRSSMinimum) {
-                return;
-            }
-
             // skip GC if no new native weakrefs have been created.
             int currentWeakrefCount = context.handleContext.nativeLookup.size();
             if (currentWeakrefCount < this.previousWeakrefCount || this.previousWeakrefCount == -1) {
@@ -706,8 +702,13 @@ public final class CApiContext extends CExtContext {
                 return;
             }
 
-            double ratio = ((rss - this.previousRSS) / (double) this.previousRSS);
-            if (ratio >= gcRSSThreshold) {
+            double ratio = ((currentWeakrefCount - this.previousWeakrefCount) / (double) Math.max(1, this.previousWeakrefCount));
+            if (rss < gcRSSMinimum && ratio < gcGrowthThreshold) {
+                return;
+            }
+
+            ratio = ((rss - this.previousRSS) / (double) this.previousRSS);
+            if (ratio >= gcGrowthThreshold) {
                 this.previousWeakrefCount = currentWeakrefCount;
 
                 long start = System.nanoTime();
@@ -729,7 +730,7 @@ public final class CApiContext extends CExtContext {
                  * mappings (RssFile) and shmem memory (RssShmem). GC can only reduce RssAnon while
                  * RssFile is managed by the operating system which doesn't go down easily.
                  */
-                this.previousRSS += (long) (this.previousRSS * gcRSSThreshold);
+                this.previousRSS += (long) (this.previousRSS * gcGrowthThreshold);
             }
         }
     }
