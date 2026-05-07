@@ -1098,6 +1098,18 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None, only_projects=None):
         mx.run(['git', 'clone', '--depth=1', 'https://github.com/oracle/graalpy-extensions.git', graalpy_extensions_path])
 
     local_repo_path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
+
+    # setup symlink .mvn/maven-bundle -> local repo path
+    maven_dir = os.path.join(graalpy_extensions_path, '.mvn')
+    bundle_path = os.path.join(maven_dir, 'maven-bundle')
+    if os.path.lexists(bundle_path):
+        mx.abort(f"Refusing to override existing '{bundle_path}' when building graalpy-extensions.")
+    os.makedirs(maven_dir, exist_ok=True)
+    try:
+        os.symlink(os.path.abspath(local_repo_path), bundle_path, target_is_directory=True)
+    except OSError as e:
+        mx.abort(f"Could not create {bundle_path} -> {local_repo_path}: {e}")
+
     version = GRAAL_VERSION
     common_args = [
         '-DskipJavainterfacegen',
@@ -1124,7 +1136,7 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None, only_projects=None):
 def deploy_graalpy_extensions_to_local_maven_repo_wrapper(*args):
     deploy_graalpy_extensions_to_local_maven_repo()
 
-def deploy_local_maven_repo_wrapper(*args):
+def deploy_local_maven_repo_wrapper(args):
     p, _, _ = deploy_local_maven_repo()
     if '--with-extensions' in args:
         deploy_graalpy_extensions_to_local_maven_repo()
