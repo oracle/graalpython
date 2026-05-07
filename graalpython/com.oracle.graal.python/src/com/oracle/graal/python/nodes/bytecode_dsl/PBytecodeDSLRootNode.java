@@ -537,6 +537,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object doExit(VirtualFrame frame, Object returnValue,
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode location) {
+            if (root.needsTraceAndProfileInstrumentation()) {
+                root.traceOrProfileReturn(frame, location, returnValue);
+            }
             root.calleeContext.exit(frame, root, location);
             return returnValue;
         }
