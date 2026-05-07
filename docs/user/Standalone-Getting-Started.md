@@ -28,12 +28,12 @@ Two language runtime options are available for both distributions:
 
 ### Distribution Identification
 
-The GraalPy runtimes are identified using the pattern _graalpy(-community)(-jvm)-&lt;version&gt;-&lt;os&gt;-&lt;arch&gt;_:
+The GraalPy native runtimes are identified using the pattern _graalpy(-community)&lt;python-version&gt;-&lt;graal-version&gt;-&lt;os&gt;-&lt;arch&gt;_:
 
-| Distribution  | Native                                    | JVM |
-| ------------- | ----------------------------------------- | ---- |
-| **Oracle**    | `graalpy-<version>-<os>-<arch>`           | `graalpy-jvm-<version>-<os>-<arch>` |
-| **Community** | `graalpy-community-<version>-<os>-<arch>` | `graalpy-community-jvm-<version>-<os>-<arch>` |
+| Distribution  | Native                                                          | JVM                                                 |
+|---------------|-----------------------------------------------------------------|-----------------------------------------------------|
+| **Oracle**    | `graalpy<python-version>-<graal-version>-<os>-<arch>`           | `graalpy-jvm-<graal-version>-<os>-<arch>`           |
+| **Community** | `graalpy-community<python-version>-<graal-version>-<os>-<arch>` | `graalpy-community-jvm-<graal-version>-<os>-<arch>` |
 
 ### Runtime Comparison
 
@@ -78,14 +78,14 @@ pyenv shell graalpy-25.0.2
 
 1. Download the appropriate binary from [GitHub releases](https://github.com/oracle/graalpython/releases):
 
-   - AMD64: `graalpy-XX.Y.Z-linux-amd64.tar.gz`
-   - ARM64: `graalpy-XX.Y.Z-linux-aarch64.tar.gz`
+   - AMD64: `graalpy3.12-25.1.0-linux-amd64.tar.gz`
+   - ARM64: `graalpy3.12-25.1.0-linux-aarch64.tar.gz`
 
 2. Extract and add it to your `PATH` environment variable:
 
    ```bash
-   tar -xzf graalpy-25.0.2-linux-amd64.tar.gz
-   export PATH="$PWD/graalpy-25.0.2-linux-amd64/bin:$PATH"
+   tar -xzf graalpy3.12-25.1.0-linux-amd64.tar.gz
+   export PATH="$PWD/graalpy3.12-25.1.0-linux-amd64/bin:$PATH"
    ```
 
 ### macOS
@@ -115,8 +115,8 @@ pyenv shell graalpy-25.0.2
 3. Extract and add it to your `PATH` environment variable:
 
    ```bash
-   tar -xzf graalpy-25.0.2-macos-aarch64.tar.gz
-   export PATH="$PWD/graalpy-25.0.2-macos-aarch64/bin:$PATH"
+   tar -xzf graalpy3.12-25.1.0-macos-aarch64.tar.gz
+   export PATH="$PWD/graalpy3.12-25.1.0-macos-aarch64/bin:$PATH"
    ```
 
 ### Windows
@@ -129,9 +129,9 @@ pyenv shell graalpy-25.0.2
 
    ```powershell
    # Extract the file and update your PATH environment variable
-   # to include the graalpy-XX.Y.Z-windows-amd64/bin directory
-   tar -xzf graalpy-25.0.2-windows-amd64.tar.gz
-   $env:PATH = "$PWD\graalpy-25.0.2-windows-amd64\bin;$env:PATH"
+   # to include the graalpy3.12-25.1.0-windows-amd64/bin directory
+   tar -xzf graalpy3.12-25.1.0-windows-amd64.zip
+   $env:PATH = "$PWD\graalpy3.12-25.1.0-windows-amd64\bin;$env:PATH"
    ```
 
 #### Known Windows Limitations

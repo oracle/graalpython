@@ -41,9 +41,10 @@ For Linux/amd64, I use [act](https://github.com/nektos/act/releases) on a Linux 
 ```shell
 git clone https://github.com/oracle/graalpython
 cd graalpython
-VERSION=24.2.0
+VERSION=25.1.0
+PYTHON_VERSION=3.12
 BINDIR=. curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | bash
-echo "graalpy_url=https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy-$VERSION-linux-amd64.tar.gz" > .input
+echo "graalpy_url=https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy$PYTHON_VERSION-$VERSION-linux-amd64.tar.gz" > .input
 podman system service -t 0 unix:///tmp/podman.sock &
 export DOCKER_HOST=unix:///tmp/podman.sock
 ./act --env http_proxy=$http_proxy --env https_proxy=$https_proxy -W .github/workflows/build-linux-amd64-wheels.yml --artifact-server-path=$(pwd)/artifacts
@@ -53,9 +54,10 @@ For Linux/aarch64, I use act on a mac, those are usually beefy ARM machines that
 ```shell
 git clone https://github.com/oracle/graalpython
 cd graalpython
-VERSION=24.2.0
+VERSION=25.1.0
+PYTHON_VERSION=3.12
 brew install act
-echo "graalpy_url=https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy-$VERSION-linux-aarch64.tar.gz" > .input
+echo "graalpy_url=https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy$PYTHON_VERSION-$VERSION-linux-aarch64.tar.gz" > .input
 podman machine init -m 16384 --now
 act --env http_proxy=$http_proxy --env https_proxy=$https_proxy -W .github/workflows/build-linux-aarch64-wheels.yml --artifact-server-path=$(pwd)/artifacts --container-architecture linux/aarch64
 ```
@@ -63,19 +65,21 @@ act --env http_proxy=$http_proxy --env https_proxy=$https_proxy -W .github/workf
 For macOS/aarch64, you get no isolation from act, so I just run it directly.
 ```shell
 git clone https://github.com/oracle/graalpython
-VERSION=24.2.0
+VERSION=25.1.0
+PYTHON_VERSION=3.12
 export GITHUB_RUN_ID=doesntMatterJustTriggerBrewInstallScripts
 python3 -m venv wheelbuilder-venv
 . wheelbuilder-venv/bin/activate
-python3 graalpython/scripts/wheelbuilder/build_wheels.py https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy-$VERSION-macos-aarch64.tar.gz
+python3 graalpython/scripts/wheelbuilder/build_wheels.py https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy$PYTHON_VERSION-$VERSION-macos-aarch64.tar.gz
 ```
 
 For Windows/amd64, you get no isolation from act, so I just run it directly in Visual Studio powershell.
 ```shell
 git clone https://github.com/oracle/graalpython
-$VERSION="24.2.0"
+$VERSION="25.1.0"
+$PYTHON_VERSION="3.12"
 $env:GITHUB_RUN_ID="doesntMatterJustTriggerBrewInstallScripts"
 python3 -m venv wheelbuilder-venv
 wheelbuilder-venv/scripts/activate
-python3 graalpython/scripts/wheelbuilder/build_wheels.py https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy-$VERSION-windows-amd64.zip
+python3 graalpython/scripts/wheelbuilder/build_wheels.py https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy$PYTHON_VERSION-$VERSION-windows-amd64.zip
 ```

@@ -1715,8 +1715,8 @@ suite = {
             "class": "DeliverableStandaloneArchive",
             "platformDependent": True,
             "standalone_dist": "GRAALPY_NATIVE_STANDALONE",
-            "community_archive_name": "graalpy-community",
-            "enterprise_archive_name": "graalpy",
+            "community_archive_name": "graalpy-community<py_ver:major_minor>",
+            "enterprise_archive_name": "graalpy<py_ver:major_minor>",
             "language_id": "python",
         },
 
