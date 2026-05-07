@@ -414,7 +414,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         private static boolean isBouncyCastleDigest(String name) {
-            return name.startsWith("BLAKE2B-") || name.startsWith("BLAKE2S-");
+            return name.startsWith("BLAKE2B-") || name.startsWith("BLAKE2S-") || name.equals("SHAKE128") || name.equals("SHAKE256");
         }
     }
 
