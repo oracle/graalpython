@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -153,7 +154,7 @@ public abstract class StringNodes {
                     } catch (OverflowException e) {
                         throw CompilerDirectives.shouldNotReachHere(e);
                     }
-                    int kind = CStructAccess.readIntField(ptr, CFields.GraalPyUnicodeObject__kind);
+                    int kind = CApiTransitions.getGraalPyUnicodeObjectKind(ptr);
                     TruffleString.CompactionLevel compactionLevel = switch (kind) {
                         case 1 -> TruffleString.CompactionLevel.S1;
                         case 2 -> TruffleString.CompactionLevel.S2;

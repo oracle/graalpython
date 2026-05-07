@@ -332,7 +332,7 @@ public final class PythonCextUnicodeBuiltins {
             str.intern();
             if (str.isNative()) {
                 long ptr = HandlePointerConverter.pointerToStub(str.getNativePointer());
-                CStructAccess.writeIntField(ptr, CFields.GraalPyUnicodeObject__interned, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
+                CApiTransitions.setGraalPyUnicodeObjectInterned(ptr, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
             }
             /*
              * TODO this is not integrated with str.intern, pointer comparisons of two str.intern'ed

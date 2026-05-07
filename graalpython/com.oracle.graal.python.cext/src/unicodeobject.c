@@ -15271,13 +15271,92 @@ PyInit__string(void)
 #endif // GraalPy change
 
 // GraalPy additions
+/* Keep in sync with CApiTransitions.encodeGraalPyUnicodeObjectAscii. */
+static inline uint64_t
+GraalPyUnicodeObject_EncodeAscii(unsigned int is_ascii)
+{
+    return is_ascii ? GRAALPY_UNICODE_IS_ASCII_FLAG : 0;
+}
+
+/* Keep in sync with CApiTransitions.encodeGraalPyUnicodeObjectInterned. */
+static inline uint64_t
+GraalPyUnicodeObject_EncodeInterned(unsigned int interned)
+{
+    return (uint64_t) interned << GRAALPY_UNICODE_INTERN_STATE_SHIFT;
+}
+
+/* Keep in sync with CApiTransitions.createGraalPyUnicodeObjectState. */
+static inline uint64_t
+GraalPyUnicodeObject_CreateState(int kind, unsigned int is_ascii, unsigned int interned)
+{
+    return kind | GraalPyUnicodeObject_EncodeAscii(is_ascii) | GraalPyUnicodeObject_EncodeInterned(interned);
+}
+
+/* Keep in sync with CApiTransitions.getGraalPyUnicodeObjectInternedFromState. */
+static inline unsigned int
+GraalPyUnicodeObject_GetInternedFromState(uint64_t state)
+{
+    return (state & GRAALPY_UNICODE_INTERN_STATE_MASK) >> GRAALPY_UNICODE_INTERN_STATE_SHIFT;
+}
+
+/* Keep in sync with CApiTransitions.updateGraalPyUnicodeObjectInterned. */
+static inline uint64_t
+GraalPyUnicodeObject_UpdateInterned(uint64_t state, unsigned int interned)
+{
+    return (state & ~GRAALPY_UNICODE_INTERN_STATE_MASK) | GraalPyUnicodeObject_EncodeInterned(interned);
+}
+
+/* Keep in sync with CApiTransitions.isGraalPyUnicodeObjectAsciiFromState. */
+static inline unsigned int
+GraalPyUnicodeObject_IsAsciiFromState(uint64_t state)
+{
+    return (state & GRAALPY_UNICODE_IS_ASCII_FLAG) != 0;
+}
+
+/* Keep in sync with CApiTransitions.getGraalPyUnicodeObjectKindFromState. */
+static inline int
+GraalPyUnicodeObject_GetKindFromState(uint64_t state)
+{
+    return state & GRAALPY_UNICODE_KIND_MASK;
+}
+
+/* Keep in sync with CApiTransitions.getGraalPyUnicodeObjectInternedFromState. */
+static inline unsigned int
+GraalPyUnicodeObject_GetInterned(GraalPyUnicodeObject *unicode)
+{
+    return GraalPyUnicodeObject_GetInternedFromState(unicode->state);
+}
+
+/* Keep in sync with CApiTransitions.setGraalPyUnicodeObjectInterned. */
+static inline void
+GraalPyUnicodeObject_SetInterned(GraalPyUnicodeObject *unicode, unsigned int interned)
+{
+    unicode->state = GraalPyUnicodeObject_UpdateInterned(unicode->state, interned);
+}
+
+/* Keep in sync with CApiTransitions.isGraalPyUnicodeObjectAsciiFromState. */
+static inline unsigned int
+GraalPyUnicodeObject_IsAscii(GraalPyUnicodeObject *unicode)
+{
+    return GraalPyUnicodeObject_IsAsciiFromState(unicode->state);
+}
+
+/* Keep in sync with CApiTransitions.getGraalPyUnicodeObjectKind. */
+static inline int
+GraalPyUnicodeObject_GetKind(GraalPyUnicodeObject *unicode)
+{
+    return GraalPyUnicodeObject_GetKindFromState(unicode->state);
+}
+
 unsigned int GraalPyUnicode_CHECK_INTERNED(PyObject *op) {
     if (points_to_py_handle_space(op)) {
         GraalPyUnicodeObject *unicode = (GraalPyUnicodeObject *) pointer_to_stub(op);
-        if (unicode->interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED) {
-            unicode->interned = GraalPyPrivate_Unicode_CheckInterned(op) ? GRAALPY_UNICODE_INTERN_STATE_INTERNED : GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
+        unsigned int interned = GraalPyUnicodeObject_GetInterned(unicode);
+        if (interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED) {
+            interned = GraalPyPrivate_Unicode_CheckInterned(op) ? GRAALPY_UNICODE_INTERN_STATE_INTERNED : GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
+            GraalPyUnicodeObject_SetInterned(unicode, interned);
         }
-        return unicode->interned == GRAALPY_UNICODE_INTERN_STATE_INTERNED ? SSTATE_INTERNED_MORTAL : SSTATE_NOT_INTERNED;
+        return interned == GRAALPY_UNICODE_INTERN_STATE_INTERNED ? SSTATE_INTERNED_MORTAL : SSTATE_NOT_INTERNED;
     }
     return _PyASCIIObject_CAST(op)->state.interned;
 }
@@ -15291,7 +15370,7 @@ Py_ssize_t GraalPyUnicode_GET_LENGTH(PyObject* op) {
 
 unsigned int GraalPyUnicode_IS_ASCII(PyObject* op) {
     if (points_to_py_handle_space(op)) {
-        return ((GraalPyUnicodeObject *) pointer_to_stub(op))->is_ascii;
+        return GraalPyUnicodeObject_IsAscii((GraalPyUnicodeObject *) pointer_to_stub(op));
     }
     return _PyASCIIObject_CAST(op)->state.ascii;
 }
@@ -15305,7 +15384,7 @@ unsigned int GraalPyUnicode_IS_COMPACT(PyObject* op) {
 
 int GraalPyUnicode_KIND(PyObject* op) {
     if (points_to_py_handle_space(op)) {
-        return ((GraalPyUnicodeObject *) pointer_to_stub(op))->kind;
+        return GraalPyUnicodeObject_GetKind((GraalPyUnicodeObject *) pointer_to_stub(op));
     }
     return _PyASCIIObject_CAST(op)->state.kind;
 }

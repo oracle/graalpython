@@ -161,14 +161,18 @@ typedef struct {
 #define GRAALPY_UNICODE_INTERN_STATE_INTERNED 1
 #define GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED 2
 
+#define GRAALPY_UNICODE_KIND_MASK 0x7
+#define GRAALPY_UNICODE_IS_ASCII_FLAG (1ULL << 3)
+#define GRAALPY_UNICODE_INTERN_STATE_SHIFT 4
+#define GRAALPY_UNICODE_INTERN_STATE_MASK (0x3ULL << GRAALPY_UNICODE_INTERN_STATE_SHIFT)
+
 typedef struct {
     GraalPyObject ob_base;
     Py_ssize_t length;
     Py_ssize_t byte_length;
     Py_hash_t hash;
-    int32_t kind;
-    int32_t is_ascii;
-    int32_t interned;
+    /* Bits 0-2: kind; bit 3: is_ascii; bits 4-5: interned state. */
+    uint64_t state;
     void *data;
 } GraalPyUnicodeObject;
 

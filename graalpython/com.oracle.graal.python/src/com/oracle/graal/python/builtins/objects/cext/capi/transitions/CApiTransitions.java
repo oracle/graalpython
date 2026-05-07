@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_READY;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_UNINITIALIZED;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeDoubleField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
@@ -176,6 +177,10 @@ public abstract class CApiTransitions {
     public static final int GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED = 0;
     public static final int GRAALPY_UNICODE_INTERN_STATE_INTERNED = 1;
     public static final int GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED = 2;
+    private static final int GRAALPY_UNICODE_KIND_MASK = 0x7;
+    private static final long GRAALPY_UNICODE_IS_ASCII_FLAG = 1L << 3;
+    private static final int GRAALPY_UNICODE_INTERN_STATE_SHIFT = 4;
+    private static final long GRAALPY_UNICODE_INTERN_STATE_MASK = 0x3L << GRAALPY_UNICODE_INTERN_STATE_SHIFT;
 
     enum PollingState {
         /** startup barrier not finished yet, polling must not run */
@@ -459,12 +464,58 @@ public abstract class CApiTransitions {
         writeLongField(rawPointer, CFields.GraalPyUnicodeObject__length, elements);
         writeLongField(rawPointer, CFields.GraalPyUnicodeObject__byte_length, byteLength);
         writeLongField(rawPointer, CFields.GraalPyUnicodeObject__hash, -1);
-        writeIntField(rawPointer, CFields.GraalPyUnicodeObject__kind, charSize);
-        writeIntField(rawPointer, CFields.GraalPyUnicodeObject__is_ascii, isAscii ? 1 : 0);
-        writeIntField(rawPointer, CFields.GraalPyUnicodeObject__interned, interned);
+        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__state, createGraalPyUnicodeObjectState(charSize, isAscii, interned));
         writePtrField(rawPointer, CFields.GraalPyUnicodeObject__data, data);
         NativeMemory.memset(data + byteLength, (byte) 0, charSize);
         return data;
+    }
+
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_CreateState.
+    private static long createGraalPyUnicodeObjectState(int charSize, boolean isAscii, int interned) {
+        assert (charSize & ~GRAALPY_UNICODE_KIND_MASK) == 0;
+        return charSize | encodeGraalPyUnicodeObjectAscii(isAscii) | encodeGraalPyUnicodeObjectInterned(interned);
+    }
+
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_EncodeAscii.
+    private static long encodeGraalPyUnicodeObjectAscii(boolean isAscii) {
+        return isAscii ? GRAALPY_UNICODE_IS_ASCII_FLAG : 0;
+    }
+
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_EncodeInterned.
+    private static long encodeGraalPyUnicodeObjectInterned(int interned) {
+        return (long) interned << GRAALPY_UNICODE_INTERN_STATE_SHIFT;
+    }
+
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetInternedFromState.
+    private static int getGraalPyUnicodeObjectInternedFromState(long state) {
+        return (int) ((state & GRAALPY_UNICODE_INTERN_STATE_MASK) >> GRAALPY_UNICODE_INTERN_STATE_SHIFT);
+    }
+
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_IsAsciiFromState.
+    private static boolean isGraalPyUnicodeObjectAsciiFromState(long state) {
+        return (state & GRAALPY_UNICODE_IS_ASCII_FLAG) != 0;
+    }
+
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetKindFromState.
+    private static int getGraalPyUnicodeObjectKindFromState(long state) {
+        return (int) (state & GRAALPY_UNICODE_KIND_MASK);
+    }
+
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_UpdateInterned.
+    private static long updateGraalPyUnicodeObjectInterned(long state, int interned) {
+        return (state & ~GRAALPY_UNICODE_INTERN_STATE_MASK) | encodeGraalPyUnicodeObjectInterned(interned);
+    }
+
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetKind.
+    public static int getGraalPyUnicodeObjectKind(long rawPointer) {
+        return getGraalPyUnicodeObjectKindFromState(readLongField(rawPointer, CFields.GraalPyUnicodeObject__state));
+    }
+
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_SetInterned.
+    public static void setGraalPyUnicodeObjectInterned(long rawPointer, int interned) {
+        assert interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED || interned == GRAALPY_UNICODE_INTERN_STATE_INTERNED || interned == GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
+        long state = readLongField(rawPointer, CFields.GraalPyUnicodeObject__state);
+        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__state, updateGraalPyUnicodeObjectInterned(state, interned));
     }
 
     public static final class PyCapsuleReference extends IdReference<PyCapsule> {

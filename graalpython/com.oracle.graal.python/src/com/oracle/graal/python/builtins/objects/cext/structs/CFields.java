@@ -67,6 +67,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UCHAR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.allocfunc;
@@ -126,9 +127,7 @@ public enum CFields {
     GraalPyUnicodeObject__length(Py_ssize_t),
     GraalPyUnicodeObject__byte_length(Py_ssize_t),
     GraalPyUnicodeObject__hash(Py_hash_t),
-    GraalPyUnicodeObject__kind(Int),
-    GraalPyUnicodeObject__is_ascii(Int),
-    GraalPyUnicodeObject__interned(Int),
+    GraalPyUnicodeObject__state(UINT64_T),
     GraalPyUnicodeObject__data(Pointer),
 
     PyModuleDef__m_name(ConstCharPtr),
