@@ -34,12 +34,12 @@ set(ASDL_STAMP "Python.asdl.stamp")
 
 add_custom_command(
     OUTPUT "${PARSER_TARGET}"
-    COMMAND ${PYTHON_EXE} "${CMAKE_CURRENT_LIST_DIR}/main_parser_gen.py" "${GRAMMAR}" "${TOKENS}" "${PARSER_TARGET}"
+    COMMAND "${PYTHON_EXE}" "${CMAKE_CURRENT_LIST_DIR}/main_parser_gen.py" "${GRAMMAR}" "${TOKENS}" "${PARSER_TARGET}"
     DEPENDS "${CMAKE_CURRENT_LIST_DIR}/main_parser_gen.py" "${GRAMMAR}" "${TOKENS}" ${PEGEN_FILES} ${PEGJAVA_FILES})
 
 add_custom_command(
     OUTPUT "${ASDL_STAMP}"
-    COMMAND ${PYTHON_EXE} "${CMAKE_CURRENT_LIST_DIR}/main_asdl_gen.py" "${ASDL}" --sst-path "${PEGPARSER_SRC_PATH}" --ast-path "${GRAALPY_SRC_PATH}" --stamp "${ASDL_STAMP}"
+    COMMAND "${PYTHON_EXE}" "${CMAKE_CURRENT_LIST_DIR}/main_asdl_gen.py" "${ASDL}" --sst-path "${PEGPARSER_SRC_PATH}" --ast-path "${GRAALPY_SRC_PATH}" --stamp "${ASDL_STAMP}"
     DEPENDS "${CMAKE_CURRENT_LIST_DIR}/main_asdl_gen.py" "${ASDL}" ${ASDL_FILES})
 
 add_custom_target(
