@@ -13,7 +13,7 @@ The module bundles all your application's resources into a single file.
 
 ## Running Python Standalone Applications
 
-To create an native executable from a Python file with its dependencies, use this command:
+To create a native executable from a Python file with its dependencies, use this command:
 
 ```bash
 graalpy -m standalone native \

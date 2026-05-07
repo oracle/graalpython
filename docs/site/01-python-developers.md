@@ -29,7 +29,7 @@ audience_identifier: python
               <h4>Single-Binary Packaging</h4>
             </div>
             <div class="langpage__benefits-text">
-              <h5>Package Python applications as a <a href="/python/python-developers/docs/#python-standalone-applications">single binary</a></h5>
+              <h5>Package Python applications as a <a href="{{ '/python-developers/docs/#python-standalone-applications' | relative_url }}">single binary</a></h5>
             </div>
           </div>
           <div class="langbenefits__card">
@@ -75,7 +75,7 @@ audience_identifier: python
         <div>
           <h5 class="download-text">
           GraalPy is available for multiple platforms in two variants: <strong class="language-downloads__variant-native">Native</strong> (for a compact download size and smaller footprint) and <strong class="language-downloads__variant-jvm">JVM</strong> (for full Java interoperability). Distributions based on Oracle GraalVM provide the best performance and advanced features and are released under the <a href="https://www.oracle.com/downloads/licenses/graal-free-license.html">GFTC license</a>. Distributions based on GraalVM Community Edition, released under the OSI-approved <a href="https://opensource.org/licenses/UPL">UPL license</a>, are available on <a href="https://github.com/oracle/graalpython/releases">GitHub</a>.
-          See <a href="/python/python-developers/docs/#choosing-a-graalpy-distribution">Choosing a GraalPy Distribution</a> for guidance on selecting the appropriate runtime.
+          See <a href="{{ '/python-developers/docs/#choosing-a-graalpy-distribution' | relative_url }}">Choosing a GraalPy Distribution</a> for guidance on selecting the appropriate runtime.
           </h5>
         </div>
         <div class="languages__example-card">
