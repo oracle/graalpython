@@ -891,6 +891,9 @@ public final class CApiContext extends CExtContext {
         String libName = PythonContext.getSupportLibName("python-native");
         final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
         try {
+            if (PythonContext.isCurrentThreadVirtual()) {
+                throw new ApiInitException(ErrorMessages.NATIVE_EXTENSIONS_VIRTUAL_THREAD);
+            }
             boolean useNative = true;
             boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
             final NativeLibraryLocator loc;

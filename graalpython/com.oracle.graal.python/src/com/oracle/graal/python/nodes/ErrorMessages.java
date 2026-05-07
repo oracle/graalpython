@@ -1305,6 +1305,8 @@ public abstract class ErrorMessages {
     public static final TruffleString NFI_NOT_AVAILABLE = tsLiteral("GraalPy option '%s' is set to '%s, but the 'nfi' language, which is required for this feature, is not available. " +
                     "If this is a GraalPy standalone distribution: this indicates internal error. If GraalPy was used as a Maven dependency: " +
                     "are you missing a runtime dependency 'org.graalvm.truffle:truffle-nfi-libffi', which should be a dependency of 'org.graalvm.polyglot:python{-community}'?");
+    public static final TruffleString NATIVE_EXTENSIONS_VIRTUAL_THREAD = tsLiteral("Python native extensions cannot be used from Java virtual threads. " +
+                    "Run Python code that may load or call native extensions on a platform thread.");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");
