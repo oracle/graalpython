@@ -49,19 +49,19 @@ call_traverse(traverseproc traverse, PyObject *op, visitproc visit, void *arg)
         return 0;
     }
     if (!traverse) {
-        GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE,
+        GraalPyPrivate_Log(GRAALPY_LOG_FINE,
                       "type '%.100s' is a GC type but tp_traverse is NULL",
                       Py_TYPE((op))->tp_name);
         return 0;
     } else {
         if (_PyObject_IsFreed(op)) {
-            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE,
+            GraalPyPrivate_Log(GRAALPY_LOG_FINE,
                           "we tried to call tp_traverse on a freed object at %p (ctx %p)!",
                           op, arg);
             return 0;
         }
         if (_PyObject_IsFreed((PyObject *)Py_TYPE(op))) {
-            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE,
+            GraalPyPrivate_Log(GRAALPY_LOG_FINE,
                           "we tried to call tp_traverse on an object at %p with a freed type at %p (ctx %p)!",
                           op, Py_TYPE(op), arg);
             return 0;
