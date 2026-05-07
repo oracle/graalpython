@@ -74,6 +74,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.CApiConstant;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -174,12 +175,19 @@ public abstract class CApiTransitions {
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CApiTransitions.class);
 
+    @CApiConstant //
     public static final int GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED = 0;
+    @CApiConstant //
     public static final int GRAALPY_UNICODE_INTERN_STATE_INTERNED = 1;
+    @CApiConstant //
     public static final int GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED = 2;
+    @CApiConstant //
     private static final int GRAALPY_UNICODE_KIND_MASK = 0x7;
+    @CApiConstant //
     private static final long GRAALPY_UNICODE_IS_ASCII_FLAG = 1L << 3;
+    @CApiConstant //
     private static final int GRAALPY_UNICODE_INTERN_STATE_SHIFT = 4;
+    @CApiConstant //
     private static final long GRAALPY_UNICODE_INTERN_STATE_MASK = 0x3L << GRAALPY_UNICODE_INTERN_STATE_SHIFT;
 
     enum PollingState {
