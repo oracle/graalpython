@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
@@ -297,6 +300,44 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
             }
         }
         return eg;
+    }
+
+    /**
+     * Build the sub-exception group of {@code orig} that contains all leaf exceptions also present
+     * in {@code keep}. This corresponds to CPython's {@code exception_group_projection()} helper.
+     */
+    @TruffleBoundary
+    public static PBaseExceptionGroup exceptionGroupProjection(Node inliningTarget, PBaseExceptionGroup orig, Object[] keep) {
+        Set<Object> leafExceptions = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Object exception : keep) {
+            collectExceptionGroupLeafIdentities(exception, leafExceptions);
+        }
+        return exceptionGroupProjection(inliningTarget, orig, leafExceptions);
+    }
+
+    private static void collectExceptionGroupLeafIdentities(Object exception, Set<Object> leafExceptions) {
+        if (exception instanceof PBaseExceptionGroup group) {
+            for (Object child : group.getExceptions()) {
+                collectExceptionGroupLeafIdentities(child, leafExceptions);
+            }
+        } else if (exception != PNone.NONE) {
+            leafExceptions.add(exception);
+        }
+    }
+
+    private static PBaseExceptionGroup exceptionGroupProjection(Node inliningTarget, PBaseExceptionGroup orig, Set<Object> leafExceptions) {
+        List<Object> matches = new ArrayList<>();
+        for (Object exception : orig.getExceptions()) {
+            if (exception instanceof PBaseExceptionGroup group) {
+                PBaseExceptionGroup projected = exceptionGroupProjection(inliningTarget, group, leafExceptions);
+                if (projected != null) {
+                    matches.add(projected);
+                }
+            } else if (leafExceptions.contains(exception)) {
+                matches.add(exception);
+            }
+        }
+        return subset(inliningTarget, orig, matches.toArray());
     }
 
     private enum MatcherType {
