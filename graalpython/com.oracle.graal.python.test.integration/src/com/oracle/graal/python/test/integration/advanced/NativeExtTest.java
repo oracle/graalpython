@@ -40,11 +40,15 @@
  */
 package com.oracle.graal.python.test.integration.advanced;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -106,6 +110,33 @@ public class NativeExtTest {
         } finally {
             cextContext.close(true);
             engine.close();
+        }
+    }
+
+    @Test
+    public void testMissingDelvewheelError() throws IOException {
+        Assume.assumeTrue(System.getProperty("os.name").toLowerCase().contains("win"));
+
+        Path tempDir = Files.createTempDirectory("graalpy-no-delvewheel");
+        try (Engine engine = Engine.create("python");
+                        Context context = newContext(engine)
+                                        .option("python.IsolateNativeModules", "true")
+                                        .option("python.Executable", tempDir.resolve("python.exe").toString())
+                                        .environment("PATH", tempDir.toString())
+                                        .build()) {
+            try {
+                context.eval("python", "import _sqlite3");
+                Assert.fail("importing _sqlite3 with python.IsolateNativeModules=true should fail when delvewheel is not on PATH");
+            } catch (PolyglotException ex) {
+                Assert.assertTrue(ex.getMessage(), ex.isGuestException());
+                Value exception = ex.getGuestObject();
+                Assert.assertTrue(exception.isException());
+                Assert.assertEquals("SystemError", exception.getMetaObject().getMetaSimpleName());
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("delvewheel` 1.9.0"));
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("installed"));
+            }
+        } finally {
+            Files.deleteIfExists(tempDir);
         }
     }
 
