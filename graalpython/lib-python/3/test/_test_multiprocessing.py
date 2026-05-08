@@ -6533,19 +6533,16 @@ def install_tests_in_module_dict(remote_globs, start_method,
                     continue
                 if exclude_types:
                     continue
-                # Begin Truffle change
-                # multiprocessing manager not supported
-                # newname = 'With' + type_.capitalize() + name[1:]
-                # Mixin = local_globs[type_.capitalize() + 'Mixin']
-                # class Temp(base, Mixin, unittest.TestCase):
-                #     pass
-                # if type_ == 'manager':
-                #     Temp = hashlib_helper.requires_hashdigest('sha256')(Temp)
-                # Temp.__name__ = Temp.__qualname__ = newname
-                # Temp.__module__ = __module__
-                # Temp.start_method = start_method
-                # remote_globs[newname] = Temp
-                # End Truffle change
+                newname = 'With' + type_.capitalize() + name[1:]
+                Mixin = local_globs[type_.capitalize() + 'Mixin']
+                class Temp(base, Mixin, unittest.TestCase):
+                    pass
+                if type_ == 'manager':
+                    Temp = hashlib_helper.requires_hashdigest('sha256')(Temp)
+                Temp.__name__ = Temp.__qualname__ = newname
+                Temp.__module__ = __module__
+                Temp.start_method = start_method
+                remote_globs[newname] = Temp
         elif issubclass(base, unittest.TestCase):
             if only_type:
                 continue
