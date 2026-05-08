@@ -1502,6 +1502,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("        return Linker.nativeLinker().upcallStub(staticMethodHandle, functionDescriptor, (Arena) arena).address();");
         lines.add("    }");
         lines.add("");
+        lines.add("    @Override");
+        lines.add("    protected boolean isCurrentThreadVirtualImpl() {");
+        lines.add("        return Thread.currentThread().isVirtual();");
+        lines.add("    }");
+        lines.add("");
         lines.add("    private static FunctionDescriptor createFunctionDescriptor(NativeSimpleType resType, NativeSimpleType[] argTypes) {");
         lines.add("        MemoryLayout[] argLayouts = new MemoryLayout[argTypes.length];");
         lines.add("        for (int i = 0; i < argTypes.length; i++) {");
@@ -1597,6 +1602,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    @Override");
         lines.add("    protected long createClosureImpl(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena) {");
         lines.add("        throw unsupported();");
+        lines.add("    }");
+        lines.add("");
+        lines.add("    @Override");
+        lines.add("    protected boolean isCurrentThreadVirtualImpl() {");
+        lines.add("        return false;");
         lines.add("    }");
         lines.add("}");
 

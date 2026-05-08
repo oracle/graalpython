@@ -381,8 +381,19 @@ public final class PythonOptions {
     @Option(category = OptionCategory.INTERNAL, usageSyntax = "<time>", help = "Specifies the interval (ms) for the background GC task to monitor the resident set size (RSS)") //
     public static final OptionKey<Integer> BackgroundGCTaskInterval = new OptionKey<>(1000);
 
-    @Option(category = OptionCategory.INTERNAL, usageSyntax = "<limit>", help = "The percentage increase in RSS memory between System.gc() calls. Low percentage will trigger System.gc() more often. (default: 30).") //
-    public static final OptionKey<Integer> BackgroundGCTaskThreshold = new OptionKey<>(30);
+    @Option(category = OptionCategory.INTERNAL, usageSyntax = "[1,100]", help = "The percentage increase in RSS memory between System.gc() calls. Low percentage will trigger System.gc() more often. (default: 30).") //
+    public static final OptionKey<Integer> BackgroundGCTaskThreshold = new OptionKey<>(30,
+                    new OptionType<>("BackgroundGCTaskThreshold", input -> {
+                        try {
+                            int value = Integer.parseInt(input);
+                            if (value >= 1 && value <= 100) {
+                                return value;
+                            }
+                        } catch (NumberFormatException e) {
+                            // fallthrough
+                        }
+                        throw new IllegalArgumentException("BackgroundGCTaskThreshold must be an integer in range [1, 100]");
+                    }));
 
     @Option(category = OptionCategory.INTERNAL, usageSyntax = "<megabytes>", help = "The minimum RSS memory (in megabytes) to start calling System.gc(). (default: 4 GB).") //
     public static final OptionKey<Integer> BackgroundGCTaskMinimum = new OptionKey<>(4096);

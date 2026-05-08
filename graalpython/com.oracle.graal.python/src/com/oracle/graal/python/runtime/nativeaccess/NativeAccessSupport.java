@@ -114,6 +114,10 @@ public abstract class NativeAccessSupport {
         return INSTANCE.createClosureImpl(staticMethodHandle, resType, argTypes, arena);
     }
 
+    public static boolean isCurrentThreadVirtual() {
+        return INSTANCE.isCurrentThreadVirtualImpl();
+    }
+
     private MethodHandle createTypedDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
         Class<?>[] parameterTypes = new Class<?>[argTypes.length + 1];
         parameterTypes[0] = long.class;
@@ -134,4 +138,6 @@ public abstract class NativeAccessSupport {
     protected abstract MethodHandle createDowncallHandleImpl(MethodType methodType, boolean critical);
 
     protected abstract long createClosureImpl(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena);
+
+    protected abstract boolean isCurrentThreadVirtualImpl();
 }

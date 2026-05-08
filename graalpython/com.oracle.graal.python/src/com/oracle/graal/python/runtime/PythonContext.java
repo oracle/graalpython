@@ -171,6 +171,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.locale.PythonLocale;
+import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
 import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.IDUtils;
@@ -246,6 +247,10 @@ public final class PythonContext extends Python3Core {
 
     // Used for testing only.
     public boolean wasStackWalk;
+
+    public static boolean isCurrentThreadVirtual() {
+        return NativeAccessSupport.isCurrentThreadVirtual();
+    }
 
     @TruffleBoundary
     public static String getSupportLibName(PythonOS os, String libName) {
@@ -2722,7 +2727,7 @@ public final class PythonContext extends Python3Core {
     public void attachThread(Thread thread, ContextThreadLocal<PythonThreadState> threadState) {
         CompilerAsserts.neverPartOfCompilation();
         PythonThreadState pythonThreadState = threadState.get(thread);
-        threadStateMapping.put(thread, pythonThreadState);
+        PythonThreadState previousThreadState = threadStateMapping.put(thread, pythonThreadState);
         ReentrantLock initLock = getcApiInitializationLock();
         /*
          * Synchronize with C API initialization so that we do not miss eager initialization of this
@@ -2734,9 +2739,19 @@ public final class PythonContext extends Python3Core {
         initLock.lock();
         try {
             if (getCApiState() == CApiState.INITIALIZED) {
+                if (isCurrentThreadVirtual()) {
+                    throw PRaiseNode.raiseStatic(getLanguage().unavailableSafepointLocation, SystemError, ErrorMessages.NATIVE_EXTENSIONS_VIRTUAL_THREAD);
+                }
                 // initialize this thread's native TLS slot eagerly instead of on first use
                 initializeNativeThreadState(pythonThreadState);
             }
+        } catch (PException e) {
+            if (previousThreadState == null) {
+                threadStateMapping.remove(thread);
+            } else {
+                threadStateMapping.put(thread, previousThreadState);
+            }
+            throw e;
         } finally {
             initLock.unlock();
         }

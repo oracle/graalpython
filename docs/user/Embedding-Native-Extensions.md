@@ -13,6 +13,13 @@ The Context API allows you to set options such as `allowIO`, `allowHostAccess`, 
 To use Python native extensions on GraalPy, the `allowNativeAccess` option must be set to `true`, but this opens the door to full native access.
 This means that while Python code may be denied access to the host file system, thread or subprocess creation, and more, the native extension is under no such restriction.
 
+## Java Virtual Threads
+
+Python native extensions are not compatible with Java virtual threads.
+Native extensions commonly use native thread-local state, including CPython and extension-runtime state that cannot track Java virtual-thread scheduling.
+If an embedded application may load or call native extensions, run that Python code on platform threads.
+For example, server applications that use virtual threads for request handling should dispatch GraalPy calls that may use native extensions to a platform-thread executor.
+
 ## Memory Management
 
 Python C extensions, like the CPython reference implementation, use reference counting for memory management.
