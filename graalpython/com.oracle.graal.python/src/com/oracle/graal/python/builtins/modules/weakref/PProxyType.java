@@ -46,16 +46,13 @@ import com.oracle.truffle.api.object.Shape;
 
 public class PProxyType extends PythonBuiltinObject {
 
-    public final Object object;
     public final PReferenceType weakReference;
 
-    public PProxyType(Object cls, Shape instanceShape, Object object, PReferenceType weakReference) {
+    public PProxyType(Object cls, Shape instanceShape, PReferenceType weakReference) {
         super(cls, instanceShape);
 
-        assert (object != null);
         assert (weakReference != null);
 
-        this.object = object;
         this.weakReference = weakReference;
     }
 }

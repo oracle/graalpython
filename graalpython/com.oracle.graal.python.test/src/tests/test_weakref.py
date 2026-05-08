@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -126,6 +126,34 @@ def test_weakref_object_type_support():
         pass
     else:
         assert False, "should throw TypeError for unsupported objects"
+
+
+def test_proxy_does_not_keep_object_alive():
+    import gc
+
+    class A:
+        attr = 42
+
+    a = A()
+    proxy = weakref.proxy(a)
+    ref = weakref.ref(a)
+
+    assert proxy.attr == 42
+    a = None
+
+    for _ in range(10000):
+        gc.collect()
+        if ref() is None:
+            break
+
+    assert ref() is None
+    assert "NoneType" in repr(proxy)
+    try:
+        getattr(proxy, "attr")
+    except ReferenceError:
+        pass
+    else:
+        assert False, "weakref proxy kept the object alive"
 
 
 def test_proxy_getitem():

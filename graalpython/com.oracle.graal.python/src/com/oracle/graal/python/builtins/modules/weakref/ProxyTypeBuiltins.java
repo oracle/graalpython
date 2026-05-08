@@ -190,7 +190,7 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
 
             PythonBuiltinClassType cls = PythonBuiltinClassType.PProxyType;
             Shape shape = cls.getInstanceShape(language);
-            return new PProxyType(cls, shape, object, weakReference);
+            return new PProxyType(cls, shape, weakReference);
         }
     }
 
@@ -268,9 +268,13 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
                         @Cached ObjectNodes.GetIdNode getIdNode,
                         @Cached TypeNodes.GetQualNameNode getQualNameNode,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-            Object object = unwrap(self, inliningTarget);
+            Object object = self.weakReference.getPyObject();
 
             long selfId = (long) getIdNode.execute(self);
+            if (object == PNone.NONE) {
+                long noneId = (long) getIdNode.execute(PNone.NONE);
+                return reprBoundary(selfId, noneId, "NoneType");
+            }
             long objectId = (long) getIdNode.execute(object);
             TruffleString objectTypeNameTS = getQualNameNode.execute(inliningTarget, ((PythonObject) object).getPythonClass());
             String objectTypeName = castToJavaStringNode.execute(objectTypeNameTS);
