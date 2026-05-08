@@ -4,6 +4,8 @@ This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 25.1.0
+* The standalone artifacts now include the Python version name before the Graal version. The new artifacts now start with `graalpy<PYTHON_VERSION>-<GRAAL_VERSION>-<OPERATING_SYSTEM>-<ARCHITECTURE>`.
+* Standalone JVM artifacts are no longer released as separate distributions. For standalone deployments, use the GraalPy native artifacts. If you require Java interoperability, use a custom embedding.
 * Treat foreign buffer objects as Python buffer-compatible binary objects, so APIs like `memoryview`, `bytes`, `bytearray`, `binascii.hexlify`, and `io.BytesIO` work naturally on them when embedding GraalPy in Java. This allows passing binary data between Python and Java's `ByteBuffer` and `ByteSequence` types with minimal (sometimes zero) copies.
 * Add support for [Truffle source options](https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/source/Source.SourceBuilder.html#option(java.lang.String,java.lang.String)):
   * The `python.Optimize` option can be used to specify the optimization level, like the `-O` (level 1) and `-OO` (level 2) commandline options.
@@ -22,6 +24,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Add an experimental `python.InitializationEntropySource` option to control the entropy source used for initialization-only randomness such as hash secret generation and `random.Random(None)` seeding. This means embeddings and tests can select deterministic or externally provided initialization entropy without affecting cryptographically relevant APIs like `os.urandom()` or `random.SystemRandom()`.
 * Foreign temporal objects (dates, times, and timezones) are now given a Python class corresponding to their interop traits, i.e., `date`, `time`, `datetime`, or `tzinfo`. This allows any foreign objects with these traits to be used in place of the native Python types and Python methods available on these types work on the foreign types.
 * Make BouncyCastle an optional dependency for embedding use cases. BouncyCastle is only needed for legacy RSA, DSA, and EC privat keys versions 0 and 1. To support these from Python embeddings, BouncyCastle must now be explicitly enabled by adding the `org.graalvm.python:python-bouncycastle-support` Maven artifact.
+* The GraalPy Native standalone on Linux now uses a lower-footprint Native Image garbage collection configuration. This reduces resident set size (RSS) for many workloads, but may increase startup time and warmup time, and can slow down some workloads.
 
 ## Version 25.0.1
 * Allow users to keep going on unsupported JDK/OS/ARCH combinations at their own risk by opting out of early failure using `-Dtruffle.UseFallbackRuntime=true`, `-Dpolyglot.engine.userResourceCache=/set/to/a/writeable/dir`, `-Dpolyglot.engine.allowUnsupportedPlatform=true`, and `-Dpolyglot.python.UnsupportedPlatformEmulates=[linux|macos|windows]` and `-Dorg.graalvm.python.resources.exclude=native.files`.
@@ -40,7 +43,6 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Enable FTS3, FTS4, FTS5, RTREE, and math function features in the bundled sqlite3 library.
 * Add support patches for Torch 2.7.0, PyGObject 3.52.3, xmlschema 4.0.0, lxml < 5.4.0, SciPy 1.15, jq 1.8.0, NumPy < 2.3, ormsgpack < 1.9.1, pandas 2.2.3, PyArrow 19.0, PyMuPDF 1.25.4.
 * The GraalPy Native standalone on Linux now uses the G1 garbage collector which is much faster.
-* The GraalPy Native standalone on Linux now uses a lower-footprint Native Image garbage collection configuration. This reduces resident set size (RSS) for many workloads, but may increase startup time and warmup time, and can slow down some workloads.
 * The full-featured Python REPL is now available on GraalPy standalone builds for Windows.
 
 ## Version 24.2.0

@@ -12,37 +12,20 @@ GraalPy is available in multiple distributions:
 - **GraalPy built on Oracle GraalVM** provides the best experience with additional optimizations, significantly faster performance, and better memory efficiency. It is licensed under the [GraalVM Free Terms and Conditions (GFTC)](https://www.oracle.com/downloads/licenses/graal-free-license.html), which permits use by any user including commercial and production use. Redistribution is permitted as long as it is not for a fee.
 - **GraalPy Community** is built on top of GraalVM Community Edition and is fully open source.
 
-### Runtime Options
+### Runtime
 
-Two language runtime options are available for both distributions:
-
-- **Native** (recommended for standalone use)
-  - GraalPy is compiled ahead-of-time to a native executable
-  - You do not need a JVM to run GraalPy and it is compact in size
-  - Faster startup time
-  - Faster time to reach peak performance
-- **JVM**
-  - You can easily exploit Java interoperability
-  - Peak performance may be higher than the native option
-  - Slower startup time
+The standalone GraalPy runtime is compiled ahead-of-time to a native executable.
+You do not need a JVM to run it, and it has a compact size, fast startup, and fast time to reach peak performance.
+For Java interoperability and JVM application embedding, see [Embedding Python in Java](Embedding-Getting-Started.md).
 
 ### Distribution Identification
 
-The GraalPy runtimes are identified using the pattern _graalpy(-community)(-jvm)-&lt;version&gt;-&lt;os&gt;-&lt;arch&gt;_:
+The GraalPy standalone runtimes are identified using the pattern _graalpy(-community)&lt;python-version&gt;-&lt;graal-version&gt;-&lt;os&gt;-&lt;arch&gt;_:
 
-| Distribution  | Native                                    | JVM |
-| ------------- | ----------------------------------------- | ---- |
-| **Oracle**    | `graalpy-<version>-<os>-<arch>`           | `graalpy-jvm-<version>-<os>-<arch>` |
-| **Community** | `graalpy-community-<version>-<os>-<arch>` | `graalpy-community-jvm-<version>-<os>-<arch>` |
-
-### Runtime Comparison
-
-| Runtime | Native (default) | JVM |
-|:-------|:-----------------|:----|
-| Time to start | faster | slower |
-| Time to reach peak performance | faster | slower |
-| Peak performance (also considering GC) | good | best |
-| Java interoperability | needs configuration | works |
+| Distribution  | Runtime                                                         | License                                                                   |
+|---------------|-----------------------------------------------------------------|---------------------------------------------------------------------------|
+| **Oracle**    | `graalpy<python-version>-<graal-version>-<os>-<arch>`           | [GFTC](https://www.oracle.com/downloads/licenses/graal-free-license.html) |
+| **Community** | `graalpy-community<python-version>-<graal-version>-<os>-<arch>` | [UPL](https://opensource.org/licenses/UPL)                                |
 
 ## GraalPy Capabilities
 
@@ -78,14 +61,14 @@ pyenv shell graalpy-25.0.2
 
 1. Download the appropriate binary from [GitHub releases](https://github.com/oracle/graalpython/releases):
 
-   - AMD64: `graalpy-XX.Y.Z-linux-amd64.tar.gz`
-   - ARM64: `graalpy-XX.Y.Z-linux-aarch64.tar.gz`
+   - AMD64: `graalpy3.12-25.1.0-linux-amd64.tar.gz`
+   - ARM64: `graalpy3.12-25.1.0-linux-aarch64.tar.gz`
 
 2. Extract and add it to your `PATH` environment variable:
 
    ```bash
-   tar -xzf graalpy-25.0.2-linux-amd64.tar.gz
-   export PATH="$PWD/graalpy-25.0.2-linux-amd64/bin:$PATH"
+   tar -xzf graalpy3.12-25.1.0-linux-amd64.tar.gz
+   export PATH="$PWD/graalpy3.12-25.1.0-linux-amd64/bin:$PATH"
    ```
 
 ### macOS
@@ -115,8 +98,8 @@ pyenv shell graalpy-25.0.2
 3. Extract and add it to your `PATH` environment variable:
 
    ```bash
-   tar -xzf graalpy-25.0.2-macos-aarch64.tar.gz
-   export PATH="$PWD/graalpy-25.0.2-macos-aarch64/bin:$PATH"
+   tar -xzf graalpy3.12-25.1.0-macos-aarch64.tar.gz
+   export PATH="$PWD/graalpy3.12-25.1.0-macos-aarch64/bin:$PATH"
    ```
 
 ### Windows
@@ -129,9 +112,9 @@ pyenv shell graalpy-25.0.2
 
    ```powershell
    # Extract the file and update your PATH environment variable
-   # to include the graalpy-XX.Y.Z-windows-amd64/bin directory
-   tar -xzf graalpy-25.0.2-windows-amd64.tar.gz
-   $env:PATH = "$PWD\graalpy-25.0.2-windows-amd64\bin;$env:PATH"
+   # to include the graalpy3.12-25.1.0-windows-amd64/bin directory
+   tar -xzf graalpy3.12-25.1.0-windows-amd64.zip
+   $env:PATH = "$PWD\graalpy3.12-25.1.0-windows-amd64\bin;$env:PATH"
    ```
 
 #### Known Windows Limitations

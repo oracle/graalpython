@@ -74,8 +74,8 @@ audience_identifier: python
         <h3 class="langstarter__title">Install or Download</h3>
         <div>
           <h5 class="download-text">
-          GraalPy is available for multiple platforms in two variants: <strong class="language-downloads__variant-native">Native</strong> (for a compact download size and smaller footprint) and <strong class="language-downloads__variant-jvm">JVM</strong> (for full Java interoperability). Distributions based on Oracle GraalVM provide the best performance and advanced features and are released under the <a href="https://www.oracle.com/downloads/licenses/graal-free-license.html">GFTC license</a>. Distributions based on GraalVM Community Edition, released under the OSI-approved <a href="https://opensource.org/licenses/UPL">UPL license</a>, are available on <a href="https://github.com/oracle/graalpython/releases">GitHub</a>.
-          See <a href="/python/python-developers/docs/#choosing-a-graalpy-distribution">Choosing a GraalPy Distribution</a> for guidance on selecting the appropriate runtime.
+          GraalPy is available for multiple platforms. Distributions based on Oracle GraalVM provide the best performance and advanced features and are released under the <a href="https://www.oracle.com/downloads/licenses/graal-free-license.html">GFTC license</a>. Distributions based on GraalVM Community Edition, released under the OSI-approved <a href="https://opensource.org/licenses/UPL">UPL license</a>, are available on <a href="https://github.com/oracle/graalpython/releases">GitHub</a>.
+          See <a href="/python/python-developers/docs/#choosing-a-graalpy-distribution">Choosing a GraalPy Distribution</a> for guidance on available distributions.
           </h5>
         </div>
         <div class="languages__example-card">
@@ -160,48 +160,30 @@ docker run --rm ghcr.io/graalvm/graalpy-community:{{ site.language_version }} py
             <table class="centered">
               <tr>
                 <th class="border-correct-3">Version</th>
-                <th>Kind</th>
                 <th>Linux (aarch64)</th>
                 <th>Linux (amd64)</th>
                 <th>macOS (aarch64)</th>
                 <th class="border-correct-4">Windows (amd64)</th>
               </tr>
               <tr>
-                <td rowspan="2">
+                <td>
                 {{ site.language_version }}
                 </td>
-                <td>Native</td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy-{{ site.language_version }}-linux-aarch64.tar.gz">
+                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy{{ site.python_version }}-{{ site.language_version }}-linux-aarch64.tar.gz">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy-{{ site.language_version }}-linux-amd64.tar.gz">
+                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy{{ site.python_version }}-{{ site.language_version }}-linux-amd64.tar.gz">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy-{{ site.language_version }}-macos-aarch64.tar.gz">
+                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy{{ site.python_version }}-{{ site.language_version }}-macos-aarch64.tar.gz">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy-{{ site.language_version }}-windows-amd64.tar.gz">
+                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy{{ site.python_version }}-{{ site.language_version }}-windows-amd64.zip">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
               </tr>
               <tr>
-                <td>JVM</td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy-jvm-{{ site.language_version }}-linux-aarch64.tar.gz">
-                <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
-                </a></td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy-jvm-{{ site.language_version }}-linux-amd64.tar.gz">
-                <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
-                </a></td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy-jvm-{{ site.language_version }}-macos-aarch64.tar.gz">
-                <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
-                </a></td>
-                <td><a target="_blank" href="https://github.com/oracle/graalpython/releases/download/graal-{{ site.language_version }}/graalpy-jvm-{{ site.language_version }}-windows-amd64.tar.gz">
-                <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
-              </a></td>
-              </tr>
-              <tr>
-                <td class="border-correct-1" rowspan="2">Latest early access build</td>
-                <td>Native</td>
+                <td class="border-correct-1">Latest early access build</td>
                 <td><a target="_blank" href="https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-native-linux-aarch64.url" onclick="resolveEarlyAccessDownload(event, this.href)">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
@@ -212,21 +194,6 @@ docker run --rm ghcr.io/graalvm/graalpy-community:{{ site.language_version }} py
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
                 </a></td>
                 <td><a target="_blank" href="https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-native-windows-amd64.url" onclick="resolveEarlyAccessDownload(event, this.href)">
-                <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
-              </a></td>
-              </tr>
-              <tr>
-                <td>JVM</td>
-                <td><a target="_blank" href="https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-jvm-linux-aarch64.url" onclick="resolveEarlyAccessDownload(event, this.href)">
-                <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
-                </a></td>
-                <td><a target="_blank" href="https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-jvm-linux-amd64.url" onclick="resolveEarlyAccessDownload(event, this.href)">
-                <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
-                </a></td>
-                <td><a target="_blank" href="https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-jvm-darwin-aarch64.url" onclick="resolveEarlyAccessDownload(event, this.href)">
-                <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
-                </a></td>
-                <td class="border-correct-2"><a target="_blank" href="https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-jvm-windows-amd64.url" onclick="resolveEarlyAccessDownload(event, this.href)">
                 <img src="{{ '/assets/img/download-icon.svg' | relative_url }}" class="" alt="download icon">
               </a></td>
               </tr>
