@@ -150,7 +150,11 @@ class Stats:
         elif hasattr(arg, 'create_stats'):
             arg.create_stats()
             self.stats = arg.stats
+            # GraalPy change: our sampling-based cProfile can produce an empty
+            # stats dict for very short profiled code; that is still a valid
+            # profile object and should print as 0 function calls.
             arg.stats = {}
+            return
         if not self.stats:
             raise TypeError("Cannot create or construct a %r object from %r"
                             % (self.__class__, arg))
