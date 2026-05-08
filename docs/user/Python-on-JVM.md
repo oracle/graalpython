@@ -10,8 +10,8 @@ This guide shows you how to migrate from Jython to GraalPy.
 
 ### Prerequisites
 
-- To move plain Jython scripts from Jython to GraalPy, use a GraalPy JVM-based runtime. (For more information, see available [GraalPy Distributions](Python-Runtime.md))
-- First migrate code from Python 2 to Python 3 following [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html)
+- To migrate Jython scripts to GraalPy, you first need to create a GraalPy embedding. For more information, see [Embedding Python in Java](Embedding-Getting-Started.md).
+- Make sure to migrate code from Python 2 (as supported by Jython) to Python 3 (the major version GraalPy is compatible with) following [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html)
 
 ## GraalPy Java Interoperability Overview
 

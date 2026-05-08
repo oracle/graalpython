@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "7.67.0",
+    "mxversion": "7.81.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -1722,6 +1722,7 @@ suite = {
 
         "GRAALPY_JVM_STANDALONE_RELEASE_ARCHIVE": {
             "class": "DeliverableStandaloneArchive",
+            "deploy": False,
             "platformDependent": True,
             "standalone_dist": "GRAALPY_JVM_STANDALONE",
             "community_archive_name": "graalpy-community-jvm",
