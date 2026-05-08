@@ -313,12 +313,19 @@ class XMLRPCTestCase(unittest.TestCase):
             has_ssl = False
         else:
             has_ssl = True
+        # Begin: GraalPy change
+        old_timeout = socket.getdefaulttimeout()
         try:
+            # xmlrpc.client.ServerProxy('https://localhost:9999').bad_function()
+            socket.setdefaulttimeout(SSL_PROBE_TIMEOUT)
             xmlrpc.client.ServerProxy('https://localhost:9999').bad_function()
         except NotImplementedError:
             self.assertFalse(has_ssl, "xmlrpc client's error with SSL support")
         except OSError:
             self.assertTrue(has_ssl)
+        finally:
+            socket.setdefaulttimeout(old_timeout)
+        # End: GraalPy Change
 
     def test_keepalive_disconnect(self):
         class RequestHandler(http.server.BaseHTTPRequestHandler):
@@ -599,6 +606,10 @@ class BinaryTestCase(unittest.TestCase):
 
 
 ADDR = PORT = URL = None
+# Begin: GraalPy change
+SERVER_TIMEOUT = support.LOOPBACK_TIMEOUT
+SSL_PROBE_TIMEOUT = 1.0
+# End: GraalPy Change
 
 # The evt is set twice.  First when the server is ready to serve.
 # Second when the server has been shutdown.  The user must clear
@@ -630,6 +641,9 @@ def http_server(evt, numrequests, requestHandler=None, encoding=None):
     serv = MyXMLRPCServer(("localhost", 0), requestHandler,
                           encoding=encoding,
                           logRequests=False, bind_and_activate=False)
+    # Begin: GraalPy change
+    serv.socket.settimeout(SERVER_TIMEOUT)
+    # End: GraalPy Change
     try:
         serv.server_bind()
         global ADDR, PORT, URL
@@ -785,16 +799,34 @@ class BaseServerTestCase(unittest.TestCase):
         # start server thread to handle requests
         serv_args = (self.evt, self.request_count, self.requestHandler)
         thread = threading.Thread(target=self.threadFunc, args=serv_args)
+        # Begin: GraalPy change
+        self.thread = thread
+        # End: GraalPy Change
         thread.start()
-        self.addCleanup(thread.join)
+        # Begin: GraalPy change
+        # self.addCleanup(thread.join)
+        self.addCleanup(self._join_server_thread)
+        # End: GraalPy Change
 
         # wait for the server to be ready
-        self.evt.wait()
+        # Begin: GraalPy change
+        # self.evt.wait()
+        self.assertTrue(self.evt.wait(SERVER_TIMEOUT), "XML-RPC server did not start")
+        # End: GraalPy Change
         self.evt.clear()
+
+    # Begin: GraalPy change
+    def _join_server_thread(self):
+        self.thread.join(SERVER_TIMEOUT)
+        self.assertFalse(self.thread.is_alive(), "XML-RPC server thread did not stop")
+    # End: GraalPy Change
 
     def tearDown(self):
         # wait on the server thread to terminate
-        self.evt.wait()
+        # Begin: GraalPy change
+        # self.evt.wait()
+        self.assertTrue(self.evt.wait(SERVER_TIMEOUT), "XML-RPC server did not stop")
+        # End: GraalPy Change
 
         # disable traceback reporting
         xmlrpc.server.SimpleXMLRPCServer._send_traceback_header = False
@@ -1339,16 +1371,34 @@ class FailingServerTestCase(unittest.TestCase):
         # start server thread to handle requests
         serv_args = (self.evt, 1)
         thread = threading.Thread(target=http_server, args=serv_args)
+        # Begin: GraalPy change
+        self.thread = thread
+        # End: GraalPy Change
         thread.start()
-        self.addCleanup(thread.join)
+        # Begin: GraalPy change
+        # self.addCleanup(thread.join)
+        self.addCleanup(self._join_server_thread)
+        # End: GraalPy Change
 
         # wait for the server to be ready
-        self.evt.wait()
+        # Begin: GraalPy change
+        # self.evt.wait()
+        self.assertTrue(self.evt.wait(SERVER_TIMEOUT), "XML-RPC server did not start")
+        # End: GraalPy Change
         self.evt.clear()
+
+    # Begin: GraalPy change
+    def _join_server_thread(self):
+        self.thread.join(SERVER_TIMEOUT)
+        self.assertFalse(self.thread.is_alive(), "XML-RPC server thread did not stop")
+    # End: GraalPy Change
 
     def tearDown(self):
         # wait on the server thread to terminate
-        self.evt.wait()
+        # Begin: GraalPy change
+        # self.evt.wait()
+        self.assertTrue(self.evt.wait(SERVER_TIMEOUT), "XML-RPC server did not stop")
+        # End: GraalPy Change
         # reset flag
         xmlrpc.server.SimpleXMLRPCServer._send_traceback_header = False
         # reset message class

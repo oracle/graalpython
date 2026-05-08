@@ -36,6 +36,10 @@ from test.support import threading_helper
 
 support.requires_working_socket(module=True)
 
+# Begin: GraalPy change
+SERVER_TIMEOUT = support.LOOPBACK_TIMEOUT
+# End: GraalPy Change
+
 class NoLogRequestHandler:
     def log_message(self, *args):
         # don't write log messages to stderr
@@ -63,7 +67,12 @@ class TestServerThread(threading.Thread):
 
     def stop(self):
         self.server.shutdown()
-        self.join()
+        # Begin: GraalPy change
+        # self.join()
+        self.join(SERVER_TIMEOUT)
+        if self.is_alive():
+            raise AssertionError("HTTP server thread did not stop")
+        # End: GraalPy Change
 
 
 class BaseTestCase(unittest.TestCase):
@@ -73,7 +82,10 @@ class BaseTestCase(unittest.TestCase):
         self.server_started = threading.Event()
         self.thread = TestServerThread(self, self.request_handler)
         self.thread.start()
-        self.server_started.wait()
+        # Begin: GraalPy change
+        # self.server_started.wait()
+        self.assertTrue(self.server_started.wait(SERVER_TIMEOUT), "HTTP server did not start")
+        # End: GraalPy Change
 
     def tearDown(self):
         self.thread.stop()
@@ -322,7 +334,13 @@ class RequestHandlerLoggingTestCase(BaseTestCase):
 
         def do_GET(self):
             self.send_response(HTTPStatus.OK)
+            # Begin: GraalPy change
+            # self.end_headers()
+            self.send_header('Content-Length', '0')
+            self.send_header('Connection', 'close')
             self.end_headers()
+            self.close_connection = True
+            # End: GraalPy Change
 
         def do_ERROR(self):
             self.send_error(HTTPStatus.NOT_FOUND, 'File not found')

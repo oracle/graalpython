@@ -8,6 +8,10 @@ from test import support
 
 support.requires_working_socket(module=True)
 
+# Begin: GraalPy change
+SERVER_TIMEOUT = support.LOOPBACK_TIMEOUT
+# End: GraalPy Change
+
 def make_request_and_skipIf(condition, reason):
     # If we skip the test, we have to make a request because
     # the server created in setUp blocks expecting one to come in.
@@ -85,7 +89,11 @@ class DocXMLRPCHTTPGETServer(unittest.TestCase):
         # Disable server feedback
         DocXMLRPCServer._send_traceback_header = False
         self.serv.shutdown()
-        self.thread.join()
+        # Begin: GraalPy change
+        # self.thread.join()
+        self.thread.join(SERVER_TIMEOUT)
+        self.assertFalse(self.thread.is_alive(), "DocXMLRPC server thread did not stop")
+        # End: GraalPy Change
         self.serv.server_close()
 
     def test_valid_get_response(self):
