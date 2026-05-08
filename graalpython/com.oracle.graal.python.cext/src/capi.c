@@ -100,7 +100,7 @@ typedef struct {
 // defined in 'unicodeobject.c'
 void unicode_dealloc(PyObject *unicode);
 
-NO_INLINE void
+Py_LOCAL_SYMBOL NO_INLINE void
 graalpy_dealloc_stack_grow(PyThreadState *tstate)
 {
     size_t old_capacity;
@@ -119,7 +119,7 @@ graalpy_dealloc_stack_grow(PyThreadState *tstate)
     }
 }
 
-void
+Py_LOCAL_SYMBOL void
 graalpy_dealloc_stack_push(PyThreadState *tstate, PyObject *op)
 {
     assert(tstate != NULL);
@@ -129,7 +129,7 @@ graalpy_dealloc_stack_push(PyThreadState *tstate, PyObject *op)
     tstate->graalpy_deallocating.items[tstate->graalpy_deallocating.len++] = op;
 }
 
-void
+Py_LOCAL_SYMBOL void
 graalpy_dealloc_stack_pop(PyThreadState *tstate, PyObject *op)
 {
     assert(tstate != NULL);
