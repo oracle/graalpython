@@ -710,13 +710,19 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     has_jep_454 = mx.get_jdk().version >= mx.VersionSpec("22.0.0")
     # test leaks when some C module code is involved
     if has_jep_454:
-        run_leak_launcher(["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+        run_leak_launcher([
+            "--forbid-capi-residue", "--code",
+            'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)',
+        ])
     # test leaks with shared engine Python code only
     run_leak_launcher(["--shared-engine", "--code", "pass"])
     run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
     # test leaks with shared engine when some C module code is involved
     if has_jep_454:
-        run_leak_launcher(["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+        run_leak_launcher([
+            "--shared-engine", "--forbid-capi-residue", "--code",
+            'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)',
+        ])
     run_leak_launcher(["--shared-engine", "--code", '[10, 20]', "--python.UseNativePrimitiveStorageStrategy=true",
                        "--forbidden-class", "com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage",
                        "--forbidden-class", "com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference"])
