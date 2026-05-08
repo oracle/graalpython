@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.weakref.PProxyType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -69,8 +70,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class PythonCextWeakrefBuiltins {
 
     @CApiBuiltin(ret = Void, args = {PyObjectRawPointer}, call = Direct, acquireGil = false, canRaise = false)
-    public static void PyObject_ClearWeakRefs(@SuppressWarnings("unused") long pyObject) {
-        // TODO: Implement
+    public static void PyObject_ClearWeakRefs(long pyObject) {
+        CApiTransitions.removeNativeWeakRef(PythonContext.get(null), pyObject);
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct, acquireGil = false, canRaise = true)
