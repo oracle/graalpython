@@ -100,7 +100,7 @@ typedef struct {
 // defined in 'unicodeobject.c'
 void unicode_dealloc(PyObject *unicode);
 
-NO_INLINE void
+Py_LOCAL_SYMBOL NO_INLINE void
 graalpy_dealloc_stack_grow(PyThreadState *tstate)
 {
     size_t old_capacity;
@@ -119,7 +119,7 @@ graalpy_dealloc_stack_grow(PyThreadState *tstate)
     }
 }
 
-void
+Py_LOCAL_SYMBOL void
 graalpy_dealloc_stack_push(PyThreadState *tstate, PyObject *op)
 {
     assert(tstate != NULL);
@@ -129,7 +129,7 @@ graalpy_dealloc_stack_push(PyThreadState *tstate, PyObject *op)
     tstate->graalpy_deallocating.items[tstate->graalpy_deallocating.len++] = op;
 }
 
-void
+Py_LOCAL_SYMBOL void
 graalpy_dealloc_stack_pop(PyThreadState *tstate, PyObject *op)
 {
     assert(tstate != NULL);
@@ -574,26 +574,12 @@ void initialize_hashes();
 void _PyFloat_InitState(PyInterpreterState* state);
 
 /*
- * This is used to allow Truffle to enter/leave the context on native threads
- * that were not created by NFI/Truffle/Java and thus not previously attached
- * to the context. See e.g. PyGILState_Ensure. This is used by some C
- * extensions to allow calling Python APIs from natively created threads. This
- * poses a problem if multiple contexts use the same library, since we cannot
- * know which context should be entered. CPython has the same problem (see
- * https://docs.python.org/3/c-api/init.html#bugs-and-caveats), in particular
- * the following quote:
- *
- *   Furthermore, extensions (such as ctypes) using these APIs to allow calling
- *   of Python code from non-Python created threads will probably be broken
- *   when using sub-interpreters.
- *
- * If we try to use the same libpython for multiple contexts, we can only
- * behave in a similar (likely broken) way as CPython: natively created threads
- * that use the PyGIL_* APIs to allow calling into Python will attach to the
- * first interpreter that initialized the C API (and thus set the
- * TRUFFLE_CONTEXT pointer) only.
+ * These functions allow Truffle to enter/leave the context on native threads
+ * that were not created by Truffle/Java and thus do not have a previously
+ * entered polyglot context. See e.g. PyGILState_Ensure.
  */
-Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
+Py_LOCAL_SYMBOL graalpy_attach_native_thread_func graalpy_attach_native_thread = NULL;
+Py_LOCAL_SYMBOL graalpy_detach_native_thread_func graalpy_detach_native_thread = NULL;
 
 /*
  * This is only set during VM shutdown, so on the native side can only be used
@@ -603,10 +589,14 @@ Py_LOCAL_SYMBOL TruffleContext* TRUFFLE_CONTEXT;
  */
 Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing = NULL;
 
-PyAPI_FUNC(PyThreadState **) initialize_graal_capi(void **builtin_closures, GCState *gc, PyThreadState *tstate) {
+PyAPI_FUNC(PyThreadState **) initialize_graal_capi(void **builtin_closures, GCState *gc,
+                PyThreadState *tstate, graalpy_attach_native_thread_func attach_native_thread,
+                graalpy_detach_native_thread_func detach_native_thread) {
     clock_t t = clock();
 
     _PyGC_InitState(gc);
+    graalpy_attach_native_thread = attach_native_thread;
+    graalpy_detach_native_thread = detach_native_thread;
 
     /*
      * Initializing all these global fields with pointers to different contexts

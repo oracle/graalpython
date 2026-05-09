@@ -196,13 +196,22 @@ public abstract class PThreadState {
 
     @TruffleBoundary
     public static void dispose(PythonThreadState threadState) {
+        dispose(threadState, true);
+    }
+
+    @TruffleBoundary
+    public static void dispose(PythonThreadState threadState, boolean markShuttingDown) {
         long nativeCompanion = threadState.getNativePointer();
         if (nativeCompanion == UNINITIALIZED || nativeCompanion == NATIVE_POINTER_FREED) {
             return;
         }
 
         assert !HandlePointerConverter.pointsToPyHandleSpace(nativeCompanion);
-        threadState.clearNativePointer();
+        if (markShuttingDown) {
+            threadState.clearNativePointer();
+        } else {
+            threadState.resetNativePointerAfterDetach();
+        }
 
         long deallocatingState = CStructAccess.getFieldPtr(nativeCompanion, CFields.PyThreadState__graalpy_deallocating);
         long deallocatingItems = CStructAccess.readPtrField(deallocatingState, CFields.GraalPyDeallocState__items);

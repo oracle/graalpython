@@ -56,6 +56,8 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -96,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
+import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -113,6 +116,7 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -138,6 +142,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
+import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -778,6 +783,70 @@ public final class CApiContext extends CExtContext {
 
     private Runnable nativeFinalizerRunnable;
     private Thread nativeFinalizerShutdownHook;
+    private final ThreadLocal<Object> attachedThreadPreviousContext = new ThreadLocal<>();
+
+    private static final NativeSignature ATTACH_NATIVE_THREAD_SIGNATURE = NativeSignature.create(NativeSimpleType.SINT32);
+    private static final NativeSignature DETACH_NATIVE_THREAD_SIGNATURE = NativeSignature.create(NativeSimpleType.VOID);
+    /** Must stay in sync with {@code GRAALPY_ATTACH_NATIVE_FAILED} in {@code capi.h}. */
+    private static final int ATTACH_NATIVE_THREAD_FAILED = -1;
+    /** Must stay in sync with {@code GRAALPY_ATTACH_NATIVE_OWNED} in {@code capi.h}. */
+    private static final int ATTACH_NATIVE_THREAD_OWNED = 1;
+    /** Must stay in sync with {@code GRAALPY_ATTACH_NATIVE_FOREIGN} in {@code capi.h}. */
+    private static final int ATTACH_NATIVE_THREAD_FOREIGN = 2;
+    private static final MethodHandle HANDLE_ATTACH_NATIVE_THREAD;
+    private static final MethodHandle HANDLE_DETACH_NATIVE_THREAD;
+
+    static {
+        try {
+            HANDLE_ATTACH_NATIVE_THREAD = MethodHandles.lookup().findVirtual(CApiContext.class, "attachNativeThread",
+                            MethodType.methodType(int.class));
+            HANDLE_DETACH_NATIVE_THREAD = MethodHandles.lookup().findVirtual(CApiContext.class, "detachNativeThread",
+                            MethodType.methodType(void.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Called from native threads before using the C API. Returns
+     * {@link #ATTACH_NATIVE_THREAD_OWNED} if this method entered the context and a matching
+     * {@link #detachNativeThread()} is required, {@link #ATTACH_NATIVE_THREAD_FOREIGN} if the context
+     * was already active on this thread from Truffle/Java/Python, and
+     * {@link #ATTACH_NATIVE_THREAD_FAILED} if entering failed.
+     */
+    private int attachNativeThread() {
+        CompilerAsserts.neverPartOfCompilation();
+        TruffleContext truffleContext = getContext().getEnv().getContext();
+        if (truffleContext.isActive()) {
+            return ATTACH_NATIVE_THREAD_FOREIGN;
+        }
+        try {
+            Object previousContext = truffleContext.enter(null);
+            attachedThreadPreviousContext.set(previousContext);
+            return ATTACH_NATIVE_THREAD_OWNED;
+        } catch (Throwable t) {
+            LOGGER.severe("could not attach native thread to polyglot context: " + t.getMessage());
+            return ATTACH_NATIVE_THREAD_FAILED;
+        }
+    }
+
+    private static boolean assertAttachNativeThreadConstants() {
+        assert ATTACH_NATIVE_THREAD_FAILED == CConstants.GRAALPY_ATTACH_NATIVE_FAILED.intValue();
+        assert ATTACH_NATIVE_THREAD_OWNED == CConstants.GRAALPY_ATTACH_NATIVE_OWNED.intValue();
+        assert ATTACH_NATIVE_THREAD_FOREIGN == CConstants.GRAALPY_ATTACH_NATIVE_FOREIGN.intValue();
+        return true;
+    }
+
+    /**
+     * Called from native immediately before detaching a thread that was previously attached by
+     * {@link #attachNativeThread()}.
+     */
+    private void detachNativeThread() {
+        CompilerAsserts.neverPartOfCompilation();
+        Object previousContext = attachedThreadPreviousContext.get();
+        attachedThreadPreviousContext.remove();
+        getContext().getEnv().getContext().leave(null, previousContext);
+    }
 
     @TruffleBoundary
     public static CApiContext ensureCapiWasLoaded(String reason) {
@@ -842,6 +911,7 @@ public final class CApiContext extends CExtContext {
                         // This can happen when other languages restrict multithreading
                         LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
                     }
+                    assert assertAttachNativeThreadConstants();
                 } catch (ImportException e) {
                     context.setCApiState(PythonContext.CApiState.CANNOT_IMPORT);
                     throw e;
@@ -934,6 +1004,10 @@ public final class CApiContext extends CExtContext {
             long gcState = cApiContext.createGCState();
             PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
             long nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
+            long attachNativeThread = cApiContext.registerClosure("attachNativeThread", ATTACH_NATIVE_THREAD_SIGNATURE,
+                            HANDLE_ATTACH_NATIVE_THREAD.bindTo(cApiContext), "attachNativeThread", cApiContext);
+            long detachNativeThread = cApiContext.registerClosure("detachNativeThread", DETACH_NATIVE_THREAD_SIGNATURE,
+                            HANDLE_DETACH_NATIVE_THREAD.bindTo(cApiContext), "detachNativeThread", cApiContext);
 
             long builtinArrayPtr = NativeMemory.mallocPtrArray(PythonCextBuiltinRegistry.builtins.length);
             try {
@@ -943,7 +1017,8 @@ public final class CApiContext extends CExtContext {
                 }
                 long nativeThreadLocalVarPointer = ExternalFunctionInvoker.invokeCAPIINIT(null, TIMING_INVOKE_CAPI_INIT, nativeContext, BoundaryCallData.getUncached(),
                                 context.getThreadState(context.getLanguage()),
-                                ExternalFunctionSignature.CAPIINIT.bind(nativeContext, initFunction), builtinArrayPtr, gcState, nativeThreadState);
+                                ExternalFunctionSignature.CAPIINIT.bind(nativeContext, initFunction), builtinArrayPtr,
+                                gcState, nativeThreadState, attachNativeThread, detachNativeThread);
                 assert nativeThreadLocalVarPointer != NULLPTR;
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
             } finally {

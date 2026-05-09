@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -85,34 +86,22 @@ import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PythonCextPyStateBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
-    abstract static class GraalPyPrivate_GILState_Check extends CApiNullaryBuiltinNode {
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextPyStateBuiltins.class);
 
-        @Specialization
-        Object check() {
-            return PythonContext.get(this).ownsGil() ? 1 : 0;
-        }
+    @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
+    static int GraalPyPrivate_GILState_Check() {
+        return PythonContext.get(null).ownsGil() ? 1 : 0;
     }
 
     @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
-    abstract static class GraalPyPrivate_GILState_Ensure extends CApiNullaryBuiltinNode {
-
-        @Specialization
-        static Object save(@Cached GilNode gil) {
-            boolean acquired = gil.acquire();
-            return acquired ? 1 : 0;
-        }
+    static int GraalPyPrivate_GILState_Ensure() {
+        boolean acquired = GilNode.getUncached().acquire();
+        return acquired ? 1 : 0;
     }
 
     @CApiBuiltin(ret = Void, args = {}, acquireGil = false, call = Ignored)
-    abstract static class GraalPyPrivate_GILState_Release extends CApiNullaryBuiltinNode {
-
-        @Specialization
-        static Object restore(
-                        @Cached GilNode gil) {
-            gil.release(true);
-            return PNone.NO_VALUE;
-        }
+    static void GraalPyPrivate_GILState_Release() {
+        GilNode.getUncached().release(true);
     }
 
     /**
@@ -121,44 +110,43 @@ public final class PythonCextPyStateBuiltins {
      * action that eagerly initializes their native 'tstate_current' TLS slot.
      */
     @CApiBuiltin(ret = PyThreadState, args = {Pointer}, acquireGil = false, call = Ignored)
-    abstract static class GraalPyPrivate_ThreadState_Get extends CApiUnaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_ThreadState_Get.class);
+    static long GraalPyPrivate_ThreadState_Get(long tstateCurrentPtr) {
 
-        @Specialization
-        @TruffleBoundary
-        static long get(long tstateCurrentPtr) {
-            PythonContext context = PythonContext.get(null);
-            PythonThreadState threadState = context.getThreadState(context.getLanguage());
+        PythonContext context = PythonContext.get(null);
+        PythonThreadState threadState = context.getThreadState(context.getLanguage());
 
-            /*
-             * The C caller may have observed 'tstate_current == NULL' before entering this upcall.
-             * While entering this builtin, the same thread may process a queued thread-local action
-             * from C API initialization and initialize its native thread state eagerly. So the
-             * fallback decision made in C can be stale by the time we get here.
-             */
-            if (threadState.isNativeThreadStateInitialized()) {
-                LOGGER.fine(() -> String.format("Lazy initialization attempt of native thread state for thread %s aborted. Was initialized in the meantime.", Thread.currentThread()));
-                long nativeThreadState = threadState.getNativePointer();
-                assert nativeThreadState != NULLPTR;
-                return nativeThreadState;
-            }
-
-            LOGGER.fine(() -> "Lazy (fallback) initialization of native thread state for thread " + Thread.currentThread());
-            assert threadState.getNativePointer() == NULLPTR;
-            long nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
-            threadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
+        /*
+         * The C caller may have observed 'tstate_current == NULL' before entering this upcall.
+         * While entering this builtin, the same thread may process a queued thread-local action
+         * from C API initialization and initialize its native thread state eagerly. So the
+         * fallback decision made in C can be stale by the time we get here.
+         */
+        if (threadState.isNativeThreadStateInitialized()) {
+            LOGGER.fine(() -> String.format("Lazy initialization attempt of native thread state for thread %s aborted. Was initialized in the meantime.", Thread.currentThread()));
+            long nativeThreadState = threadState.getNativePointer();
+            assert nativeThreadState != NULLPTR;
             return nativeThreadState;
         }
+
+        LOGGER.fine(() -> "Lazy (fallback) initialization of native thread state for thread " + Thread.currentThread());
+        assert threadState.getNativePointer() == PythonObject.UNINITIALIZED;
+        long nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
+        threadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
+        return nativeThreadState;
     }
 
     @CApiBuiltin(ret = Void, args = {}, call = Ignored)
-    abstract static class GraalPyPrivate_BeforeThreadDetach extends CApiNullaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        Object doIt() {
-            getContext().disposeThread(Thread.currentThread(), true);
-            return PNone.NO_VALUE;
-        }
+    static Object GraalPyPrivate_BeforeThreadDetach() {
+        /*
+         * This is the PyGILState_Release path for native-created threads. CPython clears its own
+         * auto-TSS key and deletes the PyThreadState here. Our Java thread state is stored in a
+         * Truffle ContextThreadLocal, which has no per-thread clear operation for a still-alive
+         * thread. If the same native thread later enters the context again, Truffle may return the
+         * same PythonThreadState object. Therefore this is a detach, not final thread shutdown: free
+         * the native PyThreadState, but leave the Java state usable for the next attach.
+         */
+        PythonContext.get(null).disposeThread(Thread.currentThread(), true, false);
+        return PNone.NO_VALUE;
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)

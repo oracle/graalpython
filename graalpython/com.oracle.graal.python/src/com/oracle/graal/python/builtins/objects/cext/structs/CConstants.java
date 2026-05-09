@@ -58,24 +58,30 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 /**
  * Helper enum to extract constants from the C space. Constants are limited to the range of "long"
- * values, but '-1' is not allowed at the moment.
+ * values.
  */
 @CApiConstants
 public enum CConstants {
     PYLONG_BITS_IN_DIGIT,
     READONLY,
     CHAR_MIN,
+    GRAALPY_ATTACH_NATIVE_FAILED,
+    GRAALPY_ATTACH_NATIVE_OWNED,
+    GRAALPY_ATTACH_NATIVE_FOREIGN,
     _PY_NSMALLNEGINTS,
     _PY_NSMALLPOSINTS;
 
     @CompilationFinal(dimensions = 1) public static final CConstants[] VALUES = values();
 
-    @CompilationFinal private long longValue = -1;
-    @CompilationFinal private int intValue = -1;
+    private static final long UNRESOLVED = Long.MIN_VALUE;
+    private static final int INT_OVERFLOW = Integer.MIN_VALUE;
+
+    @CompilationFinal private long longValue = UNRESOLVED;
+    @CompilationFinal private int intValue = INT_OVERFLOW;
 
     public long longValue() {
         long o = longValue;
-        if (o == -1) {
+        if (o == UNRESOLVED) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             resolve();
             return longValue;
@@ -89,10 +95,10 @@ public enum CConstants {
      */
     public int intValue() {
         int o = intValue;
-        if (o == -1) {
+        if (o == INT_OVERFLOW) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             resolve();
-            if (intValue == -1) {
+            if (intValue == INT_OVERFLOW) {
                 throw PRaiseNode.raiseStatic(null, SystemError, INTERNAL_INT_OVERFLOW);
             }
             return intValue;
@@ -112,9 +118,6 @@ public enum CConstants {
         long[] constants = readLongArrayElements(constantsPointer, 0L, VALUES.length);
         for (CConstants constant : VALUES) {
             constant.longValue = constants[constant.ordinal()];
-            if (constant.longValue == -1) {
-                throw PRaiseNode.raiseStatic(null, SystemError, toTruffleStringUncached("internal limitation - cannot extract constants with value '-1'"));
-            }
             if ((constant.longValue & 0xFFFF0000L) == 0xDEAD0000L) {
                 throw PRaiseNode.raiseStatic(null, SystemError, toTruffleStringUncached("marker value reached, regenerate C code (mx python-capi)"));
             }

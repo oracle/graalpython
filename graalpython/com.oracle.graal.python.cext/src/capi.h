@@ -65,6 +65,16 @@
 #error "don't know how to declare thread local variable"
 #endif
 
+typedef int (*graalpy_attach_native_thread_func)(void);
+typedef void (*graalpy_detach_native_thread_func)(void);
+
+#define GRAALPY_ATTACH_NATIVE_FAILED (-1)
+#define GRAALPY_ATTACH_NATIVE_OWNED 1
+#define GRAALPY_ATTACH_NATIVE_FOREIGN 2
+
+extern graalpy_attach_native_thread_func graalpy_attach_native_thread;
+extern graalpy_detach_native_thread_func graalpy_detach_native_thread;
+
 #ifdef MS_WINDOWS
 // define the below, otherwise windows' sdk defines complex to _complex and breaks us
 #define _COMPLEX_DEFINED
@@ -168,9 +178,9 @@ extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
 extern Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing;
 #define graalpy_finalizing (_graalpy_finalizing != NULL && *_graalpy_finalizing)
 
-void graalpy_dealloc_stack_grow(PyThreadState *tstate);
-void graalpy_dealloc_stack_push(PyThreadState *tstate, PyObject *op);
-void graalpy_dealloc_stack_pop(PyThreadState *tstate, PyObject *op);
+Py_LOCAL_SYMBOL void graalpy_dealloc_stack_grow(PyThreadState *tstate);
+Py_LOCAL_SYMBOL void graalpy_dealloc_stack_push(PyThreadState *tstate, PyObject *op);
+Py_LOCAL_SYMBOL void graalpy_dealloc_stack_pop(PyThreadState *tstate, PyObject *op);
 
 #if (__linux__ && __GNU_LIBRARY__)
 #include <stdlib.h>

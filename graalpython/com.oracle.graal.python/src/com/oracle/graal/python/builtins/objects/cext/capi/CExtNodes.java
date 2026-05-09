@@ -855,23 +855,29 @@ public abstract class CExtNodes {
             if (pointer == NULLPTR) {
                 return;
             }
+            // Boxed primitive values do not have a native reference count.
             if (HandlePointerConverter.pointsToPyFloatHandle(pointer) || HandlePointerConverter.pointsToPyIntHandle(pointer)) {
                 return;
             }
             Object object = toPythonNode.execute(inliningTarget, pointer, false);
-            if (object instanceof PythonObject pythonObject) {
-                isWrapperProfile.enter(inliningTarget);
-                updateRefNode.execute(inliningTarget, pythonObject, pythonObject.decRef());
-            } else if (CApiContext.isSpecialSingleton(object)) {
-                isSpecialSingletonProfile.enter(inliningTarget);
-            } else {
-                assert object instanceof PythonAbstractNativeObject;
+            if (object instanceof PythonAbstractNativeObject) {
+                // Native objects use their native reference count and deallocator.
                 if (CApiTransitions.subNativeRefCount(pointer, 1) == 0) {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_DEALLOC);
                     ExternalFunctionInvoker.invokePY_DEALLOC(null, C_API_TIMING, context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                     context.getThreadState(PythonLanguage.get(inliningTarget)), callable, pointer);
                 }
+            } else if (CApiContext.isSpecialSingleton(object)) {
+                // Special singletons such as PNone are immortal handle-space objects.
+                isSpecialSingletonProfile.enter(inliningTarget);
+            } else if (object instanceof PythonObject pythonObject) {
+                // Managed Python objects keep their reference count in the wrapper.
+                isWrapperProfile.enter(inliningTarget);
+                updateRefNode.execute(inliningTarget, pythonObject, pythonObject.decRef());
+            } else {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("unexpected object for decref: " + object);
             }
         }
     }
