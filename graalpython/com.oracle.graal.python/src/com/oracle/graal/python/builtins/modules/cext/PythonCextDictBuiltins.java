@@ -412,8 +412,16 @@ public final class PythonCextDictBuiltins {
         @Specialization
         static Object setItem(PDict dict, Object key, Object value,
                         @Bind Node inliningTarget,
-                        @Cached PyDictSetDefault setDefault) {
-            return setDefault.execute(null, inliningTarget, dict, key, value);
+                        @Cached PyDictSetDefault setDefault,
+                        @Cached PromoteBorrowedValue promoteNode,
+                        @Cached SetItemNode setItemNode) {
+            Object result = setDefault.execute(null, inliningTarget, dict, key, value);
+            Object promotedValue = promoteNode.execute(inliningTarget, result);
+            if (promotedValue != null) {
+                setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
+                return promotedValue;
+            }
+            return result;
         }
 
         @Fallback

@@ -85,6 +85,11 @@ def _reference_set_item(args):
         raise SystemError
 
 
+def _reference_setdefault(args):
+    d, key, default = args
+    return d.setdefault(key, default), d
+
+
 def _reference_del_item(args):
     d = args[0]
     del d[args[1]]
@@ -358,6 +363,30 @@ class TestPyDict(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* dict"],
         callfunction="wrap__PyDict_SetItem_KnownHash",
+    )
+
+    # PyDict_SetDefault
+    test_PyDict_SetDefault = CPyExtFunction(
+        _reference_setdefault,
+        lambda: (
+            ({}, 1, 2),
+            ({1: 3}, 1, 2),
+            ({}, "a", "hello"),
+            ({"a": "existing"}, "a", "default"),
+        ),
+        code='''PyObject* wrap_PyDict_SetDefault(PyObject* dict, PyObject* key, PyObject* deflt) {
+            PyObject* result = PyDict_SetDefault(dict, key, deflt);
+            if (result == NULL) {
+                return NULL;
+            }
+            Py_INCREF(result);
+            return Py_BuildValue("NN", result, Py_NewRef(dict));
+        }''',
+        resultspec="O",
+        argspec='OOO',
+        arguments=("PyObject* dict", "PyObject* key", "PyObject* deflt"),
+        callfunction="wrap_PyDict_SetDefault",
+        cmpfunc=unhandled_error_compare
     )
 
     # PyDict_Size
