@@ -1016,12 +1016,23 @@ public abstract class CApiTransitions {
         assert pythonContext.ownsGil();
         HandleContext context = pythonContext.handleContext;
         int idx = -1;
-        Object[] list = context.nativeWeakRef.values().toArray();
+        Long[] list = context.nativeWeakRef.keySet().toArray(new Long[0]);
         context.nativeWeakRef.clear();
         long[] ptrArray = new long[list.length];
-        for (Object ptr : list) {
-            if (context.nativeLookup.containsKey(ptr)) {
-                ptrArray[++idx] = (Long) ptr;
+        for (Long ptr : list) {
+            if (ptr != NULLPTR) {
+                IdReference<?> ref = nativeLookupGet(context, ptr);
+                Object object = ref != null ? ref.get() : null;
+                long refCount = ref != null ? readNativeRefCount(ptr) : 0;
+                /*
+                 * Only native weakrefs with extra C references need shutdown deallocation here.
+                 * Objects with just MANAGED_REFCNT are still owned by the managed wrapper.
+                 */
+                if (refCount > MANAGED_REFCNT && refCount != IMMORTAL_REFCNT &&
+                                (object == null || !TypeNodes.IsTypeNode.executeUncached(object))) {
+                    nativeLookupRemove(context, ptr);
+                    ptrArray[++idx] = ptr;
+                }
             }
         }
         if (idx != -1) {
