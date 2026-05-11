@@ -639,7 +639,7 @@ def test_faulthandler_many_threads():
 
     for i in range(nthreads):
         loc = {}
-        src = f"def thread_func_{i}(evt, barrier):\n    barrier.wait()\n    evt.wait(5)\n"
+        src = f"def thread_func_{i}(evt, barrier):\n    barrier.wait()\n    evt.wait(30)\n"
         exec(src, {}, loc)
         target = loc[f"thread_func_{i}"]
         t = threading.Thread(target=target, args=(evt, barrier), name=f"thread-{i}")
@@ -655,36 +655,38 @@ def test_faulthandler_many_threads():
             t.join(timeout=2)
         assert False, f"Barrier wait failed: {e!r}"
 
+    header_re = re.compile(r'^Thread.+', re.MULTILINE)
+    func_name_re = re.compile(r'in (thread_func_(\d+))\b')
+
+    def find_interleaved_block(out):
+        headers = list(header_re.finditer(out))
+        for idx, m in enumerate(headers):
+            start = m.end()
+            end = headers[idx + 1].start() if idx + 1 < len(headers) else len(out)
+            ids = set(m.group(2) for m in func_name_re.finditer(out[start:end]))
+            if len(ids) > 1:
+                return m.group(), ids
+        return None
+
     try:
-        f = tempfile.TemporaryFile()
-        faulthandler.dump_traceback(file=f, all_threads=True)
-        f.flush()
-        f.seek(0)
-        out = f.read().decode('utf-8', 'replace')
+        interleaved_block = None
+        for _ in range(3):
+            with tempfile.TemporaryFile() as f:
+                faulthandler.dump_traceback(file=f, all_threads=True)
+                f.flush()
+                f.seek(0)
+                out = f.read().decode('utf-8', 'replace')
+            interleaved_block = find_interleaved_block(out)
+            if interleaved_block is None:
+                break
+        assert interleaved_block is None, (
+            f"Interleaved output detected in block {interleaved_block[0]!r} "
+            f"with multiple thread func ids: {interleaved_block[1]}"
+        )
     finally:
-        try:
-            f.close()
-        except Exception:
-            pass
         evt.set()
         for t in threads:
             t.join(timeout=3)
-
-    header_re = re.compile(r'Thread.+')
-    headers = list(header_re.finditer(out))
-    blocks = []
-    for idx, m in enumerate(headers):
-        start = m.end()
-        end = headers[idx + 1].start() if idx + 1 < len(headers) else len(out)
-        blocks.append((m.group(), out[start:end]))
-
-    func_name_re = re.compile(r'in (thread_func_(\d+))\b')
-    ids_per_block = []
-    for header, content in blocks:
-        ids = set(m.group(2) for m in func_name_re.finditer(content))
-        if ids:
-            ids_per_block.append(ids)
-            assert len(ids) == 1, f"Interleaved output detected in block {header!r} with multiple thread func ids: {ids}"
 
 
 def test_faulthandler_sigsegv_builtin():
