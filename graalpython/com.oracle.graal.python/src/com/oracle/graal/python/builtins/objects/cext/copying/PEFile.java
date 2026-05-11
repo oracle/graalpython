@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,10 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleFile;
 
 final class PEFile extends SharedObject {
+    private static final String DELVEWHEEL_VERSION = "1.9.0";
+    private static final String DELVEWHEEL_INSTALL_INSTRUCTION = "IsolateNativeModules option needs `delvewheel` tool to copy libraries. Make sure you have `delvewheel==" + DELVEWHEEL_VERSION +
+                    "` available on PATH.";
+
     private final PythonContext context;
     private final TruffleFile tempfile;
 
@@ -65,13 +69,16 @@ final class PEFile extends SharedObject {
         // TODO
     }
 
-    private String getDelvewheelPython() {
+    private String getDelvewheelPython() throws IOException {
         TruffleFile delvewheel = which(context, "delvewheel.exe");
         if (!delvewheel.exists()) {
             delvewheel = which(context, "delvewheel.bat");
         }
         if (!delvewheel.exists()) {
             delvewheel = which(context, "delvewheel.cmd");
+        }
+        if (!delvewheel.exists()) {
+            throw new IOException("Could not find `delvewheel` on PATH. " + DELVEWHEEL_INSTALL_INSTRUCTION);
         }
         TruffleFile python = delvewheel.resolveSibling("python.exe");
         if (!python.exists()) {
@@ -89,6 +96,9 @@ final class PEFile extends SharedObject {
         if (!python.exists()) {
             python = delvewheel.getParent().resolveSibling("python.cmd");
         }
+        if (!python.exists()) {
+            throw new IOException("Could not find Python executable next to `delvewheel` at '" + delvewheel + "'. " + DELVEWHEEL_INSTALL_INSTRUCTION);
+        }
         return python.toString();
     }
 
@@ -100,9 +110,14 @@ final class PEFile extends SharedObject {
         pb.command(pythonExe, "-c",
                         String.format("from delvewheel import _dll_utils; _dll_utils.replace_needed('%s', ['%s'], {'%s': '%s'}, strip=True, verbose=2, test=[])",
                                         tempfileWithForwardSlashes, oldName, oldName, newName));
-        var proc = pb.start();
+        Process proc;
+        try {
+            proc = pb.start();
+        } catch (IOException e) {
+            throw new IOException("Failed to start `delvewheel` to copy required DLL: " + e.getMessage() + ". " + DELVEWHEEL_INSTALL_INSTRUCTION, e);
+        }
         if (proc.waitFor() != 0) {
-            throw new IOException("Failed to run `delvewheel` 1.9.0 to copy required DLL. Make sure you have it installed in your venv.");
+            throw new IOException("Failed to run `delvewheel` to copy required DLL (exit code " + proc.exitValue() + "). " + DELVEWHEEL_INSTALL_INSTRUCTION);
         }
     }
 

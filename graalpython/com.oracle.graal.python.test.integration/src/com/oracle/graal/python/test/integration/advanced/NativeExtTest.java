@@ -59,6 +59,8 @@ import org.junit.Test;
  * because we cannot create multiple contexts that would load native extensions.
  */
 public class NativeExtTest {
+    private static final String DELVEWHEEL_VERSION = "1.9.0";
+
     @BeforeClass
     public static void setUpClass() {
         Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
@@ -131,8 +133,8 @@ public class NativeExtTest {
                 Assert.assertTrue(ex.getMessage(), ex.isGuestException());
                 Value exception = ex.getGuestObject();
                 Assert.assertTrue(exception.isException());
-                Assert.assertEquals("SystemError", exception.getMetaObject().getMetaSimpleName());
-                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("delvewheel` 1.9.0"));
+                Assert.assertEquals(ex.getMessage(), "SystemError", exception.getMetaObject().getMetaSimpleName());
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("delvewheel` " + DELVEWHEEL_VERSION));
                 Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("installed"));
             }
         } finally {

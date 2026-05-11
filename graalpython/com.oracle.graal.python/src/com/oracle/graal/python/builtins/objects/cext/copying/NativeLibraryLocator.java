@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
-import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -127,13 +126,8 @@ public final class NativeLibraryLocator {
      *
      * @see PythonOptions#IsolateNativeModules
      */
-    public String resolve(PythonContext context, TruffleFile original) throws ImportException {
-        try {
-            return resolve(context, original, capiSlot, capiOriginal);
-        } catch (ApiInitException e) {
-            throw new ImportException(null, toTruffleStringUncached(original.getName()), toTruffleStringUncached(original.getPath()),
-                            toTruffleStringUncached(e.getMessage() == null ? "" : e.getMessage()));
-        }
+    public String resolve(PythonContext context, TruffleFile original) throws ApiInitException {
+        return resolve(context, original, capiSlot, capiOriginal);
     }
 
     public String getCapiLibrary() {
