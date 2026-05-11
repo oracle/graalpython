@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -563,6 +563,46 @@ class TestPyObject(CPyExtTestCase):
     # test calling m_meth
 
 class TestPyCFunction(unittest.TestCase):
+    test_PyCFunction_NewEx_non_string_module = CPyExtFunction(
+        lambda args: 1,
+        lambda: (
+            ({},),
+            ([],),
+            (object(),),
+        ),
+        code="""
+            static PyObject *native_meth_noargs(PyObject *self, PyObject *dummy) {
+                Py_RETURN_NONE;
+            }
+
+            static PyMethodDef non_string_module_method = {
+                "non_string_module_method",
+                native_meth_noargs,
+                METH_NOARGS,
+                NULL
+            };
+
+            static int wrap_PyCFunction_NewEx_non_string_module(PyObject *module_obj) {
+                PyObject *func = PyCFunction_NewEx(&non_string_module_method, Py_None, module_obj);
+                if (func == NULL) {
+                    return -1;
+                }
+                PyObject *attr = PyObject_GetAttrString(func, "__module__");
+                Py_DECREF(func);
+                if (attr == NULL) {
+                    return -1;
+                }
+                int same = attr == module_obj;
+                Py_DECREF(attr);
+                return same;
+            }
+            """,
+        resultspec="i",
+        argspec="O",
+        arguments=["PyObject* module_obj"],
+        callfunction="wrap_PyCFunction_NewEx_non_string_module",
+    )
+
     def test_PyMethodDef(self):
         TestPyMethodDef = CPyExtType(
             "TestPyMethodDef",
