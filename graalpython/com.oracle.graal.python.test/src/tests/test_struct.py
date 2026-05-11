@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -185,6 +185,14 @@ def test_pack_large_long():
         maxval = (1 << (size * 8)) - 1
         assert struct.pack(fmt, maxval) == b'\xff' * size
         assert struct.unpack(fmt, b'\xff' * size) == (maxval,)
+
+
+def test_pack_void_ptr_unsigned_range():
+    size = struct.calcsize('P')
+    maxval = (1 << (size * 8)) - 1
+    assert struct.pack('P', maxval) == b'\xff' * size
+    assert struct.unpack('P', struct.pack('P', -1)) == (maxval,)
+    assert_raises(struct.error, struct.pack, 'P', maxval + 1)
 
 
 def test_pack_into():
