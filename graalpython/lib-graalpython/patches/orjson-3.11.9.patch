@@ -1,0 +1,473 @@
+diff --git a/build.rs b/build.rs
+index 09b723e..5347b2c 100644
+--- a/build.rs
++++ b/build.rs
+@@ -24,6 +24,7 @@ fn main() {
+                 println!("cargo:rustc-cfg=feature=\"inline_str\"");
+             }
+         }
++        pyo3_build_config::PythonImplementation::GraalPy => {}
+         _ => not_supported(&python_config.implementation.to_string()),
+     }
+ 
+diff --git a/src/deserialize/input.rs b/src/deserialize/input.rs
+index faa6d30..18f1ddb 100644
+--- a/src/deserialize/input.rs
++++ b/src/deserialize/input.rs
+@@ -3,8 +3,10 @@
+ 
+ use crate::deserialize::DeserializeError;
+ #[cfg(all(CPython, not(Py_GIL_DISABLED)))]
+-use crate::ffi::{PyByteArrayRef, PyMemoryViewRef};
+-use crate::ffi::{PyBytesRef, PyStrRef};
++use crate::ffi::PyMemoryViewRef;
++#[cfg(not(CPython))]
++use crate::ffi::{Py_buffer, PyBUF_C_CONTIGUOUS};
++use crate::ffi::{PyByteArrayRef, PyBytesRef, PyStrRef};
+ use crate::util::INVALID_STR;
+ use std::borrow::Cow;
+ 
+@@ -15,11 +17,23 @@ const INPUT_TYPE_MESSAGE: &str = "Input must be bytes, bytearray, memoryview, or
+ const INPUT_TYPE_MESSAGE: &str = "Input must be bytes or str";
+ 
+ #[cfg(not(CPython))]
+-const INPUT_TYPE_MESSAGE: &str = "Input must be bytes, bytearray, or str";
++const INPUT_TYPE_MESSAGE: &str = "Input must be bytes, bytearray, memoryview, or str";
+ 
+-#[cfg_attr(not(Py_GIL_DISABLED), repr(transparent))]
+ pub struct Utf8Buffer {
+     buffer: &'static str,
++    #[cfg(not(CPython))]
++    view: Option<Py_buffer>,
++}
++
++#[cfg(not(CPython))]
++impl Drop for Utf8Buffer {
++    fn drop(&mut self) {
++        if let Some(mut view) = self.view {
++            unsafe {
++                crate::ffi::PyBuffer_Release(&raw mut view);
++            }
++        }
++    }
+ }
+ 
+ impl Utf8Buffer {
+@@ -40,7 +54,7 @@ impl Utf8Buffer {
+         }
+     }
+ 
+-    #[cfg(any(not(CPython), Py_GIL_DISABLED))]
++    #[cfg(all(CPython, Py_GIL_DISABLED))]
+     fn buffer_from_ptr(
+         ptr: *mut crate::ffi::PyObject,
+     ) -> Result<Option<&'static str>, DeserializeError<'static>> {
+@@ -53,6 +67,64 @@ impl Utf8Buffer {
+         }
+     }
+ 
++    #[cfg(not(CPython))]
++    pub fn from_pyobject(
++        ptr: *mut crate::ffi::PyObject,
++    ) -> Result<Self, DeserializeError<'static>> {
++        debug_assert!(!ptr.is_null());
++        let as_str = if let Ok(ob) = PyBytesRef::from_ptr(ptr) {
++            ob.as_str()
++        } else if let Ok(ob) = PyStrRef::from_ptr(ptr) {
++            ob.as_str()
++        } else if let Ok(ob) = PyByteArrayRef::from_ptr(ptr) {
++            ob.as_str()
++        } else {
++            let mut view = Py_buffer::new();
++            unsafe {
++                if crate::ffi::PyObject_GetBuffer(ptr, &raw mut view, PyBUF_C_CONTIGUOUS) != 0 {
++                    crate::ffi::PyErr_Clear();
++                    return Err(DeserializeError::invalid(Cow::Borrowed(INPUT_TYPE_MESSAGE)));
++                }
++                let buffer = core::slice::from_raw_parts(
++                    view.buf.cast::<u8>().cast_const(),
++                    crate::util::isize_to_usize(view.len),
++                );
++                if core::str::from_utf8(buffer).is_err() {
++                    crate::ffi::PyBuffer_Release(&raw mut view);
++                    return Err(DeserializeError::invalid(Cow::Borrowed(INVALID_STR)));
++                }
++                let as_str = core::str::from_utf8_unchecked(buffer);
++                if as_str.is_empty() {
++                    crate::ffi::PyBuffer_Release(&raw mut view);
++                    return Err(DeserializeError::invalid(Cow::Borrowed(
++                        "Input is a zero-length, empty document",
++                    )));
++                }
++                return Ok(Self {
++                    buffer: as_str,
++                    view: Some(view),
++                });
++            }
++        };
++        match as_str {
++            Some(buffer) => {
++                if buffer.is_empty() {
++                    cold_path!();
++                    Err(DeserializeError::invalid(Cow::Borrowed(
++                        "Input is a zero-length, empty document",
++                    )))
++                } else {
++                    Ok(Self { buffer, view: None })
++                }
++            }
++            None => {
++                cold_path!();
++                Err(DeserializeError::invalid(Cow::Borrowed(INVALID_STR)))
++            }
++        }
++    }
++
++    #[cfg(CPython)]
+     pub fn from_pyobject(
+         ptr: *mut crate::ffi::PyObject,
+     ) -> Result<Self, DeserializeError<'static>> {
+diff --git a/src/ffi/mod.rs b/src/ffi/mod.rs
+index b33af1f..6f4505a 100644
+--- a/src/ffi/mod.rs
++++ b/src/ffi/mod.rs
+@@ -8,7 +8,6 @@ pub(crate) mod compat;
+ mod fragment;
+ mod numpy;
+ mod pyboolref;
+-#[cfg(all(CPython, not(Py_GIL_DISABLED)))]
+ mod pybytearrayref;
+ mod pybytesref;
+ mod pydateref;
+@@ -41,6 +40,7 @@ pub(crate) use {
+     bytes::{PyBytes_AS_STRING, PyBytes_GET_SIZE, PyBytesObject},
+     fragment::{Fragment, orjson_fragmenttype_new},
+     pyboolref::PyBoolRef,
++    pybytearrayref::{PyByteArrayRef, PyByteArrayRefError},
+     pybytesref::{PyBytesRef, PyBytesRefError},
+     pydateref::PyDateRef,
+     pydatetimeref::PyDateTimeRef,
+@@ -59,7 +59,6 @@ pub(crate) use {
+ #[allow(unused_imports)]
+ #[cfg(all(CPython, not(Py_GIL_DISABLED)))]
+ pub(crate) use {
+-    pybytearrayref::{PyByteArrayRef, PyByteArrayRefError},
+     pymemoryview::{PyMemoryViewRef, PyMemoryViewRefError},
+ };
+ 
+@@ -77,18 +76,20 @@ pub(crate) use pyo3_ffi::{
+     PyDateTime_DATE_GET_TZINFO, PyDateTime_DELTA_GET_DAYS, PyDateTime_DELTA_GET_SECONDS,
+     PyDateTime_DateTime, PyDateTime_GET_DAY, PyDateTime_GET_MONTH, PyDateTime_GET_YEAR,
+     PyDateTime_IMPORT, PyDateTime_TIME_GET_HOUR, PyDateTime_TIME_GET_MICROSECOND,
+-    PyDateTime_TIME_GET_MINUTE, PyDateTime_TIME_GET_SECOND, PyDateTime_Time, PyDict_Contains,
+-    PyDict_Next, PyDict_SetItem, PyDict_Type, PyDictObject, PyErr_Clear, PyErr_NewException,
+-    PyErr_Occurred, PyErr_SetObject, PyExc_TypeError, PyException_SetCause, PyFloat_AS_DOUBLE,
+-    PyFloat_FromDouble, PyFloat_Type, PyImport_ImportModule, PyList_GET_ITEM, PyList_New,
+-    PyList_SET_ITEM, PyList_Type, PyListObject, PyLong_AsLong, PyLong_AsLongLong,
++    PyDateTime_TIME_GET_MINUTE, PyDateTime_TIME_GET_SECOND, PyDateTime_TIME_GET_TZINFO,
++    PyDateTime_Time, PyDict_Contains, PyDict_Next, PyDict_SetItem, PyDict_Type, PyDictObject,
++    PyErr_Clear, PyErr_NewException, PyErr_Occurred, PyErr_SetObject, PyExc_TypeError,
++    PyException_SetCause, PyFloat_AS_DOUBLE, PyFloat_FromDouble, PyFloat_Type,
++    PyImport_ImportModule, PyList_GET_ITEM, PyList_New, PyList_SET_ITEM, PyList_Type,
++    PyListObject, PyLong_AsLong, PyLong_AsLongLong,
+     PyLong_AsUnsignedLongLong, PyLong_FromLongLong, PyLong_FromUnsignedLongLong, PyLong_Type,
+     PyLongObject, PyMapping_GetItemString, PyMem_Free, PyMem_Malloc, PyMem_Realloc,
+     PyMemoryView_Type, PyMethodDef, PyMethodDefPointer, PyModule_AddIntConstant,
+     PyModule_AddObject, PyModuleDef, PyModuleDef_HEAD_INIT, PyModuleDef_Init, PyModuleDef_Slot,
+     PyObject, PyObject_CallFunctionObjArgs, PyObject_CallMethodObjArgs, PyObject_GenericGetDict,
+-    PyObject_GetAttr, PyObject_HasAttr, PyObject_Hash, PyObject_Vectorcall, PyTuple_New,
+-    PyTuple_Type, PyTupleObject, PyType_FromSpec, PyType_Slot, PyType_Spec, PyTypeObject,
++    PyBUF_C_CONTIGUOUS, PyBuffer_Release, PyObject_GetAttr, PyObject_GetBuffer,
++    PyObject_HasAttr, PyObject_Hash, PyObject_Vectorcall, PyTuple_New, PyTuple_Type,
++    PyTupleObject, PyType_FromSpec, PyType_Slot, PyType_Spec, PyTypeObject,
+     PyUnicode_AsUTF8AndSize, PyUnicode_FromStringAndSize, PyUnicode_InternFromString,
+     PyUnicode_New, PyUnicode_Type, PyVarObject, PyVectorcall_NARGS,
+ };
+@@ -99,10 +100,44 @@ pub(crate) use pyo3_ffi::PyErr_Restore;
+ #[cfg(CPython)]
+ pub(crate) use pyo3_ffi::{PyObject_CallMethodNoArgs, PyObject_CallMethodOneArg};
+ 
++#[cfg(not(CPython))]
++#[inline(always)]
++#[allow(non_snake_case)]
++pub(crate) unsafe fn PyObject_CallMethodNoArgs(
++    obj: *mut pyo3_ffi::PyObject,
++    name: *mut pyo3_ffi::PyObject,
++) -> *mut pyo3_ffi::PyObject {
++    unsafe {
++        pyo3_ffi::PyObject_CallMethodObjArgs(
++            obj,
++            name,
++            core::ptr::null_mut::<pyo3_ffi::PyObject>(),
++        )
++    }
++}
++
++#[cfg(not(CPython))]
++#[inline(always)]
++#[allow(non_snake_case)]
++pub(crate) unsafe fn PyObject_CallMethodOneArg(
++    obj: *mut pyo3_ffi::PyObject,
++    name: *mut pyo3_ffi::PyObject,
++    arg: *mut pyo3_ffi::PyObject,
++) -> *mut pyo3_ffi::PyObject {
++    unsafe {
++        pyo3_ffi::PyObject_CallMethodObjArgs(
++            obj,
++            name,
++            arg,
++            core::ptr::null_mut::<pyo3_ffi::PyObject>(),
++        )
++    }
++}
++
+ #[cfg(all(CPython, not(Py_GIL_DISABLED)))]
+ pub(crate) use buffer::PyMemoryView_GET_BUFFER;
+ 
+-#[cfg(not(feature = "inline_str"))]
++#[cfg(all(CPython, not(feature = "inline_str")))]
+ pub(crate) use pyo3_ffi::{PyUnicode_DATA, PyUnicode_KIND};
+ 
+ #[cfg(Py_3_12)]
+diff --git a/src/ffi/pydatetimeref.rs b/src/ffi/pydatetimeref.rs
+index 26c0e07..dd0c395 100644
+--- a/src/ffi/pydatetimeref.rs
++++ b/src/ffi/pydatetimeref.rs
+@@ -2,8 +2,10 @@
+ // Copyright ijl (2025-2026), Ben Sully (2021)
+ 
+ use crate::typeref::{
+-    CONVERT_METHOD_STR, DST_STR, NORMALIZE_METHOD_STR, UTCOFFSET_METHOD_STR, ZONEINFO_TYPE,
++    CONVERT_METHOD_STR, DST_STR, NORMALIZE_METHOD_STR, UTCOFFSET_METHOD_STR,
+ };
++#[cfg(CPython)]
++use crate::typeref::ZONEINFO_TYPE;
+ 
+ use crate::ffi::{PyObject_CallMethodNoArgs, PyObject_CallMethodOneArg, PyObject_HasAttr};
+ 
+@@ -157,7 +159,11 @@ impl PyDateTimeRef {
+     #[cfg(not(CPython))]
+     #[inline]
+     pub fn offset(&self) -> Option<Offset> {
+-        unimplemented!()
++        if !self.has_tz() {
++            Some(Offset::default())
++        } else {
++            self.slow_offset(self.tzinfo())
++        }
+     }
+ 
+     #[cfg(CPython)]
+@@ -185,7 +191,6 @@ impl PyDateTimeRef {
+         }
+     }
+ 
+-    #[cfg(CPython)]
+     #[cold]
+     #[inline(never)]
+     fn slow_offset(&self, tzinfo: *mut crate::ffi::PyObject) -> Option<Offset> {
+diff --git a/src/ffi/pystrref/object.rs b/src/ffi/pystrref/object.rs
+index 69f8d4d..e28449b 100644
+--- a/src/ffi/pystrref/object.rs
++++ b/src/ffi/pystrref/object.rs
+@@ -3,9 +3,10 @@
+ 
+ #[allow(unused)]
+ use crate::ffi::{
+-    Py_HashBuffer, Py_SIZE, Py_ssize_t, PyASCIIObject, PyCompactUnicodeObject, PyObject,
+-    PyUnicode_AsUTF8AndSize,
++    Py_SIZE, Py_ssize_t, PyASCIIObject, PyCompactUnicodeObject, PyObject, PyUnicode_AsUTF8AndSize,
+ };
++#[cfg(CPython)]
++use crate::ffi::Py_HashBuffer;
+ #[cfg(all(CPython, not(feature = "inline_str")))]
+ use crate::ffi::{PyUnicode_DATA, PyUnicode_KIND};
+ use crate::typeref::{EMPTY_UNICODE, STR_TYPE};
+@@ -124,6 +125,12 @@ impl PyStrRef {
+         obj
+     }
+ 
++    #[cfg(not(CPython))]
++    #[inline(always)]
++    pub fn from_str_with_hash(buf: &str) -> Self {
++        PyStrRef::from_str(buf)
++    }
++
+     #[cfg(CPython)]
+     #[inline(always)]
+     pub fn from_str(buf: &str) -> Self {
+@@ -166,7 +173,7 @@ impl PyStrRef {
+         unsafe { crate::ffi::PyUnstable_Unicode_GET_CACHED_HASH(self.as_ptr()) }
+     }
+ 
+-    #[cfg(feature = "inline_str")]
++    #[cfg(all(CPython, feature = "inline_str"))]
+     fn set_hash(&mut self) {
+         unsafe {
+             let ptr = self.as_ptr().cast::<PyASCIIObject>();
+@@ -187,7 +194,7 @@ impl PyStrRef {
+         }
+     }
+ 
+-    #[cfg(not(feature = "inline_str"))]
++    #[cfg(all(CPython, not(feature = "inline_str")))]
+     fn set_hash(&mut self) {
+         unsafe {
+             let data_ptr = PyUnicode_DATA(self.as_ptr());
+diff --git a/src/ffi/pytimeref.rs b/src/ffi/pytimeref.rs
+index 57faa72..04c1ece 100644
+--- a/src/ffi/pytimeref.rs
++++ b/src/ffi/pytimeref.rs
+@@ -3,8 +3,10 @@
+ 
+ use crate::ffi::{
+     PyDateTime_TIME_GET_HOUR, PyDateTime_TIME_GET_MICROSECOND, PyDateTime_TIME_GET_MINUTE,
+-    PyDateTime_TIME_GET_SECOND, PyDateTime_Time, PyObject,
++    PyDateTime_TIME_GET_SECOND, PyDateTime_TIME_GET_TZINFO, PyObject,
+ };
++#[cfg(CPython)]
++use crate::ffi::PyDateTime_Time;
+ 
+ #[derive(Clone)]
+ #[repr(transparent)]
+@@ -54,7 +56,7 @@ impl PyTimeRef {
+     #[cfg(not(CPython))]
+     #[inline]
+     pub fn has_tz(&self) -> bool {
+-        unimplemented!()
++        unsafe { PyDateTime_TIME_GET_TZINFO(self.ptr.as_ptr()) != crate::typeref::NONE }
+     }
+ 
+     #[inline]
+diff --git a/src/serialize/per_type/list.rs b/src/serialize/per_type/list.rs
+index 8003ee9..15fcb30 100644
+--- a/src/serialize/per_type/list.rs
++++ b/src/serialize/per_type/list.rs
+@@ -40,12 +40,21 @@ impl Serialize for ZeroListSerializer {
+ }
+ 
+ pub(crate) struct ListTupleSerializer {
++    ptr: *mut crate::ffi::PyObject,
++    kind: ListTupleKind,
++    #[cfg(CPython)]
+     data_ptr: *const *mut crate::ffi::PyObject,
+     state: SerializerState,
+     default: Option<NonNull<crate::ffi::PyObject>>,
+     len: usize,
+ }
+ 
++#[derive(Copy, Clone)]
++enum ListTupleKind {
++    List,
++    Tuple,
++}
++
+ impl ListTupleSerializer {
+     pub fn from_list(
+         ob: PyListRef,
+@@ -53,6 +62,9 @@ impl ListTupleSerializer {
+         default: Option<NonNull<crate::ffi::PyObject>>,
+     ) -> Self {
+         Self {
++            ptr: ob.as_ptr(),
++            kind: ListTupleKind::List,
++            #[cfg(CPython)]
+             data_ptr: ob.data_ptr(),
+             len: ob.len(),
+             state: state.copy_for_recursive_call(),
+@@ -72,15 +84,39 @@ impl ListTupleSerializer {
+                     Py_TPFLAGS_TUPLE_SUBCLASS
+                 )
+         );
++        #[cfg(CPython)]
+         let data_ptr = unsafe { (*ptr.cast::<crate::ffi::PyTupleObject>()).ob_item.as_ptr() };
+         let len = isize_to_usize(ffi!(Py_SIZE(ptr)));
+         Self {
++            ptr: ptr,
++            kind: ListTupleKind::Tuple,
++            #[cfg(CPython)]
+             data_ptr: data_ptr,
+             len: len,
+             state: state.copy_for_recursive_call(),
+             default: default,
+         }
+     }
++
++    #[inline(always)]
++    unsafe fn get_item(&self, idx: usize) -> *mut crate::ffi::PyObject {
++        #[cfg(CPython)]
++        {
++            unsafe { *((self.data_ptr).add(idx)) }
++        }
++
++        #[cfg(not(CPython))]
++        {
++            match self.kind {
++                ListTupleKind::List => unsafe {
++                    crate::ffi::PyList_GET_ITEM(self.ptr, crate::util::usize_to_isize(idx))
++                },
++                ListTupleKind::Tuple => unsafe {
++                    crate::ffi::PyTuple_GET_ITEM(self.ptr, crate::util::usize_to_isize(idx))
++                },
++            }
++        }
++    }
+ }
+ 
+ impl Serialize for ListTupleSerializer {
+@@ -96,7 +132,7 @@ impl Serialize for ListTupleSerializer {
+         debug_assert!(self.len >= 1);
+         let mut seq = serializer.serialize_seq(None).unwrap();
+         for idx in 0..self.len {
+-            let value = unsafe { *((self.data_ptr).add(idx)) };
++            let value = unsafe { self.get_item(idx) };
+             match pyobject_to_obtype(value, self.state.opts()) {
+                 ObType::Str => {
+                     seq.serialize_element(&StrSerializer::new(unsafe {
+diff --git a/src/util.rs b/src/util.rs
+index bfeccbf..59df84e 100644
+--- a/src/util.rs
++++ b/src/util.rs
+@@ -69,7 +69,7 @@ macro_rules! str_from_slice {
+     };
+ }
+ 
+-#[cfg(all(Py_3_12, not(Py_GIL_DISABLED)))]
++#[cfg(all(CPython, Py_3_12, not(Py_GIL_DISABLED)))]
+ macro_rules! reverse_pydict_incref {
+     ($op:expr) => {
+         unsafe {
+@@ -80,14 +80,14 @@ macro_rules! reverse_pydict_incref {
+     };
+ }
+ 
+-#[cfg(Py_GIL_DISABLED)]
++#[cfg(any(Py_GIL_DISABLED, not(CPython)))]
+ macro_rules! reverse_pydict_incref {
+     ($op:expr) => {
+         unsafe { crate::ffi::Py_DECREF($op) }
+     };
+ }
+ 
+-#[cfg(not(Py_3_12))]
++#[cfg(all(CPython, not(Py_3_12)))]
+ macro_rules! reverse_pydict_incref {
+     ($op:expr) => {
+         unsafe {
+@@ -160,14 +160,14 @@ macro_rules! pydict_contains {
+     };
+ }
+ 
+-#[cfg(Py_3_12)]
++#[cfg(all(CPython, Py_3_12))]
+ macro_rules! use_immortal {
+     ($op:expr) => {
+         unsafe { $op }
+     };
+ }
+ 
+-#[cfg(not(Py_3_12))]
++#[cfg(any(not(Py_3_12), not(CPython)))]
+ macro_rules! use_immortal {
+     ($op:expr) => {
+         unsafe {
