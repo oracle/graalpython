@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,7 @@ _list_clear(PyListObject *a)
 
     /* Because XDECREF can recursively invoke operations on
        this list, we make it empty first. */
-    i = GraalPyPrivate_List_TryGetItems((PyObject *)a, &item);
+    i = GraalPyPrivate_List_ClearManagedOrGetItems((PyObject *)a, &item);
     if (i > 0) {
         assert(item != NULL);
         while (--i >= 0) {
