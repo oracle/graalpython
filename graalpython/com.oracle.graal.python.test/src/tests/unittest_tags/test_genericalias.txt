@@ -18,7 +18,7 @@ test.test_genericalias.BaseTest.test_pickle @ darwin-arm64,linux-aarch64,linux-a
 test.test_genericalias.BaseTest.test_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericalias.BaseTest.test_subclassing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericalias.BaseTest.test_subclassing_types_genericalias @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_genericalias.BaseTest.test_subscriptable @ linux-aarch64-github,linux-x86_64-github
+test.test_genericalias.BaseTest.test_subscriptable @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_genericalias.BaseTest.test_type_generic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericalias.BaseTest.test_type_subclass_generic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericalias.BaseTest.test_unbound_methods @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -26,6 +26,6 @@ test.test_genericalias.BaseTest.test_union @ darwin-arm64,linux-aarch64,linux-aa
 test.test_genericalias.BaseTest.test_union_generic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericalias.BaseTest.test_unpack @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericalias.BaseTest.test_unsubscriptable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_genericalias.BaseTest.test_weakref @ linux-aarch64-github,linux-x86_64-github
+test.test_genericalias.BaseTest.test_weakref @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_genericalias.TypeIterationTests.test_cannot_iterate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_genericalias.TypeIterationTests.test_is_not_instance_of_iterable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
