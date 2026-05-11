@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -115,8 +115,9 @@ public final class StructNodes {
     // ------------------------------------------------------------------------------------------------------------
     @ImportStatic({PGuards.class})
     public abstract static class StructBaseNode extends PNodeWithContext {
-        public static final BigInteger UBYTE_MASK = BigInteger.valueOf(0xff);
-        public static final BigInteger ULONG_MASK = BigInteger.ONE.shiftLeft(Long.SIZE).subtract(BigInteger.ONE);
+        private static final BigInteger ULONG_MASK = BigInteger.ONE.shiftLeft(Long.SIZE).subtract(BigInteger.ONE);
+        protected static final BigInteger PTR_SIGNED_MIN = BigInteger.valueOf(Long.MIN_VALUE);
+        protected static final BigInteger PTR_UNSIGNED_MAX = ULONG_MASK;
 
         public static int getNumBytesLimit() {
             return NUM_BYTES_LIMIT;
@@ -200,6 +201,18 @@ public final class StructNodes {
         @TruffleBoundary
         public static BigInteger getAsUnsignedBigInt(long value) {
             return BigInteger.valueOf(value).and(ULONG_MASK);
+        }
+
+        @TruffleBoundary
+        public static long checkVoidPtr(Node raisingNode, BigInteger value) {
+            if (value.signum() < 0) {
+                if (value.compareTo(PTR_SIGNED_MIN) < 0) {
+                    throw PRaiseNode.raiseStatic(raisingNode, StructError, ARG_O_O_RANGE);
+                }
+            } else if (value.compareTo(PTR_UNSIGNED_MAX) > 0) {
+                throw PRaiseNode.raiseStatic(raisingNode, StructError, ARG_O_O_RANGE);
+            }
+            return value.longValue();
         }
 
         public static long handleSign(FormatCode code, long num) {
@@ -369,8 +382,14 @@ public final class StructNodes {
                 }
                 packFloat(formatCode, formatAlignment, asDoubleNode.execute(frame, inliningTarget, value), buffer, offset, inliningTarget, numericSupport, raiseNode);
             } else if (isFmtVoidPtr(formatCode)) {
-                getLongNode.execute(frame, value, formatCode.isUnsigned());
-                packLong(formatCode, formatAlignment, getLongNode.execute(frame, value, formatCode.isUnsigned()), buffer, offset, inliningTarget, numericSupport, profileSigned, raiseNode);
+                BigInteger num;
+                try {
+                    num = toJavaBigIntegerNode.execute(inliningTarget, value);
+                } catch (PException pe) {
+                    pe.expect(inliningTarget, PythonBuiltinClassType.TypeError, errorProfile);
+                    throw raiseNode.raise(inliningTarget, StructError, ARG_NOT_T, "an integer");
+                }
+                numericSupport.putLong(buffer, offset, checkVoidPtr(inliningTarget, num), formatCode.numBytes());
             } else if (isFmtBoolean(formatCode)) {
                 packBoolean(formatCode, formatAlignment, isTrueNode.execute(frame, value), buffer, offset);
             } else if (isFmtBytes(formatCode)) {
