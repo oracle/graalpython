@@ -224,7 +224,7 @@ public class StructSequence {
 
     private static void createMember(PythonLanguage language, Object klass, TruffleString name, TruffleString doc, int idx) {
         GetStructMemberNode rootNode = (GetStructMemberNode) language.createStructSeqIndexedMemberAccessCachedRootNode((l) -> new GetStructMemberNode(l, idx), idx);
-        PBuiltinFunction getter = PFactory.createBuiltinFunction(language, name, klass, 0, 0, rootNode, false);
+        PBuiltinFunction getter = PFactory.createBuiltinFunction(language, name, klass, 0, 0, rootNode);
         GetSetDescriptor callable = PFactory.createGetSetDescriptor(language, getter, null, name, klass, false);
         if (doc != null) {
             callable.setAttribute(T___DOC__, doc);

@@ -520,16 +520,9 @@ public final class PFactory {
                         PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget);
     }
 
-    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget,
-                    boolean trackCallTargetInitialization) {
+    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode) {
         return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
-                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget, trackCallTargetInitialization);
-    }
-
-    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode,
-                    boolean trackCallTargetInitialization) {
-        return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
-                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode, trackCallTargetInitialization);
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode);
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {

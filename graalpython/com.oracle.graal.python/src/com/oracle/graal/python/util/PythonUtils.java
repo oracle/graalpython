@@ -767,7 +767,7 @@ public final class PythonUtils {
         assert rootNode.getBuiltin() == builtin : String.format("%s != %s, klass: %s", rootNode.getBuiltin(), builtin, klass);
         int flags = PBuiltinFunction.getFlags(builtin, rootNode.getSignature());
         TruffleString name = toInternedTruffleStringUncached(builtin.name());
-        PBuiltinFunction function = PFactory.createBuiltinFunction(PythonLanguage.get(null), name, type, numDefaults, flags, rootNode, false);
+        PBuiltinFunction function = PFactory.createBuiltinFunction(PythonLanguage.get(null), name, type, numDefaults, flags, rootNode);
         if (klass != null) {
             WriteAttributeToObjectNode.getUncached().execute(klass, name, function);
         }

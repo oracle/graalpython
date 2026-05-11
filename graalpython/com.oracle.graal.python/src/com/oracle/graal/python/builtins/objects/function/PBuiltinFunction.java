@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
@@ -72,48 +71,22 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @ExportLibrary(InteropLibrary.class)
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
-    private static final AtomicInteger TRACKED_BUILTIN_FUNCTION_COUNT = new AtomicInteger();
-    private static final AtomicInteger TRACKED_BUILTIN_CALL_TARGET_COUNT = new AtomicInteger();
-
     private static final class Executable {
         private final RootNode functionRootNode;
         private final Signature signature;
-        private final boolean trackCallTargetInitialization;
-        private volatile RootCallTarget callTarget;
-        private volatile boolean callTargetCounted;
 
-        private Executable(RootCallTarget callTarget, boolean trackCallTargetInitialization) {
+        private Executable(RootCallTarget callTarget) {
             this.functionRootNode = callTarget.getRootNode();
             this.signature = ((PRootNode) functionRootNode).getSignature();
-            this.callTarget = callTarget;
-            this.trackCallTargetInitialization = trackCallTargetInitialization;
-            this.callTargetCounted = callTarget != null;
-            if (trackCallTargetInitialization) {
-                TRACKED_BUILTIN_FUNCTION_COUNT.incrementAndGet();
-                TRACKED_BUILTIN_CALL_TARGET_COUNT.incrementAndGet();
-            }
         }
 
-        private Executable(PRootNode rootNode, boolean trackCallTargetInitialization) {
+        private Executable(PRootNode rootNode) {
             this.functionRootNode = rootNode;
             this.signature = rootNode.getSignature();
-            this.trackCallTargetInitialization = trackCallTargetInitialization;
-            if (trackCallTargetInitialization) {
-                TRACKED_BUILTIN_FUNCTION_COUNT.incrementAndGet();
-            }
         }
 
         private synchronized RootCallTarget getCallTarget() {
-            RootCallTarget ct = callTarget;
-            if (ct == null) {
-                ct = functionRootNode.getCallTarget();
-                callTarget = ct;
-                if (trackCallTargetInitialization && !callTargetCounted) {
-                    callTargetCounted = true;
-                    TRACKED_BUILTIN_CALL_TARGET_COUNT.incrementAndGet();
-                }
-            }
-            return ct;
+            return functionRootNode.getCallTarget();
         }
 
         private RootNode getFunctionRootNode() {
@@ -165,31 +138,21 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(callTarget, false), slot, slotWrapper);
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(callTarget), slot, slotWrapper);
     }
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
         this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, callTarget, null, null);
     }
 
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget,
-                    boolean trackCallTargetInitialization) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(callTarget, trackCallTargetInitialization), null, null);
-    }
-
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
-                    PRootNode rootNode, boolean trackCallTargetInitialization) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode, trackCallTargetInitialization), null, null);
-    }
-
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
                     PRootNode rootNode) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode, false), null, null);
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode), null, null);
     }
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
                     PRootNode rootNode, TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode, false), slot, slotWrapper);
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode), slot, slotWrapper);
     }
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, PBuiltinFunction source,
@@ -301,14 +264,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
 
     public boolean forceSplitDirectCalls() {
         return executable.forceSplitDirectCalls();
-    }
-
-    public static int getTrackedBuiltinFunctionCount() {
-        return TRACKED_BUILTIN_FUNCTION_COUNT.get();
-    }
-
-    public static int getTrackedBuiltinCallTargetCount() {
-        return TRACKED_BUILTIN_CALL_TARGET_COUNT.get();
     }
 
     public TruffleString getName() {

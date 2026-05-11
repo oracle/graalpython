@@ -2345,7 +2345,7 @@ public abstract class TypeNodes {
 
         private static void setAttribute(TruffleString name, Builtin builtin, BuiltinFunctionRootNode rootNode, PythonClass pythonClass, PythonLanguage language) {
             int flags = PBuiltinFunction.getFlags(builtin, rootNode.getSignature());
-            PBuiltinFunction function = PFactory.createBuiltinFunction(language, name, pythonClass, 1, flags, rootNode, false);
+            PBuiltinFunction function = PFactory.createBuiltinFunction(language, name, pythonClass, 1, flags, rootNode);
             GetSetDescriptor desc = PFactory.createGetSetDescriptor(language, function, function, name, pythonClass, true);
             pythonClass.setAttribute(name, desc);
         }

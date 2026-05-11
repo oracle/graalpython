@@ -254,7 +254,7 @@ public class CApiMemberAccessNodes {
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadMemberNodeGen.create(type, offset, asPythonObjectNode)), true),
                             ReadMemberNode.class, BUILTIN.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
-            return PFactory.createBuiltinFunction(language, propertyName, owner, 0, flags, rootNode, false);
+            return PFactory.createBuiltinFunction(language, propertyName, owner, 0, flags, rootNode);
         }
     }
 
@@ -280,7 +280,7 @@ public class CApiMemberAccessNodes {
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadOnlyMemberNodeGen.create(propertyName)), true),
                             ReadOnlyMemberNode.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
-            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, rootNode, false);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, rootNode);
         }
     }
 
@@ -304,7 +304,7 @@ public class CApiMemberAccessNodes {
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(BadMemberDescrNodeGen.create()), true),
                             BadMemberDescrNode.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
-            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, rootNode, false);
+            return PFactory.createBuiltinFunction(language, propertyName, null, 0, flags, rootNode);
         }
     }
 
@@ -603,7 +603,7 @@ public class CApiMemberAccessNodes {
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(WriteMemberNodeGen.create(type, offset)), true),
                             WriteMemberNode.class, BUILTIN.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
-            return PFactory.createBuiltinFunction(language, propertyName, owner, 0, flags, rootNode, false);
+            return PFactory.createBuiltinFunction(language, propertyName, owner, 0, flags, rootNode);
         }
     }
 }

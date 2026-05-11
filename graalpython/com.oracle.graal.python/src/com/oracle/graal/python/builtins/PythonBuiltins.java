@@ -113,7 +113,7 @@ public abstract class PythonBuiltins {
                             factory.getNodeClass(), builtin.name());
             Signature signature = rootNode.getSignature();
             int flags = PBuiltinFunction.getFlags(builtin, signature);
-            PBuiltinFunction function = PFactory.createBuiltinFunction(language, tsName, null, numDefaults(builtin), flags, rootNode, true);
+            PBuiltinFunction function = PFactory.createBuiltinFunction(language, tsName, null, numDefaults(builtin), flags, rootNode);
             function.setAttribute(T___DOC__, builtinDoc);
             BoundBuiltinCallable<?> callable = function;
             if (builtin.isGetter() || builtin.isSetter()) {
