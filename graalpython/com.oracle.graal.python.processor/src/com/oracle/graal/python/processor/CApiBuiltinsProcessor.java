@@ -80,6 +80,7 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.StandardLocation;
 
+import com.oracle.graal.python.annotations.CApiConstant;
 import com.oracle.graal.python.annotations.CApiConstants;
 import com.oracle.graal.python.annotations.CApiExternalFunctionSignatures;
 import com.oracle.graal.python.annotations.CApiFields;
@@ -193,6 +194,25 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return obj.getSimpleName().toString();
     }
 
+    private static String formatCConstantValue(VariableElement constant, Object value) {
+        TypeKind kind = constant.asType().getKind();
+        return switch (kind) {
+            case BOOLEAN -> ((Boolean) value) ? "1" : "0";
+            case BYTE, SHORT, INT -> value.toString();
+            case LONG -> value + "LL";
+            case CHAR -> Integer.toString((Character) value);
+            case FLOAT -> {
+                float f = (Float) value;
+                yield Float.isFinite(f) ? Float.toString(f) + "f" : null;
+            }
+            case DOUBLE -> {
+                double d = (Double) value;
+                yield Double.isFinite(d) ? Double.toString(d) : null;
+            }
+            default -> null;
+        };
+    }
+
     private static final class CApiBuiltinDesc {
         public final Element origin;
         public final String name;
@@ -213,6 +233,18 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             this.canRaise = canRaise;
             this.call = call;
             this.factory = factory;
+        }
+    }
+
+    private static final class CApiConstantDesc {
+        public final Element origin;
+        public final String name;
+        public final String value;
+
+        public CApiConstantDesc(Element origin, String name, String value) {
+            this.origin = origin;
+            this.name = name;
+            this.value = value;
         }
     }
 
@@ -270,7 +302,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Set.of(CAPI_BUILTIN, CAPI_BUILTINS, CApiFields.class.getName(), CApiConstants.class.getName(), CApiStructs.class.getName(), CApiExternalFunctionSignatures.class.getName());
+        return Set.of(CAPI_BUILTIN, CAPI_BUILTINS, CApiFields.class.getName(),
+                        CApiConstant.class.getName(), CApiConstants.class.getName(), CApiStructs.class.getName(),
+                        CApiExternalFunctionSignatures.class.getName());
     }
 
     @Override
@@ -632,8 +666,15 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         updateResource("capi.gen.c.h", javaBuiltins, lines);
     }
 
-    private void updateResource(String name, List<CApiBuiltinDesc> javaBuiltins, List<String> lines, StandardLocation loc) throws IOException {
-        var origins = javaBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
+    private void updateResource(String name, List<CApiBuiltinDesc> javaBuiltins, List<? extends Element> additionalOrigins,
+                    List<String> lines, StandardLocation loc)
+                    throws IOException {
+        var originsList = new ArrayList<Element>();
+        for (var javaBuiltin : javaBuiltins) {
+            originsList.add(javaBuiltin.origin);
+        }
+        originsList.addAll(additionalOrigins);
+        var origins = originsList.toArray(Element[]::new);
         String oldContents = "";
         String newContents = String.join(System.lineSeparator(), lines);
         try {
@@ -651,6 +692,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
+    private void updateResource(String name, List<CApiBuiltinDesc> javaBuiltins, List<String> lines,
+                    StandardLocation loc) throws IOException {
+        updateResource(name, javaBuiltins, List.of(), lines, loc);
+    }
+
     private void updateResource(String name, List<CApiBuiltinDesc> javaBuiltins, List<String> lines) throws IOException {
         updateResource(name, javaBuiltins, lines, StandardLocation.NATIVE_HEADER_OUTPUT);
     }
@@ -660,8 +706,14 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
      * in Java code. Additionally, it generates helpers for all "GraalPyPrivate_Get_" and
      * "GraalPyPrivate_Set_" builtins.
      */
-    private void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
+    private void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins, List<CApiConstantDesc> javaConstants) throws IOException {
         List<String> lines = new ArrayList<>();
+        for (var javaConstant : javaConstants) {
+            lines.add("#define " + javaConstant.name + " " + javaConstant.value);
+        }
+        if (!javaConstants.isEmpty()) {
+            lines.add("");
+        }
         lines.add("#define CAPI_BUILTINS \\");
         int id = 0;
         for (var entry : javaBuiltins) {
@@ -705,7 +757,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
         }
 
-        updateResource("capi.gen.h", javaBuiltins, lines);
+        updateResource("capi.gen.h", javaBuiltins, javaConstants.stream().map((c) -> c.origin).toList(), lines,
+                        StandardLocation.NATIVE_HEADER_OUTPUT);
     }
 
     /**
@@ -2036,7 +2089,33 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         List<String> constants = new ArrayList<>();
         List<String> fields = new ArrayList<>();
         List<String> structs = new ArrayList<>();
+        List<CApiConstantDesc> javaConstants = new ArrayList<>();
         List<CApiExternalFunctionSignatureDesc> externalFunctionSignatures = new ArrayList<>();
+        for (var el : re.getElementsAnnotatedWith(CApiConstant.class)) {
+            if (el.getKind() == ElementKind.FIELD && el.asType().getKind().isPrimitive() &&
+                            el.getModifiers().contains(Modifier.STATIC) && el.getModifiers().contains(Modifier.FINAL)) {
+                VariableElement constant = (VariableElement) el;
+                Object value = constant.getConstantValue();
+                String cValue = value == null ? null : formatCConstantValue(constant, value);
+                if (cValue != null) {
+                    javaConstants.add(new CApiConstantDesc(constant, constant.getSimpleName().toString(), cValue));
+                } else {
+                    processingEnv.getMessager().printError(CApiConstant.class.getSimpleName() +
+                                    " is only applicable for Java primitive compile-time constants with C-representable values.", el);
+                }
+            } else {
+                processingEnv.getMessager().printError(CApiConstant.class.getSimpleName() +
+                                " is only applicable for static final Java primitive fields.", el);
+            }
+        }
+        javaConstants.sort((a, b) -> a.name.compareTo(b.name));
+        for (int i = 1; i < javaConstants.size(); i++) {
+            if (javaConstants.get(i - 1).name.equals(javaConstants.get(i).name)) {
+                processingEnv.getMessager().printError("Duplicate " + CApiConstant.class.getSimpleName() +
+                                " name: " + javaConstants.get(i).name,
+                                javaConstants.get(i).origin);
+            }
+        }
         for (var el : re.getElementsAnnotatedWith(CApiConstants.class)) {
             if (el.getKind() == ElementKind.ENUM) {
                 for (var enumBit : el.getEnclosedElements()) {
@@ -2102,7 +2181,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             if (trees != null) {
                 // needs jdk.compiler
                 generateCApiSource(allBuiltins, constants, fields, structs);
-                generateCApiHeader(javaBuiltins);
+                generateCApiHeader(javaBuiltins, javaConstants);
                 generateExternalFunctionInvoker(new ArrayList<>(sigs.values()));
                 generateExternalFunctionHelperNodes(externalFunctionDescs);
                 generateExternalFunctionRootNodes(externalFunctionDescs, cApiExternalFunctionWrapperDescs, sigs);

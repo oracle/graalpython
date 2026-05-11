@@ -58,7 +58,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -69,7 +74,6 @@ import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -87,7 +91,8 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -112,27 +117,47 @@ public abstract class StringNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(StringNodes.class)
     public abstract static class StringMaterializeNode extends Node {
 
         public static TruffleString executeUncached(PString s) {
-            return StringMaterializeNodeGen.getUncached().execute(null, s);
+            CompilerAsserts.neverPartOfCompilation();
+            return StringMaterializeNodeGen.getUncached().execute(null, s, false);
         }
 
-        public abstract TruffleString execute(Node inliningTarget, PString materialize);
+        public final TruffleString execute(Node inliningTarget, PString materialize) {
+            return execute(inliningTarget, materialize, false);
+        }
+
+        public abstract TruffleString execute(Node inliningTarget, PString materialize, boolean copyNativeData);
 
         @Specialization(guards = "x.isMaterialized()")
-        static TruffleString doMaterialized(PString x) {
+        static TruffleString doMaterialized(PString x, @SuppressWarnings("unused") boolean copyNativeData) {
             return x.getMaterialized();
         }
 
-        @Fallback
+        @Specialization(guards = "!x.isMaterialized()")
         @InliningCutoff
-        static TruffleString doNative(Node inliningTarget, PString x,
-                        @Cached HiddenAttr.ReadNode readAttrNode,
+        static TruffleString doNative(PString x, boolean copyNativeData,
                         @Cached TruffleString.FromNativePointerWithCompactionUTF32Node fromNativePointerNode) {
-            NativeStringData nativeData = x.getNativeStringData(inliningTarget, readAttrNode);
-            TruffleString materialized = nativeData.toTruffleString(fromNativePointerNode);
+            assert x.isNative();
+            assert PythonToNativeInternalNode.executeUncached(x, false) == x.getNativePointer();
+            long ptr = HandlePointerConverter.pointerToStub(x.getNativePointer());
+            long data = CStructAccess.readPtrField(ptr, CFields.GraalPyUnicodeObject__data);
+            assert data != 0;
+            int byteLength;
+            try {
+                byteLength = PInt.intValueExact(CStructAccess.readLongField(ptr, CFields.GraalPyUnicodeObject__byte_length));
+            } catch (OverflowException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            int kind = CApiTransitions.getGraalPyUnicodeObjectKind(ptr);
+            TruffleString.CompactionLevel compactionLevel = switch (kind) {
+                case 1 -> TruffleString.CompactionLevel.S1;
+                case 2 -> TruffleString.CompactionLevel.S2;
+                case 4 -> TruffleString.CompactionLevel.S4;
+                default -> throw CompilerDirectives.shouldNotReachHere();
+            };
+            TruffleString materialized = fromNativePointerNode.execute(data, 0, byteLength, compactionLevel, copyNativeData);
             x.setMaterialized(materialized);
             return materialized;
         }
@@ -152,28 +177,21 @@ public abstract class StringNodes {
             return codePointLengthNode.execute(str, TS_ENCODING);
         }
 
-        @Specialization(guards = "x.isMaterialized()")
-        static int doMaterialized(PString x,
-                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return doString(x.getMaterialized(), codePointLengthNode);
-        }
-
-        @Specialization(guards = "!x.isMaterialized()")
-        static int doNative(PString x,
+        @Specialization
+        static int doPString(PString x,
                         @Bind Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readAttrNode,
-                        @Cached InlinedConditionProfile oneByteProfile,
-                        @Cached StringMaterializeNode materializeNode,
+                        @Cached InlinedConditionProfile isMaterializedProfile,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            NativeStringData nativeData = x.getNativeStringData(inliningTarget, readAttrNode);
-            int charSize = nativeData.getCharSize();
-            assert charSize == 1 || charSize == 2 || charSize == 4;
-            /*
-             * Avoid materialization of strings backed by native memory. It is correct to use the
-             * 'length / charSize' because native data always contains characters with fixed byte
-             * size (i.e. Py_UCS1, Py_UCS2, or Py_UCS4).
-             */
-            return nativeData.length() / nativeData.getCharSize();
+            if (isMaterializedProfile.profile(inliningTarget, x.isMaterialized())) {
+                return doString(x.getMaterialized(), codePointLengthNode);
+            }
+            assert x.isNative();
+            long ptr = HandlePointerConverter.pointerToStub(x.getNativePointer());
+            try {
+                return PInt.intValueExact(CStructAccess.readLongField(ptr, CFields.GraalPyUnicodeObject__length));
+            } catch (OverflowException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @Specialization
@@ -189,10 +207,15 @@ public abstract class StringNodes {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(x);
                 PythonContext context = PythonContext.get(inliningTarget);
                 var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH);
-                return intValue(ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNativeContext(),
+                long lresult = ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNativeContext(),
                                 BoundaryCallData.getUncached(),
                                 context.getThreadState(context.getLanguage(inliningTarget)), callable,
-                                toNativeNode.executeLong(x)));
+                                toNativeNode.executeLong(x));
+                try {
+                    return PInt.intValueExact(lresult);
+                } catch (OverflowException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
             }
             // the object's type is not a subclass of 'str'
             throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
@@ -206,11 +229,6 @@ public abstract class StringNodes {
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             TruffleString tstring = cast.cast(inliningTarget, x, ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "str", x);
             return doString(tstring, codePointLengthNode);
-        }
-
-        @TruffleBoundary
-        private static int intValue(Number result) {
-            return result.intValue();
         }
     }
 

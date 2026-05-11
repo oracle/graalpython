@@ -201,6 +201,16 @@ public abstract class ToNativeTypeNode {
         // free'd if the type is free'd.
         TruffleString nativeUncached = nameUtf8.asNativeUncached(ctx::allocateContextMemory, Encoding.UTF_8, false, true);
         Object internalNativePointerUncached = nativeUncached.getInternalNativePointerUncached(Encoding.UTF_8);
+        if (internalNativePointerUncached == null) {
+            /*
+             * Native TruffleStrings created from raw long pointers do not have a pointer object for
+             * lifetime tracking. Force a managed copy before allocating the tp_name with context
+             * lifetime. See GR-75283.
+             */
+            TruffleString managedName = TruffleString.AsManagedNode.getUncached().execute(nameUtf8, Encoding.UTF_8);
+            nativeUncached = managedName.asNativeUncached(ctx::allocateContextMemory, Encoding.UTF_8, false, true);
+            internalNativePointerUncached = nativeUncached.getInternalNativePointerUncached(Encoding.UTF_8);
+        }
         long namePointer = PythonUtils.coerceToLong(internalNativePointerUncached, InteropLibrary.getUncached());
 
         writePtrField(mem, CFields.PyTypeObject__tp_name, namePointer);

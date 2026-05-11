@@ -144,11 +144,11 @@ _GraalPyMem_LogRecentSamples(const char *func, void *ptr)
         const GraalPyMemSample_t *sample = &_GraalPyMem_Samples[index];
         if (sample->ptr == ptr && sample->serial != 0) {
             char prefix[128];
-            GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
+            GraalPyPrivate_Log(GRAALPY_LOG_INFO,
                     "%s: recent raw memory sample #%llu op=%c ptr=%p size=%lu depth=%lu\n",
                     func, sample->serial, sample->operation, sample->ptr, (unsigned long) sample->size, (unsigned long) sample->depth);
             snprintf(prefix, sizeof(prefix), "%s: sample #%llu ", func, sample->serial);
-            GraalPyPrivate_LogCapturedStacktrace(PY_TRUFFLE_LOG_INFO, prefix, sample->stack, sample->depth);
+            GraalPyPrivate_LogCapturedStacktrace(GRAALPY_LOG_INFO, prefix, sample->stack, sample->depth);
             printed++;
         }
     }
@@ -179,7 +179,7 @@ _GraalPyMem_FatalInvalidHeader(const char *func, void *ptr, const mem_head_t *pt
     const char *reason = (ptr_with_head->size == GRAALPY_MEM_HEAD_POISON && ptr_with_head->dummy == GRAALPY_MEM_HEAD_POISON)
             ? "poisoned raw allocation header"
             : "invalid raw allocation header";
-    GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
+    GraalPyPrivate_Log(GRAALPY_LOG_INFO,
             "%s: %s for ptr=%p head=%p size=%lu dummy=0x%lx\n",
             func, reason, ptr, ptr_with_head, (unsigned long) ptr_with_head->size, (unsigned long) ptr_with_head->dummy);
     _GraalPyMem_LogRecentSamples(func, ptr);
@@ -512,7 +512,7 @@ _GraalPyMem_PrepareAlloc(GraalPyMem_t *state, size_t size)
             state->native_memory_gc_barrier = GraalPyPrivate_GetInitialNativeMemory();
             continue;
         }
-        GraalPyPrivate_Log(PY_TRUFFLE_LOG_CONFIG,
+        GraalPyPrivate_Log(GRAALPY_LOG_CONFIG,
                 "%s: exceeding native_memory_gc_barrier (%lu) with allocation of size %lu, current allocated_memory: %lu\n",
                 __func__, state->native_memory_gc_barrier, size, state->allocated_memory);
 
@@ -532,12 +532,12 @@ _GraalPyMem_PrepareAlloc(GraalPyMem_t *state, size_t size)
             if (state->native_memory_gc_barrier > state->max_native_memory) {
                 state->native_memory_gc_barrier = state->max_native_memory;
             }
-            GraalPyPrivate_Log(PY_TRUFFLE_LOG_CONFIG,
+            GraalPyPrivate_Log(GRAALPY_LOG_CONFIG,
                     "%s: enlarging native_memory_gc_barrier to %lu\n",
                     __func__, state->native_memory_gc_barrier);
         }
         else {
-            GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
+            GraalPyPrivate_Log(GRAALPY_LOG_INFO,
                     "%s: native memory exhausted while allocating %lu bytes\n",
                     __func__, size);
             return 1;
@@ -658,7 +658,7 @@ _GraalPyMem_RawFree(void *ctx, void *ptr)
     mem_head_t *ptr_with_head = _GraalPyMem_GetValidatedHead(__func__, ptr);
     const size_t size = ptr_with_head->size;
     if (state->allocated_memory < size) {
-        GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
+        GraalPyPrivate_Log(GRAALPY_LOG_INFO,
                 "%s: freed memory size (%lu) is larger than allocated memory size (%lu)\n",
                 __func__, size, state->allocated_memory);
         state->allocated_memory = size;

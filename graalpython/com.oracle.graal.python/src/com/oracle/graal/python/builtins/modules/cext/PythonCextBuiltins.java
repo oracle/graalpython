@@ -112,6 +112,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.CApiConstant;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
@@ -1439,16 +1440,26 @@ public final class PythonCextBuiltins {
         return PInt.intValue(CApiTransitions.disableReferenceQueuePolling(handleContext));
     }
 
-    private static final int TRACE_MEM = 0x1;
-    private static final int LOG_INFO = 0x2;
-    private static final int LOG_CONFIG = 0x4;
-    private static final int LOG_FINE = 0x8;
-    private static final int LOG_FINER = 0x10;
-    private static final int LOG_FINEST = 0x20;
-    private static final int DEBUG_CAPI = 0x40;
-    private static final int PYTHON_GC = 0x80;
-    private static final int POISON_NATIVE_MEMORY_ON_FREE = 0x100;
-    private static final int SAMPLE_NATIVE_MEMORY_ALLOC_SITES = 0x200;
+    @CApiConstant //
+    private static final int GRAALPY_TRACE_MEM = 0x1;
+    @CApiConstant //
+    private static final int GRAALPY_LOG_INFO = 0x2;
+    @CApiConstant //
+    private static final int GRAALPY_LOG_CONFIG = 0x4;
+    @CApiConstant //
+    private static final int GRAALPY_LOG_FINE = 0x8;
+    @CApiConstant //
+    private static final int GRAALPY_LOG_FINER = 0x10;
+    @CApiConstant //
+    private static final int GRAALPY_LOG_FINEST = 0x20;
+    @CApiConstant //
+    private static final int GRAALPY_DEBUG_CAPI = 0x40;
+    @CApiConstant //
+    private static final int GRAALPY_PYTHON_GC = 0x80;
+    @CApiConstant //
+    private static final int GRAALPY_POISON_NATIVE_MEMORY_ON_FREE = 0x100;
+    @CApiConstant //
+    private static final int GRAALPY_SAMPLE_NATIVE_MEMORY_ALLOC_SITES = 0x200;
 
     /*
      * These should be kept so they can be shared across multiple contexts in the same engine, if
@@ -1462,34 +1473,34 @@ public final class PythonCextBuiltins {
         int options = 0;
         PythonLanguage language = PythonLanguage.get(null);
         if (language.getEngineOption(PythonOptions.TraceNativeMemory)) {
-            options |= TRACE_MEM;
+            options |= GRAALPY_TRACE_MEM;
         }
         if (LOGGER.isLoggable(Level.INFO)) {
-            options |= LOG_INFO;
+            options |= GRAALPY_LOG_INFO;
         }
         if (LOGGER.isLoggable(Level.CONFIG)) {
-            options |= LOG_CONFIG;
+            options |= GRAALPY_LOG_CONFIG;
         }
         if (LOGGER.isLoggable(Level.FINE)) {
-            options |= LOG_FINE;
+            options |= GRAALPY_LOG_FINE;
         }
         if (LOGGER.isLoggable(Level.FINER)) {
-            options |= LOG_FINER;
+            options |= GRAALPY_LOG_FINER;
         }
         if (LOGGER.isLoggable(Level.FINEST)) {
-            options |= LOG_FINEST;
+            options |= GRAALPY_LOG_FINEST;
         }
         if (PythonContext.DEBUG_CAPI) {
-            options |= DEBUG_CAPI;
+            options |= GRAALPY_DEBUG_CAPI;
         }
         if (language.getEngineOption(PythonOptions.PythonGC)) {
-            options |= PYTHON_GC;
+            options |= GRAALPY_PYTHON_GC;
         }
         if (language.getEngineOption(PythonOptions.PoisonNativeMemoryOnFree)) {
-            options |= POISON_NATIVE_MEMORY_ON_FREE;
+            options |= GRAALPY_POISON_NATIVE_MEMORY_ON_FREE;
         }
         if (language.getEngineOption(PythonOptions.SampleNativeMemoryAllocSites)) {
-            options |= SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
+            options |= GRAALPY_SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
         }
         return options;
     }
@@ -1500,19 +1511,19 @@ public final class PythonCextBuiltins {
         TruffleString message = (TruffleString) CharPtrToPythonNode.getUncached().execute(messagePtr);
         String msg = message.toJavaStringUncached();
         switch (level) {
-            case LOG_INFO:
+            case GRAALPY_LOG_INFO:
                 LOGGER.info(msg);
                 break;
-            case LOG_CONFIG:
+            case GRAALPY_LOG_CONFIG:
                 LOGGER.config(msg);
                 break;
-            case LOG_FINE:
+            case GRAALPY_LOG_FINE:
                 LOGGER.fine(msg);
                 break;
-            case LOG_FINER:
+            case GRAALPY_LOG_FINER:
                 LOGGER.finer(msg);
                 break;
-            case LOG_FINEST:
+            case GRAALPY_LOG_FINEST:
                 LOGGER.finest(msg);
                 break;
             default:

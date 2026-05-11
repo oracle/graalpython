@@ -254,7 +254,7 @@ uint32_t Py_Truffle_Options;
 #undef bool
 static void initialize_builtin_types_and_structs() {
 	clock_t t = clock();
-    GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs...");
+    GraalPyPrivate_Log(GRAALPY_LOG_FINE, "initialize_builtin_types_and_structs...");
 	static int64_t builtin_types[] = {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) &GLOBAL_NAME, __TYPE_NAME__,
@@ -271,7 +271,7 @@ static void initialize_builtin_types_and_structs() {
 	// fix up for circular dependency:
 	PyType_Type.tp_base = &PyBaseObject_Type;
 
-	GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtin_types_and_structs: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+	GraalPyPrivate_Log(GRAALPY_LOG_FINE, "initialize_builtin_types_and_structs: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
  }
 
 int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
@@ -284,7 +284,7 @@ int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
 }
 
 PyAPI_FUNC(void) GraalPyPrivate_MMap_InitBufferProtocol(PyObject* mmap_type) {
-	GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "GraalPyPrivate_MMap_InitBufferProtocol");
+	GraalPyPrivate_Log(GRAALPY_LOG_FINE, "GraalPyPrivate_MMap_InitBufferProtocol");
 	assert(PyType_Check(mmap_type));
 
 	static PyBufferProcs mmap_as_buffer = {
@@ -433,7 +433,7 @@ GraalPyPrivate_SUBREF(intptr_t ptr, Py_ssize_t value)
 
     Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
     if (new_value == 0) {
-        GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
+        GraalPyPrivate_Log(GRAALPY_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
                 __func__, obj);
         _Py_Dealloc(obj);
     }
@@ -451,7 +451,7 @@ GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
 {
     for (int i = 0; i < len; i++) {
         PyObject *obj = (PyObject *)ptrArray[i];
-        GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER,
+        GraalPyPrivate_Log(GRAALPY_LOG_FINER,
                            "%s: _Py_Dealloc(a %s at 0x%zx)",
                            __func__, Py_TYPE(obj)->tp_name, obj);
         _Py_Dealloc(obj);
@@ -476,7 +476,7 @@ GraalPyPrivate_BulkDeallocOnShutdown(intptr_t ptrArray[], int64_t len)
             /* we don't need to care about objects with default deallocation
                process */
             obj->ob_refcnt = 0;
-            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
+            GraalPyPrivate_Log(GRAALPY_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
                     __func__, obj);
             _Py_Dealloc(obj);
         }
@@ -623,7 +623,7 @@ PyAPI_FUNC(PyThreadState **) initialize_graal_capi(void **builtin_closures, GCSt
      * context exits and its table is the "latest", we delay freeing it.
      */
     initialize_builtins(builtin_closures);
-    GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    GraalPyPrivate_Log(GRAALPY_LOG_FINE, "initialize_builtins: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     Py_Truffle_Options = GraalPyPrivate_Native_Options();
 
     initialize_builtin_types_and_structs();
@@ -638,7 +638,7 @@ PyAPI_FUNC(PyThreadState **) initialize_graal_capi(void **builtin_closures, GCSt
     // TODO: initialize during cext initialization doesn't work at the moment
     Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyPrivate_FileSystemDefaultEncoding()));
 
-    GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
+    GraalPyPrivate_Log(GRAALPY_LOG_FINE, "initialize_graal_capi: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
     return &tstate_current;
 }
 

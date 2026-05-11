@@ -108,7 +108,6 @@ public final class HiddenAttr {
     public static final HiddenAttr NATIVE_SLOTS = new HiddenAttr("__native_slots__");
     public static final HiddenAttr INSTANCESHAPE = new HiddenAttr("instanceshape");
     public static final HiddenAttr STRUCTSEQ_FIELD_NAMES = new HiddenAttr("struct_seq_field_names");
-    public static final HiddenAttr PSTRING_NATIVE_DATA = new HiddenAttr("native_string_data");
     public static final HiddenAttr PSTRING_UTF8 = new HiddenAttr("utf8");
     public static final HiddenAttr PSTRING_WCHAR = new HiddenAttr("wchar");
 

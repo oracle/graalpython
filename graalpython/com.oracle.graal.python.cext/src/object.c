@@ -2966,7 +2966,7 @@ void
 GraalPy_SET_TYPE(PyObject *a, PyTypeObject *b)
 {
     if (points_to_py_handle_space(a)) {
-        GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
+        GraalPyPrivate_Log(GRAALPY_LOG_INFO,
                 "changing the type of an object is not supported\n");
     } else {
         a->ob_type = b;

@@ -68,10 +68,6 @@
 typedef int (*graalpy_attach_native_thread_func)(void);
 typedef void (*graalpy_detach_native_thread_func)(void);
 
-#define GRAALPY_ATTACH_NATIVE_FAILED (-1)
-#define GRAALPY_ATTACH_NATIVE_OWNED 1
-#define GRAALPY_ATTACH_NATIVE_FOREIGN 2
-
 extern graalpy_attach_native_thread_func graalpy_attach_native_thread;
 extern graalpy_detach_native_thread_func graalpy_detach_native_thread;
 
@@ -96,18 +92,6 @@ extern graalpy_detach_native_thread_func graalpy_detach_native_thread;
 #include "graalpy/handles.h"
 
 #define SRC_CS "utf-8"
-
-/* Flags definitions representing global (debug) options. */
-#define PY_TRUFFLE_TRACE_MEM 0x1
-#define PY_TRUFFLE_LOG_INFO 0x2
-#define PY_TRUFFLE_LOG_CONFIG 0x4
-#define PY_TRUFFLE_LOG_FINE 0x8
-#define PY_TRUFFLE_LOG_FINER 0x10
-#define PY_TRUFFLE_LOG_FINEST 0x20
-#define PY_TRUFFLE_DEBUG_CAPI 0x40
-#define PY_TRUFFLE_PYTHON_GC 0x80
-#define PY_TRUFFLE_POISON_NATIVE_MEMORY_ON_FREE 0x100
-#define PY_TRUFFLE_SAMPLE_NATIVE_MEMORY_ALLOC_SITES 0x200
 
 typedef struct mmap_object mmap_object;
 typedef struct _gc_runtime_state GCState; // originally in 'gcmodule.c'
@@ -156,6 +140,16 @@ typedef struct {
     GraalPyObject ob_base;
     double ob_fval;
 } GraalPyFloatObject;
+
+typedef struct {
+    GraalPyObject ob_base;
+    Py_ssize_t length;
+    Py_ssize_t byte_length;
+    Py_hash_t hash;
+    /* Bits 0-2: kind; bit 3: is_ascii; bits 4-5: interned state. */
+    uint64_t state;
+    void *data;
+} GraalPyUnicodeObject;
 
 typedef struct gc_generation GCGeneration;
 
@@ -220,35 +214,35 @@ static void print_c_stacktrace() {
 
 /* Flags definitions representing global (debug) options. */
 static MUST_INLINE int GraalPyPrivate_Trace_Memory() {
-    return Py_Truffle_Options & PY_TRUFFLE_TRACE_MEM;
+    return Py_Truffle_Options & GRAALPY_TRACE_MEM;
 }
 static MUST_INLINE int GraalPyPrivate_Log_Info() {
-    return Py_Truffle_Options & PY_TRUFFLE_LOG_INFO;
+    return Py_Truffle_Options & GRAALPY_LOG_INFO;
 }
 static MUST_INLINE int GraalPyPrivate_Log_Config() {
-    return Py_Truffle_Options & PY_TRUFFLE_LOG_CONFIG;
+    return Py_Truffle_Options & GRAALPY_LOG_CONFIG;
 }
 static MUST_INLINE int GraalPyPrivate_Log_Fine() {
-    return Py_Truffle_Options & PY_TRUFFLE_LOG_FINE;
+    return Py_Truffle_Options & GRAALPY_LOG_FINE;
 }
 static MUST_INLINE int GraalPyPrivate_Log_Finer() {
-    return Py_Truffle_Options & PY_TRUFFLE_LOG_FINER;
+    return Py_Truffle_Options & GRAALPY_LOG_FINER;
 }
 static MUST_INLINE int GraalPyPrivate_Log_Finest() {
-    return Py_Truffle_Options & PY_TRUFFLE_LOG_FINEST;
+    return Py_Truffle_Options & GRAALPY_LOG_FINEST;
 }
 static MUST_INLINE int GraalPyPrivate_Debug_CAPI() {
-    return Py_Truffle_Options & PY_TRUFFLE_DEBUG_CAPI;
+    return Py_Truffle_Options & GRAALPY_DEBUG_CAPI;
 }
 
 static MUST_INLINE int GraalPyPrivate_PythonGC() {
-    return Py_Truffle_Options & PY_TRUFFLE_PYTHON_GC;
+    return Py_Truffle_Options & GRAALPY_PYTHON_GC;
 }
 static MUST_INLINE int GraalPyPrivate_PoisonNativeMemoryOnFree() {
-    return Py_Truffle_Options & PY_TRUFFLE_POISON_NATIVE_MEMORY_ON_FREE;
+    return Py_Truffle_Options & GRAALPY_POISON_NATIVE_MEMORY_ON_FREE;
 }
 static MUST_INLINE int GraalPyPrivate_SampleNativeMemoryAllocSites() {
-    return Py_Truffle_Options & PY_TRUFFLE_SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
+    return Py_Truffle_Options & GRAALPY_SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
 }
 
 static void

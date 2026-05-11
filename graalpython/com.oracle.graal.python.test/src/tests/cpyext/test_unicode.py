@@ -79,6 +79,13 @@ def _reference_unicode_escape(args):
     return _codecs.unicode_escape_encode(args[0])[0]
 
 
+def _reference_unicode_new(args):
+    expected = args[3]
+    if isinstance(expected, type) and issubclass(expected, BaseException):
+        raise expected()
+    return expected
+
+
 def _reference_fromformat(args):
     fmt = args[0]
     fmt_args = args[1:]
@@ -897,7 +904,7 @@ class TestPyUnicode(CPyExtTestCase):
     )
 
     test_PyUnicode_New = CPyExtFunction(
-        lambda args: args[3],
+        _reference_unicode_new,
         lambda: (
             (134818, bytearray([0xA2, 0x0E, 0x02, 0x00]), 1, "𠺢"),
             (134988, bytearray([0xA2, 0x0E, 0x02, 0x00, 0x4C, 0x0F, 0x02, 0x00]), 2, "𠺢𠽌"),
@@ -905,9 +912,15 @@ class TestPyUnicode(CPyExtTestCase):
             (8252, bytearray([0x30, 0x20, 0x3C, 0x20]), 2, "‰‼"),
             (127, bytearray([0x61, 0x62, 0x63, 0x64]), 4, "abcd"),
             (127, bytearray([0x61, 0x62, 0x63, 0x64]), 2, "ab"),
+            (127, bytearray(), -1, SystemError),
+            (0x10ffff, bytearray(), sys.maxsize, MemoryError),
+            (0x110000, bytearray(), 1, SystemError),
         ),
         code='''PyObject* wrap_PyUnicode_New(Py_ssize_t maxchar, Py_buffer buffer, Py_ssize_t nchars, PyObject* dummy) {
             PyObject* obj = PyUnicode_New(nchars, (Py_UCS4) maxchar);
+            if (obj == NULL) {
+                return NULL;
+            }
             void* data = PyUnicode_DATA(obj);
             size_t char_size;
             if (maxchar < 256) {
