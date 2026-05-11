@@ -68,6 +68,7 @@ import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
 import org.netbeans.lib.profiler.heap.ObjectArrayInstance;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.test.integration.Utils;
 import com.sun.management.HotSpotDiagnosticMXBean;
 
@@ -173,10 +174,10 @@ public class LeakTest extends AbstractLanguageLauncher {
         }
 
         private boolean checkCApiResidue(Heap heap) {
-            JavaClass cls = heap.getJavaClassByName(
-                            "com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions$HandleContext");
+            JavaClass cls = heap.getJavaClassByName(HandleContext.class.getName());
             if (cls == null) {
-                return false;
+                System.err.println("Could not find " + HandleContext.class.getName() + " in heap dump");
+                return true;
             }
             boolean fail = false;
             for (Object i : cls.getInstances()) {
@@ -185,14 +186,14 @@ public class LeakTest extends AbstractLanguageLauncher {
                     continue;
                 }
                 List<String> residues = new ArrayList<>();
-                addResidue(residues, "referencesToBeFreed", collectionSize(inst.getValueOfField("referencesToBeFreed")));
-                addResidue(residues, "nativeLookup", collectionSize(inst.getValueOfField("nativeLookup")));
-                addResidue(residues, "nativeWeakRef", collectionSize(inst.getValueOfField("nativeWeakRef")));
-                addResidue(residues, "managedNativeLookup", collectionSize(inst.getValueOfField("managedNativeLookup")));
-                addResidue(residues, "nativeTypeLookup", objectArraySize(inst.getValueOfField("nativeTypeLookup")));
-                addResidue(residues, "nativeStubLookup", objectArraySize(inst.getValueOfField("nativeStubLookup")));
-                addResidue(residues, "nativeStorageReferences", collectionSize(inst.getValueOfField("nativeStorageReferences")));
-                addResidue(residues, "pyCapsuleReferences", collectionSize(inst.getValueOfField("pyCapsuleReferences")));
+                addResidue(residues, inst, "referencesToBeFreed", this::collectionSize);
+                addResidue(residues, inst, "nativeLookup", this::collectionSize);
+                addResidue(residues, inst, "nativeWeakRef", this::collectionSize);
+                addResidue(residues, inst, "managedNativeLookup", this::collectionSize);
+                addResidue(residues, inst, "nativeTypeLookup", this::objectArraySize);
+                addResidue(residues, inst, "nativeStubLookup", this::objectArraySize);
+                addResidue(residues, inst, "nativeStorageReferences", this::collectionSize);
+                addResidue(residues, inst, "pyCapsuleReferences", this::collectionSize);
                 if (!residues.isEmpty()) {
                     fail = true;
                     System.err.println("C API residue in reachable HandleContext " + inst.getInstanceId() + ": " +
@@ -202,10 +203,21 @@ public class LeakTest extends AbstractLanguageLauncher {
             return fail;
         }
 
-        private void addResidue(List<String> residues, String name, int size) {
+        private void addResidue(List<String> residues, Instance inst, String name, FieldSize fieldSize) {
+            Object fieldValue = inst.getValueOfField(name);
+            if (fieldValue == null) {
+                residues.add(name + "=missing");
+                return;
+            }
+            int size = fieldSize.apply(fieldValue);
             if (size > 0) {
                 residues.add(name + "=" + size);
             }
+        }
+
+        @FunctionalInterface
+        private interface FieldSize {
+            int apply(Object object);
         }
 
         private int collectionSize(Object object) {
