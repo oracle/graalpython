@@ -1310,7 +1310,7 @@ class Connection:
         while len(data) < size:
             read = self.socket.recv(size - len(data))
             if not read:
-                return data
+                raise ConnectionClosed
             data += read
         return data
 
