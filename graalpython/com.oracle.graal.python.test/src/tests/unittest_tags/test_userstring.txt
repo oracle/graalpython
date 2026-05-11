@@ -1,4 +1,5 @@
 test.test_userstring.UserStringTest.test___contains__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_userstring.UserStringTest.test_adaptive_find @ darwin-arm64
 test.test_userstring.UserStringTest.test_additional_rsplit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_userstring.UserStringTest.test_additional_split @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_userstring.UserStringTest.test_capitalize @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
