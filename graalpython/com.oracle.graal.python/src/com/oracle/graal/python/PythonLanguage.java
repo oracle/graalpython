@@ -324,7 +324,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     private final ConcurrentHashMap<Object, RootNode> runtimeCachedRootNodes = new ConcurrentHashMap<>();
 
-    @CompilationFinal(dimensions = 1) private final RootCallTarget[] builtinSlotsCallTargets;
     @CompilationFinal(dimensions = 1) private RootCallTarget[] capiCallTargets;
     @CompilationFinal(dimensions = 1) private final RootNode[] builtinSlotsRootNodes;
 
@@ -389,7 +388,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (PythonBuiltinClassType.PythonClass.getSlots() == null) {
             throw new IllegalStateException("Slots must be initialized in PythonBuiltinClassType static initializer");
         }
-        builtinSlotsCallTargets = new RootCallTarget[TpSlot.getBuiltinsCallTargetsCount()];
         builtinSlotsRootNodes = new RootNode[TpSlot.getBuiltinsCallTargetsCount()];
     }
 
@@ -1070,16 +1068,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public RootCallTarget getBuiltinSlotCallTarget(int index) {
-        RootCallTarget callTarget = builtinSlotsCallTargets[index];
-        if (callTarget == null) {
-            RootNode rootNode = builtinSlotsRootNodes[index];
-            if (rootNode != null) {
-                callTarget = rootNode.getCallTarget();
-                VarHandle.storeStoreFence();
-                builtinSlotsCallTargets[index] = callTarget;
-            }
-        }
-        return callTarget;
+        RootNode rootNode = builtinSlotsRootNodes[index];
+        assert rootNode != null : index;
+        return rootNode.getCallTarget();
     }
 
     public void setBuiltinSlotRootNode(int index, RootNode rootNode) {
