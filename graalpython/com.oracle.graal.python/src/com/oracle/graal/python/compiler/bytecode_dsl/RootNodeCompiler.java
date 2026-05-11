@@ -864,11 +864,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     void beginReturn(Builder b) {
         b.beginReturn();
-        b.beginTraceOrProfileReturn();
     }
 
     void endReturn(Builder b) {
-        b.endTraceOrProfileReturn();
         b.endReturn();
     }
 
