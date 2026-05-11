@@ -21,7 +21,7 @@ test.test_os.BytesWalkTests.test_walk_prune @ darwin-arm64,linux-aarch64,linux-a
 test.test_os.BytesWalkTests.test_walk_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_os.BytesWalkTests.test_walk_topdown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.CPUCountTests.test_cpu_count @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_os.ChownFileTests.test_chown_gid @ linux-aarch64-github,linux-x86_64-github
+test.test_os.ChownFileTests.test_chown_gid @ darwin-arm64,linux-aarch64-github,linux-x86_64-github
 test.test_os.ChownFileTests.test_chown_uid_gid_arguments_must_be_index @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.ChownFileTests.test_chown_without_permission @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_os.DevNullTests.test_devnull @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

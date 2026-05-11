@@ -2,6 +2,7 @@ test.test_capi.test_abstract.CAPITest.test_mapping_check @ darwin-arm64,linux-aa
 test.test_capi.test_abstract.CAPITest.test_mapping_haskey @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_abstract.CAPITest.test_mapping_haskeystring @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_abstract.CAPITest.test_mapping_keys_valuesitems @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_abstract.CAPITest.test_mapping_keys_valuesitems_bad_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_abstract.CAPITest.test_mapping_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_abstract.CAPITest.test_object_ascii @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_abstract.CAPITest.test_object_bytes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -14,6 +15,7 @@ test.test_capi.test_abstract.CAPITest.test_object_setattr @ darwin-arm64,linux-a
 test.test_capi.test_abstract.CAPITest.test_object_str @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_abstract.CAPITest.test_sequence_check @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_abstract.CAPITest.test_sequence_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_abstract.CAPITest.test_sequence_tuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_bytearray.CAPITest.test_asstring @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_bytearray.CAPITest.test_check @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_bytearray.CAPITest.test_checkexact @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -69,6 +71,7 @@ test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_args @ darwin-
 test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_closure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_default @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_kwarg_default @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_kwargs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_err_restore @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_err_set_raised @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_format @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -168,6 +171,7 @@ test.test_capi.test_list.CAPITest.test_list_setslice @ darwin-arm64,linux-aarch6
 test.test_capi.test_list.CAPITest.test_list_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_list.CAPITest.test_list_sort @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_long.LongTests.test_compact @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_long.LongTests.test_compact_known @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_long.LongTests.test_long_aslongandoverflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_long.LongTests.test_long_aslonglong @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_long.LongTests.test_long_aslonglongandoverflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -220,6 +224,7 @@ test.test_capi.test_misc.CAPITest.test_unstable_gc_new_with_extra_data @ darwin-
 test.test_capi.test_misc.TestStaticTypes.test_pytype_ready_always_sets_tp_type @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.Test_ModuleStateAccess.test_get_module_bad_def @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.Test_ModuleStateAccess.test_get_module_static_in_mro @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_misc.Test_ModuleStateAccess.test_state_access @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.Test_ModuleStateAccess.test_subclass_get_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.Test_ModuleStateAccess.test_subclass_get_module_with_super @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.Test_testcapi.test_PyOS_mystricmp @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -275,7 +280,9 @@ test.test_capi.test_misc.Test_testcapi.test_xincref_doesnt_leak @ darwin-arm64,l
 test.test_capi.test_number.CAPITest.test_asssizet @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_number.CAPITest.test_binary_ops @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_number.CAPITest.test_check @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_number.CAPITest.test_float @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_number.CAPITest.test_index @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_number.CAPITest.test_long @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_number.CAPITest.test_misc_add @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_number.CAPITest.test_misc_power @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_number.CAPITest.test_unary_ops @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -311,3 +318,4 @@ test.test_capi.test_tuple.CAPITest.test_tuple_getitem @ darwin-arm64,linux-aarch
 test.test_capi.test_tuple.CAPITest.test_tuple_getslice @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_tuple.CAPITest.test_tuple_set_item @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_tuple.CAPITest.test_tuple_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_unicode.CAPITest.test_from_format @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
