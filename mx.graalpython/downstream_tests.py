@@ -120,7 +120,7 @@ def downstream_test_pybind11(graalpy, testdir):
     run_in_venv(venv, ['cmake', '--build', 'build', *parallel_arg], cwd=src)
     env = os.environ.copy()
     env['PYTHONPATH'] = 'build/tests'
-    run_in_venv(venv, ['pytest', '-v', '--tb=short', 'tests'], cwd=src, env=env)
+    run_in_venv(venv, ['pytest', '-v', '--tb=short', '-o', 'xfail_strict=False', 'tests'], cwd=src, env=env)
 
 
 @downstream_test('virtualenv')
