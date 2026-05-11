@@ -515,34 +515,13 @@ public final class PFactory {
         return new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption);
     }
 
-    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
-        return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
-                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget);
-    }
-
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode) {
         return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
                         PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode);
     }
 
-    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
-        return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type, defaults, kw, flags, callTarget);
-    }
-
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, PRootNode rootNode) {
         return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type, defaults, kw, flags, rootNode);
-    }
-
-    public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget, TpSlot slot,
-                    PExternalFunctionWrapper slotWrapper) {
-        return new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type,
-                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget, slot, slotWrapper);
-    }
-
-    public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget,
-                    TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        return new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, flags,
-                        callTarget, slot, slotWrapper);
     }
 
     public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode, TpSlot slot,
@@ -555,12 +534,6 @@ public final class PFactory {
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         return new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, flags,
                         rootNode, slot, slotWrapper);
-    }
-
-    public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, RootCallTarget callTarget, TpSlot slot) {
-        PBuiltinFunction func = createWrapperDescriptor(language, T___NEW__, type, defaults, kwdefaults, CExtContext.METH_VARARGS | CExtContext.METH_KEYWORDS, callTarget, slot,
-                        PExternalFunctionWrapper.NEW);
-        return createBuiltinMethod(language, type, func);
     }
 
     public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, PRootNode rootNode, TpSlot slot) {
@@ -1108,16 +1081,8 @@ public final class PFactory {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct, filename);
     }
 
-    public static PCode createCode(PythonLanguage language, PRootNode rootNode, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, filename);
-    }
-
     public static PCode createCode(PythonLanguage language, RootCallTarget ct, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct, flags, firstlineno, linetable, filename);
-    }
-
-    public static PCode createCode(PythonLanguage language, PRootNode rootNode, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, flags, firstlineno, linetable, filename);
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
@@ -1126,10 +1091,6 @@ public final class PFactory {
 
     public static PCode createCode(PythonLanguage language, PRootNode rootNode, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature, codeUnit, filename);
-    }
-
-    public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature, codeUnit, filename);
     }
 
     public static PCode createCode(PythonLanguage language, PRootNode rootNode, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {

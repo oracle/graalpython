@@ -75,17 +75,12 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         private final RootNode functionRootNode;
         private final Signature signature;
 
-        private Executable(RootCallTarget callTarget) {
-            this.functionRootNode = callTarget.getRootNode();
-            this.signature = ((PRootNode) functionRootNode).getSignature();
-        }
-
         private Executable(PRootNode rootNode) {
             this.functionRootNode = rootNode;
             this.signature = rootNode.getSignature();
         }
 
-        private synchronized RootCallTarget getCallTarget() {
+        private RootCallTarget getCallTarget() {
             return functionRootNode.getCallTarget();
         }
 
@@ -134,15 +129,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.kwDefaults = kwDefaults != null ? kwDefaults : generateKwDefaults(signature);
         this.slot = slot;
         this.slotWrapper = slotWrapper;
-    }
-
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget,
-                    TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(callTarget), slot, slotWrapper);
-    }
-
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, callTarget, null, null);
     }
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,

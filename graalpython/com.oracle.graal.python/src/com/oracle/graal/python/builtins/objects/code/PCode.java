@@ -160,48 +160,12 @@ public final class PCode extends PythonBuiltinObject {
                         codeUnit.name, codeUnit.qualname, -1, codeUnit.srcOffsetTable);
     }
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
-        this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, -1, -1, null, null,
-                        null, null, null, filename,
-                        codeUnit.name, codeUnit.qualname, -1, null);
-    }
-
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals,
                     int stacksize, int flags, Object[] constants, TruffleString[] names,
                     TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
                     TruffleString filename, TruffleString name, TruffleString qualname,
                     int firstlineno, byte[] linetable) {
-        super(cls, instanceShape);
-        this.nlocals = nlocals;
-        this.stacksize = stacksize;
-        this.flags = flags;
-        this.constants = constants;
-        this.names = names;
-        this.varnames = varnames;
-        this.filename = filename;
-        this.name = name;
-        this.qualname = qualname;
-        this.firstlineno = firstlineno;
-        this.linetable = linetable;
-        this.freevars = freevars;
-        this.cellvars = cellvars;
-        this.rootNode = callTarget.getRootNode();
-        this.signature = signature;
-        assert signature != null;
-    }
-
-    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, TruffleString filename) {
-        super(cls, instanceShape);
-        this.rootNode = rootNode;
-        this.signature = rootNode.getSignature();
-        this.filename = filename;
-    }
-
-    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
-        this(cls, instanceShape, rootNode, filename);
-        this.flags = flags;
-        this.firstlineno = firstlineno;
-        this.linetable = linetable;
+        this(cls, instanceShape, (PRootNode) callTarget.getRootNode(), signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
     }
 
     public PCode(Object cls, Shape instanceShape, PRootNode rootNode, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
