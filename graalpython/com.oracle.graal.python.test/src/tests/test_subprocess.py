@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -11,7 +11,7 @@ import sys
 from subprocess import CalledProcessError
 from tempfile import mkdtemp
 
-POSIX_BACKEND_IS_JAVA = sys.implementation.name == "graalpy" and __graalpython__.posix_module_backend != 'java'
+POSIX_BACKEND_IS_JAVA = sys.implementation.name == "graalpy" and __graalpython__.posix_module_backend() == 'java'
 
 def test_os_pipe():
     import os
@@ -122,6 +122,7 @@ class TestSubprocess(unittest.TestCase):
             print("===== stderr:")
             print(safe_decode(e.stderr))
             print("=============")
+            raise
         finally:
             if filename:
                os.remove(filename)
@@ -137,8 +138,7 @@ class TestSubprocess(unittest.TestCase):
                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
             ps_list = 'not available'
-            if sys.implementation.name == "graalpy" and \\
-                    and sys.platform.startswith("linux"):
+            if sys.implementation.name == "graalpy" and sys.platform.startswith("linux"):
                 ps_list = subprocess.check_output("ps", shell=True, text=True)
             res = os.waitpid(0, 0)
             msg = f"Spawned {p.pid=}, os.waitpid result={res}, output of ps:\\n{ps_list}"
