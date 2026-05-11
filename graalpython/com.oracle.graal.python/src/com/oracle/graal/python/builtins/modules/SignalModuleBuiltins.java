@@ -313,7 +313,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     private static Object handlerToPython(SignalHandler handler, int signum, ModuleData data) {
         if (!(handler instanceof Signals.PythonSignalHandler)) {
             // Save default JVM handlers to be restored later
-            data.defaultSignalHandlers.put(signum, handler);
+            data.defaultSignalHandlers.putIfAbsent(signum, handler);
         }
         if (handler == sun.misc.SignalHandler.SIG_DFL) {
             return Signals.SIG_DFL;
