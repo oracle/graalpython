@@ -58,8 +58,8 @@ def run_in_venv(venv, cmd, **kwargs):
     return run(['sh', '-c', f". {venv}/bin/activate && {shlex.join(cmd)}"], **kwargs)
 
 
-def replace_in_file(path: Path, pattern, replacement):
-    path.write_text(re.sub(pattern, replacement, path.read_text()))
+def replace_in_file(path: Path, pattern, replacement, flags=0):
+    path.write_text(re.sub(pattern, replacement, path.read_text(), flags=flags))
 
 
 def downstream_test(name):
@@ -222,7 +222,7 @@ def downstream_test_cython(graalpy, testdir):
     env["BACKEND"] = "c"
     run([graalpy, '-m', 'venv', str(venv)])
     if not CI:
-        replace_in_file(src / 'Tools/ci-run.sh', r'^\s*sudo', '# sudo')
+        replace_in_file(src / 'Tools/ci-run.sh', r'^\s*sudo', '# sudo', flags=re.MULTILINE)
         try:
             run([graalpy, '--version', '--experimental-options', '--engine.Compilation=false'])
         except subprocess.CalledProcessError:
