@@ -1419,7 +1419,7 @@ public final class PythonCextBuiltins {
         assert PythonContext.get(null).isNativeAccessAllowed();
         assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
 
-        // this upcall doesn't make sense for managed objects
+        // this upcall doesn't make sense for handle-space managed object stubs
         assert !HandlePointerConverter.pointsToPyHandleSpace(lPointer);
 
         Object object = GcNativePtrToPythonNode.executeUncached(lPointer);
