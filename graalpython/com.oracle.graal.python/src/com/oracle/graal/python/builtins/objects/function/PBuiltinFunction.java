@@ -71,40 +71,10 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @ExportLibrary(InteropLibrary.class)
 public final class PBuiltinFunction extends PythonBuiltinObject implements BoundBuiltinCallable<PBuiltinFunction> {
-    private static final class Executable {
-        private final RootNode functionRootNode;
-        private final Signature signature;
-
-        private Executable(PRootNode rootNode) {
-            this.functionRootNode = rootNode;
-            this.signature = rootNode.getSignature();
-        }
-
-        private RootCallTarget getCallTarget() {
-            return functionRootNode.getCallTarget();
-        }
-
-        private RootNode getFunctionRootNode() {
-            return functionRootNode;
-        }
-
-        private NodeFactory<? extends PythonBuiltinBaseNode> getBuiltinNodeFactory() {
-            return functionRootNode instanceof BuiltinFunctionRootNode builtinRoot ? builtinRoot.getFactory() : null;
-        }
-
-        private boolean declaresExplicitSelf() {
-            return !(functionRootNode instanceof BuiltinFunctionRootNode builtinRoot) || builtinRoot.declaresExplicitSelf();
-        }
-
-        private boolean forceSplitDirectCalls() {
-            return functionRootNode instanceof BuiltinFunctionRootNode builtinRoot && builtinRoot.getBuiltin().forceSplitDirectCalls();
-        }
-    }
-
     private final PString name;
     private final TruffleString qualname;
     private final Object enclosingType;
-    private final Executable executable;
+    private final RootNode functionRootNode;
     private final Signature signature;
     private final int flags;
     private final TpSlot slot;
@@ -112,7 +82,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    private PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, Executable executable,
+    private PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootNode functionRootNode,
+                    Signature signature,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         super(cls, shape);
         this.name = PythonUtils.toPString(name);
@@ -122,8 +93,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
             this.qualname = name;
         }
         this.enclosingType = enclosingType;
-        this.executable = executable;
-        this.signature = executable.signature;
+        this.functionRootNode = functionRootNode;
+        this.signature = signature;
         this.flags = flags;
         this.defaults = defaults;
         this.kwDefaults = kwDefaults != null ? kwDefaults : generateKwDefaults(signature);
@@ -133,17 +104,17 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
                     PRootNode rootNode) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode), null, null);
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, rootNode, rootNode.getSignature(), null, null);
     }
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
                     PRootNode rootNode, TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, new Executable(rootNode), slot, slotWrapper);
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, rootNode, rootNode.getSignature(), slot, slotWrapper);
     }
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, PBuiltinFunction source,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, source.executable, slot, slotWrapper);
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, source.functionRootNode, source.signature, slot, slotWrapper);
     }
 
     public static PKeyword[] generateKwDefaults(Signature signature) {
@@ -169,7 +140,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public RootNode getFunctionRootNode() {
-        return executable.getFunctionRootNode();
+        return functionRootNode;
     }
 
     /**
@@ -189,7 +160,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public NodeFactory<? extends PythonBuiltinBaseNode> getBuiltinNodeFactory() {
-        return executable.getBuiltinNodeFactory();
+        return functionRootNode instanceof BuiltinFunctionRootNode builtinRoot ? builtinRoot.getFactory() : null;
     }
 
     public int getFlags() {
@@ -241,15 +212,15 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public RootCallTarget getCallTarget() {
-        return executable.getCallTarget();
+        return functionRootNode.getCallTarget();
     }
 
     public boolean declaresExplicitSelf() {
-        return executable.declaresExplicitSelf();
+        return !(functionRootNode instanceof BuiltinFunctionRootNode builtinRoot) || builtinRoot.declaresExplicitSelf();
     }
 
     public boolean forceSplitDirectCalls() {
-        return executable.forceSplitDirectCalls();
+        return functionRootNode instanceof BuiltinFunctionRootNode builtinRoot && builtinRoot.getBuiltin().forceSplitDirectCalls();
     }
 
     public TruffleString getName() {
