@@ -78,6 +78,7 @@ import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.CApiConstant;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
@@ -98,7 +99,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
-import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -787,12 +787,12 @@ public final class CApiContext extends CExtContext {
 
     private static final NativeSignature ATTACH_NATIVE_THREAD_SIGNATURE = NativeSignature.create(NativeSimpleType.SINT32);
     private static final NativeSignature DETACH_NATIVE_THREAD_SIGNATURE = NativeSignature.create(NativeSimpleType.VOID);
-    /** Must stay in sync with {@code GRAALPY_ATTACH_NATIVE_FAILED} in {@code capi.h}. */
-    private static final int ATTACH_NATIVE_THREAD_FAILED = -1;
-    /** Must stay in sync with {@code GRAALPY_ATTACH_NATIVE_OWNED} in {@code capi.h}. */
-    private static final int ATTACH_NATIVE_THREAD_OWNED = 1;
-    /** Must stay in sync with {@code GRAALPY_ATTACH_NATIVE_FOREIGN} in {@code capi.h}. */
-    private static final int ATTACH_NATIVE_THREAD_FOREIGN = 2;
+    @CApiConstant //
+    private static final int GRAALPY_ATTACH_NATIVE_FAILED = -1;
+    @CApiConstant //
+    private static final int GRAALPY_ATTACH_NATIVE_OWNED = 1;
+    @CApiConstant //
+    private static final int GRAALPY_ATTACH_NATIVE_FOREIGN = 2;
     private static final MethodHandle HANDLE_ATTACH_NATIVE_THREAD;
     private static final MethodHandle HANDLE_DETACH_NATIVE_THREAD;
 
@@ -809,32 +809,25 @@ public final class CApiContext extends CExtContext {
 
     /**
      * Called from native threads before using the C API. Returns
-     * {@link #ATTACH_NATIVE_THREAD_OWNED} if this method entered the context and a matching
-     * {@link #detachNativeThread()} is required, {@link #ATTACH_NATIVE_THREAD_FOREIGN} if the context
+     * {@link #GRAALPY_ATTACH_NATIVE_OWNED} if this method entered the context and a matching
+     * {@link #detachNativeThread()} is required, {@link #GRAALPY_ATTACH_NATIVE_FOREIGN} if the context
      * was already active on this thread from Truffle/Java/Python, and
-     * {@link #ATTACH_NATIVE_THREAD_FAILED} if entering failed.
+     * {@link #GRAALPY_ATTACH_NATIVE_FAILED} if entering failed.
      */
     private int attachNativeThread() {
         CompilerAsserts.neverPartOfCompilation();
         TruffleContext truffleContext = getContext().getEnv().getContext();
         if (truffleContext.isActive()) {
-            return ATTACH_NATIVE_THREAD_FOREIGN;
+            return GRAALPY_ATTACH_NATIVE_FOREIGN;
         }
         try {
             Object previousContext = truffleContext.enter(null);
             attachedThreadPreviousContext.set(previousContext);
-            return ATTACH_NATIVE_THREAD_OWNED;
+            return GRAALPY_ATTACH_NATIVE_OWNED;
         } catch (Throwable t) {
             LOGGER.severe("could not attach native thread to polyglot context: " + t.getMessage());
-            return ATTACH_NATIVE_THREAD_FAILED;
+            return GRAALPY_ATTACH_NATIVE_FAILED;
         }
-    }
-
-    private static boolean assertAttachNativeThreadConstants() {
-        assert ATTACH_NATIVE_THREAD_FAILED == CConstants.GRAALPY_ATTACH_NATIVE_FAILED.intValue();
-        assert ATTACH_NATIVE_THREAD_OWNED == CConstants.GRAALPY_ATTACH_NATIVE_OWNED.intValue();
-        assert ATTACH_NATIVE_THREAD_FOREIGN == CConstants.GRAALPY_ATTACH_NATIVE_FOREIGN.intValue();
-        return true;
     }
 
     /**
@@ -911,7 +904,6 @@ public final class CApiContext extends CExtContext {
                         // This can happen when other languages restrict multithreading
                         LOGGER.warning(() -> "didn't start the background GC task due to: " + e.getMessage());
                     }
-                    assert assertAttachNativeThreadConstants();
                 } catch (ImportException e) {
                     context.setCApiState(PythonContext.CApiState.CANNOT_IMPORT);
                     throw e;

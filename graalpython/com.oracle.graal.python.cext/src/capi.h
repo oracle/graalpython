@@ -68,10 +68,6 @@
 typedef int (*graalpy_attach_native_thread_func)(void);
 typedef void (*graalpy_detach_native_thread_func)(void);
 
-#define GRAALPY_ATTACH_NATIVE_FAILED (-1)
-#define GRAALPY_ATTACH_NATIVE_OWNED 1
-#define GRAALPY_ATTACH_NATIVE_FOREIGN 2
-
 extern graalpy_attach_native_thread_func graalpy_attach_native_thread;
 extern graalpy_detach_native_thread_func graalpy_detach_native_thread;
 
