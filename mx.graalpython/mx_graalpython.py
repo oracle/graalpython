@@ -708,15 +708,26 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     run_leak_launcher(["--code", "pass", ])
     run_leak_launcher(["--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
     has_jep_454 = mx.get_jdk().version >= mx.VersionSpec("22.0.0")
+    c_api_leak_test = (
+        'import _testcapi; '
+        't = _testcapi.tuple_pack(2, "a", "b"); '
+        'assert _testcapi.tuple_get_item(t, 1) == "b"'
+    )
     # test leaks when some C module code is involved
     if has_jep_454:
-        run_leak_launcher(["--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+        run_leak_launcher([
+            "--forbid-capi-residue", "--code",
+            c_api_leak_test,
+        ])
     # test leaks with shared engine Python code only
     run_leak_launcher(["--shared-engine", "--code", "pass"])
     run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
     # test leaks with shared engine when some C module code is involved
     if has_jep_454:
-        run_leak_launcher(["--shared-engine", "--code", 'import _testcapi, mmap, bz2; print(memoryview(b"").nbytes)'])
+        run_leak_launcher([
+            "--shared-engine", "--forbid-capi-residue", "--code",
+            c_api_leak_test,
+        ])
     run_leak_launcher(["--shared-engine", "--code", '[10, 20]', "--python.UseNativePrimitiveStorageStrategy=true",
                        "--forbidden-class", "com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage",
                        "--forbidden-class", "com.oracle.graal.python.runtime.native_memory.NativePrimitiveReference"])
@@ -2924,6 +2935,7 @@ def run_leak_launcher(input_args):
     vm_args, graalpython_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     vm_args += mx.get_runtime_jvm_args(dists)
     vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.builtins=ALL-UNNAMED']
+    vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.builtins.objects.cext.capi.transitions=ALL-UNNAMED']
     vm_args.append('-Dpolyglot.engine.WarnInterpreterOnly=false')
     jdk = get_jdk()
     vm_args.append("com.oracle.graal.python.test.advanced.LeakTest")

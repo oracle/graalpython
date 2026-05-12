@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,9 @@ import org.netbeans.lib.profiler.heap.Heap;
 import org.netbeans.lib.profiler.heap.HeapFactory;
 import org.netbeans.lib.profiler.heap.Instance;
 import org.netbeans.lib.profiler.heap.JavaClass;
+import org.netbeans.lib.profiler.heap.ObjectArrayInstance;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.test.integration.Utils;
 import com.sun.management.HotSpotDiagnosticMXBean;
 
@@ -100,6 +102,7 @@ public class LeakTest extends AbstractLanguageLauncher {
     private boolean keepDump = false;
     private int repeatAndCheckSize = -1;
     private boolean nullStdout = false;
+    private boolean forbidCApiResidue = false;
     private String languageId;
     private String code;
     private List<String> forbiddenClasses = new ArrayList<>();
@@ -161,10 +164,91 @@ public class LeakTest extends AbstractLanguageLauncher {
                         }
                     }
                 }
+                if (forbidCApiResidue && checkCApiResidue(heap)) {
+                    fail = true;
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
             return fail;
+        }
+
+        private boolean checkCApiResidue(Heap heap) {
+            JavaClass cls = heap.getJavaClassByName(HandleContext.class.getName());
+            if (cls == null) {
+                System.err.println("Could not find " + HandleContext.class.getName() + " in heap dump");
+                return true;
+            }
+            boolean fail = false;
+            for (Object i : cls.getInstances()) {
+                Instance inst = (Instance) i;
+                if (!isReachable(inst)) {
+                    continue;
+                }
+                List<String> residues = new ArrayList<>();
+                addResidue(residues, inst, "referencesToBeFreed", this::collectionSize);
+                addResidue(residues, inst, "nativeLookup", this::collectionSize);
+                addResidue(residues, inst, "nativeWeakRef", this::collectionSize);
+                addResidue(residues, inst, "managedNativeLookup", this::collectionSize);
+                addResidue(residues, inst, "nativeTypeLookup", this::objectArraySize);
+                addResidue(residues, inst, "nativeStubLookup", this::objectArraySize);
+                addResidue(residues, inst, "nativeStorageReferences", this::collectionSize);
+                addResidue(residues, inst, "pyCapsuleReferences", this::collectionSize);
+                if (!residues.isEmpty()) {
+                    fail = true;
+                    System.err.println("C API residue in reachable HandleContext " + inst.getInstanceId() + ": " +
+                                    String.join(", ", residues));
+                }
+            }
+            return fail;
+        }
+
+        private void addResidue(List<String> residues, Instance inst, String name, FieldSize fieldSize) {
+            Object fieldValue = inst.getValueOfField(name);
+            if (fieldValue == null) {
+                residues.add(name + "=missing");
+                return;
+            }
+            int size = fieldSize.apply(fieldValue);
+            if (size > 0) {
+                residues.add(name + "=" + size);
+            }
+        }
+
+        @FunctionalInterface
+        private interface FieldSize {
+            int apply(Object object);
+        }
+
+        private int collectionSize(Object object) {
+            if (object instanceof Instance instance) {
+                Object size = instance.getValueOfField("size");
+                if (size instanceof Number n) {
+                    return n.intValue();
+                }
+                Object baseCount = instance.getValueOfField("baseCount");
+                if (baseCount instanceof Number n) {
+                    return n.intValue();
+                }
+                Object map = instance.getValueOfField("map");
+                if (map instanceof Instance mapInstance) {
+                    return collectionSize(mapInstance);
+                }
+            }
+            return 0;
+        }
+
+        private int objectArraySize(Object object) {
+            if (object instanceof ObjectArrayInstance array) {
+                int size = 0;
+                for (Object value : array.getValues()) {
+                    if (value != null) {
+                        size++;
+                    }
+                }
+                return size;
+            }
+            return 0;
         }
 
         private int getCntAndErrors(JavaClass cls, List<String> errors) {
@@ -173,7 +257,7 @@ public class LeakTest extends AbstractLanguageLauncher {
                 boolean realLeak = false;
                 for (Object i : cls.getInstances()) {
                     Instance inst = (Instance) i;
-                    if (inst.isGCRoot() || inst.getNearestGCRootPointer() != null) {
+                    if (isReachable(inst)) {
                         realLeak = true;
                         break;
                     }
@@ -186,6 +270,10 @@ public class LeakTest extends AbstractLanguageLauncher {
                 errors.add(sb.toString());
             }
             return cnt;
+        }
+
+        private boolean isReachable(Instance inst) {
+            return inst.isGCRoot() || inst.getNearestGCRootPointer() != null;
         }
 
         @SuppressWarnings("sync-override")
@@ -271,6 +359,8 @@ public class LeakTest extends AbstractLanguageLauncher {
                 }
             } else if (arg.equals("--null-stdout")) {
                 nullStdout = true;
+            } else if (arg.equals("--forbid-capi-residue")) {
+                forbidCApiResidue = true;
             } else {
                 unrecognized.add(arg);
             }
@@ -348,6 +438,7 @@ public class LeakTest extends AbstractLanguageLauncher {
 
     @Override
     protected void printHelp(OptionCategory maxCategory) {
-        System.out.println("--lang ID --code CODE --forbidden-class FQN [--forbidden-class FQN]* [--shared-engine] [--keep-dump] [POLYGLOT-OPTIONS]");
+        System.out.println("--lang ID --code CODE --forbidden-class FQN [--forbidden-class FQN]* " +
+                        "[--forbid-capi-residue] [--shared-engine] [--keep-dump] [POLYGLOT-OPTIONS]");
     }
 }
