@@ -17,7 +17,7 @@
         RUBYGEMS_MIRROR: "",
         JEKYLL_THEME_GIT: "",
         WEBSITE_GIT: "",
-        STAGING_DEPLOY_CMD: [],
+        STAGING_DEPLOY_CMD: [["echo", "1"]],
         GRAAL_ENTERPRISE_GIT: "",
         CI_OVERLAYS_GIT: "",
         BENCHMARK_CONFIG_GIT: "",
