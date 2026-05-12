@@ -179,7 +179,40 @@ def bcflags():
     return ''
 
 
+def _quote_argfile_arg(arg):
+    if not arg:
+        return '""'
+    if any(c.isspace() or c in arg for c in ['"', '#']):
+        return '"' + arg.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    return arg
+
+
 if WIN32:
+    original_NativeImageBuildTask_build = mx_sdk_vm_ng.NativeImageBuildTask.build
+
+    def build_libpythonvm_with_argfile_on_windows(self):
+        if self.subject.name != "libpythonvm":
+            return original_NativeImageBuildTask_build(self)
+
+        mx_util.ensure_dir_exists(self.subject.build_directory())
+        native_image_command = self.get_build_command()
+        argfile = os.path.join(self.subject.build_directory(), self.subject.output_file_name() + ".args")
+        with open(argfile, "w", newline="\n") as f:
+            for arg in native_image_command[1:]:
+                f.write(_quote_argfile_arg(arg) + "\n")
+
+        # The 25.0 Windows native-image launcher can split long --vm.* arguments
+        # while parsing them in cmd.exe. Keep the successful-build command file
+        # expanded for mx rebuild checks, but execute via an argfile.
+        out = mx.PrefixCapture(lambda l: mx.log(l, end=''), self.subject.output_file_name())
+        err = mx.PrefixCapture(lambda l: mx.log(l, end='', file=sys.stderr), out.identifier)
+        mx.run([native_image_command[0], "@" + argfile.replace(os.sep, "/")], nonZeroIsFatal=True, out=out, err=err)
+
+        with open(self._get_command_file(), 'w') as f:
+            f.writelines((l + os.linesep for l in native_image_command))
+
+    mx_sdk_vm_ng.NativeImageBuildTask.build = build_libpythonvm_with_argfile_on_windows
+
     # we need the .lib for pythonjni
     original_DefaultNativeProject_getArchivableResults = mx_native.DefaultNativeProject.getArchivableResults
     def getArchivableResultsWithLib(self, *args, **kwargs):
