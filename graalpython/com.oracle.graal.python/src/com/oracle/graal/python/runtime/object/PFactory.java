@@ -258,6 +258,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.tools.profiler.CPUSampler;
@@ -1075,27 +1076,31 @@ public final class PFactory {
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget ct) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct);
+        return createCode(language, ct, null);
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget ct, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct, filename);
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct.getRootNode(), Signature.fromCallTarget(ct),
+                        -1, -1, -1, null, null, null, null, null, filename, null, null, -1, null);
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget ct, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct, flags, firstlineno, linetable, filename);
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct.getRootNode(), Signature.fromCallTarget(ct),
+                        -1, -1, flags, null, null, null, null, null, filename, null, null, firstlineno, linetable);
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature, codeUnit, filename);
+        return createCode(language, callTarget.getRootNode(), signature, codeUnit, filename);
     }
 
-    public static PCode createCode(PythonLanguage language, PRootNode rootNode, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature, codeUnit, filename);
+    public static PCode createCode(PythonLanguage language, RootNode rootNode, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature,
+                        codeUnit.varnames.length, -1, -1, null, null, null, null, null, filename, codeUnit.name, codeUnit.qualname, -1, codeUnit.srcOffsetTable);
     }
 
-    public static PCode createCode(PythonLanguage language, PRootNode rootNode, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature, codeUnit, filename);
+    public static PCode createCode(PythonLanguage language, RootNode rootNode, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
+        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature,
+                        codeUnit.varnames.length, -1, -1, null, null, null, null, null, filename, codeUnit.name, codeUnit.qualname, -1, null);
     }
 
     public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, int nlocals,
@@ -1104,12 +1109,10 @@ public final class PFactory {
                     TruffleString[] freevars, TruffleString[] cellvars,
                     TruffleString filename, TruffleString name, TruffleString qualname,
                     int firstlineno, byte[] linetable) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), callTarget, signature,
-                        nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars,
-                        filename, name, qualname, firstlineno, linetable);
+        return createCode(language, callTarget.getRootNode(), signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
     }
 
-    public static PCode createCode(PythonLanguage language, PRootNode rootNode, Signature signature, int nlocals,
+    public static PCode createCode(PythonLanguage language, RootNode rootNode, Signature signature, int nlocals,
                     int stacksize, int flags, Object[] constants,
                     TruffleString[] names, TruffleString[] varnames,
                     TruffleString[] freevars, TruffleString[] cellvars,

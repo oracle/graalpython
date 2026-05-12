@@ -135,52 +135,7 @@ public final class PCode extends PythonBuiltinObject {
     // tuple of names of cell variables (referenced by containing scopes)
     private TruffleString[] cellvars;
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget) {
-        this(cls, instanceShape, callTarget, null);
-    }
-
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, TruffleString filename) {
-        super(cls, instanceShape);
-        this.rootNode = callTarget.getRootNode();
-        this.signature = Signature.fromCallTarget(callTarget);
-        this.filename = filename;
-    }
-
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
-        this(cls, instanceShape, callTarget);
-        this.flags = flags;
-        this.firstlineno = firstlineno;
-        this.linetable = linetable;
-        this.filename = filename;
-    }
-
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
-        this(cls, instanceShape, callTarget, signature, codeUnit.varnames.length, -1, -1, null, null,
-                        null, null, null, filename,
-                        codeUnit.name, codeUnit.qualname, -1, codeUnit.srcOffsetTable);
-    }
-
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals,
-                    int stacksize, int flags, Object[] constants, TruffleString[] names,
-                    TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
-                    TruffleString filename, TruffleString name, TruffleString qualname,
-                    int firstlineno, byte[] linetable) {
-        this(cls, instanceShape, (PRootNode) callTarget.getRootNode(), signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
-    }
-
-    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
-        this(cls, instanceShape, rootNode, signature, codeUnit.varnames.length, -1, -1, null, null,
-                        null, null, null, filename,
-                        codeUnit.name, codeUnit.qualname, -1, codeUnit.srcOffsetTable);
-    }
-
-    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
-        this(cls, instanceShape, rootNode, signature, codeUnit.varnames.length, -1, -1, null, null,
-                        null, null, null, filename,
-                        codeUnit.name, codeUnit.qualname, -1, null);
-    }
-
-    public PCode(Object cls, Shape instanceShape, PRootNode rootNode, Signature signature, int nlocals,
+    public PCode(Object cls, Shape instanceShape, RootNode rootNode, Signature signature, int nlocals,
                     int stacksize, int flags, Object[] constants, TruffleString[] names,
                     TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
                     TruffleString filename, TruffleString name, TruffleString qualname,
@@ -518,7 +473,7 @@ public final class PCode extends PythonBuiltinObject {
     private PCode createCode(BytecodeDSLCodeUnit codeUnit) {
         PBytecodeDSLRootNode outerRootNode = (PBytecodeDSLRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
-        PBytecodeDSLRootNode rN = (PBytecodeDSLRootNode) language.createCachedRootNode(l -> codeUnit.createRootNode(l, outerRootNode.getSource()), codeUnit);
+        PBytecodeDSLRootNode rN = language.createCachedRootNode(l -> codeUnit.createRootNode(l, outerRootNode.getSource()), codeUnit);
         return PFactory.createCode(language, rN, rN.getSignature(), codeUnit, getFilename());
     }
 
@@ -536,8 +491,8 @@ public final class PCode extends PythonBuiltinObject {
     private PCode createCode(BytecodeCodeUnit codeUnit) {
         PBytecodeRootNode outerRootNode = (PBytecodeRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
-        PRootNode executableRootNode = (PRootNode) language.createCachedRootNode(
-                        l -> PBytecodeRootNode.createMaybeGenerator(language, codeUnit, outerRootNode.getSource(), outerRootNode.isInternal()), codeUnit);
+        PRootNode executableRootNode = language.createCachedRootNode(
+                        l -> (PRootNode) PBytecodeRootNode.createMaybeGenerator(language, codeUnit, outerRootNode.getSource(), outerRootNode.isInternal()), codeUnit);
         RootNode rN = executableRootNode;
         if (executableRootNode instanceof PBytecodeGeneratorFunctionRootNode generatorRoot) {
             rN = generatorRoot.getBytecodeRootNode();
