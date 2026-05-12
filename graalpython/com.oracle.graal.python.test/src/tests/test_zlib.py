@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -280,3 +280,21 @@ def test_various_chunks():
     decompressed += decompressor.decompress(compressed[200:])
 
     assert decompressed == contents
+
+def test_gzip_decompress_max_length_unconsumed_tail():
+    import gzip
+
+    contents = bytes(range(251)) * 100
+    compressed = gzip.compress(contents)
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+
+    decompressed = b''
+    for i in range(0, len(compressed), 8192):
+        decompressed += decompressor.decompress(compressed[i:i + 8192], 1)
+        while decompressor.unconsumed_tail:
+            decompressed += decompressor.decompress(decompressor.unconsumed_tail, 1)
+    decompressed += decompressor.flush()
+
+    assert decompressed == contents
+    assert decompressor.eof
+    assert decompressor.unused_data == b''
