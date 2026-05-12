@@ -298,7 +298,7 @@ public final class PythonCextTypeBuiltins {
                 throw PRaiseNode.raiseStatic(EncapsulatingNodeReference.getCurrent().get(), PythonBuiltinClassType.ValueError, ErrorMessages.METHOD_CANNOT_BE_BOTH_CLASS_AND_STATIC);
             }
             assert func != null;
-            return PFactory.createClassmethodFromCallableObj(language, func);
+            return PFactory.createBuiltinClassmethodFromCallableObj(language, func);
         } else if (CExtContext.isMethStatic(flags)) {
             return PFactory.createStaticmethodFromCallableObj(language, func);
         }

@@ -104,7 +104,7 @@ public final class PythonCextDescrBuiltins {
         Object type = NativeToPythonClassInternalNode.executeUncached(typeRaw);
         PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, type, flags);
         assert func != null;
-        PDecoratedMethod classMethod = PFactory.createClassmethodFromCallableObj(language, func);
+        PDecoratedMethod classMethod = PFactory.createBuiltinClassmethodFromCallableObj(language, func);
         WriteAttributeToPythonObjectNode.executeUncached(classMethod, T___NAME__, name);
         WriteAttributeToPythonObjectNode.executeUncached(classMethod, T___DOC__, doc);
         HiddenAttr.WriteLongNode.executeUncached(classMethod, METHOD_DEF_PTR, methodDefPtr);

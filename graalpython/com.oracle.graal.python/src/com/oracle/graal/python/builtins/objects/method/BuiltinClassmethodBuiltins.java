@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,18 +61,28 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -86,6 +96,58 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BuiltinClassmethodBuiltinsFactory.getFactories();
+    }
+
+    @Slot(SlotKind.tp_descr_get)
+    @ReportPolymorphism
+    @GenerateUncached
+    @GenerateNodeFactory
+    abstract static class GetNode extends DescrGetBuiltinNode {
+        // If self.getCallable() is null, let the next @Specialization handle that
+        @Specialization(guards = {"isSingleContext()", "isNoValue(type) == typeIsNoValue", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
+        static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, Object type,
+                        @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
+                        @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
+                        @Cached("isNoValue(type)") boolean typeIsNoValue,
+                        @Exclusive @Cached GetClassNode getClass,
+                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            Object actualType = typeIsNoValue ? getClass.execute(inliningTarget, obj) : type;
+            return doGet(inliningTarget, actualType, cachedCallable, makeMethod, raiseNode);
+        }
+
+        @InliningCutoff
+        @Specialization(replaces = "getCached")
+        static Object get(PDecoratedMethod self, Object obj, Object type,
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached GetClassNode getClass,
+                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            Object actualType = PGuards.isNoValue(type) ? getClass.execute(inliningTarget, obj) : type;
+            return doGet(inliningTarget, actualType, ClassmethodCommonBuiltins.getCallable(inliningTarget, self, raiseNode),
+                            makeMethod, raiseNode);
+        }
+
+        private static Object doGet(Node inliningTarget, Object type, Object callable,
+                        ClassmethodCommonBuiltins.MakeMethodNode makeMethod, PRaiseNode raiseNode) {
+            checkBuiltinClassMethod(inliningTarget, callable, type, raiseNode);
+            return makeMethod.execute(inliningTarget, type, callable);
+        }
+
+        private static void checkBuiltinClassMethod(Node inliningTarget, Object callable, Object type, PRaiseNode raiseNode) {
+            if (!PGuards.isPythonClass(type)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
+            }
+            if (callable instanceof PBuiltinFunction builtinFunction) {
+                Object enclosingType = builtinFunction.getEnclosingType();
+                // Binding object.__init_subclass__ happens during class creation. Avoid caching the
+                // transient derived class strongly from this descriptor slot.
+                if (enclosingType != null && !IsSubtypeNode.getUncached().execute(type, enclosingType)) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
+                }
+            }
+        }
     }
 
     @Builtin(name = J___NAME__, maxNumOfPositionalArgs = 1, isGetter = true)
