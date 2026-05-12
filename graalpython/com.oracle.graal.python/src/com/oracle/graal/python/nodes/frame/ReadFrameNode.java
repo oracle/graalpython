@@ -171,13 +171,17 @@ public abstract class ReadFrameNode extends Node {
     }
 
     public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags) {
-        return execute(frame, startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, selector, level, callerFlags | CallerFlags.NEEDS_PFRAME);
+        return getFrameForReference(frame, startFrameInfo, selector, level, callerFlags, null);
     }
 
-    protected abstract PFrame execute(Frame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags);
+    public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags, Thread frameThread) {
+        return execute(frame, startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, selector, level, callerFlags | CallerFlags.NEEDS_PFRAME, frameThread);
+    }
+
+    protected abstract PFrame execute(Frame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags, Thread frameThread);
 
     @Specialization
-    PFrame read(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
+    PFrame read(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags, Thread frameThread,
                     @Bind Node inliningTarget,
                     @Cached MaterializeFrameNode materializeFrameNode,
                     @Cached InlinedBranchProfile stackWalkProfile1,
@@ -233,17 +237,16 @@ public abstract class ReadFrameNode extends Node {
          * It is necessary to continue from where we stopped with the backref walk because the
          * original starting frame might not be on stack anymore
          */
-        return readSlowPath(curFrameInfo, frameAccess, selector, level - i, callerFlags, materializeFrameNode);
+        return readSlowPath(curFrameInfo, frameAccess, selector, level - i, callerFlags, frameThread, materializeFrameNode);
     }
 
     @TruffleBoundary
     @SuppressWarnings("try")
-    private PFrame readSlowPath(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
+    private PFrame readSlowPath(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags, Thread frameThread,
                     MaterializeFrameNode materializeFrameNode) {
-        if (level == 0 && startFrameInfo != null && startFrameInfo.getPyFrame() != null && !selector.skip(startFrameInfo.getRootNode()) && startFrameInfo.getPyFrame().getThread() != null &&
-                        startFrameInfo.getPyFrame().getThread() != Thread.currentThread()) {
+        Thread thread = getFrameThread(startFrameInfo, frameThread);
+        if (level == 0 && startFrameInfo != null && !selector.skip(startFrameInfo.getRootNode()) && thread != null && thread != Thread.currentThread()) {
             // We have the frame we're looking for, but it's on another thread
-            Thread thread = startFrameInfo.getPyFrame().getThread();
             if (thread.isAlive()) {
                 try (var gil = GilNode.uncachedRelease()) {
                     // Schedule a safepoint action on that thread
@@ -272,11 +275,21 @@ public abstract class ReadFrameNode extends Node {
                     }, future);
                 }
             }
-            assert !startFrameInfo.getPyFrame().outdatedCallerFlags(callerFlags);
-            return startFrameInfo.getPyFrame();
+            PFrame pyFrame = startFrameInfo.getPyFrame();
+            if (pyFrame != null) {
+                assert !pyFrame.outdatedCallerFlags(callerFlags);
+                return pyFrame;
+            }
         }
         StackWalkResult callerFrameResult = getFrame(this, startFrameInfo, frameAccess, selector, level, callerFlags);
         return processStackWalkResult(materializeFrameNode, callerFlags, callerFrameResult);
+    }
+
+    private static Thread getFrameThread(PFrame.Reference startFrameInfo, Thread frameThread) {
+        if (startFrameInfo != null && startFrameInfo.getPyFrame() != null) {
+            return startFrameInfo.getPyFrame().getThread();
+        }
+        return frameThread;
     }
 
     private static PFrame processStackWalkResult(MaterializeFrameNode materializeFrameNode, int callerFlags, StackWalkResult callerFrameResult) {
