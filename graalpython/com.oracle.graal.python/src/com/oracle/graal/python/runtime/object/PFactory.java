@@ -1103,15 +1103,6 @@ public final class PFactory {
                         codeUnit.varnames.length, -1, -1, null, null, null, null, null, filename, codeUnit.name, codeUnit.qualname, -1, null);
     }
 
-    public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, int nlocals,
-                    int stacksize, int flags, Object[] constants,
-                    TruffleString[] names, TruffleString[] varnames,
-                    TruffleString[] freevars, TruffleString[] cellvars,
-                    TruffleString filename, TruffleString name, TruffleString qualname,
-                    int firstlineno, byte[] linetable) {
-        return createCode(language, callTarget.getRootNode(), signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
-    }
-
     public static PCode createCode(PythonLanguage language, RootNode rootNode, Signature signature, int nlocals,
                     int stacksize, int flags, Object[] constants,
                     TruffleString[] names, TruffleString[] varnames,
