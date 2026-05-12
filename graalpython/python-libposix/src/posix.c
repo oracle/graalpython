@@ -866,8 +866,8 @@ int32_t call_getsockname(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
 }
 
 //TODO len should be size_t, retval should be ssize_t
-int32_t call_send(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags) {
-    return send(sockfd, buf + offset, len, flags);
+int32_t call_send(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    return send(sockfd, buf, len, flags);
 }
 
 int32_t call_sendto(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *addr, int32_t addr_len) {
@@ -876,8 +876,8 @@ int32_t call_sendto(int32_t sockfd, void *buf, int32_t offset, int32_t len, int3
     return sendto(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, addr_len);
 }
 
-int32_t call_recv(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags) {
-    return recv(sockfd, buf + offset, len, flags);
+int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    return recv(sockfd, buf, len, flags);
 }
 
 int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *src_addr, int32_t *addr_len) {

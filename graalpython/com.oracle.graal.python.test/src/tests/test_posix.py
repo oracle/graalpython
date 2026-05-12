@@ -258,6 +258,18 @@ class PosixTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, r"expected C.__fspath__\(\) to return str or bytes, not bytearray"):
             os.open(C(), 0)
 
+    def test_open_bytes_path(self):
+        try:
+            with open(os.fsencode(TEST_FULL_PATH1), os.O_WRONLY | os.O_CREAT) as fd:
+                os.write(fd, b'hello')
+            with open(os.fsencode(TEST_FULL_PATH1), os.O_RDONLY) as fd:
+                self.assertEqual(b'hello', os.read(fd, 5))
+        finally:
+            try:
+                os.unlink(TEST_FULL_PATH1)
+            except Exception:
+                pass
+
     def test_fd_converter(self):
         class MyInt(int):
             def fileno(self): return 0

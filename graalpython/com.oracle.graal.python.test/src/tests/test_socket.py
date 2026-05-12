@@ -110,3 +110,33 @@ def test_recv_into():
         sock.recv_into(buffer, 1)
         assert b == b'123'
     thread.join()
+
+
+def test_sendto_recvfrom_roundtrip():
+    try:
+        if __graalpython__.posix_module_backend() == "java":
+            return
+    except NameError:
+        pass
+
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server:
+        server.bind(("127.0.0.1", 0))
+        server_addr = server.getsockname()
+
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as client:
+            client.bind(("127.0.0.1", 0))
+            client_addr = client.getsockname()
+
+            sent = client.sendto(b"phase5", server_addr)
+            assert sent == 6
+
+            data, addr = server.recvfrom(64)
+            assert data == b"phase5"
+            assert addr == client_addr
+
+            sent = server.sendto(b"reply", client_addr)
+            assert sent == 5
+
+            data, addr = client.recvfrom(64)
+            assert data == b"reply"
+            assert addr == server_addr
