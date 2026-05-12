@@ -1185,7 +1185,7 @@ public abstract class CExtNodes {
         Object methodDoc = PNone.NONE;
         long methodDocPtr = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_doc);
         if (methodDocPtr != NULLPTR) {
-            methodDoc = FromCharPointerNode.executeUncached(methodDocPtr, false);
+            methodDoc = FromCharPointerNode.executeUncached(methodDocPtr);
         }
 
         int flags = readStructArrayIntField(methodDefPtr, element, PyMethodDef__ml_flags);

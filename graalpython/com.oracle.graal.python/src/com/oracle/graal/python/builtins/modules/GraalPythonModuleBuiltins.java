@@ -217,7 +217,6 @@ import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @CoreFunctions(defineModule = J___GRAALPYTHON__, isEager = true)
 public final class GraalPythonModuleBuiltins extends PythonBuiltins {
@@ -1549,19 +1548,14 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PTuple doCreate(long arrowArrayAddr, long arrowSchemaAddr,
                         @Bind Node inliningTarget,
-                        @Cached PythonCextCapsuleBuiltins.PyCapsuleNewNode pyCapsuleNewNode,
-                        @Cached TruffleString.AsNativeNode asNativeNode,
-                        @Cached TruffleString.GetInternalNativePointerNode getInternalNativePointerNode,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+                        @Cached PythonCextCapsuleBuiltins.PyCapsuleNewNode pyCapsuleNewNode) {
             PythonContext ctx = getContext(inliningTarget);
             long arrayDestructor = ctx.arrowSupport.getArrowArrayDestructor(inliningTarget);
-            TruffleString arrayCapsuleName = asNativeNode.execute(ArrowArray.CAPSULE_NAME, ctx::allocateContextMemory, Encoding.UTF_8, false, true);
-            long arrayCapsuleNamePointer = PythonUtils.coerceToLong(getInternalNativePointerNode.execute(arrayCapsuleName, Encoding.UTF_8), lib);
+            long arrayCapsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowArray.CAPSULE_NAME, true);
             PyCapsule arrowArrayCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowArrayAddr, arrayCapsuleNamePointer, arrayDestructor);
 
             long schemaDestructor = ctx.arrowSupport.getArrowSchemaDestructor(inliningTarget);
-            TruffleString schemaCapsuleName = asNativeNode.execute(ArrowSchema.CAPSULE_NAME, ctx::allocateContextMemory, Encoding.UTF_8, false, true);
-            long schemaCapsuleNamePointer = PythonUtils.coerceToLong(getInternalNativePointerNode.execute(schemaCapsuleName, Encoding.UTF_8), lib);
+            long schemaCapsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowSchema.CAPSULE_NAME, true);
             PyCapsule arrowSchemaCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowSchemaAddr, schemaCapsuleNamePointer, schemaDestructor);
             return PFactory.createTuple(ctx.getLanguage(inliningTarget), new Object[]{arrowSchemaCapsule, arrowArrayCapsule});
         }

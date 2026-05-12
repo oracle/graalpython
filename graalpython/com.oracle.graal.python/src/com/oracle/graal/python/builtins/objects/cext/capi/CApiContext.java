@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
 import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
@@ -955,6 +956,10 @@ public final class CApiContext extends CExtContext {
         try {
             if (PythonContext.isCurrentThreadVirtual()) {
                 throw new ApiInitException(ErrorMessages.NATIVE_EXTENSIONS_VIRTUAL_THREAD);
+            }
+            // Check this before marking the API as loaded so that we don't get a different error the second time a C import is attempted
+            if (!NativeAccessSupport.isAvailable()) {
+                throw new ImportException(null, name, path, toTruffleStringUncached(NativeContext.UNAVAILABLE));
             }
             boolean useNative = true;
             boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());

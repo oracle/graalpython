@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -51,9 +51,9 @@ TYPE_INDIRECT_BOUNDARY_UNCACHED_INTEROP = 4
 NUM_ITERATIONS = 1000000 if sys.implementation.name == "graalpy" else 5
 
 # Because of splitting, the code may not stabilize after first iteration and we may
-# see some stack walks during first few iterations. With default runtime or splitting
-# disabled, these tests should pass with STABILIZES_AT=1
-STABILIZES_AT = int(os.environ.get('GRAALPY_TEST_INDIRECT_CALL_STABILIZES_AT', 10))
+# see some stack walks at later points. With default runtime or splitting
+# disabled, these tests should pass with ALLOWED_NUM_STACK_WALKS=2 (uncached may add one more)
+ALLOWED_NUM_STACK_WALKS = int(os.environ.get('GRAALPY_ALLOWED_NUM_STACK_WALKS', 6))
 
 has_stack_walk_check = False
 if sys.implementation.name == "graalpy":
@@ -90,13 +90,11 @@ def check_get_frame_no_deopt(forwarding_call, *args):
         known_local = x
         return forwarding_call(callee, *args)
 
+    stack_walks = 0
     for i in range(NUM_ITERATIONS):
         assert fun(i * 2).f_locals['known_local'] == i * 2
-        if i <= STABILIZES_AT:
-            # just reset the flag
-            was_stack_walk(False)
-        else:
-            assert not was_stack_walk(False), f"{i=}"
+        stack_walks += was_stack_walk(False)
+    assert stack_walks <= ALLOWED_NUM_STACK_WALKS, f"Too many stack walks recorded: {stack_walks}"
 
 def test_capi_get_frame():
     check_get_frame_no_deopt(IndirectCApiCallTester().call)
@@ -128,13 +126,11 @@ class Var:
 
 def test_format_with_get_frame_in_str():
     secret_var = 42
+    stack_walks = 0
     for i in range(NUM_ITERATIONS):
         assert "{}".format(Var("secret_var")) == "42"
-        if i <= STABILIZES_AT:
-            # just reset the flag
-            was_stack_walk(False)
-        else:
-            assert not was_stack_walk(False), f"{i=}"
+        stack_walks += was_stack_walk(False)
+    assert stack_walks <= ALLOWED_NUM_STACK_WALKS, f"Too many stack walks recorded: {stack_walks}"
 
 escape_frame = None
 class AttrGetter:
@@ -146,13 +142,11 @@ class AttrGetter:
 
 def test_obj_with_get_frame_in_getattribute():
     secret_var = 42
+    stack_walks = 0
     for i in range(NUM_ITERATIONS):
         assert AttrGetter().secret_var == 42
-        if i <= STABILIZES_AT:
-            # just reset the flag
-            was_stack_walk(False)
-        else:
-            assert not was_stack_walk(False), f"{i=}"
+        stack_walks += was_stack_walk(False)
+    assert stack_walks <= ALLOWED_NUM_STACK_WALKS, f"Too many stack walks recorded: {stack_walks}"
 
 # === exception state
 
@@ -174,15 +168,11 @@ def check_get_ex_no_deopt(forwarding_call, *args):
         assert type(ex) == IndexError, f"{ex=}, {msg=}"
         assert str(ex) == str(msg), f"{ex=}, {msg=}"
 
+    stack_walks = 0
     for i in range(NUM_ITERATIONS):
         check_ex(i*2)
-        if i <= max(STABILIZES_AT, 2):
-            # uncached interpreter always passes exception down, so on first call we do not walk the stack
-            # and do not invalidate the assumptions. We can proactively walk the stack just to invalidate
-            # the assumptions if we ever find that this is a problem.
-            was_stack_walk(False)
-        else:
-            assert not was_stack_walk(False)
+        stack_walks += was_stack_walk(False)
+    assert stack_walks <= ALLOWED_NUM_STACK_WALKS, f"Too many stack walks recorded: {stack_walks}"
 
 def test_capi_get_ex():
     check_get_ex_no_deopt(IndirectCApiCallTester().call)
@@ -209,16 +199,14 @@ class ExStr:
         return str(self.escape_ex)
 
 def test_format_with_get_ex_in_str():
+    stack_walks = 0
     for i in range(NUM_ITERATIONS):
         try:
             raise IndexError(str(i))
         except:
             assert "{}".format(ExStr()) == str(i)
-        if i <= max(STABILIZES_AT, 2):
-            # see similar code above
-            was_stack_walk(False)
-        else:
-            assert not was_stack_walk(False)
+        stack_walks += was_stack_walk(False)
+    assert stack_walks <= ALLOWED_NUM_STACK_WALKS, f"Too many stack walks recorded: {stack_walks}"
 
 escape_ex = None
 class AttrGetterFromEx:
@@ -229,13 +217,11 @@ class AttrGetterFromEx:
 
 
 def test_obj_with_get_ex_in_getattribute():
+    stack_walks = 0
     for i in range(NUM_ITERATIONS):
         try:
             raise IndexError(str(i))
         except:
             assert AttrGetterFromEx().dummy_attribute == str(i)
-        if i <= max(STABILIZES_AT, 2):
-            # see similar code above
-            was_stack_walk(False)
-        else:
-            assert not was_stack_walk(False)
+        stack_walks += was_stack_walk(False)
+    assert stack_walks <= ALLOWED_NUM_STACK_WALKS, f"Too many stack walks recorded: {stack_walks}"

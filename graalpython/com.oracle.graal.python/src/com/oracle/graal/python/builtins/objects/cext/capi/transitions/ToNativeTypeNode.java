@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBasicSizeNode;
@@ -103,13 +104,8 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
-import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
 
 public abstract class ToNativeTypeNode {
 
@@ -196,22 +192,9 @@ public abstract class ToNativeTypeNode {
 
         writeLongField(mem, CFields.PyVarObject__ob_size, 0L);
 
-        TruffleString nameUtf8 = SwitchEncodingNode.getUncached().execute(clazz.getName(), Encoding.UTF_8);
         // TODO(fa): the allocated 'char *' will be free'd at context finalization. It should be
         // free'd if the type is free'd.
-        TruffleString nativeUncached = nameUtf8.asNativeUncached(ctx::allocateContextMemory, Encoding.UTF_8, false, true);
-        Object internalNativePointerUncached = nativeUncached.getInternalNativePointerUncached(Encoding.UTF_8);
-        if (internalNativePointerUncached == null) {
-            /*
-             * Native TruffleStrings created from raw long pointers do not have a pointer object for
-             * lifetime tracking. Force a managed copy before allocating the tp_name with context
-             * lifetime. See GR-75283.
-             */
-            TruffleString managedName = TruffleString.AsManagedNode.getUncached().execute(nameUtf8, Encoding.UTF_8);
-            nativeUncached = managedName.asNativeUncached(ctx::allocateContextMemory, Encoding.UTF_8, false, true);
-            internalNativePointerUncached = nativeUncached.getInternalNativePointerUncached(Encoding.UTF_8);
-        }
-        long namePointer = PythonUtils.coerceToLong(internalNativePointerUncached, InteropLibrary.getUncached());
+        long namePointer = ctx.stringToNativeUtf8Bytes(TypeNodes.GetTpNameNode.executeUncached(clazz), true);
 
         writePtrField(mem, CFields.PyTypeObject__tp_name, namePointer);
         writeLongField(mem, CFields.PyTypeObject__tp_basicsize, GetBasicSizeNode.executeUncached(clazz));

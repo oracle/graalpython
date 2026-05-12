@@ -2074,7 +2074,17 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static PTuple perform(Object[] array,
                         @Bind PBytecodeDSLRootNode rootNode) {
-            SequenceStorage storage = new ObjectSequenceStorage(array);
+            SequenceStorage storage;
+            if (rootNode.getLanguage().isSingleContext()) {
+                storage = new ObjectSequenceStorage(array, array.length);
+            } else {
+                /*
+                * In multi-context mode, even if we started with context-independent objects, they can get replaced with
+                * context-dependent ones when using the C API (i.e. TruffleString gets "inflated" to PString).
+                * So we need to copy.
+                */
+                storage = new ObjectSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
+            }
             return PFactory.createTuple(rootNode.getLanguage(), storage);
         }
     }

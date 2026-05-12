@@ -74,6 +74,11 @@ final class NativeAccessSupportJdk21 extends NativeAccessSupport {
     }
 
     @Override
+    protected boolean isAvailableImpl() {
+        return false;
+    }
+
+    @Override
     protected boolean isCurrentThreadVirtualImpl() {
         return false;
     }

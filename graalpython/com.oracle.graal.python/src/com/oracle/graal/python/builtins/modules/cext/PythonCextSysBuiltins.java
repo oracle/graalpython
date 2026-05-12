@@ -120,7 +120,7 @@ public final class PythonCextSysBuiltins {
     @CApiBuiltin(ret = Int, args = {Int, ConstCharPtr}, call = Ignored, acquireGil = false)
     @TruffleBoundary
     public static int GraalPyPrivate_Sys_WriteStd(int fd, long msgPtr) {
-        TruffleString msg = FromCharPointerNode.executeUncached(msgPtr, false);
+        TruffleString msg = FromCharPointerNode.executeUncached(msgPtr);
         PyObjectCallMethodObjArgs.executeUncached(selectOut(fd), T_WRITE, msg);
         return 0;
     }

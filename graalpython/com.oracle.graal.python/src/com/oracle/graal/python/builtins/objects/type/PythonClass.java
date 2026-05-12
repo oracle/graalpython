@@ -322,7 +322,7 @@ public final class PythonClass extends PythonManagedClass {
                     break;
                 }
                 PythonClass subType = subTypeRef.get();
-                if (subType != null) {
+                if (subType != null && subType.hasMroShapeSubTypes()) {
                     subType.mroShape = MroShape.create(subType.getMethodResolutionOrder(), lang);
                 }
             }

@@ -113,9 +113,8 @@ public final class PythonCextStructSeqBuiltins {
                     break;
                 }
                 long doc = readPtrArrayElement(fields, pos * 2L + 1);
-                // CPython also directly references name and doc string pointers without copying.
-                names.add(FromCharPointerNode.executeUncached(name, false));
-                docs.add(doc == NULLPTR ? null : FromCharPointerNode.executeUncached(doc, false));
+                names.add(FromCharPointerNode.executeUncached(name));
+                docs.add(doc == NULLPTR ? null : FromCharPointerNode.executeUncached(doc));
                 pos++;
             }
 
