@@ -222,6 +222,9 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     private void exit(int exitCode) {
+        if (getSourceSection() == null) {
+            throw new PythonExitException(this, exitCode);
+        }
         if (!getSourceSection().getSource().isInteractive()) {
             if (getContext().isChildContext()) {
                 getContext().getChildContextData().setExitCode(1);
@@ -264,7 +267,16 @@ public final class TopLevelExceptionHandler extends RootNode {
     @TruffleBoundary
     private void handleSystemExit(PBaseException pythonException) {
         PythonContext theContext = getContext();
-        if (theContext.getOption(PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
+
+        boolean executingNonInteractiveSource;
+        if (source != null) {
+            executingNonInteractiveSource = !source.isInteractive();
+        } else {
+            SourceSection section = getSourceSection();
+            executingNonInteractiveSource = section != null && !section.getSource().isInteractive();
+        }
+
+        if (theContext.getOption(PythonOptions.InspectFlag) && executingNonInteractiveSource) {
             // Don't exit if -i flag was given and we're not yet running interactively
             return;
         }

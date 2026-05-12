@@ -211,7 +211,12 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     public static TruffleString extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        String fileName = getSourceSectionFileName(funcRootNode.getSourceSection());
+        SourceSection sourceSection = funcRootNode.getSourceSection();
+        if (sourceSection == null && funcRootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+            bytecodeDSLRootNode.getRootNodes().ensureSourceInformation();
+            sourceSection = funcRootNode.getSourceSection();
+        }
+        String fileName = getSourceSectionFileName(sourceSection);
         if (fileName != null) {
             return toInternedTruffleStringUncached(fileName);
         }
@@ -505,7 +510,7 @@ public final class PCode extends PythonBuiltinObject {
     private PCode createCode(BytecodeDSLCodeUnit codeUnit) {
         PBytecodeDSLRootNode outerRootNode = (PBytecodeDSLRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> codeUnit.createRootNode(l, outerRootNode.getSource()), codeUnit);
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> codeUnit.createRootNode(l, outerRootNode.isInternal()), codeUnit);
         PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) callTarget.getRootNode();
         return PFactory.createCode(language, callTarget, rootNode.getSignature(), codeUnit, getFilename());
     }
