@@ -128,6 +128,34 @@ def test_weakref_object_type_support():
         assert False, "should throw TypeError for unsupported objects"
 
 
+def test_proxy_does_not_keep_object_alive():
+    import gc
+
+    class A:
+        attr = 42
+
+    a = A()
+    proxy = weakref.proxy(a)
+    ref = weakref.ref(a)
+
+    assert proxy.attr == 42
+    a = None
+
+    for _ in range(10000):
+        gc.collect()
+        if ref() is None:
+            break
+
+    assert ref() is None
+    assert "NoneType" in repr(proxy)
+    try:
+        getattr(proxy, "attr")
+    except ReferenceError:
+        pass
+    else:
+        assert False, "weakref proxy kept the object alive"
+
+
 def test_proxy_getitem():
     class A:
         def __init__(self, collection):
