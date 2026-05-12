@@ -517,23 +517,24 @@ public final class PFactory {
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode) {
         return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
-                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode);
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode, rootNode.getSignature(), null, null);
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, PRootNode rootNode) {
-        return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type, defaults, kw, flags, rootNode);
+        return new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type, defaults, kw, flags, rootNode,
+                        rootNode.getSignature(), null, null);
     }
 
     public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, PRootNode rootNode, TpSlot slot,
                     PExternalFunctionWrapper slotWrapper) {
         return new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type,
-                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode, slot, slotWrapper);
+                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, rootNode, rootNode.getSignature(), slot, slotWrapper);
     }
 
     public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, PRootNode rootNode,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         return new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, flags,
-                        rootNode, slot, slotWrapper);
+                        rootNode, rootNode.getSignature(), slot, slotWrapper);
     }
 
     public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, PRootNode rootNode, TpSlot slot) {
@@ -545,7 +546,7 @@ public final class PFactory {
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, PBuiltinFunction function, Object klass) {
         PythonBuiltinClassType type = (PythonBuiltinClassType) function.getPythonClass();
         return new PBuiltinFunction(type, type.getInstanceShape(language), function.getName(), klass,
-                        function.getDefaults(), function.getKwDefaults(), function.getFlags(), function,
+                        function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getFunctionRootNode(), function.getSignature(),
                         function.getSlot(), function.getSlotWrapper());
     }
 

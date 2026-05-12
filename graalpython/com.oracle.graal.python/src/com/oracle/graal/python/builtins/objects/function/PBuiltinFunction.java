@@ -43,7 +43,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -82,7 +81,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    private PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootNode functionRootNode,
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootNode functionRootNode,
                     Signature signature,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         super(cls, shape);
@@ -100,21 +99,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.kwDefaults = kwDefaults != null ? kwDefaults : generateKwDefaults(signature);
         this.slot = slot;
         this.slotWrapper = slotWrapper;
-    }
-
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
-                    PRootNode rootNode) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, rootNode, rootNode.getSignature(), null, null);
-    }
-
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags,
-                    PRootNode rootNode, TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, rootNode, rootNode.getSignature(), slot, slotWrapper);
-    }
-
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, PBuiltinFunction source,
-                    TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, source.functionRootNode, source.signature, slot, slotWrapper);
     }
 
     public static PKeyword[] generateKwDefaults(Signature signature) {
