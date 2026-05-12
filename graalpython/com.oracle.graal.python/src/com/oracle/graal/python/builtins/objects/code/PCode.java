@@ -629,7 +629,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     public String toDisassembledString(boolean quickened) {
-        RootNode rN = getRootCallTarget().getRootNode();
+        RootNode rN = getRootNode();
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && rN instanceof PBytecodeDSLRootNode dslRoot) {
             return dslRoot.getCodeUnit().toString(quickened, dslRoot);
         } else if (rN instanceof PBytecodeGeneratorRootNode r) {
