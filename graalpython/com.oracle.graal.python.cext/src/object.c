@@ -2745,6 +2745,11 @@ _PyObject_AssertFailed(PyObject *obj, const char *expr, const char *msg,
 void
 _Py_Dealloc(PyObject *op)
 {
+    if (points_to_py_handle_space(op) && _PyObject_IS_GC(op)) {
+        GraalPyPrivate_ManagedObject_GC_Del(op);
+        return;
+    }
+
     PyThreadState *tstate = _PyThreadState_GET();
     PyTypeObject *type = Py_TYPE(op);
     destructor dealloc = type->tp_dealloc;
