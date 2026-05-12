@@ -381,6 +381,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                     addInstrumentation(TraceOrProfileCall.class).//
                     addInstrumentation(TraceLine.class).//
                     addInstrumentation(TraceLineAtLoopHeader.class).//
+                    addInstrumentation(ClearTraceLine.class).//
                     addInstrumentation(TraceOrProfileReturn.class).//
                     addInstrumentation(TraceException.class).//
                     addInstrumentation(TraceLineWithArgument.class).//
@@ -779,6 +780,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @InliningCutoff
+    private void clearTraceLine(VirtualFrame frame, BytecodeNode location) {
+        InstrumentationData instrumentationData = getInstrumentationData(frame, location);
+        instrumentationData.clearPastLine();
+    }
+
+    @InliningCutoff
     private void traceOrProfileReturn(VirtualFrame frame, BytecodeNode location, Object value) {
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
@@ -859,6 +866,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode location,
                         @Bind PBytecodeDSLRootNode root) {
             root.traceLineAtLoopHeader(frame, location, line);
+        }
+    }
+
+    @Instrumentation(storeBytecodeIndex = false)
+    public static final class ClearTraceLine {
+        @Specialization
+        public static void perform(VirtualFrame frame,
+                        @Bind BytecodeNode location,
+                        @Bind PBytecodeDSLRootNode root) {
+            root.clearTraceLine(frame, location);
         }
     }
 
