@@ -144,7 +144,7 @@ public abstract class CodeNodes {
             RootCallTarget ct;
             Signature signature;
             if (codedata.length == 0) {
-                PRootNode rootNode = (PRootNode) language.createCachedRootNode(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name.toJavaStringUncached());
+                PRootNode rootNode = language.createCachedRootNode(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name.toJavaStringUncached());
                 /*
                  * We need to create a proper signature because this code path is used to create
                  * fake code objects for duck-typed function-like objects, such as Cython functions.

@@ -212,7 +212,7 @@ public final class TpSlotVarargs {
              * 'WrapTpNew' holds the type in a field and uses that to do the check. The dropping is
              * achieved by using `declaresExplicitSelf = false`.
              */
-            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedRootNode(l -> new BuiltinFunctionRootNode(l, builtin, factory, false, builtinType),
+            BuiltinFunctionRootNode rootNode = language.createCachedRootNode(l -> new BuiltinFunctionRootNode(l, builtin, factory, false, builtinType),
                             nodeClass, nodeClass, builtinType, J___NEW__);
             return PFactory.createNewWrapper(language, type, defaults, kwDefaults, rootNode, this);
         }

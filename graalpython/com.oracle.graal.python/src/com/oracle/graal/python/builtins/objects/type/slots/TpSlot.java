@@ -309,7 +309,7 @@ public abstract class TpSlot {
             Class<?> nodeClass = NodeFactoryBase.getWrappedNodeClass(factory);
             validateSlotNode(factory, nodeClass, slotSignature);
             PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : null;
-            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) core.getLanguage().createCachedRootNode(
+            BuiltinFunctionRootNode rootNode = core.getLanguage().createCachedRootNode(
                             l -> new BuiltinFunctionRootNode(l, builtin, factory, true, builtinType), factory.getNodeClass(), nodeClass, builtinType, name);
 
             PBuiltinFunction function = PFactory.createWrapperDescriptor(core.getLanguage(), tsName, type, numDefaults(builtin), 0, rootNode, this, wrapper);
@@ -327,7 +327,7 @@ public abstract class TpSlot {
             Builtin builtin = new Slot2Builtin(slotSignature, name, signature);
             Class<?> nodeClass = NodeFactoryBase.getWrappedNodeClass(factory);
             validateSlotNode(factory, nodeClass, slotSignature);
-            return (BuiltinFunctionRootNode) language.createCachedRootNode(l -> new BuiltinFunctionRootNode(l, builtin, factory, true), factory.getNodeClass(), nodeClass, name);
+            return language.createCachedRootNode(l -> new BuiltinFunctionRootNode(l, builtin, factory, true), factory.getNodeClass(), nodeClass, name);
         }
 
         private static void validateSlotNode(NodeFactory<? extends PythonBuiltinBaseNode> factory, Class<?> nodeClass, SlotSignature slotSignature) {

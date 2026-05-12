@@ -482,7 +482,7 @@ public abstract class ExternalFunctionNodes {
 
         @TruffleBoundary
         static PRootNode getOrCreateRootNode(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name) {
-            return (PRootNode) language.createCachedExternalFunWrapperRootNode(l -> WrapperDescriptorRootNodesGen.create(l, name, sig), sig.rootNodeClass, sig, name, true, false);
+            return language.createCachedExternalFunWrapperRootNode(l -> WrapperDescriptorRootNodesGen.create(l, name, sig), sig.rootNodeClass, sig, name, true, false);
         }
 
         /**

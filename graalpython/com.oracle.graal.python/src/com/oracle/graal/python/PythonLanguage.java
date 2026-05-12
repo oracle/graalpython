@@ -1096,7 +1096,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         capiCallTargets[index] = ct;
     }
 
-    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> key) {
+    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, Class<? extends Node> key) {
         assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length <= 1;
         assert RootNode.class.isAssignableFrom(key) || key.getConstructors().length == 0 || key.getConstructors()[0].getParameterCount() == 0;
         return createCachedRootNodeUnsafe(rootNodeFunction, key, true);
@@ -1106,13 +1106,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, key, true);
     }
 
-    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
+    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, key);
     }
 
     // Variant that should be called at most once per context, because it does not cache the root
     // node in single context mode
-    public RootNode initBuiltinRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
+    public <T extends RootNode> T initBuiltinRootNode(Function<PythonLanguage, T> rootNodeFunction, Class<? extends Node> nodeClass, String key) {
         return createCachedRootNodeUnsafe(rootNodeFunction, false, nodeClass, key);
     }
 
@@ -1124,33 +1124,33 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, key);
     }
 
-    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, String name) {
+    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, String name) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, name);
     }
 
-    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, PythonBuiltinClassType type, String name) {
+    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, Class<? extends Node> nodeClass1, Class<?> nodeClass2, PythonBuiltinClassType type, String name) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
     }
 
-    public RootNode createCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, CodeUnit key) {
+    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, CodeUnit key) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, key);
     }
 
-    public RootNode createCachedExternalFunWrapperRootNode(Function<PythonLanguage, RootNode> rootNodeFunction,
+    public <T extends RootNode> T createCachedExternalFunWrapperRootNode(Function<PythonLanguage, T> rootNodeFunction,
                     Class<? extends RootNode> klass, Enum<?> signature, TruffleString name,
                     boolean doArgumentAndResultConversion, boolean isStatic) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, klass, signature, name, doArgumentAndResultConversion, isStatic);
     }
 
-    public RootNode createStructSeqIndexedMemberAccessCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, int memberIndex) {
+    public <T extends RootNode> T createStructSeqIndexedMemberAccessCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, int memberIndex) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, StructSequence.class, memberIndex);
     }
 
-    public RootNode createCachedPropAccessRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Class<?> nodeClass, String name, int type, int offset) {
+    public <T extends RootNode> T createCachedPropAccessRootNode(Function<PythonLanguage, T> rootNodeFunction, Class<?> nodeClass, String name, int type, int offset) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass, name, type, offset);
     }
 
-    private RootNode createCachedRootNodeUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, Object key, boolean cacheInSingleContext) {
+    private <T extends RootNode> T createCachedRootNodeUnsafe(Function<PythonLanguage, T> rootNodeFunction, Object key, boolean cacheInSingleContext) {
         CompilerAsserts.neverPartOfCompilation();
         if (cacheInSingleContext || !singleContext) {
             return getOrCreateCachedRootNode(rootNodeFunction, key);
@@ -1159,18 +1159,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private RootNode createCachedRootNodeUnsafe(Function<PythonLanguage, RootNode> rootNodeFunction, boolean cacheInSingleContext, Object... cacheKeys) {
+    private <T extends RootNode> T createCachedRootNodeUnsafe(Function<PythonLanguage, T> rootNodeFunction, boolean cacheInSingleContext, Object... cacheKeys) {
         return createCachedRootNodeUnsafe(rootNodeFunction, Arrays.asList(cacheKeys), cacheInSingleContext);
     }
 
-    private RootNode getOrCreateCachedRootNode(Function<PythonLanguage, RootNode> rootNodeFunction, Object key) {
+    @SuppressWarnings("unchecked")
+    private <T extends RootNode> T getOrCreateCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, Object key) {
         CompilerAsserts.neverPartOfCompilation();
         if (ImageInfo.inImageRuntimeCode()) {
             RootNode preinitialized = imageBuildtimeCachedRootNodes.get(key);
             if (preinitialized != null) {
-                return preinitialized;
+                return (T) preinitialized;
             }
-            return runtimeCachedRootNodes.computeIfAbsent(key, k -> rootNodeFunction.apply(this));
+            return (T) runtimeCachedRootNodes.computeIfAbsent(key, k -> rootNodeFunction.apply(this));
         }
         if (ImageInfo.inImageBuildtimeCode()) {
             synchronized (imageBuildtimeCachedRootNodes) {
@@ -1179,10 +1180,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     cached = rootNodeFunction.apply(this);
                     imageBuildtimeCachedRootNodes.put(key, cached);
                 }
-                return cached;
+                return (T) cached;
             }
         }
-        return runtimeCachedRootNodes.computeIfAbsent(key, k -> rootNodeFunction.apply(this));
+        return (T) runtimeCachedRootNodes.computeIfAbsent(key, k -> rootNodeFunction.apply(this));
     }
 
     @Override

@@ -169,7 +169,7 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
                 return;
             }
             PythonLanguage language = context.getLanguage();
-            ReleaserRootNode rootNode = (ReleaserRootNode) language.createCachedRootNode(ReleaserRootNode::new, ReleaserRootNode.class);
+            ReleaserRootNode rootNode = language.createCachedRootNode(ReleaserRootNode::new, ReleaserRootNode.class);
             rootNode.getCallTarget().call(ref);
         }
 

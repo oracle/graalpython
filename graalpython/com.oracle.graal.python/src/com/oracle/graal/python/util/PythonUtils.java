@@ -758,7 +758,7 @@ public final class PythonUtils {
     public static PBuiltinFunction createMethod(PythonLanguage language, Object klass, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory, Object type, int numDefaults) {
         Class<? extends PythonBuiltinBaseNode> nodeClass = nodeFactory.getNodeClass();
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedRootNode(l -> new BuiltinFunctionRootNode(l, builtin, nodeFactory, true), nodeClass);
+        BuiltinFunctionRootNode rootNode = language.createCachedRootNode(l -> new BuiltinFunctionRootNode(l, builtin, nodeFactory, true), nodeClass);
         return createMethod(klass, builtin, rootNode, type, numDefaults);
     }
 

@@ -2327,7 +2327,7 @@ public abstract class TypeNodes {
             // initialized yet
             if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
-                BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) PythonLanguage.get(null).createCachedRootNode(
+                BuiltinFunctionRootNode rootNode = PythonLanguage.get(null).createCachedRootNode(
                                 l -> new BuiltinFunctionRootNode(l, dictBuiltin, ObjectBuiltinsFactory.DictNodeFactory.getInstance(), true), ObjectBuiltins.DictNode.class);
                 setAttribute(T___DICT__, dictBuiltin, rootNode, pythonClass, language);
             }
@@ -2337,7 +2337,7 @@ public abstract class TypeNodes {
         private static void addWeakrefDescrAttribute(PythonClass pythonClass, PythonLanguage language) {
             if (LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___WEAKREF__) == PNone.NO_VALUE) {
                 Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
-                BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) PythonLanguage.get(null).createCachedRootNode(
+                BuiltinFunctionRootNode rootNode = PythonLanguage.get(null).createCachedRootNode(
                                 l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class);
                 setAttribute(T___WEAKREF__, builtin, rootNode, pythonClass, language);
             }

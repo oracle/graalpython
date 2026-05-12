@@ -68,7 +68,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum MethodDescriptorWrapper implements NativeCExtSymbol {
@@ -126,7 +125,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
     @TruffleBoundary
     static PRootNode getOrCreateRootNode(PythonLanguage language, MethodDescriptorWrapper sig, TruffleString name, boolean isStatic) {
         Class<? extends PRootNode> nodeKlass;
-        Function<PythonLanguage, RootNode> rootNodeFunction = switch (sig) {
+        Function<PythonLanguage, PRootNode> rootNodeFunction = switch (sig) {
             case KEYWORDS -> {
                 nodeKlass = MethKeywordsRoot.class;
                 yield l -> new MethKeywordsRoot(l, name, isStatic, sig);
@@ -156,7 +155,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
                 yield (l -> new MethMethodRoot(l, name, isStatic, sig));
             }
         };
-        return (PRootNode) language.createCachedExternalFunWrapperRootNode(rootNodeFunction, nodeKlass, sig, name, true, isStatic);
+        return language.createCachedExternalFunWrapperRootNode(rootNodeFunction, nodeKlass, sig, name, true, isStatic);
     }
 
     /**

@@ -250,7 +250,7 @@ public class CApiMemberAccessNodes {
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, TruffleString propertyName, int type, int offset) {
             CExtToJavaNode asPythonObjectNode = getReadConverterNode(type);
-            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedPropAccessRootNode(
+            BuiltinFunctionRootNode rootNode = language.createCachedPropAccessRootNode(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadMemberNodeGen.create(type, offset, asPythonObjectNode)), true),
                             ReadMemberNode.class, BUILTIN.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
@@ -276,7 +276,7 @@ public class CApiMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
-            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedRootNode(
+            BuiltinFunctionRootNode rootNode = language.createCachedRootNode(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadOnlyMemberNodeGen.create(propertyName)), true),
                             ReadOnlyMemberNode.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
@@ -300,7 +300,7 @@ public class CApiMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString propertyName) {
-            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedRootNode(
+            BuiltinFunctionRootNode rootNode = language.createCachedRootNode(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(BadMemberDescrNodeGen.create()), true),
                             BadMemberDescrNode.class, BUILTIN.name());
             int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
@@ -599,7 +599,7 @@ public class CApiMemberAccessNodes {
                 return BadMemberDescrNode.createBuiltinFunction(language, propertyName);
             }
             //
-            BuiltinFunctionRootNode rootNode = (BuiltinFunctionRootNode) language.createCachedPropAccessRootNode(
+            BuiltinFunctionRootNode rootNode = language.createCachedPropAccessRootNode(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(WriteMemberNodeGen.create(type, offset)), true),
                             WriteMemberNode.class, BUILTIN.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());

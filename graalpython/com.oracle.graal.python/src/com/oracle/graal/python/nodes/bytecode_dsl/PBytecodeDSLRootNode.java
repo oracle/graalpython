@@ -452,7 +452,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         PythonLanguage language = getLanguage();
         for (Object constant : co.constants) {
             if (constant instanceof BytecodeDSLCodeUnit codeUnit) {
-                PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) language.createCachedRootNode(l -> codeUnit.createRootNode(l, getSource()), codeUnit);
+                PBytecodeDSLRootNode rootNode = language.createCachedRootNode(l -> codeUnit.createRootNode(l, getSource()), codeUnit);
                 rootNode.getCallTarget();
             }
         }

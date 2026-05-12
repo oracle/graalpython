@@ -960,7 +960,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 return;
             }
             PythonLanguage language = context.getLanguage();
-            ReleaserRootNode rootNode = (ReleaserRootNode) language.createCachedRootNode(MMapBuiltins.ReleaseCallback.ReleaserRootNode::new,
+            ReleaserRootNode rootNode = language.createCachedRootNode(MMapBuiltins.ReleaseCallback.ReleaserRootNode::new,
                             MMapBuiltins.ReleaseCallback.ReleaserRootNode.class);
             rootNode.getCallTarget().call(ref);
         }

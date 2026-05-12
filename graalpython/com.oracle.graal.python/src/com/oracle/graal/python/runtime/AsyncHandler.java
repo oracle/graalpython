@@ -344,7 +344,7 @@ public class AsyncHandler {
 
     AsyncHandler(PythonContext context) {
         this.context = new WeakReference<>(context);
-        this.rootNode = (CallRootNode) context.getLanguage().createCachedRootNode(CallRootNode::new, CallRootNode.class);
+        this.rootNode = context.getLanguage().createCachedRootNode(CallRootNode::new, CallRootNode.class);
         if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
             this.executorService = Executors.newScheduledThreadPool(6, runnable -> {
                 Thread t = Executors.defaultThreadFactory().newThread(runnable);

@@ -132,7 +132,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -412,14 +411,14 @@ public final class PythonCextTypeBuiltins {
 
     @TruffleBoundary
     private static PRootNode getterRootNode(TruffleString name, PythonLanguage lang) {
-        Function<PythonLanguage, RootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.GETTER);
-        return (PRootNode) lang.createCachedExternalFunWrapperRootNode(rootNodeFunction, GetterRoot.class, PExternalFunctionWrapper.GETTER, name, true, false);
+        Function<PythonLanguage, PRootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.GETTER);
+        return lang.createCachedExternalFunWrapperRootNode(rootNodeFunction, GetterRoot.class, PExternalFunctionWrapper.GETTER, name, true, false);
     }
 
     @TruffleBoundary
     private static PRootNode setterRootNode(TruffleString name, PythonLanguage lang) {
-        Function<PythonLanguage, RootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.SETTER);
-        return (PRootNode) lang.createCachedExternalFunWrapperRootNode(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true, false);
+        Function<PythonLanguage, PRootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.SETTER);
+        return lang.createCachedExternalFunWrapperRootNode(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true, false);
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored)
