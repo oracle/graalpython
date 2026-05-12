@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetSetStorageForXorNode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetSetStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
@@ -500,7 +501,7 @@ public final class SetBuiltins extends PythonBuiltins {
         static Object doSet(VirtualFrame frame, PSet self, PBaseSet other,
                         @Bind Node inliningTarget,
                         @Cached HashingStorageXor xorNode) {
-            self.setDictStorage(xorNode.execute(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()));
+            self.setDictStorage(xorNode.executeMutatingLeft(frame, inliningTarget, self.getDictStorage(), other.getDictStorage()));
             return self;
         }
 
@@ -513,15 +514,25 @@ public final class SetBuiltins extends PythonBuiltins {
 
     @Builtin(name = "symmetric_difference", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class SymmetricDifferenceNode extends PythonBuiltinNode {
 
         @Specialization
-        static PSet doSet(VirtualFrame frame, PSet self, Object other,
+        static PSet doHashingCollection(VirtualFrame frame, PSet self, PHashingCollection other,
                         @Bind Node inliningTarget,
-                        @Cached GetSetStorageNode getHashingStorage,
-                        @Cached HashingStorageXor xorNode,
+                        @Exclusive @Cached HashingStorageXor xorNode,
                         @Bind PythonLanguage language) {
-            HashingStorage result = xorNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorage.execute(frame, inliningTarget, other));
+            HashingStorage result = xorNode.executePreservingLeft(frame, inliningTarget, other.getDictStorage(), self.getDictStorage());
+            return PFactory.createSet(language, result);
+        }
+
+        @Specialization(guards = "!isPHashingCollection(other)")
+        static PSet doGeneric(VirtualFrame frame, PSet self, Object other,
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached GetSetStorageForXorNode getHashingStorage,
+                        @Exclusive @Cached HashingStorageXor xorNode,
+                        @Bind PythonLanguage language) {
+            HashingStorage result = xorNode.executeMutatingLeft(frame, inliningTarget, getHashingStorage.execute(frame, inliningTarget, other), self.getDictStorage());
             return PFactory.createSet(language, result);
         }
     }
@@ -540,11 +551,11 @@ public final class SetBuiltins extends PythonBuiltins {
         static PNone doCached(VirtualFrame frame, PSet self, Object[] args,
                         @Bind Node inliningTarget,
                         @Cached("args.length") int len,
-                        @Shared @Cached HashingCollectionNodes.GetSetStorageNode getHashingStorage,
+                        @Shared @Cached GetSetStorageForXorNode getHashingStorage,
                         @Shared @Cached HashingStorageXor xorNode) {
             HashingStorage result = self.getDictStorage();
             for (int i = 0; i < len; i++) {
-                result = xorNode.execute(frame, inliningTarget, result, getHashingStorage.execute(frame, inliningTarget, args[i]));
+                result = xorNode.executeMutatingLeft(frame, inliningTarget, result, getHashingStorage.execute(frame, inliningTarget, args[i]));
             }
             self.setDictStorage(result);
             return PNone.NONE;
@@ -553,11 +564,11 @@ public final class SetBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doCached")
         static PNone doSetArgs(VirtualFrame frame, PSet self, Object[] args,
                         @Bind Node inliningTarget,
-                        @Shared @Cached GetSetStorageNode getHashingStorage,
+                        @Shared @Cached GetSetStorageForXorNode getHashingStorage,
                         @Shared @Cached HashingStorageXor xorNode) {
             HashingStorage result = self.getDictStorage();
             for (Object o : args) {
-                result = xorNode.execute(frame, inliningTarget, result, getHashingStorage.execute(frame, inliningTarget, o));
+                result = xorNode.executeMutatingLeft(frame, inliningTarget, result, getHashingStorage.execute(frame, inliningTarget, o));
             }
             self.setDictStorage(result);
             return PNone.NONE;
@@ -570,9 +581,9 @@ public final class SetBuiltins extends PythonBuiltins {
         @Specialization(guards = "isOther(other)")
         static PNone doSetOther(VirtualFrame frame, PSet self, Object other,
                         @Bind Node inliningTarget,
-                        @Shared @Cached HashingCollectionNodes.GetSetStorageNode getHashingStorage,
+                        @Shared @Cached GetSetStorageForXorNode getHashingStorage,
                         @Shared @Cached HashingStorageXor xorNode) {
-            HashingStorage result = xorNode.execute(frame, inliningTarget, self.getDictStorage(), getHashingStorage.execute(frame, inliningTarget, other));
+            HashingStorage result = xorNode.executeMutatingLeft(frame, inliningTarget, self.getDictStorage(), getHashingStorage.execute(frame, inliningTarget, other));
             self.setDictStorage(result);
             return PNone.NONE;
         }

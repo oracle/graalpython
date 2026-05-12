@@ -1549,6 +1549,46 @@ def test_eq_side_effects():
     assert key.eq_calls == 1
 
 
+def test_keys_xor_side_effects():
+    key1 = TrackingKey('foo')
+    key2 = TrackingKey('foo')
+    d1 = {key1: 1}
+    d2 = {key2: 2}
+    key1.clear_observations()
+    key2.clear_observations()
+
+    assert d1.keys() ^ d2.keys() == set()
+    assert key1.eq_calls == 1
+    assert key1.hash_calls == 0
+    assert key2.eq_calls == 0
+    assert key2.hash_calls == 1
+
+
+def test_items_xor_side_effects():
+    log = []
+
+    class Key:
+        def __init__(self, name):
+            self.name = name
+
+        def __hash__(self):
+            log.append(("hash", self.name))
+            return 42
+
+        def __eq__(self, other):
+            log.append(("eq", self.name, other.name))
+            return True
+
+    key1 = Key('left')
+    key2 = Key('right')
+    d1 = {key1: 1}
+    d2 = {key2: 1}
+    log.clear()
+
+    assert d1.items() ^ d2.items() == set()
+    assert log == [("eq", "left", "right"), ("eq", "left", "right")]
+
+
 # TODO: GR-40680
 # def test_iteration_and_del():
 #     def test_iter(get_iterable):

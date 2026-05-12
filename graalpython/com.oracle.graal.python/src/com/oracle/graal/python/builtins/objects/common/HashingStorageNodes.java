@@ -1370,23 +1370,23 @@ public class HashingStorageNodes {
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic({PGuards.class})
-    public abstract static class HashingStorageXorCallback extends HashingStorageForEachCallback<ResultAndOther> {
+    public abstract static class HashingStorageXorCallback extends HashingStorageForEachCallback<EconomicMapStorage> {
 
         @Override
-        public abstract ResultAndOther execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther accumulator);
+        public abstract EconomicMapStorage execute(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, EconomicMapStorage accumulator);
 
         @Specialization
-        static ResultAndOther doGeneric(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, ResultAndOther acc,
+        static EconomicMapStorage doGeneric(Frame frame, Node inliningTarget, HashingStorage storage, HashingStorageIterator it, EconomicMapStorage acc,
                         @Cached PutNode putResultNode,
-                        @Cached HashingStorageGetItemWithHash getFromOther,
+                        @Cached ObjectHashMap.RemoveNode removeResultNode,
                         @Cached HashingStorageIteratorKey iterKey,
                         @Cached HashingStorageIteratorValue iterValue,
                         @Cached HashingStorageIteratorKeyHash iterHash) {
             Object key = iterKey.execute(inliningTarget, storage, it);
             long hash = iterHash.execute(frame, inliningTarget, storage, it);
-            Object otherValue = getFromOther.execute(frame, inliningTarget, acc.other, key, hash);
-            if (otherValue == null) {
-                putResultNode.put(frame, inliningTarget, acc.result, key, hash, iterValue.execute(inliningTarget, storage, it));
+            Object removedValue = removeResultNode.execute(frame, inliningTarget, acc, key, hash);
+            if (removedValue == null) {
+                putResultNode.put(frame, inliningTarget, acc, key, hash, iterValue.execute(inliningTarget, storage, it));
             }
             return acc;
         }
@@ -1397,22 +1397,41 @@ public class HashingStorageNodes {
     @GenerateCached(false)
     @ImportStatic({PGuards.class})
     public abstract static class HashingStorageXor extends Node {
-        public abstract HashingStorage execute(Frame frame, Node inliningTarget, HashingStorage a, HashingStorage b);
+        abstract HashingStorage execute(Frame frame, Node inliningTarget, HashingStorage left, HashingStorage right, boolean leftMayBeMutated);
+
+        public final HashingStorage executePreservingLeft(Frame frame, Node inliningTarget, HashingStorage left, HashingStorage right) {
+            return execute(frame, inliningTarget, left, right, false);
+        }
+
+        public final HashingStorage executeMutatingLeft(Frame frame, Node inliningTarget, HashingStorage left, HashingStorage right) {
+            return execute(frame, inliningTarget, left, right, true);
+        }
 
         @Specialization
-        static HashingStorage doIt(Frame frame, Node inliningTarget, HashingStorage aStorage, HashingStorage bStorage,
-                        @Cached HashingStorageForEach forEachA,
-                        @Cached HashingStorageForEach forEachB,
-                        @Cached HashingStorageXorCallback callbackA,
-                        @Cached HashingStorageXorCallback callbackB) {
+        static HashingStorage doEconomicLeft(Frame frame, Node inliningTarget, EconomicMapStorage leftStorage, HashingStorage rightStorage,
+                        boolean leftMayBeMutated,
+                        @Exclusive @Cached HashingStorageForEach forEachRight,
+                        @Exclusive @Cached HashingStorageXorCallback callback) {
+            if (leftStorage == rightStorage) {
+                return EmptyStorage.INSTANCE;
+            }
+            EconomicMapStorage result = leftMayBeMutated ? leftStorage : (EconomicMapStorage) leftStorage.copy();
+            forEachRight.execute(frame, inliningTarget, rightStorage, callback, result);
+            return result;
+        }
+
+        @Specialization(replaces = "doEconomicLeft")
+        static HashingStorage doIt(Frame frame, Node inliningTarget, HashingStorage leftStorage, HashingStorage rightStorage,
+                        @SuppressWarnings("unused") boolean leftMayBeMutated,
+                        @Exclusive @Cached HashingStorageForEach forEachLeft,
+                        @Exclusive @Cached HashingStorageForEach forEachRight,
+                        @Exclusive @Cached HashingStorageTransferItem transferItem,
+                        @Exclusive @Cached HashingStorageXorCallback callback) {
             final EconomicMapStorage result = EconomicMapStorage.createWithSideEffects();
-            ObjectHashMap resultMap = result;
 
-            ResultAndOther accA = new ResultAndOther(resultMap, bStorage);
-            forEachA.execute(frame, inliningTarget, aStorage, callbackA, accA);
-
-            ResultAndOther accB = new ResultAndOther(resultMap, aStorage);
-            forEachB.execute(frame, inliningTarget, bStorage, callbackB, accB);
+            HashingStorage copiedLeft = forEachLeft.execute(frame, inliningTarget, leftStorage, transferItem, result);
+            assert copiedLeft == result;
+            forEachRight.execute(frame, inliningTarget, rightStorage, callback, result);
 
             return result;
         }
