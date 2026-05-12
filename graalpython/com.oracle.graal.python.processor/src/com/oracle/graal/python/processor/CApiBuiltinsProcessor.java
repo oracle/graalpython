@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.processor;
 
+import static com.oracle.graal.python.processor.NativeDowncallMethodHandleGenerator.argName;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -290,10 +292,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private String capiTypeToForeignPrimitiveType(VariableElement element) {
         String type = capiTypeToJavaPrimitiveType(element);
         return type.equals("void") ? "void" : ("j" + type);
-    }
-
-    private static String argName(int i) {
-        return "" + (char) ('a' + i);
     }
 
     private static final String CAPI_BUILTIN = "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin";
@@ -1262,21 +1260,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return processingEnv.getTypeUtils().getPrimitiveType(TypeKind.LONG);
     }
 
-    private static String getNativeMethodHandleVarName(String signatureName) {
-        return "NATIVE_METHOD_HANDLE_" + signatureName;
-    }
-
-    private static String toClassLiteral(String javaType) {
-        return switch (javaType) {
-            case "void" -> "void.class";
-            case "int" -> "int.class";
-            case "long" -> "long.class";
-            case "float" -> "float.class";
-            case "double" -> "double.class";
-            default -> throw new IllegalArgumentException("Unexpected Java type: " + javaType);
-        };
-    }
-
     private boolean isCannotRaise(VariableElement signature) {
         String externalFunctionSignatureInitializer = getExternalFunctionSignatureInitializer(signature);
         int start = externalFunctionSignatureInitializer.indexOf('(');
@@ -1349,7 +1332,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             assert sig.returnType != null;
             assert sig.argumentTypes != null;
             String returnType = toJavaNfiType(sig.returnType);
-            String returnTypeLiteral = toClassLiteral(returnType);
             List<String> argTypes = Arrays.stream(sig.argumentTypes).map(this::toJavaNfiType).toList();
 
             boolean isVoidReturn = "void".equals(returnType);
@@ -1382,14 +1364,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             for (String argType : argTypes) {
                 typedArgs.add(argType + " " + argName(i++));
             }
-
-            List<String> methodTypeArgs = new ArrayList<>();
-            methodTypeArgs.add("long.class");
-            for (String argType : argTypes) {
-                methodTypeArgs.add(toClassLiteral(argType));
-            }
-            lines.add("    private static final MethodHandle " + getNativeMethodHandleVarName(sig.name) + " = NativeAccessSupport.createDowncallHandle(" +
-                            "MethodType.methodType(" + returnTypeLiteral + ", " + String.join(", ", methodTypeArgs) + "), false);");
+            NativeDowncallMethodHandleGenerator.emitMethodHandleField(lines, NativeDowncallMethodHandleGenerator.methodHandleVarName(sig.name), returnType, argTypes);
 
             lines.add("");
             if (sig.cannotRaise) {
@@ -1465,9 +1440,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("    public static " + returnType + " invoke" + sig.name + "(" + String.join(", ", rawInvokeArgs) + ") throws Throwable {");
             String directArgExpr = cArgs.isEmpty() ? "function" : "function, " + String.join(", ", cArgs);
             if (isVoidReturn) {
-                lines.add("        " + getNativeMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
+                lines.add("        " + NativeDowncallMethodHandleGenerator.methodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
             } else {
-                lines.add("        return (" + returnType + ") " + getNativeMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
+                lines.add("        return (" + returnType + ") " + NativeDowncallMethodHandleGenerator.methodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
             }
             lines.add("    }");
         }
