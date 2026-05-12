@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.nativeaccess;
+package com.oracle.graal.python.annotations;
 
 /**
  * Simple native carrier types used by native access signatures.
@@ -55,5 +55,5 @@ public enum NativeSimpleType {
     SINT64,
     FLOAT,
     DOUBLE,
-    RAW_POINTER;    // arg must be long, retval is long
+    POINTER;    // raw pointer represented in Java as a long
 }

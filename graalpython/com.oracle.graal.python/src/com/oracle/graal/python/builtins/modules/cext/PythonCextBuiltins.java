@@ -113,6 +113,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.CApiConstant;
+import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
@@ -192,7 +193,6 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
-import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -636,7 +636,7 @@ public final class PythonCextBuiltins {
                 case SINT64 -> -1L;
                 case FLOAT -> -1.0f;
                 case DOUBLE -> -1.0;
-                case RAW_POINTER -> NULLPTR;
+                case POINTER -> NULLPTR;
             };
         }
 

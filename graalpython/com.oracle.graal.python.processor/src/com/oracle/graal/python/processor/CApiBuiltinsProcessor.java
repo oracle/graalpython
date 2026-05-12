@@ -86,6 +86,7 @@ import com.oracle.graal.python.annotations.CApiExternalFunctionSignatures;
 import com.oracle.graal.python.annotations.CApiFields;
 import com.oracle.graal.python.annotations.CApiStructs;
 import com.oracle.graal.python.annotations.CApiUpcallTarget;
+import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
@@ -1504,6 +1505,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import java.util.OptionalLong;");
         lines.add("");
         lines.add("import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;");
+        lines.add("import " + NativeSimpleType.class.getCanonicalName() + ";");
         lines.add("");
         lines.add("public final class " + NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME + " extends " + NATIVE_ACCESS_SUPPORT_CLASS_NAME + " {");
         lines.add("    private static final MethodHandle OF_ADDRESS;");
@@ -1604,7 +1606,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("            case SINT64 -> ValueLayout.JAVA_LONG;");
         lines.add("            case FLOAT -> ValueLayout.JAVA_FLOAT;");
         lines.add("            case DOUBLE -> ValueLayout.JAVA_DOUBLE;");
-        lines.add("            case RAW_POINTER -> ValueLayout.JAVA_LONG;");
+        lines.add("            case POINTER -> ValueLayout.JAVA_LONG;");
         lines.add("        };");
         lines.add("    }");
         lines.add("}");

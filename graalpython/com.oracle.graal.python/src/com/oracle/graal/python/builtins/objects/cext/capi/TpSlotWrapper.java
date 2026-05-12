@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType.RAW_POINTER;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType.SINT32;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType.SINT64;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.lang.invoke.MethodHandle;
@@ -104,16 +104,16 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public abstract class TpSlotWrapper {
 
-    private static final NativeSignature SIGNATURE_P_P = NativeSignature.create(RAW_POINTER, RAW_POINTER);
-    private static final NativeSignature SIGNATURE_P_PP = NativeSignature.create(RAW_POINTER, RAW_POINTER, RAW_POINTER);
-    private static final NativeSignature SIGNATURE_P_PPP = NativeSignature.create(RAW_POINTER, RAW_POINTER, RAW_POINTER, RAW_POINTER);
-    private static final NativeSignature SIGNATURE_P_PPI = NativeSignature.create(RAW_POINTER, RAW_POINTER, RAW_POINTER, SINT32);
-    private static final NativeSignature SIGNATURE_P_PL = NativeSignature.create(RAW_POINTER, RAW_POINTER, SINT64);
-    private static final NativeSignature SIGNATURE_I_P = NativeSignature.create(SINT32, RAW_POINTER);
-    private static final NativeSignature SIGNATURE_I_PP = NativeSignature.create(SINT32, RAW_POINTER, RAW_POINTER);
-    private static final NativeSignature SIGNATURE_I_PPP = NativeSignature.create(SINT32, RAW_POINTER, RAW_POINTER, RAW_POINTER);
-    private static final NativeSignature SIGNATURE_I_PLP = NativeSignature.create(SINT32, RAW_POINTER, SINT64, RAW_POINTER);
-    private static final NativeSignature SIGNATURE_L_P = NativeSignature.create(SINT64, RAW_POINTER);
+    private static final NativeSignature SIGNATURE_P_P = NativeSignature.create(POINTER, POINTER);
+    private static final NativeSignature SIGNATURE_P_PP = NativeSignature.create(POINTER, POINTER, POINTER);
+    private static final NativeSignature SIGNATURE_P_PPP = NativeSignature.create(POINTER, POINTER, POINTER, POINTER);
+    private static final NativeSignature SIGNATURE_P_PPI = NativeSignature.create(POINTER, POINTER, POINTER, SINT32);
+    private static final NativeSignature SIGNATURE_P_PL = NativeSignature.create(POINTER, POINTER, SINT64);
+    private static final NativeSignature SIGNATURE_I_P = NativeSignature.create(SINT32, POINTER);
+    private static final NativeSignature SIGNATURE_I_PP = NativeSignature.create(SINT32, POINTER, POINTER);
+    private static final NativeSignature SIGNATURE_I_PPP = NativeSignature.create(SINT32, POINTER, POINTER, POINTER);
+    private static final NativeSignature SIGNATURE_I_PLP = NativeSignature.create(SINT32, POINTER, SINT64, POINTER);
+    private static final NativeSignature SIGNATURE_L_P = NativeSignature.create(SINT64, POINTER);
 
     private static final MethodHandle HANDLE_GET_ATTR;
     private static final MethodHandle HANDLE_BINARY_SLOT_FUNC;

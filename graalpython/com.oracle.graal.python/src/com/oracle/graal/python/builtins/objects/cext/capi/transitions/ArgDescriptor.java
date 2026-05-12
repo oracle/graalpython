@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
+import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FromLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
@@ -52,30 +53,29 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
     PyObject(
-                    NativeSimpleType.RAW_POINTER,
+                    NativeSimpleType.POINTER,
                     PythonToNativeNode::create,
                     NativeToPythonNode::create,
                     NativeToPythonNode.getUncached(),
                     PythonToNativeNewRefNode::create,
                     NativeToPythonTransferNode::create,
                     NativeToPythonTransferNode.getUncached()),
-    PyObjectBorrowed(NativeSimpleType.RAW_POINTER, ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
-    PyObjectAsTruffleString(NativeSimpleType.RAW_POINTER, null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
+    PyObjectBorrowed(NativeSimpleType.POINTER, ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
+    PyObjectAsTruffleString(NativeSimpleType.POINTER, null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
     PyTypeObject(
-                    NativeSimpleType.RAW_POINTER,
+                    NativeSimpleType.POINTER,
                     PythonToNativeNode::create,
                     NativeToPythonClassNode::create,
                     NativeToPythonClassNode.getUncached(),
                     PythonToNativeNewRefNode::create,
                     NativeToPythonTransferNode::create,
                     NativeToPythonTransferNode.getUncached()),
-    Pointer(NativeSimpleType.RAW_POINTER),
-    TruffleStringPointer(NativeSimpleType.RAW_POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
+    Pointer(NativeSimpleType.POINTER),
+    TruffleStringPointer(NativeSimpleType.POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
     Char8(NativeSimpleType.SINT8),
     UChar8(NativeSimpleType.SINT8),
     Char16(NativeSimpleType.SINT16),
