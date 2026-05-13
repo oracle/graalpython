@@ -283,7 +283,7 @@ int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
     return PyBuffer_FillInfo(view, (PyObject*)self, data, PyObject_Size((PyObject *)self), 0, flags);
 }
 
-PyAPI_FUNC(void) GraalPyPrivate_MMap_InitBufferProtocol(PyObject* mmap_type) {
+GraalPy_CAPI_HELPER_SYMBOL void GraalPyPrivate_MMap_InitBufferProtocol(PyObject* mmap_type) {
 	GraalPyPrivate_Log(GRAALPY_LOG_FINE, "GraalPyPrivate_MMap_InitBufferProtocol");
 	assert(PyType_Check(mmap_type));
 
@@ -310,7 +310,7 @@ PyObject* _Py_NotImplementedStructReference;
  */
 THREAD_LOCAL PyThreadState *tstate_current = NULL;
 
-PyAPI_FUNC(PyThreadState **) GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate) {
+GraalPy_CAPI_HELPER_SYMBOL PyThreadState **GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate) {
     tstate_current = tstate;
     return &tstate_current;
 }
@@ -446,7 +446,7 @@ GraalPyPrivate_SUBREF(intptr_t ptr, Py_ssize_t value)
 }
 
 /** to be used from Java code only; calls '_Py_Dealloc' */
-PyAPI_FUNC(Py_ssize_t)
+GraalPy_CAPI_HELPER_SYMBOL Py_ssize_t
 GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
 {
     for (int i = 0; i < len; i++) {
@@ -460,7 +460,7 @@ GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
 }
 
 /** to be used from Java code only and only at exit; calls _Py_Dealloc */
-PyAPI_FUNC(Py_ssize_t)
+GraalPy_CAPI_HELPER_SYMBOL Py_ssize_t
 GraalPyPrivate_BulkDeallocOnShutdown(intptr_t ptrArray[], int64_t len)
 {
     /* some objects depends on others which might get deallocated in the
@@ -487,11 +487,11 @@ GraalPyPrivate_BulkDeallocOnShutdown(intptr_t ptrArray[], int64_t len)
 /* To be used from Java code only.
  * This function is used if a native class inherits from a managed class but uses the 'object.__new__'.
  * This function roughly corresponds to CPython's 'object_new'. */
-PyAPI_FUNC(PyObject*) GraalPyPrivate_ObjectNew(PyTypeObject* cls) {
+GraalPy_CAPI_HELPER_SYMBOL PyObject* GraalPyPrivate_ObjectNew(PyTypeObject* cls) {
     return cls->tp_alloc(cls, 0);
 }
 
-PyAPI_FUNC(void) GraalPyPrivate_ObjectArrayRelease(PyObject** array, int32_t size) {
+GraalPy_CAPI_HELPER_SYMBOL void GraalPyPrivate_ObjectArrayRelease(PyObject** array, int32_t size) {
     for (int i = 0; i < size; i++) {
         /* This needs to use 'Py_XDECREF' because we use this function to
            deallocate storages of tuples, lists, ..., where this is done in the
@@ -509,7 +509,7 @@ PyAPI_FUNC(void) GraalPyPrivate_ObjectArrayRelease(PyObject** array, int32_t siz
 #include "psapi.h"
 #endif
 
-PyAPI_FUNC(size_t) GraalPyPrivate_GetCurrentRSS() {
+GraalPy_CAPI_HELPER_SYMBOL size_t GraalPyPrivate_GetCurrentRSS(void) {
     size_t rss = 0;
 #if defined(__APPLE__) && defined(__MACH__)
     // MacOS
@@ -541,7 +541,7 @@ PyAPI_FUNC(size_t) GraalPyPrivate_GetCurrentRSS() {
 
 
 // Implements the basesisze check in typeobject.c:_PyObject_GetState
-PyAPI_FUNC(int) GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject* type, int slot_num) {
+GraalPy_CAPI_HELPER_SYMBOL int GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject* type, int slot_num) {
     Py_ssize_t basicsize = PyBaseObject_Type.tp_basicsize;
     if (type->tp_dictoffset)
         basicsize += sizeof(PyObject *);
@@ -552,17 +552,17 @@ PyAPI_FUNC(int) GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject* type, int
     return type->tp_basicsize > basicsize;
 }
 
-PyAPI_FUNC(void) GraalPyPrivate_CheckTypeReady(PyTypeObject* type) {
+GraalPy_CAPI_HELPER_SYMBOL void GraalPyPrivate_CheckTypeReady(PyTypeObject* type) {
     if (!(type->tp_flags & Py_TPFLAGS_READY)) {
         PyType_Ready(type);
     }
 }
 
-PyAPI_FUNC(int) GraalPyPrivate_NoOpClear(PyObject* o) {
+GraalPy_CAPI_HELPER_SYMBOL int GraalPyPrivate_NoOpClear(PyObject* o) {
     return 0;
 }
 
-PyAPI_FUNC(int) GraalPyPrivate_NoOpTraverse(PyObject *self, visitproc visit, void *arg) {
+GraalPy_CAPI_HELPER_SYMBOL int GraalPyPrivate_NoOpTraverse(PyObject *self, visitproc visit, void *arg) {
     return 0;
 }
 
@@ -646,7 +646,7 @@ PyAPI_FUNC(PyThreadState **) initialize_graal_capi(void **builtin_closures, GCSt
  * This function is called from Java during C API initialization to get the
  * pointer `_graalpy_finalizing`.
  */
-PyAPI_FUNC(int8_t *) GraalPyPrivate_GetFinalizeCApiPointer() {
+GraalPy_CAPI_HELPER_SYMBOL void *GraalPyPrivate_GetFinalizeCApiPointer(void) {
     assert(!_graalpy_finalizing);
     // We actually leak this memory on purpose. On the Java side, this is
     // written to in a VM shutdown hook. Once such a hook is registered it

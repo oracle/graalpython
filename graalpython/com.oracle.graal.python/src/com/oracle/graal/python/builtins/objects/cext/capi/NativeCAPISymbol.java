@@ -52,10 +52,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_NO_OP_CLEAR("GraalPyPrivate_NoOpClear", ExternalFunctionSignature.NO_OP_CLEAR),
     FUN_NO_OP_TRAVERSE("GraalPyPrivate_NoOpTraverse", ExternalFunctionSignature.NO_OP_TRAVERSE),
 
-    FUN_PYTRUFFLE_CONSTANTS("GraalPyPrivate_Constants", ExternalFunctionSignature.PYTRUFFLE_CONSTANTS),
-    FUN_PYTRUFFLE_STRUCT_OFFSETS("GraalPyPrivate_StructOffsets", ExternalFunctionSignature.PYTRUFFLE_STRUCT_OFFSETS),
-    FUN_PYTRUFFLE_STRUCT_SIZES("GraalPyPrivate_StructSizes", ExternalFunctionSignature.PYTRUFFLE_STRUCT_SIZES),
-
     /* Python C API functions */
 
     FUN_PY_TYPE_READY("PyType_Ready", ExternalFunctionSignature.PY_TYPE_READY),
@@ -98,6 +94,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GRAALPY_GC_COLLECT("GraalPyPrivate_GC_Collect", ExternalFunctionSignature.GCCOLLECT),
     FUN_SUBTYPE_TRAVERSE("GraalPyPrivate_SubtypeTraverse", ExternalFunctionSignature.SUBTYPE_TRAVERSE),
     FUN_INIT_THREAD_STATE_CURRENT("GraalPyPrivate_InitThreadStateCurrent", ExternalFunctionSignature.INIT_THREAD_STATE_CURRENT),
+    FUN_GET_FINALIZE_CAPI_POINTER("GraalPyPrivate_GetFinalizeCApiPointer", ExternalFunctionSignature.GETFINALIZECAPIPOINTER),
 
     /* PyDateTime_CAPI */
 

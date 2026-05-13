@@ -153,6 +153,8 @@ typedef struct {
 
 typedef struct gc_generation GCGeneration;
 
+#define GraalPy_CAPI_HELPER_SYMBOL Py_LOCAL_SYMBOL
+
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.h"
 
@@ -261,8 +263,6 @@ GraalPyPrivate_Log(int level, const char *format, ...)
 }
 
 Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
-
-PyAPI_FUNC(void) GraalPyPrivate_Object_GC_Del(void *op);
 
 // export the SizeT arg parse functions, because we use them in contrast to cpython on windows for core modules that we link dynamically
 PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);

@@ -239,7 +239,7 @@ PyComplex_FromCComplex(Py_complex cval)
     return PyComplex_FromDoubles(cval.real, cval.imag);
 }
 
-PyAPI_FUNC(PyObject *) // GraalPy change: expose the function for downcalls, rename
+GraalPy_CAPI_HELPER_SYMBOL PyObject * // GraalPy change: helper-table entry for downcalls, rename
 GraalPyPrivate_Complex_SubtypeFromDoubles(PyTypeObject *type, double real, double imag)
 {
     Py_complex c;

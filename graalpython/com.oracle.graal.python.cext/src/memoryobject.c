@@ -3408,7 +3408,7 @@ PyTypeObject PyMemoryView_Type = {
 
 // GraalPy additions
 
-PyAPI_FUNC(PyObject *)
+GraalPy_CAPI_HELPER_SYMBOL PyObject *
 GraalPyPrivate_MemoryViewFromObject(PyObject *v, int flags)
 {
     if (PyObject_CheckBuffer(v)) {
@@ -3459,7 +3459,7 @@ GraalPyPrivate_MemoryViewFromObject(PyObject *v, int flags)
 }
 
 /* Release buffer struct allocated in GraalPyPrivate_MemoryViewFromObject */
-PyAPI_FUNC(void)
+GraalPy_CAPI_HELPER_SYMBOL void
 GraalPyPrivate_ReleaseBuffer(Py_buffer* buffer)
 {
     if (buffer->obj != NULL) {

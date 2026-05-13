@@ -2820,8 +2820,8 @@ _Py_COMP_DIAG_POP
 }
 #endif // GraalPy change
 
-// GraalPy change: export for downcall, rename, use C array instead of bytes
-PyAPI_FUNC(PyObject *)
+// GraalPy change: helper-table entry for downcall, rename, use C array instead of bytes
+GraalPy_CAPI_HELPER_SYMBOL PyObject *
 GraalPyPrivate_Bytes_SubtypeNew(PyTypeObject *type, int8_t* contents, Py_ssize_t n) {
     // GraalPy change: different implementation
     PyObject* bytes = type->tp_alloc(type, n);
@@ -3393,4 +3393,3 @@ _PyBytes_Repeat(char* dest, Py_ssize_t len_dest,
     }
 }
 #endif // GraalPy change
-

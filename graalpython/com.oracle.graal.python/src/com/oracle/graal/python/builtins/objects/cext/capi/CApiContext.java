@@ -214,9 +214,11 @@ public final class CApiContext extends CExtContext {
     private static boolean nativeSymbolCacheSingleContextUsed;
 
     /**
-     * A private (i.e. per-context) cache of C API symbols (usually helper functions).
+     * A private (i.e. per-context) cache of native C API symbols.
      */
     private final NativeFunctionPointer[] nativeSymbolCache;
+    private long nativeCAPISymbolTablePtr = NULLPTR;
+    private long nativeCAPIMetadataPtr = NULLPTR;
 
     public static boolean isSpecialSingleton(Object delegate) {
         return getSingletonNativeWrapperIdx(delegate) != -1;
@@ -591,12 +593,38 @@ public final class CApiContext extends CExtContext {
      */
     private static NativeFunctionPointer lookupNativeSymbol(NativeFunctionPointer[] nativeSymbolCache, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
-        String name = symbol.getName();
         PythonContext pythonContext = PythonContext.get(null);
-        long nativeSymbolPtr = pythonContext.getCApiContext().getLibrary().lookupSymbol(name);
-        NativeFunctionPointer nativeSymbol = symbol.bind(pythonContext.ensureNativeContext(), nativeSymbolPtr);
+        CApiContext cApiContext = pythonContext.getCApiContext();
+        return cApiContext.lookupNativeSymbolFromTable(nativeSymbolCache, symbol);
+    }
+
+    private NativeFunctionPointer lookupNativeSymbolFromTable(NativeFunctionPointer[] nativeSymbolCache, NativeCAPISymbol symbol) {
+        long nativeCAPISymbolTable = nativeCAPISymbolTablePtr;
+        if (nativeCAPISymbolTable == NULLPTR) {
+            throw CompilerDirectives.shouldNotReachHere("native C API symbol table was not initialized: " + symbol.getName());
+        }
+        long nativeSymbolPtr = NativeMemory.readPtrArrayElement(nativeCAPISymbolTable, symbol.ordinal());
+        if (nativeSymbolPtr == NULLPTR) {
+            throw CompilerDirectives.shouldNotReachHere("native C API symbol table entry is not initialized: " + symbol.getName());
+        }
+        NativeFunctionPointer nativeSymbol = symbol.bind(getContext().ensureNativeContext(), nativeSymbolPtr);
         VarHandle.storeStoreFence();
         return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
+    }
+
+    private void initializeNativeSymbolCache(long nativeCAPISymbolTablePtr) {
+        NativeFunctionPointer[] nativeSymbolCache = this.nativeSymbolCache;
+        NativeContext nativeContext = getContext().ensureNativeContext();
+        for (NativeCAPISymbol symbol : NativeCAPISymbol.getValues()) {
+            long nativeSymbolPtr = NativeMemory.readPtrArrayElement(nativeCAPISymbolTablePtr, symbol.ordinal());
+            assert nativeSymbolPtr != NULLPTR : symbol;
+            nativeSymbolCache[symbol.ordinal()] = symbol.bind(nativeContext, nativeSymbolPtr);
+        }
+        VarHandle.storeStoreFence();
+    }
+
+    public static long getNativeCAPIMetadataPointer(Node caller) {
+        return PythonContext.get(caller).getCApiContext().nativeCAPIMetadataPtr;
     }
 
     @SuppressWarnings("unused")
@@ -990,9 +1018,14 @@ public final class CApiContext extends CExtContext {
             NativeContext nativeContext = context.ensureNativeContext();
             NativeLibrary capiLibrary = nativeContext.loadLibrary(loc.getCapiLibrary(), dlopenFlags);
             long initFunction = capiLibrary.lookupSymbol("initialize_graal_capi");
+            long nativeCAPISymbolTablePtr = capiLibrary.lookupSymbol("GraalPy_CAPI_HELPERS");
+            long nativeCAPIMetadataPtr = capiLibrary.lookupSymbol("GraalPy_CAPI_METADATA");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
+            cApiContext.nativeCAPISymbolTablePtr = nativeCAPISymbolTablePtr;
+            cApiContext.nativeCAPIMetadataPtr = nativeCAPIMetadataPtr;
             context.setCApiContext(cApiContext);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
+            cApiContext.initializeNativeSymbolCache(nativeCAPISymbolTablePtr);
 
             /*
              * The GC state needs to be created before the first managed object is sent to native.
@@ -1035,7 +1068,7 @@ public final class CApiContext extends CExtContext {
              * it during context exit, but when the VM is terminated by a signal, the context exit
              * is skipped. For that case we set up the shutdown hook.
              */
-            long finalizeFunction = capiLibrary.lookupSymbol("GraalPyPrivate_GetFinalizeCApiPointer");
+            long finalizeFunction = getNativeSymbol(null, NativeCAPISymbol.FUN_GET_FINALIZE_CAPI_POINTER).getAddress();
             long finalizingPointer = ExternalFunctionInvoker.invokeGETFINALIZECAPIPOINTER(null, TIMING_INVOKE_GET_FINALIZE_CAPI_POINTER, nativeContext, BoundaryCallData.getUncached(),
                             context.getThreadState(context.getLanguage()), ExternalFunctionSignature.GETFINALIZECAPIPOINTER.bind(nativeContext, finalizeFunction));
             try {

@@ -52,7 +52,7 @@ void initialize_exceptions() {
 #undef EXCEPTION
 }
 
-PyAPI_FUNC(PyObject *)
+GraalPy_CAPI_HELPER_SYMBOL PyObject *
 GraalPyPrivate_Exception_SubtypeNew(PyTypeObject *type, PyObject *args) {
     PyBaseExceptionObject *self;
 
