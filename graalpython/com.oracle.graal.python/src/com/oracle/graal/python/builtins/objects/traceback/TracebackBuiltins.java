@@ -270,11 +270,17 @@ public final class TracebackBuiltins extends PythonBuiltins {
             Reference frameInfo = tb.getFrameInfo();
             assert frameInfo.isEscaped() : createAssertionMessage("Cannot create traceback for non-escaped frame", frameInfo);
 
-            PFrame escapedFrame = readCallerFrame.getFrameForReference(frame, frameInfo, ReadFrameNode.AllPythonFramesSelector.INSTANCE, 0, 0);
+            PFrame escapedFrame = readCallerFrame.getFrameForReference(frame, frameInfo, ReadFrameNode.AllPythonFramesSelector.INSTANCE, 0, 0, getEscapedFrameThread(tb));
             assert escapedFrame != null : createAssertionMessage("Failed to find escaped frame on stack", frameInfo);
 
             tb.setFrame(escapedFrame);
             return escapedFrame;
+        }
+
+        private static Thread getEscapedFrameThread(PTraceback tb) {
+            LazyTraceback lazyTraceback = tb.getLazyTraceback();
+            PException exception = lazyTraceback != null ? lazyTraceback.getException() : null;
+            return exception != null ? exception.getEscapedFrameThread() : null;
         }
 
         @TruffleBoundary

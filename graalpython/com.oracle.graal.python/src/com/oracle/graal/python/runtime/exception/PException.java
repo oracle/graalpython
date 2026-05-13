@@ -101,6 +101,7 @@ public final class PException extends AbstractTruffleException {
     private String message = null;
     final transient Object pythonException;
     private transient PFrame.Reference frameInfo;
+    private transient Thread escapedFrameThread;
 
     /**
      * Root node that caught this exception object. This node is a manual bytecode or Bytecode DSL
@@ -383,7 +384,14 @@ public final class PException extends AbstractTruffleException {
         // shouldn't leak to the traceback
         if (this.frameInfo != null) {
             this.frameInfo.markAsEscaped();
+            if (escapedFrameThread == null) {
+                escapedFrameThread = Thread.currentThread();
+            }
         }
+    }
+
+    public Thread getEscapedFrameThread() {
+        return escapedFrameThread;
     }
 
     /**

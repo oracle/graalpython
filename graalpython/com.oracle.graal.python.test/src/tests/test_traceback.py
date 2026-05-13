@@ -37,9 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import ast
+import concurrent.futures
 import linecache
 import subprocess
 import sys
+import traceback
+import threading
 
 
 def assert_raises(err, fn, *args, **kwargs):
@@ -61,6 +64,34 @@ def test_traceback_dir():
         assert _err.args == ("the unthinkable happened!", )
         assert hasattr(tb, '__dir__')
         assert set(dir(tb)) == {'tb_frame', 'tb_next', 'tb_lasti', 'tb_lineno'}
+
+
+def test_traceback_frame_from_threadpool_exception_published_before_workitem_exit():
+    published = threading.Event()
+    release = threading.Event()
+    original_set_exception = concurrent.futures.Future.set_exception
+
+    def set_exception_and_wait(self, exc):
+        original_set_exception(self, exc)
+        published.set()
+        release.wait(timeout=5)
+
+    def target():
+        raise OSError("published before _WorkItem.run exits")
+
+    concurrent.futures.Future.set_exception = set_exception_and_wait
+    try:
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            future = executor.submit(target)
+            assert published.wait(timeout=60)
+            exc = future.exception(timeout=0)
+            traceback.clear_frames(exc.__traceback__)
+        finally:
+            release.set()
+            executor.shutdown(wait=True)
+    finally:
+        concurrent.futures.Future.set_exception = original_set_exception
 
 
 def test_import():
