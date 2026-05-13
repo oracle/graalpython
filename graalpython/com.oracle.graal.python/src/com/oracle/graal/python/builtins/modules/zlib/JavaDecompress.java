@@ -313,15 +313,16 @@ public class JavaDecompress extends JavaZlibCompObject {
         return true;
     }
 
-    private static boolean needsReplay(DecompressStream stream, long bytesWritten, boolean finishInflater) {
-        return stream.inflater.getBytesWritten() < bytesWritten || (finishInflater && !stream.inflater.finished());
+    private static boolean needsReplay(DecompressStream stream, long bytesRead, long bytesWritten, boolean finishInflater) {
+        return stream.inflater.getBytesRead() < bytesRead || stream.inflater.getBytesWritten() < bytesWritten ||
+                        (finishInflater && !stream.inflater.finished());
     }
 
-    private static void replayInflaterInput(JavaDecompress obj, long bytesWritten, boolean finishInflater, boolean isRAW)
+    private static void replayInflaterInput(JavaDecompress obj, long bytesRead, long bytesWritten, boolean finishInflater, boolean isRAW)
                     throws DataFormatException {
         byte[] result = new byte[ZLibModuleBuiltins.DEF_BUF_SIZE];
         boolean zdictIsSet = isRAW;
-        while (needsReplay(obj.stream, bytesWritten, finishInflater) && !obj.stream.inflater.finished()) {
+        while (needsReplay(obj.stream, bytesRead, bytesWritten, finishInflater) && !obj.stream.inflater.finished()) {
             long remainingBytes = bytesWritten - obj.stream.inflater.getBytesWritten();
             int len = remainingBytes > 0 ? (int) Math.min(result.length, remainingBytes) : result.length;
             int n = obj.stream.inflater.inflate(result, 0, len);
@@ -350,7 +351,8 @@ public class JavaDecompress extends JavaZlibCompObject {
                 if (!obj.setInflaterInput(inputData, inputLen, node)) {
                     return obj;
                 }
-                replayInflaterInput(obj, stream.inflater.getBytesWritten(), stream.inflater.finished(), isRAW);
+                replayInflaterInput(obj, stream.inflater.getBytesRead(), stream.inflater.getBytesWritten(), stream.inflater.finished(),
+                                isRAW);
                 if (stream.gzip && stream.inflater.finished() && obj.stream.inflater.finished()) {
                     int remaining = obj.stream.inflater.getRemaining();
                     int remainingOffset = obj.stream.inputOffset + (inputLen - obj.stream.inputOffset - remaining);

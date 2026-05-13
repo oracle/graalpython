@@ -347,6 +347,16 @@ def test_zlib_decompress_copy_preserves_eof_after_max_length():
     assert not copied.eof
 
 
+def test_zlib_decompress_copy_preserves_consumed_input_without_output():
+    compressed = zlib.compress(HAMLET_SCENE)
+    decompressor = zlib.decompressobj()
+    first = decompressor.decompress(compressed[:32])
+    assert first == b""
+
+    copied = decompressor.copy()
+    assert copied.decompress(compressed[32:]) + copied.flush() == HAMLET_SCENE
+
+
 def test_GR65704():
     contents = b"The quick brown fox jumped over the lazy dog"
     wbits = 27
