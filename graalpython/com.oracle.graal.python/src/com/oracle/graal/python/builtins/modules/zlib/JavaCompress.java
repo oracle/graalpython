@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -183,9 +183,9 @@ public final class JavaCompress extends JavaZlibCompObject {
     @TruffleBoundary
     protected static byte[] compressFinish(byte[] bytes, int length, int level, int wbits, Node node) {
         CompressStream stream = createStream(level, wbits);
-        stream.deflater.setInput(bytes, 0, length);
         if (stream.stream != null) {
             try {
+                stream.stream.write(bytes, 0, length);
                 stream.stream.finish();
                 return stream.out.toByteArray();
             } catch (ZipException ze) {

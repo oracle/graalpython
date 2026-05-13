@@ -42,11 +42,14 @@ package com.oracle.graal.python.builtins.modules.zlib;
 
 import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins.MAX_WBITS;
+import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_DATA_ERROR;
+import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_D_S_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.WHILE_SETTING_ZDICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.zip.CRC32;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
@@ -103,6 +106,10 @@ public class JavaDecompress extends JavaZlibCompObject {
         public int byteAt(int index) {
             return buf[index] & 0xff;
         }
+
+        public void updateCrc(CRC32 crc, int offset, int length) {
+            crc.update(buf, offset, length);
+        }
     }
 
     private static class DecompressStream {
@@ -111,6 +118,7 @@ public class JavaDecompress extends JavaZlibCompObject {
         final boolean gzip;
         int inputOffset;
         final byte[] gzipTrailer;
+        final CRC32 gzipCrc;
         int gzipTrailerLength;
         int gzipUnusedLength;
         boolean gzipTrailerComplete;
@@ -122,6 +130,7 @@ public class JavaDecompress extends JavaZlibCompObject {
             this.gzip = gzip;
             this.inputOffset = 0;
             this.gzipTrailer = gzip ? new byte[8] : null;
+            this.gzipCrc = gzip ? new CRC32() : null;
             this.gzipTrailerLength = 0;
             this.gzipUnusedLength = 0;
             this.gzipTrailerComplete = !gzip;
@@ -157,10 +166,7 @@ public class JavaDecompress extends JavaZlibCompObject {
 
     private static int gzipHeaderLength(ZLibByteInputStream in, boolean force, Node node) {
         if (in.count() < HEADER_TRAILER_SIZE) {
-            if (force) {
-                throw PRaiseNode.raiseStatic(node, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
-            }
-            return -1;
+            return incompleteGZIPHeader(force, node);
         }
         if (in.byteAt(0) != 0x1f || in.byteAt(1) != 0x8b || in.byteAt(2) != 8 || (in.byteAt(3) & 0xe0) != 0) {
             throw PRaiseNode.raiseStatic(node, ZLibError, ErrorMessages.WHILE_PREPARING_TO_S_DATA, "decompress");
@@ -169,37 +175,61 @@ public class JavaDecompress extends JavaZlibCompObject {
         int offset = HEADER_TRAILER_SIZE;
         if ((flags & 0x04) != 0) {
             if (in.count() < offset + 2) {
-                return -1;
+                return incompleteGZIPHeader(force, node);
             }
             int extraLength = in.byteAt(offset) | (in.byteAt(offset + 1) << 8);
             offset += 2 + extraLength;
             if (in.count() < offset) {
-                return -1;
+                return incompleteGZIPHeader(force, node);
             }
         }
         if ((flags & 0x08) != 0) {
-            while (offset < in.count() && in.byteAt(offset++) != 0) {
-                // skip original file name
-            }
-            if (offset > in.count() || in.byteAt(offset - 1) != 0) {
-                return -1;
+            offset = skipGZIPHeaderString(in, offset, force, node);
+            if (offset < 0) {
+                return offset;
             }
         }
         if ((flags & 0x10) != 0) {
-            while (offset < in.count() && in.byteAt(offset++) != 0) {
-                // skip file comment
-            }
-            if (offset > in.count() || in.byteAt(offset - 1) != 0) {
-                return -1;
+            offset = skipGZIPHeaderString(in, offset, force, node);
+            if (offset < 0) {
+                return offset;
             }
         }
         if ((flags & 0x02) != 0) {
+            int crcOffset = offset;
             offset += 2;
             if (in.count() < offset) {
-                return -1;
+                return incompleteGZIPHeader(force, node);
             }
+            validateGZIPHeaderCrc(in, crcOffset, node);
         }
         return offset;
+    }
+
+    private static int skipGZIPHeaderString(ZLibByteInputStream in, int offset, boolean force, Node node) {
+        while (offset < in.count()) {
+            if (in.byteAt(offset++) == 0) {
+                return offset;
+            }
+        }
+        return incompleteGZIPHeader(force, node);
+    }
+
+    private static int incompleteGZIPHeader(boolean force, Node node) {
+        if (force) {
+            throw PRaiseNode.raiseStatic(node, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
+        }
+        return -1;
+    }
+
+    private static void validateGZIPHeaderCrc(ZLibByteInputStream in, int crcOffset, Node node) {
+        CRC32 crc = new CRC32();
+        in.updateCrc(crc, 0, crcOffset);
+        int expectedCrc = in.byteAt(crcOffset) | (in.byteAt(crcOffset + 1) << 8);
+        if (((int) crc.getValue() & 0xffff) != expectedCrc) {
+            throw PRaiseNode.raiseStatic(node, ZLibError, ERROR_D_S_S, Z_DATA_ERROR,
+                            "while decompressing data", "header crc mismatch");
+        }
     }
 
     private static boolean isGZIPStreamReady(DecompressStream stream, byte[] data, int length, boolean force, Node node) {
@@ -216,15 +246,41 @@ public class JavaDecompress extends JavaZlibCompObject {
         return false;
     }
 
+    private static long getLittleEndianUnsignedInt(byte[] data, int offset) {
+        return (data[offset] & 0xffL) |
+                        ((data[offset + 1] & 0xffL) << 8) |
+                        ((data[offset + 2] & 0xffL) << 16) |
+                        ((data[offset + 3] & 0xffL) << 24);
+    }
+
+    private static void validateGZIPTrailer(DecompressStream stream, Node node) {
+        assert stream.gzip;
+        long expectedCrc = getLittleEndianUnsignedInt(stream.gzipTrailer, 0);
+        long expectedSize = getLittleEndianUnsignedInt(stream.gzipTrailer, 4);
+        if (stream.gzipCrc.getValue() != expectedCrc) {
+            throw PRaiseNode.raiseStatic(node, ZLibError, ERROR_D_S_S, Z_DATA_ERROR,
+                            "while decompressing data", "incorrect data check");
+        }
+        if ((stream.inflater.getBytesWritten() & 0xffffffffL) != expectedSize) {
+            throw PRaiseNode.raiseStatic(node, ZLibError, ERROR_D_S_S, Z_DATA_ERROR,
+                            "while decompressing data", "incorrect length check");
+        }
+    }
+
     private static boolean consumeGZIPTrailer(DecompressStream stream, byte[] data, int offset, int length, Node node) {
-        if (!stream.gzip || !stream.inflater.finished() || stream.gzipTrailerComplete) {
+        if (!stream.gzip || (!stream.inflater.finished() && !stream.gzipTrailerComplete)) {
             return false;
+        }
+        if (stream.gzipTrailerComplete) {
+            stream.gzipUnusedLength = length;
+            return true;
         }
         int trailerBytes = Math.min(stream.gzipTrailer.length - stream.gzipTrailerLength, length);
         PythonUtils.arraycopy(data, offset, stream.gzipTrailer, stream.gzipTrailerLength, trailerBytes);
         stream.gzipTrailerLength += trailerBytes;
         stream.gzipUnusedLength = 0;
         if (stream.gzipTrailerLength == stream.gzipTrailer.length) {
+            validateGZIPTrailer(stream, node);
             stream.gzipTrailerComplete = true;
             stream.gzipUnusedLength = length - trailerBytes;
         }
@@ -232,7 +288,7 @@ public class JavaDecompress extends JavaZlibCompObject {
     }
 
     private static boolean isGZIPStreamFinishing(DecompressStream stream, byte[] data, int length, Node node) {
-        if (stream.gzip && stream.inflater.finished()) {
+        if (stream.gzip && (stream.inflater.finished() || stream.gzipTrailerComplete)) {
             consumeGZIPTrailer(stream, data, 0, length, node);
             stream.inputOffset = 0;
             return true;
@@ -257,6 +313,30 @@ public class JavaDecompress extends JavaZlibCompObject {
         return true;
     }
 
+    private static boolean needsReplay(DecompressStream stream, long bytesWritten, boolean finishInflater) {
+        return stream.inflater.getBytesWritten() < bytesWritten || (finishInflater && !stream.inflater.finished());
+    }
+
+    private static void replayInflaterInput(JavaDecompress obj, long bytesWritten, boolean finishInflater, boolean isRAW)
+                    throws DataFormatException {
+        byte[] result = new byte[ZLibModuleBuiltins.DEF_BUF_SIZE];
+        boolean zdictIsSet = isRAW;
+        while (needsReplay(obj.stream, bytesWritten, finishInflater) && !obj.stream.inflater.finished()) {
+            long remainingBytes = bytesWritten - obj.stream.inflater.getBytesWritten();
+            int len = remainingBytes > 0 ? (int) Math.min(result.length, remainingBytes) : result.length;
+            int n = obj.stream.inflater.inflate(result, 0, len);
+            if (n == 0) {
+                if (!zdictIsSet && obj.stream.inflater.needsDictionary() && obj.getZdict().length > 0) {
+                    obj.setDictionary();
+                    zdictIsSet = true;
+                    continue;
+                }
+                break;
+            }
+            updateGZIPCrc(obj.stream, result, n);
+        }
+    }
+
     @TruffleBoundary
     protected JavaDecompress copy(Node node) {
         assert canCopy();
@@ -270,10 +350,11 @@ public class JavaDecompress extends JavaZlibCompObject {
                 if (!obj.setInflaterInput(inputData, inputLen, node)) {
                     return obj;
                 }
-                int n = obj.stream.inflater.inflate(new byte[ZLibModuleBuiltins.DEF_BUF_SIZE]);
-                if (!isRAW && n == 0 && obj.stream.inflater.needsDictionary() && getZdict().length > 0) {
-                    obj.setDictionary();
-                    obj.stream.inflater.inflate(new byte[ZLibModuleBuiltins.DEF_BUF_SIZE]);
+                replayInflaterInput(obj, stream.inflater.getBytesWritten(), stream.inflater.finished(), isRAW);
+                if (stream.gzip && stream.inflater.finished() && obj.stream.inflater.finished()) {
+                    int remaining = obj.stream.inflater.getRemaining();
+                    int remainingOffset = obj.stream.inputOffset + (inputLen - obj.stream.inputOffset - remaining);
+                    consumeGZIPTrailer(obj.stream, inputData, remainingOffset, remaining, node);
                 }
             } catch (DataFormatException e) {
                 // pass
@@ -281,6 +362,7 @@ public class JavaDecompress extends JavaZlibCompObject {
         }
         obj.setUnconsumedTail(getUnconsumedTail());
         obj.setUnusedData(getUnusedData());
+        obj.setEof(isEof());
         return obj;
     }
 
@@ -316,6 +398,7 @@ public class JavaDecompress extends JavaZlibCompObject {
             } catch (DataFormatException e) {
                 throw PRaiseNode.raiseStatic(nodeForRaise, ZLibError, e);
             }
+            updateGZIPCrc(stream, result, bytesWritten);
             baos.write(result, 0, bytesWritten);
         }
         if (stream.gzip && stream.inflater.finished()) {
@@ -354,6 +437,7 @@ public class JavaDecompress extends JavaZlibCompObject {
                 if (howmany == 0 && stream.inflater.needsInput()) {
                     throw PRaiseNode.raiseStatic(node, ZLibError, ErrorMessages.ERROR_5_WHILE_DECOMPRESSING);
                 }
+                updateGZIPCrc(stream, resultArray, howmany);
                 baos.write(resultArray, 0, howmany);
             }
             if (stream.gzip) {
@@ -397,6 +481,12 @@ public class JavaDecompress extends JavaZlibCompObject {
         return stream.inflater != null;
     }
 
+    private static void updateGZIPCrc(DecompressStream stream, byte[] data, int length) {
+        if (stream.gzip && length > 0) {
+            stream.gzipCrc.update(data, 0, length);
+        }
+    }
+
     private boolean isReady() {
         return isReady(stream);
     }
@@ -413,8 +503,13 @@ public class JavaDecompress extends JavaZlibCompObject {
         if (!isReady()) {
             return 0;
         }
-        if (stream.gzip && stream.inflater.finished()) {
-            return stream.gzipTrailerComplete ? stream.gzipUnusedLength : 0;
+        if (stream.gzip) {
+            if (stream.gzipTrailerComplete) {
+                return stream.gzipUnusedLength;
+            }
+            if (stream.inflater.finished()) {
+                return 0;
+            }
         }
         return stream.inflater.getRemaining();
     }
