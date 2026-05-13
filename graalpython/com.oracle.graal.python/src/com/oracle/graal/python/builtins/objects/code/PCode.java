@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
@@ -101,6 +102,7 @@ public final class PCode extends PythonBuiltinObject {
     public static final int CO_GRAALPYHON_MODULE = 0x1000;
 
     private final RootNode rootNode;
+    @CompilationFinal private RootCallTarget callTarget;
     private final Signature signature;
 
     // number of local variables
@@ -578,7 +580,13 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public RootCallTarget getRootCallTarget() {
-        return rootNode.getCallTarget();
+        RootCallTarget ct = callTarget;
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, ct == null)) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            ct = rootNode.getCallTarget();
+            callTarget = ct;
+        }
+        return ct;
     }
 
     @ExportMessage
