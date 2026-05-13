@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,11 +49,35 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleFile;
 
 final class ElfFile extends SharedObject {
+    private static final String PATCHELF_INSTALL_INSTRUCTION = "IsolateNativeModules option needs `patchelf` tool to copy libraries. Make sure you have it available " +
+                    "on PATH or installed in your venv.";
+
     private final PythonContext context;
     private final TruffleFile tempfile;
 
-    private String getPatchelf() {
-        return which(context, "patchelf").toString();
+    private String getPatchelf() throws IOException {
+        TruffleFile patchelf = which(context, "patchelf");
+        if (!patchelf.exists()) {
+            throw new IOException("Could not find `patchelf` on PATH. " + PATCHELF_INSTALL_INSTRUCTION);
+        }
+        return patchelf.toString();
+    }
+
+    private void runPatchelf(String action, String... arguments) throws IOException, InterruptedException {
+        var command = new String[arguments.length + 1];
+        command[0] = getPatchelf();
+        System.arraycopy(arguments, 0, command, 1, arguments.length);
+        var pb = newProcessBuilder(context);
+        pb.command(command);
+        Process proc;
+        try {
+            proc = pb.start();
+        } catch (IOException e) {
+            throw new IOException("Failed to start `patchelf` to " + action + ": " + e.getMessage() + ". " + PATCHELF_INSTALL_INSTRUCTION, e);
+        }
+        if (proc.waitFor() != 0) {
+            throw new IOException("Failed to run `patchelf` to " + action + " (exit code " + proc.exitValue() + "). " + PATCHELF_INSTALL_INSTRUCTION);
+        }
     }
 
     ElfFile(byte[] b, PythonContext context) throws IOException {
@@ -66,27 +90,13 @@ final class ElfFile extends SharedObject {
 
     @Override
     public void setId(String newId) throws IOException, InterruptedException {
-        var pb = newProcessBuilder(context);
-        pb.command(getPatchelf(), "--debug", "--set-soname", newId, tempfile.toString());
-        var proc = pb.start();
-        if (proc.waitFor() != 0) {
-            throw new IOException("Failed to run `patchelf` command. Make sure you have it on your PATH or installed in your venv.");
-        }
+        runPatchelf("set SONAME", "--debug", "--set-soname", newId, tempfile.toString());
     }
 
     @Override
     public void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException {
-        var pb = newProcessBuilder(context);
-        pb.command(getPatchelf(), "--debug", "--remove-needed", oldName, tempfile.toString());
-        var proc = pb.start();
-        if (proc.waitFor() != 0) {
-            throw new IOException("Failed to run `patchelf` command. Make sure you have it on your PATH or installed in your venv.");
-        }
-        pb.command(getPatchelf(), "--debug", "--add-needed", newName, tempfile.toString());
-        proc = pb.start();
-        if (proc.waitFor() != 0) {
-            throw new IOException("Failed to run `patchelf` command. Make sure you have it on your PATH or installed in your venv.");
-        }
+        runPatchelf("remove dependency", "--debug", "--remove-needed", oldName, tempfile.toString());
+        runPatchelf("add dependency", "--debug", "--add-needed", newName, tempfile.toString());
     }
 
     @Override

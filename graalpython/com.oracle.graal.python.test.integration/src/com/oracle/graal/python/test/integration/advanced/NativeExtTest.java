@@ -121,11 +121,8 @@ public class NativeExtTest {
 
         Path tempDir = Files.createTempDirectory("graalpy-no-delvewheel");
         try (Engine engine = Engine.create("python");
-                        Context context = newContext(engine)
-                                        .option("python.IsolateNativeModules", "true")
-                                        .option("python.Executable", tempDir.resolve("python.exe").toString())
-                                        .environment("PATH", tempDir.toString())
-                                        .build()) {
+                        Context context = newContext(engine).option("python.IsolateNativeModules", "true").option("python.Executable", tempDir.resolve("python.exe").toString()).environment("PATH",
+                                        tempDir.toString()).build()) {
             try {
                 context.eval("python", "import _sqlite3");
                 Assert.fail("importing _sqlite3 with python.IsolateNativeModules=true should fail when delvewheel is not on PATH");
@@ -135,6 +132,30 @@ public class NativeExtTest {
                 Assert.assertTrue(exception.isException());
                 Assert.assertEquals(ex.getMessage(), "SystemError", exception.getMetaObject().getMetaSimpleName());
                 Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("delvewheel` " + DELVEWHEEL_VERSION));
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("installed"));
+            }
+        } finally {
+            Files.deleteIfExists(tempDir);
+        }
+    }
+
+    @Test
+    public void testMissingPatchelfError() throws IOException {
+        Assume.assumeTrue(System.getProperty("os.name").toLowerCase().contains("linux"));
+
+        Path tempDir = Files.createTempDirectory("graalpy-no-patchelf");
+        try (Engine engine = Engine.create("python");
+                        Context context = newContext(engine).option("python.IsolateNativeModules", "true").option("python.Executable", tempDir.resolve("python").toString()).environment("PATH",
+                                        tempDir.toString()).build()) {
+            try {
+                context.eval("python", "import _sqlite3");
+                Assert.fail("importing _sqlite3 with python.IsolateNativeModules=true should fail when patchelf is not on PATH");
+            } catch (PolyglotException ex) {
+                Assert.assertTrue(ex.getMessage(), ex.isGuestException());
+                Value exception = ex.getGuestObject();
+                Assert.assertTrue(exception.isException());
+                Assert.assertEquals(ex.getMessage(), "SystemError", exception.getMetaObject().getMetaSimpleName());
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("patchelf`"));
                 Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("installed"));
             }
         } finally {
