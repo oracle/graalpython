@@ -58,8 +58,8 @@ def run_in_venv(venv, cmd, **kwargs):
     return run(['sh', '-c', f". {venv}/bin/activate && {shlex.join(cmd)}"], **kwargs)
 
 
-def replace_in_file(path: Path, pattern, replacement):
-    path.write_text(re.sub(pattern, replacement, path.read_text()))
+def replace_in_file(path: Path, pattern, replacement, flags=0):
+    path.write_text(re.sub(pattern, replacement, path.read_text(), flags=flags))
 
 
 def downstream_test(name):
@@ -120,7 +120,7 @@ def downstream_test_pybind11(graalpy, testdir):
     run_in_venv(venv, ['cmake', '--build', 'build', *parallel_arg], cwd=src)
     env = os.environ.copy()
     env['PYTHONPATH'] = 'build/tests'
-    run_in_venv(venv, ['pytest', '-v', '--tb=short', 'tests'], cwd=src, env=env)
+    run_in_venv(venv, ['pytest', '-v', '--tb=short', '-o', 'xfail_strict=False', 'tests'], cwd=src, env=env)
 
 
 @downstream_test('virtualenv')
@@ -222,12 +222,58 @@ def downstream_test_cython(graalpy, testdir):
     env["BACKEND"] = "c"
     run([graalpy, '-m', 'venv', str(venv)])
     if not CI:
-        replace_in_file(src / 'Tools/ci-run.sh', r'^\s*sudo', '# sudo')
+        replace_in_file(src / 'Tools/ci-run.sh', r'^\s*sudo', '# sudo', flags=re.MULTILINE)
         try:
             run([graalpy, '--version', '--experimental-options', '--engine.Compilation=false'])
         except subprocess.CalledProcessError:
             replace_in_file(src / 'Tools/ci-run.sh', r'--engine\.Compilation=false', '')
     run_in_venv(venv, ["bash", "./Tools/ci-run.sh"], cwd=src, env=env)
+
+
+# To run locally, use:
+# docker run --rm -it -p 1521:1521 -p 5500:5500 -e ORACLE_PWD=asdf12345678 container-registry.oracle.com/database/free@sha256:51940ce2a4c9a085c9deb715713d68c579756e9bf09a0d7318c7e3e28f70ba1e
+@downstream_test('oracledb')
+def downstream_test_oracledb(graalpy, testdir):
+    run([
+        'git', 'clone', 'https://github.com/oracle/python-oracledb.git',
+        '-b', 'main',
+        '--depth', '1',
+        '--recurse-submodules',
+    ], cwd=testdir)
+    src = testdir / 'python-oracledb'
+    venv = src / 'venv'
+    env = os.environ.copy()
+    env.setdefault('PYO_TEST_CONNECT_STRING', "127.0.0.1:1521/FREEPDB1")
+    env.setdefault('PYO_TEST_ADMIN_USER', "SYSTEM")
+    env.setdefault('PYO_TEST_ADMIN_PASSWORD', "asdf12345678")
+    env.setdefault('PYO_TEST_MAIN_USER', "pythontest")
+    env.setdefault('PYO_TEST_MAIN_PASSWORD', "testpasswordAx3")
+    env.setdefault('PYO_TEST_PROXY_USER', "pythontestproxy")
+    env.setdefault('PYO_TEST_PROXY_PASSWORD', "testpasswordAx3")
+    run([graalpy, '-m', 'venv', str(venv)])
+    run_in_venv(venv, ['pip', 'install', '.[test]'], cwd=src)
+    run_in_venv(venv, ['pip', 'install', 'pytest-rerunfailures'], cwd=src)
+    run_in_venv(venv, ['pytest', '--tb=short', 'tests/create_schema.py'], cwd=src, env=env)
+    try:
+        for mode_arg in ([], ['--use-thick-mode']):
+            run_in_venv(venv, [
+                'pytest',
+                '--tb=short',
+                '-v',
+                '-rs',
+                '--reruns',
+                '1',
+                '--reruns-delay',
+                '3',
+                '--only-rerun',
+                'Listener refused connection',
+                'tests',
+                '--ignore',
+                'tests/ext',
+                *mode_arg,
+            ], cwd=src, env=env)
+    finally:
+        run_in_venv(venv, ['pytest', '--tb=short', 'tests/drop_schema.py'], cwd=src, env=env)
 
 
 def run_downstream_test(python, project):

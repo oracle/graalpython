@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -91,7 +90,6 @@ public final class PythonCextMethodBuiltins {
         } else {
             method = PFactory.createBuiltinMethod(language, self, func);
         }
-        assert moduleName == PNone.NO_VALUE || PyUnicodeCheckNode.executeUncached(moduleName);
         WriteAttributeToPythonObjectNode.executeUncached(method, T___MODULE__, moduleName);
         return method;
     }

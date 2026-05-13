@@ -37,9 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import gc
 import sys
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, compile_module_from_string, unhandled_error_compare
 
 
 def _reference_new_list(args):
@@ -121,6 +122,47 @@ class DummyListSubclass(list):
 
 
 class TestPyList(CPyExtTestCase):
+
+    def test_clear_native_storage_gc(self):
+        module = compile_module_from_string(
+            """
+            #define PY_SSIZE_T_CLEAN
+            #include <Python.h>
+
+            static PyObject* clear_native_list_storage(PyObject* self, PyObject* list) {
+                if (!PyList_Check(list) || PyList_GET_SIZE(list) == 0) {
+                    PyErr_SetString(PyExc_ValueError, "expected non-empty list");
+                    return NULL;
+                }
+                // Force storage to native
+                PySequence_Fast_ITEMS(list);
+                if (Py_TYPE(list)->tp_clear((PyObject *) list) < 0) {
+                    return NULL;
+                }
+                Py_RETURN_NONE;
+            }
+
+            static PyMethodDef methods[] = {
+                {"clear_native_list_storage", (PyCFunction) clear_native_list_storage, METH_O, NULL},
+                {NULL, NULL, 0, NULL}
+            };
+
+            static struct PyModuleDef module = {
+                PyModuleDef_HEAD_INIT, "test_list_native_storage_gc", NULL, -1, methods
+            };
+
+            PyMODINIT_FUNC PyInit_test_list_native_storage_gc(void) {
+                return PyModule_Create(&module);
+            }
+            """,
+            "test_list_native_storage_gc",
+        )
+
+        items = [object()]
+        module.clear_native_list_storage(items)
+        del items
+        for _ in range(5):
+            gc.collect()
 
     test_PyList_New = CPyExtFunction(
         _reference_new_list,
@@ -304,11 +346,11 @@ class TestPyList(CPyExtTestCase):
         arguments=["PyObject* op", "Py_ssize_t ilow", "Py_ssize_t ihigh"],
         cmpfunc=unhandled_error_compare
     )
-    
+
     test_PyList_SetSlice = CPyExtFunction(
         _reference_setslice,
         lambda: (
-            ([1,2,3,4],0,4,[5,6,7,8]),    
+            ([1,2,3,4],0,4,[5,6,7,8]),
             ([],1,2, [5,6]),
             ([1,2,3,4],10,20,[5,6,7,8]),
             (DummyClass(),10,20, [1]),
@@ -351,16 +393,16 @@ class TestPyList(CPyExtTestCase):
     test_PyList_Check = CPyExtFunction(
         lambda args: isinstance(args[0], list),
         lambda: (
-            ([1,2,3,4],), 
-            ([None],), 
-            ([],), 
-            (list(),), 
-            (dict(),), 
-            (tuple(),), 
-            (DummyListSubclass(),), 
-            (DummyClass(),), 
-            (1,), 
-            (1.0,), 
+            ([1,2,3,4],),
+            ([None],),
+            ([],),
+            (list(),),
+            (dict(),),
+            (tuple(),),
+            (DummyListSubclass(),),
+            (DummyClass(),),
+            (1,),
+            (1.0,),
         ),
         resultspec="i",
         argspec='O',
@@ -371,16 +413,16 @@ class TestPyList(CPyExtTestCase):
     test_PyList_CheckExact = CPyExtFunction(
         lambda args: type(args[0]) is list,
         lambda: (
-            ([1,2,3,4],), 
-            ([None],), 
-            ([],), 
-            (list(),), 
-            (dict(),), 
-            (tuple(),), 
-            (DummyListSubclass(),), 
-            (DummyClass(),), 
-            (1,), 
-            (1.0,), 
+            ([1,2,3,4],),
+            ([None],),
+            ([],),
+            (list(),),
+            (dict(),),
+            (tuple(),),
+            (DummyListSubclass(),),
+            (DummyClass(),),
+            (1,),
+            (1.0,),
         ),
         resultspec="i",
         argspec='O',

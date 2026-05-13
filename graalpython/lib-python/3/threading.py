@@ -1096,8 +1096,12 @@ class Thread:
         # Special case:  _main_thread releases ._tstate_lock via this
         # module's _shutdown() function.
         lock = self._tstate_lock
-        if lock is not None:
-            assert not lock.locked()
+        # GraalPy change: In CPython 3.12, the lock state reported by lock.locked() is only updated after the acquiring
+        # thread also reacquired the GIL. GraalPy updates the lock state immediately when acquired and so does
+        # CPython 3.13+, so we would fail the assert when another thread is trying to join the main thread.
+        # When updating to 3.13 this change can be dropped.
+        # if lock is not None:
+        #     assert not lock.locked()
         self._is_stopped = True
         self._tstate_lock = None
         if not self.daemon:

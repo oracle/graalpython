@@ -1,0 +1,87 @@
+name: Run downstream test
+description: Shared steps for running a downstream package test against a GraalPy standalone build (latest CE dev build on Mac OS)
+
+inputs:
+  package:
+    description: Downstream package name as accepted by mx.graalpython/downstream_tests.py
+    required: true
+  needs_cmake:
+    description: Whether to install CMake
+    required: false
+    default: "false"
+  needs_rust:
+    description: Whether to install Rust toolchain
+    required: false
+    default: "false"
+  needs_uv:
+    description: Whether to install uv
+    required: false
+    default: "false"
+  platform:
+    description: Platform identifier (linux/macos)
+    required: true
+  arch:
+    description: Architecture identifier (e.g. amd64/aarch64)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install CMake (Linux)
+      if: ${{ inputs.platform == 'linux' && inputs.needs_cmake == 'true' }}
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake
+
+    - name: Install CMake (Darwin)
+      if: ${{ inputs.platform == 'macos' && inputs.needs_cmake == 'true' }}
+      shell: bash
+      run: |
+        if brew list cmake >/dev/null 2>&1; then
+          echo "cmake already installed"
+        else
+          brew install cmake
+        fi
+
+    - name: Install Rust toolchain
+      if: ${{ inputs.needs_rust == 'true' }}
+      shell: bash
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install uv
+      if: ${{ inputs.needs_uv == 'true' }}
+      shell: bash
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Get GraalPy CE dev build
+      if: ${{ inputs.platform == 'macos' }}
+      shell: bash
+      run: |
+        tarball="$(curl -sH "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/graalvm/graalvm-ce-dev-builds/releases/latest" | jq -r --arg artifact "graalpy-community-dev-${{ inputs.platform }}-${{ inputs.arch }}.tar.gz" '.assets[] | select(.name == $artifact) | .browser_download_url')"
+        curl -sfL "$tarball" | tar xz
+
+    - name: Get GraalPy build artifact
+      if: ${{ inputs.platform == 'linux' }}
+      uses: actions/download-artifact@v5
+      with:
+        name: graalpy-native-standalonelinux
+        path: graalpynative
+
+    - name: Unpack GraalPy build artifact
+      if: ${{ inputs.platform == 'linux' }}
+      shell: bash
+      env:
+        ARTIFACT_PATH: graalpy-native-standalonelinux
+        ARTIFACT_PATH_PREFIX: graalpynative
+      run: |
+        ./.github/scripts/unpack-artifact graalpy-native-standalonelinux
+        mv $ARTIFACT_PATH_PREFIX/main/mxbuild/linux-amd64/GRAALPY_NATIVE_STANDALONE/ graalpy-native-standalone
+
+    - name: Run downstream tests for ${{ inputs.package }}
+      shell: bash
+      run: python mx.graalpython/downstream_tests.py graalpy-*/bin/python ${{ inputs.package }}

@@ -13,81 +13,50 @@ jobs:
       logs_retention_days: 0
       artifacts_retention_days: 0
 
-  downstream-tests:
+  downstream-pybind11:
     needs: build-standalone-artifacts
-    strategy:
-      fail-fast: false
-      matrix:
-        name:
-        - pybind11
-        - virtualenv
-        - pyo3
-        - pydantic-core
-        - jiter
-        - cython
-        os:
-        - id: ubuntu-latest
-          platform: linux
-          arch: amd64
-        - id: macos-latest
-          platform: macos
-          arch: aarch64
+    uses: ./.github/workflows/_downstream-test-common.yml
+    with:
+      package: pybind11
+      needs_cmake: true
 
-    runs-on: ${{ matrix.os.id }}
-    env:
-        ARTIFACT_PATH: graalpy-native-standalone${{ matrix.os.platform }}
-        ARTIFACT_PATH_PREFIX: graalpynative
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  downstream-virtualenv:
+    needs: build-standalone-artifacts
+    uses: ./.github/workflows/_downstream-test-common.yml
+    with:
+      package: virtualenv
 
-    steps:
-    - name: Install CMake (Linux)
-      if: ${{ matrix.os.platform == 'linux' && matrix.name == 'pybind11' }}
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake
+  downstream-pyo3:
+    needs: build-standalone-artifacts
+    uses: ./.github/workflows/_downstream-test-common.yml
+    with:
+      package: pyo3
+      needs_rust: true
 
-    - name: Install CMake (Darwin)
-      if: ${{ matrix.os.platform == 'macos' && matrix.name == 'pybind11' }}
-      run: |
-        if brew list cmake >/dev/null 2>&1; then
-          echo "cmake already installed"
-        else
-          brew install cmake
-        fi
+  downstream-pydantic-core:
+    needs: build-standalone-artifacts
+    uses: ./.github/workflows/_downstream-test-common.yml
+    with:
+      package: pydantic-core
+      needs_rust: true
+      needs_uv: true
 
-    - name: Install Rust toolchain
-      if: ${{ matrix.name == 'pyo3' || matrix.name == 'pydantic-core' || matrix.name == 'jiter' }}
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
+  downstream-jiter:
+    needs: build-standalone-artifacts
+    uses: ./.github/workflows/_downstream-test-common.yml
+    with:
+      package: jiter
+      needs_rust: true
+      needs_uv: true
 
-    - name: Install uv
-      if: ${{ matrix.name == 'pydantic-core' || matrix.name == 'jiter' }}
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
+  downstream-cython:
+    needs: build-standalone-artifacts
+    uses: ./.github/workflows/_downstream-test-common.yml
+    with:
+      package: cython
 
-    - name: Checkout main repository
-      uses: actions/checkout@v4
-
-    - name: Get GraalPy EA build
-      if: ${{ matrix.os.platform == 'macos' }}
-      run: |
-        tarball="$(curl -sH "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/graalvm/graalvm-ce-dev-builds/releases/latest" | jq -r --arg artifact "graalpy-community-dev-${{ matrix.os.platform }}-${{matrix.os.arch}}.tar.gz" '.assets[] | select(.name == $artifact) | .browser_download_url')"
-        curl -sfL "$tarball" | tar xz
-
-    - name: Get GraalPy build artifact
-      if: ${{ matrix.os.platform == 'linux' }}
-      uses: actions/download-artifact@v5
-      with:
-        name: graalpy-native-standalonelinux
-        path: ${{ env.ARTIFACT_PATH_PREFIX }}
-
-    - name: Unpack GraalPy build artifact
-      if: ${{ matrix.os.platform == 'linux' }}
-      run: |
-        ./.github/scripts/unpack-artifact graalpy-native-standalonelinux
-        mv $ARTIFACT_PATH_PREFIX/main/mxbuild/linux-amd64/GRAALPY_NATIVE_STANDALONE/ graalpy-native-standalone
-
-    - name: Run downstream tests for ${{ matrix.name }}
-      run: python mx.graalpython/downstream_tests.py graalpy-*/bin/python ${{ matrix.name }}
+  downstream-oracledb:
+    needs: build-standalone-artifacts
+    uses: ./.github/workflows/_downstream-test-oracledb.yml
+    with:
+      package: oracledb

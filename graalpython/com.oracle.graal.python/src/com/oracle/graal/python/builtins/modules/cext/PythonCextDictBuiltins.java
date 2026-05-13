@@ -107,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
@@ -134,6 +135,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -168,7 +170,8 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
                         @Cached PromoteBorrowedValue promoteKeyNode,
                         @Cached PromoteBorrowedValue promoteValueNode,
-                        @Cached HashingStorageSetItem setItem) {
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
             /*
              * We need to promote primitive values and strings to object types for borrowing to work
              * correctly. This is very hard to do mid-iteration, so we do all the promotion for the
@@ -217,6 +220,10 @@ public final class PythonCextDictBuiltins {
                             setItem.execute(null, inliningTarget, newStorage, key, value);
                         }
                         dict.setDictStorage(newStorage);
+                        if (storage instanceof DynamicObjectStorage dynamicStorage &&
+                                        dynamicStorage.getStore() instanceof PythonObject owner) {
+                            setShapeFlagsNode.executeAdd(owner, PythonObject.HAS_MATERIALIZED_DICT);
+                        }
                     }
                 }
             }
@@ -405,8 +412,16 @@ public final class PythonCextDictBuiltins {
         @Specialization
         static Object setItem(PDict dict, Object key, Object value,
                         @Bind Node inliningTarget,
-                        @Cached PyDictSetDefault setDefault) {
-            return setDefault.execute(null, inliningTarget, dict, key, value);
+                        @Cached PyDictSetDefault setDefault,
+                        @Cached PromoteBorrowedValue promoteNode,
+                        @Cached SetItemNode setItemNode) {
+            Object result = setDefault.execute(null, inliningTarget, dict, key, value);
+            Object promotedValue = promoteNode.execute(inliningTarget, result);
+            if (promotedValue != null) {
+                setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
+                return promotedValue;
+            }
+            return result;
         }
 
         @Fallback

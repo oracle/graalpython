@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -60,3 +60,23 @@ del threading._shutdown
         ]
     )
     assert not output, "No output expected"
+
+
+def test_threads_joining_main_thread_at_shutdown():
+    import subprocess
+    import sys
+
+    script = r"""
+import threading
+import time
+
+def f():
+    threading.main_thread().join()
+
+for _ in range(100):
+    threading.Thread(target=f).start()
+
+time.sleep(0.05)
+"""
+    result = subprocess.run([sys.executable, "-c", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    assert result.returncode == 0, result.stderr.decode("utf-8", "replace")

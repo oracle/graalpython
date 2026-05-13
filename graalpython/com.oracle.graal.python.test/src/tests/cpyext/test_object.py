@@ -91,6 +91,55 @@ class AttroClass(object):
 
 
 class TestObject(unittest.TestCase):
+    def test_iter_dict_before_getattr_property(self):
+        module = compile_module_from_string(
+            """
+            #include <Python.h>
+
+            static PyObject* iter_dict_then_get_attr(PyObject* self, PyObject* obj) {
+                PyObject* dict = PyObject_GetAttrString(obj, "__dict__");
+                if (dict == NULL) {
+                    return NULL;
+                }
+
+                Py_ssize_t pos = 0;
+                PyObject *key, *value;
+                while (PyDict_Next(dict, &pos, &key, &value)) {
+                    Py_INCREF(value);
+                    Py_DECREF(value);
+                }
+
+                Py_DECREF(dict);
+                return PyObject_GetAttrString(obj, "area");
+            }
+
+            static PyMethodDef methods[] = {
+                {"iter_dict_then_get_attr", (PyCFunction)iter_dict_then_get_attr, METH_O, NULL},
+                {NULL, NULL, 0, NULL}
+            };
+
+            static struct PyModuleDef module = {
+                PyModuleDef_HEAD_INIT, "test_iter_dict_before_getattr_property", NULL, -1, methods
+            };
+
+            PyMODINIT_FUNC PyInit_test_iter_dict_before_getattr_property(void) {
+                return PyModule_Create(&module);
+            }
+            """,
+            "test_iter_dict_before_getattr_property",
+        )
+
+        class Model:
+            def __init__(self, **kwargs):
+                for key, value in kwargs.items():
+                    setattr(self, key, value)
+
+            @property
+            def area(self):
+                return b"%d" % (self.width * self.height)
+
+        self.assertEqual(module.iter_dict_then_get_attr(Model(width=3, height=4)), b"12")
+
     def test_add(self):
         TestAdd = CPyExtType("TestAdd",
                              """
