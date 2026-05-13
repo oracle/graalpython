@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Simacek <michael.simacek@oracle.com>
+Date: Wed, 13 May 2026 12:00:00 +0200
+Subject: [PATCH] Work around GraalPy qualified extension type names
+
+---
+ cryptography/x509/verification.py | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/cryptography/x509/verification.py b/cryptography/x509/verification.py
+index 9b4fde9..7f40570 100644
+--- a/cryptography/x509/verification.py
++++ b/cryptography/x509/verification.py
+@@ -30,3 +30,6 @@ Policy = rust_x509.Policy
+ ExtensionPolicy = rust_x509.ExtensionPolicy
+ Criticality = rust_x509.Criticality
+-VerificationError = rust_x509.VerificationError
++try:
++    VerificationError = rust_x509.VerificationError
++except AttributeError:
++    VerificationError = getattr(rust_x509, "hazmat.bindings._rust.x509.VerificationError")
+-- 
+2.34.1
