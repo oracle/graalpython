@@ -453,7 +453,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     selfIndex = cellLocals.get(selfCellName).getLocalOffset();
                 }
             }
-            SourceRange sourceRange = node.getSourceRange();
+            SourceRange sourceRange = getRootSourceRange(node);
             codeUnit = new BytecodeDSLCodeUnit(toInternedTruffleStringUncached(name), toInternedTruffleStringUncached(qualName),
                             argumentInfo.argCount, argumentInfo.kwOnlyArgCount, argumentInfo.positionalOnlyArgCount,
                             flags, orderedTruffleStringArray(names),
@@ -672,10 +672,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 } else {
                     b.emitTraceLine(node.getSourceRange().startLine);
                 }
-            } else if (node instanceof FunctionDef fn) {
-                if (fn.decoratorList != null && fn.decoratorList.length > 0) {
-                    b.emitTraceLine(fn.decoratorList[0].getSourceRange().startLine);
-                }
             }
         }
     }
@@ -817,14 +813,23 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
      * first line.
      */
     void beginRootSourceSection(SSTNode node, Builder b) {
-        SourceRange sourceRange;
-        if (node instanceof ClassDef cls && cls.decoratorList != null && cls.decoratorList.length > 0) {
-            sourceRange = cls.decoratorList[0].getSourceRange().withEnd(node.getSourceRange().endLine, node.getSourceRange().endColumn);
-        } else {
-            sourceRange = node.getSourceRange();
-        }
+        beginSourceSectionInner(b, getRootSourceRange(node));
+    }
 
-        beginSourceSectionInner(b, sourceRange);
+    /**
+     * Decorated class and function roots start at their first decorator for code object metadata and root source sections,
+     * while still ending at the decorated definition.
+     */
+    private static SourceRange getRootSourceRange(SSTNode node) {
+        if (node instanceof ClassDef cls && cls.decoratorList != null && cls.decoratorList.length > 0) {
+            return cls.decoratorList[0].getSourceRange().withEnd(node.getSourceRange().endLine, node.getSourceRange().endColumn);
+        } else if (node instanceof FunctionDef fn && fn.decoratorList != null && fn.decoratorList.length > 0) {
+            return fn.decoratorList[0].getSourceRange().withEnd(node.getSourceRange().endLine, node.getSourceRange().endColumn);
+        } else if (node instanceof AsyncFunctionDef fn && fn.decoratorList != null && fn.decoratorList.length > 0) {
+            return fn.decoratorList[0].getSourceRange().withEnd(node.getSourceRange().endLine, node.getSourceRange().endColumn);
+        } else {
+            return node.getSourceRange();
+        }
     }
 
     private static void beginSourceSectionInner(Builder b, SourceRange sourceRange) {
@@ -1228,7 +1233,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         });
     }
 
-    private void emitComprehension(ComprehensionTy[] generators, int index, Builder b,
+    private void emitComprehension(ComprehensionTy[] generators, int index, Builder b, ComprehensionType type,
                     BytecodeLocal collectionLocal,
                     BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer) {
         ComprehensionTy comp = generators[index];
@@ -1241,7 +1246,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 iter = comp.iter;
             }
             statementCompiler.emitAsyncFor(iter, comp.target, null, true, index,
-                            (stmtComp, idx) -> emitComprehensionBody(generators, idx, collectionLocal, accumulateProducer, stmtComp));
+                            (stmtComp, idx) -> emitComprehensionBody(generators, idx, type, collectionLocal, accumulateProducer, stmtComp));
         } else {
             BytecodeLocal localIter = beginTemporaryLocal(b);
             BytecodeLocal localValue = beginTemporaryLocal(b);
@@ -1260,7 +1265,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.beginWhile();
 
             b.beginBlock();
-            b.emitTraceLineAtLoopHeader(currentLocation.startLine);
+            if (type == ComprehensionType.GENEXPR) {
+                b.emitTraceLineAtLoopHeader(currentLocation.startLine);
+            } else {
+                b.emitClearTraceLine();
+            }
             b.beginForIterate(localValue);
             b.emitLoadLocal(localIter);
             b.endForIterate();
@@ -1269,7 +1278,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.beginBlock();
 
             comp.target.accept(statementCompiler.new StoreVisitor(() -> b.emitLoadLocal(localValue)));
-            emitComprehensionBody(generators, index, collectionLocal, accumulateProducer, statementCompiler);
+            emitComprehensionBody(generators, index, type, collectionLocal, accumulateProducer, statementCompiler);
 
             b.endBlock();
             b.endWhile();
@@ -1282,7 +1291,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private void emitComprehensionBody(ComprehensionTy[] generators, int index,
-                    BytecodeLocal collectionLocal, BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer,
+                    ComprehensionType type, BytecodeLocal collectionLocal, BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer,
                     StatementCompiler statementCompiler) {
         ComprehensionTy comp = generators[index];
         Builder b = statementCompiler.b;
@@ -1297,7 +1306,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         if (index == generators.length - 1) {
             accumulateProducer.accept(statementCompiler, collectionLocal);
         } else {
-            emitComprehension(generators, index + 1, b, collectionLocal, accumulateProducer);
+            emitComprehension(generators, index + 1, b, type, collectionLocal, accumulateProducer);
         }
 
         if (comp.ifs != null) {
@@ -1346,7 +1355,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endStoreLocal();
             }
 
-            emitComprehension(generators, 0, b, collectionLocal, accumulateProducer);
+            emitComprehension(generators, 0, b, type, collectionLocal, accumulateProducer);
 
             beginReturn(b);
             if (scope.isGenerator()) {
