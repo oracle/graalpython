@@ -91,8 +91,9 @@ SUITE = cast(mx.SourceSuite, mx.suite('graalpython'))
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 
 GRAALPY_ABI_VERSION = 'graalpy250'
-GRAAL_VERSION = SUITE.suiteDict['version']
-IS_RELEASE = SUITE.suiteDict['release']
+IS_RELEASE = SUITE.is_release()
+FULL_GRAAL_VERSION = SUITE.release_version()
+GRAAL_VERSION = FULL_GRAAL_VERSION if IS_RELEASE else FULL_GRAAL_VERSION[:-len('-dev')]
 GRAAL_VERSION_MAJ_MIN = ".".join(GRAAL_VERSION.split(".")[:2])
 PYTHON_VERSION = SUITE.suiteDict[f'{SUITE.name}:pythonVersion']
 PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
@@ -2007,7 +2008,6 @@ def py_version_short(variant=None, **_):
     else:
         return PYTHON_VERSION_MAJ_MIN
 
-
 def graal_version_short(variant=None, **_):
     if variant == 'major_minor_nodot':
         return GRAAL_VERSION_MAJ_MIN.replace(".", "")
@@ -2041,7 +2041,7 @@ def release_level(variant: Union[Literal['binary'], None]) -> str: ...
 def release_level(variant=None):
     # CPython has alpha, beta, candidate and final. We distinguish just two at the moment
     level = 'alpha'
-    if SUITE.suiteDict['release']:
+    if IS_RELEASE:
         level = 'final'
     if variant in ('binary', 'int'):
         level_num = {
