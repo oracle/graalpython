@@ -1989,6 +1989,8 @@ class SimpleBackgroundTests(unittest.TestCase):
         ss = test_wrap_socket(socket.socket(socket.AF_INET))
         ss.connect(self.server_addr)
         fd = ss.fileno()
+        # GraalPy change: tolerate transient reuse of the closed fd by another thread.
+        fd_stat = os.fstat(fd)
         f = ss.makefile()
         f.close()
         # The fd is still open
@@ -1996,9 +1998,17 @@ class SimpleBackgroundTests(unittest.TestCase):
         # Closing the SSL socket should close the fd too
         ss.close()
         gc.collect()
-        with self.assertRaises(OSError) as e:
+        try:
             os.read(fd, 0)
-        self.assertEqual(e.exception.errno, errno.EBADF)
+        except OSError as e:
+            self.assertEqual(e.errno, errno.EBADF)
+        else:
+            new_stat = os.fstat(fd)
+            self.assertNotEqual(
+                (new_stat.st_dev, new_stat.st_ino, new_stat.st_mode),
+                (fd_stat.st_dev, fd_stat.st_ino, fd_stat.st_mode),
+            )
+        # End GraalPy change
 
     def test_non_blocking_handshake(self):
         s = socket.socket(socket.AF_INET)

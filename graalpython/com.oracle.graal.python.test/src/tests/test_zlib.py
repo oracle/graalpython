@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -8,6 +8,8 @@ import random
 import sys
 import unittest
 import zlib
+
+from tests.util import assert_raises
 
 pintNumber = 98765432109876543210
 longNumber = 9876543210
@@ -242,6 +244,119 @@ def test_zlib_decompress_gzip():
         data = d.decompress(f.read()) + d.flush()
     assert data == GZ_DATA
 
+
+def test_zlib_decompress_gzip_bad_trailer():
+    import gzip
+
+    compressed = bytearray(gzip.compress(GZ_DATA))
+    compressed[-8] ^= 1
+    assert_raises(zlib.error, zlib.decompress, compressed, 16 + zlib.MAX_WBITS)
+
+    compressed = bytearray(gzip.compress(GZ_DATA))
+    compressed[-4] ^= 1
+    d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+
+    def decompress_streaming():
+        return d.decompress(compressed[:20]) + d.decompress(compressed[20:]) + d.flush()
+
+    assert_raises(zlib.error, decompress_streaming)
+
+
+def gzip_bytes_with_header_crc(data, header_crc=None):
+    import struct
+
+    compressor = zlib.compressobj(wbits=-zlib.MAX_WBITS)
+    compressed = compressor.compress(data) + compressor.flush()
+    header = b"\x1f\x8b\x08\x02\x00\x00\x00\x00\x02\xff"
+    if header_crc is None:
+        header_crc = zlib.crc32(header) & 0xffff
+    trailer = struct.pack("<II", zlib.crc32(data), len(data) & 0xffffffff)
+    return header + struct.pack("<H", header_crc) + compressed + trailer
+
+
+def gzip_bytes_with_optional_header(data, flags, optional_header):
+    import struct
+
+    compressor = zlib.compressobj(wbits=-zlib.MAX_WBITS)
+    compressed = compressor.compress(data) + compressor.flush()
+    header = b"\x1f\x8b\x08" + bytes([flags]) + b"\x00\x00\x00\x00\x02\x00"
+    trailer = struct.pack("<II", zlib.crc32(data), len(data) & 0xffffffff)
+    return header + optional_header + compressed + trailer
+
+
+def test_zlib_decompress_gzip_header_crc():
+    compressed = gzip_bytes_with_header_crc(GZ_DATA)
+    assert zlib.decompress(compressed, 16 + zlib.MAX_WBITS) == GZ_DATA
+
+    bad_header_crc = gzip_bytes_with_header_crc(GZ_DATA, 0)
+    assert_raises(zlib.error, zlib.decompress, bad_header_crc, 16 + zlib.MAX_WBITS)
+
+
+def test_zlib_decompress_gzip_truncated_optional_header():
+    assert_raises(zlib.error, zlib.decompress, b"\x1f\x8b\x08\x08\x00\x00\x00\x00\x02\xffunterminated",
+                  16 + zlib.MAX_WBITS)
+
+
+def test_zlib_decompress_gzip_empty_fname_split_after_header():
+    compressed = gzip_bytes_with_optional_header(GZ_DATA, 0x08, b"\x00")
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    assert decompressor.decompress(compressed[:10]) == b""
+    assert decompressor.decompress(compressed[10:]) + decompressor.flush() == GZ_DATA
+
+
+def test_zlib_decompress_gzip_empty_fcomment_split_after_fname():
+    compressed = gzip_bytes_with_optional_header(GZ_DATA, 0x18, b"\x00\x00")
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    assert decompressor.decompress(compressed[:11]) == b""
+    assert decompressor.decompress(compressed[11:]) + decompressor.flush() == GZ_DATA
+
+
+def test_zlib_decompress_gzip_copy_preserves_crc():
+    import gzip
+
+    contents = bytes(range(251)) * 4000
+    compressed = gzip.compress(contents)
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    first = decompressor.decompress(compressed[:400])
+    assert len(first) > zlib.DEF_BUF_SIZE
+
+    copied = decompressor.copy()
+    assert first + copied.decompress(compressed[400:]) + copied.flush() == contents
+
+
+def test_zlib_decompress_gzip_copy_after_eof_consumes_trailer():
+    import gzip
+
+    compressed = gzip.compress(b"x")
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    assert decompressor.decompress(compressed) == b"x"
+    assert decompressor.eof
+
+    copied = decompressor.copy()
+    assert copied.eof
+    assert copied.decompress(b"") == b""
+
+
+def test_zlib_decompress_copy_preserves_eof_after_max_length():
+    compressed = zlib.compress(b"abc")
+    decompressor = zlib.decompressobj()
+    assert decompressor.decompress(compressed, 1) == b"a"
+    assert not decompressor.eof
+
+    copied = decompressor.copy()
+    assert not copied.eof
+
+
+def test_zlib_decompress_copy_preserves_consumed_input_without_output():
+    compressed = zlib.compress(HAMLET_SCENE)
+    decompressor = zlib.decompressobj()
+    first = decompressor.decompress(compressed[:32])
+    assert first == b""
+
+    copied = decompressor.copy()
+    assert copied.decompress(compressed[32:]) + copied.flush() == HAMLET_SCENE
+
+
 def test_GR65704():
     contents = b"The quick brown fox jumped over the lazy dog"
     wbits = 27
@@ -280,3 +395,34 @@ def test_various_chunks():
     decompressed += decompressor.decompress(compressed[200:])
 
     assert decompressed == contents
+
+def test_gzip_decompress_max_length_unconsumed_tail():
+    import gzip
+
+    contents = bytes(range(251)) * 100
+    compressed = gzip.compress(contents)
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+
+    decompressed = b''
+    for i in range(0, len(compressed), 8192):
+        decompressed += decompressor.decompress(compressed[i:i + 8192], 1)
+        while decompressor.unconsumed_tail:
+            decompressed += decompressor.decompress(decompressor.unconsumed_tail, 1)
+    decompressed += decompressor.flush()
+
+    assert decompressed == contents
+    assert decompressor.eof
+    assert decompressor.unused_data == b''
+
+
+def test_gzip_decompress_post_eof_unused_data():
+    import gzip
+
+    compressed = gzip.compress(GZ_DATA)
+    decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
+
+    assert decompressor.decompress(compressed + b'first') == GZ_DATA
+    assert decompressor.eof
+    assert decompressor.unused_data == b'first'
+    assert decompressor.decompress(b'second') == b''
+    assert decompressor.unused_data == b'firstsecond'
