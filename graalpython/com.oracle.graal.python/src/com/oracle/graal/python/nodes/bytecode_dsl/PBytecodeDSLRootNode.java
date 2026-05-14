@@ -59,6 +59,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.math.BigInteger;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -376,7 +377,6 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @ShortCircuitOperation(name = "BoolOr", booleanConverter = PyObjectIsTrueNode.class, operator = Operator.OR_RETURN_VALUE)
 @ShortCircuitOperation(name = "PrimitiveBoolAnd", operator = Operator.AND_RETURN_VALUE)
 public abstract class PBytecodeDSLRootNode extends PRootNode implements BytecodeRootNode {
-    public static final int EXPLODE_LOOP_THRESHOLD = 30;
     private static final BytecodeConfig TRACE_AND_PROFILE_CONFIG = PBytecodeDSLRootNodeGen.newConfigBuilder().//
                     addInstrumentation(TraceOrProfileCall.class).//
                     addInstrumentation(TraceLine.class).//
@@ -412,6 +412,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @CompilationFinal protected transient int instrumentationDataIndex;
     @CompilationFinal protected transient int yieldFromGeneratorIndex = -1;
     @CompilationFinal(dimensions = 1) protected transient Assumption[] cellEffectivelyFinalAssumptions;
+
+    /*
+     * We don't want to store the assumption in MakeFunction node to be able to have an uncached version of it.
+     * So we put it into the root of the function that MakeFunction is creating.
+     */
+    private final transient AtomicReference<Assumption> functionCodeFinalAssumption = new AtomicReference<>();
 
     private transient boolean pythonInternal;
     @CompilationFinal private transient boolean internal;
@@ -1132,6 +1138,18 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return yieldFromGeneratorIndex != -1;
     }
 
+    public Assumption getFunctionCodeFinalAssumption() {
+        CompilerAsserts.neverPartOfCompilation();
+        Assumption assumption = functionCodeFinalAssumption.get();
+        if (assumption == null) {
+            assumption = Truffle.getRuntime().createAssumption("code stable assumption");
+            if (!functionCodeFinalAssumption.compareAndSet(null, assumption)) {
+                assumption = functionCodeFinalAssumption.get();
+            }
+        }
+        return assumption;
+    }
+
     @Operation
     @ConstantOperand(type = int.class)
     public static final class ArrayIndex {
@@ -1495,12 +1513,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation(storeBytecodeIndex = true, forceCached = true)
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class, name = "name")
     @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
     @ConstantOperand(type = int.class)
     public static final class MakeFunction {
-        @Specialization(guards = "isSingleContext(rootNode)")
+        @Specialization(guards = "isSingleContext(rootNode)", excludeForUncached = true)
         public static Object functionSingleContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
@@ -1511,27 +1529,27 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind("getCodeUnit(rootNode, codeIndex)") BytecodeDSLCodeUnit codeUnit,
-                        @Cached("getCode(frame, codeIndex, codeUnit)") PCode cachedCode,
-                        @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
+                        @Cached("getCode(frame, codeIndex, codeUnit)") PCode code,
+                        @Cached(value = "getCodeStableAssumption(code)", uncached = "getCodeStableAssumption(code)") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
-                            cachedCode, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
+                            code, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
         }
 
         @Specialization(replaces = "functionSingleContext")
         public static Object functionMultiContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        int codeIndex,
+                        @SuppressWarnings("unused") int codeIndex,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
+                        @Bind("getCodeUnit(rootNode, codeIndex)") BytecodeDSLCodeUnit codeUnit,
+                        @Bind("getCode(frame, codeIndex, codeUnit)") PCode code,
+                        @Cached(value = "getCodeStableAssumption(code)", uncached = "getCodeStableAssumption(code)") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
-            BytecodeDSLCodeUnit codeUnit = getCodeUnit(rootNode, codeIndex);
-            PCode code = getCode(frame, codeIndex, codeUnit);
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
                             code, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
         }
@@ -1542,8 +1560,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @NeverDefault
-        static Assumption createCodeStableAssumption() {
-            return Truffle.getRuntime().createAssumption("code stable assumption");
+        static Assumption getCodeStableAssumption(PCode code) {
+            PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) code.getRootCallTarget().getRootNode();
+            return rootNode.getFunctionCodeFinalAssumption();
         }
 
         @NeverDefault
