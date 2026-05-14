@@ -4282,6 +4282,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 return;
             }
             for (int i = 0; i < decorators.length; i++) {
+                // Attribute the eventual decorator call to the decorator expression, not the def/class line.
+                beginSourceSectionInner(b, decorators[i].getSourceRange());
                 b.beginCallUnaryMethod();
                 // evaluation of the decorator expression
                 b.beginTraceLineWithArgument();
@@ -4305,6 +4307,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 // need to flip them manually
                 b.endTraceLineWithArgument(decorators[decorators.length - 1 - i].getSourceRange().startLine);
                 b.endCallUnaryMethod();
+                b.endSourceSection();
             }
         }
 
