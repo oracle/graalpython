@@ -368,7 +368,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(GetAIterNode.class)
 @OperationProxy(GetANextNode.class)
 @OperationProxy(value = ReadGlobalOrBuiltinNode.class, name = "ReadGlobal")
-@OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys", forceCached = true)
+@OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
 @OperationProxy(value = PyObjectIsTrueNode.class, name = "Yes")
 @OperationProxy(value = PyObjectIsNotTrueNode.class, name = "Not")
 @OperationProxy(value = ListNodes.AppendNode.class, name = "ListAppend")
