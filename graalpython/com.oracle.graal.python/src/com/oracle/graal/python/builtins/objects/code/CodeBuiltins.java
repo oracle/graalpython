@@ -396,7 +396,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         }
 
         private static List<PTuple> computeLinesForBytecodeDSLInterpreter(PBytecodeDSLRootNode root) {
-            BytecodeNode bytecodeNode = root.getBytecodeNode();
+            BytecodeNode bytecodeNode = root.getBytecodeNode().ensureSourceInformation();
             List<int[]> triples = new ArrayList<>();
             SourceInformationTree sourceInformationTree = bytecodeNode.getSourceInformationTree();
             assert sourceInformationTree.getSourceSection() != null;
@@ -495,7 +495,11 @@ public final class CodeBuiltins extends PythonBuiltins {
                 List<PTuple> lines = new ArrayList<>();
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                     PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
-                    for (Instruction instruction : rootNode.getBytecodeNode().getInstructions()) {
+                    BytecodeNode bytecodeNode = rootNode.getBytecodeNode();
+                    if (!bytecodeNode.hasSourceInformation()) {
+                        bytecodeNode = bytecodeNode.ensureSourceInformation();
+                    }
+                    for (Instruction instruction : bytecodeNode.getInstructions()) {
                         if (instruction.isInstrumentation()) {
                             // Skip instrumented instructions. The co_positions array should agree
                             // with the logical instruction index.

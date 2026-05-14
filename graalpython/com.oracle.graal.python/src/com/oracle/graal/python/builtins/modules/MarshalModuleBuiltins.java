@@ -475,7 +475,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         int depth = 0;
         long cacheKey;
         TruffleFile bytecodeFile;
-        TruffleFile sourceFile;
+        SourceReference sourceReference;
         // Offset of the buffer in parent buffer in nested deserializations
         int baseOffset;
 
@@ -507,23 +507,22 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         Marshal(PythonLanguage language, byte[] in, int length, long cacheKey) {
-            this(language, SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(in, 0, length)), null, null, 0);
+            this(language, SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(in, 0, length)), null, 0);
             this.cacheKey = cacheKey;
         }
 
         Marshal(PythonLanguage language, byte[] in, int length, long cacheKey, TruffleFile bytecodeFile, int baseOffset) {
-            this(language, SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(in, 0, length)), null, bytecodeFile, baseOffset);
+            this(language, SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(in, 0, length)), bytecodeFile, baseOffset);
             this.cacheKey = cacheKey;
         }
 
         Marshal(PythonLanguage language, Object in) {
-            this(language, new DataInputStream(new FileLikeInputStream(in)), null, null, 0);
+            this(language, new DataInputStream(new FileLikeInputStream(in)), null, 0);
         }
 
-        Marshal(PythonLanguage language, DataInput in, Source source, TruffleFile bytecodeFile, int baseOffset) {
+        Marshal(PythonLanguage language, DataInput in, TruffleFile bytecodeFile, int baseOffset) {
             this.language = language;
             this.in = in;
-            this.source = source;
             this.refList = new ArrayList<>();
             this.version = -1;
             this.outData = null;
@@ -949,7 +948,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     }
                 } else if (v instanceof Source s) {
                     writeByte(TYPE_DSL_SOURCE | flag);
-                    setSource(s);
+                    writeSource(s);
                 } else {
                     PythonBufferAcquireLibrary acquireLib = PythonBufferAcquireLibrary.getFactory().getUncached(v);
                     if (acquireLib.hasBuffer(v)) {
@@ -1166,7 +1165,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_GRAALPYTHON_DSL_CODE_UNIT:
                     return addRef.run(readBytecodeDSLCodeUnit());
                 case TYPE_DSL_SOURCE:
-                    return getSource();
+                    return addRef.run(readSource());
                 case TYPE_DSL_EMPTY_KEYWORDS:
                     return PKeyword.EMPTY_KEYWORDS;
                 case TYPE_ARRAY:
@@ -1180,6 +1179,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             InternalByteArray ba = v.switchEncodingUncached(Encoding.UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8).getInternalByteArrayUncached(Encoding.UTF_8);
             writeSize(ba.getLength());
             writeBytes(ba.getArray(), ba.getOffset(), ba.getLength());
+        }
+
+        private void writeSource(Source source) {
+            writeString(TruffleString.fromJavaStringUncached(source.getName(), TS_ENCODING));
+        }
+
+        private Source readSource() {
+            String name = readString(false).toJavaStringUncached();
+            if (sourceReference == null) {
+                sourceReference = new SourceReference(name);
+            }
+            return sourceReference.getSource(language);
         }
 
         private TruffleString readString(boolean intern) {
@@ -1338,24 +1349,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return a;
         }
 
-        private void setSource(Source s) {
-            if (source == null) {
-                source = s;
-            } else if (source != s) {
-                throw CompilerDirectives.shouldNotReachHere("attempted to serialize with multiple Source objects");
-            }
-        }
-
-        private Source getSource() {
-            if (source != null) {
-                return source;
-            } else {
-                // This should never happen when deserializing a bytecode DSL code unit, but could
-                // happen if the user tries to deserialize arbitrary bytes.
-                throw new MarshalError(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
-            }
-        }
-
         private CodeUnit readCodeUnit() {
             int codeUnitType = readByte();
             return switch (codeUnitType) {
@@ -1450,7 +1443,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int yieldFromGeneratorIndex = readInt();
             int instrumentationDataIndex = readInt();
 
-            BytecodeSupplier provider = new BytecodeSupplier(serialized, bytecodeFile, bytecodeOffset, bytecodeSize, cacheKey);
+            BytecodeSupplier provider = new BytecodeSupplier(serialized, bytecodeFile, sourceReference, bytecodeOffset, bytecodeSize, cacheKey);
             return new BytecodeDSLCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames, cellvars, freevars, cell2arg, constants,
                             startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, yieldFromGeneratorIndex, instrumentationDataIndex, provider);
         }
@@ -1545,8 +1538,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 String jName = code.qualname.toJavaStringUncached();
                 Source source = Source.newBuilder(PythonLanguage.ID, "", jName).content(Source.CONTENT_NONE).build();
                 PythonLanguage language = this.language;
-                if (sourceFile != null) {
-                    language.registerOriginalFile(source, sourceFile);
+                if (sourceReference != null && sourceReference.sourceFile != null) {
+                    language.registerOriginalFile(source, sourceReference.sourceFile);
                 }
                 return language.callTargetFromBytecode(source, code);
             };
@@ -1587,28 +1580,56 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    private static final class SourceReference {
+        private String name;
+        private final TruffleFile sourceFile;
+        private Source source;
+
+        SourceReference(String name) {
+            this.name = name;
+            this.sourceFile = null;
+        }
+
+        SourceReference(TruffleFile sourceFile) {
+            this.sourceFile = sourceFile;
+        }
+
+        synchronized Source getSource(PythonLanguage language) {
+            if (source == null) {
+                String sourceName = sourceFile != null ? sourceFile.getPath() : name;
+                source = Source.newBuilder(PythonLanguage.ID, "", sourceName).content(Source.CONTENT_NONE).build();
+                if (sourceFile != null) {
+                    language.registerOriginalFile(source, sourceFile);
+                }
+            }
+            return source;
+        }
+    }
+
     public static class BytecodeSupplier extends BytecodeDSLCodeUnit.BytecodeSupplier {
         private byte[] serialized;
         // Original file for reparsing
         private final TruffleFile bytecodeFile;
+        private final SourceReference sourceReference;
         // Offset within the bytecode file, points directly at the start of serialized bytecode
         private final int bytecodeOffset;
         private final int bytecodeSize;
         private final long cacheKey;
 
-        public BytecodeSupplier(byte[] serialized, TruffleFile bytecodeFile, int bytecodeOffset, int bytecodeSize, long cacheKey) {
+        public BytecodeSupplier(byte[] serialized, TruffleFile bytecodeFile, SourceReference sourceReference, int bytecodeOffset, int bytecodeSize, long cacheKey) {
             this.serialized = serialized;
             this.bytecodeFile = bytecodeFile;
+            this.sourceReference = sourceReference;
             this.bytecodeOffset = bytecodeOffset;
             this.bytecodeSize = bytecodeSize;
             this.cacheKey = cacheKey;
         }
 
         @Override
-        public PBytecodeDSLRootNode createRootNode(PythonLanguage language, Source source) {
+        public PBytecodeDSLRootNode createRootNode(PythonLanguage language) {
             BytecodeRootNodes<PBytecodeDSLRootNode> deserialized;
             try {
-                deserialized = PBytecodeDSLRootNodeGen.deserialize(language, BytecodeConfig.WITH_SOURCE,
+                deserialized = PBytecodeDSLRootNodeGen.deserialize(language, BytecodeConfig.DEFAULT,
                                 () -> SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(getBytecode())),
                                 /*
                                  * NB: Since a DSL node may reparse multiple times, we cannot reuse
@@ -1616,7 +1637,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                                  * different buffer).
                                  */
                                 (deserializerContext, buffer) -> {
-                                    Marshal marshal = new Marshal(language, buffer, source, bytecodeFile, bytecodeOffset);
+                                    Marshal marshal = new Marshal(language, buffer, bytecodeFile, bytecodeOffset);
+                                    marshal.sourceReference = sourceReference;
                                     marshal.cacheKey = cacheKey;
                                     return marshal.readObject();
                                 });
@@ -1699,7 +1721,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @TruffleBoundary
     public static Object fromBytecodeFile(PythonLanguage language, TruffleFile bytecodeFile, TruffleFile sourceFile, byte[] bytes, int offset, int length, long cacheKey) throws IOException {
         MarshalModuleBuiltins.Marshal marshal = new MarshalModuleBuiltins.Marshal(language, bytes, length + offset, cacheKey, bytecodeFile, 0);
-        marshal.sourceFile = sourceFile;
+        marshal.sourceReference = sourceFile == null ? null : new SourceReference(sourceFile);
         marshal.in.skipBytes(offset);
         return marshal.readObject();
     }
