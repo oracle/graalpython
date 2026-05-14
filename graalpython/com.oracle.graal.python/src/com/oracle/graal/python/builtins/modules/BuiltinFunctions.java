@@ -146,7 +146,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.EllipsisBuiltins;
@@ -167,7 +166,6 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
@@ -196,6 +194,8 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
+import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
@@ -245,7 +245,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
@@ -296,7 +295,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -309,8 +307,6 @@ import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -1279,207 +1275,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    /**
-     * Base class for {@code isinstance} and {@code issubclass} that implements the recursive
-     * iteration of tuples passed as the second argument. The inheriting classes need to just
-     * provide the base for the recursion.
-     */
-    public abstract static class RecursiveBinaryCheckBaseNode extends PythonBinaryBuiltinNode {
-        static final int MAX_EXPLODE_LOOP = 16; // is also shifted to the left by recursion depth
-        static final byte NON_RECURSIVE = Byte.MAX_VALUE;
-
-        protected final byte depth;
-
-        protected RecursiveBinaryCheckBaseNode(byte depth) {
-            this.depth = depth;
-        }
-
-        public abstract boolean executeWith(VirtualFrame frame, Object instance, Object cls);
-
-        @NeverDefault
-        protected final RecursiveBinaryCheckBaseNode createRecursive() {
-            return createRecursive((byte) (depth + 1));
-        }
-
-        @NeverDefault
-        protected final RecursiveBinaryCheckBaseNode createNonRecursive() {
-            return createRecursive(NON_RECURSIVE);
-        }
-
-        protected RecursiveBinaryCheckBaseNode createRecursive(@SuppressWarnings("unused") byte newDepth) {
-            throw new AbstractMethodError(); // Cannot be really abstract b/c Truffle DSL...
-        }
-
-        @Idempotent
-        protected int getMaxExplodeLoop() {
-            return MAX_EXPLODE_LOOP >> depth;
-        }
-
-        @Specialization(guards = {"depth < getNodeRecursionLimit()", "getLength(clsTuple) == cachedLen", "cachedLen < getMaxExplodeLoop()"}, //
-                        limit = "getVariableArgumentInlineCacheLimit()")
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        static boolean doTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Bind Node inliningTarget,
-                        @Cached("getLength(clsTuple)") int cachedLen,
-                        @Shared @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Shared @Cached("createRecursive()") RecursiveBinaryCheckBaseNode recursiveNode) {
-            Object[] array = getObjectArrayNode.execute(inliningTarget, clsTuple);
-            for (int i = 0; i < cachedLen; i++) {
-                Object cls = array[i];
-                if (recursiveNode.executeWith(frame, instance, cls)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Specialization(guards = "depth < getNodeRecursionLimit()", replaces = "doTupleConstantLen")
-        static boolean doRecursiveWithNode(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Shared @Cached("createRecursive()") RecursiveBinaryCheckBaseNode recursiveNode) {
-            for (Object cls : getObjectArrayNode.execute(inliningTarget, clsTuple)) {
-                if (recursiveNode.executeWith(frame, instance, cls)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Specialization(guards = {"depth != NON_RECURSIVE", "depth >= getNodeRecursionLimit()"})
-        static boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Bind Node inliningTarget,
-                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                        @Shared @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
-            PythonContext context = PythonContext.get(inliningTarget);
-            PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
-            try {
-                // Note: we need actual recursion to trigger the stack overflow error like CPython
-                // Note: we need fresh RecursiveBinaryCheckBaseNode and cannot use "this", because
-                // other children of this executed by other specializations may assume they'll
-                // always get a non-null frame
-                return callRecursiveWithNodeTruffleBoundary(inliningTarget, instance, clsTuple, getObjectArrayNode, node);
-            } finally {
-                BoundaryCallContext.exit(frame, language, context, state);
-            }
-        }
-
-        @Specialization(guards = "depth == NON_RECURSIVE")
-        boolean doRecursiveWithLoopReuseThis(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetObjectArrayNode getObjectArrayNode) {
-            // This should be only called by doRecursiveWithLoop, now we have to reuse this to stop
-            // recursive node creation. It is OK, because now all specializations should always get
-            // null frame
-            assert frame == null;
-            return callRecursiveWithNodeTruffleBoundary(inliningTarget, instance, clsTuple, getObjectArrayNode, this);
-        }
-
-        @TruffleBoundary
-        private static boolean callRecursiveWithNodeTruffleBoundary(Node inliningTarget, Object instance, PTuple clsTuple, GetObjectArrayNode getObjectArrayNode, RecursiveBinaryCheckBaseNode node) {
-            return doRecursiveWithNode(null, instance, clsTuple, inliningTarget, getObjectArrayNode, node);
-        }
-
-        protected static int getLength(PTuple t) {
-            return t.getSequenceStorage().length();
-        }
-    }
-
     // isinstance(object, classinfo)
     @Builtin(name = J_ISINSTANCE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class IsInstanceNode extends RecursiveBinaryCheckBaseNode {
+    abstract static class IsInstanceNode extends PythonBinaryBuiltinNode {
 
-        protected IsInstanceNode(byte depth) {
-            super(depth);
-        }
-
-        protected IsInstanceNode() {
-            this((byte) 0);
-        }
-
-        @Override
-        public IsInstanceNode createRecursive(byte newDepth) {
-            return BuiltinFunctionsFactory.IsInstanceNodeFactory.create(newDepth);
-        }
-
-        @Specialization(guards = "!isPTuple(cls)")
-        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClsClassNode,
-                        @Cached IsBuiltinClassExactProfile classProfile,
-                        @Cached GetClassNode getInstanceClassNode,
-                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                        @Cached("create(T___INSTANCECHECK__)") LookupAndCallBinaryNode instanceCheckNode,
-                        @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached TypeNodes.GenericInstanceCheckNode genericInstanceCheckNode,
-                        @Cached InlinedBranchProfile noInstanceCheckProfile) {
-            if (isSameTypeNode.execute(inliningTarget, getInstanceClassNode.execute(inliningTarget, instance), cls)) {
-                // Exact match, don't call __instancecheck__
-                return true;
-            }
-            if (classProfile.profileClass(inliningTarget, getClsClassNode.execute(inliningTarget, cls), PythonBuiltinClassType.PythonClass)) {
-                // Avoid the lookup and call overhead when we know we're calling
-                // type.__instancecheck__
-                return genericInstanceCheckNode.execute(frame, inliningTarget, instance, cls);
-            }
-            try {
-                Object result = instanceCheckNode.executeObject(frame, cls, instance);
-                return isTrueNode.execute(frame, result);
-            } catch (SpecialMethodNotFound ignore) {
-                noInstanceCheckProfile.enter(inliningTarget);
-                return genericInstanceCheckNode.execute(frame, inliningTarget, instance, cls);
-            }
+        @Specialization
+        static Object isInstance(VirtualFrame frame, Object instance, Object cls,
+                        @Cached PyObjectIsInstanceNode isInstanceNode) {
+            return isInstanceNode.execute(frame, instance, cls);
         }
     }
 
     // issubclass(class, classinfo)
     @Builtin(name = J_ISSUBCLASS, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class IsSubClassNode extends RecursiveBinaryCheckBaseNode {
-        public abstract boolean executeBoolean(VirtualFrame frame, Object derived, Object cls);
+    abstract static class IsSubClassNode extends PythonBinaryBuiltinNode {
 
-        protected IsSubClassNode(byte depth) {
-            super(depth);
-        }
-
-        protected IsSubClassNode() {
-            this((byte) 0);
-        }
-
-        @Override
-        public IsSubClassNode createRecursive(byte newDepth) {
-            return BuiltinFunctionsFactory.IsSubClassNodeFactory.create(newDepth);
-        }
-
-        @Specialization(guards = "!isPTuple(cls)")
-        static boolean isSubclass(VirtualFrame frame, Object derived, Object cls,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClsClassNode,
-                        @Cached IsBuiltinClassExactProfile classProfile,
-                        @Cached("create(T___SUBCLASSCHECK__)") LookupAndCallBinaryNode subclassCheckNode,
-                        @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached TypeNodes.GenericSubclassCheckNode genericSubclassCheckNode,
-                        @Cached InlinedBranchProfile noInstanceCheckProfile) {
-            if (classProfile.profileClass(inliningTarget, getClsClassNode.execute(inliningTarget, cls), PythonBuiltinClassType.PythonClass)) {
-                // Avoid the lookup and call overhead when we know we're calling
-                // type.__subclasscheck__
-                return genericSubclassCheckNode.execute(frame, inliningTarget, derived, cls);
-            }
-            try {
-                Object result = subclassCheckNode.executeObject(frame, cls, derived);
-                return isTrueNode.execute(frame, result);
-            } catch (SpecialMethodNotFound ignore) {
-                noInstanceCheckProfile.enter(inliningTarget);
-                return genericSubclassCheckNode.execute(frame, inliningTarget, derived, cls);
-            }
-        }
-
-        @NeverDefault
-        public static IsSubClassNode create() {
-            return BuiltinFunctionsFactory.IsSubClassNodeFactory.create();
+        @Specialization
+        static Object isSubclass(VirtualFrame frame, Object derived, Object cls,
+                        @Cached PyObjectIsSubclassNode isSubclassNode) {
+            return isSubclassNode.execute(frame, derived, cls);
         }
     }
 

@@ -66,7 +66,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsSubClassNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.ExitNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -95,6 +94,7 @@ import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -198,7 +198,7 @@ public final class PythonCextErrBuiltins {
         @Specialization(guards = "!isExceptionClass(inliningTarget, type, isTypeNode, isSubClassNode)")
         static Object create(Object type, @SuppressWarnings("unused") Object value,
                         @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached PyObjectIsSubclassNode isSubClassNode,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, EXCEPTION_NOT_BASEEXCEPTION, new Object[]{type});
         }
@@ -207,14 +207,14 @@ public final class PythonCextErrBuiltins {
         static Object create(Object type, Object value,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached IsTypeNode isTypeNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubClassNode isSubClassNode,
+                        @SuppressWarnings("unused") @Shared @Cached PyObjectIsSubclassNode isSubClassNode,
                         @Cached PrepareExceptionNode prepareExceptionNode) {
             Object exception = prepareExceptionNode.execute(null, type, value);
             throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
         }
 
-        protected static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, IsSubClassNode isSubClassNode) {
-            return isTypeNode.execute(inliningTarget, obj) && isSubClassNode.executeWith(null, obj, PythonBuiltinClassType.PBaseException);
+        protected static boolean isExceptionClass(Node inliningTarget, Object obj, IsTypeNode isTypeNode, PyObjectIsSubclassNode isSubClassNode) {
+            return isTypeNode.execute(inliningTarget, obj) && isSubClassNode.execute(null, obj, PythonBuiltinClassType.PBaseException);
         }
     }
 

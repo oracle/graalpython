@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,13 +44,13 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
+import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -101,13 +101,13 @@ public abstract class PrepareExceptionNode extends Node {
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
-                    @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
+                    @Cached PyObjectIsInstanceNode isInstanceNode,
                     @Cached InlinedConditionProfile isInstanceProfile,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
         checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
-        if (isInstanceProfile.profile(inliningTarget, isInstanceNode.executeWith(frame, value, type))) {
+        if (isInstanceProfile.profile(inliningTarget, isInstanceNode.execute(frame, value, type))) {
             return value;
         } else {
             Object instance = callConstructor.execute(frame, type, value);

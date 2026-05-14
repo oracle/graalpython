@@ -78,7 +78,6 @@ import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -119,6 +118,7 @@ import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -675,7 +675,7 @@ public abstract class ObjectNodes {
                         @Cached InlinedConditionProfile hasArgsProfile,
                         @Cached(inline = false) GetNewArgsNode getNewArgsNode,
                         @Cached ObjectGetStateNode getStateNode,
-                        @Cached(inline = false) BuiltinFunctions.IsSubClassNode isSubClassNode,
+                        @Cached(inline = false) PyObjectIsSubclassNode isSubClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyObjectSizeNode sizeNode,
@@ -718,8 +718,8 @@ public abstract class ObjectNodes {
                 throw raiseNode.raiseBadInternalCall(inliningTarget);
             }
 
-            boolean objIsList = isSubClassNode.executeWith(frame, cls, PythonBuiltinClassType.PList);
-            boolean objIsDict = isSubClassNode.executeWith(frame, cls, PythonBuiltinClassType.PDict);
+            boolean objIsList = isSubClassNode.execute(frame, cls, PythonBuiltinClassType.PList);
+            boolean objIsDict = isSubClassNode.execute(frame, cls, PythonBuiltinClassType.PDict);
             boolean required = !hasargs && !objIsDict && !objIsList;
 
             Object state = getStateNode.execute(frame, inliningTarget, obj, required);

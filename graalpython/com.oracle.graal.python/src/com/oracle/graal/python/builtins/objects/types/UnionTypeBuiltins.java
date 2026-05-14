@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,6 @@ import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -76,6 +75,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.Ric
 import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
+import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -225,7 +226,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         static boolean check(VirtualFrame frame, PUnionType self, Object other,
                         @Bind Node inliningTarget,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
-                        @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
+                        @Cached PyObjectIsInstanceNode isInstanceNode,
                         @Cached PRaiseNode raiseNode) {
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             boolean result = false;
@@ -235,7 +236,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISINSTANCE_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
                 if (!result) {
-                    result = isInstanceNode.executeWith(frame, other, arg);
+                    result = isInstanceNode.execute(frame, other, arg);
                     // Cannot break here, the check for GenericAlias needs to check all args
                 }
             }
@@ -251,7 +252,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
-                        @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
+                        @Cached PyObjectIsSubclassNode isSubClassNode,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, other)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_ARG_1_MUST_BE_A_CLASS);
@@ -264,7 +265,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ISSUBCLASS_ARG_2_CANNOT_CONTAIN_A_PARAMETERIZED_GENERIC);
                 }
                 if (!result) {
-                    result = isSubClassNode.executeWith(frame, other, arg);
+                    result = isSubClassNode.execute(frame, other, arg);
                     // Cannot break here, the check for GenericAlias needs to check all args
                 }
             }

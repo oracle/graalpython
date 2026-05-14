@@ -2798,6 +2798,7 @@ public abstract class TypeNodes {
     /** Equivalent of CPython's {@code recursive_isinstance} */
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class GenericInstanceCheckNode extends Node {
 
         public abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object instance, Object cls);
@@ -2848,6 +2849,7 @@ public abstract class TypeNodes {
     /** Equivalent of CPython's {@code recursive_issubclass} */
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class GenericSubclassCheckNode extends Node {
 
         public abstract boolean execute(VirtualFrame frame, Node inliningTarget, Object derived, Object cls);

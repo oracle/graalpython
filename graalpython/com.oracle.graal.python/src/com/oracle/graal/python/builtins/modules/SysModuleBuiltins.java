@@ -208,6 +208,7 @@ import com.oracle.graal.python.lib.PyLongAsIntNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -1925,7 +1926,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyImportImport importNode,
                         @Cached IsBuiltinObjectProfile attrErrorProfile,
-                        @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
+                        @Cached PyObjectIsInstanceNode isInstanceNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
@@ -1962,7 +1963,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             try {
                 module = importNode.execute(frame, inliningTarget, modPath);
             } catch (PException pe) {
-                if (isInstanceNode.executeWith(frame, pe.getUnreifiedException(), ImportError)) {
+                if (isInstanceNode.execute(frame, pe.getUnreifiedException(), ImportError)) {
                     warnNode.warnFormat(frame, RuntimeWarning, WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S, hookName);
                 }
                 return PNone.NONE;
