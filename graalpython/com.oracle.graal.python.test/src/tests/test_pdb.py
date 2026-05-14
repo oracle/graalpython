@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -97,6 +97,86 @@ def doctest_pdb_locals():
     (Pdb) p a
     2
     (Pdb) continue
+    """
+
+
+# Extracted from CPython test_pdb_basic_commands and test_pdb_issue_gh_91742.
+# The full upstream doctests require unsupported Bytecode DSL f_lineno jumps;
+# these keep the non-jump debugger coverage that is still relevant.
+def doctest_pdb_args_for_kwonly_and_posonly():
+    """
+    Test that args displays keyword-only and positional-only parameters.
+
+    >>> def kwonly_func(arg=None, *, kwonly=None):
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+    ...     pass
+
+    >>> def posonly_func(a, b, /, c=None):
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+    ...     pass
+
+    >>> with PdbTestInput([
+    ...     'args',
+    ...     'continue',
+    ...     'args',
+    ...     'continue',
+    ... ]):
+    ...     kwonly_func('value', kwonly=True)
+    ...     posonly_func(1, 2, c=3)
+    > <doctest tests.test_pdb.doctest_pdb_args_for_kwonly_and_posonly[0]>(3)kwonly_func()
+    -> pass
+    (Pdb) args
+    arg = 'value'
+    kwonly = True
+    (Pdb) continue
+    > <doctest tests.test_pdb.doctest_pdb_args_for_kwonly_and_posonly[1]>(3)posonly_func()
+    -> pass
+    (Pdb) args
+    a = 1
+    b = 2
+    c = 3
+    (Pdb) continue
+    """
+
+
+def doctest_pdb_multiline_call_line_tracing():
+    """
+    Test stepping through a nested function and stopping on a multiline call continuation.
+
+    >>> def test_function():
+    ...     __author__ = "pi"
+    ...     __version__ = "3.14"
+    ...
+    ...     def about():
+    ...         '''About'''
+    ...         print(f"Author: {__author__!r}",
+    ...             f"Version: {__version__!r}",
+    ...             sep=" ")
+    ...
+    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+    ...     about()
+
+    >>> with PdbTestInput([  # doctest: +NORMALIZE_WHITESPACE
+    ...     'step',
+    ...     'next',
+    ...     'next',
+    ...     'continue',
+    ... ]):
+    ...     test_function()
+    > <doctest tests.test_pdb.doctest_pdb_multiline_call_line_tracing[0]>(12)test_function()
+    -> about()
+    (Pdb) step
+    --Call--
+    > <doctest tests.test_pdb.doctest_pdb_multiline_call_line_tracing[0]>(5)about()
+    -> def about():
+    (Pdb) next
+    > <doctest tests.test_pdb.doctest_pdb_multiline_call_line_tracing[0]>(7)about()
+    -> print(f"Author: {__author__!r}",
+    (Pdb) next
+    > <doctest tests.test_pdb.doctest_pdb_multiline_call_line_tracing[0]>(8)about()
+    -> f"Version: {__version__!r}",
+    (Pdb) continue
+    Author: 'pi' Version: '3.14'
     """
 
 

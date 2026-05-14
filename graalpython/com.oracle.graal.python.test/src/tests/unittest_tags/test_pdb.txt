@@ -3,7 +3,7 @@ DocTestCase.test.test_pdb.test_list_commands @ darwin-arm64,linux-aarch64,linux-
 DocTestCase.test.test_pdb.test_next_until_return_at_return_event @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_alias_command @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_ambiguous_statements @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-# GR-71866
+# Arbitrary jumps in pdb not supported in Bytecode DSL
 !DocTestCase.test.test_pdb.test_pdb_basic_commands @ darwin-arm64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_breakpoint_commands @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_breakpoint_on_annotated_function_def @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -17,7 +17,7 @@ DocTestCase.test.test_pdb.test_pdb_issue_43318 @ darwin-arm64,linux-aarch64,linu
 DocTestCase.test.test_pdb.test_pdb_issue_gh_101673 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_issue_gh_103225 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_issue_gh_65052 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-# GR-71866
+# Arbitrary jumps in pdb not supported in Bytecode DSL
 !DocTestCase.test.test_pdb.test_pdb_issue_gh_91742 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_next_command_for_generator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_pp_repr_exc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
