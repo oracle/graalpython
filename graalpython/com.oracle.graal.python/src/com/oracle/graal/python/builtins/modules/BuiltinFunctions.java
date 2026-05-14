@@ -89,10 +89,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_FALSE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_MINUS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
@@ -190,6 +188,7 @@ import com.oracle.graal.python.lib.PyNumberPowerNode;
 import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDir;
+import com.oracle.graal.python.lib.PyObjectFormat;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
@@ -238,6 +237,7 @@ import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
@@ -285,7 +285,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1695,27 +1694,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // format(object, [format_spec])
     @Builtin(name = J_FORMAT, minNumOfPositionalArgs = 1, parameterNames = {"object", "format_spec"})
+    @ArgumentClinic(name = "format_spec", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_EMPTY_STRING")
     @GenerateNodeFactory
-    @OperationProxy.Proxyable(storeBytecodeIndex = true)
-    @ImportStatic(PGuards.class)
-    public abstract static class FormatNode extends PythonBinaryBuiltinNode {
+    abstract static class FormatNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BuiltinFunctionsClinicProviders.FormatNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        public static Object format(VirtualFrame frame, Object obj, Object formatSpec,
-                        @Bind Node inliningTarget,
-                        @Cached("create(T___FORMAT__)") LookupAndCallBinaryNode callFormat,
-                        @Cached InlinedConditionProfile formatIsNoValueProfile,
-                        @Cached PRaiseNode raiseNode) {
-            Object format = formatIsNoValueProfile.profile(inliningTarget, isNoValue(formatSpec)) ? T_EMPTY_STRING : formatSpec;
-            try {
-                Object res = callFormat.executeObject(frame, obj, format);
-                if (!PGuards.isString(res)) {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_RETURN_S_NOT_P, T___FORMAT__, "str", res);
-                }
-                return res;
-            } catch (SpecialMethodNotFound ignore) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_FORMAT, obj);
-            }
+        public static Object format(VirtualFrame frame, Object obj, TruffleString formatSpec,
+                        @Cached PyObjectFormat formatNode) {
+            return formatNode.execute(frame, obj, formatSpec);
         }
 
         @NeverDefault

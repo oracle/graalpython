@@ -63,7 +63,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallTypingFuncObjectNode;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.UnpackTypeVarTuplesNode;
@@ -156,6 +155,7 @@ import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
+import com.oracle.graal.python.lib.PyObjectFormat;
 import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -358,7 +358,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(PyNumberInPlaceLshiftNode.class)
 @OperationProxy(PyNumberInPlaceRshiftNode.class)
 @OperationProxy(IsNode.class)
-@OperationProxy(value = FormatNode.class, forceCached = true)
+@OperationProxy(value = PyObjectFormat.class, name = "Format")
 @OperationProxy(ExceptMatchNode.class)
 @OperationProxy(value = HandleExceptionsInHandlerNode.class, forceCached = true)
 @OperationProxy(value = EncapsulateExceptionGroupNode.class, forceCached = true)

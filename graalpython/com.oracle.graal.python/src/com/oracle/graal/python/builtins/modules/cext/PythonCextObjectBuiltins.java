@@ -69,7 +69,6 @@ import java.lang.ref.Reference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -110,6 +109,7 @@ import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDir;
+import com.oracle.graal.python.lib.PyObjectFormat;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -675,7 +675,7 @@ public abstract class PythonCextObjectBuiltins {
     abstract static class PyObject_Format extends CApiBinaryBuiltinNode {
         @Specialization
         static Object ascii(Object obj, Object spec,
-                        @Cached FormatNode format) {
+                        @Cached PyObjectFormat format) {
             return format.execute(null, obj, spec);
         }
     }

@@ -74,7 +74,6 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TRegexUtil;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -134,6 +133,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRe
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectFormat;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -459,7 +459,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static TruffleString format(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                        @Cached BuiltinFunctions.FormatNode format,
+                        @Cached PyObjectFormat format,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PRaiseNode raiseNode) {
             TruffleString string;
@@ -493,7 +493,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString format(VirtualFrame frame, TruffleString self, Object mapping,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                        @Cached BuiltinFunctions.FormatNode format) {
+                        @Cached PyObjectFormat format) {
 
             TemplateFormatter template = new TemplateFormatter(self);
 
