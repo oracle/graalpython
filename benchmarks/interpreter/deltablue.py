@@ -633,6 +633,8 @@ def projection_test(n):
         if dests[i].value != (i * 5 + 2000):
             print("Projection 4 failed")
 
+    __graalpython__.dump_heap() # could prolly go in the main func
+
 
 def change(v, new_value):
     global planner

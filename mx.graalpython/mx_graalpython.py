@@ -618,6 +618,8 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 def node_footprint_analyzer(args, **kwargs):
     main_class = 'com.oracle.graal.python.test.advanced.NodeFootprintAnalyzer'
     vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON'])
+    vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.nodes.bytecode=ALL-UNNAMED']
+    vm_args += ['--add-exports', 'org.graalvm.py/com.oracle.graal.python.nodes.function=ALL-UNNAMED']
     return mx.run_java(vm_args + [main_class] + args, **kwargs)
 
 
