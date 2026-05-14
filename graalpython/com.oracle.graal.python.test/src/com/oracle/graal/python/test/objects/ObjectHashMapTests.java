@@ -74,9 +74,6 @@ import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
 public class ObjectHashMapTests {
     public static final class DictKey implements TruffleObject {
@@ -220,8 +217,7 @@ public class ObjectHashMapTests {
         var keys = expected.keySet().stream().toList().reversed().stream().limit(count).toArray(Long[]::new);
         for (int i = 0; i < keys.length; i++) {
             Long key = keys[i];
-            Object[] popped = PopNode.doPopWithRestart(null, map, InlinedConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(), InlinedCountingConditionProfile.getUncached(),
-                            InlinedBranchProfile.getUncached());
+            Object[] popped = PopNode.doPopWithRestartForTests(map);
             Assert.assertEquals(Integer.toString(i), key, popped[0]);
             Assert.assertEquals(Integer.toString(i), expected.get(key), popped[1]);
             expected.remove(key);
@@ -376,25 +372,14 @@ public class ObjectHashMapTests {
     }
 
     private static Object get(ObjectHashMap map, Object key, long hash) {
-        InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
-        return ObjectHashMap.GetNode.doGetWithRestart(null, null, map, key, hash,
-                        InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
-                        uncachedCounting, uncachedCounting,
-                        new EqNodeStub());
+        return ObjectHashMap.GetNode.doGetWithRestartForTests(map, key, hash, new EqNodeStub());
     }
 
     private static void remove(ObjectHashMap map, Object key, long hash) {
-        InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
-        ObjectHashMap.RemoveNode.doRemoveWithRestart(null, null, map, key, hash,
-                        InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
-                        uncachedCounting, InlinedBranchProfile.getUncached(), new EqNodeStub());
+        ObjectHashMap.RemoveNode.doRemoveWithRestartForTests(map, key, hash, new EqNodeStub());
     }
 
     private static void put(ObjectHashMap map, Object key, long hash, Object value) {
-        InlinedCountingConditionProfile uncachedCounting = InlinedCountingConditionProfile.getUncached();
-        PutNode.doPutWithRestart(null, null, map, key, hash, value,
-                        InlinedBranchProfile.getUncached(), uncachedCounting, uncachedCounting, uncachedCounting,
-                        uncachedCounting, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(),
-                        new EqNodeStub());
+        PutNode.doPutWithRestartForTests(map, key, hash, value, new EqNodeStub());
     }
 }
