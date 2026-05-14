@@ -107,7 +107,9 @@ license = 'Apache-2.0 OR BSD-3-Clause'
 
 [[cryptography.rules]]
 version = '>= 43.0.0'
-note = "Versions newer than 43 do not need a patch."
+patch = 'cryptography-48.0.0.patch'
+license = 'Apache-2.0 OR BSD-3-Clause'
+subdir = 'src'
 
 [[Cython.rules]]
 version = '>= 3.0.10, <= 3.0.12'
