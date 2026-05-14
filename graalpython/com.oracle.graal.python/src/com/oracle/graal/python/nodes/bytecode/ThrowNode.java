@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,9 +47,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.lib.PyGenFetchStopIterationValue;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
@@ -85,7 +85,7 @@ public abstract class ThrowNode extends PNodeWithContext {
                     @Exclusive @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                     @Exclusive @Cached IsBuiltinObjectProfile profileExit,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
         Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, exception);
         if (profileExit.profileObject(inliningTarget, exceptionObject, GeneratorExit)) {
             closeNode.execute(frame, generator);
@@ -115,7 +115,7 @@ public abstract class ThrowNode extends PNodeWithContext {
                     @Exclusive @Cached GetEscapedExceptionNode getEscapedExceptionNode,
                     @Exclusive @Cached IsBuiltinObjectProfile profileExit,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
         Object exceptionObject = getEscapedExceptionNode.execute(inliningTarget, exception);
         if (profileExit.profileObject(inliningTarget, exceptionObject, GeneratorExit)) {
             Object close = PNone.NO_VALUE;
@@ -147,10 +147,10 @@ public abstract class ThrowNode extends PNodeWithContext {
     }
 
     private static void handleException(VirtualFrame frame, Node inliningTarget, PException e,
-                    IsBuiltinObjectProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue,
+                    IsBuiltinObjectProfile stopIterationProfile, PyGenFetchStopIterationValue getValue,
                     int stackTop) {
         e.expectStopIteration(inliningTarget, stopIterationProfile);
-        Object value = getValue.execute((PBaseException) e.getUnreifiedException());
+        Object value = getValue.execute(inliningTarget, (PBaseException) e.getUnreifiedException());
         frame.setObject(stackTop, null);
         frame.setObject(stackTop - 1, value);
     }

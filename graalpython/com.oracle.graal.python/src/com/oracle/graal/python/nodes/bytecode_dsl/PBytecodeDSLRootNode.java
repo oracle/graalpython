@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.exception.ChainExceptionsNode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
-import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -122,6 +121,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyGenFetchStopIterationValue;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
@@ -3705,13 +3705,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     /** Used in implementation of {@code yield from} */
-    @Operation(storeBytecodeIndex = true, forceCached = true)
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class YieldFromSend {
         private static final TruffleString T_SEND = tsLiteral("send");
 
-        @Specialization
+        @Specialization(excludeForUncached = true)
         static boolean doGenerator(VirtualFrame virtualFrame,
                         LocalAccessor yieldedValue,
                         LocalAccessor returnedValue,
@@ -3721,7 +3721,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode,
                         @Cached CommonGeneratorBuiltins.SendNode sendNode,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             try {
                 Object value = sendNode.execute(virtualFrame, generator, arg);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
@@ -3749,7 +3749,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Exclusive @Cached InlinedBranchProfile exhaustedNoException,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             try {
                 Object value = callIterNext.execute(virtualFrame, inliningTarget, slots.tp_iternext(), iter);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
@@ -3775,7 +3775,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind("$bytecodeIndex") int bci,
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             try {
                 Object value = callMethodNode.execute(virtualFrame, inliningTarget, obj, T_SEND, arg);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
@@ -3788,16 +3788,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, BytecodeNode bytecode,
                         IsBuiltinObjectProfile stopIterationProfile,
-                        StopIterationBuiltins.StopIterationValueNode getValue,
+                        PyGenFetchStopIterationValue getValue,
                         LocalAccessor returnedValue) {
             e.expectStopIteration(inliningTarget, stopIterationProfile);
-            returnedValue.setObject(bytecode, frame, getValue.execute((PBaseException) e.getUnreifiedException()));
+            returnedValue.setObject(bytecode, frame, getValue.execute(inliningTarget, (PBaseException) e.getUnreifiedException()));
         }
 
     }
 
     /** used in the implementation of {@code yield from} */
-    @Operation(storeBytecodeIndex = true, forceCached = true)
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class YieldFromThrow {
@@ -3805,7 +3805,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         private static final TruffleString T_CLOSE = tsLiteral("close");
         private static final TruffleString T_THROW = tsLiteral("throw");
 
-        @Specialization
+        @Specialization(excludeForUncached = true)
         static boolean doGenerator(VirtualFrame frame,
                         LocalAccessor yieldedValue,
                         LocalAccessor returnedValue,
@@ -3817,7 +3817,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached CommonGeneratorBuiltins.CloseNode closeNode,
                         @Exclusive @Cached IsBuiltinObjectProfile profileExit,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
                 closeNode.execute(frame, generator);
                 throw exception;
@@ -3848,7 +3848,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached WriteUnraisableNode writeUnraisableNode,
                         @Exclusive @Cached IsBuiltinObjectProfile profileExit,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             PException pException = (PException) exception;
             if (profileExit.profileException(inliningTarget, pException, GeneratorExit)) {
                 Object close = PNone.NO_VALUE;
@@ -3878,10 +3878,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, BytecodeNode bytecode,
-                        IsBuiltinObjectProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue,
+                        IsBuiltinObjectProfile stopIterationProfile, PyGenFetchStopIterationValue getValue,
                         LocalAccessor returnedValue) {
             e.expectStopIteration(inliningTarget, stopIterationProfile);
-            returnedValue.setObject(bytecode, frame, getValue.execute((PBaseException) e.getUnreifiedException()));
+            returnedValue.setObject(bytecode, frame, getValue.execute(inliningTarget, (PBaseException) e.getUnreifiedException()));
         }
     }
 

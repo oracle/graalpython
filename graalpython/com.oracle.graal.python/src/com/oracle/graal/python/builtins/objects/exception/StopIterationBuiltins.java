@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,7 +76,7 @@ public final class StopIterationBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_init, isComplex = true)
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    public abstract static class StopIterationInitNode extends PythonVarargsBuiltinNode {
+    abstract static class StopIterationInitNode extends PythonVarargsBuiltinNode {
 
         @Specialization
         static Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
@@ -89,7 +89,7 @@ public final class StopIterationBuiltins extends PythonBuiltins {
 
     @Builtin(name = "value", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "generator return value")
     @GenerateNodeFactory
-    public abstract static class StopIterationValueNode extends PythonBinaryBuiltinNode {
+    abstract static class StopIterationValueNode extends PythonBinaryBuiltinNode {
         public final Object execute(PBaseException self) {
             return execute(null, self, PNone.NO_VALUE);
         }
