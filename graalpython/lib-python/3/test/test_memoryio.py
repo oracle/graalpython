@@ -6,7 +6,6 @@ BytesIO -- for bytes
 import unittest
 from test import support
 
-import gc
 import io
 import _pyio as pyio
 import pickle
@@ -495,7 +494,7 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         del a
         # The C implementation emits an unraisable exception.
         with support.catch_unraisable_exception():
-            gc.collect()
+            support.gc_collect(lambda: memiowr() is not None or bufwr() is not None)
         self.assertIsNone(memiowr())
         self.assertIsNone(bufwr())
 
