@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.builtins.objects.cext.copying;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
@@ -51,25 +53,33 @@ import com.oracle.truffle.api.TruffleFile;
 final class PEFile extends SharedObject {
     private static final String DELVEWHEEL_VERSION = "1.9.0";
     private static final String DELVEWHEEL_INSTALL_INSTRUCTION = "IsolateNativeModules option needs `delvewheel` tool to copy libraries. Make sure you have `delvewheel==" + DELVEWHEEL_VERSION +
-                    "` available on PATH.";
+                    "` available in the virtualenv or on PATH (needs environment access).";
 
     private final PythonContext context;
     private final TruffleFile tempfile;
 
-    PEFile(byte[] b, PythonContext context) throws IOException {
+    PEFile(byte[] b, PythonContext context) throws NativeLibraryToolException {
         this.context = context;
-        this.tempfile = context.getEnv().createTempFile(null, null, ".dll");
-        try (var os = this.tempfile.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+        TruffleFile temp;
+        try {
+            temp = context.getEnv().createTempFile(null, null, ".dll");
+        } catch (IOException e) {
+            throw new NativeLibraryToolException("Failed to create temporary PE library copy for IsolateNativeModules relocation: " + e.getMessage(), e);
+        }
+        this.tempfile = temp;
+        try (var os = tempfile.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
             os.write(b);
+        } catch (IOException e) {
+            throw new NativeLibraryToolException("Failed to write temporary PE library copy '" + tempfile + "' for IsolateNativeModules relocation: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public void setId(String newId) throws IOException {
+    public void setId(String newId) {
         // TODO
     }
 
-    private String getDelvewheelPython() throws IOException {
+    private String getDelvewheelPython() throws NativeLibraryToolException {
         TruffleFile delvewheel = which(context, "delvewheel.exe");
         if (!delvewheel.exists()) {
             delvewheel = which(context, "delvewheel.bat");
@@ -78,7 +88,7 @@ final class PEFile extends SharedObject {
             delvewheel = which(context, "delvewheel.cmd");
         }
         if (!delvewheel.exists()) {
-            throw new IOException("Could not find `delvewheel` on PATH. " + DELVEWHEEL_INSTALL_INSTRUCTION);
+            throw new NativeLibraryToolException("Could not find `delvewheel`. " + DELVEWHEEL_INSTALL_INSTRUCTION);
         }
         TruffleFile python = delvewheel.resolveSibling("python.exe");
         if (!python.exists()) {
@@ -97,14 +107,16 @@ final class PEFile extends SharedObject {
             python = delvewheel.getParent().resolveSibling("python.cmd");
         }
         if (!python.exists()) {
-            throw new IOException("Could not find Python executable next to `delvewheel` at '" + delvewheel + "'. " + DELVEWHEEL_INSTALL_INSTRUCTION);
+            throw new NativeLibraryToolException("Could not find Python executable next to `delvewheel` at '" + delvewheel + "'. " + DELVEWHEEL_INSTALL_INSTRUCTION);
         }
         return python.toString();
     }
 
     @Override
-    public void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException {
+    public void changeOrAddDependency(String oldName, String newName) throws NativeLibraryToolException {
         var pb = newProcessBuilder(context);
+        var stderr = new ByteArrayOutputStream();
+        pb.redirectError(pb.createRedirectToStream(stderr));
         var tempfileWithForwardSlashes = tempfile.toString().replace('\\', '/');
         String pythonExe = getDelvewheelPython();
         pb.command(pythonExe, "-c",
@@ -114,20 +126,39 @@ final class PEFile extends SharedObject {
         try {
             proc = pb.start();
         } catch (IOException e) {
-            throw new IOException("Failed to start `delvewheel` to copy required DLL: " + e.getMessage() + ". " + DELVEWHEEL_INSTALL_INSTRUCTION, e);
+            throw new NativeLibraryToolException("Failed to start `delvewheel` to copy required DLL: " + e.getMessage() + ". " + DELVEWHEEL_INSTALL_INSTRUCTION, e);
         }
-        if (proc.waitFor() != 0) {
-            throw new IOException("Failed to run `delvewheel` to copy required DLL (exit code " + proc.exitValue() + "). " + DELVEWHEEL_INSTALL_INSTRUCTION);
+        try {
+            if (proc.waitFor() != 0) {
+                throw new NativeLibraryToolException("Failed to run `delvewheel` to copy required DLL (exit code " + proc.exitValue() + "). " + DELVEWHEEL_INSTALL_INSTRUCTION +
+                                " Stderr: " + getStderr(stderr));
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new NativeLibraryToolException("Interrupted while waiting for `delvewheel` to copy required DLL. " + DELVEWHEEL_INSTALL_INSTRUCTION, e);
+        }
+    }
+
+    private static String getStderr(ByteArrayOutputStream stderr) {
+        String output = stderr.toString(StandardCharsets.UTF_8).strip();
+        return output.isEmpty() ? "<empty>" : output;
+    }
+
+    @Override
+    public void write(TruffleFile copy) throws NativeLibraryToolException {
+        try {
+            tempfile.copy(copy, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        } catch (IOException e) {
+            throw new NativeLibraryToolException("Failed to write relocated PE library copy '" + copy + "': " + e.getMessage(), e);
         }
     }
 
     @Override
-    public void write(TruffleFile copy) throws IOException {
-        tempfile.copy(copy, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
-    }
-
-    @Override
-    public void close() throws IOException {
-        tempfile.delete();
+    public void close() throws NativeLibraryToolException {
+        try {
+            tempfile.delete();
+        } catch (IOException e) {
+            throw new NativeLibraryToolException("Failed to delete temporary PE library copy '" + tempfile + "': " + e.getMessage(), e);
+        }
     }
 }

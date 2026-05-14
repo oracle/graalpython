@@ -131,8 +131,7 @@ public class NativeExtTest {
                 Value exception = ex.getGuestObject();
                 Assert.assertTrue(exception.isException());
                 Assert.assertEquals(ex.getMessage(), "SystemError", exception.getMetaObject().getMetaSimpleName());
-                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("delvewheel` " + DELVEWHEEL_VERSION));
-                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("installed"));
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("delvewheel==" + DELVEWHEEL_VERSION));
             }
         } finally {
             Files.deleteIfExists(tempDir);
@@ -156,7 +155,6 @@ public class NativeExtTest {
                 Assert.assertTrue(exception.isException());
                 Assert.assertEquals(ex.getMessage(), "SystemError", exception.getMetaObject().getMetaSimpleName());
                 Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("patchelf`"));
-                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("installed"));
             }
         } finally {
             Files.deleteIfExists(tempDir);

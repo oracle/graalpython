@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,25 +51,30 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.io.TruffleProcessBuilder;
 
 abstract class SharedObject implements AutoCloseable {
-    abstract void setId(String newId) throws IOException, InterruptedException;
+    abstract void setId(String newId) throws NativeLibraryToolException;
 
-    abstract void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException;
+    abstract void changeOrAddDependency(String oldName, String newName) throws NativeLibraryToolException;
 
-    abstract void write(TruffleFile copy) throws IOException, InterruptedException;
+    abstract void write(TruffleFile copy) throws NativeLibraryToolException;
 
-    public abstract void close() throws IOException;
+    public abstract void close() throws NativeLibraryToolException;
 
-    static SharedObject open(TruffleFile file, PythonContext context) throws IOException {
-        var f = file.readAllBytes();
+    static SharedObject open(TruffleFile file, PythonContext context) throws NativeLibraryToolException {
+        byte[] f;
+        try {
+            f = file.readAllBytes();
+        } catch (IOException e) {
+            throw new NativeLibraryToolException("Failed to read native library '" + file + "' for IsolateNativeModules relocation: " + e.getMessage(), e);
+        }
         switch (f[0]) {
             case 0x7f:
                 return new ElfFile(f, context);
             case 0x4d, 0x5a:
                 return new PEFile(f, context);
             case (byte) 0xca, (byte) 0xfe, (byte) 0xce, (byte) 0xcf:
-                throw new IOException("Modifying Mach-O files is not yet supported");
+                throw new NativeLibraryToolException("Failed to relocate native library '" + file + "': modifying Mach-O files is not yet supported.");
             default:
-                throw new IOException("Unknown shared object format");
+                throw new NativeLibraryToolException("Failed to relocate native library '" + file + "': unknown shared object format.");
         }
     }
 

@@ -41,7 +41,9 @@
 
 package com.oracle.graal.python.builtins.objects.cext.copying;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 
@@ -55,57 +57,106 @@ final class ElfFile extends SharedObject {
     private final PythonContext context;
     private final TruffleFile tempfile;
 
-    private String getPatchelf() throws IOException {
+    private String getPatchelf() throws NativeLibraryToolException {
         TruffleFile patchelf = which(context, "patchelf");
         if (!patchelf.exists()) {
-            throw new IOException("Could not find `patchelf` on PATH. " + PATCHELF_INSTALL_INSTRUCTION);
+            throw new NativeLibraryToolException("Could not find `patchelf`. " + PATCHELF_INSTALL_INSTRUCTION);
         }
         return patchelf.toString();
     }
 
-    private void runPatchelf(String action, String... arguments) throws IOException, InterruptedException {
+    private void runPatchelf(String action, String... arguments) throws NativeLibraryToolException {
         var command = new String[arguments.length + 1];
         command[0] = getPatchelf();
         System.arraycopy(arguments, 0, command, 1, arguments.length);
         var pb = newProcessBuilder(context);
+        var stderr = new ByteArrayOutputStream();
+        pb.redirectError(pb.createRedirectToStream(stderr));
         pb.command(command);
         Process proc;
         try {
             proc = pb.start();
         } catch (IOException e) {
-            throw new IOException("Failed to start `patchelf` to " + action + ": " + e.getMessage() + ". " + PATCHELF_INSTALL_INSTRUCTION, e);
+            throw new NativeLibraryToolException("Failed to start `patchelf` to " + action + ": " + e.getMessage() + ". " + PATCHELF_INSTALL_INSTRUCTION, e);
         }
-        if (proc.waitFor() != 0) {
-            throw new IOException("Failed to run `patchelf` to " + action + " (exit code " + proc.exitValue() + "). " + PATCHELF_INSTALL_INSTRUCTION);
+        try {
+            if (proc.waitFor() != 0) {
+                throw new NativeLibraryToolException("Failed to run `patchelf` to " + action + " (exit code " + proc.exitValue() + "). " + PATCHELF_INSTALL_INSTRUCTION +
+                                " Stderr: " + getStderr(stderr));
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new NativeLibraryToolException("Interrupted while waiting for `patchelf` to " + action + ". " + PATCHELF_INSTALL_INSTRUCTION, e);
         }
     }
 
-    ElfFile(byte[] b, PythonContext context) throws IOException {
-        this.context = context;
-        this.tempfile = context.getEnv().createTempFile(null, null, ".so");
-        try (var os = this.tempfile.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-            os.write(b);
+    private static String getStderr(ByteArrayOutputStream stderr) {
+        String output = stderr.toString(StandardCharsets.UTF_8).strip();
+        return output.isEmpty() ? "<empty>" : output;
+    }
+
+    private static void deleteTempfile(TruffleFile tempfile) throws NativeLibraryToolException {
+        try {
+            tempfile.delete();
+        } catch (IOException e) {
+            throw new NativeLibraryToolException("Failed to delete temporary ELF library copy '" + tempfile + "': " + e.getMessage(), e);
         }
+    }
+
+    private static void deleteTempfileAfterFailedInit(TruffleFile tempfile, IOException failure) throws NativeLibraryToolException {
+        var exception = new NativeLibraryToolException("Failed to write temporary ELF library copy '" + tempfile + "' for IsolateNativeModules relocation: " + failure.getMessage(), failure);
+        try {
+            deleteTempfile(tempfile);
+        } catch (NativeLibraryToolException e) {
+            exception.addSuppressed(e);
+        }
+        throw exception;
+    }
+
+    private static void writeTempfile(TruffleFile tempfile, byte[] b) throws NativeLibraryToolException {
+        try (var os = tempfile.newOutputStream(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+            os.write(b);
+        } catch (IOException e) {
+            deleteTempfileAfterFailedInit(tempfile, e);
+        }
+    }
+
+    private static TruffleFile createTempfile(PythonContext context) throws NativeLibraryToolException {
+        try {
+            return context.getEnv().createTempFile(null, null, ".so");
+        } catch (IOException e) {
+            throw new NativeLibraryToolException("Failed to create temporary ELF library copy for IsolateNativeModules relocation: " + e.getMessage(), e);
+        }
+    }
+
+    ElfFile(byte[] b, PythonContext context) throws NativeLibraryToolException {
+        this.context = context;
+        this.tempfile = createTempfile(context);
+        writeTempfile(tempfile, b);
     }
 
     @Override
-    public void setId(String newId) throws IOException, InterruptedException {
+    public void setId(String newId) throws NativeLibraryToolException {
         runPatchelf("set SONAME", "--debug", "--set-soname", newId, tempfile.toString());
     }
 
     @Override
-    public void changeOrAddDependency(String oldName, String newName) throws IOException, InterruptedException {
+    public void changeOrAddDependency(String oldName, String newName) throws NativeLibraryToolException {
         runPatchelf("remove dependency", "--debug", "--remove-needed", oldName, tempfile.toString());
         runPatchelf("add dependency", "--debug", "--add-needed", newName, tempfile.toString());
     }
 
     @Override
-    public void write(TruffleFile copy) throws IOException {
-        tempfile.copy(copy, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+    public void write(TruffleFile copy) throws NativeLibraryToolException {
+        try {
+            tempfile.copy(copy, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        } catch (IOException e) {
+            throw new NativeLibraryToolException("Failed to write relocated ELF library copy '" + copy + "': " + e.getMessage(), e);
+        }
     }
 
     @Override
-    public void close() throws IOException {
-        tempfile.delete();
+    public void close() throws NativeLibraryToolException {
+        deleteTempfile(tempfile);
     }
 }
