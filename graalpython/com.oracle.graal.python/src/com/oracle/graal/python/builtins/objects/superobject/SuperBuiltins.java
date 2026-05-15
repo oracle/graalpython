@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -97,7 +98,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -105,6 +108,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -459,18 +463,36 @@ public final class SuperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNode extends DescrGetBuiltinNode {
         @Specialization
-        static Object doNoneOrBound(SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
+        static Object doNoneOrBound(VirtualFrame frame, SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile objIsNoneProfile,
                         @Cached InlinedConditionProfile selfObjIsNullProfile,
+                        @Cached IsBuiltinClassExactProfile isBuiltinSuperProfile,
                         @Cached GetObjectNode getObject,
+                        @Cached GetTypeNode getType,
+                        @Cached GetPythonObjectClassNode getClass,
+                        @Cached CallNode callNode,
+                        @Cached InlinedConditionProfile superTypeIsNullProfile,
                         @Cached DoGetNode doGetNode) {
-            // TODO: (GR-53092) doesn't seem to handle super subclasses like CPython
             if (objIsNoneProfile.profile(inliningTarget, PGuards.isPNone(obj)) || //
                             selfObjIsNullProfile.profile(inliningTarget, getObject.execute(inliningTarget, self) != null)) {
                 return self;
             }
+            Object cls = getClass.execute(inliningTarget, self);
+            if (!isBuiltinSuperProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.Super)) {
+                return doSuperSubclass(frame, inliningTarget, self, obj, cls, getType, callNode, superTypeIsNullProfile);
+            }
             return doGetNode.execute(inliningTarget, self, obj);
+        }
+
+        @InliningCutoff
+        private static Object doSuperSubclass(VirtualFrame frame, Node inliningTarget, SuperObject self, Object obj, Object cls, GetTypeNode getType, CallNode callNode,
+                        InlinedConditionProfile superTypeIsNullProfile) {
+            Object superType = getType.execute(inliningTarget, self);
+            if (superTypeIsNullProfile.profile(inliningTarget, superType == null)) {
+                return callNode.execute(frame, cls);
+            }
+            return callNode.execute(frame, cls, superType, obj);
         }
     }
 

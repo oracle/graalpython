@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,3 +47,44 @@ def test_super():
     B.my_super = B.my_super
 
     assert B().m() == ["B", "A"]
+
+
+def test_super_subclass_descr_get_invokes_subclass_type():
+    class MySuper(super):
+        news = []
+        calls = []
+
+        def __new__(cls, *args):
+            cls.news.append(args)
+            return super().__new__(cls)
+
+        def __init__(self, *args):
+            type(self).calls.append(args)
+            super().__init__(*args)
+
+    class A:
+        def f(self):
+            return "A.f"
+
+    class B(A):
+        pass
+
+    raw = MySuper(B)
+    MySuper.news.clear()
+    MySuper.calls.clear()
+    obj = B()
+    bound = raw.__get__(obj, B)
+
+    assert type(bound) is MySuper
+    assert MySuper.news == [(B, obj)]
+    assert MySuper.calls == [(B, obj)]
+    assert bound.f() == "A.f"
+
+    raw = MySuper.__new__(MySuper)
+    MySuper.news.clear()
+    MySuper.calls.clear()
+    bound = raw.__get__(obj, B)
+
+    assert type(bound) is MySuper
+    assert MySuper.news == [()]
+    assert MySuper.calls == [()]
