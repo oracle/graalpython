@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDiff;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -75,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageTransferItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageXor;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltinsFactory.ContainedInNodeGen;
@@ -458,7 +458,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return PFactory.createSet(language, storage);
         }
 
-        @Specialization
+        @Fallback
         static PBaseSet doGeneric(VirtualFrame frame, Object self, Object other,
                         @Bind Node inliningTarget,
                         @Shared("constrSet") @Cached SetNodes.ConstructSetNode constructSetNode,
@@ -670,7 +670,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return ((PBaseSet) self).getDictStorage();
         }
 
-        @Specialization(guards = {"!isDictKeysView(self)", "!isAnySet(self)"})
+        @Fallback
         static PBaseSet doGeneric(VirtualFrame frame, Object self, Object other,
                         @Bind Node inliningTarget,
                         @Cached SetNodes.ConstructSetNode constructSetNode,
