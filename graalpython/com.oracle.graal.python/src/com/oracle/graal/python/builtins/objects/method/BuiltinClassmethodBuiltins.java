@@ -69,12 +69,15 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrG
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -86,6 +89,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinClassMethod)
@@ -111,10 +115,11 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
                         @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
                         @Cached("isNoValue(type)") boolean typeIsNoValue,
                         @Exclusive @Cached GetClassNode getClass,
-                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            Object actualType = typeIsNoValue ? getClass.execute(inliningTarget, obj) : type;
-            return doGet(inliningTarget, actualType, cachedCallable, makeMethod, raiseNode);
+                        @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                        @Exclusive @Cached InlinedBranchProfile errorProfile,
+                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod) {
+            Object actualType = getType(inliningTarget, errorProfile, getClass, cachedCallable, typeIsNoValue, obj, type);
+            return doGet(inliningTarget, isSubtypeNode, errorProfile, makeMethod, actualType, cachedCallable);
         }
 
         @InliningCutoff
@@ -122,31 +127,69 @@ public final class BuiltinClassmethodBuiltins extends PythonBuiltins {
         static Object get(PDecoratedMethod self, Object obj, Object type,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClass,
+                        @Exclusive @Cached IsSubtypeNode isSubtypeNode,
+                        @Exclusive @Cached InlinedBranchProfile errorProfile,
                         @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            Object actualType = PGuards.isNoValue(type) ? getClass.execute(inliningTarget, obj) : type;
-            return doGet(inliningTarget, actualType, ClassmethodCommonBuiltins.getCallable(inliningTarget, self, raiseNode),
-                            makeMethod, raiseNode);
+            Object callable = ClassmethodCommonBuiltins.getCallable(inliningTarget, self, raiseNode);
+            Object actualType = getType(inliningTarget, errorProfile, getClass, callable, PGuards.isNoValue(type), obj, type);
+            return doGet(inliningTarget, isSubtypeNode, errorProfile, makeMethod, actualType, callable);
         }
 
-        private static Object doGet(Node inliningTarget, Object type, Object callable,
-                        ClassmethodCommonBuiltins.MakeMethodNode makeMethod, PRaiseNode raiseNode) {
-            checkBuiltinClassMethod(inliningTarget, callable, type, raiseNode);
+        private static Object getType(Node inliningTarget, InlinedBranchProfile errorProfile, GetClassNode getClassNode,
+                        Object callable, boolean typeIsNoValue, Object obj, Object type) {
+            if (typeIsNoValue) {
+                if (PGuards.isNoValue(obj)) {
+                    errorProfile.enter(inliningTarget);
+                    throw raiseNeedsEitherObjOrType(inliningTarget, callable);
+                }
+                return getClassNode.execute(inliningTarget, obj);
+            }
+            return type;
+        }
+
+        @TruffleBoundary
+        private static PException raiseNeedsEitherObjOrType(Node inliningTarget, Object callable) {
+            if (callable instanceof PBuiltinFunction pbf) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError,
+                                ErrorMessages.DESCRIPTOR_S_FOR_TYPE_S_NEEDS_EITHER_OBJ_OR_TYPE, pbf.getName(),
+                                TypeNodes.GetNameNode.executeUncached(pbf.getEnclosingType()));
+            } else {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError);
+            }
+        }
+
+        private static Object doGet(Node inliningTarget, IsSubtypeNode isSubtypeNode, InlinedBranchProfile errorProfile,
+                        ClassmethodCommonBuiltins.MakeMethodNode makeMethod, Object type, Object callable) {
+            if (!PGuards.isPythonClass(type)) {
+                errorProfile.enter(inliningTarget);
+                throw raiseNeedsType(inliningTarget, callable, type);
+            }
+            // Not clear if we can get any other callable than PBuiltinFunction...
+            if (callable instanceof PBuiltinFunction builtinFunction) {
+                Object descriptorType = builtinFunction.getEnclosingType();
+                if (!isSubtypeNode.execute(type, descriptorType)) {
+                    errorProfile.enter(inliningTarget);
+                    throw raiseRequiresSubtype(inliningTarget, builtinFunction, descriptorType, type);
+                }
+            }
             return makeMethod.execute(inliningTarget, type, callable);
         }
 
-        private static void checkBuiltinClassMethod(Node inliningTarget, Object callable, Object type, PRaiseNode raiseNode) {
-            if (!PGuards.isPythonClass(type)) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
+        @TruffleBoundary
+        private static RuntimeException raiseNeedsType(Node inliningTarget, Object callable, Object type) {
+            if (callable instanceof PBuiltinFunction pbf) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_S_FOR_TYPE_S_NEEDS_TYPE_NOT_P_AS_ARG_2,
+                                pbf.getName(), TypeNodes.GetNameNode.executeUncached(pbf.getEnclosingType()), type);
+            } else {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError);
             }
-            if (callable instanceof PBuiltinFunction builtinFunction) {
-                Object enclosingType = builtinFunction.getEnclosingType();
-                // Binding object.__init_subclass__ happens during class creation. Avoid caching the
-                // transient derived class strongly from this descriptor slot.
-                if (enclosingType != null && !IsSubtypeNode.getUncached().execute(type, enclosingType)) {
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError);
-                }
-            }
+        }
+
+        @TruffleBoundary
+        private static RuntimeException raiseRequiresSubtype(Node inliningTarget, PBuiltinFunction builtinFunction, Object descriptorType, Object type) {
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_S_REQUIRES_SUBTYPE_OF_S_BUT_RECEIVED_S,
+                            builtinFunction.getName(), TypeNodes.GetNameNode.executeUncached(descriptorType), TypeNodes.GetNameNode.executeUncached(type));
         }
     }
 

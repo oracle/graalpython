@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -79,7 +78,6 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -241,17 +239,6 @@ public final class MethodBuiltins extends PythonBuiltins {
                         @Cached GetKeywordDefaultsNode getKeywordDefaultsNode) {
             PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(inliningTarget, self);
             return (kwdefaults.length > 0) ? PFactory.createDict(PythonLanguage.get(inliningTarget), kwdefaults) : PNone.NONE;
-        }
-    }
-
-    @Slot(SlotKind.tp_descr_get)
-    @GenerateUncached
-    @GenerateNodeFactory
-    public abstract static class GetNode extends DescrGetBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        static PMethod doGeneric(PMethod self, Object obj, Object cls) {
-            return self;
         }
     }
 }

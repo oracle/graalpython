@@ -111,6 +111,7 @@ def test_classmethod_wraps_bound_method():
             return self, cls
 
     receiver = C()
+    assert not hasattr(type(receiver.method), "__get__")
 
     class D:
         method = classmethod(receiver.method)
@@ -125,13 +126,23 @@ def test_classmethod_descriptor_get_errors():
     assert descriptor.__get__(None, dict)([1, 2]) == {1: None, 2: None}
     assert descriptor.__get__({})([1, 2]) == {1: None, 2: None}
 
-    for args in ((None, None), (42,), (None, 42), (None, int)):
+    for args in ((None, None), (42,), (None, 42), (None, int), ({}, int)):
         try:
             descriptor.__get__(*args)
         except TypeError:
             pass
         else:
             raise AssertionError("classmethod_descriptor.__get__ accepted invalid arguments")
+
+
+def test_classmethod_descriptor_get_uses_object_type_when_type_omitted():
+    class MyDict(dict):
+        pass
+
+    descriptor = dict.__dict__["fromkeys"]
+    bound = descriptor.__get__(MyDict())
+    assert bound.__self__ is MyDict
+    assert type(bound([1, 2])) is MyDict
 
 
 def test_classmethod_descriptor_get_does_not_keep_type_alive():

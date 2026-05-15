@@ -156,12 +156,9 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
 
         private static Object doGet(VirtualFrame frame, Node inliningTarget, Object type, Object callable,
                         GetObjectSlotsNode getCallableSlots, CallSlotDescrGet callGet, ClassmethodCommonBuiltins.MakeMethodNode makeMethod) {
-            // GraalPy exposes tp_descr_get on method objects, but CPython's method type does not.
-            if (!(callable instanceof PMethod)) {
-                TpSlot get = getCallableSlots.execute(inliningTarget, callable).tp_descr_get();
-                if (get != null) {
-                    return callGet(frame, inliningTarget, type, callable, callGet, get);
-                }
+            TpSlot get = getCallableSlots.execute(inliningTarget, callable).tp_descr_get();
+            if (get != null) {
+                return callGet(frame, inliningTarget, type, callable, callGet, get);
             }
             return makeMethod.execute(inliningTarget, type, callable);
         }
