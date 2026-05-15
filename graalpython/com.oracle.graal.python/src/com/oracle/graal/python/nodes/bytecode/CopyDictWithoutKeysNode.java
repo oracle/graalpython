@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,6 +52,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -60,11 +61,12 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false) // used in BCI root node
-@OperationProxy.Proxyable(storeBytecodeIndex = true)
+@OperationProxy.Proxyable(storeBytecodeIndex = true, allowUncached = true)
+@GenerateUncached
 public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
     public abstract PDict execute(Frame frame, Object subject, Object[] keys);
 
-    @Specialization(guards = {"keys.length == keysLength", "keysLength <= 32"}, limit = "1")
+    @Specialization(guards = {"keys.length == keysLength", "keysLength <= 32"}, limit = "1", excludeForUncached = true)
     public static PDict copy(VirtualFrame frame, Object subject, @NeverDefault @SuppressWarnings("unused") Object[] keys,
                     @Bind Node inliningTarget,
                     @Cached("keys.length") int keysLength,
@@ -85,7 +87,7 @@ public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
         }
     }
 
-    @Specialization(guards = "keys.length > 32")
+    @Specialization
     public static PDict copy(VirtualFrame frame, Object subject, Object[] keys,
                     @Bind Node inliningTarget,
                     @Bind PythonLanguage language,

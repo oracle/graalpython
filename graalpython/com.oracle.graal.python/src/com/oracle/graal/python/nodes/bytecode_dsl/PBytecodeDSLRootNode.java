@@ -59,10 +59,10 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.math.BigInteger;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallTypingFuncObjectNode;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.UnpackTypeVarTuplesNode;
@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.exception.ChainExceptionsNode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
-import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -121,6 +120,7 @@ import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyGenFetchStopIterationValue;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
@@ -155,6 +155,7 @@ import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
+import com.oracle.graal.python.lib.PyObjectFormat;
 import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -357,7 +358,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(PyNumberInPlaceLshiftNode.class)
 @OperationProxy(PyNumberInPlaceRshiftNode.class)
 @OperationProxy(IsNode.class)
-@OperationProxy(value = FormatNode.class, forceCached = true)
+@OperationProxy(value = PyObjectFormat.class, name = "Format")
 @OperationProxy(ExceptMatchNode.class)
 @OperationProxy(value = HandleExceptionsInHandlerNode.class, forceCached = true)
 @OperationProxy(value = EncapsulateExceptionGroupNode.class, forceCached = true)
@@ -367,7 +368,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(GetAIterNode.class)
 @OperationProxy(GetANextNode.class)
 @OperationProxy(value = ReadGlobalOrBuiltinNode.class, name = "ReadGlobal")
-@OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys", forceCached = true)
+@OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
 @OperationProxy(value = PyObjectIsTrueNode.class, name = "Yes")
 @OperationProxy(value = PyObjectIsNotTrueNode.class, name = "Not")
 @OperationProxy(value = ListNodes.AppendNode.class, name = "ListAppend")
@@ -376,7 +377,6 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @ShortCircuitOperation(name = "BoolOr", booleanConverter = PyObjectIsTrueNode.class, operator = Operator.OR_RETURN_VALUE)
 @ShortCircuitOperation(name = "PrimitiveBoolAnd", operator = Operator.AND_RETURN_VALUE)
 public abstract class PBytecodeDSLRootNode extends PRootNode implements BytecodeRootNode {
-    public static final int EXPLODE_LOOP_THRESHOLD = 30;
     private static final BytecodeConfig TRACE_AND_PROFILE_CONFIG = PBytecodeDSLRootNodeGen.newConfigBuilder().//
                     addInstrumentation(TraceOrProfileCall.class).//
                     addInstrumentation(TraceLine.class).//
@@ -412,6 +412,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @CompilationFinal protected transient int instrumentationDataIndex;
     @CompilationFinal protected transient int yieldFromGeneratorIndex = -1;
     @CompilationFinal(dimensions = 1) protected transient Assumption[] cellEffectivelyFinalAssumptions;
+
+    /*
+     * We don't want to store the assumption in MakeFunction node to be able to have an uncached version of it.
+     * So we put it into the root of the function that MakeFunction is creating.
+     */
+    private final transient AtomicReference<Assumption> functionCodeFinalAssumption = new AtomicReference<>();
 
     private transient boolean pythonInternal;
     @CompilationFinal private transient boolean internal;
@@ -1132,6 +1138,18 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return yieldFromGeneratorIndex != -1;
     }
 
+    public Assumption getFunctionCodeFinalAssumption() {
+        CompilerAsserts.neverPartOfCompilation();
+        Assumption assumption = functionCodeFinalAssumption.get();
+        if (assumption == null) {
+            assumption = Truffle.getRuntime().createAssumption("code stable assumption");
+            if (!functionCodeFinalAssumption.compareAndSet(null, assumption)) {
+                assumption = functionCodeFinalAssumption.get();
+            }
+        }
+        return assumption;
+    }
+
     @Operation
     @ConstantOperand(type = int.class)
     public static final class ArrayIndex {
@@ -1483,7 +1501,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation(storeBytecodeIndex = true, forceCached = true)
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class MatchClass {
         @Specialization
@@ -1495,12 +1513,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation(storeBytecodeIndex = true, forceCached = true)
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class, name = "name")
     @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
     @ConstantOperand(type = int.class)
     public static final class MakeFunction {
-        @Specialization(guards = "isSingleContext(rootNode)")
+        @Specialization(guards = "isSingleContext(rootNode)", excludeForUncached = true)
         public static Object functionSingleContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
@@ -1511,27 +1529,27 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind("getCodeUnit(rootNode, codeIndex)") BytecodeDSLCodeUnit codeUnit,
-                        @Cached("getCode(frame, codeIndex, codeUnit)") PCode cachedCode,
-                        @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
+                        @Cached("getCode(frame, codeIndex, codeUnit)") PCode code,
+                        @Cached(value = "getCodeStableAssumption(code)", uncached = "getCodeStableAssumption(code)") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
-                            cachedCode, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
+                            code, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
         }
 
         @Specialization(replaces = "functionSingleContext")
         public static Object functionMultiContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        int codeIndex,
+                        @SuppressWarnings("unused") int codeIndex,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
+                        @Bind("getCodeUnit(rootNode, codeIndex)") BytecodeDSLCodeUnit codeUnit,
+                        @Bind("getCode(frame, codeIndex, codeUnit)") PCode code,
+                        @Cached(value = "getCodeStableAssumption(code)", uncached = "getCodeStableAssumption(code)") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
-            BytecodeDSLCodeUnit codeUnit = getCodeUnit(rootNode, codeIndex);
-            PCode code = getCode(frame, codeIndex, codeUnit);
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(),
                             code, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
         }
@@ -1542,8 +1560,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @NeverDefault
-        static Assumption createCodeStableAssumption() {
-            return Truffle.getRuntime().createAssumption("code stable assumption");
+        static Assumption getCodeStableAssumption(PCode code) {
+            PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) code.getRootCallTarget().getRootNode();
+            return rootNode.getFunctionCodeFinalAssumption();
         }
 
         @NeverDefault
@@ -3686,13 +3705,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     /** Used in implementation of {@code yield from} */
-    @Operation(storeBytecodeIndex = true, forceCached = true)
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class YieldFromSend {
         private static final TruffleString T_SEND = tsLiteral("send");
 
-        @Specialization
+        @Specialization(excludeForUncached = true)
         static boolean doGenerator(VirtualFrame virtualFrame,
                         LocalAccessor yieldedValue,
                         LocalAccessor returnedValue,
@@ -3702,7 +3721,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode,
                         @Cached CommonGeneratorBuiltins.SendNode sendNode,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             try {
                 Object value = sendNode.execute(virtualFrame, generator, arg);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
@@ -3730,7 +3749,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Exclusive @Cached InlinedBranchProfile exhaustedNoException,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             try {
                 Object value = callIterNext.execute(virtualFrame, inliningTarget, slots.tp_iternext(), iter);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
@@ -3756,7 +3775,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind("$bytecodeIndex") int bci,
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             try {
                 Object value = callMethodNode.execute(virtualFrame, inliningTarget, obj, T_SEND, arg);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
@@ -3769,16 +3788,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, BytecodeNode bytecode,
                         IsBuiltinObjectProfile stopIterationProfile,
-                        StopIterationBuiltins.StopIterationValueNode getValue,
+                        PyGenFetchStopIterationValue getValue,
                         LocalAccessor returnedValue) {
             e.expectStopIteration(inliningTarget, stopIterationProfile);
-            returnedValue.setObject(bytecode, frame, getValue.execute((PBaseException) e.getUnreifiedException()));
+            returnedValue.setObject(bytecode, frame, getValue.execute(inliningTarget, (PBaseException) e.getUnreifiedException()));
         }
 
     }
 
     /** used in the implementation of {@code yield from} */
-    @Operation(storeBytecodeIndex = true, forceCached = true)
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class YieldFromThrow {
@@ -3786,7 +3805,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         private static final TruffleString T_CLOSE = tsLiteral("close");
         private static final TruffleString T_THROW = tsLiteral("throw");
 
-        @Specialization
+        @Specialization(excludeForUncached = true)
         static boolean doGenerator(VirtualFrame frame,
                         LocalAccessor yieldedValue,
                         LocalAccessor returnedValue,
@@ -3798,7 +3817,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached CommonGeneratorBuiltins.CloseNode closeNode,
                         @Exclusive @Cached IsBuiltinObjectProfile profileExit,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
                 closeNode.execute(frame, generator);
                 throw exception;
@@ -3829,7 +3848,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached WriteUnraisableNode writeUnraisableNode,
                         @Exclusive @Cached IsBuiltinObjectProfile profileExit,
                         @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
             PException pException = (PException) exception;
             if (profileExit.profileException(inliningTarget, pException, GeneratorExit)) {
                 Object close = PNone.NO_VALUE;
@@ -3859,10 +3878,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, BytecodeNode bytecode,
-                        IsBuiltinObjectProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue,
+                        IsBuiltinObjectProfile stopIterationProfile, PyGenFetchStopIterationValue getValue,
                         LocalAccessor returnedValue) {
             e.expectStopIteration(inliningTarget, stopIterationProfile);
-            returnedValue.setObject(bytecode, frame, getValue.execute((PBaseException) e.getUnreifiedException()));
+            returnedValue.setObject(bytecode, frame, getValue.execute(inliningTarget, (PBaseException) e.getUnreifiedException()));
         }
     }
 

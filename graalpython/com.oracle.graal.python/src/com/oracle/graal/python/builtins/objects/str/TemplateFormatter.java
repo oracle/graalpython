@@ -64,11 +64,11 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.math.BigInteger;
 import java.util.ArrayList;
 
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectFormat;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -102,7 +102,7 @@ public final class TemplateFormatter {
     }
 
     @TruffleBoundary
-    public TruffleString build(Node node, Object[] argsArg, Object kwArgs, FormatNode formatNode) {
+    public TruffleString build(Node node, Object[] argsArg, Object kwArgs, PyObjectFormat formatNode) {
         this.args = argsArg;
         this.keywords = kwArgs;
         this.autoNumbering = 0;
@@ -110,14 +110,14 @@ public final class TemplateFormatter {
         return buildString(node, 0, template.length(), 2, formatNode);
     }
 
-    private TruffleString buildString(Node node, int start, int end, int level, FormatNode formatNode) {
+    private TruffleString buildString(Node node, int start, int end, int level, PyObjectFormat formatNode) {
         if (level == 0) {
             throw PRaiseNode.raiseStatic(node, ValueError, RECURSION_DEPTH_EXCEEDED);
         }
         return doBuildString(node, start, end, level - 1, this.template, formatNode);
     }
 
-    private TruffleString doBuildString(Node node, int start, int end, int level, String s, FormatNode formatNode) {
+    private TruffleString doBuildString(Node node, int start, int end, int level, String s, PyObjectFormat formatNode) {
         StringBuilder out = new StringBuilder();
         int lastLiteral = start;
         int i = start;
@@ -375,7 +375,7 @@ public final class TemplateFormatter {
         }
     }
 
-    private Object renderField(Node node, int start, int end, boolean recursive, int level, FormatNode formatNode) {
+    private Object renderField(Node node, int start, int end, boolean recursive, int level, PyObjectFormat formatNode) {
         Field filed = parseField(node, start, end);
         String name = filed.name;
         Character conversion = filed.conversion;

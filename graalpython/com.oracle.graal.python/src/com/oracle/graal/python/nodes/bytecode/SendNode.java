@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,13 +44,13 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_SEND;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.CommonGeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyGenFetchStopIterationValue;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -77,7 +77,7 @@ public abstract class SendNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached CommonGeneratorBuiltins.SendNode sendNode,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
         try {
             Object value = sendNode.execute(virtualFrame, generator, arg);
             virtualFrame.setObject(stackTop, value);
@@ -96,7 +96,7 @@ public abstract class SendNode extends PNodeWithContext {
                     @Cached CallSlotTpIterNextNode callIterNext,
                     @Exclusive @Cached InlinedBranchProfile exhaustedNoException,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
         try {
             Object value = callIterNext.execute(virtualFrame, inliningTarget, slots.tp_iternext(), iter);
             virtualFrame.setObject(stackTop, value);
@@ -121,7 +121,7 @@ public abstract class SendNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached PyObjectCallMethodObjArgs callMethodNode,
                     @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
-                    @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                    @Exclusive @Cached PyGenFetchStopIterationValue getValue) {
         try {
             Object value = callMethodNode.execute(virtualFrame, inliningTarget, obj, T_SEND, arg);
             virtualFrame.setObject(stackTop, value);
@@ -132,10 +132,9 @@ public abstract class SendNode extends PNodeWithContext {
         }
     }
 
-    private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, IsBuiltinObjectProfile stopIterationProfile, StopIterationBuiltins.StopIterationValueNode getValue,
-                    int stackTop) {
+    private static void handleException(VirtualFrame frame, PException e, Node inliningTarget, IsBuiltinObjectProfile stopIterationProfile, PyGenFetchStopIterationValue getValue, int stackTop) {
         e.expectStopIteration(inliningTarget, stopIterationProfile);
-        Object value = getValue.execute((PBaseException) e.getUnreifiedException());
+        Object value = getValue.execute(inliningTarget, (PBaseException) e.getUnreifiedException());
         frame.setObject(stackTop, null);
         frame.setObject(stackTop - 1, value);
     }

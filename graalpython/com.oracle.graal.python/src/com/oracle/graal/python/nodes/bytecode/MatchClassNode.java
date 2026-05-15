@@ -43,27 +43,28 @@ package com.oracle.graal.python.nodes.bytecode;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.MATCH_SELF;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATCH_ARGS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
+import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -73,23 +74,25 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateInline(false) // used in BCI root node
+@GenerateUncached
 public abstract class MatchClassNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object subject, Object type, int nargs, TruffleString[] kwArgs);
 
     @Specialization
-    Object match(VirtualFrame frame, Object subject, Object type, int nargs, @NeverDefault @SuppressWarnings("unused") TruffleString[] kwArgsArg,
+    static Object match(VirtualFrame frame, Object subject, Object type, int nargs, @NeverDefault @SuppressWarnings("unused") TruffleString[] kwArgsArg,
                     @Bind Node inliningTarget,
                     @Cached(value = "kwArgsArg", dimensions = 1) TruffleString[] kwArgs,
                     @Cached TypeNodes.IsTypeNode isTypeNode,
-                    @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
+                    @Cached PyObjectIsInstanceNode isInstanceNode,
                     @Cached PyObjectGetAttrO getAttr,
                     @Cached TypeNodes.GetTypeFlagsNode getTypeFlagsNode,
                     @Cached IsBuiltinObjectProfile isClassProfile,
-                    @Cached StringBuiltins.StringRichCmpNode eqStrNode,
+                    @Cached CastToTruffleStringNode castStringNode,
+                    @Cached TruffleString.EqualNode equalNode,
                     @Cached PyTupleCheckExactNode tupleCheckExactNode,
                     @Bind PythonLanguage language,
                     @Cached PyTupleSizeNode tupleSizeNode,
-                    @Cached TupleBuiltins.GetItemNode getItemNode,
+                    @Cached PyTupleGetItem getItemNode,
                     @Cached PyUnicodeCheckNode unicodeCheckNode,
                     @Cached PRaiseNode raise) {
 
@@ -97,7 +100,7 @@ public abstract class MatchClassNode extends PNodeWithContext {
             throw raise.raise(inliningTarget, TypeError, ErrorMessages.CALLED_MATCH_PAT_MUST_BE_TYPE);
         }
 
-        if (!isInstanceNode.executeWith(frame, subject, type)) {
+        if (!isInstanceNode.execute(frame, subject, type)) {
             return null;
         }
 
@@ -133,14 +136,14 @@ public abstract class MatchClassNode extends PNodeWithContext {
                 attrs[attrsLength[0]++] = subject;
             } else {
                 attrs = new Object[nargs + kwArgs.length];
-                getArgs(frame, inliningTarget, subject, type, nargs, seen, seenLength, attrs, attrsLength, matchArgs, getAttr, eqStrNode, getItemNode, unicodeCheckNode, raise);
+                getArgs(frame, inliningTarget, subject, type, nargs, seen, seenLength, attrs, attrsLength, matchArgs, getAttr, castStringNode, equalNode, getItemNode, unicodeCheckNode, raise);
             }
         } else {
             attrs = new Object[kwArgs.length];
         }
         // Finally, the keyword subpatterns:
         try {
-            getKwArgs(frame, inliningTarget, subject, type, kwArgs, seen, seenLength, attrs, attrsLength, getAttr, eqStrNode, raise);
+            getKwArgs(frame, inliningTarget, subject, type, kwArgs, seen, seenLength, attrs, attrsLength, getAttr, castStringNode, equalNode, raise);
         } catch (PException pe) {
             // missing keyword argument will throw AttributeError, but in pattern matching, that
             // should be ignored
@@ -153,42 +156,43 @@ public abstract class MatchClassNode extends PNodeWithContext {
     @ExplodeLoop
     private static void getArgs(VirtualFrame frame, Node inliningTarget, Object subject, Object type, int nargs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength, Object matchArgs,
                     PyObjectGetAttrO getAttr,
-                    StringBuiltins.StringRichCmpNode eqStrNode, TupleBuiltins.GetItemNode getItemNode, PyUnicodeCheckNode unicodeCheckNode, PRaiseNode raise) {
+                    CastToTruffleStringNode castStringNode, TruffleString.EqualNode equalNode, PyTupleGetItem getItemNode, PyUnicodeCheckNode unicodeCheckNode, PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(nargs);
         for (int i = 0; i < nargs; i++) {
-            Object name = getItemNode.execute(frame, matchArgs, i);
+            Object name = getItemNode.execute(inliningTarget, matchArgs, i);
             if (!unicodeCheckNode.execute(inliningTarget, name)) {
                 throw raise.raise(inliningTarget, TypeError, ErrorMessages.MATCH_ARGS_ELEMENTS_MUST_BE_STRINGS_GOT_P, name);
             }
-            setName(frame, inliningTarget, type, name, seen, seenLength, eqStrNode, raise);
+            setName(inliningTarget, type, name, seen, seenLength, castStringNode, equalNode, raise);
             attrs[attrsLength[0]++] = getAttr.execute(frame, inliningTarget, subject, name);
         }
     }
 
     @ExplodeLoop
     private static void getKwArgs(VirtualFrame frame, Node inliningTarget, Object subject, Object type, TruffleString[] kwArgs, Object[] seen, int[] seenLength, Object[] attrs, int[] attrsLength,
-                    PyObjectGetAttrO getAttr,
-                    StringBuiltins.StringRichCmpNode eqStrNode, PRaiseNode raise) {
+                    PyObjectGetAttrO getAttr, CastToTruffleStringNode castStringNode, TruffleString.EqualNode equalNode, PRaiseNode raise) {
         CompilerAsserts.partialEvaluationConstant(kwArgs);
         for (int i = 0; i < kwArgs.length; i++) {
             TruffleString name = kwArgs[i];
             CompilerAsserts.partialEvaluationConstant(name);
-            setName(frame, inliningTarget, type, name, seen, seenLength, eqStrNode, raise);
+            setName(inliningTarget, type, name, seen, seenLength, castStringNode, equalNode, raise);
             attrs[attrsLength[0]++] = getAttr.execute(frame, inliningTarget, subject, name);
         }
     }
 
-    private static void setName(VirtualFrame frame, Node inliningTarget, Object type, Object name, Object[] seen, int[] seenLength, StringBuiltins.StringRichCmpNode eqNode, PRaiseNode raise) {
-        if (seenLength[0] > 0 && contains(frame, seen, name, eqNode)) {
+    private static void setName(Node inliningTarget, Object type, Object name, Object[] seen, int[] seenLength, CastToTruffleStringNode castStringNode, TruffleString.EqualNode equalNode,
+                    PRaiseNode raise) {
+        if (seenLength[0] > 0 && contains(inliningTarget, seen, name, castStringNode, equalNode)) {
             throw raise.raise(inliningTarget, TypeError, ErrorMessages.S_GOT_MULTIPLE_SUBPATTERNS_FOR_ATTR_S, type, name);
         }
         seen[seenLength[0]++] = name;
     }
 
     @ExplodeLoop
-    private static boolean contains(VirtualFrame frame, Object[] seen, Object name, StringBuiltins.StringRichCmpNode eqNode) {
+    private static boolean contains(Node inliningTarget, Object[] seen, Object name, CastToTruffleStringNode castStringNode, TruffleString.EqualNode equalNode) {
+        TruffleString nameString = castStringNode.castKnownString(inliningTarget, name);
         for (int i = 0; i < seen.length; i++) {
-            if (seen[i] != null && (boolean) eqNode.execute(frame, seen[i], name, RichCmpOp.Py_EQ)) {
+            if (seen[i] != null && equalNode.execute(castStringNode.castKnownString(inliningTarget, seen[i]), nameString, TS_ENCODING)) {
                 return true;
             }
         }

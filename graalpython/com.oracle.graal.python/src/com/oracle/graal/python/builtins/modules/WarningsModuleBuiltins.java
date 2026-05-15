@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsSubClassNode;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltinsClinicProviders.WarnBuiltinNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltinsFactory.WarnBuiltinNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -95,6 +94,7 @@ import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool.CachedPyObjectRichCompareBool;
@@ -210,7 +210,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
         @Child PyObjectIsTrueNode isTrueNode;
-        @Child IsSubClassNode isSubClassNode;
+        @Child PyObjectIsSubclassNode isSubClassNode;
         @Child GetOrCreateDictNode getDictNode;
         @Child ReadFrameNode readFrameNode;
         @Child PyObjectLookupAttr lookupAttrNode;
@@ -376,11 +376,11 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             return substringNode;
         }
 
-        private IsSubClassNode getIsSubClass() {
+        private PyObjectIsSubclassNode getIsSubClass() {
             if (isSubClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
-                isSubClassNode = insert(IsSubClassNode.create());
+                isSubClassNode = insert(PyObjectIsSubclassNode.create());
             }
             return isSubClassNode;
         }
@@ -595,7 +595,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
 
                 boolean goodMsg = checkMatched(frame, msg, text);
                 boolean goodMod = checkMatched(frame, mod, module);
-                boolean isSubclass = getIsSubClass().executeBoolean(frame, category, cat);
+                boolean isSubclass = getIsSubClass().execute(frame, category, cat);
                 int ln = getAsSizeNode().executeExactCached(frame, lnObj);
                 if (goodMsg && isSubclass && goodMod && (ln == 0 || lineno == ln)) {
                     // if we're ignoring warnings, the first action will match all and the loop
@@ -778,7 +778,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             // Python code uses PyObject_IsInstance but on the built-in Warning class, so we know
             // what __instancecheck__ does
             Object text;
-            if (getIsSubClass().executeBoolean(frame, getPythonClass(message), PythonBuiltinClassType.Warning)) {
+            if (getIsSubClass().execute(frame, getPythonClass(message), PythonBuiltinClassType.Warning)) {
                 text = getStrNode().executeCached(frame, message);
                 category = getPythonClass(message);
             } else {
@@ -907,11 +907,11 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
          */
         private Object getCategory(VirtualFrame frame, Object message, Object category) {
             Object messageType = getPythonClass(message);
-            if (getIsSubClass().executeBoolean(frame, messageType, PythonBuiltinClassType.Warning)) {
+            if (getIsSubClass().execute(frame, messageType, PythonBuiltinClassType.Warning)) {
                 return messageType;
             } else if (category == null || category == PNone.NONE) {
                 return PythonBuiltinClassType.UserWarning;
-            } else if (!getIsTypeNode().executeCached(category) || !getIsSubClass().executeBoolean(frame, category, PythonBuiltinClassType.Warning)) {
+            } else if (!getIsTypeNode().executeCached(category) || !getIsSubClass().execute(frame, category, PythonBuiltinClassType.Warning)) {
                 throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.CATEGORY_MUST_BE_WARN_SUBCLS, category);
             } else {
                 return category;

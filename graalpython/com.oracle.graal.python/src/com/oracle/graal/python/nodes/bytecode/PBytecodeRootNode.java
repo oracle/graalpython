@@ -61,8 +61,6 @@ import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.FormatNodeFactory.FormatNodeGen;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
@@ -147,6 +145,8 @@ import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectAsciiAsObjectNodeGen;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDelItemNodeGen;
+import com.oracle.graal.python.lib.PyObjectFormat;
+import com.oracle.graal.python.lib.PyObjectFormatNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -403,7 +403,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final NodeSupplier<PyObjectReprAsObjectNode> NODE_REPR = PyObjectReprAsObjectNode::create;
     private static final PyObjectAsciiAsObjectNode UNCACHED_ASCII = PyObjectAsciiAsObjectNode.getUncached();
     private static final NodeSupplier<PyObjectAsciiAsObjectNode> NODE_ASCII = PyObjectAsciiAsObjectNode::create;
-    private static final NodeSupplier<FormatNode> NODE_FORMAT = FormatNode::create;
+    private static final PyObjectFormat UNCACHED_FORMAT = PyObjectFormat.getUncached();
+    private static final NodeSupplier<PyObjectFormat> NODE_FORMAT = PyObjectFormat::create;
     private static final NodeSupplier<SendNode> NODE_SEND = SendNode::create;
     private static final NodeSupplier<ThrowNode> NODE_THROW = ThrowNode::create;
     private static final WriteGlobalNode UNCACHED_WRITE_GLOBAL = WriteGlobalNode.getUncached();
@@ -5009,7 +5010,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             default:
                 assert type == FormatOptions.FVC_NONE;
         }
-        FormatNode formatNode = insertChildNode(localNodes, bci + 1, FormatNodeGen.class, NODE_FORMAT);
+        PyObjectFormat formatNode = insertChildNode(localNodes, bci + 1, UNCACHED_FORMAT, PyObjectFormatNodeGen.class, NODE_FORMAT, useCachedNodes);
         value = formatNode.execute(virtualFrame, value, spec);
         virtualFrame.setObject(stackTop, value);
         return stackTop;
