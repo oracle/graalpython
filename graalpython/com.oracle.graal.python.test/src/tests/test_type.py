@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -93,7 +93,7 @@ def test_base():
 
     class B(BB): pass
 
-    class C (A): 
+    class C (A):
         __slots__ = ['a']
 
     class D (B, C): pass
@@ -135,7 +135,7 @@ def test_base():
 
     assert C.__bases__ == (A, B)
     assert A.__subclasses__() == [C]
-    assert B.__subclasses__() == [C]    
+    assert B.__subclasses__() == [C]
 
     #-----------------------------------------------
 
@@ -189,6 +189,26 @@ def test_dir_sorted():
 def test_isinstance_non_type():
     import typing
     assert isinstance(1, typing.AbstractSet) is False
+
+
+def test_object_new_with_generic_base_and_slots():
+    from typing import Generic, TypeVar
+
+    KT = TypeVar("KT")
+    VT = TypeVar("VT")
+
+    class Foo(Generic[KT, VT]):
+        __slots__ = ("x", "y")
+
+        def __new__(cls, x, y):
+            self = super(Foo, cls).__new__(cls)
+            self.x = x
+            self.y = y
+            return self
+
+    foo = Foo(1, 2)
+    assert foo.x == 1
+    assert foo.y == 2
 
 
 @skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 8), "skipping for cPython versions < 3.8")
@@ -264,39 +284,39 @@ def test_dict():
             o['__dict__']
         except err:
             raised = True
-        assert raised        
-        
+        assert raised
+
     class Base:
         pass
-    
+
     class Sub(Base):
         pass
-    
+
     str(type(Base.__dict__['__dict__'])) == "<class 'get_set_desc'>"
-    dict_element_raises(Sub.__dict__, KeyError)    
-    Base().__dict__ == {}    
-    Sub().__dict__ == {}            
+    dict_element_raises(Sub.__dict__, KeyError)
+    Base().__dict__ == {}
+    Sub().__dict__ == {}
 
     class BaseSlots:
         __slots__ = ['a']
-        
-    dict_element_raises(BaseSlots.__dict__, KeyError)        
+
+    dict_element_raises(BaseSlots.__dict__, KeyError)
     raised = False
     try:
         BaseSlots().__dict__
     except AttributeError:
         raised = True
     assert raised
-    
+
     class SubSlots(BaseSlots):
         pass
 
     str(type(SubSlots.__dict__['__dict__'])) == "<class 'get_set_desc'>"
     assert SubSlots().__dict__ == {}
-    
+
     class SubSlots(BaseSlots, Base):
         pass
-    
+
     str(type(SubSlots.__dict__['__dict__'])) == "<class 'get_set_desc'>"
     assert SubSlots().__dict__ == {}
 
@@ -306,21 +326,21 @@ def test_itemsize():
     assert list.__itemsize__ == 0
     assert type.__itemsize__ == 40
     assert tuple.__itemsize__ == 8
-    
+
     class C: pass
     assert C.__itemsize__ == 0
-    
+
     class C(tuple): pass
     assert C.__itemsize__ == 8
-    
-    
+
+
     raised = False
     try:
         object.__itemsize__ = 1
     except TypeError:
         raised = True
     assert raised
-    
+
     raised = False
     try:
         C.__itemsize__ = 1
@@ -331,13 +351,13 @@ def test_itemsize():
     class C():
         __itemsize__ = 'abc'
     assert C.__itemsize__ == 0
-    
+
     class C(tuple):
         __itemsize__ = 42
     assert C.__itemsize__ == 8
 
 
-def test_descr_name_qualname():    
+def test_descr_name_qualname():
     assert float.real.__qualname__ == 'float.real'
     assert float.real.__name__ == 'real'
     class C: __slots__ = ['a']
@@ -348,13 +368,13 @@ def test_descr_name_qualname():
         C.a.__qualname__ = 'b'
     except AttributeError:
         raised = True
-    assert raised    
+    assert raised
     raised = False
     try:
         C.a.__name__ = 'b'
     except AttributeError:
         raised = True
-    assert raised    
+    assert raised
 
 
 def test_cant_set_builtin_attributes():
@@ -364,41 +384,41 @@ def test_cant_set_builtin_attributes():
     except TypeError:
         raised = True
     assert raised
-    
+
     raised = False
     try:
         float.__qualname__ = 'b'
     except TypeError:
         raised = True
     assert raised
-    
+
     raised = False
     try:
         float.__dictoffset__ = 'b'
     except TypeError:
         raised = True
     assert raised
-    
+
     raised = False
     try:
         float.__module__ = 'b'
     except TypeError:
         raised = True
     assert raised
-    
+
     raised = False
     try:
         float.__itemsize__ = 'b'
     except TypeError:
         raised = True
     assert raised
-    
+
     raised = False
     try:
         float.__basicsize__ = 'b'
     except TypeError:
         raised = True
-    assert raised    
+    assert raised
 
 
 def test_slots_no_instance_layout_conflict():
