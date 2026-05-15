@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
+import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryToolException;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
@@ -1407,7 +1408,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context) {
             try {
                 NativeLibraryLocator.replicate(context.getEnv().getPublicTruffleFile(venvPath.toJavaStringUncached()), context, count);
-            } catch (IOException | InterruptedException e) {
+            } catch (NativeLibraryToolException e) {
                 throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.ValueError, e);
             }
             return PNone.NONE;

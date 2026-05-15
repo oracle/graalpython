@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,18 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.copying;
 
+import static com.oracle.graal.python.nodes.StringLiterals.J_MAX_CAPI_COPIES;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BASE_PREFIX;
-import static com.oracle.graal.python.nodes.StringLiterals.J_MAX_CAPI_COPIES;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PREFIX;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
-import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -61,6 +60,7 @@ import com.oracle.graal.python.util.BiFunction;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Given a GraalPy virtual environment, this class helps prepare that environment so that multiple
@@ -127,13 +127,8 @@ public final class NativeLibraryLocator {
      *
      * @see PythonOptions#IsolateNativeModules
      */
-    public String resolve(PythonContext context, TruffleFile original) throws ImportException {
-        try {
-            return resolve(context, original, capiSlot, capiOriginal);
-        } catch (ApiInitException e) {
-            throw new ImportException(null, toTruffleStringUncached(original.getName()), toTruffleStringUncached(original.getPath()),
-                            toTruffleStringUncached(e.getMessage() == null ? "" : e.getMessage()));
-        }
+    public String resolve(PythonContext context, TruffleFile original) throws ApiInitException {
+        return resolve(context, original, capiSlot, capiOriginal);
     }
 
     public String getCapiLibrary() {
@@ -148,7 +143,7 @@ public final class NativeLibraryLocator {
      * the same time. The minimum number of concurrent contexts to prepare for is given with {@code
      * count}.
      */
-    public static void replicate(TruffleFile venvDirectory, PythonContext context, int count) throws IOException, InterruptedException {
+    public static void replicate(TruffleFile venvDirectory, PythonContext context, int count) throws NativeLibraryToolException {
         if (count > MAX_CEXT_COPIES) {
             LOGGER.warning(() -> String.format("The current limit for concurrent Python contexts accessing the Python C API is %d, " +
                             "but we are preparing %d copies. The extra copies will only be used if a different value " +
@@ -156,24 +151,13 @@ public final class NativeLibraryLocator {
         }
         String suffix = context.getSoAbi().toJavaStringUncached();
         TruffleFile capiLibrary = context.getPublicTruffleFileRelaxed(context.getCAPIHome()).resolve(PythonContext.getSupportLibName("python-" + J_NATIVE));
-        try {
-            for (int i = 0; i < count; i++) {
-                // Relocate the C API library
-                replicate(capiLibrary, venvDirectory.resolve(copyNameOf(capiLibrary.getName(), i)), context, i);
-                // Relocate the core C extensions
-                walk(context.getPublicTruffleFileRelaxed(context.getCoreHome()), suffix, capiLibrary.getName(), context, i, (o, n) -> venvDirectory.resolve(n));
-                // Relocate C extensions in the venv
-                walk(venvDirectory, suffix, capiLibrary.getName(), context, i, (o, n) -> o.resolveSibling(n));
-            }
-        } catch (RuntimeException e) {
-            var cause = e.getCause();
-            if (cause instanceof IOException ioCause) {
-                throw ioCause;
-            } else if (cause instanceof InterruptedException intCause) {
-                throw intCause;
-            } else {
-                throw e;
-            }
+        for (int i = 0; i < count; i++) {
+            // Relocate the C API library
+            replicate(capiLibrary, venvDirectory.resolve(copyNameOf(capiLibrary.getName(), i)), context, i);
+            // Relocate the core C extensions
+            walk(context.getPublicTruffleFileRelaxed(context.getCoreHome()), suffix, capiLibrary.getName(), context, i, (o, n) -> venvDirectory.resolve(n));
+            // Relocate C extensions in the venv
+            walk(venvDirectory, suffix, capiLibrary.getName(), context, i, (o, n) -> o.resolveSibling(n));
         }
     }
 
@@ -229,14 +213,15 @@ public final class NativeLibraryLocator {
         if (!copy.isReadable()) {
             try {
                 replicate(original, copy, context, capiSlot, capiOrignalName);
-            } catch (IOException | InterruptedException e) {
-                throw new ApiInitException(e);
+            } catch (NativeLibraryToolException e) {
+                throw new ApiInitException(TruffleString.fromJavaStringUncached(e.getMessage(), TS_ENCODING));
             }
         }
         return copy.getPath();
     }
 
-    private static void replicate(TruffleFile original, TruffleFile copy, PythonContext context, int slot, String... dependenciesToUpdate) throws IOException, InterruptedException {
+    private static void replicate(TruffleFile original, TruffleFile copy, PythonContext context, int slot, String... dependenciesToUpdate)
+                    throws NativeLibraryToolException {
         try (var o = SharedObject.open(original, context)) {
             for (var depToUpdate : dependenciesToUpdate) {
                 if (depToUpdate != null) {
@@ -250,7 +235,7 @@ public final class NativeLibraryLocator {
     }
 
     private static void walk(TruffleFile dir, String suffix, String capiOriginalName, PythonContext context, int capiSlot, BiFunction<TruffleFile, String, TruffleFile> f)
-                    throws IOException, InterruptedException {
+                    throws NativeLibraryToolException {
         try (var ds = dir.newDirectoryStream()) {
             for (var e : ds) {
                 if (e.isDirectory()) {
@@ -259,6 +244,8 @@ public final class NativeLibraryLocator {
                     replicate(e, f.apply(e, copyNameOf(e.getName(), capiSlot)), context, capiSlot, capiOriginalName);
                 }
             }
+        } catch (IOException e) {
+            throw new NativeLibraryToolException("Failed to scan native library directory '" + dir + "' for IsolateNativeModules relocation: " + e.getMessage(), e);
         }
     }
 }

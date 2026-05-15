@@ -40,11 +40,15 @@
  */
 package com.oracle.graal.python.test.integration.advanced;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -55,6 +59,8 @@ import org.junit.Test;
  * because we cannot create multiple contexts that would load native extensions.
  */
 public class NativeExtTest {
+    private static final String DELVEWHEEL_VERSION = "1.9.0";
+
     @BeforeClass
     public static void setUpClass() {
         Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
@@ -106,6 +112,52 @@ public class NativeExtTest {
         } finally {
             cextContext.close(true);
             engine.close();
+        }
+    }
+
+    @Test
+    public void testMissingDelvewheelError() throws IOException {
+        Assume.assumeTrue(System.getProperty("os.name").toLowerCase().contains("win"));
+
+        Path tempDir = Files.createTempDirectory("graalpy-no-delvewheel");
+        try (Engine engine = Engine.create("python");
+                        Context context = newContext(engine).option("python.IsolateNativeModules", "true").option("python.Executable", tempDir.resolve("python.exe").toString()).environment("PATH",
+                                        tempDir.toString()).build()) {
+            try {
+                context.eval("python", "import _sqlite3");
+                Assert.fail("importing _sqlite3 with python.IsolateNativeModules=true should fail when delvewheel is not on PATH");
+            } catch (PolyglotException ex) {
+                Assert.assertTrue(ex.getMessage(), ex.isGuestException());
+                Value exception = ex.getGuestObject();
+                Assert.assertTrue(exception.isException());
+                Assert.assertEquals(ex.getMessage(), "SystemError", exception.getMetaObject().getMetaSimpleName());
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("delvewheel==" + DELVEWHEEL_VERSION));
+            }
+        } finally {
+            Files.deleteIfExists(tempDir);
+        }
+    }
+
+    @Test
+    public void testMissingPatchelfError() throws IOException {
+        Assume.assumeTrue(System.getProperty("os.name").toLowerCase().contains("linux"));
+
+        Path tempDir = Files.createTempDirectory("graalpy-no-patchelf");
+        try (Engine engine = Engine.create("python");
+                        Context context = newContext(engine).option("python.IsolateNativeModules", "true").option("python.Executable", tempDir.resolve("python").toString()).environment("PATH",
+                                        tempDir.toString()).build()) {
+            try {
+                context.eval("python", "import _sqlite3");
+                Assert.fail("importing _sqlite3 with python.IsolateNativeModules=true should fail when patchelf is not on PATH");
+            } catch (PolyglotException ex) {
+                Assert.assertTrue(ex.getMessage(), ex.isGuestException());
+                Value exception = ex.getGuestObject();
+                Assert.assertTrue(exception.isException());
+                Assert.assertEquals(ex.getMessage(), "SystemError", exception.getMetaObject().getMetaSimpleName());
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("patchelf`"));
+            }
+        } finally {
+            Files.deleteIfExists(tempDir);
         }
     }
 
