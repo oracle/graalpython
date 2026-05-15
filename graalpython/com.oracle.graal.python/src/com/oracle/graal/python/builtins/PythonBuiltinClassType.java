@@ -1491,7 +1491,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                                     See PEP 695 for more information.
                                     """)),
-    PGeneric(J_GENERIC, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).basetype());
+    PGeneric(J_GENERIC, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_TYPING).basetype().heaptype());
 
     private static TypeBuilder newBuilder() {
         return new TypeBuilder();
