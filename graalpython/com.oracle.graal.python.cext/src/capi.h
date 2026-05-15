@@ -244,9 +244,11 @@ GraalPyPrivate_Log(int level, const char *format, ...)
         char buffer[1024];
         va_list args;
         va_start(args, format);
-        vsprintf(buffer, format, args);
-        GraalPyPrivate_LogString(level, buffer);
+        int written = PyOS_vsnprintf(buffer, sizeof(buffer), format, args);
         va_end(args);
+        if (written >= 0) {
+            GraalPyPrivate_LogString(level, buffer);
+        }
     }
 }
 
