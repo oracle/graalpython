@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -117,10 +117,54 @@ def test_meta_meta_new():
         pass
     notAMeta2 = type("notAMeta2", (notAMeta,), {})
 
-    # the below assertions should pass, but this is such an unusual case that we
-    # ignore this.
-    # assert notAMeta.metatype is NewDescriptor
-    # assert notAMeta2.metatype is NewDescriptor
+    assert notAMeta.metatype is NewDescriptor
+    assert notAMeta2.metatype is NewDescriptor
+
+
+def test_meta_new_default_metatype():
+    class Meta(type):
+        def __new__(*args, **kwargs):
+            cls = type.__new__(*args, **kwargs)
+            cls.metatype = "meta"
+            return cls
+
+    class uses_meta(metaclass=Meta):
+        pass
+
+    uses_meta2 = type("uses_meta2", (uses_meta,), {})
+
+    assert uses_meta.metatype == "meta"
+    assert uses_meta2.metatype == "meta"
+
+
+def test_meta_meta_new_custom_getattribute():
+    meta_new_calls = []
+
+    class MetaMeta(type):
+        def __getattribute__(self, name):
+            if name == "__new__":
+                def new(*args, **kwargs):
+                    cls = type.__new__(*args, **kwargs)
+                    cls.metatype = "getattribute"
+                    return cls
+                return new
+            return super().__getattribute__(name)
+
+    class Meta(type, metaclass=MetaMeta):
+        def __new__(*args, **kwargs):
+            meta_new_calls.append(True)
+            cls = type.__new__(*args, **kwargs)
+            cls.metatype = "meta"
+            return cls
+
+    class uses_getattribute(metaclass=Meta):
+        pass
+
+    uses_getattribute2 = type("uses_getattribute2", (uses_getattribute,), {})
+
+    assert uses_getattribute.metatype == "getattribute"
+    assert uses_getattribute2.metatype == "getattribute"
+    assert meta_new_calls == []
 
 
 def test_subclasses_collection():

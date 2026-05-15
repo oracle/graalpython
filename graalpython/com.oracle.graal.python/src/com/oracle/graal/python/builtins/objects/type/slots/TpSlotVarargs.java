@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSl
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargsFactory.CallSlotTpCallNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargsFactory.CallSlotTpInitNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargsFactory.CallSlotTpNewNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -97,6 +98,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -110,6 +112,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -484,12 +487,25 @@ public final class TpSlotVarargs {
             return CallSlotTpNewNodeGen.getUncached().execute(null, null, slot, self, args, keywords);
         }
 
-        @Specialization
-        static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
+        @Specialization(guards = "hasDefaultMetatype(inliningTarget, self, getClassNode)", limit = "1")
+        static Object callPythonFast(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached GetClassNode getClassNode,
                         @Cached BindNewMethodNode bindNew,
-                        @Cached(inline = false) CallNode callNode) {
+                        @Exclusive @Cached(inline = false) CallNode callNode) {
             Object callable = bindNew.execute(frame, inliningTarget, slot.getCallable(), self);
             return callNode.execute(frame, callable, PythonUtils.prependArgument(self, args), keywords);
+        }
+
+        @Specialization(replaces = "callPythonFast")
+        static Object callPython(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Cached PyObjectGetAttr getNew,
+                        @Exclusive @Cached(inline = false) CallNode callNode) {
+            Object callable = getNew.execute(frame, inliningTarget, self, T___NEW__);
+            return callNode.execute(frame, callable, PythonUtils.prependArgument(self, args), keywords);
+        }
+
+        static boolean hasDefaultMetatype(Node inliningTarget, Object self, GetClassNode getClassNode) {
+            return getClassNode.execute(inliningTarget, self) == PythonBuiltinClassType.PythonClass;
         }
 
         @Specialization
