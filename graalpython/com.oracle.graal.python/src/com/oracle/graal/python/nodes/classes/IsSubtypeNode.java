@@ -209,7 +209,6 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     @Shared @Cached IsSameTypeNode isSameDerivedNode,
                     @Shared @Cached IsSameTypeNode isSameClsNode,
                     @Shared @Cached IsSameTypeNode isSameTypeInLoopNode,
-                    @Shared @Cached GetMroStorageNode getMro,
                     @Cached(value = "getMroUncached(derived)", weak = true) MroSequenceStorage mro,
                     @Cached("isInMro(inliningTarget, cachedCls, mro, mro.getInternalClassArray().length, isSameTypeInLoopNode)") boolean isInMro) {
         return isInMro;
@@ -230,7 +229,6 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     static boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") Object derived, Object cls,
                     @Bind Node inliningTarget,
                     @Cached(value = "derived", weak = true) @SuppressWarnings("unused") Object cachedDerived,
-                    @SuppressWarnings("unused") @Shared @Cached GetMroStorageNode getMro,
                     @Cached(value = "getMroUncached(derived)", weak = true) MroSequenceStorage mro,
                     @Cached("mro.getInternalClassArray().length") int sz,
                     @Shared @Cached IsSameTypeNode isSameTypeInLoopNode,

@@ -51,9 +51,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -62,17 +64,17 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -162,25 +164,22 @@ public final class MethodBuiltins extends PythonBuiltins {
         @Specialization
         static Object doIt(VirtualFrame frame, PMethod self, Object keyObj,
                         @Bind Node inliningTarget,
-                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Cached IsBuiltinObjectProfile errorProfile,
-                        @Cached CastToTruffleStringNode castKeyToStringNode,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO: (GR-53090) this is different to what CPython does and CPython also does not
-            // define tp_descrget for method
-            TruffleString key;
-            try {
-                key = castKeyToStringNode.execute(inliningTarget, keyObj);
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+                        @Cached StringNodes.CastToTruffleStringChecked1Node castToString,
+                        @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
+                        @Cached LookupAttributeInMRONode.Dynamic lookup,
+                        @Cached GetObjectSlotsNode getDescrSlotsNode,
+                        @Cached CallSlotDescrGet callSlotDescrGet,
+                        @Cached PyObjectGetAttr getAttrNode) {
+            TruffleString key = castToString.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
+            Object type = getClassNode.execute(inliningTarget, self);
+            Object descr = lookup.execute(type, key);
+            if (!PGuards.isNoValue(descr)) {
+                TpSlots descrSlots = getDescrSlotsNode.execute(inliningTarget, descr);
+                if (descrSlots.tp_descr_get() != null) {
+                    return callSlotDescrGet.execute(frame, inliningTarget, descrSlots.tp_descr_get(), descr, self, type);
+                }
             }
-
-            try {
-                return objectGetattrNode.execute(frame, self, key);
-            } catch (PException e) {
-                e.expectAttributeError(inliningTarget, errorProfile);
-                return objectGetattrNode.execute(frame, self.getFunction(), key);
-            }
+            return getAttrNode.execute(frame, inliningTarget, self.function, key);
         }
 
         @Specialization(guards = "!isPMethod(self)")
