@@ -53,6 +53,8 @@ public final class PXMLParser extends PythonBuiltinObject {
     public static final int XML_ERROR_FINISHED = 1;
     public static final int XML_ERROR_SYNTAX = 2;
     public static final int XML_ERROR_UNCLOSED_TOKEN = 3;
+    public static final int XML_ERROR_AMPLIFICATION_LIMIT_BREACH = 43;
+    public static final String XML_ERROR_AMPLIFICATION_LIMIT_BREACH_MESSAGE = "limit on input amplification factor (from DTD and entities) breached";
 
     private final TruffleString namespaceSeparator;
 
