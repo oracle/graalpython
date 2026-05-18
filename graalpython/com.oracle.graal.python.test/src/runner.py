@@ -83,6 +83,8 @@ CURRENT_PLATFORM_KEYS = frozenset({CURRENT_PLATFORM})
 
 RUNNER_ENV = {}
 DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '--experimental-options --engine.Compilation=false'}
+# The worker transport sends pickled data, so keep it on loopback only.
+WORKER_SERVER_HOST = '127.0.0.1'
 
 GITHUB_CI = os.environ.get("GITHUB_CI", None)
 if GITHUB_CI:
@@ -791,7 +793,7 @@ class SubprocessWorker:
         self.thread = threading.current_thread()
         with (
             tempfile.TemporaryDirectory(prefix='graalpytest-') as tmp_dir,
-            socket.create_server(('0.0.0.0', 0)) as server,
+            socket.create_server((WORKER_SERVER_HOST, 0)) as server,
         ):
             tmp_dir = Path(tmp_dir)
 
@@ -1327,7 +1329,7 @@ class Connection:
 
 
 def main_worker(args):
-    with socket.create_connection(('localhost', args.port)) as sock:
+    with socket.create_connection((WORKER_SERVER_HOST, args.port)) as sock:
         conn = Connection(sock)
 
         tests = conn.recv()
