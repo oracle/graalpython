@@ -489,7 +489,7 @@ long _PyHASH_INF;
 long _PyHASH_MODULUS;
 long _PyHASH_IMAG;
 
-void
+Py_LOCAL_SYMBOL void
 initialize_hashes()
 {
     _PyHASH_INF = GraalPyPrivate_HashConstant(0);

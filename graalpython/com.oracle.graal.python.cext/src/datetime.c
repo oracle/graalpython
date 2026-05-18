@@ -7263,7 +7263,7 @@ pretty bizarre, and a tzinfo subclass can override fromutc() if it is.
 
 // GraalPy additions
 
-long
+Py_LOCAL_SYMBOL long
 GraalPyPrivate_PyDateTime_GET_LONG_FIELD(PyObject* o, const char* field_name)
 {
     PyObject* attr = PyObject_GetAttrString(o, field_name);

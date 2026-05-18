@@ -42,6 +42,8 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstPyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Double;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
@@ -61,6 +63,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.visitproc;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -171,6 +174,8 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     CAPIINIT(false, Pointer, Pointer, Pointer, Pointer, Pointer, Pointer),
     // PyThreadState **GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate)
     INIT_THREAD_STATE_CURRENT(true, PyThreadStatePtr, PyThreadState),
+    // void GraalPyPrivate_LogImpl(int, const char *, va_list);
+    LOG_IMPL(true, Void, Int, ConstCharPtr, VA_LIST),
     // typedef void *(*GraalPyPrivate_GetFinalizeCApiPointer)(void);
     GETFINALIZECAPIPOINTER(false, Pointer),
     // int PyType_Ready(PyTypeObject *);
@@ -181,6 +186,8 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     PY_UNICODE_GET_LENGTH(false, PrimitiveResult64, PyObject),
     // void GraalPyPrivate_InitNativeDateTime(void);
     INIT_NATIVE_DATETIME(true, Void),
+    // uintptr_t GraalPyPrivate_Long_lv_tag(const PyLongObject *);
+    LONG_LV_TAG(true, UINTPTR_T, ConstPyLongObject),
     // void* PyMem_Calloc(size_t, size_t);
     PYMEM_ALLOC(true, Pointer, SIZE_T, SIZE_T),
     // int GraalPyPrivate_NoOpClear(PyObject *);

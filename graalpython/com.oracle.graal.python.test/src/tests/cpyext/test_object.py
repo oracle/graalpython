@@ -1650,13 +1650,20 @@ class TestObjectFunctions(CPyExtTestCase):
         ),
         code='''
         #ifdef GRAALVM_PYTHON
-            uintptr_t GraalPyPrivate_Long_lv_tag(const PyLongObject *op);
-            #define GET_LV_TAG(val) GraalPyPrivate_Long_lv_tag((PyLongObject*)val)
+            #include <graalpy/testcapi.h>
+            #define GET_LV_TAG(val) GraalPyTestCAPI->LongLvTag((PyLongObject*)val)
         #else
             #define GET_LV_TAG(val) ((PyLongObject*)val)->long_value.lv_tag
         #endif
 
         static Py_ssize_t wrap_lv_tag(PyObject* object, PyObject* unused) {
+        #ifdef GRAALVM_PYTHON
+            if (GraalPyTestCAPI == NULL) {
+                if (GraalPyTestCAPI_Import() < 0) {
+                    return -1;
+                }
+            }
+        #endif
             return GET_LV_TAG(object);
         }
         ''',

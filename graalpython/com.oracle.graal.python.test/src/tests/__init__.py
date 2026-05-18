@@ -237,7 +237,11 @@ def ccompile(self, name, check_duplicate_name=True):
         os.chdir(build_dir)
         try:
             shutil.copy(source_file, '.')
-            module = Extension(filename, sources=[source_file.name])
+            module = Extension(
+                filename,
+                sources=[source_file.name],
+                define_macros=[("GRAALPY_ENABLE_TESTING_CAPI", "1")],
+            )
             args = [
                 '--verbose' if sys.flags.verbose else '--quiet',
                 'build', '--build-temp=t', '--build-base=b', '--build-purelib=l', '--build-platlib=l',

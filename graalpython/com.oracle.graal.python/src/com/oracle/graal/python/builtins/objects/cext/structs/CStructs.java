@@ -98,7 +98,8 @@ public enum CStructs {
     GCState,
     PyGC_Head,
     GraalPyGC_CycleNode,
-    GCGeneration;
+    GCGeneration,
+    GraalPy_Test_CAPI;
 
     @CompilationFinal(dimensions = 1) public static final CStructs[] VALUES = values();
 

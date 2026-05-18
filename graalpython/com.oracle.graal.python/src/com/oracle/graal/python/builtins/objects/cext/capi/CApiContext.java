@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -130,6 +131,7 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.ConcurrentWeakSet;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
@@ -162,6 +164,8 @@ import sun.misc.Unsafe;
 public final class CApiContext extends CExtContext {
     private static final TruffleString T_PY_INIT = tsLiteral("PyInit_");
     private static final TruffleString T_PY_INIT_U = tsLiteral("PyInitU_");
+    private static final TruffleString T_GRAALPY_TEST_CAPI = tsLiteral("_testcapi");
+    private static final TruffleString T_GRAALPY_TEST_CAPI_NAME = tsLiteral("__graalpython__._testcapi");
 
     public static final String LOGGER_CAPI_NAME = "capi";
 
@@ -590,6 +594,27 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    private static void publishGraalPyTestCAPI(PythonContext context) {
+        if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
+            return;
+        }
+        NativePointer testCAPIPointer = context.allocateContextMemory(CStructs.GraalPy_Test_CAPI.size());
+        long testCAPI = testCAPIPointer.asPointer();
+        long[] testCAPIFunctions = {
+                        PythonCextBuiltinRegistry.GraalPyPrivate_ToNative.getNativePointer(),
+                        PythonCextBuiltinRegistry.GraalPyPrivate_DisableReferenceQueuePolling.getNativePointer(),
+                        PythonCextBuiltinRegistry.GraalPyPrivate_EnableReferenceQueuePolling.getNativePointer(),
+                        PythonCextBuiltinRegistry.GraalPyPrivate_TriggerGC.getNativePointer(),
+                        getNativeSymbol(null, NativeCAPISymbol.FUN_LONG_LV_TAG).getAddress(),
+                        getNativeSymbol(null, NativeCAPISymbol.FUN_GRAALPY_PRIVATE_LOG_IMPL).getAddress(),
+        };
+        NativeMemory.writePtrArrayElements(testCAPI, 0, testCAPIFunctions, 0, testCAPIFunctions.length);
+
+        long name = context.stringToNativeUtf8Bytes(T_GRAALPY_TEST_CAPI_NAME, true);
+        PyCapsule capsule = PFactory.createCapsuleNativeName(context.getLanguage(), testCAPI, name);
+        context.lookupBuiltinModule(T___GRAALPYTHON__).setAttribute(T_GRAALPY_TEST_CAPI, capsule);
+    }
+
     public static long getNativeCAPIMetadataPointer(Node caller) {
         return PythonContext.get(caller).getCApiContext().nativeCAPIMetadataPtr;
     }
@@ -991,6 +1016,7 @@ public final class CApiContext extends CExtContext {
             cApiContext.nativeCAPIMetadataPtr = nativeCAPIMetadataPtr;
             cApiContext.initializeNativeCAPISymbols(nativeContext, nativeCAPISymbolTablePtr);
             context.setCApiContext(cApiContext);
+            publishGraalPyTestCAPI(context);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
 
             /*

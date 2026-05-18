@@ -45,6 +45,10 @@
 
 #include "pycore_gc.h" // _PyGC_InitState
 
+#define GRAALPY_ENABLE_TESTING_CAPI
+#include "graalpy/testcapi.h"
+#undef GRAALPY_ENABLE_TESTING_CAPI
+
 typedef struct arrayobject {
     PyObject_VAR_HEAD
     char *ob_item;
@@ -234,8 +238,8 @@ PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 
 
-#define PUBLIC_BUILTIN(NAME, RET, ...) RET (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
-#define PRIVATE_BUILTIN(NAME, RET, ...) RET (*NAME)(__VA_ARGS__);
+#define PUBLIC_BUILTIN(NAME, RET, ...) Py_LOCAL_SYMBOL RET (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
+#define PRIVATE_BUILTIN(NAME, RET, ...) Py_LOCAL_SYMBOL RET (*NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef PUBLIC_BUILTIN
 #undef PRIVATE_BUILTIN
@@ -567,9 +571,9 @@ GraalPy_CAPI_HELPER_SYMBOL int GraalPyPrivate_NoOpTraverse(PyObject *self, visit
 }
 
 // defined in 'exceptions.c'
-void initialize_exceptions();
+Py_LOCAL_SYMBOL void initialize_exceptions();
 // defined in 'pyhash.c'
-void initialize_hashes();
+Py_LOCAL_SYMBOL void initialize_hashes();
 // defined in 'floatobject.c'
 void _PyFloat_InitState(PyInterpreterState* state);
 

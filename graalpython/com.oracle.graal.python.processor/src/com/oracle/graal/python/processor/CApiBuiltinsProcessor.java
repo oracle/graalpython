@@ -628,7 +628,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             CApiBuiltinDesc value = entry;
             if (value.call.equals("Direct") || value.call.equals("NotImplemented")) {
                 lines.add("#undef " + name);
-                String line = "PyAPI_FUNC(" + getCSignature(value.returnType) + ") " + name + "(";
+                String line;
+                if (name.startsWith("GraalPyPrivate_")) {
+                    line = "GraalPy_CAPI_HELPER_SYMBOL " + getCSignature(value.returnType) + " " + name + "(";
+                } else {
+                    line = "PyAPI_FUNC(" + getCSignature(value.returnType) + ") " + name + "(";
+                }
                 for (int i = 0; i < value.arguments.length; i++) {
                     line += (i == 0 ? "" : ", ") + getArgSignatureWithName(value.arguments[i], i);
                 }
@@ -1129,7 +1134,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("");
         for (var builtin : allBuiltins) {
             lines.add("        hasMember = reallyHasMember(capiLibrary, \"" + builtin.name + "\");");
-            if (builtin.call.equals("CImpl") || builtin.call.equals("Direct") || builtin.call.equals("NotImplemented")) {
+            if (builtin.call.equals("CImpl") || builtin.call.equals("NotImplemented") || (builtin.call.equals("Direct") && !builtin.name.startsWith("GraalPyPrivate_"))) {
                 lines.add("        if (!hasMember) messages.add(\"missing implementation: " + builtin.name + "\");");
             }
         }
@@ -1356,8 +1361,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             case "Double" -> "double";
             case "Float" -> "float";
             case "Py_hash_t", "Py_ssize_t", "PrimitiveResult64", "INT64_T", "INT64_T_PTR", "INTPTR_T_PTR", "SIZE_T", "UINTPTR_T", "Long", "UNSIGNED_LONG", "UINT64_T",
-                            "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyObjectPtr", "PyTypeObject", "PyThreadState", "PyThreadStatePtr",
-                            "CharPtrAsTruffleString", "IterResult", "Pointer", "CHAR_PTR", "INT8_T_PTR", "PY_BUFFER_PTR", "PY_CAPSULE_DESTRUCTOR", "PY_SSIZE_T_PTR", "visitproc" ->
+                            "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyObjectPtr", "PyTypeObject", "ConstPyLongObject", "PyThreadState", "PyThreadStatePtr",
+                            "CharPtrAsTruffleString", "IterResult", "Pointer", "CHAR_PTR", "ConstCharPtr", "INT8_T_PTR", "PY_BUFFER_PTR", "PY_CAPSULE_DESTRUCTOR", "PY_SSIZE_T_PTR", "VA_LIST",
+                            "visitproc" ->
                 "long";
             default -> {
                 processingEnv.getMessager().printError(String.format("Unexpected ArgDescriptor: '%s'", argDescriptor));

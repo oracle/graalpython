@@ -96,7 +96,9 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GRAALPY_GC_COLLECT("GraalPyPrivate_GC_Collect", ExternalFunctionSignature.GCCOLLECT),
     FUN_SUBTYPE_TRAVERSE("GraalPyPrivate_SubtypeTraverse", ExternalFunctionSignature.SUBTYPE_TRAVERSE),
     FUN_INIT_THREAD_STATE_CURRENT("GraalPyPrivate_InitThreadStateCurrent", ExternalFunctionSignature.INIT_THREAD_STATE_CURRENT),
+    FUN_GRAALPY_PRIVATE_LOG_IMPL("GraalPyPrivate_LogImpl", ExternalFunctionSignature.LOG_IMPL),
     FUN_GET_FINALIZE_CAPI_POINTER("GraalPyPrivate_GetFinalizeCApiPointer", ExternalFunctionSignature.GETFINALIZECAPIPOINTER),
+    FUN_LONG_LV_TAG("GraalPyPrivate_Long_lv_tag", ExternalFunctionSignature.LONG_LV_TAG),
 
     /* PyDateTime_CAPI */
 

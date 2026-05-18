@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,32 +38,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
 
-#include <pyerrors.h>
+#ifndef GRAALPY_TESTCAPI_H
+#define GRAALPY_TESTCAPI_H
 
-#define EXCEPTION(NAME) PyObject* PyExc_##NAME = NULL;
-PY_EXCEPTIONS
-#undef EXCEPTION
+#ifndef GRAALPY_ENABLE_TESTING_CAPI
+# error "graalpy/testcapi.h is only available if GRAALPY_ENABLE_TESTING_CAPI is defined"
+#endif
 
-Py_LOCAL_SYMBOL void initialize_exceptions() {
-#define EXCEPTION(NAME) PyExc_##NAME = (PyObject*) GraalPyPrivate_Type(#NAME);
-	PY_EXCEPTIONS
-#undef EXCEPTION
+#include <stdarg.h>
+#include <stdint.h>
+#include <Python.h>
+
+#define GraalPy_Test_CAPI_NAME "__graalpython__._testcapi"
+
+typedef struct {
+    int (*ToNative)(void *);
+    int (*DisableReferenceQueuePolling)(void);
+    void (*EnableReferenceQueuePolling)(void);
+    void (*TriggerGC)(size_t);
+    uintptr_t (*LongLvTag)(const PyLongObject *);
+    void (*GraalPyPrivate_LogImpl)(int, const char *, va_list);
+} GraalPy_Test_CAPI;
+
+static GraalPy_Test_CAPI *GraalPyTestCAPI = NULL;
+
+static inline int GraalPyTestCAPI_Import(void) {
+    GraalPyTestCAPI = (GraalPy_Test_CAPI *) PyCapsule_Import(GraalPy_Test_CAPI_NAME, 0);
+    return GraalPyTestCAPI == NULL ? -1 : 0;
 }
 
-GraalPy_CAPI_HELPER_SYMBOL PyObject *
-GraalPyPrivate_Exception_SubtypeNew(PyTypeObject *type, PyObject *args) {
-    PyBaseExceptionObject *self;
-
-    self = (PyBaseExceptionObject *)type->tp_alloc(type, 0);
-    if (!self)
-        return NULL;
-    /* the dict is created on the fly in PyObject_GenericSetAttr */
-    self->dict = NULL;
-    self->traceback = self->cause = self->context = NULL;
-    self->suppress_context = 0;
-    self->args = args;
-    Py_INCREF(args);
-    return (PyObject *)self;
-}
+#endif

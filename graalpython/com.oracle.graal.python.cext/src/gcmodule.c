@@ -2957,7 +2957,7 @@ GraalPyPrivate_GC_Collect(int generation)
     return gc_collect_impl(NULL, generation);
 }
 
-PyAPI_FUNC(void)
+Py_LOCAL_SYMBOL void
 _GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op)
 {
     if (!is_managed(op) && _PyObject_IS_GC(op) && _PyObject_GC_IS_TRACKED(op)) {

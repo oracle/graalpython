@@ -126,7 +126,7 @@ PyAPI_FUNC(char*) _PyLong_FormatBytesWriter(
 #define SIGN_NEGATIVE 2
 #define NON_SIZE_BITS 3
 
-PyAPI_FUNC(uintptr_t) GraalPyPrivate_Long_lv_tag(const PyLongObject *op);
+Py_LOCAL_SYMBOL uintptr_t GraalPyPrivate_Long_lv_tag(const PyLongObject *op);
 /* The functions _PyLong_IsCompact and _PyLong_CompactValue are defined
  * in Include/cpython/longobject.h, since they need to be inline.
  *

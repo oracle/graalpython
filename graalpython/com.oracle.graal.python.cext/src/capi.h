@@ -123,7 +123,7 @@ typedef struct {
     PyGC_Head *reachable;
 } GraalPyGC_Cycle;
 
-PyAPI_FUNC(void) GraalPyPrivate_DebugTrace(void);
+Py_LOCAL_SYMBOL void GraalPyPrivate_DebugTrace(void);
 
 typedef struct {
     PyObject_HEAD
@@ -159,8 +159,8 @@ typedef struct gc_generation GCGeneration;
 #include "capi.gen.h"
 
 
-#define PUBLIC_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
-#define PRIVATE_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*NAME)(__VA_ARGS__);
+#define PUBLIC_BUILTIN(NAME, RET, ...) extern Py_LOCAL_SYMBOL RET (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
+#define PRIVATE_BUILTIN(NAME, RET, ...) extern Py_LOCAL_SYMBOL RET (*NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef PUBLIC_BUILTIN
 #undef PRIVATE_BUILTIN
@@ -205,10 +205,10 @@ static void attach_gdb() {
 }
 #endif
 
-size_t GraalPyPrivate_CaptureStacktrace(void **frames, size_t max_depth, size_t skip);
-void GraalPyPrivate_PrintCapturedStacktrace(FILE *file, const char *header, void *const *frames, size_t depth);
-void GraalPyPrivate_PrintCurrentStacktrace(FILE *file, const char *header, size_t max_depth, size_t skip);
-void GraalPyPrivate_LogCapturedStacktrace(int level, const char *prefix, void *const *frames, size_t depth);
+Py_LOCAL_SYMBOL size_t GraalPyPrivate_CaptureStacktrace(void **frames, size_t max_depth, size_t skip);
+Py_LOCAL_SYMBOL void GraalPyPrivate_PrintCapturedStacktrace(FILE *file, const char *header, void *const *frames, size_t depth);
+Py_LOCAL_SYMBOL void GraalPyPrivate_PrintCurrentStacktrace(FILE *file, const char *header, size_t max_depth, size_t skip);
+Py_LOCAL_SYMBOL void GraalPyPrivate_LogCapturedStacktrace(int level, const char *prefix, void *const *frames, size_t depth);
 
 static void print_c_stacktrace() {
     GraalPyPrivate_PrintCurrentStacktrace(stderr, "Native stacktrace:\n", 16, 0);
