@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,9 +37,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
+import unittest
+
+try:
+    _POSIX_MODULE_BACKEND = __graalpython__.posix_module_backend()
+except Exception:
+    _POSIX_MODULE_BACKEND = "cpython"
+
+_NATIVE_POSIX_LINUX = sys.platform == "linux" and _POSIX_MODULE_BACKEND == "native"
+
 
 def test_import():
-    import sys
     if sys.platform not in ['darwin', 'linux']:
         return
     imported = True
@@ -50,7 +59,7 @@ def test_import():
     assert imported
 
 
-def test_gerusage():
+def test_getrusage():
     from resource import getrusage, RUSAGE_SELF
     try:
         from resource import RUSAGE_THREAD
@@ -66,3 +75,18 @@ def test_gerusage():
         assert ru.ru_utime >= 0
         assert ru.ru_stime >= 0
         assert ru.ru_maxrss > 0
+
+
+@unittest.skipUnless(_NATIVE_POSIX_LINUX, "Requires native POSIX backend on Linux")
+def test_gerusage_cpu_time_progress():
+    import time
+    from resource import getrusage, RUSAGE_SELF
+
+    start = getrusage(RUSAGE_SELF)
+    deadline = time.monotonic() + 0.25
+    value = 0
+    while time.monotonic() < deadline:
+        value = (value * 3 + 1) % 1000003
+    end = getrusage(RUSAGE_SELF)
+    assert value >= 0
+    assert (end.ru_utime + end.ru_stime) - (start.ru_utime + start.ru_stime) > 1e-3
