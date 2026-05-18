@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime.nativeaccess;
 
+import java.util.Objects;
+
 import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -58,7 +60,8 @@ public final class NativeFunctionPointer {
         this.argTypes = argTypes;
     }
 
-    public static NativeFunctionPointer create(@SuppressWarnings("unused") NativeContext context, long pointer, NativeSimpleType resType, NativeSimpleType... argTypes) {
+    public static NativeFunctionPointer create(NativeContext context, long pointer, NativeSimpleType resType, NativeSimpleType... argTypes) {
+        Objects.requireNonNull(context, "context");
         // TODO(native-access) if logging enabled, use context to lookup name
         return new NativeFunctionPointer(pointer, resType, argTypes.clone());
     }

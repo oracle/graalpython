@@ -58,7 +58,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -207,17 +206,16 @@ public final class CApiContext extends CExtContext {
     private PyCapsule pyDateTimeCAPICapsule;
 
     /**
-     * Same as {@link #nativeSymbolCache} if there is only one context per JVM (i.e. just one engine
+     * Same as {@link #nativeCAPISymbols} if there is only one context per JVM (i.e. just one engine
      * in single-context mode). Will be {@code null} in case of multiple contexts.
      */
-    @CompilationFinal(dimensions = 1) private static NativeFunctionPointer[] nativeSymbolCacheSingleContext;
-    private static boolean nativeSymbolCacheSingleContextUsed;
+    @CompilationFinal(dimensions = 1) private static NativeFunctionPointer[] nativeCAPISymbolsSingleContext;
+    private static boolean nativeCAPISymbolsSingleContextUsed;
 
     /**
-     * A private (i.e. per-context) cache of native C API symbols.
+     * A private (i.e. per-context) table of native C API symbols.
      */
-    private final NativeFunctionPointer[] nativeSymbolCache;
-    private long nativeCAPISymbolTablePtr = NULLPTR;
+    @CompilationFinal(dimensions = 1) private final NativeFunctionPointer[] nativeCAPISymbols;
     private long nativeCAPIMetadataPtr = NULLPTR;
 
     public static boolean isSpecialSingleton(Object delegate) {
@@ -332,37 +330,8 @@ public final class CApiContext extends CExtContext {
 
     public CApiContext(PythonContext context, NativeLibrary library, NativeLibraryLocator locator) {
         super(context, library, locator.getCapiLibrary());
-        this.nativeSymbolCache = new NativeFunctionPointer[NativeCAPISymbol.values().length];
+        this.nativeCAPISymbols = new NativeFunctionPointer[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
-
-        /*
-         * Publish the native symbol cache to the static field if following is given: (1) The static
-         * field hasn't been used by another instance yet (i.e. '!used'), and (2) we are in
-         * single-context mode. This initialization ensures that if
-         * 'CApiContext.nativeSymbolCacheSingleContext != null', the context is safe to use it and
-         * just needs to do a null check.
-         */
-        synchronized (CApiContext.class) {
-            if (!CApiContext.nativeSymbolCacheSingleContextUsed && context.getLanguage().isSingleContext()) {
-                assert CApiContext.nativeSymbolCacheSingleContext == null;
-
-                assert !context.getEnv().isPreInitialization();
-
-                // this is the first context accessing the static symbol cache
-                CApiContext.nativeSymbolCacheSingleContext = this.nativeSymbolCache;
-            } else if (CApiContext.nativeSymbolCacheSingleContext != null) {
-                assert CApiContext.nativeSymbolCacheSingleContextUsed;
-                /*
-                 * In this case, this context instance is at least the second one attempting to use
-                 * the static symbol cache. We now clear the static field to indicate that every
-                 * context instance should use its private cache. If a former context already used
-                 * the cache and there is already compiled code, it is not necessary to invalidate
-                 * the code because the cache is still valid.
-                 */
-                CApiContext.nativeSymbolCacheSingleContext = null;
-            }
-            CApiContext.nativeSymbolCacheSingleContextUsed = true;
-        }
 
         // initialize singleton native pointers array
         singletonNativePtrs = new long[CONTEXT_INSENSITIVE_SINGLETONS.length];
@@ -542,21 +511,21 @@ public final class CApiContext extends CExtContext {
     }
 
     /**
-     * Retrieves the C API symbol cache instance in the fastest possible way. If there is just one
-     * instance of {@link CApiContext}, it will load the cache stored from the static field
-     * {@link CApiContext#nativeSymbolCacheSingleContext}. Otherwise, it will load the cache from
-     * the instance field {@link CApiContext#nativeSymbolCache}.
+     * Retrieves the C API symbol table in the fastest possible way. If there is just one instance of
+     * {@link CApiContext}, it will load the table stored from the static field
+     * {@link CApiContext#nativeCAPISymbolsSingleContext}. Otherwise, it will load the table from the
+     * instance field {@link CApiContext#nativeCAPISymbols}.
      *
      * @param caller The requesting node (may be {@code null}). Used for the fast-path lookup of the
      *            {@link CApiContext} instance (if necessary).
-     * @return The C API symbol cache.
+     * @return The C API symbol table.
      */
-    private static NativeFunctionPointer[] getSymbolCache(Node caller) {
-        NativeFunctionPointer[] cache = nativeSymbolCacheSingleContext;
-        if (cache != null) {
-            return cache;
+    private static NativeFunctionPointer[] getNativeCAPISymbols(Node caller) {
+        NativeFunctionPointer[] symbols = nativeCAPISymbolsSingleContext;
+        if (symbols != null) {
+            return symbols;
         }
-        return PythonContext.get(caller).getCApiContext().nativeSymbolCache;
+        return PythonContext.get(caller).getCApiContext().nativeCAPISymbols;
     }
 
     public static boolean isIdenticalToSymbol(Object obj, NativeCAPISymbol symbol) {
@@ -577,50 +546,48 @@ public final class CApiContext extends CExtContext {
     }
 
     public static NativeFunctionPointer getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
-        NativeFunctionPointer[] nativeSymbolCache = getSymbolCache(caller);
-        NativeFunctionPointer result = nativeSymbolCache[symbol.ordinal()];
+        NativeFunctionPointer result = getNativeCAPISymbols(caller)[symbol.ordinal()];
         if (result == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            result = lookupNativeSymbol(nativeSymbolCache, symbol);
+            CompilerDirectives.transferToInterpreter();
+            throw CompilerDirectives.shouldNotReachHere("native C API symbol table entry is not initialized: " + symbol.getName());
         }
-        assert result != null;
         return result;
     }
 
-    /**
-     * Lookup the given C API symbol in the library, store it to the provided cache, and return the
-     * callable symbol.
-     */
-    private static NativeFunctionPointer lookupNativeSymbol(NativeFunctionPointer[] nativeSymbolCache, NativeCAPISymbol symbol) {
-        CompilerAsserts.neverPartOfCompilation();
-        PythonContext pythonContext = PythonContext.get(null);
-        CApiContext cApiContext = pythonContext.getCApiContext();
-        return cApiContext.lookupNativeSymbolFromTable(nativeSymbolCache, symbol);
-    }
-
-    private NativeFunctionPointer lookupNativeSymbolFromTable(NativeFunctionPointer[] nativeSymbolCache, NativeCAPISymbol symbol) {
-        long nativeCAPISymbolTable = nativeCAPISymbolTablePtr;
-        if (nativeCAPISymbolTable == NULLPTR) {
-            throw CompilerDirectives.shouldNotReachHere("native C API symbol table was not initialized: " + symbol.getName());
-        }
-        long nativeSymbolPtr = NativeMemory.readPtrArrayElement(nativeCAPISymbolTable, symbol.ordinal());
-        if (nativeSymbolPtr == NULLPTR) {
-            throw CompilerDirectives.shouldNotReachHere("native C API symbol table entry is not initialized: " + symbol.getName());
-        }
-        NativeFunctionPointer nativeSymbol = symbol.bind(getContext().ensureNativeContext(), nativeSymbolPtr);
-        VarHandle.storeStoreFence();
-        return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
-    }
-
-    private void initializeNativeSymbolCache(long nativeCAPISymbolTablePtr) {
-        NativeFunctionPointer[] nativeSymbolCache = this.nativeSymbolCache;
-        NativeContext nativeContext = getContext().ensureNativeContext();
+    private void initializeNativeCAPISymbols(NativeContext nativeContext, long nativeCAPISymbolTablePtr) {
         for (NativeCAPISymbol symbol : NativeCAPISymbol.getValues()) {
             long nativeSymbolPtr = NativeMemory.readPtrArrayElement(nativeCAPISymbolTablePtr, symbol.ordinal());
             assert nativeSymbolPtr != NULLPTR : symbol;
-            nativeSymbolCache[symbol.ordinal()] = symbol.bind(nativeContext, nativeSymbolPtr);
+            nativeCAPISymbols[symbol.ordinal()] = symbol.bind(nativeContext, nativeSymbolPtr);
         }
-        VarHandle.storeStoreFence();
+        /*
+         * Publish the native C API symbol table to the static field if following is given: (1) The
+         * static field hasn't been used by another instance yet (i.e. '!used'), and (2) we are in
+         * single-context mode. This initialization ensures that if
+         * 'CApiContext.nativeCAPISymbolsSingleContext != null', the context is safe to use it and
+         * just needs to do a null check.
+         */
+        synchronized (CApiContext.class) {
+            if (!CApiContext.nativeCAPISymbolsSingleContextUsed && getContext().getLanguage().isSingleContext()) {
+                assert CApiContext.nativeCAPISymbolsSingleContext == null;
+
+                assert !getContext().getEnv().isPreInitialization();
+
+                // this is the first context accessing the static C API symbol table
+                CApiContext.nativeCAPISymbolsSingleContext = nativeCAPISymbols;
+            } else if (CApiContext.nativeCAPISymbolsSingleContext != null) {
+                assert CApiContext.nativeCAPISymbolsSingleContextUsed;
+                /*
+                 * In this case, this context instance is at least the second one attempting to use
+                 * the static symbol table. We now clear the static field to indicate that every
+                 * context instance should use its private table. If a former context already used
+                 * the table and there is already compiled code, it is not necessary to invalidate
+                 * the code because the table is still valid.
+                 */
+                CApiContext.nativeCAPISymbolsSingleContext = null;
+            }
+            CApiContext.nativeCAPISymbolsSingleContextUsed = true;
+        }
     }
 
     public static long getNativeCAPIMetadataPointer(Node caller) {
@@ -1021,11 +988,10 @@ public final class CApiContext extends CExtContext {
             long nativeCAPISymbolTablePtr = capiLibrary.lookupSymbol("GraalPy_CAPI_HELPERS");
             long nativeCAPIMetadataPtr = capiLibrary.lookupSymbol("GraalPy_CAPI_METADATA");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
-            cApiContext.nativeCAPISymbolTablePtr = nativeCAPISymbolTablePtr;
             cApiContext.nativeCAPIMetadataPtr = nativeCAPIMetadataPtr;
+            cApiContext.initializeNativeCAPISymbols(nativeContext, nativeCAPISymbolTablePtr);
             context.setCApiContext(cApiContext);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
-            cApiContext.initializeNativeSymbolCache(nativeCAPISymbolTablePtr);
 
             /*
              * The GC state needs to be created before the first managed object is sent to native.
@@ -1310,14 +1276,14 @@ public final class CApiContext extends CExtContext {
         pyCFunctionWrappers.clear();
         freeGCState();
         /*
-         * If the static symbol cache is not null, then it is guaranteed that this context instance
+         * If the static symbol table is not null, then it is guaranteed that this context instance
          * was the exclusive user of it. We can now reset the state such that other contexts created
          * after this can use it.
          */
         synchronized (CApiContext.class) {
-            if (nativeSymbolCacheSingleContext != null) {
-                nativeSymbolCacheSingleContext = null;
-                nativeSymbolCacheSingleContextUsed = false;
+            if (nativeCAPISymbolsSingleContext != null) {
+                nativeCAPISymbolsSingleContext = null;
+                nativeCAPISymbolsSingleContextUsed = false;
             }
         }
 
