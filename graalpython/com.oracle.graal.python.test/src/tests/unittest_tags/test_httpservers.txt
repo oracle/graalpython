@@ -54,7 +54,7 @@ test.test_httpservers.CGIHTTPServerTestCase.test_url_collapse_path @ darwin-arm6
 test.test_httpservers.CGIHTTPServerTestCase.test_urlquote_decoding_in_cgi_check @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_httpservers.MiscTestCase.test_all @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httpservers.RequestHandlerLoggingTestCase.test_err @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_httpservers.RequestHandlerLoggingTestCase.test_get @ linux-x86_64-github
+test.test_httpservers.RequestHandlerLoggingTestCase.test_get @ linux-aarch64-github,linux-x86_64-github
 test.test_httpservers.ScriptTestCase.test_server_test_ipv4 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httpservers.ScriptTestCase.test_server_test_ipv6 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httpservers.ScriptTestCase.test_server_test_localhost @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -39,6 +39,6 @@ test.test_fractions.FractionTest.test_format_f_presentation_type @ darwin-arm64,
 test.test_fractions.FractionTest.test_format_g_presentation_type @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fractions.FractionTest.test_format_no_presentation_type @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fractions.FractionTest.test_int_subclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_fractions.FractionTest.test_invalid_formats @ linux-x86_64-github
+test.test_fractions.FractionTest.test_invalid_formats @ linux-aarch64-github,linux-x86_64-github
 test.test_fractions.FractionTest.test_is_integer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_fractions.FractionTest.test_slots @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
