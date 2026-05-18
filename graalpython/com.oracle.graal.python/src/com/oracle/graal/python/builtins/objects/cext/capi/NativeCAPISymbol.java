@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.util.Objects;
+
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -109,11 +111,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     NativeCAPISymbol(String name, ExternalFunctionSignature signature) {
         this.name = name;
         this.tsName = toTruffleStringUncached(name);
-        this.signature = signature;
-    }
-
-    NativeCAPISymbol(String name) {
-        this(name, null);
+        this.signature = Objects.requireNonNull(signature);
     }
 
     @Override
@@ -134,12 +132,11 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     }
 
     public ArgDescriptor getReturnValue() {
-        return signature != null ? signature.getReturnValue() : null;
+        return signature.getReturnValue();
     }
 
     @Override
     public ArgDescriptor[] getArguments() {
-        assert signature != null : "no signature for " + this;
         return signature.getArguments();
     }
 }
