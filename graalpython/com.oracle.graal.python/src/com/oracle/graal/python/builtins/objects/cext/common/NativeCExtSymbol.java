@@ -44,6 +44,7 @@ import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public interface NativeCExtSymbol {
@@ -55,6 +56,7 @@ public interface NativeCExtSymbol {
 
     ArgDescriptor[] getArguments();
 
+    @TruffleBoundary
     default NativeFunctionPointer bind(NativeContext context, long pointer) {
         ArgDescriptor returnValue = getReturnValue();
         if (returnValue == null) {
