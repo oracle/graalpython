@@ -4,6 +4,7 @@ test.test_file.CAutoFileTests.testMethods @ darwin-arm64,linux-aarch64,linux-aar
 test.test_file.CAutoFileTests.testReadWhenWriting @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.CAutoFileTests.testReadinto @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.CAutoFileTests.testReadinto_text @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_file.CAutoFileTests.testWeakRefs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.CAutoFileTests.testWritelinesIntegers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.CAutoFileTests.testWritelinesIntegersUserList @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.CAutoFileTests.testWritelinesNonString @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -19,6 +20,7 @@ test.test_file.PyAutoFileTests.testMethods @ darwin-arm64,linux-aarch64,linux-aa
 test.test_file.PyAutoFileTests.testReadWhenWriting @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.PyAutoFileTests.testReadinto @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.PyAutoFileTests.testReadinto_text @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_file.PyAutoFileTests.testWeakRefs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.PyAutoFileTests.testWritelinesIntegers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.PyAutoFileTests.testWritelinesIntegersUserList @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_file.PyAutoFileTests.testWritelinesNonString @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

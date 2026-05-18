@@ -1,6 +1,6 @@
 test.test_ssl.BasicSocketTests.test_DER_to_PEM @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ssl.BasicSocketTests.test_cert_time_to_seconds @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_ssl.BasicSocketTests.test_cert_time_to_seconds_timezone @ win32-AMD64
+test.test_ssl.BasicSocketTests.test_cert_time_to_seconds_timezone @ darwin-arm64,win32-AMD64
 test.test_ssl.BasicSocketTests.test_connect_ex_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_ssl.BasicSocketTests.test_empty_cert @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ssl.BasicSocketTests.test_get_default_verify_paths @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
