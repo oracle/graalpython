@@ -2974,10 +2974,10 @@ test.datetimetester.ZoneInfoTest[Europe/Busingen]_Pure.test_gaps @ darwin-arm64,
 test.datetimetester.ZoneInfoTest[Europe/Busingen]_Pure.test_system_transitions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[Europe/Chisinau]_Fast.test_folds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[Europe/Chisinau]_Fast.test_gaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.datetimetester.ZoneInfoTest[Europe/Chisinau]_Fast.test_system_transitions @ darwin-arm64,darwin-x86_64,linux-aarch64-github,linux-x86_64-github
+test.datetimetester.ZoneInfoTest[Europe/Chisinau]_Fast.test_system_transitions @ linux-aarch64-github,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[Europe/Chisinau]_Pure.test_folds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[Europe/Chisinau]_Pure.test_gaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.datetimetester.ZoneInfoTest[Europe/Chisinau]_Pure.test_system_transitions @ darwin-arm64,darwin-x86_64,linux-aarch64-github,linux-x86_64-github
+test.datetimetester.ZoneInfoTest[Europe/Chisinau]_Pure.test_system_transitions @ linux-aarch64-github,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[Europe/Copenhagen]_Fast.test_folds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[Europe/Copenhagen]_Fast.test_gaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[Europe/Copenhagen]_Fast.test_system_transitions @ darwin-arm64,linux-aarch64,linux-x86_64
