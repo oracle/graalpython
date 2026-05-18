@@ -527,11 +527,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        public TruffleString getTsName() {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        @Override
         public ArgDescriptor getReturnValue() {
             return signature.returnValue;
         }

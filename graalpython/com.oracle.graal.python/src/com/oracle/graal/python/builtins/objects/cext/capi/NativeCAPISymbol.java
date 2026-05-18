@@ -121,7 +121,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
         return name;
     }
 
-    @Override
     public TruffleString getTsName() {
         return tsName;
     }

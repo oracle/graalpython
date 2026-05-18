@@ -106,11 +106,6 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
     }
 
     @Override
-    public TruffleString getTsName() {
-        throw CompilerDirectives.shouldNotReachHere();
-    }
-
-    @Override
     public ArgDescriptor getReturnValue() {
         return returnValue;
     }

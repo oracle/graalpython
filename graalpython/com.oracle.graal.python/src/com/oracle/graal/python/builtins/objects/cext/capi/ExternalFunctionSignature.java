@@ -269,7 +269,6 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
         return name();
     }
 
-    @Override
     public TruffleString getTsName() {
         return toTruffleStringUncached(name());
     }

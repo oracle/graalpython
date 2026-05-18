@@ -45,12 +45,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public interface NativeCExtSymbol {
     String getName();
-
-    TruffleString getTsName();
 
     ArgDescriptor getReturnValue();
 
