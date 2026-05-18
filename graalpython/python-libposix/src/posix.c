@@ -204,9 +204,13 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
     int32_t* writefds, int32_t writefdsLen, int32_t* errfds, int32_t errfdsLen,
     int64_t timeoutSec, int64_t timeoutUsec, int8_t* selected) {
     fd_set readfdsSet, writefdsSet, errfdsSet;
+    int32_t selectedLen = readfdsLen + writefdsLen + errfdsLen;
     fill_fd_set(&readfdsSet, readfds, readfdsLen);
     fill_fd_set(&writefdsSet, writefds, writefdsLen);
     fill_fd_set(&errfdsSet, errfds, errfdsLen);
+    if (selectedLen > 0) {
+        memset(selected, 0, selectedLen * sizeof(*selected));
+    }
 
     struct timeval timeout = {timeoutSec, timeoutUsec};
 
