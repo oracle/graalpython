@@ -90,6 +90,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -107,6 +108,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
@@ -2602,7 +2604,7 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private static PosixException outOfMemoryPosixError() throws PosixException {
-        throw new PosixException(OSErrorEnum.ENOMEM.getNumber(), OSErrorEnum.ENOMEM.getMessage());
+        throw new PosixErrnoException(OSErrorEnum.ENOMEM.getNumber(), OSErrorEnum.ENOMEM.getMessage());
     }
 
     private int sysConfPwdSizeMax = -1;
@@ -2723,7 +2725,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @TruffleBoundary
     private PosixException newPosixException(InvokeNativeFunction invokeNode, int errno) throws PosixException {
-        throw new PosixException(errno, strerror(errno, invokeNode, TruffleString.FromByteArrayNode.getUncached(), TruffleString.SwitchEncodingNode.getUncached()));
+        throw new PosixErrnoException(errno, strerror(errno, invokeNode, TruffleString.FromByteArrayNode.getUncached(), TruffleString.SwitchEncodingNode.getUncached()));
     }
 
     private Object wrap(long[] value) {

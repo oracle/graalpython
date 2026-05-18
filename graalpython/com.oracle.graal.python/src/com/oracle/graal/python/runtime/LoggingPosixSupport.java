@@ -55,6 +55,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -681,9 +683,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
         logEnter("faccessAt", "%d, %s, 0%o, %b, %b", dirFd, path, mode, effectiveIds, followSymlinks);
-        return logExit("faccessAt", "%b", lib.faccessat(delegate, dirFd, path, mode, effectiveIds, followSymlinks));
+        try {
+            return logExit("faccessAt", "%b", lib.faccessat(delegate, dirFd, path, mode, effectiveIds, followSymlinks));
+        } catch (UnsupportedPosixFeatureException e) {
+            throw logException("faccessAt", e);
+        }
     }
 
     @ExportMessage
@@ -927,9 +933,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final long geteuid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
         logEnter("geteuid", "");
-        return logExit("geteuid", "%d", lib.geteuid(delegate));
+        try {
+            return logExit("geteuid", "%d", lib.geteuid(delegate));
+        } catch (UnsupportedPosixFeatureException e) {
+            throw logException("geteuid", e);
+        }
     }
 
     @ExportMessage
@@ -941,16 +951,24 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final long getegid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
         logEnter("getegid", "");
-        return logExit("getegid", "%d", lib.getegid(delegate));
+        try {
+            return logExit("getegid", "%d", lib.getegid(delegate));
+        } catch (UnsupportedPosixFeatureException e) {
+            throw logException("getegid", e);
+        }
     }
 
     @ExportMessage
     final long getppid(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
         logEnter("getppid", "");
-        return logExit("getppid", "%d", lib.getppid(delegate));
+        try {
+            return logExit("getppid", "%d", lib.getppid(delegate));
+        } catch (UnsupportedPosixFeatureException e) {
+            throw logException("getppid", e);
+        }
     }
 
     @ExportMessage
@@ -977,9 +995,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final long getpgrp(
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
         logEnter("getpgrp", "");
-        return logExit("getpgrp", "%d", lib.getpgrp(delegate));
+        try {
+            return logExit("getpgrp", "%d", lib.getpgrp(delegate));
+        } catch (UnsupportedPosixFeatureException e) {
+            throw logException("getpgrp", e);
+        }
     }
 
     @ExportMessage
@@ -1117,9 +1139,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     public long mmapGetPointer(Object mmap,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
         logEnter("mmapGetPointer", "%s", mmap);
-        return lib.mmapGetPointer(delegate, mmap);
+        try {
+            return lib.mmapGetPointer(delegate, mmap);
+        } catch (UnsupportedPosixFeatureException e) {
+            throw logException("mmapGetPointer", e);
+        }
     }
 
     @ExportMessage
@@ -1427,10 +1453,12 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final Object[] getnameinfo(UniversalSockAddr addr, int flags,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws GetAddrInfoException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         logEnter("getnameinfo", "%s, %d", addr, flags);
         try {
             return logExit("getnameinfo", "%s", lib.getnameinfo(delegate, addr, flags));
+        } catch (UnsupportedPosixFeatureException e) {
+            throw logException("getnameinfo", e);
         } catch (GetAddrInfoException e) {
             throw logException("getnameinfo", e);
         }
@@ -1438,10 +1466,12 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws GetAddrInfoException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         logEnter("getaddrinfo", "%s, %s, %d, %d, %d, %d", node, service, family, sockType, protocol, flags);
         try {
             return logExit("getaddrinfo", "%s", lib.getaddrinfo(delegate, node, service, family, sockType, protocol, flags));
+        } catch (UnsupportedPosixFeatureException e) {
+            throw logException("getaddrinfo", e);
         } catch (GetAddrInfoException e) {
             throw logException("getaddrinfo", e);
         }
@@ -1562,10 +1592,12 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws InvalidUnixSocketPathException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException, InvalidUnixSocketPathException {
         logEnter("createUniversalSockAddrUnix", "%s", src);
         try {
             return logExit("createUniversalSockAddrUnix", "%s", lib.createUniversalSockAddrUnix(delegate, src));
+        } catch (UnsupportedPosixFeatureException e) {
+            throw logException("createUniversalSockAddrUnix", e);
         } catch (InvalidUnixSocketPathException e) {
             throw logException("createUniversalSockAddrUnix", e);
         }
@@ -1626,9 +1658,21 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @TruffleBoundary
+    private static UnsupportedPosixFeatureException logException(Level level, String msg, UnsupportedPosixFeatureException e) throws UnsupportedPosixFeatureException {
+        if (LOGGER.isLoggable(level)) {
+            LOGGER.log(level, msg + String.format(" -> throw unsupported, msg=%s", fixLogArg(e.getMessage())));
+        }
+        throw e;
+    }
+
+    @TruffleBoundary
     private static PosixException logException(Level level, String msg, PosixException e) throws PosixException {
         if (LOGGER.isLoggable(level)) {
-            LOGGER.log(level, msg + String.format(" -> throw errno=%d, msg=%s", fixLogArgs(e.getErrorCode(), e.getMessage())));
+            if (e instanceof PosixErrnoException errnoException) {
+                LOGGER.log(level, msg + String.format(" -> throw errno=%d, msg=%s", fixLogArgs(errnoException.getErrorCode(), errnoException.getMessage())));
+            } else {
+                LOGGER.log(level, msg + String.format(" -> throw unsupported, msg=%s", fixLogArg(e.getMessage())));
+            }
         }
         throw e;
     }
@@ -1658,6 +1702,10 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     private static PosixException logException(String msg, PosixException e) throws PosixException {
+        throw logException(DEFAULT_LEVEL, msg, e);
+    }
+
+    private static UnsupportedPosixFeatureException logException(String msg, UnsupportedPosixFeatureException e) throws UnsupportedPosixFeatureException {
         throw logException(DEFAULT_LEVEL, msg, e);
     }
 

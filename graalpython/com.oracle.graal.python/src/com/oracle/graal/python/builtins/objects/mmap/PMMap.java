@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.mmap;
 
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -62,7 +61,6 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
@@ -141,13 +139,11 @@ public final class PMMap extends PythonObject {
     byte readByte(int byteOffset,
                     @Bind Node inliningTarget,
                     @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                    @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                    @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode) {
         try {
             return posixLib.mmapReadByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset);
         } catch (PosixException e) {
-            // TODO(fa) how to handle?
-            throw raiseNode.get(inliningTarget).raiseOSError(null, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING));
+            throw raiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
         }
     }
 
@@ -155,13 +151,11 @@ public final class PMMap extends PythonObject {
     void writeByte(int byteOffset, byte value,
                     @Bind Node inliningTarget,
                     @Shared @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
-                    @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode,
-                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+                    @Shared("raiseNode") @Cached PConstructAndRaiseNode.Lazy raiseNode) {
         try {
             posixLib.mmapWriteByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset, value);
         } catch (PosixException e) {
-            // TODO(fa) how to handle?
-            throw raiseNode.get(inliningTarget).raiseOSError(null, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING));
+            throw raiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
         }
     }
 

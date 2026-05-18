@@ -62,6 +62,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -548,7 +549,7 @@ public class PreInitPosixSupport extends PosixSupport {
 
     @ExportMessage
     final boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
         return nativeLib.faccessat(nativePosixSupport, dirFd, path, mode, effectiveIds, followSymlinks);
     }
@@ -707,7 +708,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final long geteuid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    final long geteuid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
         return nativeLib.geteuid(nativePosixSupport);
     }
@@ -719,13 +720,13 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final long getegid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    final long getegid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
         return nativeLib.getegid(nativePosixSupport);
     }
 
     @ExportMessage
-    final long getppid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    final long getppid(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
         return nativeLib.getppid(nativePosixSupport);
     }
@@ -745,7 +746,7 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final long getpgrp(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    final long getpgrp(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
         return nativeLib.getpgrp(nativePosixSupport);
     }
@@ -879,7 +880,7 @@ public class PreInitPosixSupport extends PosixSupport {
     @ExportMessage
     @SuppressWarnings("static-method")
     final long mmapGetPointer(Object mmap,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
         return nativeLib.mmapGetPointer(nativePosixSupport, mmap);
     }
@@ -1064,14 +1065,14 @@ public class PreInitPosixSupport extends PosixSupport {
 
     @ExportMessage
     final Object[] getnameinfo(UniversalSockAddr addr, int flags,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws GetAddrInfoException {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         checkNotInPreInitialization();
         return nativeLib.getnameinfo(nativePosixSupport, addr, flags);
     }
 
     @ExportMessage
     final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws GetAddrInfoException {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         checkNotInPreInitialization();
         return nativeLib.getaddrinfo(nativePosixSupport, node, service, family, sockType, protocol, flags);
     }
@@ -1155,7 +1156,7 @@ public class PreInitPosixSupport extends PosixSupport {
 
     @ExportMessage
     final UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws InvalidUnixSocketPathException {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException, InvalidUnixSocketPathException {
         checkNotInPreInitialization();
         return nativeLib.createUniversalSockAddrUnix(nativePosixSupport, src);
     }

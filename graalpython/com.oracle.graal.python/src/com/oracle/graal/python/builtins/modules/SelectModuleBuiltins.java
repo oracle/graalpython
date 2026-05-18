@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -155,13 +155,13 @@ public final class SelectModuleBuiltins extends PythonBuiltins {
                 } finally {
                     gil.acquire();
                 }
-            } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } catch (ChannelNotSelectableException e) {
                 // GraalPython hack: if one of the channels is not selectable (can happen only in
                 // the emulated mode), we just return everything.
                 notSelectableBranch.enter(inliningTarget);
                 return PFactory.createTuple(language, new Object[]{rlist, wlist, xlist});
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PFactory.createTuple(language, new PList[]{
                             toList(result.getReadFds(), readFDs, language),
