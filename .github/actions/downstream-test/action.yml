@@ -62,7 +62,7 @@ runs:
       if: ${{ inputs.platform == 'macos' }}
       shell: bash
       run: |
-        tarball="$(curl -sH "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/graalvm/graalvm-ce-dev-builds/releases/latest" | jq -r --arg artifact "graalpy-community-dev-${{ inputs.platform }}-${{ inputs.arch }}.tar.gz" '.assets[] | select(.name == $artifact) | .browser_download_url')"
+        tarball="$(curl -sH "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/graalvm/graalvm-ce-dev-builds/releases/latest" | jq -r --arg platform "${{ inputs.platform }}" --arg arch "${{ inputs.arch }}" 'first(.assets[] | select(.name | test("^graalpy[0-9.]+-community-dev-\($platform)-\($arch)\\.(tar\\.gz|zip)$")) | .browser_download_url)')"
         curl -sfL "$tarball" | tar xz
 
     - name: Get GraalPy build artifact
