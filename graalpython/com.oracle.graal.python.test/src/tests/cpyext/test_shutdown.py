@@ -79,7 +79,7 @@ def test_sigterm():
 
 @skip_if_sandboxed("Needs native extension support in sandboxed runs")
 @skipIf(not GRAALPY, "GraalPy-only native weakref shutdown test")
-def test_native_weakref_shutdown_with_c_retained_object():
+def test_native_weakref_shutdown_skips_c_retained_object():
     module = compile_module_from_string(textwrap.dedent("""
         #include "Python.h"
         #include "structmember.h"
@@ -90,14 +90,16 @@ def test_native_weakref_shutdown_with_c_retained_object():
         typedef struct {
             PyObject_HEAD
             PyObject *weakreflist;
+            int id;
         } NativeWeakRefObject;
 
         static PyObject *kept_alive;
+        static PyTypeObject NativeWeakRefType;
 
         static void write_marker(const char *contents) {
             const char *marker_path = getenv("GR50212_DEALLOC_MARKER");
             if (marker_path != NULL) {
-                FILE *marker = fopen(marker_path, "w");
+                FILE *marker = fopen(marker_path, "a");
                 if (marker != NULL) {
                     fputs(contents, marker);
                     fclose(marker);
@@ -105,8 +107,17 @@ def test_native_weakref_shutdown_with_c_retained_object():
             }
         }
 
+        static PyObject *new_native_weakref(int id) {
+            NativeWeakRefObject *obj = (NativeWeakRefObject *)PyObject_CallNoArgs((PyObject *)&NativeWeakRefType);
+            if (obj == NULL) {
+                return NULL;
+            }
+            obj->id = id;
+            return (PyObject *)obj;
+        }
+
         static void NativeWeakRef_dealloc(NativeWeakRefObject *self) {
-            write_marker("deallocated\\n");
+            write_marker(self->id == 1 ? "deallocated:held\\n" : "deallocated:free\\n");
             if (self->weakreflist != NULL) {
                 PyObject_ClearWeakRefs((PyObject *)self);
             }
@@ -125,16 +136,26 @@ def test_native_weakref_shutdown_with_c_retained_object():
 
         static PyObject *hold(PyObject *self, PyObject *Py_UNUSED(ignored)) {
             Py_CLEAR(kept_alive);
-            kept_alive = PyObject_CallNoArgs((PyObject *)&NativeWeakRefType);
+            kept_alive = new_native_weakref(1);
             if (kept_alive == NULL) {
                 return NULL;
             }
-            write_marker("held\\n");
+            write_marker("created:held\\n");
             return Py_NewRef(kept_alive);
+        }
+
+        static PyObject *make(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+            PyObject *obj = new_native_weakref(2);
+            if (obj == NULL) {
+                return NULL;
+            }
+            write_marker("created:free\\n");
+            return obj;
         }
 
         static PyMethodDef methods[] = {
             {"hold", hold, METH_NOARGS, ""},
+            {"make", make, METH_NOARGS, ""},
             {NULL, NULL, 0, NULL},
         };
 
@@ -173,13 +194,20 @@ def test_native_weakref_shutdown_with_c_retained_object():
     if not __graalpython__.is_native:
         args += [f'--vm.Dpython.EnableBytecodeDSLInterpreter={str(__graalpython__.is_bytecode_dsl_interpreter).lower()}']
     code = textwrap.dedent("""
+        import gc
         import weakref
         import native_weakref_shutdown_reproducer_gr50212
 
-        obj = native_weakref_shutdown_reproducer_gr50212.hold()
-        wr = weakref.ref(obj)
+        held = native_weakref_shutdown_reproducer_gr50212.hold()
+        free = native_weakref_shutdown_reproducer_gr50212.make()
+        held_wr = weakref.ref(held)
+        free_wr = weakref.ref(free)
         type_wr = weakref.ref(native_weakref_shutdown_reproducer_gr50212.NativeWeakRef)
-        print(type(obj).__name__, flush=True)
+        print(type(held).__name__, type(free).__name__, flush=True)
+        del free
+        for _ in range(3):
+            gc.collect()
+        print(held_wr() is not None, free_wr() is None, flush=True)
     """)
     env = dict(ENV)
     env["PYTHONPATH"] = os.pathsep.join([module_dir, env["PYTHONPATH"]])
@@ -187,5 +215,5 @@ def test_native_weakref_shutdown_with_c_retained_object():
         marker = Path(tmpdir) / "deallocated"
         env["GR50212_DEALLOC_MARKER"] = str(marker)
         proc = subprocess.run([*args, '-c', code], env=env, capture_output=True, text=True, check=True)
-        assert proc.stdout.strip() == "NativeWeakRef"
-        assert marker.read_text() == "deallocated\n"
+        assert proc.stdout.splitlines() == ["NativeWeakRef NativeWeakRef", "True True"]
+        assert marker.read_text().splitlines() == ["created:held", "created:free", "deallocated:free"]

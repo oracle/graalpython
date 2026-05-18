@@ -1025,11 +1025,11 @@ public abstract class CApiTransitions {
                 Object object = ref != null ? ref.get() : null;
                 long refCount = ref != null ? readNativeRefCount(ptr) : 0;
                 /*
-                 * Only native weakrefs with extra C references need shutdown deallocation here.
-                 * Objects with just MANAGED_REFCNT are still owned by the managed wrapper.
+                 * Only deallocate weakref referents whose managed wrapper has already been
+                 * collected and that have no additional native owners. Forcing deallocation while
+                 * native owners remain can leave dangling references for later shutdown DECREFs.
                  */
-                if (refCount > MANAGED_REFCNT && refCount != IMMORTAL_REFCNT &&
-                                (object == null || !TypeNodes.IsTypeNode.executeUncached(object))) {
+                if (object == null && refCount == MANAGED_REFCNT) {
                     nativeLookupRemove(context, ptr);
                     ptrArray[++idx] = ptr;
                 }
