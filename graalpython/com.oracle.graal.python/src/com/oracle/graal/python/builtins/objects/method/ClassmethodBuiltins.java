@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,18 +54,29 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -106,6 +117,55 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
             self.setCallable(callable);
             DecoratedMethodBuiltins.wraps(frame, self, callable, inliningTarget, lookup, setAttr);
             return PNone.NONE;
+        }
+    }
+
+    @Slot(value = SlotKind.tp_descr_get, isComplex = true)
+    @ReportPolymorphism
+    @GenerateUncached
+    @GenerateNodeFactory
+    abstract static class GetNode extends DescrGetBuiltinNode {
+        // If self.getCallable() is null, let the next @Specialization handle that
+        @Specialization(guards = {"isSingleContext()", "isNoValue(type) == typeIsNoValue", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
+        static Object getCached(VirtualFrame frame, @SuppressWarnings("unused") PDecoratedMethod self, Object obj, Object type,
+                        @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
+                        @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
+                        @Cached("isNoValue(type)") boolean typeIsNoValue,
+                        @Exclusive @Cached GetClassNode getClass,
+                        @Exclusive @Cached GetObjectSlotsNode getCallableSlots,
+                        @Exclusive @Cached CallSlotDescrGet callGet,
+                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod) {
+            Object actualType = typeIsNoValue ? getClass.execute(inliningTarget, obj) : type;
+            return doGet(frame, inliningTarget, actualType, cachedCallable, getCallableSlots, callGet, makeMethod);
+        }
+
+        @InliningCutoff
+        @Specialization(replaces = "getCached")
+        static Object get(VirtualFrame frame, PDecoratedMethod self, Object obj, Object type,
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached GetClassNode getClass,
+                        @Exclusive @Cached GetObjectSlotsNode getCallableSlots,
+                        @Exclusive @Cached CallSlotDescrGet callGet,
+                        @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            Object actualType = PGuards.isNoValue(type) ? getClass.execute(inliningTarget, obj) : type;
+            return doGet(frame, inliningTarget, actualType, ClassmethodCommonBuiltins.getCallable(inliningTarget, self, raiseNode),
+                            getCallableSlots, callGet, makeMethod);
+        }
+
+        private static Object doGet(VirtualFrame frame, Node inliningTarget, Object type, Object callable,
+                        GetObjectSlotsNode getCallableSlots, CallSlotDescrGet callGet, ClassmethodCommonBuiltins.MakeMethodNode makeMethod) {
+            TpSlot get = getCallableSlots.execute(inliningTarget, callable).tp_descr_get();
+            if (get != null) {
+                return callGet(frame, inliningTarget, type, callable, callGet, get);
+            }
+            return makeMethod.execute(inliningTarget, type, callable);
+        }
+
+        @InliningCutoff
+        private static Object callGet(VirtualFrame frame, Node inliningTarget, Object type, Object callable, CallSlotDescrGet callGet, TpSlot get) {
+            return callGet.execute(frame, inliningTarget, get, callable, type, type);
         }
     }
 

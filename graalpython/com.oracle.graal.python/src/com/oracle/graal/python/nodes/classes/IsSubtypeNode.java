@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -165,6 +165,10 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         return a - b;
     }
 
+    protected static MroSequenceStorage getMroUncached(Object cls) {
+        return GetMroStorageNode.executeUncached(cls);
+    }
+
     @Specialization(guards = {
                     "cachedCls != null",
                     "getType(inliningTarget, cls, builtinTypeProfile, builtinClassProfile) == cachedCls",
@@ -200,13 +204,12 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @SuppressWarnings("unused")
     static boolean isSubtypeOfCached(Object derived, Object cls,
                     @Bind Node inliningTarget,
-                    @Cached("derived") Object cachedDerived,
-                    @Cached("cls") Object cachedCls,
+                    @Cached(value = "derived", weak = true) Object cachedDerived,
+                    @Cached(value = "cls", weak = true) Object cachedCls,
                     @Shared @Cached IsSameTypeNode isSameDerivedNode,
                     @Shared @Cached IsSameTypeNode isSameClsNode,
                     @Shared @Cached IsSameTypeNode isSameTypeInLoopNode,
-                    @Shared @Cached GetMroStorageNode getMro,
-                    @Cached("getMro.execute(inliningTarget, cachedDerived)") MroSequenceStorage mro,
+                    @Cached(value = "getMroUncached(derived)", weak = true) MroSequenceStorage mro,
                     @Cached("isInMro(inliningTarget, cachedCls, mro, mro.getInternalClassArray().length, isSameTypeInLoopNode)") boolean isInMro) {
         return isInMro;
     }
@@ -225,9 +228,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @InliningCutoff
     static boolean isSubtypeOfVariableTypeCached(@SuppressWarnings("unused") Object derived, Object cls,
                     @Bind Node inliningTarget,
-                    @Cached("derived") @SuppressWarnings("unused") Object cachedDerived,
-                    @SuppressWarnings("unused") @Shared @Cached GetMroStorageNode getMro,
-                    @Cached("getMro.execute(inliningTarget, cachedDerived)") MroSequenceStorage mro,
+                    @Cached(value = "derived", weak = true) @SuppressWarnings("unused") Object cachedDerived,
+                    @Cached(value = "getMroUncached(derived)", weak = true) MroSequenceStorage mro,
                     @Cached("mro.getInternalClassArray().length") int sz,
                     @Shared @Cached IsSameTypeNode isSameTypeInLoopNode,
                     @Shared @Cached @SuppressWarnings("unused") IsSameTypeNode isSameDerivedNode) {
@@ -252,9 +254,9 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     @InliningCutoff
     static boolean isVariableSubtypeOfConstantTypeCached(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
                     @Bind Node inliningTarget,
-                    @Cached("cls") @SuppressWarnings("unused") Object cachedCls,
+                    @Cached(value = "cls", weak = true) @SuppressWarnings("unused") Object cachedCls,
                     @SuppressWarnings("unused") @Shared @Cached GetMroStorageNode getMro,
-                    @SuppressWarnings("unused") @Cached("getMro.execute(inliningTarget, cachedCls)") MroSequenceStorage baseMro,
+                    @SuppressWarnings("unused") @Cached(value = "getMroUncached(cls)", weak = true) MroSequenceStorage baseMro,
                     @Shared @Cached IsSameTypeNode isSameTypeInLoopNode,
                     @Bind("getMro.execute(inliningTarget, derived).getInternalClassArray()") PythonAbstractClass[] mroAry,
                     @SuppressWarnings("unused") @Cached("mroAry.length") int derivedMroLen,

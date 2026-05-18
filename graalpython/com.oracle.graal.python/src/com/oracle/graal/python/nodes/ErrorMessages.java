@@ -260,6 +260,9 @@ public abstract class ErrorMessages {
     public static final TruffleString DESC_FOR_INDEX_S_FOR_S_DOESNT_APPLY_TO_P = tsLiteral("descriptor for index '%d' for %s doesn't apply to '%p' object");
     public static final TruffleString DESC_S_FOR_N_DOESNT_APPLY_TO_N = tsLiteral("descriptor '%s' for '%N' objects doesn't apply to '%N' object");
     public static final TruffleString GET_NONE_NONE_IS_INVALID = tsLiteral("__get__(None, None) is invalid");
+    public static final TruffleString DESCRIPTOR_S_FOR_TYPE_S_NEEDS_EITHER_OBJ_OR_TYPE = tsLiteral("descriptor '%s' for type '%s' needs either an object or a type");
+    public static final TruffleString DESCRIPTOR_S_FOR_TYPE_S_NEEDS_TYPE_NOT_P_AS_ARG_2 = tsLiteral("descriptor '%s' for type '%s' needs a type, not a '%p' as arg 2");
+    public static final TruffleString DESCRIPTOR_S_REQUIRES_SUBTYPE_OF_S_BUT_RECEIVED_S = tsLiteral("descriptor '%s' requires a subtype of '%s' but received '%s'");
     public static final TruffleString DESCRIPTOR_S_REQUIRES_S_OBJ_RECEIVED_P = tsLiteral("descriptor '%s' requires a '%s' object but received a '%p'");
     public static final TruffleString DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P = tsLiteral("descriptor requires a '%s' object but received a '%p'");
     public static final TruffleString DESCRIPTOR_NEED_OBJ = tsLiteral("descriptor '%s' of '%s' object needs an argument");

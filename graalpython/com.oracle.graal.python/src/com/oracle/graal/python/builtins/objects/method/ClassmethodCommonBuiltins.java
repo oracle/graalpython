@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,18 +53,14 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -86,66 +82,12 @@ public final class ClassmethodCommonBuiltins extends PythonBuiltins {
         return ClassmethodCommonBuiltinsFactory.getFactories();
     }
 
-    @Slot(SlotKind.tp_descr_get)
-    @ReportPolymorphism
-    @GenerateUncached
-    @GenerateNodeFactory
-    abstract static class GetNode extends DescrGetBuiltinNode {
-        /*-
-        TODO: (GR-53082) this is not handling following code-path added to CPython at some later point:
-        if (Py_TYPE(cm->cm_callable)->tp_descr_get != NULL) {
-            return Py_TYPE(cm->cm_callable)->tp_descr_get(cm->cm_callable, type, type);
+    static Object getCallable(Node inliningTarget, PDecoratedMethod self, PRaiseNode raiseNode) {
+        Object callable = self.getCallable();
+        if (callable == null) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
         }
-        
-        Additionally, in CPython tp_descrget is not shared between classmethod_descriptor and classmethod,
-        we should investigate if we can really share the implementation
-        */
-
-        // If self.getCallable() is null, let the next @Specialization handle that
-        @Specialization(guards = {"isSingleContext()", "isNoValue(type)", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
-        static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
-                        @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
-                        @Shared @Cached GetClassNode getClass,
-                        @Shared @Cached MakeMethodNode makeMethod) {
-            return makeMethod.execute(inliningTarget, getClass.execute(inliningTarget, obj), cachedCallable);
-        }
-
-        @Specialization(guards = "isNoValue(type)", replaces = "getCached")
-        static Object get(PDecoratedMethod self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetClassNode getClass,
-                        @Shared @Cached MakeMethodNode makeMethod,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            return doGet(inliningTarget, self, getClass.execute(inliningTarget, obj), makeMethod, raiseNode);
-        }
-
-        // If self.getCallable() is null, let the next @Specialization handle that
-        @Specialization(guards = {"isSingleContext()", "!isNoValue(type)", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
-        static Object getTypeCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
-                        @SuppressWarnings("unused") @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
-                        @Shared @Cached MakeMethodNode makeMethod) {
-            return makeMethod.execute(inliningTarget, type, cachedCallable);
-        }
-
-        @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")
-        static Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached MakeMethodNode makeMethod,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            return doGet(inliningTarget, self, type, makeMethod, raiseNode);
-        }
-
-        private static Object doGet(Node inliningTarget, PDecoratedMethod self, Object type, MakeMethodNode makeMethod, PRaiseNode raiseNode) {
-            Object callable = self.getCallable();
-            if (callable == null) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.UNINITIALIZED_S_OBJECT);
-            }
-            return makeMethod.execute(inliningTarget, type, callable);
-        }
+        return callable;
     }
 
     @GenerateInline
