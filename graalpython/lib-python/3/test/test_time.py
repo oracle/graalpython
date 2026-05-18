@@ -742,6 +742,10 @@ class TestPytime(unittest.TestCase):
     @unittest.skipIf(
         support.is_emscripten, "musl libc issue on Emscripten, bpo-46390"
     )
+    # GraalPy change: avoid CI host time zones whose current offset cannot be
+    # selected reliably via the standard/daylight module attributes.
+    @support.run_with_tz('UTC')
+    # End GraalPy change
     def test_localtime_timezone(self):
 
         # Get the localtime and examine it for the offset and zone.
