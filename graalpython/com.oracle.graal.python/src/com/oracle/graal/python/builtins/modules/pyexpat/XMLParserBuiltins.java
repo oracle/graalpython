@@ -128,8 +128,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
     /*
      * JAXP exposes entity-expansion protection through separate per-parser properties. The matching jdk.xml.* system
-     * properties are checked first so stricter process-wide limits remain effective. The SAX feature URIs below disable
-     * external entity and DTD loading where the selected SAX implementation supports them.
+     * properties are read once into static limit values so stricter process-wide limits remain effective without
+     * re-reading properties for every parse. The SAX feature URIs below disable external entity and DTD loading where
+     * the selected SAX implementation supports them.
      */
     private static final int ENTITY_EXPANSION_LIMIT = 1_000_000;
     private static final int TOTAL_ENTITY_SIZE_LIMIT = 1_000_000;
@@ -140,6 +141,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     private static final String JAXP_ENTITY_EXPANSION_LIMIT = "http://www.oracle.com/xml/jaxp/properties/entityExpansionLimit";
     private static final String JAXP_TOTAL_ENTITY_SIZE_LIMIT = "http://www.oracle.com/xml/jaxp/properties/totalEntitySizeLimit";
     private static final String JAXP_ENTITY_REPLACEMENT_LIMIT = "http://www.oracle.com/xml/jaxp/properties/entityReplacementLimit";
+    private static final String ENTITY_EXPANSION_LIMIT_VALUE = getParserLimit(JDK_ENTITY_EXPANSION_LIMIT_PROPERTY, ENTITY_EXPANSION_LIMIT);
+    private static final String TOTAL_ENTITY_SIZE_LIMIT_VALUE = getParserLimit(JDK_TOTAL_ENTITY_SIZE_LIMIT_PROPERTY, TOTAL_ENTITY_SIZE_LIMIT);
+    private static final String ENTITY_REPLACEMENT_LIMIT_VALUE = getParserLimit(JDK_ENTITY_REPLACEMENT_LIMIT_PROPERTY, ENTITY_REPLACEMENT_LIMIT);
     private static final String SAX_EXTERNAL_GENERAL_ENTITIES = "http://xml.org/sax/features/external-general-entities";
     private static final String SAX_EXTERNAL_PARAMETER_ENTITIES = "http://xml.org/sax/features/external-parameter-entities";
     private static final String SAX_LOAD_EXTERNAL_DTD = "http://apache.org/xml/features/nonvalidating/load-external-dtd";
@@ -1209,9 +1213,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             factory.setNamespaceAware(parser.getNamespaceSeparator() != null);
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             SAXParser saxParser = factory.newSAXParser();
-            saxParser.setProperty(JAXP_ENTITY_EXPANSION_LIMIT, getParserLimit(JDK_ENTITY_EXPANSION_LIMIT_PROPERTY, ENTITY_EXPANSION_LIMIT));
-            saxParser.setProperty(JAXP_TOTAL_ENTITY_SIZE_LIMIT, getParserLimit(JDK_TOTAL_ENTITY_SIZE_LIMIT_PROPERTY, TOTAL_ENTITY_SIZE_LIMIT));
-            saxParser.setProperty(JAXP_ENTITY_REPLACEMENT_LIMIT, getParserLimit(JDK_ENTITY_REPLACEMENT_LIMIT_PROPERTY, ENTITY_REPLACEMENT_LIMIT));
+            saxParser.setProperty(JAXP_ENTITY_EXPANSION_LIMIT, ENTITY_EXPANSION_LIMIT_VALUE);
+            saxParser.setProperty(JAXP_TOTAL_ENTITY_SIZE_LIMIT, TOTAL_ENTITY_SIZE_LIMIT_VALUE);
+            saxParser.setProperty(JAXP_ENTITY_REPLACEMENT_LIMIT, ENTITY_REPLACEMENT_LIMIT_VALUE);
             saxParser.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             XMLReader reader = saxParser.getXMLReader();
             setFeatureIfSupported(reader, SAX_EXTERNAL_GENERAL_ENTITIES, false);
