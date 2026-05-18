@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -123,6 +123,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidUnixSocketPathException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
@@ -170,20 +171,20 @@ public class SocketTests {
     }
 
     @Test
-    public void fillUniversalSockAddrInet4() {
+    public void fillUniversalSockAddrInet4() throws PosixException {
         Inet4SockAddr addr = new Inet4SockAddr(12345, INADDR_LOOPBACK.value);
         checkUsa(addr, createUsa(addr));
     }
 
     @Test
-    public void fillUniversalSockAddrInet6() {
+    public void fillUniversalSockAddrInet6() throws PosixException {
         assumeTrue(isInet6Supported());
         Inet6SockAddr addr = new Inet6SockAddr(12345, IN6ADDR_LOOPBACK, 12, 1);
         checkUsa(addr, createUsa(addr));
     }
 
     @Test
-    public void fillUniversalSockAddrUnix() {
+    public void fillUniversalSockAddrUnix() throws PosixException {
         assumeTrue("native".equals(backendName));
         byte[] path = new byte[]{65, 0};
         UnixSockAddr addr = new UnixSockAddr(path);
@@ -638,7 +639,7 @@ public class SocketTests {
             lib.accept(posixSupport, srv.fd);
             fail("Expected accept() to fail with EWOULDBLOCK");
         } catch (PosixException e) {
-            assertEquals(OSErrorEnum.EWOULDBLOCK.getNumber(), e.getErrorCode());
+            assertTrue(e.hasErrno(OSErrorEnum.EWOULDBLOCK));
         }
         cli.connect(srv.usa());
         srv.accept(cli.address());
@@ -698,7 +699,7 @@ public class SocketTests {
     }
 
     @Test
-    public void getnameinfo() throws GetAddrInfoException {
+    public void getnameinfo() throws PosixException, GetAddrInfoException {
         Object[] res = lib.getnameinfo(posixSupport, createUsa(new Inet6SockAddr(443, IN6ADDR_LOOPBACK, 0, 0)), NI_NUMERICSERV.value | NI_NUMERICHOST.value);
         assertThat(p2s(res[0]), anyOf(equalTo("::1"), equalTo("0:0:0:0:0:0:0:1%0")));
         assertEquals("443", p2s(res[1]));
@@ -712,7 +713,7 @@ public class SocketTests {
     }
 
     @Test
-    public void getnameinfoUdp() throws GetAddrInfoException {
+    public void getnameinfoUdp() throws PosixException, GetAddrInfoException {
         assumeTrue(runsOnLinux());
         Object[] res = lib.getnameinfo(posixSupport, createUsa(new Inet4SockAddr(512, INADDR_LOOPBACK.value)), NI_NUMERICHOST.value);
         assertEquals("exec", p2s(res[1]));
@@ -774,7 +775,7 @@ public class SocketTests {
     }
 
     @Test
-    public void getaddrinfoServiceOnly() throws GetAddrInfoException {
+    public void getaddrinfoServiceOnly() throws PosixException, GetAddrInfoException {
         Object service = s2p("https");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, null, service, AF_UNSPEC.value, SOCK_STREAM.value, 0, 0);
         cleanup.add(() -> aicLib.release(aic));
@@ -795,7 +796,7 @@ public class SocketTests {
     }
 
     @Test
-    public void getaddrinfoPassive() throws GetAddrInfoException {
+    public void getaddrinfoPassive() throws PosixException, GetAddrInfoException {
         Object service = s2p("https");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, null, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_PASSIVE.value);
         cleanup.add(() -> aicLib.release(aic));
@@ -811,7 +812,7 @@ public class SocketTests {
     }
 
     @Test
-    public void getaddrinfoServerOnlyNoCanon() throws GetAddrInfoException {
+    public void getaddrinfoServerOnlyNoCanon() throws PosixException, GetAddrInfoException {
         Object node = s2p("localhost");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, node, null, AF_UNSPEC.value, SOCK_DGRAM.value, 0, 0);
         cleanup.add(() -> aicLib.release(aic));
@@ -831,7 +832,7 @@ public class SocketTests {
     }
 
     @Test
-    public void getaddrinfo() throws GetAddrInfoException {
+    public void getaddrinfo() throws PosixException, GetAddrInfoException {
         Object node = s2p("localhost");
         Object service = s2p("https");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, node, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_CANONNAME.value);
@@ -1066,7 +1067,7 @@ public class SocketTests {
     }
 
     private static void expectErrno(ThrowingRunnable runnable, OSErrorEnum... expectedErrorCodes) {
-        PosixException exception = Assert.assertThrows(PosixException.class, runnable);
+        PosixErrnoException exception = Assert.assertThrows(PosixErrnoException.class, runnable);
         if (Stream.of(expectedErrorCodes).noneMatch(e -> exception.getErrorCode() == e.getNumber())) {
             String names = Stream.of(expectedErrorCodes).map(OSErrorEnum::name).collect(Collectors.joining(" or "));
             fail("Expected PosixException with error code " + names + " but the actual error code was " + exception.getErrorCode() + " (" + exception + ")");
@@ -1086,7 +1087,7 @@ public class SocketTests {
         return sockfd;
     }
 
-    private UniversalSockAddr createUsa(FamilySpecificSockAddr src) {
+    private UniversalSockAddr createUsa(FamilySpecificSockAddr src) throws PosixException {
         if (src instanceof Inet4SockAddr inet4SockAddr) {
             return lib.createUniversalSockAddrInet4(posixSupport, inet4SockAddr);
         } else if (src instanceof Inet6SockAddr inet6SockAddr) {

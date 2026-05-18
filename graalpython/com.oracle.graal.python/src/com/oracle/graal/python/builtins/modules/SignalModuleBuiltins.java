@@ -58,8 +58,8 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -82,9 +82,9 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -298,8 +298,6 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                 return posixLib.alarm(context.getPosixSupport(), seconds);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
-            } catch (UnsupportedPosixFeatureException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
         }
 
@@ -472,8 +470,6 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                 posixLib.raise(context.getPosixSupport(), signum);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
-            } catch (UnsupportedPosixFeatureException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
             return PNone.NONE;
         }
@@ -508,8 +504,6 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                 return createResultTuple(language, posixLib.setitimer(context.getPosixSupport(), which, delay, intervalTimeval));
             } catch (PosixException e) {
                 throw raiseItimerError(frame, inliningTarget, e, constructAndRaiseNode);
-            } catch (UnsupportedPosixFeatureException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
         }
 
@@ -530,7 +524,11 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         }
 
         private static PException raiseItimerError(VirtualFrame frame, Node inliningTarget, PosixException e, PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, PythonBuiltinClassType.SignalItimerError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
+            if (e instanceof PosixErrnoException errnoException) {
+                throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, PythonBuiltinClassType.SignalItimerError,
+                                new Object[]{errnoException.getErrorCode(), errnoException.getMessageAsTruffleString()});
+            }
+            throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
         }
     }
 
@@ -555,8 +553,6 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
                 return SetitimerNode.createResultTuple(language, posixLib.getitimer(context.getPosixSupport(), which));
             } catch (PosixException e) {
                 throw SetitimerNode.raiseItimerError(frame, inliningTarget, e, constructAndRaiseNode);
-            } catch (UnsupportedPosixFeatureException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
             }
         }
     }

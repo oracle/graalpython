@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.ssl;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.nio.ByteBuffer;
@@ -76,7 +75,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This class implements equivalents of OpenSSL transport functions ({@code SSL_read} etc) on top of
@@ -176,7 +174,6 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached(inline = false) GilNode gil,
                     @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared @Cached PRaiseNode raiseNode) {
         assert socket.getSocket() != null;
         prepare(socket);
@@ -237,13 +234,13 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                             }
                             networkInboundBIO.advanceWritePosition(recvlen);
                         } catch (PosixException e) {
-                            if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
+                            if (e.hasErrno(EAGAIN) || e.hasErrno(EWOULDBLOCK)) {
                                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
                             }
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
                             }
-                            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING));
+                            throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                         }
                         break;
                     case WANTS_WRITE:
@@ -257,13 +254,13 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                                             true, false, timeoutHelper);
                             networkOutboundBIO.advanceReadPosition(writtenBytes);
                         } catch (PosixException e) {
-                            if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
+                            if (e.hasErrno(EAGAIN) || e.hasErrno(EWOULDBLOCK)) {
                                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
                             }
                             if (socket.hasSavedException()) {
                                 throw socket.getAndClearSavedException();
                             }
-                            throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING));
+                            throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                         }
                         break;
                 }

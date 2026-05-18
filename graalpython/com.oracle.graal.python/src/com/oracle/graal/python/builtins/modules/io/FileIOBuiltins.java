@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -271,7 +271,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     }
                 } catch (PosixException e) {
                     errorProfile.enter(inliningTarget);
-                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                    if (e.hasErrno(OSErrorEnum.EINTR)) {
                         PythonContext.triggerAsyncActions(inliningTarget);
                     } else {
                         throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, name);
@@ -431,7 +431,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                      * Tolerate fstat() errors other than EBADF. See Issue #25717, where an
                      * anonymous file on a Virtual Box shared folder filesystem would raise ENOENT.
                      */
-                    if (e.getErrorCode() == OSErrorEnum.EBADF.getNumber()) {
+                    if (e.hasErrno(OSErrorEnum.EBADF)) {
                         errorCleanup(frame, self, fdIsOwn, posixClose);
                         throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                     }
@@ -456,7 +456,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         if (self.getSeekable() < 0) {
                             self.setSeekable(0);
                         }
-                        if (e.getErrorCode() != OSErrorEnum.ESPIPE.getNumber()) {
+                        if (!e.hasErrno(OSErrorEnum.ESPIPE)) {
                             errorCleanup(frame, self, fdIsOwn, posixClose);
                             throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                         }
@@ -548,7 +548,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             try {
                 return PosixModuleBuiltins.ReadNode.read(self.getFD(), size, inliningTarget, posixLib, context.getPosixSupport(), readErrorProfile, gil);
             } catch (PosixException e) {
-                if (e.getErrorCode() == EAGAIN.getNumber()) {
+                if (e.hasErrno(EAGAIN)) {
                     readErrorProfile2.enter(inliningTarget);
                     return PNone.NONE;
                 }
@@ -614,7 +614,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     return b;
                 }
             } catch (PosixException e) {
-                if (e.getErrorCode() == EAGAIN.getNumber()) {
+                if (e.hasErrno(EAGAIN)) {
                     return PNone.NONE;
                 }
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -646,7 +646,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                         break;
                     }
                 } catch (PosixException e) {
-                    if (e.getErrorCode() == EAGAIN.getNumber()) {
+                    if (e.hasErrno(EAGAIN)) {
                         if (bytesRead > 0) {
                             break;
                         }
@@ -695,7 +695,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     bufferLib.readIntoBuffer(data, 0, buffer, 0, n, bufferLib);
                     return n;
                 } catch (PosixException e) {
-                    if (e.getErrorCode() == EAGAIN.getNumber()) {
+                    if (e.hasErrno(EAGAIN)) {
                         return PNone.NONE;
                     }
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -751,7 +751,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
                     return PosixModuleBuiltins.WriteNode.write(self.getFD(), bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer),
                                     inliningTarget, posixLib, context.getPosixSupport(), errorProfile, gil);
                 } catch (PosixException e) {
-                    if (e.getErrorCode() == EAGAIN.getNumber()) {
+                    if (e.hasErrno(EAGAIN)) {
                         return PNone.NONE;
                     }
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -107,8 +108,8 @@ public class SocketUtils {
                     } finally {
                         gil.acquire();
                     }
-                } catch (PosixException e) {
-                    if (e.getErrorCode() == EINTR.getNumber()) {
+                } catch (PosixErrnoException e) {
+                    if (e.hasErrno(EINTR)) {
                         PythonContext.triggerAsyncActions(constructAndRaiseNode);
                         continue;
                     }
@@ -124,12 +125,12 @@ public class SocketUtils {
                     } finally {
                         gil.acquire();
                     }
-                } catch (PosixException e) {
-                    if (e.getErrorCode() == EINTR.getNumber()) {
+                } catch (PosixErrnoException e) {
+                    if (e.hasErrno(EINTR)) {
                         PythonContext.triggerAsyncActions(constructAndRaiseNode);
                         continue;
                     }
-                    if (timeoutHelper != null && (e.getErrorCode() == EWOULDBLOCK.getNumber() || e.getErrorCode() == EAGAIN.getNumber())) {
+                    if (timeoutHelper != null && (e.hasErrno(EWOULDBLOCK) || e.hasErrno(EAGAIN))) {
                         /*
                          * False positive: sock_func() failed with EWOULDBLOCK or EAGAIN. For
                          * example, select() could indicate a socket is ready for reading, but the

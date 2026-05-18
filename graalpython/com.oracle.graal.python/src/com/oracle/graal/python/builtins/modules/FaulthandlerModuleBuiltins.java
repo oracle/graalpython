@@ -75,15 +75,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -291,8 +290,6 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
             }
         } catch (PosixException e) {
             throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
-        } catch (UnsupportedPosixFeatureException e) {
-            throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorUnsupported(frame, e);
         }
         return PNone.NONE;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -97,6 +97,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
@@ -237,7 +238,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     family = addrLib.getFamily(addr);
                 }
             } catch (PosixException e) {
-                if (family == -1 || e.getErrorCode() == EBADF.getNumber() || e.getErrorCode() == ENOTSOCK.getNumber()) {
+                if (family == -1 || e.hasErrno(EBADF) || e.hasErrno(ENOTSOCK)) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             }
@@ -391,7 +392,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                     }
                 } catch (PosixException e) {
                     // CPython ignores ECONNRESET on close
-                    if (e.getErrorCode() != OSErrorEnum.ECONNRESET.getNumber()) {
+                    if (!e.hasErrno(OSErrorEnum.ECONNRESET)) {
                         throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                     }
                 }
@@ -436,11 +437,11 @@ public final class SocketBuiltins extends PythonBuiltins {
                 }
             } catch (PosixException e) {
                 boolean waitConnect;
-                if (e.getErrorCode() == EINTR.getNumber()) {
+                if (e.hasErrno(EINTR)) {
                     PythonContext.triggerAsyncActions(constructAndRaiseNode);
                     waitConnect = self.getTimeoutNs() != 0 && isSelectable(self);
                 } else {
-                    waitConnect = self.getTimeoutNs() > 0 && e.getErrorCode() == EINPROGRESS.getNumber() && isSelectable(self);
+                    waitConnect = self.getTimeoutNs() > 0 && e.hasErrno(EINPROGRESS) && isSelectable(self);
                 }
                 if (waitConnect) {
                     SocketUtils.callSocketFunctionWithRetry(frame, inliningTarget, constructAndRaiseNode, posixLib, posixSupport, gil, self,
@@ -449,7 +450,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                                         p.getsockopt(s, self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
                                         int err = PythonUtils.ARRAY_ACCESSOR.getInt(tmp, 0);
                                         if (err != 0 && err != EISCONN.getNumber()) {
-                                            throw new PosixException(err, p.strerror(s, err));
+                                            throw new PosixErrnoException(err, p.strerror(s, err));
                                         }
                                         return null;
                                     },
@@ -481,7 +482,10 @@ public final class SocketBuiltins extends PythonBuiltins {
             try {
                 ConnectNode.doConnect(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, self, connectAddr);
             } catch (PosixException e) {
-                return e.getErrorCode();
+                if (e instanceof PosixErrnoException errnoException) {
+                    return errnoException.getErrorCode();
+                }
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return 0;
         }

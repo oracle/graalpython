@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -343,6 +343,8 @@ public abstract class SocketNodes {
                 }
             } catch (GetAddrInfoException e) {
                 throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessage()});
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
@@ -395,7 +397,6 @@ public abstract class SocketNodes {
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached PRaiseNode raiseNode) {
@@ -428,7 +429,7 @@ public abstract class SocketNodes {
                     throw raiseNode.raise(inliningTarget, NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }
             } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING));
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
@@ -456,7 +457,6 @@ public abstract class SocketNodes {
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
@@ -473,7 +473,7 @@ public abstract class SocketNodes {
                     throw raiseNode.raise(inliningTarget, NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }
             } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, e.getErrorCode(), fromJavaStringNode.execute(e.getMessage(), TS_ENCODING));
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
     }

@@ -237,6 +237,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.OpenPtyResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
@@ -1004,7 +1005,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     // Already blocking
                     return;
                 }
-                throw new PosixException(OSErrorEnum.EPERM.getNumber(), toTruffleStringUncached("Emulated posix support does not support non-blocking mode for regular files."));
+                throw new PosixErrnoException(OSErrorEnum.EPERM.getNumber(), toTruffleStringUncached("Emulated posix support does not support non-blocking mode for regular files."));
             }
         } catch (PosixException e) {
             throw e;
@@ -1145,10 +1146,10 @@ public final class EmulatedPosixSupport extends PosixResources {
 
             return new long[]{bsize, frsize, blocks, bfree, bavail, files, ffree, favail, flag, namemax, fsid};
         } catch (NoSuchFileException e) {
-            throw new PosixException(OSErrorEnum.ENOENT.getNumber(), ErrorMessages.NO_SUCH_FILE_OR_DIR);
+            throw new PosixErrnoException(OSErrorEnum.ENOENT.getNumber(), ErrorMessages.NO_SUCH_FILE_OR_DIR);
         } catch (UnsupportedOperationException | IOException | SecurityException e) {
             TruffleString message = PythonUtils.toTruffleStringUncached(e.getMessage());
-            throw new PosixException(OSErrorEnum.EPERM.getNumber(), message);
+            throw new PosixErrnoException(OSErrorEnum.EPERM.getNumber(), message);
         }
     }
 
@@ -1158,7 +1159,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         String path = getFilePath(fd);
 
         if (path == null) {
-            throw new PosixException(OSErrorEnum.EBADF.getNumber(), ErrorMessages.BAD_FILE_DESCRIPTOR);
+            throw new PosixErrnoException(OSErrorEnum.EBADF.getNumber(), ErrorMessages.BAD_FILE_DESCRIPTOR);
         }
 
         return statvfs(path);
@@ -1893,7 +1894,7 @@ public final class EmulatedPosixSupport extends PosixResources {
                     @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws UnsupportedPosixFeatureException {
         if (effectiveIds) {
             errBranch.enter(inliningTarget);
             throw createUnsupportedFeature("faccess with effective user IDs");
@@ -1973,12 +1974,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    public void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks) {
+    public void fchownat(int dirFd, Object path, long owner, long group, boolean followSymlinks) throws PosixException {
         throw createUnsupportedFeature("fchownat");
     }
 
     @ExportMessage
-    public void fchown(int fd, long owner, long group) {
+    public void fchown(int fd, long owner, long group) throws PosixException {
         throw createUnsupportedFeature("fchown");
     }
 
@@ -2024,7 +2025,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public void raise(int signal) {
+    public void raise(int signal) throws PosixException {
         throw createUnsupportedFeature("raise");
     }
 
@@ -2156,13 +2157,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public void signalSelf(int signal) {
+    public void signalSelf(int signal) throws PosixException {
         throw createUnsupportedFeature("signalSelf");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long killpg(long pgid, int signal) {
+    public long killpg(long pgid, int signal) throws PosixException {
         throw createUnsupportedFeature("killpg");
     }
 
@@ -2269,7 +2270,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     @TruffleBoundary
-    public long geteuid() {
+    public long geteuid() throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("geteuid");
     }
 
@@ -2292,49 +2293,49 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     @TruffleBoundary
-    public long getegid() {
+    public long getegid() throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("getegid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long getppid() {
+    public long getppid() throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("getppid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long getpgid(long pid) {
+    public long getpgid(long pid) throws PosixException {
         throw createUnsupportedFeature("getpgid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public void setpgid(long pid, long pgid) {
+    public void setpgid(long pid, long pgid) throws PosixException {
         throw createUnsupportedFeature("setpgid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long getpgrp() {
+    public long getpgrp() throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("getpgrp");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long getsid(long pid) {
+    public long getsid(long pid) throws PosixException {
         throw createUnsupportedFeature("getsid");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long setsid() {
+    public long setsid() throws PosixException {
         throw createUnsupportedFeature("getsid");
     }
 
     @ExportMessage
     @TruffleBoundary
-    public long[] getgroups() {
+    public long[] getgroups() throws PosixException {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
             switch (PythonLanguage.getPythonOS()) {
                 case PLATFORM_LINUX, PLATFORM_DARWIN -> {
@@ -2412,7 +2413,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public OpenPtyResult openpty() {
+    public OpenPtyResult openpty() throws PosixException {
         throw createUnsupportedFeature("openpty");
     }
 
@@ -2858,7 +2859,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @TruffleBoundary
-    private static Set<StandardOpenOption> mmapProtToOptions(int prot) {
+    private static Set<StandardOpenOption> mmapProtToOptions(int prot) throws PosixException {
         HashSet<StandardOpenOption> options = new HashSet<>();
         if ((prot & PROT_READ.value) != 0) {
             options.add(StandardOpenOption.READ);
@@ -3001,7 +3002,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long mmapGetPointer(@SuppressWarnings("unused") Object mmap) {
+    public long mmapGetPointer(@SuppressWarnings("unused") Object mmap) throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("obtaining mmap pointer");
     }
 
@@ -3115,7 +3116,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     @SuppressWarnings("static-method")
-    public PwdResult getpwnam(Object name) {
+    public PwdResult getpwnam(Object name) throws PosixException {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
             switch (PythonLanguage.getPythonOS()) {
                 case PLATFORM_LINUX:
@@ -3141,7 +3142,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public PwdResult[] getpwentries() {
+    public PwdResult[] getpwentries() throws PosixException {
         throw createUnsupportedFeature("getpwent");
     }
 
@@ -3152,13 +3153,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("unused")
-    public int ioctlBytes(int fd, long request, byte[] arg) {
+    public int ioctlBytes(int fd, long request, byte[] arg) throws PosixException {
         throw createUnsupportedFeature("ioctl");
     }
 
     @ExportMessage
     @SuppressWarnings("unused")
-    public int ioctlInt(int fd, long request, int arg) {
+    public int ioctlInt(int fd, long request, int arg) throws PosixException {
         throw createUnsupportedFeature("ioctl");
     }
 
@@ -3598,7 +3599,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     @TruffleBoundary
-    public Object[] getnameinfo(UniversalSockAddr addr, int flags) throws GetAddrInfoException {
+    public Object[] getnameinfo(UniversalSockAddr addr, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("getnameinfo was excluded");
         }
@@ -3649,7 +3650,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     @TruffleBoundary
-    public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
+    public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException {
         if (PythonImageBuildOptions.WITHOUT_JAVA_INET || withoutIOSocket) {
             throw new UnsupportedPosixFeatureException("getaddrinfo was excluded");
         }
@@ -3841,7 +3842,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) {
+    UniversalSockAddr createUniversalSockAddrUnix(UnixSockAddr src) throws UnsupportedPosixFeatureException {
         throw createUnsupportedFeature("AF_UNIX");
     }
 
@@ -4611,7 +4612,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     static PosixException posixException(OSErrorEnum osError) throws PosixException {
-        throw new PosixException(osError.getNumber(), osError.getMessage());
+        throw new PosixErrnoException(osError.getNumber(), osError.getMessage());
     }
 
     private static PosixException posixException(Exception e, TruffleString.EqualNode eqNode) throws PosixException {
@@ -4619,11 +4620,11 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw (PosixException) e;
         }
         ErrorAndMessagePair pair = OSErrorEnum.fromException(e, eqNode);
-        throw new PosixException(pair.oserror.getNumber(), pair.message);
+        throw new PosixErrnoException(pair.oserror.getNumber(), pair.message);
     }
 
     private static PosixException posixException(ErrorAndMessagePair pair) throws PosixException {
-        throw new PosixException(pair.oserror.getNumber(), pair.message);
+        throw new PosixErrnoException(pair.oserror.getNumber(), pair.message);
     }
 
     @TruffleBoundary

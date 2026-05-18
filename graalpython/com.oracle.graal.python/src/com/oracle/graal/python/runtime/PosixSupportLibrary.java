@@ -54,6 +54,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -246,7 +247,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void renameat(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
 
-    public abstract boolean faccessat(Object receiver, int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks);
+    public abstract boolean faccessat(Object receiver, int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) throws UnsupportedPosixFeatureException;
 
     public abstract void fchmodat(Object receiver, int dirFd, Object path, int mode, boolean followSymlinks) throws PosixException;
 
@@ -292,19 +293,19 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract long getuid(Object receiver);
 
-    public abstract long geteuid(Object receiver);
+    public abstract long geteuid(Object receiver) throws UnsupportedPosixFeatureException;
 
     public abstract long getgid(Object receiver);
 
-    public abstract long getegid(Object receiver);
+    public abstract long getegid(Object receiver) throws UnsupportedPosixFeatureException;
 
-    public abstract long getppid(Object receiver);
+    public abstract long getppid(Object receiver) throws UnsupportedPosixFeatureException;
 
     public abstract long getpgid(Object receiver, long pid) throws PosixException;
 
     public abstract void setpgid(Object receiver, long pid, long pgid) throws PosixException;
 
-    public abstract long getpgrp(Object receiver);
+    public abstract long getpgrp(Object receiver) throws UnsupportedPosixFeatureException;
 
     public abstract long getsid(Object receiver, long pid) throws PosixException;
 
@@ -376,7 +377,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void mmapUnmap(Object receiver, Object mmap, long length) throws PosixException;
 
-    public abstract long mmapGetPointer(Object receiver, Object mmap);
+    public abstract long mmapGetPointer(Object receiver, Object mmap) throws UnsupportedPosixFeatureException;
 
     public abstract long semOpen(Object receiver, Object name, int openFlags, int mode, int value) throws PosixException;
 
@@ -809,7 +810,7 @@ public abstract class PosixSupportLibrary extends Library {
      *             getnameinfo uses its own error codes and gai_strerror instead of the usual errno
      *             and strerror)
      */
-    public abstract Object[] getnameinfo(Object receiver, UniversalSockAddr addr, int flags) throws GetAddrInfoException;
+    public abstract Object[] getnameinfo(Object receiver, UniversalSockAddr addr, int flags) throws UnsupportedPosixFeatureException, GetAddrInfoException;
 
     /**
      * Corresponds to POSIX {@code getaddrinfo(3)}, except it always passes a non-null value for the
@@ -832,7 +833,8 @@ public abstract class PosixSupportLibrary extends Library {
      *             getaddrinfo uses its own error codes and gai_strerror instead of the usual errno
      *             and strerror)
      */
-    public abstract AddrInfoCursor getaddrinfo(Object receiver, Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException;
+    public abstract AddrInfoCursor getaddrinfo(Object receiver, Object node, Object service, int family, int sockType, int protocol, int flags)
+                    throws UnsupportedPosixFeatureException, GetAddrInfoException;
 
     /**
      * Represents one or more addrinfos returned by {@code getaddrinfo()}.
@@ -957,7 +959,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract UniversalSockAddr createUniversalSockAddrInet6(Object receiver, Inet6SockAddr src);
 
-    public abstract UniversalSockAddr createUniversalSockAddrUnix(Object receiver, UnixSockAddr src) throws InvalidUnixSocketPathException;
+    public abstract UniversalSockAddr createUniversalSockAddrUnix(Object receiver, UnixSockAddr src) throws UnsupportedPosixFeatureException, InvalidUnixSocketPathException;
 
     /**
      * Provides messages for manipulating {@link UniversalSockAddr}.
@@ -1013,18 +1015,43 @@ public abstract class PosixSupportLibrary extends Library {
     }
 
     /**
+     * Base class for exceptions that originate in the POSIX support layer.
+     */
+    public abstract static class PosixException extends Exception {
+
+        private static final long serialVersionUID = 8700515065120346760L;
+
+        protected PosixException() {
+        }
+
+        protected PosixException(String message) {
+            super(message);
+        }
+
+        public final boolean hasErrno(OSErrorEnum errno) {
+            return this instanceof PosixErrnoException errnoException && errnoException.getErrorCode() == errno.getNumber();
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
+    /**
      * Exception that indicates POSIX level error associated with numeric code. If the message is
      * known, it may be included in the exception, otherwise it can be queried using
      * {@link #strerror(Object, int)}.
      */
-    public static final class PosixException extends Exception {
+    public static final class PosixErrnoException extends PosixException {
 
         private static final long serialVersionUID = -115762483478883093L;
 
         private final int errorCode;
         private final transient TruffleString msg;
 
-        public PosixException(int errorCode, TruffleString message) {
+        public PosixErrnoException(int errorCode, TruffleString message) {
             this.errorCode = errorCode;
             msg = message;
         }
@@ -1040,12 +1067,6 @@ public abstract class PosixSupportLibrary extends Library {
 
         public int getErrorCode() {
             return errorCode;
-        }
-
-        @SuppressWarnings("sync-override")
-        @Override
-        public Throwable fillInStackTrace() {
-            return this;
         }
     }
 
@@ -1093,18 +1114,12 @@ public abstract class PosixSupportLibrary extends Library {
      * certain feature is supported or not, but even then this exception may be thrown for other
      * features.
      */
-    public static class UnsupportedPosixFeatureException extends RuntimeException {
+    public static class UnsupportedPosixFeatureException extends PosixException {
 
         private static final long serialVersionUID = 1846254827094902593L;
 
         public UnsupportedPosixFeatureException(String message) {
             super(message);
-        }
-
-        @Override
-        @SuppressWarnings("sync-override")
-        public final Throwable fillInStackTrace() {
-            return this;
         }
     }
 

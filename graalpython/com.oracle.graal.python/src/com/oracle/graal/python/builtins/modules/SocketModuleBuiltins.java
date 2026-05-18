@@ -308,6 +308,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             } catch (GetAddrInfoException e) {
                 // TODO convert error code from gaierror to herror
                 throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketHError, new Object[]{1, e.getMessageAsTruffleString()});
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
@@ -413,6 +415,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             TruffleString protocolName;
             if (noneProtocol.profile(inliningTarget, PGuards.isNoValue(protocolNameObj))) {
@@ -450,6 +453,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 }
             } catch (GetAddrInfoException e) {
                 throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
             }
         }
 
@@ -475,6 +480,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             TruffleString protocolName;
             if (nonProtocol.profile(inliningTarget, PGuards.isNoValue(protocolNameObj))) {
@@ -510,6 +516,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 }
             } catch (GetAddrInfoException e) {
                 throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
             }
         }
 
@@ -612,6 +620,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 return PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{host, service});
             } catch (GetAddrInfoException e) {
                 throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
@@ -686,6 +696,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 }
             } catch (GetAddrInfoException e) {
                 throw constructAndRaiseNode.get(inliningTarget).executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessageAsTruffleString()});
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             try {
                 SequenceStorage storage = new ObjectSequenceStorage(5);
@@ -737,7 +749,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 }
             } catch (PosixException e) {
                 // CPython ignores ECONNRESET on close
-                if (e.getErrorCode() != OSErrorEnum.ECONNRESET.getNumber()) {
+                if (!e.hasErrno(OSErrorEnum.ECONNRESET)) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             }

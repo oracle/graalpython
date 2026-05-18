@@ -46,10 +46,10 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValid
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidWriteBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.nodes.ErrorMessages.FILE_NOT_OPEN_FOR_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.IO_CLOSED;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_INVALID_LENGTH;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING;
-import static com.oracle.graal.python.nodes.ErrorMessages.IO_CLOSED;
-import static com.oracle.graal.python.nodes.ErrorMessages.FILE_NOT_OPEN_FOR_S;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -57,18 +57,19 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -81,10 +82,9 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 public class BufferedWriterNodes {
 
@@ -254,7 +254,7 @@ public class BufferedWriterNodes {
                 n = Math.toIntExact(PosixModuleBuiltins.WriteNode.write(fileIO.getFD(), buf, len,
                                 inliningTarget, posixLib, context.getPosixSupport(), errorProfile, gil));
             } catch (PosixException e) {
-                if (e.getErrorCode() == OSErrorEnum.EAGAIN.getNumber()) {
+                if (e.hasErrno(OSErrorEnum.EAGAIN)) {
                     return -2;
                 }
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

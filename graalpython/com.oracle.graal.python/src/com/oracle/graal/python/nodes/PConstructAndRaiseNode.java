@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNodeGen.LazyNodeGen;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixErrnoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -231,15 +232,27 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
-        return raiseOSErrorInternal(frame, createOsErrorArgs(e.getErrorCode(), e.getMessageAsTruffleString()));
+        if (e instanceof PosixErrnoException errnoException) {
+            return raiseOSErrorInternal(frame, createOsErrorArgs(errnoException.getErrorCode(), errnoException.getMessageAsTruffleString()));
+        }
+        assert e instanceof UnsupportedPosixFeatureException;
+        return raiseOSErrorUnsupported(frame, (UnsupportedPosixFeatureException) e);
     }
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
-        return raiseOSErrorInternal(frame, createOsErrorArgs(e.getErrorCode(), e.getMessageAsTruffleString(), filename1));
+        if (e instanceof PosixErrnoException errnoException) {
+            return raiseOSErrorInternal(frame, createOsErrorArgs(errnoException.getErrorCode(), errnoException.getMessageAsTruffleString(), filename1));
+        }
+        assert e instanceof UnsupportedPosixFeatureException;
+        return raiseOSErrorUnsupported(frame, (UnsupportedPosixFeatureException) e);
     }
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
-        return raiseOSErrorInternal(frame, createOsErrorArgs(e.getErrorCode(), e.getMessageAsTruffleString(), filename1, filename2));
+        if (e instanceof PosixErrnoException errnoException) {
+            return raiseOSErrorInternal(frame, createOsErrorArgs(errnoException.getErrorCode(), errnoException.getMessageAsTruffleString(), filename1, filename2));
+        }
+        assert e instanceof UnsupportedPosixFeatureException;
+        return raiseOSErrorUnsupported(frame, (UnsupportedPosixFeatureException) e);
     }
 
     public final PException raiseOSErrorUnsupported(VirtualFrame frame, UnsupportedPosixFeatureException e) {
