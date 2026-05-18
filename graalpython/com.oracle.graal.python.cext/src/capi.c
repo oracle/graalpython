@@ -403,52 +403,6 @@ int is_builtin_type(PyTypeObject *tp) {
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 }
 
-/** to be used from Java code only; calls INCREF */
-PyAPI_FUNC(void) GraalPyPrivate_INCREF(PyObject* obj) {
-    Py_INCREF(obj);
-}
-
-/** to be used from Java code only; calls DECREF */
-PyAPI_FUNC(void) GraalPyPrivate_DECREF(PyObject* obj) {
-    Py_DECREF(obj);
-}
-
-/** to be used from Java code only; calls '_Py_Dealloc' */
-PyAPI_FUNC(Py_ssize_t)
-GraalPyPrivate_SUBREF(intptr_t ptr, Py_ssize_t value)
-{
-    PyObject *obj = (PyObject*)ptr; // avoid type attachment at the interop boundary
-#ifndef NDEBUG
-    if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
-        char buf[1024];
-        sprintf(buf,
-                "suspicious refcnt value during managed adjustment for %p (%zd 0x%zx - %zd)\n",
-                obj, obj->ob_refcnt, obj->ob_refcnt, value);
-        Py_FatalError(buf);
-    }
-    if ((obj->ob_refcnt - value) < 0) {
-        char buf[1024];
-        sprintf(buf,
-                "refcnt below zero during managed adjustment for %p (%zd 0x%zx - %zd)\n",
-                obj, obj->ob_refcnt, obj->ob_refcnt, value);
-        Py_FatalError(buf);
-    }
-#endif // NDEBUG
-
-    Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
-    if (new_value == 0) {
-        GraalPyPrivate_Log(GRAALPY_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
-                __func__, obj);
-        _Py_Dealloc(obj);
-    }
-#ifdef Py_REF_DEBUG
-    else if (new_value < 0) {
-        _Py_NegativeRefcount(filename, lineno, op);
-    }
-#endif
-    return new_value;
-}
-
 /** to be used from Java code only; calls '_Py_Dealloc' */
 GraalPy_CAPI_HELPER_SYMBOL Py_ssize_t
 GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
