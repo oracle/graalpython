@@ -167,7 +167,7 @@ CAPI_BUILTINS
 
 #define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPyPrivate_Get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
 
-PyAPI_DATA(uint32_t) Py_Truffle_Options;
+extern Py_LOCAL_SYMBOL uint32_t Py_Truffle_Options;
 
 extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
 

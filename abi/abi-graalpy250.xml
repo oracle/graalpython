@@ -1620,7 +1620,6 @@
     <elf-symbol name='Py_NoUserSiteDirectory' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='Py_OptimizeFlag' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='Py_QuietFlag' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='Py_Truffle_Options' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='Py_UTF8Mode' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='Py_UnbufferedStdioFlag' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='Py_VerboseFlag' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>

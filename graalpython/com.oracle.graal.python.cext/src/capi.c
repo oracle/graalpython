@@ -271,7 +271,7 @@ CAPI_BUILTINS
 #undef PRIVATE_BUILTIN
 }
 
-uint32_t Py_Truffle_Options;
+Py_LOCAL_SYMBOL uint32_t Py_Truffle_Options;
 
 #undef bool
 static void initialize_builtin_types_and_structs() {
