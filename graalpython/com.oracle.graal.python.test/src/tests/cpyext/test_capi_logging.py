@@ -1,0 +1,132 @@
+# Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# The Universal Permissive License (UPL), Version 1.0
+#
+# Subject to the condition set forth below, permission is hereby granted to any
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
+#
+# (a) the Software, and
+#
+# (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
+#
+# without restriction, including without limitation the rights to copy, create
+# derivative works of, display, perform, and distribute the Software and make,
+# use, sell, offer for sale, import, export, have made, and have sold the
+# Software and the Larger Work(s), and to sublicense the foregoing rights on
+# either these or other terms.
+#
+# This license is subject to the following condition:
+#
+# The above copyright notice and either this complete permission notice or at a
+# minimum a reference to the UPL must be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+import os
+import subprocess
+import sys
+import textwrap
+
+from . import GRAALPYTHON, compile_module_from_string
+
+if GRAALPYTHON:
+    import __graalpython__
+
+
+def test_private_log_handles_long_formatted_messages():
+    if not GRAALPYTHON or not sys.executable:
+        return
+
+    module = compile_module_from_string("""
+        #define PY_SSIZE_T_CLEAN
+        #include <Python.h>
+        #include <stdint.h>
+
+        #ifdef GRAALVM_PYTHON
+        PyAPI_FUNC(Py_ssize_t) GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len);
+        #endif
+
+        #define X10 "aaaaaaaaaa"
+        #define X100 X10 X10 X10 X10 X10 X10 X10 X10 X10 X10
+        #define X1000 X100 X100 X100 X100 X100 X100 X100 X100 X100 X100
+        #define LONG_TYPE_NAME "graalpy_capi_log_overflow." X1000 X1000
+
+        static PyTypeObject LongNameType = {
+            PyVarObject_HEAD_INIT(NULL, 0)
+            .tp_name = LONG_TYPE_NAME,
+            .tp_basicsize = sizeof(PyObject),
+            .tp_dealloc = (destructor) PyObject_Del,
+        };
+
+        static PyObject* trigger_log_with_long_type_name(PyObject* module, PyObject* unused) {
+        #ifdef GRAALVM_PYTHON
+            if (PyType_Ready(&LongNameType) < 0) {
+                return NULL;
+            }
+            PyObject* obj = LongNameType.tp_alloc(&LongNameType, 0);
+            if (obj == NULL) {
+                return NULL;
+            }
+            intptr_t objects[1] = {(intptr_t) obj};
+
+            // deallocation logs the type name
+            GraalPyPrivate_BulkDealloc(objects, 1);
+        #endif
+            Py_RETURN_NONE;
+        }
+
+        static PyMethodDef module_methods[] = {
+            {"trigger_log_with_long_type_name", trigger_log_with_long_type_name, METH_NOARGS, ""},
+            {NULL}
+        };
+
+        static PyModuleDef module_def = {
+            PyModuleDef_HEAD_INIT, "graalpy_capi_log_overflow", "", -1, module_methods
+        };
+
+        PyMODINIT_FUNC PyInit_graalpy_capi_log_overflow(void) {
+            return PyModule_Create(&module_def);
+        }
+    """, "graalpy_capi_log_overflow")
+
+    module_dir = os.path.dirname(module.__file__)
+    script = textwrap.dedent(f"""
+        import sys
+        sys.path.insert(0, {module_dir!r})
+        import graalpy_capi_log_overflow
+        graalpy_capi_log_overflow.trigger_log_with_long_type_name()
+        print("done")
+    """)
+    args = [sys.executable]
+    if not __graalpython__.is_native:
+        bytecode_dsl = str(__graalpython__.is_bytecode_dsl_interpreter).lower()
+        args.append(f"--vm.Dpython.EnableBytecodeDSLInterpreter={bytecode_dsl}")
+
+    # use fine grained logging to trigger the bug later
+    args += ["--log.python.capi.PythonCextBuiltins.level=FINER", "-c", script]
+
+    proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if proc.returncode != 0:
+        stderr_tail = "\n".join(proc.stderr.splitlines()[-40:])
+        message = (
+            f"process exited with {proc.returncode}\n"
+            f"stdout:\n{proc.stdout}\n"
+            f"stderr tail:\n{stderr_tail}"
+        )
+        raise AssertionError(message)
+    assert "done" in proc.stdout
