@@ -37,9 +37,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
+import unittest
+
 
 def test_stuck_thread():
-    import sys
     import subprocess
 
     if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
@@ -64,7 +66,6 @@ del threading._shutdown
 
 def test_threads_joining_main_thread_at_shutdown():
     import subprocess
-    import sys
 
     script = r"""
 import threading
@@ -80,3 +81,36 @@ time.sleep(0.05)
 """
     result = subprocess.run([sys.executable, "-c", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
+
+
+@unittest.skipIf(sys.implementation.name == "graalpy", "Blocked on Truffle API support for blocking native reads during thread-local handshakes")
+# see GR-75767 for details
+def test_blocking_os_read_thread_does_not_deadlock_import_re():
+    import subprocess
+
+    if sys.platform == "win32":
+        return
+
+    script = r"""
+import os
+import threading
+import sys
+
+read_fd, write_fd = os.pipe()
+threading.Thread(target=lambda: os.read(read_fd, 1), daemon=True).start()
+
+import re
+
+print("ok", flush=True)
+os._exit(0)
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.rstrip().endswith("ok"), result.stdout
