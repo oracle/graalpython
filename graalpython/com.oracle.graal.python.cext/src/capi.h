@@ -209,8 +209,9 @@ Py_LOCAL_SYMBOL size_t GraalPyPrivate_CaptureStacktrace(void **frames, size_t ma
 Py_LOCAL_SYMBOL void GraalPyPrivate_PrintCapturedStacktrace(FILE *file, const char *header, void *const *frames, size_t depth);
 Py_LOCAL_SYMBOL void GraalPyPrivate_PrintCurrentStacktrace(FILE *file, const char *header, size_t max_depth, size_t skip);
 Py_LOCAL_SYMBOL void GraalPyPrivate_LogCapturedStacktrace(int level, const char *prefix, void *const *frames, size_t depth);
+Py_LOCAL_SYMBOL void GraalPyPrivate_LogImpl(int level, const char *format, va_list args);
 
-static void print_c_stacktrace() {
+static inline void print_c_stacktrace() {
     GraalPyPrivate_PrintCurrentStacktrace(stderr, "Native stacktrace:\n", 16, 0);
 }
 
@@ -247,18 +248,14 @@ static MUST_INLINE int GraalPyPrivate_SampleNativeMemoryAllocSites() {
     return Py_Truffle_Options & GRAALPY_SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
 }
 
-static void
+static inline void
 GraalPyPrivate_Log(int level, const char *format, ...)
 {
     if (Py_Truffle_Options & level) {
-        char buffer[1024];
         va_list args;
         va_start(args, format);
-        int written = PyOS_vsnprintf(buffer, sizeof(buffer), format, args);
+        GraalPyPrivate_LogImpl(level, format, args);
         va_end(args);
-        if (written >= 0) {
-            GraalPyPrivate_LogString(level, buffer);
-        }
     }
 }
 

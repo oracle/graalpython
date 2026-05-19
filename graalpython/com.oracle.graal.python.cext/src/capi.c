@@ -49,6 +49,16 @@
 #include "graalpy/testcapi.h"
 #undef GRAALPY_ENABLE_TESTING_CAPI
 
+Py_LOCAL_SYMBOL void
+GraalPyPrivate_LogImpl(int level, const char *format, va_list args)
+{
+    char buffer[1024];
+    int written = PyOS_vsnprintf(buffer, sizeof(buffer), format, args);
+    if (written >= 0) {
+        GraalPyPrivate_LogString(level, buffer);
+    }
+}
+
 typedef struct arrayobject {
     PyObject_VAR_HEAD
     char *ob_item;
