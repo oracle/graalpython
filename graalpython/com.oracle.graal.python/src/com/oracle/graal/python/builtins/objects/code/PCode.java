@@ -582,7 +582,18 @@ public final class PCode extends PythonBuiltinObject {
     public RootCallTarget getRootCallTarget() {
         RootCallTarget ct = callTarget;
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, ct == null)) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+            }
+            ct = initializeCallTarget();
+        }
+        return ct;
+    }
+
+    @TruffleBoundary
+    private RootCallTarget initializeCallTarget() {
+        RootCallTarget ct = callTarget;
+        if (ct == null) {
             ct = rootNode.getCallTarget();
             callTarget = ct;
         }
