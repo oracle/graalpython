@@ -75,6 +75,47 @@
     local watchdog              = self.watchdog,
     local bench_task(bench=null, benchmarks=BENCHMARKS) = super.bench_task(bench=bench, benchmarks=benchmarks),
     local bisect_bench_task     = self.bisect_bench_task,
+    local oracledb_free_image    = "container-registry.oracle.com/database/free:23.26.0.0",
+    local oracledb_extra_index_urls = std.join(" ", [
+        "https://ol-graal.oraclecorp.com/mt_data/graalpy-25.0-repository/",
+        "https://artifactory.oci.oraclecorp.com/api/pypi/graalpy-wheels-internal-patches-dev-pypi-local/simple",
+        $.overlay_imports.PIP_EXTRA_INDEX_URL,
+    ]),
+    local oracledb_bench_env     = task_spec({
+        cacheVenv: false,
+        capabilities +: ["pinp"],
+        environment +: {
+            GRAALPY_ORACLEDB_QUIET_SECONDS: "60",
+            GRAALPY_ORACLEDB_WAIT_TIMEOUT: "600",
+            PYO_TEST_ADMIN_PASSWORD: "graalpy",
+            PYO_TEST_ADMIN_USER: "SYSTEM",
+            PYO_TEST_CONNECT_STRING: "127.0.0.1:1521/FREEPDB1",
+            PIP_EXTRA_INDEX_URL: oracledb_extra_index_urls,
+            PIP_ONLY_BINARY: ":all:",
+        },
+        setup: [
+            [
+                "podman", "run",
+                "--detach",
+                "--replace",
+                "--name", "graalpy-oracledb",
+                "-p", "1521:1521",
+                "-e", "ORACLE_PWD=graalpy",
+                oracledb_free_image,
+            ],
+        ] + super.setup,
+        teardown +: [
+            ["podman", "rm", "--force", "graalpy-oracledb"],
+        ],
+        evaluate_late +:: {
+            z_oracledb_podman: function(builder) {
+                docker: {
+                    image: "buildslave_ol8_podman_rootless",
+                    mount_modules: true,
+                },
+            },
+        },
+    }),
 
     local native_debug_build_env = task_spec({
        environment +: {
@@ -310,6 +351,10 @@
             "vm_name:pypy"                                              : {"linux:amd64:jdk-latest" : on_demand    + t("04:00:00")},
         }),
         for bench in ["micro", "meso", "macro"]
+    } + {
+        "macro_oracledb": bench_task("macro_oracledb") + platform_spec(no_jobs) + bench_variants({
+            "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
+        }) + oracledb_bench_env,
     } + {
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo},

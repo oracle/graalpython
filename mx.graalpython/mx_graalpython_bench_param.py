@@ -306,6 +306,7 @@ MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
     'c-pydantic-validate': ITER_10 + ['200000'],
     'c-pymupdf-parse': ITER_10 + ['1'],
+    'c-oracledb-load': ITER_5 + ['2000000'],
 }
 
 

@@ -61,39 +61,39 @@
 #  python blog_load.py 500000
 #
 # Install:
-#   python -m pip install oracledb pyarrow sqlalchemy pandas
+#   python -m pip install oracledb pyarrow
 # Requires python-oracledb 3.4+
 
 
-ensure_packages(oracledb="3.4.1", pandas="2.2.3", pyarrow="20.0.0", sqlalchemy="2.0.45")
+ensure_packages(numpy="2.2.6", cryptography="45.0.7", oracledb="3.4.2", pyarrow="20.0.0")
 
 import csv
 from datetime import datetime
 import getpass
 import os
 import sys
+import tempfile
 import time
 
 import pyarrow.csv
-from sqlalchemy import create_engine
-import pandas
 
 import oracledb
 
 # startup database with
-# $ podman run --detach --replace --name oracledb -p 1521:1521 -e ORACLE_PWD=graalpy  container-registry.oracle.com/database/free:latest
-USERNAME = 'system'
-CONNECTSTRING = 'localhost:1521/freepdb1'
-PASSWORD = "graalpy"
+# $ podman run --detach --replace --name oracledb -p 1521:1521 -e ORACLE_PWD=graalpy \
+#       container-registry.oracle.com/database/free:23.26.0.0
+USERNAME = os.environ.get("PYO_TEST_ADMIN_USER", "system")
+CONNECTSTRING = os.environ.get("PYO_TEST_CONNECT_STRING", "127.0.0.1:1521/FREEPDB1")
+PASSWORD = os.environ.get("PYO_TEST_ADMIN_PASSWORD", "graalpy")
 
 # -----------------------------------------------------------------------------
 
-FILE_NAME = os.path.join(os.path.dirname(__file__), "sample.csv")
+FILE_NAME = os.path.join(tempfile.gettempdir(), "graalpy-c-oracledb-load-sample.csv")
+BATCH_SIZE = 2_000_000
+TABLES = ["mytabpya", "mytabdpl", "mytabpyaem", "mytabem", "mytabpd"]
 
-if (len(sys.argv) > 1):
-    BATCH_SIZE = int(sys.argv[1])
-else:
-    BATCH_SIZE = 2_000_000
+def __process_args__(batch_size=BATCH_SIZE):
+    return [int(str(batch_size).replace("_", ""))]
 
 # -----------------------------------------------------------------------------
 
@@ -147,6 +147,10 @@ def compare(connection, t1, t2):
 
 def pd(tab):
     print("\nPandas read_csv() - Pandas to_sql()")
+
+    ensure_packages(pandas="2.2.3", sqlalchemy="2.0.45")
+    import pandas
+    from sqlalchemy import create_engine
 
     engine = create_engine(
         "oracle+oracledb://@",
@@ -326,7 +330,10 @@ def pya(connection, tab):
 BLOCK_SIZE = 0
 CONNECTION = None
 
-def __setup__(*args):
+def __setup__(batch_size=BATCH_SIZE):
+    global BATCH_SIZE
+    BATCH_SIZE = batch_size
+
     # blog_create.py
     #
     # christopher.jones@oracle.com, 2025
@@ -356,32 +363,49 @@ def __setup__(*args):
 
     global BLOCK_SIZE, CONNECTION
     BLOCK_SIZE = len(max(open(FILE_NAME, 'r'), key=len)) * BATCH_SIZE
-    CONNECTION = oracledb.connect(user=USERNAME, password=PASSWORD, dsn=CONNECTSTRING)
+    timeout = float(os.environ.get("GRAALPY_ORACLEDB_WAIT_TIMEOUT", "0"))
+    deadline = time.monotonic() + timeout
+    attempt = 0
+    while True:
+        try:
+            CONNECTION = oracledb.connect(user=USERNAME, password=PASSWORD, dsn=CONNECTSTRING)
+            break
+        except oracledb.Error:
+            if time.monotonic() >= deadline:
+                raise
+            attempt += 1
+            print(f"Waiting for Oracle Database at {CONNECTSTRING} (attempt {attempt})")
+            time.sleep(5)
+
+    quiet_seconds = float(os.environ.get("GRAALPY_ORACLEDB_QUIET_SECONDS", "0"))
+    if quiet_seconds > 0:
+        print(f"Waiting {quiet_seconds:g} seconds for Oracle Database to settle")
+        time.sleep(quiet_seconds)
 
 
-def __benchmark__(num=1):
-    assert num == 1
-    t1 = "mytabpya"
+def __benchmark__(batch_size=BATCH_SIZE):
+    assert batch_size == BATCH_SIZE
+    t1 = TABLES[0]
     createtab(CONNECTION, t1)
     pya(CONNECTION, t1)
     checkrowcount(CONNECTION, t1)
 
-    t2 = "mytabdpl"
+    t2 = TABLES[1]
     # createtab(CONNECTION, t2)
     # dpl(CONNECTION, t2)
     # checkrowcount(CONNECTION, t2)
 
-    t3 = "mytabpyaem"
+    t3 = TABLES[2]
     # createtab(CONNECTION, t3)
     # pyaem(CONNECTION, t3)
     # checkrowcount(CONNECTION, t3)
 
-    t4 = "mytabem"
+    t4 = TABLES[3]
     # createtab(CONNECTION, t4)
     # em(CONNECTION, t4)
     # checkrowcount(CONNECTION, t4)
 
-    t5 = "mytabpd"
+    t5 = TABLES[4]
     # createtab(CONNECTION, t5)
     # pd(t5)
     # checkrowcount(CONNECTION, t5)
@@ -391,12 +415,23 @@ def __benchmark__(num=1):
 
 
 def __cleanup__(*args):
-    droptabs(CONNECTION, [t1, t2, t3, t4, t5])
+    if CONNECTION is not None:
+        droptabs(CONNECTION, TABLES)
+
+
+def __teardown__():
+    global CONNECTION
+    if CONNECTION is not None:
+        CONNECTION.close()
+        CONNECTION = None
 
 
 if __name__ == "__main__":
-    __setup__()
+    if len(sys.argv) > 1:
+        BATCH_SIZE = int(sys.argv[1])
+    __setup__(BATCH_SIZE)
     print("\nCompare end-to-end times for reading a "
           "CSV file (number, date, string) in chunks and inserting into the Database")
-    __benchmark__(1)
+    __benchmark__(BATCH_SIZE)
     __cleanup__()
+    __teardown__()
