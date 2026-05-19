@@ -209,30 +209,32 @@
         linux: {
             common: {
                 "00:devtoolset": "==7",
-                "01:binutils": ">=2.34",
-                bzip2: ">=1.0.6",
-                cmake: ">=3.22.2",
-                zlib: ">=1.2.11",
-                lcov: ">=1.11",
-                libffi: ">=3.2.1",
+                "01:binutils": "==2.34",
+                bzip2: "==1.0.6",
+                cmake: "==3.22.2",
+                zlib: "==1.2.11",
+                lcov: "==1.14",
+                libffi: "==3.2.1",
                 llvm: "==8.0.0",
-                maven: ">=3.3.9",
+                maven: "==3.9.10",
                 curl: '==7.50.1',
             },
             amd64: {},
-            aarch64: {},
+            aarch64: {
+                maven: "==3.5.3",
+            },
         },
         darwin: {
             common: {
                 coreutils: "",
-                maven: ">=3.3.9",
+                maven: "==3.3.9",
             },
             amd64: {},
             aarch64: {},
         },
         windows: {
             common: {
-                maven: ">=3.3.9",
+                maven: "==3.3.9",
             },
             amd64: {},
             aarch64: {},

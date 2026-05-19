@@ -103,7 +103,7 @@
     ] else [],
 
     local packages(os, arch) = self.packages(os, arch) + {
-        make: ">=3.83",
+        make: "==4.3",
         binutils: "==2.23.2",
     },
 
@@ -254,7 +254,7 @@
         ],
         deploysArtifacts: true,
         packages +: packages(self.os, self.arch) + {
-            "apache/ant": ">=1.9.4",
+            "apache/ant": "==1.10.1",
             libyaml: "==0.2.5",
             "pip:ninja_syntax": "==1.7.2",
             "pip:pylint": "==2.4.4",

@@ -6,7 +6,7 @@
 (import "ci/python-bench.libsonnet") +
 {
     overlay: "28f1ff831cd38862c38c7d4c02fbf145b8a17b5c",
-    specVersion: "6",
+    specVersion: "7",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
 
@@ -458,7 +458,7 @@
             packages: {
                 ruby: "==3.2.2",
                 libyaml: "==0.2.5",
-                mx: "7.34.1",
+                mx: "==7.82.0",
                 python3: "==3.8.10",
             },
             environment: {
@@ -508,7 +508,7 @@
             targets: ["deploy"],
             capabilities: ["linux", "amd64"],
             packages: {
-                mx: "7.34.1",
+                mx: "==7.82.0",
                 python3: "==3.8.10",
             },
             requireArtifacts: [
