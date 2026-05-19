@@ -200,6 +200,7 @@
                 logs+: [
                     "default.iprof.gz",
                     "default.lcov",
+                    "host-inlining.txt",
                 ],
             }),
         }),
