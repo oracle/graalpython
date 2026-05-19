@@ -6,7 +6,7 @@
 (import "ci/python-bench.libsonnet") +
 {
     overlay: "28f1ff831cd38862c38c7d4c02fbf145b8a17b5c",
-    specVersion: "7",
+    specVersion: "8",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
 
