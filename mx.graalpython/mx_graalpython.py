@@ -411,6 +411,10 @@ def graalpy_native_pgo_build_and_test(args=None):
     if mx_sdk_vm_ng.get_bootstrap_graalvm_version() < mx.VersionSpec("25.0"):
         mx.abort("python-native-pgo not supported on GraalVM < 25")
 
+    host_inlining_log = Path(SUITE.dir) / "host-inlining.txt"
+    if host_inlining_log.exists():
+        host_inlining_log.unlink()
+
     with set_env(GRAALPY_PGO_PROFILE=""):
         mx.log(mx.colorize("[PGO] Building PGO-instrumented native image", color="yellow"))
         build_home = graalpy_standalone_home('native', enterprise=True, build=True)
@@ -469,11 +473,15 @@ def graalpy_native_pgo_build_and_test(args=None):
     if not os.path.isfile(iprof_path):
         mx.abort(f"[PGO] Could not find profile file at expected location: {iprof_path}")
 
-    with set_env(GRAALPY_PGO_PROFILE=str(iprof_path)):
+    with set_env(GRAALPY_PGO_PROFILE=str(iprof_path), GRAALPY_HOST_INLINING_LOG=str(host_inlining_log)):
         mx.log(mx.colorize("[PGO] Building optimized native image with collected profile", color="yellow"))
         native_bin = graalpy_standalone('native', enterprise=True, build=True)
 
     mx.log(mx.colorize(f"[PGO] Optimized PGO build complete: {native_bin}", color="yellow"))
+    if host_inlining_log.exists():
+        mx.log(mx.colorize(f"[PGO] Host inlining log at: {host_inlining_log}", color="yellow"))
+    else:
+        mx.warn(f"[PGO] Host inlining log was not produced at expected location: {host_inlining_log}")
 
     iprof_gz_path = str(iprof_path) + '.gz'
     with open(iprof_path, 'rb') as f_in, gzip.open(iprof_gz_path, 'wb') as f_out:
@@ -948,6 +956,14 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx_args.append(f"--extra-image-builder-argument=--pgo={pgo_profile}")
             mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
             mx_args.append(f"--extra-image-builder-argument=-H:+PGOPrintProfileQuality")
+            if host_inlining_log := os.environ.get("GRAALPY_HOST_INLINING_LOG"):
+                mx_args.extend([
+                    f"--extra-image-builder-argument=-H:Log=HostInliningPhase,~CanonicalizerPhase,~GraphBuilderPhase",
+                    f"--extra-image-builder-argument=-H:+TruffleHostInliningPrintExplored",
+                    f"--extra-image-builder-argument=-H:MethodFilter=com.oracle.graal.python.*.*",
+                    f"--extra-image-builder-argument=-H:-UnlockExperimentalVMOptions",
+                    f"--extra-image-builder-argument=-Dgraal.LogFile={host_inlining_log}",
+                ])
         else:
             mx_args.append(f"--extra-image-builder-argument=--pgo-instrument")
             mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
