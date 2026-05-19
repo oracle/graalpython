@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -41,6 +41,12 @@ public class BenchmarkTests {
     public void richards3() {
         String name = "richards3.py";
         assertBenchNoError(name, new String[]{name, "20"});
+    }
+
+    @Test
+    public void gr68715_collectOuterStackLocals() {
+        String name = "gr68715_collect_outer_stack_locals.py";
+        assertBenchNoError(name, new String[]{name, "1000", "4", "4"});
     }
 
     @Test
