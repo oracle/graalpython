@@ -1447,18 +1447,9 @@
     <elf-symbol name='_Py_strhex_bytes_with_sep' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='_Py_strhex_with_sep' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='_Py_string_to_number_with_underscores' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='bytearray_getbuffer' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='bytearray_releasebuffer' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='bytes_buffer_getbuffer' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='getPyCapsuleTypeReference' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='initialize_graal_capi' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='memory_getbuf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='memory_releasebuf' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='mmap_getbuffer' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='unicode_dealloc' type='func-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
   </elf-function-symbols>
   <elf-variable-symbols>
-    <elf-symbol name='Arraytype' size='416' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='GraalPy_CAPI_HELPERS' size='344' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='GraalPy_CAPI_METADATA' size='2376' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='PyArrayIter_Type' size='416' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
@@ -1680,8 +1671,5 @@
     <elf-symbol name='_Py_ctype_toupper' size='256' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='_Py_open_cloexec_works' size='4' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
     <elf-symbol name='_Py_tss_tstate' size='8' type='tls-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='cycle_type' size='416' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='marker_struct' size='16' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
-    <elf-symbol name='mmap_object_type' size='416' type='object-type' binding='global-binding' visibility='default-visibility' is-defined='yes'/>
   </elf-variable-symbols>
 </abi-corpus>

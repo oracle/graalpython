@@ -112,7 +112,7 @@ typedef struct {
 } PyPickleBufferObject;
 
 // defined in 'unicodeobject.c'
-void unicode_dealloc(PyObject *unicode);
+Py_LOCAL_SYMBOL void unicode_dealloc(PyObject *unicode);
 
 Py_LOCAL_SYMBOL NO_INLINE void
 graalpy_dealloc_stack_grow(PyThreadState *tstate)
@@ -169,7 +169,6 @@ static void capsule_dealloc(PyObject *o) {
 
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
-PyAPI_DATA(PyTypeObject) mmap_object_type;
 
 // used for sizeof(...)
 typedef struct {
@@ -194,8 +193,8 @@ typedef struct {
     int strict;
 } zipobject;
 
-#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
-PyTypeObject GLOBAL_NAME = {\
+#define PY_TRUFFLE_TYPE_GENERIC_WITH_STORAGE(STORAGE, GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
+STORAGE PyTypeObject GLOBAL_NAME = {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
@@ -238,12 +237,21 @@ PyTypeObject GLOBAL_NAME = {\
     0,                                          /* tp_is_gc */\
 };
 
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
+PY_TRUFFLE_TYPE_GENERIC_WITH_STORAGE(, GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__)
+
+#undef PY_TRUFFLE_TYPE_LOCAL
+#define PY_TRUFFLE_TYPE_LOCAL(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__) \
+PY_TRUFFLE_TYPE_GENERIC_WITH_STORAGE(static, GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, 0, 0, 0, 0, 0)
+
 #define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, NAME)
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) PyTypeObject GLOBAL_NAME;
 
 PY_TYPE_OBJECTS
 
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_GENERIC_WITH_STORAGE
+#undef PY_TRUFFLE_TYPE_LOCAL
 #undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 
@@ -271,10 +279,12 @@ static void initialize_builtin_types_and_structs() {
     GraalPyPrivate_Log(GRAALPY_LOG_FINE, "initialize_builtin_types_and_structs...");
 	static int64_t builtin_types[] = {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, __TYPE_NAME__,
+#define PY_TRUFFLE_TYPE_LOCAL(GLOBAL_NAME, __TYPE_NAME__, a, b) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_LOCAL
 #undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
         NULL, NULL
@@ -288,7 +298,7 @@ static void initialize_builtin_types_and_structs() {
 	GraalPyPrivate_Log(GRAALPY_LOG_FINE, "initialize_builtin_types_and_structs: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
  }
 
-int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
+static int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
 	// TODO(fa) readonly flag
     char* data = GraalPyPrivate_GetMMapData(self);
     if (!data) {
@@ -341,13 +351,13 @@ static void initialize_globals(PyThreadState *tstate) {
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
 /* BYTES, BYTEARRAY */
-int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
-int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
-void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
+Py_LOCAL_SYMBOL int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
+Py_LOCAL_SYMBOL int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
+Py_LOCAL_SYMBOL void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
 
 /* MEMORYVIEW */
-int memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags);
-void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
+Py_LOCAL_SYMBOL int memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags);
+Py_LOCAL_SYMBOL void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
 
 /* PICKLEBUFFER */
 static int
@@ -405,10 +415,12 @@ static void initialize_gc_types_related_slots() {
 
 int is_builtin_type(PyTypeObject *tp) {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) (tp == &GLOBAL_NAME) ||
+#define PY_TRUFFLE_TYPE_LOCAL(GLOBAL_NAME, __TYPE_NAME__, a, b) (tp == &GLOBAL_NAME) ||
 #define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, 0, 0, 0, 0, 0, 0, 0)
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     return PY_TYPE_OBJECTS 0;
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_LOCAL
 #undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 }

@@ -1503,7 +1503,7 @@ memoryview_toreadonly_impl(PyMemoryViewObject *self)
 /*                               getbuffer                                */
 /**************************************************************************/
 
-int // GraalPy change: not static
+Py_LOCAL_SYMBOL int // GraalPy change: hidden for capi.c
 memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags)
 {
     Py_buffer *base = &self->view;
@@ -1582,7 +1582,7 @@ memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags)
     return 0;
 }
 
-void // GraalPy change: not static
+Py_LOCAL_SYMBOL void // GraalPy change: hidden for capi.c
 memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view)
 {
     self->exports--;

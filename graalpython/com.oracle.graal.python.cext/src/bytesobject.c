@@ -1587,7 +1587,7 @@ bytes_subscript(PyBytesObject* self, PyObject* item)
 }
 #endif // GraalPy change
 
-int // GraalPy change: not static
+Py_LOCAL_SYMBOL int // GraalPy change: hidden for capi.c
 bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags)
 {
     // GraalPy change: avoid direct struct access

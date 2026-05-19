@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -51,7 +51,7 @@ _getbytevalue(PyObject* arg, int *value)
 }
 #endif // GraalPy change
 
-int // GraalPy change: not static
+Py_LOCAL_SYMBOL int // GraalPy change: hidden for capi.c
 bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags)
 {
     void *ptr;
@@ -68,7 +68,7 @@ bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags)
     return 0;
 }
 
-void // GraalPy change: not static
+Py_LOCAL_SYMBOL void // GraalPy change: hidden for capi.c
 bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view)
 {
     // GraalPy change

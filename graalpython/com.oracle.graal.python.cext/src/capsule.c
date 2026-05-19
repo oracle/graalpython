@@ -10,7 +10,7 @@
 #include "capi.h"
 
 
-PyAPI_FUNC(PyTypeObject*) getPyCapsuleTypeReference() {
+Py_LOCAL_SYMBOL PyTypeObject* getPyCapsuleTypeReference() {
 	return &PyCapsule_Type;
 }
 

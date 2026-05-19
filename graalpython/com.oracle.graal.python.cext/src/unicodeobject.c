@@ -1705,8 +1705,8 @@ find_maxchar_surrogates(const wchar_t *begin, const wchar_t *end,
     return 0;
 }
 
-// GraalPy change: export
-PyAPI_FUNC(void)
+// GraalPy change: hidden for capi.c
+Py_LOCAL_SYMBOL void
 unicode_dealloc(PyObject *unicode)
 {
 #ifdef Py_DEBUG
