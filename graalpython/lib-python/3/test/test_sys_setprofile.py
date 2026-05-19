@@ -492,6 +492,114 @@ class TestEdgeCases(unittest.TestCase):
         # The last c_call is the call to sys.setprofile
         self.assertEqual(events, ['c_call', 'c_return', 'c_call'])
 
+    def test_nested_c_call_argument_exception(self):
+        events = []
+
+        def profile(frame, event, arg):
+            arg_name = getattr(arg, "__name__", None)
+            if frame.f_code.co_name == "f" or (event.startswith("c_") and arg_name != "setprofile"):
+                events.append((event, arg_name))
+
+        def f():
+            try:
+                id(len(1))
+            except TypeError:
+                pass
+
+        sys.setprofile(profile)
+        f()
+        sys.setprofile(None)
+
+        self.assertEqual(events, [
+            ("call", None),
+            ("c_call", "len"),
+            ("c_exception", "len"),
+            ("return", None),
+        ])
+
+    def test_c_call_after_python_argument_evaluation(self):
+        events = []
+
+        def profile(frame, event, arg):
+            arg_name = getattr(arg, "__name__", None)
+            if frame.f_code.co_name in {"f", "make_arg"} or (event.startswith("c_") and arg_name != "setprofile"):
+                events.append((event, frame.f_code.co_name, arg_name))
+
+        def make_arg():
+            return []
+
+        def f():
+            id(make_arg())
+
+        sys.setprofile(profile)
+        f()
+        sys.setprofile(None)
+
+        self.assertEqual(events, [
+            ("call", "f", None),
+            ("call", "make_arg", None),
+            ("return", "make_arg", None),
+            ("c_call", "f", "id"),
+            ("c_return", "f", "id"),
+            ("return", "f", None),
+        ])
+
+    def test_nested_c_call_after_inner_return(self):
+        events = []
+
+        def profile(frame, event, arg):
+            arg_name = getattr(arg, "__name__", None)
+            if frame.f_code.co_name == "f" or (event.startswith("c_") and arg_name != "setprofile"):
+                events.append((event, arg_name))
+
+        def f():
+            id(len([]))
+
+        sys.setprofile(profile)
+        f()
+        sys.setprofile(None)
+
+        self.assertEqual(events, [
+            ("call", None),
+            ("c_call", "len"),
+            ("c_return", "len"),
+            ("c_call", "id"),
+            ("c_return", "id"),
+            ("return", None),
+        ])
+
+    def test_nested_c_call_callback_exception(self):
+        events = []
+
+        def profile(frame, event, arg):
+            arg_name = getattr(arg, "__name__", None)
+            if frame.f_code.co_name in {"f", "key"} or (event.startswith("c_") and arg_name != "setprofile"):
+                events.append((event, frame.f_code.co_name, arg_name))
+
+        def key(obj):
+            return len(1)
+
+        def f():
+            try:
+                sorted([1], key=key)
+            except TypeError:
+                pass
+
+        sys.setprofile(profile)
+        f()
+        sys.setprofile(None)
+
+        self.assertEqual(events, [
+            ("call", "f", None),
+            ("c_call", "f", "sorted"),
+            ("call", "key", None),
+            ("c_call", "key", "len"),
+            ("c_exception", "key", "len"),
+            ("return", "key", None),
+            ("c_exception", "f", "sorted"),
+            ("return", "f", None),
+        ])
+
 
 if __name__ == "__main__":
     unittest.main()

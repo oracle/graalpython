@@ -268,6 +268,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private BytecodeLocal prevSaveExceptionLocal;
 
     private BytecodeLocal instrumentationDataLocal;
+    private int profileCEventStackSize;
+    private int maxProfileCEventStackSize;
 
     public RootNodeCompiler(BytecodeDSLCompilerContext ctx, RootNodeCompiler parent, SSTNode rootNode, EnumSet<FutureFeature> futureFeatures) {
         this(ctx, parent, null, rootNode, rootNode, futureFeatures);
@@ -470,6 +472,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                             selfIndex,
                             yieldFromGenerator != null ? yieldFromGenerator.getLocalIndex() : -1,
                             instrumentationDataLocal.getLocalIndex(),
+                            maxProfileCEventStackSize,
                             new BytecodeSupplier(nodes));
             ctx.codeUnits.put(key, codeUnit);
         }
@@ -2090,8 +2093,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         private static final int NUM_ARGS_MAX_FIXED = 4;
 
+        private void enterProfileCEventCall() {
+            profileCEventStackSize++;
+            maxProfileCEventStackSize = Math.max(maxProfileCEventStackSize, profileCEventStackSize);
+        }
+
+        private void exitProfileCEventCall() {
+            assert profileCEventStackSize > 0;
+            profileCEventStackSize--;
+        }
+
         private void beginCallNAry(int numArgs) {
             assert numArgs <= NUM_ARGS_MAX_FIXED;
+            enterProfileCEventCall();
+            b.beginInstrumentCallReturn();
             switch (numArgs) {
                 case 0 -> b.beginCallNilaryMethod();
                 case 1 -> b.beginCallUnaryMethod();
@@ -2110,16 +2125,64 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 case 3 -> b.endCallTernaryMethod();
                 case 4 -> b.endCallQuaternaryMethod();
             }
+            b.endInstrumentCallReturn();
+            exitProfileCEventCall();
+        }
+
+        private void beginCallNilaryMethod() {
+            enterProfileCEventCall();
+            b.beginInstrumentCallReturn();
+            b.beginCallNilaryMethod();
+        }
+
+        private void endCallNilaryMethod() {
+            b.endCallNilaryMethod();
+            b.endInstrumentCallReturn();
+            exitProfileCEventCall();
+        }
+
+        private void beginCallUnaryMethod() {
+            enterProfileCEventCall();
+            b.beginInstrumentCallReturn();
+            b.beginCallUnaryMethod();
+        }
+
+        private void endCallUnaryMethod() {
+            b.endCallUnaryMethod();
+            b.endInstrumentCallReturn();
+            exitProfileCEventCall();
+        }
+
+        private void beginCallVarargsMethod() {
+            enterProfileCEventCall();
+            b.beginInstrumentCallReturn();
+            b.beginCallVarargsMethod();
+        }
+
+        private void endCallVarargsMethod() {
+            b.endCallVarargsMethod();
+            b.endInstrumentCallReturn();
+            exitProfileCEventCall();
         }
 
         private void visitArguments(ExprTy func, ExprTy[] args, int numArgs) {
+            visitArguments(func, args, numArgs, true);
+        }
+
+        private void visitArguments(ExprTy func, ExprTy[] args, int numArgs, boolean instrumentCall) {
             if (numArgs > 0) {
                 for (int i = 0; i < numArgs - 1; i++) {
                     args[i].accept(this);
                 }
+                if (instrumentCall) {
+                    b.beginInstrumentCall();
+                }
                 beginTraceLineChecked(b);
                 args[numArgs - 1].accept(this);
                 endTraceLineChecked(func, b);
+                if (instrumentCall) {
+                    b.endInstrumentCall();
+                }
             }
         }
 
@@ -2139,7 +2202,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             // @formatter:off
             if (useVariadic) {
-                b.beginCallVarargsMethod();
+                beginCallVarargsMethod();
             } else {
                 beginCallNAry(numArgs);
             }
@@ -2155,29 +2218,43 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         function = beginTemporaryLocal();
                         b.beginBlock();
                         b.beginStoreLocal(function);
+                        b.beginInstrumentCallable();
                         emitGetMethod(func, receiver);
+                        b.endInstrumentCallable();
                         b.endStoreLocal();
                         b.emitLoadLocal(function);
                         b.endBlock();
                     } else {
+                        b.beginInstrumentCallable();
                         emitGetMethod(func, receiver);
+                        b.endInstrumentCallable();
                     }
 
                     b.beginCollectToObjectArray();
                     emitUnstar(() -> loadAndEndTemporaryLocal(receiver), args, null, func);
                     b.endCollectToObjectArray();
+                    b.beginInstrumentCall();
                     if (hasKeywords) {
                         emitNonEmptyKeywords(keywordGroups, function);
                         // function local cleared in emitNonEmptyKeywords
                     } else {
                         emitEmptyKeywords();
                     }
+                    b.endInstrumentCall();
                 } else {
                     assert len(keywords) == 0;
 
+                    b.beginInstrumentCallable();
                     emitGetMethod(func, receiver);
-                    loadAndEndTemporaryLocal(receiver); // callable
-                    visitArguments(func, args, numArgs - 1);
+                    b.endInstrumentCallable();
+                    if (numArgs == 1) {
+                        b.beginInstrumentCall();
+                        loadAndEndTemporaryLocal(receiver); // callable
+                        b.endInstrumentCall();
+                    } else {
+                        loadAndEndTemporaryLocal(receiver); // callable
+                        visitArguments(func, args, numArgs - 1);
+                    }
                 }
             } else {
                 if (useVariadic) {
@@ -2188,23 +2265,31 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         b.beginStoreLocal(function);
                         func.accept(this);
                         b.endStoreLocal();
+                        b.beginInstrumentCallable();
                         b.emitLoadLocal(function);
+                        b.endInstrumentCallable();
                         b.endBlock();
                     } else if (hasKeywords) {
+                        b.beginInstrumentCallable();
                         func.accept(this);
+                        b.endInstrumentCallable();
                     } else {
+                        b.beginInstrumentCallable();
                         func.accept(this);
+                        b.endInstrumentCallable();
                     }
 
                     b.beginCollectToObjectArray();
                     emitUnstar(null, args, null, func);
                     b.endCollectToObjectArray();
+                    b.beginInstrumentCall();
                     if (hasKeywords) {
                         emitNonEmptyKeywords(keywordGroups, function);
                         // function local cleared in emitNonEmptyKeywords
                     } else {
                         emitEmptyKeywords();
                     }
+                    b.endInstrumentCall();
                 } else {
                     assert len(keywords) == 0;
 
@@ -2214,7 +2299,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         b.beginTag(DebuggerTags.AlwaysHalt.class);
                     }
 
+                    if (numArgs == 0) {
+                        b.beginInstrumentCall();
+                    }
+                    b.beginInstrumentCallable();
                     func.accept(this); // callable
+                    b.endInstrumentCallable();
+                    if (numArgs == 0) {
+                        b.endInstrumentCall();
+                    }
                     visitArguments(func, args, numArgs);
 
                     if (isBreakpoint) {
@@ -2225,7 +2318,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             // @formatter:off
             if (useVariadic) {
-                b.endCallVarargsMethod();
+                endCallVarargsMethod();
             } else {
                 endCallNAry(numArgs);
             }
@@ -2809,7 +2902,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     initialElementsProducer.run();
                 }
                 if (func != null) {
-                    visitArguments(func, args, args.length);
+                    visitArguments(func, args, args.length, false);
                 } else {
                     visitSequence(args);
                 }
@@ -3882,10 +3975,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 BytecodeDSLCompilerResult classBody = classBodyCompiler.compileClassDefBody(node);
                 BytecodeDSLCompilerResult typeParamsFun = typeParamsCompiler.compileClassTypeParams(node, classBody.codeUnit());
 
-                b.beginCallNilaryMethod();
+                beginCallNilaryMethod();
                 String typeParamsName = "<generic parameters of " + node.name + ">";
+                b.beginInstrumentCall();
+                b.beginInstrumentCallable();
                 emitMakeFunction(typeParamsFun.codeUnit(), node.typeParams, typeParamsName, null, null);
-                b.endCallNilaryMethod();
+                b.endInstrumentCallable();
+                b.endInstrumentCall();
+                endCallNilaryMethod();
             } else {
                 BytecodeDSLCompilerResult classBody = createRootNodeCompilerFor(node).compileClassDefBody(node);
                 emitBuildClass(classBody.codeUnit(), node);
@@ -3927,12 +4024,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endStoreLocal();
             }
 
-            b.beginCallVarargsMethod();
+            beginCallVarargsMethod();
+            b.beginInstrumentCallable();
             if (hasEmptyKeywords) {
                 b.emitLoadBuildClass();
             } else {
                 b.emitLoadLocal(buildClassFunction);
             }
+            b.endInstrumentCallable();
 
             Runnable finalElements = null;
             if (node.isGeneric()) {
@@ -3961,14 +4060,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endCollectToObjectArray();
 
             // keyword args
+            b.beginInstrumentCall();
             if (hasEmptyKeywords) {
                 emitEmptyKeywords();
             } else {
                 validateKeywords(node.keywords);
                 emitNonEmptyKeywords(node.keywords, buildClassFunction);
             }
+            b.endInstrumentCall();
 
-            b.endCallVarargsMethod();
+            endCallVarargsMethod();
             b.endBlock();
         }
 
@@ -4184,13 +4285,29 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 BytecodeDSLCompilerResult typeParamsFunUnit = typeParamsCompiler.compileFunctionTypeParams(funBodyUnit.codeUnit(), node, name, args, returns, typeParams);
 
                 String typeParamsName = "<generic parameters of " + name + ">";
+                if (argsCount == 0) {
+                    b.beginInstrumentCall();
+                }
+                b.beginInstrumentCallable();
                 emitMakeFunction(typeParamsFunUnit.codeUnit(), typeParams, typeParamsName, null, null);
+                b.endInstrumentCallable();
+                if (argsCount == 0) {
+                    b.endInstrumentCall();
+                }
 
                 if (hasDefaultArgs(args)) {
+                    if (!hasDefaultKwargs(args)) {
+                        b.beginInstrumentCall();
+                    }
                     emitDefaultArgsArray(args);
+                    if (!hasDefaultKwargs(args)) {
+                        b.endInstrumentCall();
+                    }
                 }
                 if (hasDefaultKwargs(args)) {
+                    b.beginInstrumentCall();
                     emitDefaultKwargsArray(args);
+                    b.endInstrumentCall();
                 }
 
                 endCallNAry(argsCount);
@@ -4284,15 +4401,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             for (int i = 0; i < decorators.length; i++) {
                 // Attribute the eventual decorator call to the decorator expression, not the def/class line.
                 beginSourceSectionInner(b, decorators[i].getSourceRange());
-                b.beginCallUnaryMethod();
+                beginCallUnaryMethod();
                 // evaluation of the decorator expression
                 b.beginTraceLineWithArgument();
+                b.beginInstrumentCallable();
                 decorators[i].accept(this);
+                b.endInstrumentCallable();
                 // trace line for the decorator expression, must be executed before the next
                 // decorator expression is evaluated and before the function declaration itself
                 b.endTraceLineWithArgument(decorators[i].getSourceRange().startLine);
 
                 // trace the call to the decorator function (Python 3.12+)
+                b.beginInstrumentCall();
                 b.beginTraceLineWithArgument();
             }
         }
@@ -4306,7 +4426,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 // they will "flip" w.r.t. original decorator ordering, but tracings won't, so we
                 // need to flip them manually
                 b.endTraceLineWithArgument(decorators[decorators.length - 1 - i].getSourceRange().startLine);
-                b.endCallUnaryMethod();
+                b.endInstrumentCall();
+                endCallUnaryMethod();
                 b.endSourceSection();
             }
         }
@@ -6741,9 +6862,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 BytecodeDSLCompilerResult typeParamsFun = typeParamsCompiler.compileTypeAliasTypeParameters(name, body.codeUnit(), node);
 
                 String typeParamsName = "<generic parameters of " + name + ">";
-                b.beginCallNilaryMethod();
+                beginCallNilaryMethod();
+                b.beginInstrumentCall();
+                b.beginInstrumentCallable();
                 emitMakeFunction(typeParamsFun.codeUnit(), node.typeParams, typeParamsName, null, null);
-                b.endCallNilaryMethod();
+                b.endInstrumentCallable();
+                b.endInstrumentCall();
+                endCallNilaryMethod();
             } else {
                 BytecodeDSLCompilerResult body = createRootNodeCompilerFor(node).compileTypeAliasBody(node);
                 emitBuildTypeAlias(body.codeUnit(), node);
