@@ -412,8 +412,11 @@ def graalpy_native_pgo_build_and_test(args=None):
         mx.abort("python-native-pgo not supported on GraalVM < 25")
 
     host_inlining_log = Path(SUITE.dir) / "host-inlining.txt"
+    host_inlining_log_gz = Path(str(host_inlining_log) + ".gz")
     if host_inlining_log.exists():
         host_inlining_log.unlink()
+    if host_inlining_log_gz.exists():
+        host_inlining_log_gz.unlink()
 
     with set_env(GRAALPY_PGO_PROFILE=""):
         mx.log(mx.colorize("[PGO] Building PGO-instrumented native image", color="yellow"))
@@ -480,6 +483,10 @@ def graalpy_native_pgo_build_and_test(args=None):
     mx.log(mx.colorize(f"[PGO] Optimized PGO build complete: {native_bin}", color="yellow"))
     if host_inlining_log.exists():
         mx.log(mx.colorize(f"[PGO] Host inlining log at: {host_inlining_log}", color="yellow"))
+        with open(host_inlining_log, 'rb') as f_in, gzip.open(host_inlining_log_gz, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+        host_inlining_log.unlink()
+        mx.log(mx.colorize(f"[PGO] Gzipped host inlining log at: {host_inlining_log_gz}", color="yellow"))
     else:
         mx.warn(f"[PGO] Host inlining log was not produced at expected location: {host_inlining_log}")
 
