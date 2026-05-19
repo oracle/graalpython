@@ -182,6 +182,7 @@ graalpython/com.oracle.graal.python.cext/include/internal/pycore_typeobject.h,py
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_ucnhash.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_unicodeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_warnings.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/intrcheck.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/iterobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/listobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/longobject.h,python.copyright

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,6 +71,36 @@ int
 _Py_IsFinalizing(void)
 {
     return graalpy_finalizing;
+}
+
+static void
+graalpy_fork_not_supported(void)
+{
+    PyErr_SetString(PyExc_SystemError, "fork is not supported by GraalPy");
+}
+
+void
+PyOS_BeforeFork(void)
+{
+    graalpy_fork_not_supported();
+}
+
+void
+PyOS_AfterFork_Parent(void)
+{
+    graalpy_fork_not_supported();
+}
+
+void
+PyOS_AfterFork_Child(void)
+{
+    graalpy_fork_not_supported();
+}
+
+void
+PyOS_AfterFork(void)
+{
+    PyOS_AfterFork_Child();
 }
 
 void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {
