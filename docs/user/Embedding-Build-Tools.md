@@ -62,10 +62,13 @@ This path must be configured identically in both your build plugin and runtime c
 
 Some files need to exist on the real filesystem rather than staying embedded as Java resources.
 
-This is required for Python C extensions (`.so`, `.dylib`, `.pyd`, `.dll`) and font files (`.ttf`) that must be accessed by the operating system loader outside the Truffle sandbox.
-GraalPy automatically extracts these file types to a temporary directory when first accessed, then delegates to the real files for subsequent operations.
+This is required for Python C extensions (`.so`, `.dylib`, `.pyd`, `.dll`) and other files that are opened directly by native libraries outside Python's file APIs.
+GraalPy automatically extracts common native library and font file types such as `.so`, `.dylib`, `.pyd`, `.dll`, and `.ttf` when first accessed, then delegates to the real files for subsequent operations.
 
-Use the `VirtualFileSystem$Builder#extractFilter` API to modify which files get extracted automatically.
+If a package reports that an embedded file under `/graalpy_vfs` does not exist, check whether a native library is opening that file directly.
+For example, packages using ONNX Runtime may need model files such as `.onnx` to be extracted as real files.
+
+Use the `VirtualFileSystem$Builder#extractFilter` API to customize which files are extracted automatically.
 For full control, extract all resources to a user-defined directory before creating your GraalPy context:
 
 - `GraalPyResources.extractVirtualFileSystemResources(VirtualFileSystem vfs, Path externalResourcesDirectory)` - Extract resources to a specified directory
