@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -100,6 +100,7 @@ struct timeval;
 #include "pythonrun.h"
 #include "pylifecycle.h"
 #include "ceval.h"
+#include "intrcheck.h"
 #include "sysmodule.h"
 #include "osmodule.h"
 #include "import.h"
