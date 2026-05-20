@@ -46,6 +46,7 @@ from pathlib import Path
 
 
 compiled_registry = set()
+_venv_site_packages_cache = {}
 
 
 def find_rootdir():
@@ -74,6 +75,10 @@ def _venv_site_packages(venv_dir: Path, py_executable: Path = None) -> Path:
     # the correct path using that python. this is used in polybenchmarks, where
     # the executable is not graalpy and thus a different CI-env Python is used.
     if py_executable and py_executable.exists():
+        cache_key = venv_dir.absolute()
+        cached_path = _venv_site_packages_cache.get(cache_key)
+        if cached_path and cached_path.exists():
+            return cached_path
         import subprocess
         try:
             path = subprocess.check_output([
@@ -85,7 +90,9 @@ def _venv_site_packages(venv_dir: Path, py_executable: Path = None) -> Path:
             pass
         else:
             if path:
-                return Path(path)
+                site_packages = Path(path)
+                _venv_site_packages_cache[cache_key] = site_packages
+                return site_packages
     existing_site_packages = list(venv_dir.glob("lib*/python*/site-packages"))
     if len(existing_site_packages) == 1:
         return existing_site_packages[0]
