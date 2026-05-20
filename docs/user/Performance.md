@@ -17,6 +17,16 @@ Many Python packages from the machine learning or data science ecosystems contai
 This code benefits little from GraalPy's JIT compilation and suffers from having to emulate CPython implementation details on GraalPy.
 When many C extensions are involved, performance can vary a lot depending on the specific interactions of native and Python code.
 
+### Launcher JIT Presets
+
+The GraalPy launcher provides `-X jit=0|1|2` presets for common startup-heavy and throughput-oriented use cases. The launcher defaults to `-X jit=1` when no `-X jit=...` preset is specified:
+
+- `-X jit=0` disables runtime compilation and minimizes memory usage for tiny one-shot runs.
+- `-X jit=1` keeps compilation enabled, but favors small command line applications with a single compiler thread and higher compilation thresholds.
+- `-X jit=2` keeps compilation enabled with throughput mode and the same higher thresholds for hotter or longer-running workloads.
+
+These presets are launcher conveniences that expand to engine options. They can still be combined with explicit `--engine.*` options when more detailed tuning is needed.
+
 ## Code Loading Performance and Footprint
 
 It takes time to parse Python code so when using GraalPy to embed another language in Python, observe the general advice for embedding Graal languages related to [code caching](https://www.graalvm.org/latest/reference-manual/embed-languages/#code-caching-across-multiple-contexts).

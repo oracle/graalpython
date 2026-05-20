@@ -242,6 +242,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         boolean pyExpatBackendSpecified = false;
         boolean installSignalHandlersSpecified = false;
         boolean isolateNativeModulesSpecified = false;
+        boolean jitModePresetSpecified = false;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
             String arg = argumentIterator.next();
             origArgs.add(arg);
@@ -464,6 +465,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                 if (eq > 0) {
                                     intMaxStrDigits = validateIntMaxStrDigits(xOption.substring(eq), "-X int_max_str_digits");
                                 }
+                            } else if ("jit".equals(xOption) || xOption.startsWith("jit=")) {
+                                applyJitModePreset(polyglotOptions, xOption);
+                                jitModePresetSpecified = true;
                             }
                             break shortOptionLoop;
                         default:
@@ -525,6 +529,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
         if (!isolateNativeModulesSpecified) {
             polyglotOptions.put("python.IsolateNativeModules", "false");
+        }
+        if (!jitModePresetSpecified) {
+            applyJitModePreset(polyglotOptions, "jit=1");
         }
         // Never emit warnings that mess up the output
         unrecognized.add("--engine.WarnInterpreterOnly=false");
@@ -976,6 +983,50 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         throw abort(String.format("%s: invalid limit; must be >= %d  or 0 for unlimited.", name, INT_MAX_STR_DIGITS_THRESHOLD), 1);
     }
 
+    private void applyJitModePreset(Map<String, String> polyglotOptions, String xOption) {
+        boolean fallbackRuntime = usesFallbackRuntime();
+        switch (xOption) {
+            case "jit=0":
+                if (!fallbackRuntime) {
+                    polyglotOptions.put("engine.Compilation", "false");
+                }
+                break;
+            case "jit=1":
+                if (!fallbackRuntime) {
+                    applyLatencyJitPreset(polyglotOptions);
+                }
+                break;
+            case "jit=2":
+                if (!fallbackRuntime) {
+                    applyThroughputJitPreset(polyglotOptions);
+                }
+                break;
+            default:
+                throw abort("Invalid argument for the -X jit option: expected jit=0, jit=1, or jit=2\n" + SHORT_HELP, 2);
+        }
+    }
+
+    private boolean usesFallbackRuntime() {
+        return findOptionDescriptor("engine", "engine.Compilation") == null;
+    }
+
+    private static void applyLatencyJitPreset(Map<String, String> polyglotOptions) {
+        polyglotOptions.put("engine.CompilerThreads", "1");
+        applyRaisedJitThresholds(polyglotOptions);
+    }
+
+    private static void applyThroughputJitPreset(Map<String, String> polyglotOptions) {
+        polyglotOptions.put("engine.Mode", "throughput");
+        applyRaisedJitThresholds(polyglotOptions);
+    }
+
+    private static void applyRaisedJitThresholds(Map<String, String> polyglotOptions) {
+        polyglotOptions.put("engine.FirstTierCompilationThreshold", "10000");
+        polyglotOptions.put("engine.LastTierCompilationThreshold", "100000");
+        polyglotOptions.put("engine.OSRCompilationThreshold", "200704");
+        polyglotOptions.put("engine.SingleTierCompilationThreshold", "100000");
+    }
+
     private static String toAbsolutePath(String executable) {
         if (executable.contains(":")) {
             // this is either already an absolute windows path, or not a single executable
@@ -1182,7 +1233,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         "         can be supplied multiple times to increase verbosity\n" +
                         "-V     : print the Python version number and exit (also --version)\n" +
                         "         when given twice, print more information about the build\n" +
-                        "-X opt : CPython implementation-specific options. warn_default_encoding and int_max_str_digits are supported on GraalPy\n" +
+                        "-X opt : set implementation-specific option\n" +
+                        "         CPython-compatible options supported by GraalPy: warn_default_encoding, int_max_str_digits\n" +
+                        "         GraalPy implementation-specific options: jit=0|1|2 (default: jit=1)\n" +
                         "-W arg : warning control; arg is action:message:category:module:lineno\n" +
                         "         also PYTHONWARNINGS=arg\n" +
                         "file   : program read from script file\n" +
