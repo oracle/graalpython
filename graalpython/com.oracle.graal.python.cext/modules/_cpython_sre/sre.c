@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -45,7 +45,6 @@ static const char copyright[] =
 
 #define PY_SSIZE_T_CLEAN
 
-#include "capi.h" // GraalPy change
 #include "Python.h"
 #include "pycore_long.h"          // _PyLong_GetZero()
 #include "pycore_moduleobject.h"  // _PyModule_GetState()
@@ -3051,14 +3050,24 @@ expand_template(TemplateObject *self, MatchObject *match)
 #if 0 // GraalPy change
         result = _PyUnicode_JoinArray(&_Py_STR(empty), out, count);
 #else // GraalPy change: different implementation
-        count = GraalPyPrivate_List_TryGetItems(list, &out);
-        result = _PyUnicode_JoinArray(PyUnicode_FromString(""), out, count);
+        count = PyList_GET_SIZE(list);
+        out = GraalPyList_ITEMS(list);
+        PyObject *empty = PyUnicode_FromString("");
+        if (empty == NULL) {
+            goto cleanup;
+        }
+        result = _PyUnicode_JoinArray(empty, out, count);
+        Py_DECREF(empty);
 #endif // GraalPy change
     }
     else {
         // Py_SET_SIZE(list, count); // GraalPy change
-        // GraalPy change: replace '&_Py_SINGLETON(bytes_empty)' with 'GraalPyPrivate_Bytes_EmptyWithCapacity(0)'
-        result = _PyBytes_Join(GraalPyPrivate_Bytes_EmptyWithCapacity(0), list);
+        PyObject *empty = PyBytes_FromStringAndSize(NULL, 0);
+        if (empty == NULL) {
+            goto cleanup;
+        }
+        result = _PyBytes_Join(empty, list);
+        Py_DECREF(empty);
     }
 
 cleanup:
