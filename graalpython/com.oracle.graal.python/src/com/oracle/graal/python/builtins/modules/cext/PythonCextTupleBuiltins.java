@@ -48,8 +48,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.callocPtrArray;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.callocPtrArray;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -60,6 +60,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.EnsureCapacityNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
@@ -87,17 +89,15 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextTupleBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
-    abstract static class PyTuple_New extends CApiUnaryBuiltinNode {
+    private static final CApiTiming TIMING_PYTUPLE_NEW = CApiTiming.create(false, "PyTuple_New");
 
-        @Specialization
-        static PTuple doGeneric(long longSize,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Cached PRaiseNode raiseNode) {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
+    static long PyTuple_New(long longSize) {
+        CApiTiming.enter();
+        try {
             int size = (int) longSize;
             if (longSize != size) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.MemoryError);
+                throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.MemoryError);
             }
             /*
              * Already allocate the tuple with native memory, since it has to be populated from the
@@ -105,7 +105,10 @@ public final class PythonCextTupleBuiltins {
              */
             long mem = callocPtrArray(longSize + 1);
             NativeObjectSequenceStorage storage = NativeObjectSequenceStorage.create(mem, size, size, true);
-            return PFactory.createTuple(language, storage);
+            PTuple tuple = PFactory.createTuple(PythonLanguage.get(null), storage);
+            return PythonToNativeInternalNode.executeUncached(tuple, true);
+        } finally {
+            CApiTiming.exit(TIMING_PYTUPLE_NEW);
         }
     }
 

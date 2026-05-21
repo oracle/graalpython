@@ -78,9 +78,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
@@ -143,13 +145,16 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 public final class PythonCextDictBuiltins {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextDictBuiltins.class);
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct)
-    abstract static class PyDict_New extends CApiNullaryBuiltinNode {
+    private static final CApiTiming TIMING_PYDICT_NEW = CApiTiming.create(false, "PyDict_New");
 
-        @Specialization
-        static Object run(
-                        @Bind PythonLanguage language) {
-            return PFactory.createDict(language);
+    @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct)
+    static long PyDict_New() {
+        CApiTiming.enter();
+        try {
+            PDict dict = PFactory.createDict(PythonLanguage.get(null));
+            return PythonToNativeInternalNode.executeUncached(dict, true);
+        } finally {
+            CApiTiming.exit(TIMING_PYDICT_NEW);
         }
     }
 
