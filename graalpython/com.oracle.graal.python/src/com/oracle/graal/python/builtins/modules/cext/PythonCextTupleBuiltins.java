@@ -57,9 +57,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBina
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -75,6 +75,7 @@ import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -120,7 +121,8 @@ public final class PythonCextTupleBuiltins {
         @Specialization
         static Object doPTuple(PTuple tuple, long key,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached PromoteBorrowedValue promoteNode,
+                        @Bind PythonContext context,
+                        @Exclusive @Cached EnsurePythonObjectNode ensureNode,
                         @Exclusive @Cached ListGeneralizationNode generalizationNode,
                         @Exclusive @Cached SetItemScalarNode setItemNode,
                         @Exclusive @Cached GetItemScalarNode getItemNode,
@@ -129,8 +131,8 @@ public final class PythonCextTupleBuiltins {
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
             assert result != null : "tuple must not contain Java null";
-            Object promotedValue = promoteNode.execute(inliningTarget, result);
-            if (promotedValue != null) {
+            Object promotedValue = ensureNode.execute(context, result, false);
+            if (promotedValue != result) {
                 sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
                 tuple.setSequenceStorage(sequenceStorage);
                 setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
@@ -142,21 +144,22 @@ public final class PythonCextTupleBuiltins {
         @Specialization
         static Object doNative(PythonAbstractNativeObject tuple, long key,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Exclusive @Cached GetNativeTupleStorage asNativeStorage,
-                        @Exclusive @Cached PromoteBorrowedValue promoteNode,
+                        @Exclusive @Cached EnsurePythonObjectNode ensureNode,
                         @Exclusive @Cached SetItemScalarNode setItemNode,
                         @Exclusive @Cached GetItemScalarNode getItemNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             SequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
-            Object promotedValue = promoteNode.execute(inliningTarget, result);
-            if (promotedValue != null) {
-                setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
-                return promotedValue;
-            }
             if (result == null) {
                 return NATIVE_NULL;
+            }
+            Object promotedValue = ensureNode.execute(context, result, false);
+            if (promotedValue != result) {
+                setItemNode.execute(inliningTarget, sequenceStorage, index, promotedValue);
+                return promotedValue;
             }
             return result;
         }

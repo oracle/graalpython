@@ -75,9 +75,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNull
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
@@ -121,6 +121,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -164,6 +165,7 @@ public final class PythonCextDictBuiltins {
         @Specialization
         static int next(PDict dict, long posPtr, long keyPtr, long valuePtr, long hashPtr,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached InlinedBranchProfile needsRewriteProfile,
                         @Cached InlinedBranchProfile economicMapProfile,
@@ -173,8 +175,8 @@ public final class PythonCextDictBuiltins {
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorValue itValue,
                         @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Cached PromoteBorrowedValue promoteKeyNode,
-                        @Cached PromoteBorrowedValue promoteValueNode,
+                        @Cached EnsurePythonObjectNode ensureKeyNode,
+                        @Cached EnsurePythonObjectNode ensureValueNode,
                         @Cached HashingStorageSetItem setItem,
                         @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
             /*
@@ -193,8 +195,10 @@ public final class PythonCextDictBuiltins {
                         economicMapProfile.enter(inliningTarget);
                         HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
                         while (itNext.execute(inliningTarget, storage, it)) {
-                            if (promoteKeyNode.execute(inliningTarget, itKey.execute(inliningTarget, storage, it)) != null ||
-                                            promoteValueNode.execute(inliningTarget, itValue.execute(inliningTarget, storage, it)) != null) {
+                            Object key = itKey.execute(inliningTarget, storage, it);
+                            Object value = itValue.execute(inliningTarget, storage, it);
+                            if (ensureKeyNode.execute(context, key, false) != key ||
+                                            ensureValueNode.execute(context, value, false) != value) {
                                 needsRewrite = true;
                                 break;
                             }
@@ -213,12 +217,12 @@ public final class PythonCextDictBuiltins {
                         while (itNext.execute(inliningTarget, storage, it)) {
                             Object key = itKey.execute(inliningTarget, storage, it);
                             Object value = itValue.execute(inliningTarget, storage, it);
-                            Object promotedKey = promoteKeyNode.execute(inliningTarget, key);
-                            if (promotedKey != null) {
+                            Object promotedKey = ensureKeyNode.execute(context, key, false);
+                            if (promotedKey != key) {
                                 key = promotedKey;
                             }
-                            Object promotedValue = promoteValueNode.execute(inliningTarget, value);
-                            if (promotedValue != null) {
+                            Object promotedValue = ensureValueNode.execute(context, value, false);
+                            if (promotedValue != value) {
                                 value = promotedValue;
                             }
                             // promoted key will never have side-effecting __hash__/__eq__
@@ -248,13 +252,13 @@ public final class PythonCextDictBuiltins {
             writeLong(posPtr, newPos);
             if (keyPtr != NULLPTR) {
                 Object key = itKey.execute(inliningTarget, storage, it);
-                assert promoteKeyNode.execute(inliningTarget, key) == null;
+                assert ensureKeyNode.execute(context, key, false) == key;
                 // Borrowed reference
                 NativeMemory.writePtr(keyPtr, toNativeNode.executeLong(key));
             }
             if (valuePtr != NULLPTR) {
                 Object value = itValue.execute(inliningTarget, storage, it);
-                assert promoteValueNode.execute(inliningTarget, value) == null;
+                assert ensureValueNode.execute(context, value, false) == value;
                 // Borrowed reference
                 NativeMemory.writePtr(valuePtr, toNativeNode.executeLong(value));
             }
@@ -308,8 +312,9 @@ public final class PythonCextDictBuiltins {
         @Specialization
         static Object getItem(PDict dict, Object key,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached HashingStorageGetItem getItem,
-                        @Cached PromoteBorrowedValue promoteNode,
+                        @Cached EnsurePythonObjectNode ensureNode,
                         @Cached SetItemNode setItemNode,
                         @Cached InlinedBranchProfile noResultProfile) {
             try {
@@ -318,8 +323,8 @@ public final class PythonCextDictBuiltins {
                     noResultProfile.enter(inliningTarget);
                     return NATIVE_NULL;
                 }
-                Object promotedValue = promoteNode.execute(inliningTarget, res);
-                if (promotedValue != null) {
+                Object promotedValue = ensureNode.execute(context, res, false);
+                if (promotedValue != res) {
                     setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
                     return promotedValue;
                 }
@@ -347,8 +352,9 @@ public final class PythonCextDictBuiltins {
         @Specialization
         static Object getItem(PDict dict, Object key,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached HashingStorageGetItem getItem,
-                        @Cached PromoteBorrowedValue promoteNode,
+                        @Cached EnsurePythonObjectNode ensureNode,
                         @Cached SetItemNode setItemNode,
                         @Cached InlinedBranchProfile noResultProfile) {
             Object res = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
@@ -356,8 +362,8 @@ public final class PythonCextDictBuiltins {
                 noResultProfile.enter(inliningTarget);
                 return NATIVE_NULL;
             }
-            Object promotedValue = promoteNode.execute(inliningTarget, res);
-            if (promotedValue != null) {
+            Object promotedValue = ensureNode.execute(context, res, false);
+            if (promotedValue != res) {
                 setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
                 return promotedValue;
             }
@@ -417,12 +423,13 @@ public final class PythonCextDictBuiltins {
         @Specialization
         static Object setItem(PDict dict, Object key, Object value,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached PyDictSetDefault setDefault,
-                        @Cached PromoteBorrowedValue promoteNode,
+                        @Cached EnsurePythonObjectNode ensureNode,
                         @Cached SetItemNode setItemNode) {
             Object result = setDefault.execute(null, inliningTarget, dict, key, value);
-            Object promotedValue = promoteNode.execute(inliningTarget, result);
-            if (promotedValue != null) {
+            Object promotedValue = ensureNode.execute(context, result, false);
+            if (promotedValue != result) {
                 setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
                 return promotedValue;
             }

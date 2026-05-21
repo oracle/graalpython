@@ -131,9 +131,11 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -314,19 +316,26 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         public Object execute(Object object) {
-            assert (object instanceof Double && Double.isNaN((double) object)) || !(object instanceof Number || object instanceof TruffleString);
+            assert canBorrowDirectly(object);
             /*
              * In this case, it is not necessary to explicitly keep the promoted object alive
              * because this node is only used to hand out borrowed references which means that the
-             * returned object must be owned by a container object (e.g. a list) and we already
-             * promote the elements of such container objects at the time when the container object
-             * is handed out to native. We still need to promote the object because it could be,
-             * e.g., Java primitive 'true' which will be promoted to an immortal object.
+             * returned object must either be owned by a container object (e.g. a list) or be directly
+             * encodable as a tagged native handle. We still need to promote some objects because it
+             * could be, e.g., Java primitive 'true' which will be promoted to an immortal object.
              */
             PythonContext ctx = PythonContext.get(this);
             Object promoted = ensurePythonObjectNode.execute(ctx, object, false);
             assert promoted == object || PythonToNativeInternalNode.isImmortal(ctx, promoted);
             return toNative.executeLong(promoted);
+        }
+
+        private static boolean canBorrowDirectly(Object object) {
+            return object instanceof Integer ||
+                            object instanceof Long l && PInt.fitsInInt(l) ||
+                            object instanceof Float ||
+                            object instanceof Double d && PFloat.fitsInFloat(d) ||
+                            !(object instanceof Number || object instanceof TruffleString);
         }
 
         @TruffleBoundary(allowInlining = true)

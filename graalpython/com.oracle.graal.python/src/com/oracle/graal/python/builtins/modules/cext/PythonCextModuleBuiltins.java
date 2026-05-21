@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
@@ -177,7 +178,8 @@ public final class PythonCextModuleBuiltins {
         @Specialization
         static Object getName(PythonModule module,
                         @Bind Node inliningTarget,
-                        @Cached PythonCextBuiltins.PromoteBorrowedValue promoteBorrowedValue,
+                        @Bind PythonContext context,
+                        @Cached EnsurePythonObjectNode ensureNode,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
                         // CPython reads from the module dict directly
                         @Cached ReadAttributeFromModuleNode read,
@@ -192,8 +194,8 @@ public final class PythonCextModuleBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.NAMELESS_MODULE);
             }
-            Object promotedName = promoteBorrowedValue.execute(inliningTarget, nameAttr);
-            if (promotedName == null) {
+            Object promotedName = ensureNode.execute(context, nameAttr, false);
+            if (promotedName == nameAttr) {
                 return nameAttr;
             } else {
                 write.execute(module, T___NAME__, promotedName);

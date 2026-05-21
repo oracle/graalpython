@@ -55,9 +55,9 @@ import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -81,7 +81,8 @@ public final class PythonCextSysBuiltins {
         @Specialization
         Object getObject(TruffleString name,
                         @Bind Node inliningTarget,
-                        @Cached PromoteBorrowedValue promoteNode,
+                        @Bind PythonContext context,
+                        @Cached EnsurePythonObjectNode ensureNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached PyObjectSetAttr setAttrNode) {
             try {
@@ -90,8 +91,8 @@ public final class PythonCextSysBuiltins {
                 if (value == PNone.NO_VALUE) {
                     return NATIVE_NULL;
                 }
-                Object promotedValue = promoteNode.execute(inliningTarget, value);
-                if (promotedValue != null) {
+                Object promotedValue = ensureNode.execute(context, value, false);
+                if (promotedValue != value) {
                     setAttrNode.execute(inliningTarget, sys, name, promotedValue);
                     return promotedValue;
                 }

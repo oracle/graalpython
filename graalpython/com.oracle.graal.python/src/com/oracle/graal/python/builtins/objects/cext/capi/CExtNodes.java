@@ -1289,6 +1289,8 @@ public abstract class CExtNodes {
                 return promoteBoxable || !PInt.fitsInInt(l) ? PFactory.createInt(context.getLanguage(), l) : l;
             } else if (profiled instanceof Float f) {
                 return promoteBoxable ? PFactory.createFloat(context.getLanguage(), f) : f;
+            } else if (profiled instanceof Double d && Double.isNaN(d)) {
+                return d;
             } else if (profiled instanceof Double d) {
                 return promoteBoxable || !PFloat.fitsInFloat(d) ? PFactory.createFloat(context.getLanguage(), d) : d;
             } else if (profiled instanceof Boolean b) {
