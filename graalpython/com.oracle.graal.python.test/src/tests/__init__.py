@@ -46,6 +46,7 @@ from pathlib import Path
 
 
 compiled_registry = set()
+_venv_site_packages_cache = {}
 
 
 def find_rootdir():
@@ -69,13 +70,42 @@ def _venv_python(venv_dir: Path) -> Path:
     return venv_dir / 'bin' / 'python3'
 
 
-def _venv_site_packages(venv_dir: Path) -> Path:
-    existing_site_packages = list(venv_dir.glob("lib/python*/site-packages"))
+def _venv_site_packages(venv_dir: Path, py_executable: Path = None) -> Path:
+    # the python creating the venv may be different, so we need to figure out
+    # the correct path using that python. this is used in polybenchmarks, where
+    # the executable is not graalpy and thus a different CI-env Python is used.
+    if py_executable and py_executable.exists():
+        cache_key = venv_dir.absolute()
+        cached_path = _venv_site_packages_cache.get(cache_key)
+        if cached_path and cached_path.exists():
+            return cached_path
+        import subprocess
+        try:
+            path = subprocess.check_output([
+                py_executable,
+                "-c",
+                "import sysconfig; print(sysconfig.get_paths()['purelib'])",
+            ], text=True).strip()
+        except (OSError, subprocess.CalledProcessError):
+            pass
+        else:
+            if path:
+                site_packages = Path(path)
+                _venv_site_packages_cache[cache_key] = site_packages
+                return site_packages
+    existing_site_packages = list(venv_dir.glob("lib*/python*/site-packages"))
     if len(existing_site_packages) == 1:
         return existing_site_packages[0]
+    non_empty_site_packages = [path for path in existing_site_packages if any(path.iterdir())]
+    if len(non_empty_site_packages) == 1:
+        return non_empty_site_packages[0]
     if sys.platform.startswith('win32'):
         return venv_dir / 'Lib' / 'site-packages'
-    return venv_dir / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages'
+    version_dir = f'python{sys.version_info.major}.{sys.version_info.minor}'
+    lib64_path = venv_dir / 'lib64' / version_dir / 'site-packages'
+    if lib64_path.exists():
+        return lib64_path
+    return venv_dir / 'lib' / version_dir / 'site-packages'
 
 
 def _package_present(site_packages_dir: Path, package: str, version: str) -> bool:
@@ -90,13 +120,13 @@ def ensure_packages(**package_specs):
     package_names = "-".join(package_specs.keys())
     venv_dir = find_rootdir() / f'{sys.implementation.name}-{package_names}-venv'
     py_executable = _venv_python(venv_dir)
-    site_packages_dir = _venv_site_packages(venv_dir)
+    site_packages_dir = _venv_site_packages(venv_dir, py_executable)
     if any(not _package_present(site_packages_dir, p, v) for p, v in package_specs.items()):
         import subprocess
         package_specs = [f'{p}=={v}' for p, v in package_specs.items()]
         print(f'installing {package_specs} in {venv_dir}')
         system_python = install_venv(venv_dir)
-        site_packages_dir = _venv_site_packages(venv_dir)
+        site_packages_dir = _venv_site_packages(venv_dir, py_executable)
         extra_args = []
         if system_python or sys.implementation.name != "graalpy":
             pass
