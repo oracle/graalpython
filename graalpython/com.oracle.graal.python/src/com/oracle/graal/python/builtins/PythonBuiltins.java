@@ -42,6 +42,7 @@ import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.ExecBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -49,7 +50,6 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.BiConsumer;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -108,11 +108,12 @@ public abstract class PythonBuiltins {
             }
             TruffleString tsName = toInternedTruffleStringUncached(builtin.name());
             PythonLanguage language = core.getLanguage();
-            RootCallTarget callTarget = language.initBuiltinCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
-                            builtin.name());
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : toTruffleStringUncached(builtin.doc());
-            int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-            PBuiltinFunction function = PFactory.createBuiltinFunction(language, tsName, null, numDefaults(builtin), flags, callTarget);
+            BuiltinFunctionRootNode rootNode = language.initBuiltinRootNode(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf),
+                            factory.getNodeClass(), builtin.name());
+            Signature signature = rootNode.getSignature();
+            int flags = PBuiltinFunction.getFlags(builtin, signature);
+            PBuiltinFunction function = PFactory.createBuiltinFunction(language, tsName, null, numDefaults(builtin), flags, rootNode);
             function.setAttribute(T___DOC__, builtinDoc);
             BoundBuiltinCallable<?> callable = function;
             if (builtin.isGetter() || builtin.isSetter()) {

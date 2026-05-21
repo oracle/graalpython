@@ -758,18 +758,16 @@ public final class PythonUtils {
     public static PBuiltinFunction createMethod(PythonLanguage language, Object klass, NodeFactory<? extends PythonBuiltinBaseNode> nodeFactory, Object type, int numDefaults) {
         Class<? extends PythonBuiltinBaseNode> nodeClass = nodeFactory.getNodeClass();
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, nodeFactory, true), nodeClass);
-        return createMethod(klass, builtin, callTarget, type, numDefaults);
+        BuiltinFunctionRootNode rootNode = language.createCachedRootNode(l -> new BuiltinFunctionRootNode(l, builtin, nodeFactory, true), nodeClass);
+        return createMethod(klass, builtin, rootNode, type, numDefaults);
     }
 
     @TruffleBoundary
-    public static PBuiltinFunction createMethod(Object klass, Builtin builtin, RootCallTarget callTarget, Object type, int numDefaults) {
-        RootNode rootNode = callTarget.getRootNode();
-        assert rootNode instanceof BuiltinFunctionRootNode : String.format("root: %s, builtin: %s, klass: %s", rootNode, builtin, klass);
-        assert ((BuiltinFunctionRootNode) rootNode).getBuiltin() == builtin : String.format("%s != %s, klass: %s", ((BuiltinFunctionRootNode) rootNode).getBuiltin(), builtin, klass);
-        int flags = PBuiltinFunction.getFlags(builtin, callTarget);
+    public static PBuiltinFunction createMethod(Object klass, Builtin builtin, BuiltinFunctionRootNode rootNode, Object type, int numDefaults) {
+        assert rootNode.getBuiltin() == builtin : String.format("%s != %s, klass: %s", rootNode.getBuiltin(), builtin, klass);
+        int flags = PBuiltinFunction.getFlags(builtin, rootNode.getSignature());
         TruffleString name = toInternedTruffleStringUncached(builtin.name());
-        PBuiltinFunction function = PFactory.createBuiltinFunction(PythonLanguage.get(null), name, type, numDefaults, flags, callTarget);
+        PBuiltinFunction function = PFactory.createBuiltinFunction(PythonLanguage.get(null), name, type, numDefaults, flags, rootNode);
         if (klass != null) {
             WriteAttributeToObjectNode.getUncached().execute(klass, name, function);
         }

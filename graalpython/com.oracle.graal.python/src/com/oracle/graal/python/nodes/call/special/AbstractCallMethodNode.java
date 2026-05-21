@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
@@ -64,7 +63,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.NodeField;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
 @NodeField(name = "maxSizeExceeded", type = boolean.class)
@@ -150,10 +148,7 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
 
     protected static boolean takesSelfArg(Object func) {
         if (func instanceof PBuiltinFunction) {
-            RootNode functionRootNode = ((PBuiltinFunction) func).getFunctionRootNode();
-            if (functionRootNode instanceof BuiltinFunctionRootNode) {
-                return ((BuiltinFunctionRootNode) functionRootNode).declaresExplicitSelf();
-            }
+            return ((PBuiltinFunction) func).declaresExplicitSelf();
         } else if (func instanceof PBuiltinMethod) {
             return takesSelfArg(((PBuiltinMethod) func).getFunction());
         }

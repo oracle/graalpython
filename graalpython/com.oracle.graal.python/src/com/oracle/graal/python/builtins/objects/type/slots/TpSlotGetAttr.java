@@ -120,8 +120,7 @@ public class TpSlotGetAttr {
 
         @Override
         public void initialize(PythonLanguage language) {
-            RootCallTarget target = createSlotCallTarget(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), J___GETATTRIBUTE__);
-            language.setBuiltinSlotCallTarget(callTargetIndex, target);
+            language.setBuiltinSlotRootNode(callTargetIndex, createSlotRootNode(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), J___GETATTRIBUTE__));
         }
     }
 

@@ -114,8 +114,7 @@ public final class TpSlotIterNext {
 
         @Override
         public final void initialize(PythonLanguage language) {
-            RootCallTarget callTarget = createSlotCallTarget(language, BuiltinSlotWrapperSignature.UNARY, getNodeFactory(), J___NEXT__);
-            language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
+            language.setBuiltinSlotRootNode(callTargetIndex, createSlotRootNode(language, BuiltinSlotWrapperSignature.UNARY, getNodeFactory(), J___NEXT__));
         }
 
         @Override

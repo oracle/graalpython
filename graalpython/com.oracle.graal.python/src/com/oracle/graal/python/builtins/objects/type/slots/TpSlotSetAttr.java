@@ -125,8 +125,7 @@ public class TpSlotSetAttr {
 
         @Override
         public void initialize(PythonLanguage language) {
-            RootCallTarget target = createSlotCallTarget(language, SET_SIGNATURE, getNodeFactory(), J___SETATTR__);
-            language.setBuiltinSlotCallTarget(callTargetIndex, target);
+            language.setBuiltinSlotRootNode(callTargetIndex, createSlotRootNode(language, SET_SIGNATURE, getNodeFactory(), J___SETATTR__));
         }
 
         @Override

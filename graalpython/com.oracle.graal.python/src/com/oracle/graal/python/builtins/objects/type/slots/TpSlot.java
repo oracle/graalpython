@@ -309,10 +309,10 @@ public abstract class TpSlot {
             Class<?> nodeClass = NodeFactoryBase.getWrappedNodeClass(factory);
             validateSlotNode(factory, nodeClass, slotSignature);
             PythonBuiltinClassType builtinType = type instanceof PythonBuiltinClassType bt ? bt : null;
-            RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, true, builtinType), factory.getNodeClass(), nodeClass,
-                            builtinType, name);
+            BuiltinFunctionRootNode rootNode = core.getLanguage().createCachedRootNode(
+                            l -> new BuiltinFunctionRootNode(l, builtin, factory, true, builtinType), factory.getNodeClass(), nodeClass, builtinType, name);
 
-            PBuiltinFunction function = PFactory.createWrapperDescriptor(core.getLanguage(), tsName, type, numDefaults(builtin), 0, callTarget, this, wrapper);
+            PBuiltinFunction function = PFactory.createWrapperDescriptor(core.getLanguage(), tsName, type, numDefaults(builtin), 0, rootNode, this, wrapper);
             function.setAttribute(T___DOC__, SlotWrapperDocstrings.getDocstring(name));
             return function;
         }
@@ -322,12 +322,12 @@ public abstract class TpSlot {
          * {@link #initialize(PythonLanguage)} to create the slot call target if the slot node can
          * be wrapped by {@link BuiltinFunctionRootNode}.
          */
-        static RootCallTarget createSlotCallTarget(PythonLanguage language, BuiltinSlotWrapperSignature signature, NodeFactory<? extends PythonBuiltinBaseNode> factory, String name) {
+        static BuiltinFunctionRootNode createSlotRootNode(PythonLanguage language, BuiltinSlotWrapperSignature signature, NodeFactory<? extends PythonBuiltinBaseNode> factory, String name) {
             SlotSignature slotSignature = factory.getNodeClass().getAnnotation(SlotSignature.class);
             Builtin builtin = new Slot2Builtin(slotSignature, name, signature);
             Class<?> nodeClass = NodeFactoryBase.getWrappedNodeClass(factory);
             validateSlotNode(factory, nodeClass, slotSignature);
-            return language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, true), factory.getNodeClass(), nodeClass, name);
+            return language.createCachedRootNode(l -> new BuiltinFunctionRootNode(l, builtin, factory, true), factory.getNodeClass(), nodeClass, name);
         }
 
         private static void validateSlotNode(NodeFactory<? extends PythonBuiltinBaseNode> factory, Class<?> nodeClass, SlotSignature slotSignature) {

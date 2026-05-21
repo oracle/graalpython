@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,7 +65,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -170,8 +169,8 @@ public final class ScandirIteratorBuiltins extends PythonBuiltins {
                 return;
             }
             PythonLanguage language = context.getLanguage();
-            CallTarget callTarget = language.createCachedCallTarget(ReleaserRootNode::new, ReleaserRootNode.class);
-            callTarget.call(ref);
+            ReleaserRootNode rootNode = language.createCachedRootNode(ReleaserRootNode::new, ReleaserRootNode.class);
+            rootNode.getCallTarget().call(ref);
         }
 
         private static class ReleaserRootNode extends RootNode {

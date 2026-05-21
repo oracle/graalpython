@@ -112,8 +112,7 @@ public class TpSlotSizeArgFun {
 
         @Override
         public void initialize(PythonLanguage language) {
-            RootCallTarget target = createSlotCallTarget(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), name);
-            language.setBuiltinSlotCallTarget(callTargetIndex, target);
+            language.setBuiltinSlotRootNode(callTargetIndex, createSlotRootNode(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), name));
         }
 
         @Override

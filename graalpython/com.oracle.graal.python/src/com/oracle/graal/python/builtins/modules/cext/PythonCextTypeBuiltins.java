@@ -110,6 +110,7 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
@@ -124,7 +125,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -132,7 +132,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -392,17 +391,17 @@ public final class PythonCextTypeBuiltins {
         PBuiltinFunction get = null;
         PythonLanguage language = PythonLanguage.get(null);
         if (getter != NULLPTR) {
-            RootCallTarget getterCT = getterCallTarget(name, language);
+            PRootNode getterRoot = getterRootNode(name, language);
             NativeFunctionPointer getterFun = CExtCommonNodes.bindFunctionPointer(getter, PExternalFunctionWrapper.GETTER);
-            get = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getterFun, closure), 0, getterCT);
+            get = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getterFun, closure), 0, getterRoot);
         }
 
         PBuiltinFunction set = null;
         boolean hasSetter = setter != NULLPTR;
         if (hasSetter) {
-            RootCallTarget setterCT = setterCallTarget(name, language);
+            PRootNode setterRoot = setterRootNode(name, language);
             NativeFunctionPointer setterFun = CExtCommonNodes.bindFunctionPointer(setter, PExternalFunctionWrapper.SETTER);
-            set = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setterFun, closure), 0, setterCT);
+            set = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setterFun, closure), 0, setterRoot);
         }
 
         GetSetDescriptor descriptor = PFactory.createGetSetDescriptor(language, get, set, name, cls, hasSetter);
@@ -411,15 +410,15 @@ public final class PythonCextTypeBuiltins {
     }
 
     @TruffleBoundary
-    private static RootCallTarget getterCallTarget(TruffleString name, PythonLanguage lang) {
-        Function<PythonLanguage, RootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.GETTER);
-        return lang.createCachedExternalFunWrapperCallTarget(rootNodeFunction, GetterRoot.class, PExternalFunctionWrapper.GETTER, name, true, false);
+    private static PRootNode getterRootNode(TruffleString name, PythonLanguage lang) {
+        Function<PythonLanguage, PRootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.GETTER);
+        return lang.createCachedExternalFunWrapperRootNode(rootNodeFunction, GetterRoot.class, PExternalFunctionWrapper.GETTER, name, true, false);
     }
 
     @TruffleBoundary
-    private static RootCallTarget setterCallTarget(TruffleString name, PythonLanguage lang) {
-        Function<PythonLanguage, RootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.SETTER);
-        return lang.createCachedExternalFunWrapperCallTarget(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true, false);
+    private static PRootNode setterRootNode(TruffleString name, PythonLanguage lang) {
+        Function<PythonLanguage, PRootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.SETTER);
+        return lang.createCachedExternalFunWrapperRootNode(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true, false);
     }
 
     @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored)

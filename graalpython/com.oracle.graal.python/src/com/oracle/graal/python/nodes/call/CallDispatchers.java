@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchersFactory.FunctionIndirectInvokeNodeGen;
-import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -83,8 +82,7 @@ public class CallDispatchers {
     @NeverDefault
     public static DirectCallNode createDirectCallNodeFor(PBuiltinFunction callee) {
         DirectCallNode callNode = Truffle.getRuntime().createDirectCallNode(callee.getCallTarget());
-        if (PythonLanguage.get(null).getEngineOption(PythonOptions.EnableForcedSplits) ||
-                        (callee.getFunctionRootNode() instanceof BuiltinFunctionRootNode root && root.getBuiltin().forceSplitDirectCalls())) {
+        if (PythonLanguage.get(null).getEngineOption(PythonOptions.EnableForcedSplits) || callee.forceSplitDirectCalls()) {
             callNode.cloneCallTarget();
         }
         return callNode;

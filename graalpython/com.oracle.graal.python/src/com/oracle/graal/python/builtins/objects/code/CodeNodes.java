@@ -141,10 +141,10 @@ public abstract class CodeNodes {
             TruffleString name = PythonUtils.internString(uninternedName);
             qualname = PythonUtils.internString(qualname);
 
-            RootCallTarget ct;
+            PRootNode rootNode;
             Signature signature;
             if (codedata.length == 0) {
-                ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name.toJavaStringUncached());
+                rootNode = language.createCachedRootNode(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name.toJavaStringUncached());
                 /*
                  * We need to create a proper signature because this code path is used to create
                  * fake code objects for duck-typed function-like objects, such as Cython functions.
@@ -165,14 +165,15 @@ public abstract class CodeNodes {
                                 varArgsIndex,
                                 parameterNames,
                                 kwOnlyNames);
+                return PFactory.createCode(language, rootNode, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
             } else {
-                ct = deserializeForBytecodeInterpreter(language, codedata, cellvars, freevars, flags);
-                signature = ((PRootNode) ct.getRootNode()).getSignature();
+                rootNode = deserializeForBytecodeInterpreter(language, codedata, cellvars, freevars, flags);
+                signature = rootNode.getSignature();
             }
-            return PFactory.createCode(language, ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
+            return PFactory.createCode(language, rootNode, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
         }
 
-        private static RootCallTarget deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars, int flags) {
+        private static PRootNode deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars, int flags) {
             CodeUnit codeUnit = MarshalModuleBuiltins.deserializeCodeUnit(null, language, data);
             RootNode rootNode;
 
@@ -198,7 +199,7 @@ public abstract class CodeNodes {
                     rootNode = new PBytecodeGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
                 }
             }
-            return PythonUtils.getOrCreateCallTarget(rootNode);
+            return (PRootNode) rootNode;
         }
 
         @NeverDefault

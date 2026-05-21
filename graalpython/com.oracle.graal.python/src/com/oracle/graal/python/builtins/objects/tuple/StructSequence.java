@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,7 +81,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -224,8 +223,8 @@ public class StructSequence {
     }
 
     private static void createMember(PythonLanguage language, Object klass, TruffleString name, TruffleString doc, int idx) {
-        RootCallTarget callTarget = language.createStructSeqIndexedMemberAccessCachedCallTarget((l) -> new GetStructMemberNode(l, idx), idx);
-        PBuiltinFunction getter = PFactory.createBuiltinFunction(language, name, klass, 0, 0, callTarget);
+        GetStructMemberNode rootNode = language.createStructSeqIndexedMemberAccessCachedRootNode((l) -> new GetStructMemberNode(l, idx), idx);
+        PBuiltinFunction getter = PFactory.createBuiltinFunction(language, name, klass, 0, 0, rootNode);
         GetSetDescriptor callable = PFactory.createGetSetDescriptor(language, getter, null, name, klass, false);
         if (doc != null) {
             callable.setAttribute(T___DOC__, doc);

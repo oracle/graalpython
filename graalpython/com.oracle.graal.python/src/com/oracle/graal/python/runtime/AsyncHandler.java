@@ -73,7 +73,6 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -201,7 +200,7 @@ public class AsyncHandler {
                         }
                     }
                     try {
-                        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(context.getAsyncHandler().callTarget, args);
+                        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(context.getAsyncHandler().getCallTarget(), args);
                     } catch (PException e) {
                         handleException(e);
                     } finally {
@@ -341,11 +340,11 @@ public class AsyncHandler {
         }
     }
 
-    private final RootCallTarget callTarget;
+    private final CallRootNode rootNode;
 
     AsyncHandler(PythonContext context) {
         this.context = new WeakReference<>(context);
-        this.callTarget = context.getLanguage().createCachedCallTarget(CallRootNode::new, CallRootNode.class);
+        this.rootNode = context.getLanguage().createCachedRootNode(CallRootNode::new, CallRootNode.class);
         if (PythonOptions.AUTOMATIC_ASYNC_ACTIONS) {
             this.executorService = Executors.newScheduledThreadPool(6, runnable -> {
                 Thread t = Executors.defaultThreadFactory().newThread(runnable);
@@ -378,6 +377,10 @@ public class AsyncHandler {
         } else {
             registeredActions.add(new AsyncRunnable(actionSupplier));
         }
+    }
+
+    private com.oracle.truffle.api.RootCallTarget getCallTarget() {
+        return rootNode.getCallTarget();
     }
 
     void poll() {

@@ -228,7 +228,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -2328,9 +2327,9 @@ public abstract class TypeNodes {
             // initialized yet
             if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
                 Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
-                RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
+                BuiltinFunctionRootNode rootNode = PythonLanguage.get(null).createCachedRootNode(
                                 l -> new BuiltinFunctionRootNode(l, dictBuiltin, ObjectBuiltinsFactory.DictNodeFactory.getInstance(), true), ObjectBuiltins.DictNode.class);
-                setAttribute(T___DICT__, dictBuiltin, callTarget, pythonClass, language);
+                setAttribute(T___DICT__, dictBuiltin, rootNode, pythonClass, language);
             }
         }
 
@@ -2338,15 +2337,15 @@ public abstract class TypeNodes {
         private static void addWeakrefDescrAttribute(PythonClass pythonClass, PythonLanguage language) {
             if (LookupAttributeInMRONode.lookupSlowPath(pythonClass, T___WEAKREF__) == PNone.NO_VALUE) {
                 Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
-                RootCallTarget callTarget = PythonLanguage.get(null).createCachedCallTarget(
+                BuiltinFunctionRootNode rootNode = PythonLanguage.get(null).createCachedRootNode(
                                 l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), GetWeakRefsNode.class);
-                setAttribute(T___WEAKREF__, builtin, callTarget, pythonClass, language);
+                setAttribute(T___WEAKREF__, builtin, rootNode, pythonClass, language);
             }
         }
 
-        private static void setAttribute(TruffleString name, Builtin builtin, RootCallTarget callTarget, PythonClass pythonClass, PythonLanguage language) {
-            int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-            PBuiltinFunction function = PFactory.createBuiltinFunction(language, name, pythonClass, 1, flags, callTarget);
+        private static void setAttribute(TruffleString name, Builtin builtin, BuiltinFunctionRootNode rootNode, PythonClass pythonClass, PythonLanguage language) {
+            int flags = PBuiltinFunction.getFlags(builtin, rootNode.getSignature());
+            PBuiltinFunction function = PFactory.createBuiltinFunction(language, name, pythonClass, 1, flags, rootNode);
             GetSetDescriptor desc = PFactory.createGetSetDescriptor(language, function, function, name, pythonClass, true);
             pythonClass.setAttribute(name, desc);
         }

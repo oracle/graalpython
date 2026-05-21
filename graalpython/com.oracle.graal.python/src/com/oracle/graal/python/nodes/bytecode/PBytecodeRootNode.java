@@ -246,7 +246,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -2919,10 +2918,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PythonLanguage language = getLanguage();
         for (int i = 0; i < co.constants.length; i++) {
             if (co.constants[i] instanceof BytecodeCodeUnit codeUnit) {
-                RootCallTarget callTarget = language.createCachedCallTarget(
+                RootNode rootNode = language.createCachedRootNode(
                                 l -> PBytecodeRootNode.createMaybeGenerator(language, codeUnit, getSource(), isInternal()),
                                 codeUnit);
-                RootNode rootNode = callTarget.getRootNode();
+                rootNode.getCallTarget(); // make sure the calltarget is initialized
                 if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
                     rootNode = ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
                 }

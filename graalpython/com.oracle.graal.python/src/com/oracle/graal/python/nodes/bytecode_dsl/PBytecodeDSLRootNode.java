@@ -59,6 +59,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.math.BigInteger;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -442,6 +443,19 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @TruffleBoundary
     public static void updateAllToTracingConfig(PythonLanguage language) {
         PBytecodeDSLRootNodeGen.BYTECODE.update(language, TRACE_AND_PROFILE_CONFIG);
+    }
+
+    @Override
+    @TruffleBoundary
+    protected void prepareForInstrumentation(Set<Class<?>> materializedTags) {
+        super.prepareForInstrumentation(materializedTags);
+        PythonLanguage language = getLanguage();
+        for (Object constant : co.constants) {
+            if (constant instanceof BytecodeDSLCodeUnit codeUnit) {
+                PBytecodeDSLRootNode rootNode = language.createCachedRootNode(l -> codeUnit.createRootNode(l, getSource()), codeUnit);
+                rootNode.getCallTarget();
+            }
+        }
     }
 
     public final PythonLanguage getLanguage() {

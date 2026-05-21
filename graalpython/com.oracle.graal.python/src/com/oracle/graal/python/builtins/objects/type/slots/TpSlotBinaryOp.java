@@ -246,8 +246,7 @@ public class TpSlotBinaryOp {
 
         @Override
         public void initialize(PythonLanguage language) {
-            RootCallTarget callTarget = createSlotCallTarget(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), builtinName);
-            language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
+            language.setBuiltinSlotRootNode(callTargetIndex, createSlotRootNode(language, BuiltinSlotWrapperSignature.BINARY, getNodeFactory(), builtinName));
         }
 
         @Override
