@@ -477,6 +477,7 @@
                 ["mkdir", "-p", "../docs/site/vendor/cache"],
                 ["cp", "graal-languages-jekyll-theme-*.gem", "../docs/site/vendor/cache"],
                 ["cd", "../docs/site"],
+                ["bundle", "config", "set", "mirror.https://rubygems.org", $.overlay_imports.RUBYGEMS_MIRROR],
                 ["bundle", "install"],
                 ["bundle", "exec", "jekyll", "build"],
             ],
