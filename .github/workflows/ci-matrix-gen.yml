@@ -29,6 +29,7 @@ jobs:
   generate-tier1:
     runs-on: ubuntu-latest
     outputs:
+      artifact_matrix: ${{ steps.set-matrix.outputs.artifact_matrix }}
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     env:
       TARGET: tier1
@@ -42,13 +43,17 @@ jobs:
       - name: Extract job matrix
         id: set-matrix
         run: |
-          python3 .github/scripts/extract_matrix.py ./sjsonnet ./ci.jsonnet ${TARGET} ${JOBS} > matrix.json
+          python3 .github/scripts/extract_matrix.py ./sjsonnet ./ci.jsonnet ${TARGET} ${JOBS} --artifact-mode providers > artifact-matrix.json
+          python3 .github/scripts/extract_matrix.py ./sjsonnet ./ci.jsonnet ${TARGET} ${JOBS} --artifact-mode non-providers > matrix.json
+          cat artifact-matrix.json
           cat matrix.json
+          echo "artifact_matrix=$(cat artifact-matrix.json)" >> $GITHUB_OUTPUT
           echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
 
   generate-tier2:
     runs-on: ubuntu-latest
     outputs:
+      artifact_matrix: ${{ steps.set-matrix.outputs.artifact_matrix }}
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     env:
       TARGET: tier2
@@ -58,19 +63,20 @@ jobs:
   generate-tier3:
     runs-on: ubuntu-latest
     outputs:
+      artifact_matrix: ${{ steps.set-matrix.outputs.artifact_matrix }}
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     env:
       TARGET: tier3
       JOBS: ${{ inputs.jobs_to_run }}
     steps: *generate_matrix
 
-  tier1:
+  tier1-artifacts:
     needs: generate-tier1
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.generate-tier1.outputs.matrix) }}
+        include: ${{ fromJson(needs.generate-tier1.outputs.artifact_matrix) }}
     steps: &buildsteps
       - name: Process matrix downloads
         if: ${{ matrix.downloads_steps }}
@@ -200,7 +206,6 @@ jobs:
         with:
           pattern: ${{ matrix.require_artifact[0] }}
           merge-multiple: true
-        continue-on-error: true
       
       - name: Export artifact paths Linux
         if: ${{ matrix.require_artifact }}
@@ -288,9 +293,29 @@ jobs:
           path: /tmp/test-report-*.json
           retention-days: 1
 
-  tier2:
-    if: ${{ success() || inputs.jobs_to_run }}
+  tier1:
+    if: ${{ always() && needs.generate-tier1.result == 'success' && needs.tier1-artifacts.result == 'success' }}
+    needs: [generate-tier1, tier1-artifacts]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-tier1.outputs.matrix) }}
+    steps: *buildsteps
+
+  tier2-artifacts:
+    if: ${{ always() && needs.generate-tier2.result == 'success' && (needs.tier1.result == 'success' || inputs.jobs_to_run) }}
     needs: [generate-tier2, tier1]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-tier2.outputs.artifact_matrix) }}
+    steps: *buildsteps
+
+  tier2:
+    if: ${{ always() && needs.generate-tier2.result == 'success' && needs.tier2-artifacts.result == 'success' }}
+    needs: [generate-tier2, tier2-artifacts]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -298,9 +323,19 @@ jobs:
         include: ${{ fromJson(needs.generate-tier2.outputs.matrix) }}
     steps: *buildsteps
 
-  tier3:
-    if: ${{ success() || inputs.jobs_to_run }}
+  tier3-artifacts:
+    if: ${{ always() && needs.generate-tier3.result == 'success' && (needs.tier2.result == 'success' || inputs.jobs_to_run) }}
     needs: [generate-tier3, tier2]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-tier3.outputs.artifact_matrix) }}
+    steps: *buildsteps
+
+  tier3:
+    if: ${{ always() && needs.generate-tier3.result == 'success' && needs.tier3-artifacts.result == 'success' }}
+    needs: [generate-tier3, tier3-artifacts]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

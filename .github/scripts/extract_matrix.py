@@ -360,7 +360,7 @@ class Job:
         return NotImplemented
 
 
-def get_tagged_jobs(buildspec, target, filter=None):
+def get_tagged_jobs(buildspec, target, filter=None, artifact_mode="all"):
     jobs = [Job({"name": target}).to_dict()]
     for job in sorted([Job(build) for build in buildspec.get("builds", [])]):
         if not any(t for t in job.targets if t in [target]):
@@ -371,15 +371,19 @@ def get_tagged_jobs(buildspec, target, filter=None):
             continue
         if [x for x in JOB_EXCLUSION_TERMS if x in str(job)]:
             continue
+        if artifact_mode == "providers" and not job.upload_artifact:
+            continue
+        if artifact_mode == "non-providers" and job.upload_artifact:
+            continue
         jobs.append(job.to_dict())
     return jobs
 
 
-def main(jsonnet_bin, ci_jsonnet, target, filter=None, indent=False):
+def main(jsonnet_bin, ci_jsonnet, target, filter=None, artifact_mode="all", indent=False):
 
     result = subprocess.check_output([jsonnet_bin, ci_jsonnet], text=True)
     buildspec = json.loads(result)
-    tagged_jobs = get_tagged_jobs(buildspec, target, filter=filter)
+    tagged_jobs = get_tagged_jobs(buildspec, target, filter=filter, artifact_mode=artifact_mode)
     matrix = tagged_jobs
     print(json.dumps(matrix, indent=2 if indent else None))
 
@@ -390,6 +394,12 @@ if __name__ == "__main__":
     parser.add_argument("ci_jsonnet", help="Path to ci.jsonnet spec")
     parser.add_argument("target", help="Target name (e.g., tier1)")
     parser.add_argument("filter", nargs="?", default=None, help="Regex filter for job names (optional)")
+    parser.add_argument(
+        "--artifact-mode",
+        choices=["all", "providers", "non-providers"],
+        default="all",
+        help="Select all jobs, only artifact providers, or only jobs that do not publish artifacts.",
+    )
     parser.add_argument('--indent', action='store_true', help='Indent output JSON')
     args = parser.parse_args()
     main(
@@ -397,5 +407,6 @@ if __name__ == "__main__":
         ci_jsonnet=args.ci_jsonnet,
         target=args.target,
         filter=args.filter,
+        artifact_mode=args.artifact_mode,
         indent=args.indent or sys.stdout.isatty(),
     )
