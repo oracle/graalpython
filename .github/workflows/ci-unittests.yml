@@ -2,8 +2,6 @@ name: Run CI unittests
 on:
   pull_request:
     types: [opened, ready_for_review, synchronize]
-    paths-ignore:
-      - 'docs/site/**'
   workflow_dispatch:
 
 jobs:
