@@ -98,7 +98,7 @@ public final class PythonCextSetBuiltins {
 
     private static final CApiTiming TIMING_PYSET_NEW = CApiTiming.create(false, "PySet_New");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, acquireGil = false)
     static long PySet_New(long iterablePtr) {
         CApiTiming.enter();
         try {

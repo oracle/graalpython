@@ -148,7 +148,7 @@ public final class PythonCextDictBuiltins {
 
     private static final CApiTiming TIMING_PYDICT_NEW = CApiTiming.create(false, "PyDict_New");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct, acquireGil = false)
     static long PyDict_New() {
         CApiTiming.enter();
         try {

@@ -92,7 +92,7 @@ public final class PythonCextTupleBuiltins {
 
     private static final CApiTiming TIMING_PYTUPLE_NEW = CApiTiming.create(false, "PyTuple_New");
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct, acquireGil = false)
     static long PyTuple_New(long longSize) {
         CApiTiming.enter();
         try {
