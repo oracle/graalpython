@@ -90,8 +90,16 @@
     local environment(os, arch) = self.environment(os, arch) + {
         BENCH_RESULTS_FILE_PATH: "bench-results.json",
         PANDAS_REPO_URL: $.overlay_imports.PANDAS_REPO_GIT,
+    } + if $.overlay_imports.PIP_EXTRA_INDEX_URL != "" then {
         PIP_EXTRA_INDEX_URL: $.overlay_imports.PIP_EXTRA_INDEX_URL,
-    },
+    } else {},
+
+    local pip_index_setup = [
+        // Use the CI Python's configured base index and overlay-provided GraalPy wheel index.
+        ["set-export", "PIP_INDEX_URL", ["python", "-m", "pip", "config", "get", "global.index-url"]],
+    ] + if $.overlay_imports.PIP_EXTRA_INDEX_URL != "" then [
+        ["set-export", "PIP_EXTRA_INDEX_URL", $.overlay_imports.PIP_EXTRA_INDEX_URL],
+    ] else [],
 
     local packages(os, arch) = self.packages(os, arch) + {
         make: ">=3.83",
@@ -193,7 +201,7 @@
                 "--pythonjavadriver-vm-config"
             else
                 super.vm_config_name,
-        setup+: [
+        setup+: pip_index_setup + [
             // NOTE: logic shared with ci/python-gate.libsonnet, keep in sync
             // ensure we get graal-enterprise as a hostvm
             ["git", "clone", $.overlay_imports.GRAAL_ENTERPRISE_GIT, "${BUILD_DIR}/graal-enterprise"],
