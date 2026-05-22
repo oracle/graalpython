@@ -624,6 +624,8 @@ class GraalPythonPolyBenchVm(GuestVm):
         return runner.exit_code
 
     def _build_standalone(self, host, runner, instrumented):
+        enterprise = host.graalvm_edition == "ee"
+        use_product_profile = getattr(host, "product_profile", False) and enterprise
         if instrumented:
             pgo_profile = ""
         elif host.pgo_instrumentation:
@@ -633,7 +635,13 @@ class GraalPythonPolyBenchVm(GuestVm):
         if pgo_profile is not None:
             pgo_profile = str(pgo_profile)
 
-        env_pgo_profile = pgo_profile if pgo_profile is not None else ""
+        # GRAALPY_PGO_PROFILE is a GraalPy build switch:
+        # unset: let libpythonvm_build_args auto-select the CI generated PGO profile;
+        # "": suppress auto-selection and, for benchmark-local PGO, build an instrumented image instead;
+        # path: build the final image with that explicit profile.
+        # GRAALPY_REQUIRE_PGO_PROFILE is separate: product-ee sets it to fail if the CI profile cannot be downloaded.
+        env_pgo_profile = pgo_profile if pgo_profile is not None else (None if use_product_profile else "")
+        env_require_pgo_profile = "true" if use_product_profile else None
         from mx_graalpython import (
             BUILD_NATIVE_IMAGE_WITH_ASSERTIONS,
             GITHUB_CI,
@@ -643,7 +651,6 @@ class GraalPythonPolyBenchVm(GuestVm):
             set_env,
         )
 
-        enterprise = host.graalvm_edition == "ee"
         standalone_dist = "GRAALPY_NATIVE_STANDALONE"
         mx_args = ["-p", SUITE.dir, "--env", "native-ee" if enterprise else "native-ce"]
         mx_args.append("--extra-image-builder-argument=-Ob" if GITHUB_CI else "--extra-image-builder-argument=-g")
@@ -658,14 +665,14 @@ class GraalPythonPolyBenchVm(GuestVm):
                 mx_args.append("--extra-image-builder-argument=--pgo-instrument")
                 mx_args.append("--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
                 mx_args.append("--extra-image-builder-argument=-H:+ProfilingLCOV")
-        elif BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
+        elif BUILD_NATIVE_IMAGE_WITH_ASSERTIONS and not use_product_profile:
             mx_args.append("--extra-image-builder-argument=-ea")
             mx_args.append("--extra-image-builder-argument=-J-ea")
         mx_args += bytecode_dsl_build_args(prefix="--extra-image-builder-argument=")
         for arg in self._mx_extra_image_builder_args(self._image_build_args(host)):
             mx_args.append(f"--extra-image-builder-argument={arg}")
 
-        with set_env(GRAALPY_PGO_PROFILE=env_pgo_profile):
+        with set_env(GRAALPY_PGO_PROFILE=env_pgo_profile, GRAALPY_REQUIRE_PGO_PROFILE=env_require_pgo_profile):
             write_output = host.stages_info.should_produce_datapoints()
             exit_code = run_mx(
                 mx_args + ["build", "-f", "--only", f"libpythonvm,{standalone_dist}"],

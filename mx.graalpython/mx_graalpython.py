@@ -106,6 +106,8 @@ RUNNING_ON_LATEST_JAVA = os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
 
 MAIN_BRANCH = 'master'
+GRAALPY_PGO_PROFILE_ARTIFACT_GROUP = "graalpy"
+GRAALPY_PGO_PROFILE_ARTIFACT_PREFIX = "pgo-"
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
@@ -344,6 +346,7 @@ def libpythonvm_build_args():
         build_args += ['-H:-ProtectionKeys']
 
     profile = None
+    require_profile = get_boolean_env("GRAALPY_REQUIRE_PGO_PROFILE")
     if (
             "GRAALPY_PGO_PROFILE" not in os.environ
             and mx.suite('graalpython-enterprise', fatalIfMissing=False)
@@ -353,6 +356,7 @@ def libpythonvm_build_args():
         vc = SUITE.vc
         commit = str(vc.tip(SUITE.dir)).strip()
         branch = str(vc.active_branch(SUITE.dir, abortOnError=False) or 'master').strip()
+        artifact_name = f"{GRAALPY_PGO_PROFILE_ARTIFACT_GROUP}/{GRAALPY_PGO_PROFILE_ARTIFACT_PREFIX}{commit}"
 
         if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
             # This is always available in the GraalPy CI
@@ -361,12 +365,12 @@ def libpythonvm_build_args():
                 [
                     sys.executable,
                     script,
-                    f"graalpy/pgo-{commit}",
+                    artifact_name,
                     profile,
                 ],
                 nonZeroIsFatal=False,
             )
-        else:
+        elif not require_profile:
             # Locally, we try to get a reasonable profile
             get_profile = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
             if get_profile:
@@ -377,7 +381,17 @@ def libpythonvm_build_args():
                         except BaseException:
                             pass
 
-        if CI and (not profile or not os.path.isfile(profile)):
+        profile_missing = not profile or not os.path.isfile(profile)
+        if require_profile and profile_missing:
+            mx.abort("\n".join([
+                "GRAALPY_REQUIRE_PGO_PROFILE is set, but no CI generated GraalPy PGO profile was found.",
+                f"GraalPy commit: {commit}",
+                f"Expected artifact: {artifact_name}",
+                "The product profile configuration does not fall back to benchmark-local PGO.",
+                "Run the GraalPy CI job python-pgo-profile-post_merge-linux-amd64-jdk-latest for this commit, then retry the product-ee benchmark.",
+            ]))
+
+        if CI and profile_missing:
             mx.log("No profile in CI job")
             # When running on a release branch or attempting to merge into
             # a release branch, make sure we can use a PGO profile, and
@@ -487,8 +501,8 @@ def graalpy_native_pgo_build_and_test(args=None):
                 sys.executable,
                 script,
                 iprof_gz_path,
-                f"pgo-{commit}",
-                "graalpy",
+                f"{GRAALPY_PGO_PROFILE_ARTIFACT_PREFIX}{commit}",
+                GRAALPY_PGO_PROFILE_ARTIFACT_GROUP,
                 "--lifecycle",
                 "cache",
                 "--artifact-repo-key",
