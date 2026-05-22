@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.NFIPosixSupport;
+import com.oracle.graal.python.runtime.NativePosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -211,7 +211,7 @@ public final class PMMap extends PythonObject {
     @ExportMessage
     boolean isNative(
                     @Bind Node inliningTarget) {
-        return PythonContext.get(inliningTarget).getPosixSupport() instanceof NFIPosixSupport;
+        return PythonContext.get(inliningTarget).getPosixSupport() instanceof NativePosixSupport;
     }
 
     @ExportMessage

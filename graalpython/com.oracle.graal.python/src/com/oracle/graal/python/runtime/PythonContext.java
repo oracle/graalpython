@@ -1887,21 +1887,21 @@ public final class PythonContext extends Python3Core {
         } else if (selectedNativeBackend) {
             if (env.isPreInitialization()) {
                 EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this);
-                NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                NativePosixSupport nativePosixSupport = new NativePosixSupport(this, option);
                 result = new PreInitPosixSupport(env, nativePosixSupport, emulatedPosixSupport);
             } else if (TruffleOptions.AOT) {
                 // We always use a PreInitPosixSupport on SVM to keep the type of the posixSupport
                 // field consistent for both pre-initialized and not-pre-initialized contexts so
                 // that host inlining and PE see only one type, and also to avoid polymorphism when
                 // calling library methods.
-                NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                NativePosixSupport nativePosixSupport = new NativePosixSupport(this, option);
                 result = new PreInitPosixSupport(env, nativePosixSupport, null);
             } else {
                 if (!getOption(PythonOptions.RunViaLauncher)) {
                     writeWarning("Native Posix backend is not fully supported when embedding. For example, standard I/O always uses file " +
                                     "descriptors 0, 1 and 2 regardless of stream redirection specified in Truffle environment");
                 }
-                result = new NFIPosixSupport(this, option);
+                result = new NativePosixSupport(this, option);
             }
         } else {
             throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));

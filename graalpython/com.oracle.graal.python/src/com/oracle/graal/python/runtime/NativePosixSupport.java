@@ -47,21 +47,21 @@ import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
 import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_SA_FAMILY;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
-import static com.oracle.graal.python.runtime.NFIPosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY;
+import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH;
+import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
+import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
+import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_SA_FAMILY;
+import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
+import static com.oracle.graal.python.runtime.NativePosixConstants.SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNIX;
@@ -148,7 +148,7 @@ import sun.misc.Unsafe;
  * downcalls.
  */
 @ExportLibrary(PosixSupportLibrary.class)
-public final class NFIPosixSupport extends PosixSupport {
+public final class NativePosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "posix";
     private static final Source NFI_WARMUP_SIGNATURE = Source.newBuilder(J_NFI_LANGUAGE, "with native ():void", "python-nfi-warmup").internal(true).build();
 
@@ -160,7 +160,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativePosixSupport.class);
 
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 
@@ -626,24 +626,24 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     private final PythonContext context;
-    private final TruffleString nfiBackend;
+    private final TruffleString nativeBackend;
     private final PosixNativeFunctionInvoker posixNativeFunctionInvoker;
     private final CryptNativeFunctionInvoker cryptNativeFunctionInvoker;
     @CompilationFinal(dimensions = 1) private long[] constantValues;
 
-    public NFIPosixSupport(PythonContext context, TruffleString nfiBackend) {
-        assert nfiBackend.equalsUncached(T_NATIVE, TS_ENCODING);
+    public NativePosixSupport(PythonContext context, TruffleString nativeBackend) {
+        assert nativeBackend.equalsUncached(T_NATIVE, TS_ENCODING);
         this.context = context;
-        this.nfiBackend = nfiBackend;
+        this.nativeBackend = nativeBackend;
         this.posixNativeFunctionInvoker = new PosixNativeFunctionInvokerGen(context);
         this.cryptNativeFunctionInvoker = new CryptNativeFunctionInvokerGen(context);
         setEnv(context.getEnv());
     }
 
-    long getConstant(NFIPosixConstants constant) {
+    long getConstant(NativePosixConstants constant) {
         if (constantValues == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            long[] values = new long[NFIPosixConstants.values().length];
+            long[] values = new long[NativePosixConstants.values().length];
             long nativeValues = NativeMemory.mallocLongArray(values.length);
             try {
                 int result = posixNativeFunctionInvoker.init_constants(nativeValues, values.length);
@@ -680,7 +680,7 @@ public final class NFIPosixSupport extends PosixSupport {
         // native cwd is global, but Truffle cwd is per context.
         // TruffleFile will be unaware of the real working directory and keep resolving against the
         // original working directory. This should not matter since we do not use TruffleFile for
-        // ordinary I/O when using NFI backend.
+        // ordinary I/O when using the native backend.
         try {
             TruffleFile truffleFile = context.getEnv().getInternalTruffleFile(".").getAbsoluteFile();
             context.getEnv().setCurrentWorkingDirectory(truffleFile);
@@ -691,7 +691,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public TruffleString getBackend() {
-        return nfiBackend;
+        return nativeBackend;
     }
 
     @ExportMessage
@@ -1305,7 +1305,7 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public static class DirEntryGetPath {
         @Specialization(guards = "endsWithSlash(scandirPath)")
-        static Buffer withSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
+        static Buffer withSlash(@SuppressWarnings("unused") NativePosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
             Buffer scandirPathBuffer = (Buffer) scandirPath;
             int pathLen = scandirPathBuffer.data.length;
             int nameLen = (int) dirEntry.name.length;
@@ -1316,7 +1316,7 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @Specialization(guards = "!endsWithSlash(scandirPath)")
-        static Buffer withoutSlash(@SuppressWarnings("unused") NFIPosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
+        static Buffer withoutSlash(@SuppressWarnings("unused") NativePosixSupport receiver, DirEntry dirEntry, Object scandirPath) {
             Buffer scandirPathBuffer = (Buffer) scandirPath;
             int pathLen = scandirPathBuffer.data.length;
             int nameLen = (int) dirEntry.name.length;
@@ -2627,7 +2627,7 @@ public final class NFIPosixSupport extends PosixSupport {
      * }
      * </pre>
      *
-     * To avoid multiple NFI calls, we transfer the data in batch using arrays of {@code int}s and
+     * To avoid multiple native calls, we transfer the data in batch using arrays of {@code int}s and
      * {@code long}s - int values are stored in {@code intData}, the {@code ai_canonname} and
      * {@code ai_next} pointers are stored in {@code longData} and the socket address pointed to by
      * {@code ai_addr} is copied into Java byte array {@code socketAddress}. We also cache two
@@ -2647,8 +2647,8 @@ public final class NFIPosixSupport extends PosixSupport {
         private final long[] longData = new long[2];
         private byte[] socketAddress;
 
-        private void update(long ptr, NFIPosixSupport nfiPosixSupport) {
-            socketAddress = new byte[(int) nfiPosixSupport.getConstant(SIZEOF_STRUCT_SOCKADDR_STORAGE)];
+        private void update(long ptr, NativePosixSupport nativePosixSupport) {
+            socketAddress = new byte[(int) nativePosixSupport.getConstant(SIZEOF_STRUCT_SOCKADDR_STORAGE)];
             long nativeIntData = NULLPTR;
             long nativeLongData = NULLPTR;
             long nativeSocketAddress = NULLPTR;
@@ -2656,7 +2656,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 nativeIntData = NativeMemory.mallocIntArray(intData.length);
                 nativeLongData = NativeMemory.mallocLongArray(longData.length);
                 nativeSocketAddress = NativeMemory.mallocByteArray(socketAddress.length);
-                int res = nfiPosixSupport.posixNativeFunctionInvoker.get_addrinfo_members(ptr, nativeIntData, nativeLongData, nativeSocketAddress);
+                int res = nativePosixSupport.posixNativeFunctionInvoker.get_addrinfo_members(ptr, nativeIntData, nativeLongData, nativeSocketAddress);
                 if (res != 0) {
                     throw shouldNotReachHere("the length of ai_canonname does not fit into an int");
                 }
@@ -2711,21 +2711,21 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportLibrary(AddrInfoCursorLibrary.class)
     protected static class AddrInfoCursorImpl implements AddrInfoCursor {
 
-        private final NFIPosixSupport nfiPosixSupport;
+        private final NativePosixSupport nativePosixSupport;
         private long head;
         private AddrInfo info;
 
-        AddrInfoCursorImpl(NFIPosixSupport nfiPosixSupport, long head) {
-            this.nfiPosixSupport = nfiPosixSupport;
+        AddrInfoCursorImpl(NativePosixSupport nativePosixSupport, long head) {
+            this.nativePosixSupport = nativePosixSupport;
             this.head = head;
             info = new AddrInfo();
-            info.update(head, nfiPosixSupport);
+            info.update(head, nativePosixSupport);
         }
 
         @ExportMessage
         void release() {
             checkReleased();
-            nfiPosixSupport.posixNativeFunctionInvoker.call_freeaddrinfo(head);
+            nativePosixSupport.posixNativeFunctionInvoker.call_freeaddrinfo(head);
             head = 0;
         }
 
@@ -2736,7 +2736,7 @@ public final class NFIPosixSupport extends PosixSupport {
             if (nextPtr == 0) {
                 return false;
             }
-            info.update(nextPtr, nfiPosixSupport);
+            info.update(nextPtr, nativePosixSupport);
             return true;
         }
 
@@ -2779,7 +2779,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
         @ExportMessage
         UniversalSockAddr getSockAddr() {
-            UniversalSockAddrImpl addr = new UniversalSockAddrImpl(nfiPosixSupport);
+            UniversalSockAddrImpl addr = new UniversalSockAddrImpl(nativePosixSupport);
             PythonUtils.arraycopy(info.socketAddress, 0, addr.data, 0, info.getAddrLen());
             addr.setFamily(info.getAddrFamily());
             addr.setLen(info.getAddrLen());
@@ -2833,12 +2833,12 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportLibrary(UniversalSockAddrLibrary.class)
     protected static class UniversalSockAddrImpl implements UniversalSockAddr {
 
-        private final NFIPosixSupport nfiPosixSupport;
+        private final NativePosixSupport nativePosixSupport;
         private final byte[] data;
         private int len = 0;
 
-        UniversalSockAddrImpl(NFIPosixSupport nfiPosixSupport) {
-            this.nfiPosixSupport = nfiPosixSupport;
+        UniversalSockAddrImpl(NativePosixSupport nativePosixSupport) {
+            this.nativePosixSupport = nativePosixSupport;
             this.data = new byte[(int) getConstant(SIZEOF_STRUCT_SOCKADDR_STORAGE)];
         }
 
@@ -2924,8 +2924,8 @@ public final class NFIPosixSupport extends PosixSupport {
             return new UnixSockAddr(pathBuf);
         }
 
-        long getConstant(NFIPosixConstants constant) {
-            return nfiPosixSupport.getConstant(constant);
+        long getConstant(NativePosixConstants constant) {
+            return nativePosixSupport.getConstant(constant);
         }
 
         int getLen() {

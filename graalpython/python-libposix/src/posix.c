@@ -40,7 +40,7 @@
  */
 
 // Helper functions that mostly delegate to POSIX functions
-// These functions are called from NFIPosixSupport Java class using NFI
+// These functions are called from NativePosixSupport Java class using native-access downcalls
 
 // This file uses GNU extensions. Functions that require non-GNU versions (e.g. strerror_r)
 // need to go to posix_no_gnu.c
@@ -781,7 +781,7 @@ int32_t call_unsetenv(char *name) {
     return unsetenv(name);
 }
 
-// See comment in NFiPosixSupport.execv() for the description of arguments
+// See comment in NativePosixSupport.execv() for the description of arguments
 void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
     // We reuse the memory allocated for offsets to avoid the need to allocate and reliably free another array
     char **strings = (char **) offsets;
@@ -1008,7 +1008,7 @@ void call_gai_strerror(int32_t error, char *buf, int32_t buflen) {
 }
 
 int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData, int8_t *addr) {
-    // see NFIPosixSupport.AddrInfo for description of the way data is transferred
+    // see NativePosixSupport.AddrInfo for description of the way data is transferred
     struct addrinfo *ai = (struct addrinfo *) ptr;
 
     memcpy(addr, ai->ai_addr, ai->ai_addrlen);
