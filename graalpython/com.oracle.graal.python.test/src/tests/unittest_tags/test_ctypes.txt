@@ -21,7 +21,7 @@ test.test_ctypes.test_arrays.ArrayTestCase.test_subclass @ darwin-arm64,linux-aa
 test.test_ctypes.test_arrays.ArrayTestCase.test_zero_length @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ctypes.test_as_parameter.AsParamNestedWrapperTestCase.test_byval @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ctypes.test_as_parameter.AsParamNestedWrapperTestCase.test_callbacks @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_ctypes.test_as_parameter.AsParamNestedWrapperTestCase.test_callbacks_2 @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_ctypes.test_as_parameter.AsParamNestedWrapperTestCase.test_callbacks_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ctypes.test_as_parameter.AsParamNestedWrapperTestCase.test_longlong_callbacks @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ctypes.test_as_parameter.AsParamNestedWrapperTestCase.test_pointers @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_ctypes.test_as_parameter.AsParamNestedWrapperTestCase.test_recursive_as_param @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
