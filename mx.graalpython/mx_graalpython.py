@@ -1064,6 +1064,26 @@ def update_maven_opts(env):
         mx.log(f"Added '{mvn_repo_local}' to MAVEN_OPTS={maven_opts}")
     return env
 
+
+def deploy_library_to_local_maven_repo(library_name, repo_url, env):
+    library = mx.library(library_name)
+    if not hasattr(library, 'maven'):
+        mx.abort(f'Cannot deploy {library_name}: library does not define Maven metadata')
+    maven = library.maven
+    mx.run_maven([
+        'deploy:deploy-file',
+        '-DrepositoryId=local',
+        f'-Durl={repo_url}',
+        f'-DgroupId={maven["groupId"]}',
+        f'-DartifactId={maven["artifactId"]}',
+        f'-Dversion={maven["version"]}',
+        f'-Dfile={library.get_path(True)}',
+        '-Dpackaging=jar',
+        '-DgeneratePom=true',
+        '-DretryFailedDeploymentCount=10',
+    ], env=env)
+
+
 def deploy_local_maven_repo(env=None):
     env = update_maven_opts({**os.environ.copy(), **(env or {})})
     run_mx_args = [
@@ -1098,6 +1118,9 @@ def deploy_local_maven_repo(env=None):
         mx.rmtree(path, ignore_errors=True)
         os.mkdir(path)
         run_mx(deploy_args, env={**env, **LATEST_JAVA_HOME})
+        repo_url = pathlib.Path(path).as_uri()
+        for library_name in ('BOUNCYCASTLE-PROVIDER', 'BOUNCYCASTLE-PKIX', 'BOUNCYCASTLE-UTIL'):
+            deploy_library_to_local_maven_repo(library_name, repo_url, {**env, **LATEST_JAVA_HOME})
     return path, version, env
 
 
