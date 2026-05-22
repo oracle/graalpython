@@ -1990,8 +1990,8 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(PGuards.class)
     public abstract static class GetCachedTpSlotsNode extends Node {
         public abstract TpSlots execute(Node inliningTarget, Object pythonClass);
@@ -2024,7 +2024,7 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
-    @GenerateInline(inlineByDefault = true)
+    @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class GetObjectSlotsNode extends Node {

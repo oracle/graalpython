@@ -61,7 +61,7 @@ import com.oracle.truffle.api.nodes.Node;
  * {@link com.oracle.graal.python.util.OverflowException}.
  */
 @GenerateUncached
-@GenerateInline(inlineByDefault = true)
+@GenerateInline
 @GenerateCached(false)
 public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
 

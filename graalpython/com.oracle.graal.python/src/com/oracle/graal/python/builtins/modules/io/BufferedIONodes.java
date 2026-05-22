@@ -245,7 +245,7 @@ public class BufferedIONodes {
         }
     }
 
-    @GenerateInline(inlineByDefault = true)
+    @GenerateInline
     @GenerateCached(false)
     abstract static class RawTellIgnoreErrorNode extends PNodeWithContext {
         public abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self);

@@ -62,7 +62,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * and {@code _Py_EnterRecursiveCall}.
  */
 @GenerateUncached
-@GenerateInline(inlineByDefault = true)
+@GenerateInline
 @GenerateCached(false)
 public abstract class PyEnterRecursiveCallNode extends PNodeWithContext {
     protected abstract PythonThreadState execute(Node inliningTarget, TruffleString errorMessage, Object formatArg, boolean withFormatArg);
