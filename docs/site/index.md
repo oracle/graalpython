@@ -8,7 +8,7 @@ layout: base
       <div class="container">
         <div class="hi__row">
           <div class="hi__body">
-            <h4 class="hi__title">High-performance embeddable Python 3 runtime</h4>
+            <h4 class="hi__title">A high-performance embeddable Python 3 runtime</h4>
           </div>
         </div>
       </div>
