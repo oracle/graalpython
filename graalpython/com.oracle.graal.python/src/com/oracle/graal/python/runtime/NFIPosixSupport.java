@@ -92,7 +92,6 @@ import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.DowncallSignature;
-import com.oracle.graal.python.annotations.GenerateNativeDowncalls;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -167,7 +166,6 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final Object CRYPT_LOCK = new Object();
 
-    @GenerateNativeDowncalls
     abstract static class PosixNativeFunctionInvoker {
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
         abstract int init_constants(long out, int len);
@@ -605,7 +603,6 @@ public final class NFIPosixSupport extends PosixSupport {
         }
     }
 
-    @GenerateNativeDowncalls
     abstract static class CryptNativeFunctionInvoker {
         @DowncallSignature(returnType = POINTER, argumentTypes = {POINTER, POINTER})
         abstract long crypt(long word, long salt);

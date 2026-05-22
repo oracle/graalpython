@@ -42,6 +42,7 @@ package com.oracle.graal.python.processor;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -59,7 +60,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 
 import com.oracle.graal.python.annotations.DowncallSignature;
-import com.oracle.graal.python.annotations.GenerateNativeDowncalls;
 import com.oracle.graal.python.annotations.NativeSimpleType;
 
 public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
@@ -68,7 +68,7 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Set.of(GenerateNativeDowncalls.class.getName(), DowncallSignature.class.getName());
+        return Set.of(DowncallSignature.class.getName());
     }
 
     @Override
@@ -92,34 +92,30 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
     }
 
     private void doProcess(RoundEnvironment roundEnv) throws IOException, ProcessingError {
-        validateDowncallSignatures(roundEnv);
-        for (Element element : roundEnv.getElementsAnnotatedWith(GenerateNativeDowncalls.class)) {
-            if (element.getKind() != ElementKind.CLASS) {
-                throw error(element, "Can only annotate classes with @GenerateNativeDowncalls");
-            }
-            if (!element.getModifiers().contains(Modifier.ABSTRACT)) {
-                throw error(element, "@GenerateNativeDowncalls classes must be abstract");
-            }
-            generateInvoker((TypeElement) element);
+        Set<TypeElement> invokerElements = new LinkedHashSet<>();
+        for (Element element : roundEnv.getElementsAnnotatedWith(DowncallSignature.class)) {
+            invokerElements.add(validateDowncallSignature(element));
+        }
+        for (TypeElement invokerElement : invokerElements) {
+            generateInvoker(invokerElement);
         }
     }
 
-    private static void validateDowncallSignatures(RoundEnvironment roundEnv) throws ProcessingError {
-        for (Element element : roundEnv.getElementsAnnotatedWith(DowncallSignature.class)) {
-            if (element.getKind() != ElementKind.METHOD) {
-                throw error(element, "@DowncallSignature can only annotate methods");
-            }
-            Element enclosingElement = element.getEnclosingElement();
-            if (enclosingElement == null || enclosingElement.getKind() != ElementKind.CLASS) {
-                throw error(element, "@DowncallSignature can only annotate methods in classes");
-            }
-            if (enclosingElement.getAnnotation(GenerateNativeDowncalls.class) == null) {
-                throw error(element, "Methods annotated with @DowncallSignature must be enclosed in a class annotated with @GenerateNativeDowncalls");
-            }
-            if (!element.getModifiers().contains(Modifier.ABSTRACT)) {
-                throw error(element, "@DowncallSignature methods must be abstract");
-            }
+    private static TypeElement validateDowncallSignature(Element element) throws ProcessingError {
+        if (element.getKind() != ElementKind.METHOD) {
+            throw error(element, "@DowncallSignature can only annotate methods");
         }
+        Element enclosingElement = element.getEnclosingElement();
+        if (enclosingElement == null || enclosingElement.getKind() != ElementKind.CLASS) {
+            throw error(element, "@DowncallSignature can only annotate methods in classes");
+        }
+        if (!enclosingElement.getModifiers().contains(Modifier.ABSTRACT)) {
+            throw error(enclosingElement, "@DowncallSignature methods must be enclosed in an abstract class");
+        }
+        if (!element.getModifiers().contains(Modifier.ABSTRACT)) {
+            throw error(element, "@DowncallSignature methods must be abstract");
+        }
+        return (TypeElement) enclosingElement;
     }
 
     private void generateInvoker(TypeElement invokerElement) throws IOException, ProcessingError {
@@ -219,7 +215,7 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
     private static NativeDowncallDesc extractDowncall(ExecutableElement method) throws ProcessingError {
         DowncallSignature annotation = method.getAnnotation(DowncallSignature.class);
         if (annotation == null) {
-            throw error(method, "Downcall method in @GenerateNativeDowncalls class must be annotated with @DowncallSignature");
+            throw error(method, "Downcall method must be annotated with @DowncallSignature");
         }
 
         NativeSimpleType[] argTypes = annotation.argumentTypes();
