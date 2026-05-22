@@ -194,6 +194,13 @@
         buildslave_ol8: ENVIRONMENT_DIFF_OL8,
     },
 
+    local pip_index_setup = [
+        // Use the CI Python's configured base index and overlay-provided GraalPy wheel index.
+        ["set-export", "PIP_INDEX_URL", ["python", "-m", "pip", "config", "get", "global.index-url"]],
+    ] + if $.overlay_imports.PIP_EXTRA_INDEX_URL != "" then [
+        ["set-export", "PIP_EXTRA_INDEX_URL", $.overlay_imports.PIP_EXTRA_INDEX_URL],
+    ] else [],
+
     //------------------------------------------------------------------------------------------------------------------
     // packages
     //------------------------------------------------------------------------------------------------------------------
@@ -461,7 +468,7 @@
         guard+: {
             excludes+: ["**.md", "docs/**", "3rd_party_licenses.txt", "scripts/**"],
         },
-        setup+: [
+        setup+: pip_index_setup + [
             // force imports the main repository to get the right graal commit
             ["mx"] + self.mx_parameters + ["sforceimports"],
             // logging
