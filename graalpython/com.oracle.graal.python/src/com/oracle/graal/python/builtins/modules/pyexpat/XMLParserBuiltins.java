@@ -60,6 +60,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.Attributes;
@@ -123,6 +125,28 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.XMLParser)
 public final class XMLParserBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = XMLParserBuiltinsSlotsGen.SLOTS;
+
+    /*
+     * JAXP exposes entity-expansion protection through separate per-parser properties. The matching jdk.xml.* system
+     * properties are read once into static limit values so stricter process-wide limits remain effective without
+     * re-reading properties for every parse. The SAX feature URIs below disable external entity and DTD loading where
+     * the selected SAX implementation supports them.
+     */
+    private static final int ENTITY_EXPANSION_LIMIT = 1_000_000;
+    private static final int TOTAL_ENTITY_SIZE_LIMIT = 1_000_000;
+    private static final int ENTITY_REPLACEMENT_LIMIT = 1_000_000;
+    private static final String JDK_ENTITY_EXPANSION_LIMIT_PROPERTY = "jdk.xml.entityExpansionLimit";
+    private static final String JDK_TOTAL_ENTITY_SIZE_LIMIT_PROPERTY = "jdk.xml.totalEntitySizeLimit";
+    private static final String JDK_ENTITY_REPLACEMENT_LIMIT_PROPERTY = "jdk.xml.entityReplacementLimit";
+    private static final String JAXP_ENTITY_EXPANSION_LIMIT = "http://www.oracle.com/xml/jaxp/properties/entityExpansionLimit";
+    private static final String JAXP_TOTAL_ENTITY_SIZE_LIMIT = "http://www.oracle.com/xml/jaxp/properties/totalEntitySizeLimit";
+    private static final String JAXP_ENTITY_REPLACEMENT_LIMIT = "http://www.oracle.com/xml/jaxp/properties/entityReplacementLimit";
+    private static final String ENTITY_EXPANSION_LIMIT_VALUE = getParserLimit(JDK_ENTITY_EXPANSION_LIMIT_PROPERTY, ENTITY_EXPANSION_LIMIT);
+    private static final String TOTAL_ENTITY_SIZE_LIMIT_VALUE = getParserLimit(JDK_TOTAL_ENTITY_SIZE_LIMIT_PROPERTY, TOTAL_ENTITY_SIZE_LIMIT);
+    private static final String ENTITY_REPLACEMENT_LIMIT_VALUE = getParserLimit(JDK_ENTITY_REPLACEMENT_LIMIT_PROPERTY, ENTITY_REPLACEMENT_LIMIT);
+    private static final String SAX_EXTERNAL_GENERAL_ENTITIES = "http://xml.org/sax/features/external-general-entities";
+    private static final String SAX_EXTERNAL_PARAMETER_ENTITIES = "http://xml.org/sax/features/external-parameter-entities";
+    private static final String SAX_LOAD_EXTERNAL_DTD = "http://apache.org/xml/features/nonvalidating/load-external-dtd";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -1187,11 +1211,16 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         try {
             SAXParserFactory factory = SAXParserFactory.newInstance();
             factory.setNamespaceAware(parser.getNamespaceSeparator() != null);
-            XMLReader reader = factory.newSAXParser().getXMLReader();
-            try {
-                reader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-            } catch (Exception ignored) {
-            }
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            SAXParser saxParser = factory.newSAXParser();
+            saxParser.setProperty(JAXP_ENTITY_EXPANSION_LIMIT, ENTITY_EXPANSION_LIMIT_VALUE);
+            saxParser.setProperty(JAXP_TOTAL_ENTITY_SIZE_LIMIT, TOTAL_ENTITY_SIZE_LIMIT_VALUE);
+            saxParser.setProperty(JAXP_ENTITY_REPLACEMENT_LIMIT, ENTITY_REPLACEMENT_LIMIT_VALUE);
+            saxParser.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            XMLReader reader = saxParser.getXMLReader();
+            setFeatureIfSupported(reader, SAX_EXTERNAL_GENERAL_ENTITIES, false);
+            setFeatureIfSupported(reader, SAX_EXTERNAL_PARAMETER_ENTITIES, false);
+            setFeatureIfSupported(reader, SAX_LOAD_EXTERNAL_DTD, false);
             reader.setEntityResolver(new EntityResolver2() {
                 @Override
                 public InputSource getExternalSubset(String name, String baseURI) {
@@ -1254,6 +1283,28 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                                 parser.getCurrentLineNumber(),
                                 parser.getCurrentColumnNumber());
             }
+        }
+    }
+
+    private static String getParserLimit(String property, int defaultLimit) {
+        String configuredLimit = System.getProperty(property);
+        if (configuredLimit != null) {
+            try {
+                int limit = Integer.parseInt(configuredLimit);
+                if (limit > 0 && limit < defaultLimit) {
+                    // Preserve a user-configured process-wide limit when it is stricter than GraalPy's default.
+                    return configuredLimit;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return Integer.toString(defaultLimit);
+    }
+
+    private static void setFeatureIfSupported(XMLReader reader, String feature, boolean value) {
+        try {
+            reader.setFeature(feature, value);
+        } catch (Exception ignored) {
         }
     }
 
@@ -1452,6 +1503,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         if (message == null) {
             return "syntax error";
         }
+        if (isEntityAmplificationLimitError(message)) {
+            return PXMLParser.XML_ERROR_AMPLIFICATION_LIMIT_BREACH_MESSAGE + ": line " + e.getLineNumber() + ", column " + Math.max(0, e.getColumnNumber() - 1);
+        }
         if (message.contains("entity") && message.contains("not declared")) {
             int firstQuote = message.indexOf('"');
             int secondQuote = firstQuote >= 0 ? message.indexOf('"', firstQuote + 1) : -1;
@@ -1466,10 +1520,18 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     private static int mapErrorCode(SAXParseException e) {
         String message = e.getMessage();
         if (message != null) {
+            if (isEntityAmplificationLimitError(message)) {
+                return PXMLParser.XML_ERROR_AMPLIFICATION_LIMIT_BREACH;
+            }
             if (message.contains("start and end within the same entity") || message.contains("premature end of file") || message.contains("must be terminated")) {
                 return PXMLParser.XML_ERROR_UNCLOSED_TOKEN;
             }
         }
         return PXMLParser.XML_ERROR_SYNTAX;
+    }
+
+    private static boolean isEntityAmplificationLimitError(String message) {
+        return message.contains("JAXP00010001") || message.contains("JAXP00010004") || message.contains("JAXP00010007") || message.contains("entityExpansionLimit") ||
+                        message.contains("totalEntitySizeLimit") || message.contains("entityReplacementLimit");
     }
 }

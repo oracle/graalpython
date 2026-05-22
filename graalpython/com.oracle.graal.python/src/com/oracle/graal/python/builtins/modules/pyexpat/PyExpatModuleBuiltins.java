@@ -111,6 +111,8 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
         addError(errors, codes, messages, "XML_ERROR_FINISHED", "parsing finished", PXMLParser.XML_ERROR_FINISHED);
         addError(errors, codes, messages, "XML_ERROR_SYNTAX", "syntax error", PXMLParser.XML_ERROR_SYNTAX);
         addError(errors, codes, messages, "XML_ERROR_UNCLOSED_TOKEN", "unclosed token", PXMLParser.XML_ERROR_UNCLOSED_TOKEN);
+        addError(errors, codes, messages, "XML_ERROR_AMPLIFICATION_LIMIT_BREACH", PXMLParser.XML_ERROR_AMPLIFICATION_LIMIT_BREACH_MESSAGE,
+                        PXMLParser.XML_ERROR_AMPLIFICATION_LIMIT_BREACH);
         errors.setAttribute(T_CODES, codes);
         errors.setAttribute(T_MESSAGES, messages);
         addBuiltinConstant("errors", errors);
@@ -141,12 +143,14 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
         private static final TruffleString T_PARSING_FINISHED = tsLiteral("parsing finished");
         private static final TruffleString T_UNCLOSED_TOKEN = tsLiteral("unclosed token");
         private static final TruffleString T_SYNTAX_ERROR = tsLiteral("syntax error");
+        private static final TruffleString T_AMPLIFICATION_LIMIT_BREACH = tsLiteral(PXMLParser.XML_ERROR_AMPLIFICATION_LIMIT_BREACH_MESSAGE);
 
         @Specialization
         static TruffleString doIt(int code) {
             return switch (code) {
                 case PXMLParser.XML_ERROR_FINISHED -> T_PARSING_FINISHED;
                 case PXMLParser.XML_ERROR_UNCLOSED_TOKEN -> T_UNCLOSED_TOKEN;
+                case PXMLParser.XML_ERROR_AMPLIFICATION_LIMIT_BREACH -> T_AMPLIFICATION_LIMIT_BREACH;
                 default -> T_SYNTAX_ERROR;
             };
         }
