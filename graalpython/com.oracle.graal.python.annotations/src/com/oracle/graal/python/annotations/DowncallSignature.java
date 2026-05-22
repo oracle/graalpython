@@ -46,13 +46,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.FIELD)
+@Target(ElementType.METHOD)
 public @interface DowncallSignature {
-    NativeSimpleType returns();
+    NativeSimpleType returnType();
 
-    NativeSimpleType[] argTypes() default {};
+    NativeSimpleType[] argumentTypes() default {};
 
-    String[] argNames() default {};
+    Class<?> retConversion() default void.class;
 
-    String symbol() default "";
+    Class<?>[] argConversions() default {};
 }

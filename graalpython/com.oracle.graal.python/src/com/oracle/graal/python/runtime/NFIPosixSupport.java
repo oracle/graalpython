@@ -167,448 +167,422 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final Object CRYPT_LOCK = new Object();
 
-    @GenerateNativeDowncalls(generatedClassName = "PosixNativeFunctionInvoker")
-    enum PosixNativeFunction {
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, SINT32}, argNames = {"out", "len"})
-        init_constants,
+    @GenerateNativeDowncalls
+    abstract static class PosixNativeFunctionInvoker {
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
+        abstract int init_constants(long out, int len);
 
-        @DowncallSignature(returns = SINT32)
-        get_errno,
+        @DowncallSignature(returnType = SINT32)
+        abstract int get_errno();
 
-        @DowncallSignature(returns = VOID, argTypes = {SINT32})
-        set_errno,
+        @DowncallSignature(returnType = VOID, argumentTypes = {SINT32})
+        abstract void set_errno(int errno);
 
-        @DowncallSignature(returns = SINT64, argTypes = {SINT64, SINT32, SINT32, SINT32, SINT64}, argNames = {"length", "prot", "flags", "fd", "offset"})
-        call_mmap,
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64, SINT32, SINT32, SINT32, SINT64})
+        abstract long call_mmap(long length, int prot, int flags, int fd, long offset);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT64, SINT64}, argNames = {"address", "length"})
-        call_munmap,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, SINT64})
+        abstract int call_munmap(long address, long length);
 
-        @DowncallSignature(returns = VOID, argTypes = {SINT64, SINT64, SINT64}, argNames = {"address", "offset", "length"})
-        call_msync,
+        @DowncallSignature(returnType = VOID, argumentTypes = {SINT64, SINT64, SINT64})
+        abstract void call_msync(long address, long offset, long length);
 
-        @DowncallSignature(returns = VOID, argTypes = {SINT32, POINTER, SINT32}, argNames = {"error", "buf", "buflen"})
-        call_strerror,
+        @DowncallSignature(returnType = VOID, argumentTypes = {SINT32, POINTER, SINT32})
+        abstract void call_strerror(int error, long buf, int buflen);
 
-        @DowncallSignature(returns = SINT64)
-        call_getpid,
+        @DowncallSignature(returnType = SINT64)
+        abstract long call_getpid();
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_umask,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_umask(int mask);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32, SINT32}, argNames = {"dirFd", "pathname", "flags", "mode"})
-        call_openat,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, SINT32})
+        abstract int call_openat(int dirFd, long pathname, int flags, int mode);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_close,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_close(int fd);
 
-        @DowncallSignature(returns = SINT64, argTypes = {SINT32, POINTER, SINT64}, argNames = {"fd", "buf", "count"})
-        call_read,
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32, POINTER, SINT64})
+        abstract long call_read(int fd, long buf, long count);
 
-        @DowncallSignature(returns = SINT64, argTypes = {SINT32, POINTER, SINT64}, argNames = {"fd", "buf", "count"})
-        call_write,
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32, POINTER, SINT64})
+        abstract long call_write(int fd, long buf, long count);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_dup,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_dup(int fd);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32, SINT32}, argNames = {"oldfd", "newfd", "inheritable"})
-        call_dup2,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT32})
+        abstract int call_dup2(int oldfd, int newfd, int inheritable);
 
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"pipefd"})
-        call_pipe2,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_pipe2(long pipefd);
 
-        @DowncallSignature(returns = SINT32, argTypes = {
-                        SINT32, POINTER, SINT32, POINTER, SINT32, POINTER, SINT32, SINT64, SINT64, POINTER
-        }, argNames = {
-                        "nfds", "readfds", "readfdsLen", "writefds", "writefdsLen", "errfds", "errfdsLen", "timeoutSec", "timeoutUsec", "selected"
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER, SINT32, POINTER, SINT32, SINT64, SINT64, POINTER})
+        abstract int call_select(int nfds, long readfds, int readfdsLen, long writefds, int writefdsLen, long errfds, int errfdsLen, long timeoutSec, long timeoutUsec, long selected);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT64, SINT64})
+        abstract int call_poll(int fd, int writing, long timeoutSec, long timeoutUsec);
+
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32, SINT64, SINT32})
+        abstract long call_lseek(int fd, long offset, int whence);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT64})
+        abstract int call_ftruncate(int fd, long length);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT64})
+        abstract int call_truncate(long path, long length);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_fsync(int fd);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32})
+        abstract int call_flock(int fd, int operation);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT32, SINT32, SINT64, SINT64})
+        abstract int call_fcntl_lock(int fd, int blocking, int lockType, int whence, long start, long length);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER})
+        abstract int call_fstatat(int dirFd, long path, int followSymlinks, long out);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER})
+        abstract int call_fstat(int fd, long out);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER})
+        abstract int call_statvfs(long path, long out);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER})
+        abstract int call_fstatvfs(int fd, long out);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, POINTER, POINTER, POINTER, SINT32})
+        abstract int call_uname(long sysname, long nodename, long release, long version, long machine, int size);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32})
+        abstract int call_unlinkat(int dirFd, long pathname, int rmdir);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER, SINT32})
+        abstract int call_linkat(int oldDirFd, long oldPath, int newDirFd, long newPath, int flags);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER})
+        abstract int call_symlinkat(long target, int dirFd, long linkpath);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32})
+        abstract int call_mkdirat(int dirFd, long pathname, int mode);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT64})
+        abstract int call_getcwd(long buf, long size);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_chdir(long path);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_fchdir(int fd);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_isatty(int fd);
+
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER})
+        abstract long call_opendir(long name);
+
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32})
+        abstract long call_fdopendir(int fd);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64})
+        abstract int call_closedir(long dirp);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, POINTER, SINT64, POINTER})
+        abstract int call_readdir(long dirp, long nameBuf, long nameBufSize, long out);
+
+        @DowncallSignature(returnType = VOID, argumentTypes = {SINT64})
+        abstract void call_rewinddir(long dirp);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, POINTER, SINT32})
+        abstract int call_utimensat(int dirFd, long path, long timespec, int followSymlinks);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER})
+        abstract int call_futimens(int fd, long timespec);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER})
+        abstract int call_futimes(int fd, long timeval);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER})
+        abstract int call_lutimes(long filename, long timeval);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER})
+        abstract int call_utimes(long filename, long timeval);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER})
+        abstract int call_renameat(int oldDirFd, long oldPath, int newDirFd, long newPath);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, SINT32, SINT32})
+        abstract int call_faccessat(int dirFd, long path, int mode, int effectiveIds, int followSymlinks);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, SINT32})
+        abstract int call_fchmodat(int dirFd, long path, int mode, int followSymlinks);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32})
+        abstract int call_fchmod(int fd, int mode);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT64, SINT64, SINT32})
+        abstract int call_fchownat(int dirfd, long pathname, long owner, long group, int followSymlinks);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT64, SINT64})
+        abstract int call_fchown(int fd, long owner, long group);
+
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32, POINTER, POINTER, SINT64})
+        abstract long call_readlinkat(int dirFd, long path, long buf, long size);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int get_inheritable(int fd);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32})
+        abstract int set_inheritable(int fd, int inheritable);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int get_blocking(int fd);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32})
+        abstract int set_blocking(int fd, int blocking);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER})
+        abstract int get_terminal_size(int fd, long size);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_raise(int signal);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_alarm(int seconds);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER})
+        abstract int call_getitimer(int which, long currentValue);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, POINTER})
+        abstract int call_setitimer(int which, long newValue, long oldValue);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int signal_self(int signal);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, SINT32})
+        abstract int call_kill(long pid, int signal);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, SINT32})
+        abstract int call_killpg(long pgid, int signal);
+
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64, POINTER, SINT32})
+        abstract long call_waitpid(long pid, long status, int options);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_wcoredump(int status);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_wifcontinued(int status);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_wifstopped(int status);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_wifsignaled(int status);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_wifexited(int status);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_wexitstatus(int status);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_wtermsig(int status);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int call_wstopsig(int status);
+
+        @DowncallSignature(returnType = SINT64)
+        abstract long call_getuid();
+
+        @DowncallSignature(returnType = SINT64)
+        abstract long call_geteuid();
+
+        @DowncallSignature(returnType = SINT64)
+        abstract long call_getgid();
+
+        @DowncallSignature(returnType = SINT64)
+        abstract long call_getegid();
+
+        @DowncallSignature(returnType = SINT64)
+        abstract long call_getppid();
+
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64})
+        abstract long call_getpgid(long pid);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, SINT64})
+        abstract int call_setpgid(long pid, long pgid);
+
+        @DowncallSignature(returnType = SINT64)
+        abstract long call_getpgrp();
+
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64})
+        abstract long call_getsid(long pid);
+
+        @DowncallSignature(returnType = SINT64)
+        abstract long call_setsid();
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, POINTER})
+        abstract int call_getgroups(long size, long out);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER})
+        abstract int call_getrusage(int who, long out);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_openpty(long outvars);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_ctermid(long buf);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT32})
+        abstract int call_setenv(long name, long value, int overwrite);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_unsetenv(long name);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {
+                        POINTER, POINTER, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32,
+                        SINT32, SINT32, SINT32, SINT32, SINT32, POINTER, SINT64
         })
-        call_select,
+        abstract int fork_exec(long data, long offsets, int offsetsLen, int argsPos, int envPos, int cwdPos, int stdinRdFd, int stdinWrFd, int stdoutRdFd, int stdoutWrFd, int stderrRdFd,
+                        int stderrWrFd, int errPipeRdFd, int errPipeWrFd, int closeFds, int restoreSignals, int callSetsid, long fdsToKeep, long fdsToKeepLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32, SINT64, SINT64}, argNames = {"fd", "writing", "timeoutSec", "timeoutUsec"})
-        call_poll,
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER, POINTER, SINT32})
+        abstract void call_execv(long data, long offsets, int offsetsLen);
 
-        @DowncallSignature(returns = SINT64, argTypes = {SINT32, SINT64, SINT32}, argNames = {"fd", "offset", "whence"})
-        call_lseek,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_system(long pathname);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT64}, argNames = {"fd", "length"})
-        call_ftruncate,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, POINTER, SINT32, POINTER})
+        abstract int call_getpwuid_r(long uid, long buffer, int bufferSize, long output);
 
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, SINT64}, argNames = {"path", "length"})
-        call_truncate,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT32, POINTER})
+        abstract int call_getpwname_r(long name, long buffer, int bufferSize, long output);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_fsync,
+        @DowncallSignature(returnType = VOID)
+        abstract void call_setpwent();
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32}, argNames = {"fd", "operation"})
-        call_flock,
+        @DowncallSignature(returnType = VOID)
+        abstract void call_endpwent();
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32, SINT32, SINT32, SINT64, SINT64}, argNames = {"fd", "blocking", "lockType", "whence", "start", "length"})
-        call_fcntl_lock,
+        @DowncallSignature(returnType = POINTER, argumentTypes = {POINTER})
+        abstract long call_getpwent(long bufferSize);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32, POINTER}, argNames = {"dirFd", "path", "followSymlinks", "out"})
-        call_fstatat,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT32, POINTER})
+        abstract int get_getpwent_data(long p, long buffer, int bufferSize, long output);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER}, argNames = {"fd", "out"})
-        call_fstat,
+        @DowncallSignature(returnType = SINT64)
+        abstract long get_sysconf_getpw_r_size_max();
 
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, POINTER}, argNames = {"path", "out"})
-        call_statvfs,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT32})
+        abstract int call_socket(int family, int type, int protocol);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER}, argNames = {"fd", "out"})
-        call_fstatvfs,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, POINTER})
+        abstract int call_accept(int sockfd, long addr, long addrLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, POINTER, POINTER, POINTER, POINTER, SINT32}, argNames = {"sysname", "nodename", "release", "version", "machine", "size"})
-        call_uname,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32})
+        abstract int call_bind(int sockfd, long addr, int addrLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32}, argNames = {"dirFd", "pathname", "rmdir"})
-        call_unlinkat,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32})
+        abstract int call_connect(int sockfd, long addr, int addrLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32, POINTER, SINT32}, argNames = {"oldDirFd", "oldPath", "newDirFd", "newPath", "flags"})
-        call_linkat,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32})
+        abstract int call_listen(int sockfd, int backlog);
 
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, SINT32, POINTER}, argNames = {"target", "dirFd", "linkpath"})
-        call_symlinkat,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, POINTER})
+        abstract int call_getpeername(int sockfd, long addr, long addrLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32}, argNames = {"dirFd", "pathname", "mode"})
-        call_mkdirat,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, POINTER})
+        abstract int call_getsockname(int sockfd, long addr, long addrLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, SINT64}, argNames = {"buf", "size"})
-        call_getcwd,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, SINT32})
+        abstract int call_send(int sockfd, long buf, int len, int flags);
 
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"path"})
-        call_chdir,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, SINT32, SINT32, POINTER, SINT32})
+        abstract int call_sendto(int sockfd, long buf, int offset, int len, int flags, long addr, int addrLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_fchdir,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, SINT32})
+        abstract int call_recv(int sockfd, long buf, int len, int flags);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_isatty,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, SINT32, SINT32, POINTER, POINTER})
+        abstract int call_recvfrom(int sockfd, long buf, int offset, int len, int flags, long srcAddr, long addrLen);
 
-        @DowncallSignature(returns = SINT64, argTypes = {POINTER}, argNames = {"name"})
-        call_opendir,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32})
+        abstract int call_shutdown(int sockfd, int how);
 
-        @DowncallSignature(returns = SINT64, argTypes = {SINT32})
-        call_fdopendir,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT32, POINTER, POINTER})
+        abstract int call_getsockopt(int sockfd, int level, int optname, long buf, long bufLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT64}, argNames = {"dirp"})
-        call_closedir,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT32, POINTER, SINT32})
+        abstract int call_setsockopt(int sockfd, int level, int optname, long buf, int bufLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT64, POINTER, SINT64, POINTER}, argNames = {"dirp", "nameBuf", "nameBufSize", "out"})
-        call_readdir,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_inet_addr(long src);
 
-        @DowncallSignature(returns = VOID, argTypes = {SINT64}, argNames = {"dirp"})
-        call_rewinddir,
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER})
+        abstract long call_inet_aton(long src);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, POINTER, SINT32}, argNames = {"dirFd", "path", "timespec", "followSymlinks"})
-        call_utimensat,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER})
+        abstract int call_inet_ntoa(int src, long dst);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER}, argNames = {"fd", "timespec"})
-        call_futimens,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, POINTER})
+        abstract int call_inet_pton(int family, long src, long dst);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER}, argNames = {"fd", "timeval"})
-        call_futimes,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, POINTER, SINT32})
+        abstract int call_inet_ntop(int family, long src, long dst, int dstSize);
 
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, POINTER}, argNames = {"filename", "timeval"})
-        call_lutimes,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT64})
+        abstract int call_gethostname(long buf, long bufLen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, POINTER}, argNames = {"filename", "timeval"})
-        call_utimes,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER, SINT32, POINTER, SINT32, SINT32})
+        abstract int call_getnameinfo(long addr, int addrLen, long hostBuf, int hostBufLen, long servBuf, int servBufLen, int flags);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32, POINTER}, argNames = {"oldDirFd", "oldPath", "newDirFd", "newPath"})
-        call_renameat,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT32, SINT32, SINT32, SINT32, POINTER})
+        abstract int call_getaddrinfo(long node, long service, int family, int sockType, int protocol, int flags, long ptr);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32, SINT32, SINT32}, argNames = {"dirFd", "path", "mode", "effectiveIds", "followSymlinks"})
-        call_faccessat,
+        @DowncallSignature(returnType = VOID, argumentTypes = {SINT64})
+        abstract void call_freeaddrinfo(long ptr);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32, SINT32}, argNames = {"dirFd", "path", "mode", "followSymlinks"})
-        call_fchmodat,
+        @DowncallSignature(returnType = VOID, argumentTypes = {SINT32, POINTER, SINT32})
+        abstract void call_gai_strerror(int error, long buf, int buflen);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32}, argNames = {"fd", "mode"})
-        call_fchmod,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, POINTER, POINTER, POINTER})
+        abstract int get_addrinfo_members(long ptr, long intData, long longData, long addr);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT64, SINT64, SINT32}, argNames = {"dirfd", "pathname", "owner", "group", "followSymlinks"})
-        call_fchownat,
+        @DowncallSignature(returnType = POINTER, argumentTypes = {POINTER, SINT32, SINT32, SINT32})
+        abstract long call_sem_open(long name, int openFlags, int mode, int value);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT64, SINT64}, argNames = {"fd", "owner", "group"})
-        call_fchown,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_sem_close(long handle);
 
-        @DowncallSignature(returns = SINT64, argTypes = {SINT32, POINTER, POINTER, SINT64}, argNames = {"dirFd", "path", "buf", "size"})
-        call_readlinkat,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_sem_unlink(long name);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        get_inheritable,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER})
+        abstract int call_sem_getvalue(long handle, long value);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32}, argNames = {"fd", "inheritable"})
-        set_inheritable,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_sem_post(long handle);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        get_blocking,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_sem_wait(long handle);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32}, argNames = {"fd", "blocking"})
-        set_blocking,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_sem_trywait(long handle);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER}, argNames = {"fd", "size"})
-        get_terminal_size,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT64})
+        abstract int call_sem_timedwait(long handle, long deadlineNs);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_raise,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT64, POINTER})
+        abstract int call_ioctl_bytes(int fd, long request, long buffer);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_alarm,
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT64, SINT32})
+        abstract int call_ioctl_int(int fd, long request, int arg);
 
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER}, argNames = {"which", "current_value"})
-        call_getitimer,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, POINTER}, argNames = {"which", "new_value", "old_value"})
-        call_setitimer,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        signal_self,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT64, SINT32}, argNames = {"pid", "signal"})
-        call_kill,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT64, SINT32}, argNames = {"pgid", "signal"})
-        call_killpg,
-
-        @DowncallSignature(returns = SINT64, argTypes = {SINT64, POINTER, SINT32}, argNames = {"pid", "status", "options"})
-        call_waitpid,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_wcoredump,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_wifcontinued,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_wifstopped,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_wifsignaled,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_wifexited,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_wexitstatus,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_wtermsig,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32})
-        call_wstopsig,
-
-        @DowncallSignature(returns = SINT64)
-        call_getuid,
-
-        @DowncallSignature(returns = SINT64)
-        call_geteuid,
-
-        @DowncallSignature(returns = SINT64)
-        call_getgid,
-
-        @DowncallSignature(returns = SINT64)
-        call_getegid,
-
-        @DowncallSignature(returns = SINT64)
-        call_getppid,
-
-        @DowncallSignature(returns = SINT64, argTypes = {SINT64})
-        call_getpgid,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT64, SINT64}, argNames = {"pid", "pgid"})
-        call_setpgid,
-
-        @DowncallSignature(returns = SINT64)
-        call_getpgrp,
-
-        @DowncallSignature(returns = SINT64, argTypes = {SINT64})
-        call_getsid,
-
-        @DowncallSignature(returns = SINT64)
-        call_setsid,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT64, POINTER}, argNames = {"size", "out"})
-        call_getgroups,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER}, argNames = {"who", "out"})
-        call_getrusage,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"outvars"})
-        call_openpty,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"buf"})
-        call_ctermid,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, POINTER, SINT32}, argNames = {"name", "value", "overwrite"})
-        call_setenv,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"name"})
-        call_unsetenv,
-
-        @DowncallSignature(returns = SINT32, argTypes = {
-                        POINTER, POINTER, SINT32, SINT32, SINT32,
-                        SINT32, SINT32, SINT32, SINT32, SINT32,
-                        SINT32, SINT32, SINT32, SINT32, SINT32,
-                        SINT32, SINT32, POINTER, SINT64
-        }, argNames = {
-                        "data", "offsets", "offsetsLen", "argsPos", "envPos",
-                        "cwdPos", "stdinRdFd", "stdinWrFd", "stdoutRdFd", "stdoutWrFd",
-                        "stderrRdFd", "stderrWrFd", "errPipeRdFd", "errPipeWrFd", "closeFds",
-                        "restoreSignals", "callSetsid", "fdsToKeep", "fdsToKeepLen"
-        })
-        fork_exec,
-
-        @DowncallSignature(returns = VOID, argTypes = {POINTER, POINTER, SINT32}, argNames = {"data", "offsets", "offsetsLen"})
-        call_execv,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"pathname"})
-        call_system,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT64, POINTER, SINT32, POINTER}, argNames = {"uid", "buffer", "bufferSize", "output"})
-        call_getpwuid_r,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, POINTER, SINT32, POINTER}, argNames = {"name", "buffer", "bufferSize", "output"})
-        call_getpwname_r,
-
-        @DowncallSignature(returns = VOID)
-        call_setpwent,
-
-        @DowncallSignature(returns = VOID)
-        call_endpwent,
-
-        @DowncallSignature(returns = POINTER, argTypes = {POINTER}, argNames = {"bufferSize"})
-        call_getpwent,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, POINTER, SINT32, POINTER}, argNames = {"p", "buffer", "bufferSize", "output"})
-        get_getpwent_data,
-
-        @DowncallSignature(returns = SINT64)
-        get_sysconf_getpw_r_size_max,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32, SINT32}, argNames = {"family", "type", "protocol"})
-        call_socket,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, POINTER}, argNames = {"sockfd", "addr", "addr_len"})
-        call_accept,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32}, argNames = {"sockfd", "addr", "addr_len"})
-        call_bind,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32}, argNames = {"sockfd", "addr", "addr_len"})
-        call_connect,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32}, argNames = {"sockfd", "backlog"})
-        call_listen,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, POINTER}, argNames = {"sockfd", "addr", "addr_len"})
-        call_getpeername,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, POINTER}, argNames = {"sockfd", "addr", "addr_len"})
-        call_getsockname,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32, SINT32}, argNames = {"sockfd", "buf", "len", "flags"})
-        call_send,
-
-        @DowncallSignature(returns = SINT32, argTypes = {
-                        SINT32, POINTER, SINT32, SINT32, SINT32, POINTER, SINT32
-        }, argNames = {
-                        "sockfd", "buf", "offset", "len", "flags", "addr", "addr_len"
-        })
-        call_sendto,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, SINT32, SINT32}, argNames = {"sockfd", "buf", "len", "flags"})
-        call_recv,
-
-        @DowncallSignature(returns = SINT32, argTypes = {
-                        SINT32, POINTER, SINT32, SINT32, SINT32, POINTER, POINTER
-        }, argNames = {
-                        "sockfd", "buf", "offset", "len", "flags", "src_addr", "addr_len"
-        })
-        call_recvfrom,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32}, argNames = {"sockfd", "how"})
-        call_shutdown,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32, SINT32, POINTER, POINTER}, argNames = {"sockfd", "level", "optname", "buf", "bufLen"})
-        call_getsockopt,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT32, SINT32, POINTER, SINT32}, argNames = {"sockfd", "level", "optname", "buf", "bufLen"})
-        call_setsockopt,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"src"})
-        call_inet_addr,
-
-        @DowncallSignature(returns = SINT64, argTypes = {POINTER}, argNames = {"src"})
-        call_inet_aton,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER}, argNames = {"src", "dst"})
-        call_inet_ntoa,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, POINTER}, argNames = {"family", "src", "dst"})
-        call_inet_pton,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, POINTER, POINTER, SINT32}, argNames = {"family", "src", "dst", "dstSize"})
-        call_inet_ntop,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, SINT64}, argNames = {"buf", "bufLen"})
-        call_gethostname,
-
-        @DowncallSignature(returns = SINT32, argTypes = {
-                        POINTER, SINT32, POINTER, SINT32, POINTER, SINT32, SINT32
-        }, argNames = {
-                        "addr", "addr_len", "hostBuf", "hostBufLen", "servBuf", "servBufLen", "flags"
-        })
-        call_getnameinfo,
-
-        @DowncallSignature(returns = SINT32, argTypes = {
-                        POINTER, POINTER, SINT32, SINT32, SINT32, SINT32, POINTER
-        }, argNames = {
-                        "node", "service", "family", "sockType", "protocol", "flags", "ptr"
-        })
-        call_getaddrinfo,
-
-        @DowncallSignature(returns = VOID, argTypes = {SINT64}, argNames = {"ptr"})
-        call_freeaddrinfo,
-
-        @DowncallSignature(returns = VOID, argTypes = {SINT32, POINTER, SINT32}, argNames = {"error", "buf", "buflen"})
-        call_gai_strerror,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT64, POINTER, POINTER, POINTER}, argNames = {"ptr", "intData", "longData", "addr"})
-        get_addrinfo_members,
-
-        @DowncallSignature(returns = POINTER, argTypes = {POINTER, SINT32, SINT32, SINT32}, argNames = {"name", "openFlags", "mode", "value"})
-        call_sem_open,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"handle"})
-        call_sem_close,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"name"})
-        call_sem_unlink,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, POINTER}, argNames = {"handle", "value"})
-        call_sem_getvalue,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"handle"})
-        call_sem_post,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"handle"})
-        call_sem_wait,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER}, argNames = {"handle"})
-        call_sem_trywait,
-
-        @DowncallSignature(returns = SINT32, argTypes = {POINTER, SINT64}, argNames = {"handle", "deadlineNs"})
-        call_sem_timedwait,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT64, POINTER}, argNames = {"fd", "request", "buffer"})
-        call_ioctl_bytes,
-
-        @DowncallSignature(returns = SINT32, argTypes = {SINT32, SINT64, SINT32}, argNames = {"fd", "request", "arg"})
-        call_ioctl_int,
-
-        @DowncallSignature(returns = SINT64, argTypes = {SINT32})
-        call_sysconf;
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT32})
+        abstract long call_sysconf(int name);
 
         @TruffleBoundary
         static String getLibPath(PythonContext context) {
@@ -631,10 +605,10 @@ public final class NFIPosixSupport extends PosixSupport {
         }
     }
 
-    @GenerateNativeDowncalls(generatedClassName = "CryptNativeFunctionInvoker")
-    enum CryptNativeFunction {
-        @DowncallSignature(returns = POINTER, argTypes = {POINTER, POINTER}, argNames = {"word", "salt"})
-        crypt;
+    @GenerateNativeDowncalls
+    abstract static class CryptNativeFunctionInvoker {
+        @DowncallSignature(returnType = POINTER, argumentTypes = {POINTER, POINTER})
+        abstract long crypt(long word, long salt);
 
         @TruffleBoundary
         static NativeLibrary loadNativeLibrary(PythonContext context) {
@@ -664,8 +638,8 @@ public final class NFIPosixSupport extends PosixSupport {
         assert nfiBackend.equalsUncached(T_NATIVE, TS_ENCODING);
         this.context = context;
         this.nfiBackend = nfiBackend;
-        this.posixNativeFunctionInvoker = new PosixNativeFunctionInvoker(context);
-        this.cryptNativeFunctionInvoker = new CryptNativeFunctionInvoker(context);
+        this.posixNativeFunctionInvoker = new PosixNativeFunctionInvokerGen(context);
+        this.cryptNativeFunctionInvoker = new CryptNativeFunctionInvokerGen(context);
         setEnv(context.getEnv());
     }
 

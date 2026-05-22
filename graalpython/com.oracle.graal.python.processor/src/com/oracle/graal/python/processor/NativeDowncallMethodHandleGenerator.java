@@ -43,6 +43,8 @@ package com.oracle.graal.python.processor;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.annotations.NativeSimpleType;
+
 final class NativeDowncallMethodHandleGenerator {
     private NativeDowncallMethodHandleGenerator() {
     }
@@ -71,10 +73,32 @@ final class NativeDowncallMethodHandleGenerator {
         };
     }
 
+    static String toClassLiteral(NativeSimpleType nativeType) {
+        return switch (nativeType) {
+            case VOID -> "void.class";
+            case SINT8 -> "byte.class";
+            case SINT16 -> "short.class";
+            case SINT32 -> "int.class";
+            case SINT64, POINTER -> "long.class";
+            case FLOAT -> "float.class";
+            case DOUBLE -> "double.class";
+        };
+    }
+
     static void emitMethodHandleField(List<String> lines, String fieldName, String returnType, List<String> argTypes) {
         List<String> methodTypeArgs = new ArrayList<>();
         methodTypeArgs.add("long.class");
         for (String argType : argTypes) {
+            methodTypeArgs.add(toClassLiteral(argType));
+        }
+        lines.add("    private static final MethodHandle " + fieldName + " = NativeAccessSupport.createDowncallHandle(" +
+                        "MethodType.methodType(" + toClassLiteral(returnType) + ", " + String.join(", ", methodTypeArgs) + "), false);");
+    }
+
+    static void emitMethodHandleField(List<String> lines, String fieldName, NativeSimpleType returnType, List<NativeSimpleType> argTypes) {
+        List<String> methodTypeArgs = new ArrayList<>();
+        methodTypeArgs.add("long.class");
+        for (NativeSimpleType argType : argTypes) {
             methodTypeArgs.add(toClassLiteral(argType));
         }
         lines.add("    private static final MethodHandle " + fieldName + " = NativeAccessSupport.createDowncallHandle(" +

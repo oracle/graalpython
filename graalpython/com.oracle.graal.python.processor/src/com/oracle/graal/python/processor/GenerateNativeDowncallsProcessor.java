@@ -42,7 +42,6 @@ package com.oracle.graal.python.processor;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -51,8 +50,12 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 
 import com.oracle.graal.python.annotations.DowncallSignature;
@@ -60,7 +63,7 @@ import com.oracle.graal.python.annotations.GenerateNativeDowncalls;
 import com.oracle.graal.python.annotations.NativeSimpleType;
 
 public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
-    private record NativeDowncallDesc(String name, String symbolName, String returnType, List<String> argumentTypes, List<String> argumentNames) {
+    private record NativeDowncallDesc(String name, String symbolName, NativeSimpleType returnType, List<NativeSimpleType> argumentTypes, List<String> argumentNames) {
     }
 
     @Override
@@ -91,8 +94,11 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
     private void doProcess(RoundEnvironment roundEnv) throws IOException, ProcessingError {
         validateDowncallSignatures(roundEnv);
         for (Element element : roundEnv.getElementsAnnotatedWith(GenerateNativeDowncalls.class)) {
-            if (element.getKind() != ElementKind.ENUM) {
-                throw error(element, "Can only annotate enums with @GenerateNativeDowncalls");
+            if (element.getKind() != ElementKind.CLASS) {
+                throw error(element, "Can only annotate classes with @GenerateNativeDowncalls");
+            }
+            if (!element.getModifiers().contains(Modifier.ABSTRACT)) {
+                throw error(element, "@GenerateNativeDowncalls classes must be abstract");
             }
             generateInvoker((TypeElement) element);
         }
@@ -100,30 +106,32 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
 
     private static void validateDowncallSignatures(RoundEnvironment roundEnv) throws ProcessingError {
         for (Element element : roundEnv.getElementsAnnotatedWith(DowncallSignature.class)) {
-            if (element.getKind() != ElementKind.ENUM_CONSTANT) {
-                throw error(element, "@DowncallSignature can only annotate enum constants");
+            if (element.getKind() != ElementKind.METHOD) {
+                throw error(element, "@DowncallSignature can only annotate methods");
             }
             Element enclosingElement = element.getEnclosingElement();
-            if (enclosingElement == null || enclosingElement.getKind() != ElementKind.ENUM) {
-                throw error(element, "@DowncallSignature can only annotate enum constants");
+            if (enclosingElement == null || enclosingElement.getKind() != ElementKind.CLASS) {
+                throw error(element, "@DowncallSignature can only annotate methods in classes");
             }
             if (enclosingElement.getAnnotation(GenerateNativeDowncalls.class) == null) {
-                throw error(element, "Enum constants annotated with @DowncallSignature must be enclosed in an enum annotated with @GenerateNativeDowncalls");
+                throw error(element, "Methods annotated with @DowncallSignature must be enclosed in a class annotated with @GenerateNativeDowncalls");
+            }
+            if (!element.getModifiers().contains(Modifier.ABSTRACT)) {
+                throw error(element, "@DowncallSignature methods must be abstract");
             }
         }
     }
 
-    private void generateInvoker(TypeElement enumElement) throws IOException, ProcessingError {
-        GenerateNativeDowncalls annotation = enumElement.getAnnotation(GenerateNativeDowncalls.class);
-        List<NativeDowncallDesc> downcalls = collectDowncalls(enumElement);
+    private void generateInvoker(TypeElement invokerElement) throws IOException, ProcessingError {
+        List<NativeDowncallDesc> downcalls = collectDowncalls(invokerElement);
         if (downcalls.isEmpty()) {
-            throw error(enumElement, "Annotated enum does not declare any downcalls");
+            throw error(invokerElement, "Annotated class does not declare any downcalls");
         }
 
-        String packageName = processingEnv.getElementUtils().getPackageOf(enumElement).getQualifiedName().toString();
-        String enumQualifiedName = enumElement.getQualifiedName().toString();
-        String enumTypeRef = enumQualifiedName.startsWith(packageName + ".") ? enumQualifiedName.substring(packageName.length() + 1) : enumQualifiedName;
-        String className = annotation.generatedClassName();
+        String packageName = processingEnv.getElementUtils().getPackageOf(invokerElement).getQualifiedName().toString();
+        String invokerQualifiedName = invokerElement.getQualifiedName().toString();
+        String invokerTypeRef = invokerQualifiedName.startsWith(packageName + ".") ? invokerQualifiedName.substring(packageName.length() + 1) : invokerQualifiedName;
+        String className = invokerElement.getSimpleName() + "Gen";
 
         ArrayList<String> lines = new ArrayList<>();
         lines.add("// @formatter:off");
@@ -140,9 +148,9 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
         lines.add("import com.oracle.truffle.api.CompilerDirectives;");
         lines.add("import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;");
         lines.add("");
-        lines.add("final class " + className + " {");
+        lines.add("final class " + className + " extends " + invokerTypeRef + " {");
         lines.add("    private final PythonContext context;");
-        lines.add("    private final AtomicLongArray cachedFunctions = new AtomicLongArray(" + enumTypeRef + ".values().length);");
+        lines.add("    private final AtomicLongArray cachedFunctions = new AtomicLongArray(" + downcalls.size() + ");");
         lines.add("    private volatile NativeLibrary nativeLibrary;");
         lines.add("");
 
@@ -155,24 +163,24 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
         lines.add("        this.context = context;");
         lines.add("    }");
 
-        for (NativeDowncallDesc downcall : downcalls) {
-            emitDowncallMethod(lines, enumTypeRef, downcall);
+        for (int i = 0; i < downcalls.size(); i++) {
+            emitDowncallMethod(lines, downcalls.get(i), i);
         }
 
         lines.add("");
         lines.add("    @TruffleBoundary");
-        lines.add("    private long lookup(" + enumTypeRef + " function, String symbolName) {");
-        lines.add("        long symbol = cachedFunctions.get(function.ordinal());");
+        lines.add("    private long lookup(int functionIndex, String symbolName) {");
+        lines.add("        long symbol = cachedFunctions.get(functionIndex);");
         lines.add("        if (symbol == 0) {");
-        lines.add("            symbol = loadFunction(function, symbolName);");
-        lines.add("            cachedFunctions.compareAndSet(function.ordinal(), 0, symbol);");
-        lines.add("            symbol = cachedFunctions.get(function.ordinal());");
+        lines.add("            symbol = loadFunction(symbolName);");
+        lines.add("            cachedFunctions.compareAndSet(functionIndex, 0, symbol);");
+        lines.add("            symbol = cachedFunctions.get(functionIndex);");
         lines.add("        }");
         lines.add("        return symbol;");
         lines.add("    }");
         lines.add("");
         lines.add("    @TruffleBoundary");
-        lines.add("    private long loadFunction(" + enumTypeRef + " function, String symbolName) {");
+        lines.add("    private long loadFunction(String symbolName) {");
         lines.add("        return ensureLibrary().lookupSymbol(symbolName);");
         lines.add("    }");
         lines.add("");
@@ -180,80 +188,88 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
         lines.add("    private NativeLibrary ensureLibrary() {");
         lines.add("        NativeLibrary library = nativeLibrary;");
         lines.add("        if (library == null) {");
-        lines.add("            library = " + enumTypeRef + ".loadNativeLibrary(context);");
+        lines.add("            library = " + invokerTypeRef + ".loadNativeLibrary(context);");
         lines.add("            nativeLibrary = library;");
         lines.add("        }");
         lines.add("        return library;");
         lines.add("    }");
         lines.add("}");
 
-        var file = processingEnv.getFiler().createSourceFile(packageName + "." + className, enumElement);
+        var file = processingEnv.getFiler().createSourceFile(packageName + "." + className, invokerElement);
         try (var writer = file.openWriter()) {
             writer.append(String.join(System.lineSeparator(), lines));
         }
     }
 
-    private static List<NativeDowncallDesc> collectDowncalls(TypeElement enumElement) throws ProcessingError {
+    private static List<NativeDowncallDesc> collectDowncalls(TypeElement invokerElement) throws ProcessingError {
         List<NativeDowncallDesc> result = new ArrayList<>();
-        for (Element enclosedElement : enumElement.getEnclosedElements()) {
-            if (enclosedElement.getKind() == ElementKind.ENUM_CONSTANT) {
-                result.add(extractDowncall((VariableElement) enclosedElement));
+        Set<String> methodNames = new java.util.HashSet<>();
+        for (Element enclosedElement : invokerElement.getEnclosedElements()) {
+            if (enclosedElement.getKind() == ElementKind.METHOD && enclosedElement.getAnnotation(DowncallSignature.class) != null) {
+                NativeDowncallDesc downcall = extractDowncall((ExecutableElement) enclosedElement);
+                if (!methodNames.add(downcall.name)) {
+                    throw error(enclosedElement, "Duplicate downcall method name: %s", downcall.name);
+                }
+                result.add(downcall);
             }
         }
         return result;
     }
 
-    private static NativeDowncallDesc extractDowncall(VariableElement enumConstant) throws ProcessingError {
-        DowncallSignature annotation = enumConstant.getAnnotation(DowncallSignature.class);
+    private static NativeDowncallDesc extractDowncall(ExecutableElement method) throws ProcessingError {
+        DowncallSignature annotation = method.getAnnotation(DowncallSignature.class);
         if (annotation == null) {
-            throw error(enumConstant, "Enum constant in @GenerateNativeDowncalls enum must be annotated with @DowncallSignature");
+            throw error(method, "Downcall method in @GenerateNativeDowncalls class must be annotated with @DowncallSignature");
         }
 
-        NativeSimpleType[] argTypes = annotation.argTypes();
-        List<String> argumentTypes = new ArrayList<>(argTypes.length);
-        for (NativeSimpleType argType : argTypes) {
-            argumentTypes.add(nativeSimpleTypeToJavaType(argType));
+        NativeSimpleType[] argTypes = annotation.argumentTypes();
+        if (argTypes.length != method.getParameters().size()) {
+            throw error(method, "@DowncallSignature argumentTypes length must match method parameter count (%d != %d)", argTypes.length, method.getParameters().size());
+        }
+        validateJavaType(method, method.getReturnType(), annotation.returnType());
+        for (int i = 0; i < argTypes.length; i++) {
+            validateJavaType(method.getParameters().get(i), method.getParameters().get(i).asType(), argTypes[i]);
         }
 
-        List<String> argumentNames = extractArgumentNames(enumConstant, argTypes.length, annotation.argNames());
-        String symbolName = annotation.symbol().isBlank() ? enumConstant.getSimpleName().toString() : annotation.symbol();
+        List<NativeSimpleType> argumentTypes = List.of(argTypes);
+        List<String> argumentNames = extractArgumentNames(method);
+        String symbolName = method.getSimpleName().toString();
         return new NativeDowncallDesc(
-                        enumConstant.getSimpleName().toString(),
                         symbolName,
-                        nativeSimpleTypeToJavaType(annotation.returns()),
+                        symbolName,
+                        annotation.returnType(),
                         argumentTypes,
                         argumentNames);
     }
 
-    private static List<String> extractArgumentNames(VariableElement enumConstant, int argCount, String[] argNames) throws ProcessingError {
-        if (argNames.length == 0) {
-            if (argCount > 26) {
-                throw error(enumConstant, "Generated downcall stubs support at most 26 synthetic argument names (a-z); specify argNames explicitly for %d parameters", argCount);
-            }
-            List<String> generatedNames = new ArrayList<>(argCount);
-            for (int i = 0; i < argCount; i++) {
-                generatedNames.add(NativeDowncallMethodHandleGenerator.argName(i));
-            }
-            return generatedNames;
-        }
-        if (argNames.length != argCount) {
-            throw error(enumConstant, "@DowncallSignature argNames length must match argTypes length (%d != %d)", argNames.length, argCount);
-        }
-        HashSet<String> seenNames = new HashSet<>();
-        List<String> result = new ArrayList<>(argCount);
-        for (String argName : argNames) {
+    private static List<String> extractArgumentNames(ExecutableElement method) throws ProcessingError {
+        List<String> result = new ArrayList<>(method.getParameters().size());
+        for (VariableElement parameter : method.getParameters()) {
+            String argName = parameter.getSimpleName().toString();
             if (argName.isBlank()) {
-                throw error(enumConstant, "@DowncallSignature argNames must not contain blank names");
+                throw error(parameter, "Downcall parameter name must not be blank");
             }
             if (!SourceVersion.isIdentifier(argName) || SourceVersion.isKeyword(argName)) {
-                throw error(enumConstant, "@DowncallSignature argName is not a valid Java identifier: %s", argName);
-            }
-            if (!seenNames.add(argName)) {
-                throw error(enumConstant, "@DowncallSignature argNames must be unique: %s", argName);
+                throw error(parameter, "Downcall parameter name is not a valid Java identifier: %s", argName);
             }
             result.add(argName);
         }
         return result;
+    }
+
+    private static void validateJavaType(Element element, TypeMirror actualType, NativeSimpleType nativeType) throws ProcessingError {
+        TypeKind expected = switch (nativeType) {
+            case VOID -> TypeKind.VOID;
+            case SINT8 -> TypeKind.BYTE;
+            case SINT16 -> TypeKind.SHORT;
+            case SINT32 -> TypeKind.INT;
+            case SINT64, POINTER -> TypeKind.LONG;
+            case FLOAT -> TypeKind.FLOAT;
+            case DOUBLE -> TypeKind.DOUBLE;
+        };
+        if (actualType.getKind() != expected) {
+            throw error(element, "Java type %s does not match native type %s", actualType, nativeType);
+        }
     }
 
     private static ProcessingError error(Element element, String fmt, Object... args) throws ProcessingError {
@@ -272,16 +288,17 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
         };
     }
 
-    private static void emitDowncallMethod(List<String> lines, String enumQualifiedName, NativeDowncallDesc downcall) {
+    private static void emitDowncallMethod(List<String> lines, NativeDowncallDesc downcall, int functionIndex) {
         lines.add("");
         lines.add("    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)");
-        lines.add("    " + downcall.returnType + " " + downcall.name + "(" + typedArgs(downcall.argumentTypes, downcall.argumentNames) + ") {");
-        lines.add("        long functionPointer = lookup(" + enumQualifiedName + "." + downcall.name + ", " + stringLiteral(downcall.symbolName) + ");");
+        lines.add("    @Override");
+        lines.add("    " + nativeSimpleTypeToJavaType(downcall.returnType) + " " + downcall.name + "(" + typedArgs(downcall.argumentTypes, downcall.argumentNames) + ") {");
+        lines.add("        long functionPointer = lookup(" + functionIndex + ", " + stringLiteral(downcall.symbolName) + ");");
         lines.add("        try {");
-        if ("void".equals(downcall.returnType)) {
+        if (NativeSimpleType.VOID == downcall.returnType) {
             lines.add("            " + methodHandleName(downcall.name) + ".invokeExact(" + invokeArgs(downcall.argumentNames) + ");");
         } else {
-            lines.add("            return (" + downcall.returnType + ") " + methodHandleName(downcall.name) + ".invokeExact(" + invokeArgs(downcall.argumentNames) + ");");
+            lines.add("            return (" + nativeSimpleTypeToJavaType(downcall.returnType) + ") " + methodHandleName(downcall.name) + ".invokeExact(" + invokeArgs(downcall.argumentNames) + ");");
         }
         lines.add("        } catch (Throwable t) {");
         lines.add("            throw CompilerDirectives.shouldNotReachHere(t);");
@@ -293,10 +310,10 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
         return NativeDowncallMethodHandleGenerator.methodHandleVarName(downcallName.toUpperCase());
     }
 
-    private static String typedArgs(List<String> argTypes, List<String> argNames) {
+    private static String typedArgs(List<NativeSimpleType> argTypes, List<String> argNames) {
         List<String> args = new ArrayList<>(argTypes.size());
         for (int i = 0; i < argTypes.size(); i++) {
-            args.add(argTypes.get(i) + " " + argNames.get(i));
+            args.add(nativeSimpleTypeToJavaType(argTypes.get(i)) + " " + argNames.get(i));
         }
         return String.join(", ", args);
     }
