@@ -405,6 +405,11 @@ class GraalPythonJavaDriverVm(GuestVm):
 class GraalPythonPolyBenchVm(GuestVm):
     HOSTED_INSTANCE = "GraalPythonPolyBenchVm.hosted="
     STAGED_PROGRAM = "staged-benchmark.py"
+    # Staging rewrites a benchmark into STAGED_PROGRAM. Benchmarks listed here also need data files copied from
+    # GRAALPYTHON_POLYBENCH_BENCHMARKS to keep their original sibling-file lookups working.
+    STAGED_SIBLING_RESOURCES = {
+        "warmup/pyflate-fast.py": ("graalpython-pyflate-benchmark-resource.tar.gz",),
+    }
     JAVA_MODULE_ARGS_WITH_VALUE = (
         "--add-exports",
         "--add-modules",
@@ -602,7 +607,25 @@ class GraalPythonPolyBenchVm(GuestVm):
             + image_run_args
             + staging_args
         )
-        return self._execute_setup_command(host, runner, host.generate_java_command(java_args))
+        exit_code = self._execute_setup_command(host, runner, host.generate_java_command(java_args))
+        if exit_code == 0:
+            self._copy_staged_sibling_resources(host)
+        return exit_code
+
+    def _copy_staged_sibling_resources(self, host):
+        # A few staged Python benchmarks load data files relative to __file__. Keep this targeted so the staging
+        # directory only grows for benchmarks that are known to need sibling resources.
+        benchmark = bm_exec_context().get("benchmark")
+        resources = self.STAGED_SIBLING_RESOURCES.get(benchmark, ())
+        if not resources:
+            return
+        source_dir = Path(mx.dependency("GRAALPYTHON_POLYBENCH_BENCHMARKS").get_output()) / Path(benchmark).parent
+        destination_dir = self._staged_program(host).parent
+        for resource in resources:
+            source = source_dir / resource
+            if not source.is_file():
+                mx.abort(f"Required staged benchmark resource does not exist: {source}")
+            shutil.copy2(source, destination_dir / resource)
 
     @staticmethod
     def _java_staging_vm_args(image_vm_args):
