@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -275,7 +275,7 @@ public final class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached("create(T_SEEK)") CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedIONodes.CheckIsSeekabledNode checkIsSeekabledNode,
                         @Cached BufferedIONodes.AsOffNumberNode asOffNumberNode,
-                        @Cached(inline = true) BufferedIONodes.SeekNode seekNode) {
+                        @Cached BufferedIONodes.SeekNode seekNode) {
             checkIsClosedNode.execute(frame, self);
             checkIsSeekabledNode.execute(frame, self);
             long pos = asOffNumberNode.execute(frame, inliningTarget, off, TypeError);
