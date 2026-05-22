@@ -229,7 +229,6 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.DenyReplace;
 import com.oracle.truffle.api.nodes.Node;
@@ -1991,8 +1990,8 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(PGuards.class)
     public abstract static class GetCachedTpSlotsNode extends Node {
         public abstract TpSlots execute(Node inliningTarget, Object pythonClass);
@@ -2025,23 +2024,14 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class GetObjectSlotsNode extends Node {
         public abstract TpSlots execute(Node inliningTarget, Object pythonObject);
 
-        public final TpSlots executeCached(Object pythonObject) {
-            return execute(this, pythonObject);
-        }
-
         public static TpSlots executeUncached(Object pythonObject) {
             return GetObjectSlotsNodeGen.getUncached().execute(null, pythonObject);
-        }
-
-        @NeverDefault
-        public static GetObjectSlotsNode create() {
-            return GetObjectSlotsNodeGen.create();
         }
 
         // Note: it seems that switching the GetClassNode with an adhoc GetClassNode variant that

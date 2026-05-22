@@ -535,8 +535,8 @@ public abstract class CExtNodes {
      * avoid eager and explicit conversion.
      */
     @ImportStatic(PythonUtils.class)
-    @GenerateInline(inlineByDefault = true)
-    @GenerateCached
+    @GenerateInline
+    @GenerateCached(false)
     @GenerateUncached
     public abstract static class CastToNativeLongNode extends PNodeWithContext {
         public abstract long execute(Node inliningTarget, boolean arg);

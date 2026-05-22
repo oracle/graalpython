@@ -245,7 +245,7 @@ public class BufferedIONodes {
         }
     }
 
-    @GenerateInline(inlineByDefault = true)
+    @GenerateInline
     @GenerateCached(false)
     abstract static class RawTellIgnoreErrorNode extends PNodeWithContext {
         public abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self);
@@ -337,7 +337,7 @@ public class BufferedIONodes {
      * implementation of cpython/Modules/_io/bufferedio.c:_io__Buffered_seek_impl
      */
     @GenerateInline
-    @GenerateCached
+    @GenerateCached(false)
     abstract static class SeekNode extends PNodeWithContext {
 
         public abstract long execute(VirtualFrame frame, Node inliningTarget, PBuffered self, long off, int whence);
