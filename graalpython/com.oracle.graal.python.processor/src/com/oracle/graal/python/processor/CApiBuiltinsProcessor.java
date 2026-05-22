@@ -1603,6 +1603,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import java.lang.invoke.MethodHandle;");
         lines.add("import java.lang.invoke.MethodType;");
         lines.add("");
+        lines.add("import " + NativeSimpleType.class.getCanonicalName() + ";");
+        lines.add("");
         lines.add("public final class " + NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME + " extends " + NATIVE_ACCESS_SUPPORT_CLASS_NAME + " {");
         lines.add("    @Override");
         lines.add("    protected Object createArenaImpl() {");

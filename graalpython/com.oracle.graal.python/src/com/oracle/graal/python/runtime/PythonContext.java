@@ -1873,13 +1873,18 @@ public final class PythonContext extends Python3Core {
         // The resources field will be removed once all posix builtins go through PosixSupport
         TruffleString.EqualNode eqNode = TruffleString.EqualNode.getUncached();
         boolean selectedJavaBackend = eqNode.execute(T_JAVA, option, TS_ENCODING);
-        if (PythonImageBuildOptions.WITHOUT_NATIVE_POSIX || selectedJavaBackend) {
-            if (!selectedJavaBackend) {
-                writeWarning("Native Posix backend selected, but it was excluded from the runtime, " +
-                                "switching to Java backend.");
-            }
+        boolean selectedNativeBackend = eqNode.execute(T_NATIVE, option, TS_ENCODING);
+        if (selectedJavaBackend) {
             result = new EmulatedPosixSupport(this);
-        } else if (eqNode.execute(T_NATIVE, option, TS_ENCODING)) {
+        } else if (selectedNativeBackend && PythonImageBuildOptions.WITHOUT_NATIVE_POSIX) {
+            writeWarning("Native Posix backend selected, but it was excluded from the runtime, " +
+                            "switching to Java backend.");
+            result = new EmulatedPosixSupport(this);
+        } else if (selectedNativeBackend && !NativeAccessSupport.isAvailable()) {
+            writeWarning("Native Posix backend selected, but native access downcalls are not available in this runtime, " +
+                            "switching to Java backend.");
+            result = new EmulatedPosixSupport(this);
+        } else if (selectedNativeBackend) {
             if (env.isPreInitialization()) {
                 EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this);
                 NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
