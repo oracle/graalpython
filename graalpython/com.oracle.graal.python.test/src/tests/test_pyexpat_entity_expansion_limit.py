@@ -54,6 +54,7 @@ def entity_expansion_payload(levels=5, fanout=8):
 
 class PyExpatEntityExpansionLimitTest(unittest.TestCase):
 
+    @unittest.skipUnless(sys.implementation.name == "graalpy", "GraalPy-specific test")
     def test_java_backend_internal_entity_expansion_is_limited(self):
         code = textwrap.dedent(f"""
             from xml.parsers import expat
