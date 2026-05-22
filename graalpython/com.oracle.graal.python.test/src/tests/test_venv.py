@@ -74,6 +74,8 @@ class VenvTest(unittest.TestCase):
             with open(tmpfile, "ab") as f:
                 sz = f.write(launcher_command.encode("utf-16le"))
                 assert f.write(struct.pack("@I", sz)) == 4
+            env = os.environ.copy()
+            env["PYLAUNCHER_DEBUG"] = "1"
             try:
                 out = subprocess.check_output([tmpfile, "-c", """if True:
                 import sys, os
@@ -81,9 +83,12 @@ class VenvTest(unittest.TestCase):
                 print("Hello", sys.executable)
                 print("Base", sys._base_executable)
                 print("Original", __graalpython__.venvlauncher_command)
-                """], env={"PYLAUNCHER_DEBUG": "1"}, text=True)
+                """], env=env, stderr=subprocess.STDOUT, text=True)
             except subprocess.CalledProcessError as err:
-                out = err.output.decode(errors="replace") if err.output else ""
+                if isinstance(err.output, str):
+                    out = err.output
+                else:
+                    out = err.output.decode(errors="replace") if err.output else ""
             print("out=", out, sep="\n")
             assert f"Hello {tmpfile}" in out, out
             assert f"Base {os.path.realpath(sys.executable)}" in out, out
