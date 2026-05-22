@@ -59,6 +59,21 @@ def skip_if_sandboxed(reason=''):
     return wrapper
 
 
+def _jdk_major_version():
+    version = __graalpython__.get_jdk_version()
+    return int(version.split(".", 1)[0].split("-", 1)[0])
+
+
+def has_capi():
+    return not (sys.implementation.name == 'graalpy' and _jdk_major_version() < 25)
+
+
+def needs_capi(test):
+    if not has_capi():
+        return unittest.skip("Needs C API support on JDK 25 or newer")(test)
+    return test
+
+
 def skipIfBytecodeDSL(reason=''):
     def wrapper(test):
         if IS_BYTECODE_DSL:

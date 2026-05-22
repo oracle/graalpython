@@ -47,7 +47,6 @@ from pathlib import Path
 import sys
 from unittest import skipIf
 from tests import compile_module_from_string
-from tests.util import skip_if_sandboxed
 
 GRAALPY = sys.implementation.name == 'graalpy'
 
@@ -77,7 +76,6 @@ def test_sigterm():
     assert proc.wait() in [-signal.SIGTERM, 128 + signal.SIGTERM]
 
 
-@skip_if_sandboxed("Needs native extension support in sandboxed runs")
 @skipIf(not GRAALPY, "GraalPy-only native weakref shutdown test")
 def test_native_weakref_shutdown_skips_c_retained_object():
     module = compile_module_from_string(textwrap.dedent("""

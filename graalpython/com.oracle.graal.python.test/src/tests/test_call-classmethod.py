@@ -23,6 +23,9 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # classmethod calls
 
+from tests.util import needs_capi
+
+
 class Strength(object):
 
     def __init__(self, strength, name):
@@ -171,6 +174,7 @@ def test_classmethod_descriptor_get_does_not_keep_type_alive():
     assert Parent.__subclasses__() == []
 
 
+@needs_capi
 def test_cext_classmethod_descriptor():
     from _ctypes import _SimpleCData
 

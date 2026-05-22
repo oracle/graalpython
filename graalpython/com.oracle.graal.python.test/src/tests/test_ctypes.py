@@ -46,7 +46,6 @@ import unittest
 from pathlib import Path
 
 from tests.testlib_helper import build_testlib
-from tests.util import skip_if_sandboxed
 
 
 class TestCtypesInterop(unittest.TestCase):
@@ -75,7 +74,6 @@ class TestCtypesInterop(unittest.TestCase):
                 )
             )
 
-    @skip_if_sandboxed("Needs native extension support for ctypes in sandboxed runs")
     def test_ctypes_load_and_call(self):
         # Pass the library path as an argument
         code = textwrap.dedent(
@@ -93,7 +91,6 @@ class TestCtypesInterop(unittest.TestCase):
         self.run_in_subprocess(code, str(self.lib_path))
 
     @unittest.skipIf(sys.platform != "win32", "Windows-only test")
-    @skip_if_sandboxed("Needs native extension support for ctypes in sandboxed runs")
     def test_os_add_dll_directory_and_unload(self):
         # Pass the library dir as argument
         code = textwrap.dedent(
