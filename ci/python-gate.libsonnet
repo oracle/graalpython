@@ -194,12 +194,7 @@
         buildslave_ol8: ENVIRONMENT_DIFF_OL8,
     },
 
-    local pip_index_setup = [
-        // Use the CI Python's configured base index and overlay-provided GraalPy wheel index.
-        ["set-export", "PIP_INDEX_URL", ["python", "-m", "pip", "config", "get", "global.index-url"]],
-    ] + if $.overlay_imports.PIP_EXTRA_INDEX_URL != "" then [
-        ["set-export", "PIP_EXTRA_INDEX_URL", $.overlay_imports.PIP_EXTRA_INDEX_URL],
-    ] else [],
+    local pip_index_setup = utils.pip_index_setup($.overlay_imports.PIP_EXTRA_INDEX_URL),
 
     //------------------------------------------------------------------------------------------------------------------
     // packages
