@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -318,37 +319,37 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    private static final CApiTiming TIMING_GRAALPYPRIVATE_UNICODE_LOOKUPANDINTERN = CApiTiming.create(false, "GraalPyPrivate_Unicode_LookupAndIntern");
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Unicode_LookupAndIntern extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object withPString(PString str,
-                        @Bind Node inliningTarget,
-                        @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {
-            if (!unicodeCheckExactNode.execute(inliningTarget, str)) {
-                return NATIVE_NULL;
+    static long GraalPyPrivate_Unicode_LookupAndIntern(long objPtr) {
+        CApiTiming.enter();
+        try {
+            Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
+            if (obj instanceof PString str) {
+                if (!PGuards.isBuiltinPString(str)) {
+                    return NULLPTR;
+                }
+                str.intern();
+                if (str.isNative()) {
+                    long ptr = HandlePointerConverter.pointerToStub(str.getNativePointer());
+                    CApiTransitions.setGraalPyUnicodeObjectInterned(ptr, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
+                }
+                /*
+                 * TODO this is not integrated with str.intern, pointer comparisons of two
+                 * str.intern'ed string may still yield failse
+                 */
+                ConcurrentWeakSet<PString> interningCache = PythonContext.get(null).getCApiContext().getPstringInterningCache();
+                return PythonToNativeInternalNode.executeUncached(interningCache.intern(str, s -> s), true);
+            } else {
+                /*
+                 * If it's a subclass, we don't really know what putting it in the interned dict might
+                 * do.
+                 */
+                return NULLPTR;
             }
-
-            str.intern();
-            if (str.isNative()) {
-                long ptr = HandlePointerConverter.pointerToStub(str.getNativePointer());
-                CApiTransitions.setGraalPyUnicodeObjectInterned(ptr, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
-            }
-            /*
-             * TODO this is not integrated with str.intern, pointer comparisons of two str.intern'ed
-             * string may still yield failse
-             */
-            ConcurrentWeakSet<PString> interningCache = PythonContext.get(inliningTarget).getCApiContext().getPstringInterningCache();
-            return interningCache.intern(str, s -> s);
-        }
-
-        @Fallback
-        Object nil(@SuppressWarnings("unused") Object obj) {
-            /*
-             * If it's a subclass, we don't really know what putting it in the interned dict might
-             * do.
-             */
-            return NATIVE_NULL;
+        } finally {
+            CApiTiming.exit(TIMING_GRAALPYPRIVATE_UNICODE_LOOKUPANDINTERN);
         }
     }
 
