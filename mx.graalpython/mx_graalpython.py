@@ -3116,6 +3116,10 @@ class PythonMxUnittestConfig(mx_unittest.MxUnittestConfig):
     def processDeps(self, deps):
         if PythonMxUnittestConfig.useResources:
             deps.add(mx.distribution('GRAALPYTHON_RESOURCES', fatalIfMissing=True))
+        if mx.suite('compiler', fatalIfMissing=False):
+            # punittest enables compiler-failure checks when /compiler is imported;
+            # the corresponding engine options are registered by the optimized Truffle runtime.
+            deps.add(mx.distribution('truffle:TRUFFLE_RUNTIME', fatalIfMissing=True))
 
 
 mx_unittest.register_unittest_config(PythonMxUnittestConfig('python-internal'))
