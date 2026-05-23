@@ -330,7 +330,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
                 tagTreeNodeLibrary = PTagTreeNodeExports.class, //
                 storeBytecodeIndexInFrame = true, //
                 defaultUncachedThreshold = "4", //
-                enableUncachedInterpreter = true)
+                enableUncachedInterpreter = true, //
+                enableTailCallHandlers = true)
 @OperationProxy(PyNumberSubtractNode.class)
 @OperationProxy(PyNumberTrueDivideNode.class)
 @OperationProxy(PyNumberFloorDivideNode.class)
