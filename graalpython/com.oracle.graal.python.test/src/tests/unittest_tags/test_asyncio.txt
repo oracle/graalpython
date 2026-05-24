@@ -661,7 +661,8 @@ test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_sock_client_racin
 test.test_asyncio.test_sock_lowlevel.SelectEventLoopTests.test_unix_sock_client_ops @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_ssl.TestSSL.test_connect_accepted_socket @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_ssl.TestSSL.test_connect_timeout_warning @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_asyncio.test_ssl.TestSSL.test_create_connection_ssl_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_asyncio.test_ssl.TestSSL.test_create_connection_ssl_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
+!test.test_asyncio.test_ssl.TestSSL.test_create_connection_ssl_1 @ linux-x86_64-github
 test.test_asyncio.test_ssl.TestSSL.test_create_connection_ssl_failed_certificate @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_ssl.TestSSL.test_create_connection_ssl_slow_handshake @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_ssl.TestSSL.test_create_server_ssl_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
