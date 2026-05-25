@@ -3,8 +3,8 @@ test.test_property.PropertySubclassTests.test_property_new_getter_new_docstring 
 test.test_property.PropertySubclassTests.test_property_setter_copies_getter_docstring @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_property.PropertySubclassTests.test_property_with_slots_docstring_silently_dropped @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_property.PropertySubclassTests.test_slots_docstring_copy_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_property.PropertyTests.test_class_property @ linux-x86_64-github
-test.test_property.PropertyTests.test_class_property_override @ linux-x86_64-github
+test.test_property.PropertyTests.test_class_property @ linux-aarch64-github,linux-x86_64-github
+test.test_property.PropertyTests.test_class_property_override @ linux-aarch64-github,linux-x86_64-github
 test.test_property.PropertyTests.test_property___isabstractmethod__descriptor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_property.PropertyTests.test_property_builtin_doc_writable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_property.PropertyTests.test_property_decorator_baseclass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
