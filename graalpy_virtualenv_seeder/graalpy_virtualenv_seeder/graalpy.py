@@ -138,7 +138,7 @@ try:
     _get_default_orig = SeederSelector._get_default
 
     def _seeder_selector_get_default_override(self):
-        if self.interpreter.implementation == "GraalVM":
+        if self.interpreter.implementation.lower() in ("graalvm", "graalpy"):
             return "graalpy"
         else:
             return _get_default_orig()
