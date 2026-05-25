@@ -3221,7 +3221,8 @@ class _TestMyManager(BaseTestCase):
         # bpo-30356: BaseManager._finalize_manager() sends SIGTERM
         # to the manager process if it takes longer than 1 second to stop,
         # which happens on slow buildbots.
-        self.assertIn(manager._process.exitcode, (0, -signal.SIGTERM))
+        # GraalPy change: JVM exits with 143 on SIGTERM
+        self.assertIn(manager._process.exitcode, (0, -signal.SIGTERM, 128 + signal.SIGTERM))
 
     def test_mymanager_context(self):
         manager = MyManager(shutdown_timeout=SHUTDOWN_TIMEOUT)
@@ -3230,7 +3231,8 @@ class _TestMyManager(BaseTestCase):
         # bpo-30356: BaseManager._finalize_manager() sends SIGTERM
         # to the manager process if it takes longer than 1 second to stop,
         # which happens on slow buildbots.
-        self.assertIn(manager._process.exitcode, (0, -signal.SIGTERM))
+        # GraalPy change: JVM exits with 143 on SIGTERM
+        self.assertIn(manager._process.exitcode, (0, -signal.SIGTERM, 128 + signal.SIGTERM))
 
     def test_mymanager_context_prestarted(self):
         manager = MyManager(shutdown_timeout=SHUTDOWN_TIMEOUT)
