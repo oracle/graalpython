@@ -48,6 +48,7 @@ graalpython/com.oracle.graal.python.benchmarks/python/micro/generator-parallel.p
 graalpython/com.oracle.graal.python.benchmarks/python/micro/generator-sized.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/genexp-builtin-call-sized.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/list-comp.py,zippy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/micro/list-comp2.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/list-indexing.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/list-iterating-explicit.py,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/micro/list-iterating.py,zippy.copyright
