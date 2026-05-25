@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import os
+import sys
 import tempfile
 import unittest
 
@@ -68,6 +69,9 @@ def create_test_env():
     env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
     env["PIP_CONSTRAINT"] = constraints_file
     return env
+
+def append_env_flag(env, key, flag):
+    env[key] = (env.get(key, "") + " " + flag).strip()
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():
@@ -124,7 +128,10 @@ def test_native_executable_venv_and_one_file():
 
         venv_python = os.path.join(venv_dir, "Scripts", "python.exe") if os.name == "nt" else os.path.join(venv_dir, "bin", "python")
         cmd = [venv_python, "-m", "pip", "install", "termcolor", "ujson"]
-        _, return_code = util.run_cmd(cmd, env, logger=log)
+        pip_env = env.copy()
+        if sys.platform == "darwin":
+            append_env_flag(pip_env, "CXXFLAGS", "-std=c++11")
+        _, return_code = util.run_cmd(cmd, pip_env, logger=log)
         assert return_code == 0, log
 
         target_file = os.path.join(target_dir, "hello")

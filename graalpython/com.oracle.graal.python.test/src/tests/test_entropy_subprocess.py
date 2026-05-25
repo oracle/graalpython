@@ -45,7 +45,7 @@ import textwrap
 import threading
 import unittest
 
-from tests.util import skip_if_sandboxed
+from tests.util import needs_capi
 
 
 @unittest.skipUnless(sys.implementation.name == "graalpy" and sys.platform.startswith("linux"), "Linux GraalPy-specific test")
@@ -279,7 +279,7 @@ class EntropySubprocessTests(unittest.TestCase):
             "xmlparser",
         )
 
-    @skip_if_sandboxed("Needs native extension support for sqlite3 in sandboxed runs")
+    @needs_capi
     def test_sqlite3_import_does_not_use_additional_initrandom(self):
         self.assert_initrandom_bytes_used(
             self.HASH_SECRET_BYTES,
@@ -287,7 +287,7 @@ class EntropySubprocessTests(unittest.TestCase):
             "_sqlite3",
         )
 
-    @skip_if_sandboxed("Needs native extension support for sqlite3 in sandboxed runs")
+    @needs_capi
     def test_sqlite3_randomblob_does_not_use_initrandom(self):
         self.assert_initrandom_bytes_used(
             self.HASH_SECRET_BYTES,

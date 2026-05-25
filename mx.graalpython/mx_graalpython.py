@@ -1422,8 +1422,8 @@ def run_sandboxed_tests(python_binary, report, args=None, **kwargs):
         # C API doesn't work on JDK 21
         exclude += [
             "cpyext",
+            "test_ctypes",
             "test_ctypes_callbacks",
-            "test_indirect_call",
         ]
     env = dict(kwargs.pop("env", os.environ.copy()) or {})
     propagated_args = [

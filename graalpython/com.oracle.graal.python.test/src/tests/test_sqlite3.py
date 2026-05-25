@@ -37,10 +37,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from tests.util import skip_if_sandboxed
+from tests.util import needs_capi
 
 
-@skip_if_sandboxed("Needs native extension support for sqlite3 in sandboxed runs")
+@needs_capi
 def test_basic_functionality():
     """
     This is a basic test to ensure that the module can be imported.
@@ -55,7 +55,7 @@ def test_basic_functionality():
     conn.close()
 
 
-@skip_if_sandboxed("Needs native extension support for sqlite3 in sandboxed runs")
+@needs_capi
 def test_fts5_works():
     # we explicitly enable those features below, but on CPython they might not
     # be available if using some system libsqlite that doesn't have them

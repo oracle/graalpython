@@ -40,6 +40,7 @@ import sys
 import os
 
 from tests.cpyext import CPyExtTestCase, CPyExtType
+from tests.util import has_capi, needs_capi
 
 # synchronize with Java implementation of __graalpython__.indirect_call_tester
 TYPE_INDIRECT_BOUNDARY = 1
@@ -70,15 +71,18 @@ def was_stack_walk(new_value):
     return False
 
 
-IndirectCApiCallTester = CPyExtType(
-    'IndirectCApiCallTester',
-    code='''
-    static PyObject* IndirectCApiCallTester_call(PyObject* self, PyObject *callable) {
-        return PyObject_CallNoArgs(callable);
-    }
-    ''',
-    tp_methods='''{"call", (PyCFunction)IndirectCApiCallTester_call, METH_O, ""}''',
-)
+if has_capi():
+    IndirectCApiCallTester = CPyExtType(
+        'IndirectCApiCallTester',
+        code='''
+        static PyObject* IndirectCApiCallTester_call(PyObject* self, PyObject *callable) {
+            return PyObject_CallNoArgs(callable);
+        }
+        ''',
+        tp_methods='''{"call", (PyCFunction)IndirectCApiCallTester_call, METH_O, ""}''',
+    )
+else:
+    IndirectCApiCallTester = None
 
 # === capturing frame
 
@@ -96,6 +100,7 @@ def check_get_frame_no_deopt(forwarding_call, *args):
         stack_walks += was_stack_walk(False)
     assert stack_walks <= ALLOWED_NUM_STACK_WALKS, f"Too many stack walks recorded: {stack_walks}"
 
+@needs_capi
 def test_capi_get_frame():
     check_get_frame_no_deopt(IndirectCApiCallTester().call)
 
@@ -174,6 +179,7 @@ def check_get_ex_no_deopt(forwarding_call, *args):
         stack_walks += was_stack_walk(False)
     assert stack_walks <= ALLOWED_NUM_STACK_WALKS, f"Too many stack walks recorded: {stack_walks}"
 
+@needs_capi
 def test_capi_get_ex():
     check_get_ex_no_deopt(IndirectCApiCallTester().call)
 
