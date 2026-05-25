@@ -53,17 +53,19 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
     public final int selfIndex;
     public final int yieldFromGeneratorIndex;
     public final int instrumentationDataIndex;
+    public final int maxProfileCEventStackSize;
     private final BytecodeSupplier supplier;
 
     public BytecodeDSLCodeUnit(TruffleString name, TruffleString qualname, int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int flags, TruffleString[] names, TruffleString[] varnames,
                     TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg, Object[] constants, int startLine, int startColumn, int endLine, int endColumn,
-                    int classcellIndex, int selfIndex, int yieldFromGeneratorIndex, int instrumentationDataIndex, BytecodeSupplier supplier) {
+                    int classcellIndex, int selfIndex, int yieldFromGeneratorIndex, int instrumentationDataIndex, int maxProfileCEventStackSize, BytecodeSupplier supplier) {
         super(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames, cellvars, freevars, cell2arg, constants, startLine, startColumn, endLine, endColumn);
         this.classcellIndex = classcellIndex;
         this.selfIndex = selfIndex;
         this.supplier = supplier;
         this.yieldFromGeneratorIndex = yieldFromGeneratorIndex;
         this.instrumentationDataIndex = instrumentationDataIndex;
+        this.maxProfileCEventStackSize = maxProfileCEventStackSize;
     }
 
     public abstract static class BytecodeSupplier {
@@ -75,7 +77,7 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
     public BytecodeDSLCodeUnit withFlags(int flags) {
         return new BytecodeDSLCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags,
                         names, varnames, cellvars, freevars, cell2arg, constants,
-                        startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, yieldFromGeneratorIndex, instrumentationDataIndex, supplier);
+                        startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, yieldFromGeneratorIndex, instrumentationDataIndex, maxProfileCEventStackSize, supplier);
     }
 
     @TruffleBoundary

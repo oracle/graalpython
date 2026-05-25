@@ -1449,10 +1449,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int selfIndex = readInt();
             int yieldFromGeneratorIndex = readInt();
             int instrumentationDataIndex = readInt();
+            int maxProfileCEventStackSize = readInt();
 
             BytecodeSupplier provider = new BytecodeSupplier(serialized, bytecodeFile, bytecodeOffset, bytecodeSize, cacheKey);
             return new BytecodeDSLCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames, cellvars, freevars, cell2arg, constants,
-                            startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, yieldFromGeneratorIndex, instrumentationDataIndex, provider);
+                            startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, yieldFromGeneratorIndex, instrumentationDataIndex, maxProfileCEventStackSize, provider);
         }
 
         private void writeCodeUnit(CodeUnit code) throws IOException {
@@ -1533,6 +1534,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(code.selfIndex);
             writeInt(code.yieldFromGeneratorIndex);
             writeInt(code.instrumentationDataIndex);
+            writeInt(code.maxProfileCEventStackSize);
         }
 
         private PCode readCode() {

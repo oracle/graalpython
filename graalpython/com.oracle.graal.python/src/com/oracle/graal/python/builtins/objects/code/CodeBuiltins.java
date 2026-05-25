@@ -448,12 +448,12 @@ public final class CodeBuiltins extends PythonBuiltins {
 
             int startInstructionIndex = 0;
             int instructionIndex = 0;
-            boolean wasLastInstructionInstrumentation = false;
+            boolean rangeHasInstruction = false;
             int lastTripleLine = -1;
             for (Instruction instruction : bytecodeNode.getInstructions()) {
                 if (instruction.getBytecodeIndex() == triple[1] /* end bci */) {
                     if (lastTripleLine != triple[2]) {
-                        if (!wasLastInstructionInstrumentation) {
+                        if (rangeHasInstruction) {
                             result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
                             lastTripleLine = triple[2];
                         }
@@ -461,14 +461,13 @@ public final class CodeBuiltins extends PythonBuiltins {
                     }
                     triple = triples.get(++tripleIndex);
                     assert triple[0] == instruction.getBytecodeIndex() : "bytecode ranges should be consecutive";
+                    rangeHasInstruction = false;
                 }
 
                 if (!instruction.isInstrumentation()) {
                     // Emulate CPython's fixed 2-word instructions.
                     instructionIndex += 2;
-                    wasLastInstructionInstrumentation = false;
-                } else {
-                    wasLastInstructionInstrumentation = true;
+                    rangeHasInstruction = true;
                 }
             }
 

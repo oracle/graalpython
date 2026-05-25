@@ -519,6 +519,150 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
+class AsyncTracingEventsUnitTest(TracingEventsUnitTest):
+    def async_trace(self, frame, event, arg):
+        code = frame.f_code
+        name = code.co_name
+        if name in self.names:
+            self.events.append((frame.f_lineno - self.first_line, name, event))
+        return self.async_trace
+
+    async def async_wrapper(self, afunc, names):
+        self.names = names
+        sys.settrace(self.async_trace)
+        try:
+            await afunc()
+        finally:
+            sys.settrace(None)
+            self.names = None
+
+    def trace_async_function(self, afunc, names):
+        self.first_line = afunc.__code__.co_firstlineno
+        self.events = []
+        asyncio.run(self.async_wrapper(afunc, names))
+
+    @unittest.skipIf(
+        sys.implementation.name == "graalpy",
+        "GR-65570: GraalPy does not report await exception trace events yet.",
+    )
+    def test_01_await(self):
+        async def helper(): # line -3
+            return 42
+
+        async def afunc():
+            value = await helper()
+            return value
+
+        self.trace_async_function(afunc, {"afunc", "helper"})
+
+        events = [
+            (0, 'afunc', 'call'),
+            (1, 'afunc', 'line'),
+            (-3, 'helper', 'call'),
+            (-2, 'helper', 'line'),
+            (-2, 'helper', 'return'),
+            (1, 'afunc', 'exception'),
+            (2, 'afunc', 'line'),
+            (2, 'afunc', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(
+        sys.implementation.name == "graalpy",
+        "GR-65570: GraalPy does not report async with exception trace events yet.",
+    )
+    def test_02_async_with(self):
+        class A:
+            async def __aenter__(self):
+                return self
+            async def __aexit__(self, exc_type, exc, tb):
+                pass
+
+        async def afunc():
+            async with A():
+                pass
+
+        self.trace_async_function(afunc, {"afunc", "__aenter__", "__aexit__"})
+
+        events = [
+            (0, 'afunc', 'call'),
+            (1, 'afunc', 'line'),
+            (-5, '__aenter__', 'call'),
+            (-4, '__aenter__', 'line'),
+            (-4, '__aenter__', 'return'),
+            (1, 'afunc', 'exception'),
+            (2, 'afunc', 'line'),
+            (1, 'afunc', 'line'),
+            (-3, '__aexit__', 'call'),
+            (-2, '__aexit__', 'line'),
+            (-2, '__aexit__', 'return'),
+            (1, 'afunc', 'exception'),
+            (1, 'afunc', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(
+        sys.implementation.name == "graalpy",
+        "GR-65570: GraalPy does not match CPython async for trace events yet.",
+    )
+    def test_03_async_for(self):
+        class AsyncIterator:
+            def __init__(self, items):
+                self.items = iter(items)
+            def __aiter__(self):
+                return self
+            async def __anext__(self):
+                try:
+                    return next(self.items)
+                except StopIteration:
+                    raise StopAsyncIteration
+
+        async def afunc():
+            total = 0
+            async for item in AsyncIterator([1, 2]):
+                total += item
+            return total
+
+        self.trace_async_function(afunc, {"afunc", "__aiter__", "__anext__"})
+
+        events = [
+            (0, 'afunc', 'call'),
+            (1, 'afunc', 'line'),
+            (2, 'afunc', 'line'),
+            (-8, '__aiter__', 'call'),
+            (-7, '__aiter__', 'line'),
+            (-7, '__aiter__', 'return'),
+            (-6, '__anext__', 'call'),
+            (-5, '__anext__', 'line'),
+            (-4, '__anext__', 'line'),
+            (-4, '__anext__', 'return'),
+            (2, 'afunc', 'exception'),
+            (3, 'afunc', 'line'),
+            (2, 'afunc', 'line'),
+            (-6, '__anext__', 'call'),
+            (-5, '__anext__', 'line'),
+            (-4, '__anext__', 'line'),
+            (-4, '__anext__', 'return'),
+            (2, 'afunc', 'exception'),
+            (3, 'afunc', 'line'),
+            (2, 'afunc', 'line'),
+            (-6, '__anext__', 'call'),
+            (-5, '__anext__', 'line'),
+            (-4, '__anext__', 'line'),
+            (-4, '__anext__', 'exception'),
+            (-3, '__anext__', 'line'),
+            (-2, '__anext__', 'line'),
+            (-2, '__anext__', 'exception'),
+            (-2, '__anext__', 'return'),
+            (2, 'afunc', 'exception'),
+            (4, 'afunc', 'line'),
+            (4, 'afunc', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
 class MultilineCallsTraceTest(TracingEventsUnitTest):
     class A:
         def m_basic(self, a1, a2, a3):

@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -103,6 +104,8 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterato
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -205,6 +208,7 @@ import com.oracle.graal.python.nodes.bytecode.MatchKeysNode;
 import com.oracle.graal.python.nodes.bytecode.PrintExprNode;
 import com.oracle.graal.python.nodes.bytecode.RaiseNode;
 import com.oracle.graal.python.nodes.bytecode.SetupAnnotationsNode;
+import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallDispatchers.FunctionIndirectInvokeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -384,8 +388,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                     addInstrumentation(TraceLine.class).//
                     addInstrumentation(TraceLineAtLoopHeader.class).//
                     addInstrumentation(ClearTraceLine.class).//
+                    addInstrumentation(InstrumentCallable.class).//
+                    addInstrumentation(InstrumentCall.class).//
+                    addInstrumentation(InstrumentCallReturn.class).//
                     addInstrumentation(TraceOrProfileReturn.class).//
-                    addInstrumentation(TraceException.class).//
                     addInstrumentation(TraceLineWithArgument.class).//
                     addInstrumentation(EnterInstrumentedRoot.class).//
                     addInstrumentation(ResumeYieldGenerator.class).//
@@ -413,6 +419,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @CompilationFinal protected transient int classcellIndex;
     @CompilationFinal protected transient int instrumentationDataIndex;
     @CompilationFinal protected transient int yieldFromGeneratorIndex = -1;
+    @CompilationFinal protected transient int maxProfileCEventStackSize;
     @CompilationFinal(dimensions = 1) protected transient Assumption[] cellEffectivelyFinalAssumptions;
 
     /*
@@ -479,6 +486,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
         instrumentationDataIndex = co.instrumentationDataIndex;
         yieldFromGeneratorIndex = co.yieldFromGeneratorIndex;
+        maxProfileCEventStackSize = co.maxProfileCEventStackSize;
         PythonOptions.setUncachedInterpreterThreshold(getLanguage(), getBytecodeNode());
     }
 
@@ -523,7 +531,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             // This should only happen when this root was on stack when the config was updated. It
             // should have been deoptimized anyway when the stack was unwound back to it.
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            current = new InstrumentationData();
+            current = new InstrumentationData(maxProfileCEventStackSize);
             bytecode.setLocalValue(0, frame, instrumentationDataIndex, current);
         }
         return current;
@@ -532,7 +540,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     private void resetInstrumentationData(VirtualFrame frame, BytecodeNode bytecode) {
         InstrumentationData current = (InstrumentationData) bytecode.getLocalValue(0, frame, instrumentationDataIndex);
         if (current == null) {
-            current = new InstrumentationData();
+            current = new InstrumentationData(maxProfileCEventStackSize);
             bytecode.setLocalValue(0, frame, instrumentationDataIndex, current);
         }
         current.reset();
@@ -549,7 +557,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static void doEnter(VirtualFrame frame,
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode) {
-            bytecode.setLocalValue(0, frame, root.instrumentationDataIndex, new InstrumentationData());
+            root.resetInstrumentationData(frame, bytecode);
         }
     }
 
@@ -584,16 +592,45 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    /*
-     * Data for tracing, profiling and instrumentation
+    /**
+     * Data for tracing, profiling and instrumentation. This data is stored in a dedicated frame
+     * slot when instrumentation is enabled.
+     *
+     * <p>
+     * Builtin C profile events are implemented by wrapping calls with Bytecode DSL
+     * {@code @Instrumentation} operations using this structure:
+     *
+     * <pre>{@code
+     * InstrumentCallReturn    // report C_RETURN and pop profileCEventCallables
+     *     Call
+     *         InstrumentCallable    // push the callable before the call consumes it
+     *             callable-expression
+     *         arg1-expression
+     *         ...
+     *         InstrumentCall        // report C_CALL and set profileCEventCallStarted
+     *             argN-expression
+     * }
+     * </pre>
+     *
+     * In {@code interceptTruffleException} we check whether a {@code C_CALL} is underway. If so,
+     * we report the {@code C_EXCEPTION} event.
+     *
+     * <p>
+     * A simpler implementation should be possible if GR-71168 adds support for replacing call
+     * operations directly, e.g. {@code @Instrumentation(replaces = Call.class)}.
      */
     public static final class InstrumentationData {
         private int pastLine;
         // Sometimes, we need to use pastLine value after it has been cleared. Implicit returns in
         // combination with loops are one such scenario.
         private int nonClearingPastLine;
+        // null entries are non-builtin calls that must still preserve nested C-call stack shape
+        private final Object[] profileCEventCallables;
+        private int profileCEventStackTop;
+        private boolean profileCEventCallStarted;
 
-        public InstrumentationData() {
+        public InstrumentationData(int maxProfileCEventStackSize) {
+            this.profileCEventCallables = new Object[maxProfileCEventStackSize];
             reset();
         }
 
@@ -620,6 +657,72 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public void reset() {
             this.pastLine = -1;
             this.nonClearingPastLine = -1;
+            clearProfileCEventCallableStack();
+        }
+
+        boolean hasProfileCEventCallables() {
+            return profileCEventStackTop > 0;
+        }
+
+        Object exitProfileCall() {
+            if (profileCEventStackTop == 0) {
+                return null;
+            }
+            boolean callStarted = profileCEventCallStarted;
+            Object result = popProfileCEventCallable();
+            return callStarted ? result : null;
+        }
+
+        void pushProfileCEventCallable(Object callable) {
+            assert profileCEventStackTop < profileCEventCallables.length;
+            profileCEventCallables[profileCEventStackTop] = callable;
+            profileCEventStackTop++;
+            profileCEventCallStarted = false;
+        }
+
+        private Object popProfileCEventCallable() {
+            profileCEventStackTop--;
+            Object result = profileCEventCallables[profileCEventStackTop];
+            profileCEventCallables[profileCEventStackTop] = null;
+            profileCEventCallStarted = false;
+            return result;
+        }
+
+        void startProfileCEventCall(PBytecodeDSLRootNode root, VirtualFrame frame, BytecodeNode location) {
+            if (profileCEventStackTop > 0) {
+                Object profileArg = profileCEventCallables[profileCEventStackTop - 1];
+                profileCEventCallStarted = profileArg != null && root.profileCEvent(frame, location, profileArg, ProfileEvent.C_CALL);
+            }
+        }
+
+        void clearProfileCEventCallableStack() {
+            if (profileCEventCallables != null) {
+                for (int i = 0; i < profileCEventStackTop; i++) {
+                    profileCEventCallables[i] = null;
+                }
+            }
+            profileCEventStackTop = 0;
+            profileCEventCallStarted = false;
+        }
+
+        // called when we intercept an exception; report C_EXCEPTION only for a C call that actually started
+        void profileCEventCallablesForException(PBytecodeDSLRootNode root, VirtualFrame frame, BytecodeNode location) {
+            int oldStackTop = profileCEventStackTop;
+            boolean callStarted = profileCEventCallStarted;
+            profileCEventStackTop = 0;
+            try {
+                if (callStarted && oldStackTop > 0) {
+                    Object profileArg = profileCEventCallables[oldStackTop - 1];
+                    if (profileArg != null) {
+                        root.profileCEvent(frame, location, profileArg, ProfileEvent.C_EXCEPTION);
+                    }
+                }
+            } finally {
+                for (int i = oldStackTop - 1; i >= 0; i--) {
+                    profileCEventCallables[i] = null;
+                }
+                profileCEventCallStarted = false;
+            }
         }
     }
 
@@ -676,6 +779,45 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         } finally {
             threadState.profilingStop();
         }
+    }
+
+    private static Object getBuiltinProfileArg(Object callable) {
+        Object unwrappedCallable = unwrapBoundDescriptor(callable);
+        if (isBuiltin(unwrappedCallable)) {
+            return unwrappedCallable;
+        }
+        if (unwrappedCallable instanceof PMethod method && isBuiltin(method.getFunction())) {
+            return method.getFunction();
+        }
+        return null;
+    }
+
+    private static Object unwrapBoundDescriptor(Object callable) {
+        return callable instanceof BoundDescriptor boundDescriptor ? boundDescriptor.descriptor : callable;
+    }
+
+    private static boolean isBuiltin(Object callable) {
+        return callable instanceof PBuiltinFunction || callable instanceof PBuiltinMethod;
+    }
+
+    @InliningCutoff
+    private boolean profileCEvent(VirtualFrame virtualFrame, BytecodeNode location, Object arg, PythonContext.ProfileEvent event) {
+        PythonThreadState threadState = getThreadState();
+        Object profileFun = threadState.getProfileFun();
+        if (profileFun != null && !threadState.isProfiling()) {
+            invokeProfileFunction(virtualFrame, location, profileFun, threadState, event, arg);
+            return true;
+        }
+        return false;
+    }
+
+    @InliningCutoff
+    private void profilePendingCExceptions(VirtualFrame frame, BytecodeNode location) {
+        getInstrumentationData(frame, location).profileCEventCallablesForException(this, frame, location);
+    }
+
+    private void clearPendingCExceptions(VirtualFrame frame, BytecodeNode location) {
+        getInstrumentationData(frame, location).clearProfileCEventCallableStack();
     }
 
     @InliningCutoff
@@ -826,6 +968,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         PException result = pe;
 
         PythonThreadState threadState = getThreadState();
+        profilePendingCExceptions(frame, bytecode);
         // We should only trace the exception if tracing is enabled.
         if (threadState.getTraceFun() != null && !pe.getShouldTrace()) {
             PFrame pyFrame = ensurePyFrame(frame, bytecode);
@@ -901,6 +1044,70 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Instrumentation(storeBytecodeIndex = true)
+    public static final class InstrumentCallable {
+        @Specialization
+        public static Object perform(VirtualFrame frame, Object callable,
+                        @Bind BytecodeNode location,
+                        @Bind PBytecodeDSLRootNode root) {
+            PythonThreadState threadState = root.getThreadState();
+            if (threadState.isProfiling()) {
+                return callable;
+            }
+            InstrumentationData instrumentationData = root.getInstrumentationData(frame, location);
+            if (threadState.getProfileFun() == null) {
+                if (instrumentationData.hasProfileCEventCallables()) {
+                    instrumentationData.pushProfileCEventCallable(null);
+                }
+                return callable;
+            }
+            Object profileArg = getBuiltinProfileArg(callable);
+            if (profileArg != null) {
+                instrumentationData.pushProfileCEventCallable(profileArg);
+            } else if (instrumentationData.hasProfileCEventCallables()) {
+                instrumentationData.pushProfileCEventCallable(null);
+            }
+            return callable;
+        }
+    }
+
+    @Instrumentation(storeBytecodeIndex = true)
+    public static final class InstrumentCall {
+        @Specialization
+        public static Object perform(VirtualFrame frame, Object value,
+                        @Bind BytecodeNode location,
+                        @Bind PBytecodeDSLRootNode root) {
+            PythonThreadState threadState = root.getThreadState();
+            if (!threadState.isProfiling()) {
+                root.getInstrumentationData(frame, location).startProfileCEventCall(root, frame, location);
+            }
+            return value;
+        }
+    }
+
+    @Instrumentation(storeBytecodeIndex = true)
+    public static final class InstrumentCallReturn {
+        @Specialization
+        public static Object perform(VirtualFrame frame, Object value,
+                        @Bind BytecodeNode location,
+                        @Bind PBytecodeDSLRootNode root) {
+            PythonThreadState threadState = root.getThreadState();
+            if (threadState.isProfiling()) {
+                return value;
+            }
+            InstrumentationData instrumentationData = root.getInstrumentationData(frame, location);
+            if (threadState.getProfileFun() == null) {
+                instrumentationData.exitProfileCall();
+                return value;
+            }
+            Object profileArg = instrumentationData.exitProfileCall();
+            if (profileArg != null) {
+                root.profileCEvent(frame, location, profileArg, ProfileEvent.C_RETURN);
+            }
+            return value;
+        }
+    }
+
+    @Instrumentation(storeBytecodeIndex = true)
     public static final class TraceOrProfileReturn {
         @Specialization
         public static Object perform(VirtualFrame frame, Object value,
@@ -925,16 +1132,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Instrumentation
-    public static final class TraceException {
-        @Specialization
-        public static void perform() {
-            throw new UnsupportedOperationException("trace exception not implemented");
-        }
-    }
-
     @Override
     public Throwable interceptInternalException(Throwable throwable, VirtualFrame frame, BytecodeNode bytecodeNode, int bci) {
+        if (needsTraceAndProfileInstrumentation()) {
+            clearPendingCExceptions(frame, bytecodeNode);
+        }
         PythonLanguage language = getLanguage();
         if (language.getEngineOption(PythonOptions.CatchAllExceptions) && (throwable instanceof Exception || throwable instanceof AssertionError)) {
             return ExceptionUtils.wrapJavaException(throwable, this, PFactory.createBaseException(language, SystemError, ErrorMessages.M, new Object[]{throwable}));
