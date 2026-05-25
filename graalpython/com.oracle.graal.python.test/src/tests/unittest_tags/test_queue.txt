@@ -45,7 +45,7 @@ test.test_queue.PyQueueTest.test_queue_join @ darwin-arm64,linux-aarch64,linux-a
 test.test_queue.PyQueueTest.test_queue_task_done @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_queue.PyQueueTest.test_shrinking_queue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_queue.PySimpleQueueTest.test_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_queue.PySimpleQueueTest.test_many_threads @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_queue.PySimpleQueueTest.test_many_threads @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_queue.PySimpleQueueTest.test_many_threads_nonblock @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_queue.PySimpleQueueTest.test_many_threads_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_queue.PySimpleQueueTest.test_negative_timeout_raises_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

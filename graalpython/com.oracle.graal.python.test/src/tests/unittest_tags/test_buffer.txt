@@ -19,7 +19,7 @@ test.test_buffer.TestBufferProtocol.test_ndarray_fortran @ darwin-arm64,linux-aa
 test.test_buffer.TestBufferProtocol.test_ndarray_hash @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 # Transient lists differ error GR-49936
 !test.test_buffer.TestBufferProtocol.test_ndarray_index_getitem_multidim
-test.test_buffer.TestBufferProtocol.test_ndarray_index_getitem_single @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_buffer.TestBufferProtocol.test_ndarray_index_getitem_single @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_buffer.TestBufferProtocol.test_ndarray_index_invalid @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_buffer.TestBufferProtocol.test_ndarray_index_null_strides @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_buffer.TestBufferProtocol.test_ndarray_index_scalar @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
