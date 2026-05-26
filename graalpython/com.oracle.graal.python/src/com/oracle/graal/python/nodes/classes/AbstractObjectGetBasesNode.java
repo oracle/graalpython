@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,9 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -67,10 +69,14 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
 
     @Specialization
     static PTuple getBasesCached(VirtualFrame frame, Node inliningTarget, Object cls,
-                    @Cached PyObjectLookupAttr lookupAttr) {
+                    @Cached PyObjectLookupAttr lookupAttr,
+                    @Cached PyTupleCheckNode tupleCheck,
+                    @Cached ConstructTupleNode constructTupleNode) {
         Object bases = lookupAttr.execute(frame, inliningTarget, cls, T___BASES__);
         if (bases instanceof PTuple) {
             return (PTuple) bases;
+        } else if (tupleCheck.execute(inliningTarget, bases)) {
+            return constructTupleNode.execute(frame, bases);
         }
         return null;
     }

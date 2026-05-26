@@ -101,7 +101,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.SetattrNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
@@ -121,11 +120,13 @@ import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
@@ -318,6 +319,8 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached ExpandKeywordStarargsNode castKwargsNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CallNode callNode,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             try {
 
@@ -327,10 +330,9 @@ public abstract class PythonCextObjectBuiltins {
                     keywords = PKeyword.EMPTY_KEYWORDS;
                 } else if (kwargs instanceof PDict) {
                     keywords = castKwargsNode.execute(inliningTarget, kwargs);
-                } else if (kwargs instanceof PTuple) {
+                } else if (tupleCheck.execute(inliningTarget, kwargs)) {
                     // We have a tuple with kw names and an array with kw values
-                    PTuple kwTuple = (PTuple) kwargs;
-                    SequenceStorage storage = kwTuple.getSequenceStorage();
+                    SequenceStorage storage = getTupleStorage.execute(inliningTarget, kwargs);
                     int kwcount = storage.length();
                     Object[] kwValues = readKwNode.readPyObjectArray(argsArray, kwcount, (int) nargs);
                     keywords = new PKeyword[kwcount];

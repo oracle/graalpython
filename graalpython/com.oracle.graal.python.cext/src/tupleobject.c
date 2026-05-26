@@ -105,6 +105,66 @@ PyTuple_Size(PyObject *op)
 }
 #endif // GraalPy change
 
+/* Allocate an uninitialized tuple object. Before making it public, following
+   steps must be done:
+
+   - Initialize its items.
+   - Call _PyObject_GC_TRACK() on it.
+
+   GraalPy change: unlike CPython, this does not use the tuple freelist.
+*/
+static PyTupleObject *
+tuple_alloc(Py_ssize_t size)
+{
+    if (size < 0) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    /* Check for overflow */
+    if ((size_t)size > ((size_t)PY_SSIZE_T_MAX - (sizeof(PyTupleObject) -
+                sizeof(PyObject *))) / sizeof(PyObject *)) {
+        return (PyTupleObject *)PyErr_NoMemory();
+    }
+    PyTupleObject *op = PyObject_GC_NewVar(PyTupleObject, &PyTuple_Type, size);
+    if (op == NULL) {
+        return NULL;
+    }
+    return op;
+}
+
+static inline PyObject *
+tuple_get_empty(void)
+{
+    /*
+     * GraalPy change: allocate a native empty tuple instead of returning CPython's static
+     * singleton, so PyTuple_New consistently returns native tuples.
+     */
+    PyTupleObject *op = tuple_alloc(0);
+    if (op == NULL) {
+        return NULL;
+    }
+    _PyObject_GC_TRACK(op);
+    return (PyObject *)op;
+}
+
+PyObject *
+PyTuple_New(Py_ssize_t size)
+{
+    PyTupleObject *op;
+    if (size == 0) {
+        return tuple_get_empty();
+    }
+    op = tuple_alloc(size);
+    if (op == NULL) {
+        return NULL;
+    }
+    for (Py_ssize_t i = 0; i < size; i++) {
+        op->ob_item[i] = NULL;
+    }
+    _PyObject_GC_TRACK(op);
+    return (PyObject *)op;
+}
+
 PyObject *
 PyTuple_GetItem(PyObject *op, Py_ssize_t i) {
     // GraalPy change: different implementation

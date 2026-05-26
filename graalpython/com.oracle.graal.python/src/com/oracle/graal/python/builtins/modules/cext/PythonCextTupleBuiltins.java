@@ -49,9 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.callocPtrArray;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -60,8 +58,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.EnsureCapacityNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
@@ -76,8 +72,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -89,29 +83,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextTupleBuiltins {
-
-    private static final CApiTiming TIMING_PYTUPLE_NEW = CApiTiming.create(false, "PyTuple_New");
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Py_ssize_t}, call = Direct, acquireGil = false)
-    static long PyTuple_New(long longSize) {
-        CApiTiming.enter();
-        try {
-            int size = (int) longSize;
-            if (longSize != size) {
-                throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.MemoryError);
-            }
-            /*
-             * Already allocate the tuple with native memory, since it has to be populated from the
-             * native side
-             */
-            long mem = callocPtrArray(longSize + 1);
-            NativeObjectSequenceStorage storage = NativeObjectSequenceStorage.create(mem, size, size, true);
-            PTuple tuple = PFactory.createTuple(PythonLanguage.get(null), storage);
-            return PythonToNativeInternalNode.executeUncached(tuple, true);
-        } finally {
-            CApiTiming.exit(TIMING_PYTUPLE_NEW);
-        }
-    }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Ignored)
     public abstract static class GraalPyPrivate_Tuple_GetItem extends CApiBinaryBuiltinNode {
