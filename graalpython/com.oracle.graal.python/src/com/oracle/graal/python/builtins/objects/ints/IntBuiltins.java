@@ -2327,17 +2327,10 @@ public final class IntBuiltins extends PythonBuiltins {
             byte[] bytes = new byte[byteCount];
             long number = self;
 
-            while (number != 0 && 0 <= index && index <= (byteCount - 1)) {
+            while (number != signByte && 0 <= index && index <= (byteCount - 1)) {
                 bytes[index] = (byte) (number & 0xFF);
-                if (number == signByte) {
-                    number = 0;
-                }
                 number >>= 8;
                 index += delta;
-            }
-
-            if (overflowProfile.profile(inliningTarget, !signed && number != 0 || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0 && self != -1))) {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.MESSAGE_INT_TO_BIG);
             }
 
             if (signed) {
@@ -2345,6 +2338,17 @@ public final class IntBuiltins extends PythonBuiltins {
                     bytes[index] = signByte;
                     index += delta;
                 }
+            }
+
+            boolean overflow = number != signByte;
+            if (signed && byteCount > 0) {
+                int mostSignificantByte = isBigEndian ? bytes[0] : bytes[byteCount - 1];
+                if ((mostSignificantByte < 0) != (self < 0)) {
+                    overflow = true;
+                }
+            }
+            if (overflowProfile.profile(inliningTarget, overflow)) {
+                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.MESSAGE_INT_TO_BIG);
             }
             return bytes;
         }
