@@ -305,11 +305,23 @@ def get_subprocess_launcher_args():
     orig_argv = getattr(sys, "orig_argv", None)
     if not orig_argv:
         return [sys.executable]
+
+    main_argv0 = sys.argv[0]
+    for i, arg in enumerate(orig_argv[1:], start=1):
+        if arg == main_argv0:
+            return [sys.executable, *orig_argv[1:i]]
+
     launcher_args = [sys.executable]
-    for arg in orig_argv[1:]:
+    i = 1
+    while i < len(orig_argv):
+        arg = orig_argv[i]
         if not arg.startswith("-"):
             break
         launcher_args.append(arg)
+        if arg == "-X" and i + 1 < len(orig_argv):
+            i += 1
+            launcher_args.append(orig_argv[i])
+        i += 1
     return launcher_args
 
 

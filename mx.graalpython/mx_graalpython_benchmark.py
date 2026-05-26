@@ -70,6 +70,7 @@ CONFIGURATION_DEFAULT_MULTI = "default-multi"
 CONFIGURATION_INTERPRETER_MULTI = "interpreter-multi"
 CONFIGURATION_NATIVE_INTERPRETER_MULTI = "native-interpreter-multi"
 CONFIGURATION_NATIVE = "native"
+CONFIGURATION_NATIVE_JIT2 = "native-jit2"
 CONFIGURATION_UNCACHED = "interpreter-uncached"
 CONFIGURATION_NATIVE_MULTI = "native-multi"
 CONFIGURATION_SANDBOXED = "sandboxed"
@@ -1077,16 +1078,17 @@ def register_vms(suite, sandboxed_options):
     # GraalPy VMs:
     add_graalpy_vm(CONFIGURATION_DEFAULT)
     add_graalpy_vm(CONFIGURATION_CUSTOM)
-    add_graalpy_vm(CONFIGURATION_INTERPRETER, '--experimental-options', '--engine.Compilation=false')
+    add_graalpy_vm(CONFIGURATION_INTERPRETER, '-X', 'jit=0')
     add_graalpy_vm(CONFIGURATION_DEFAULT_MULTI, '--experimental-options', '-multi-context')
-    add_graalpy_vm(CONFIGURATION_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '--engine.Compilation=false')
+    add_graalpy_vm(CONFIGURATION_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '-X', 'jit=0')
     add_graalpy_vm(CONFIGURATION_SANDBOXED, *sandboxed_options)
     add_graalpy_vm(CONFIGURATION_NATIVE)
-    add_graalpy_vm(CONFIGURATION_UNCACHED, '--experimental-options', '--engine.Compilation=false', '--python.ForceUncachedInterpreter=true')
-    add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER, '--experimental-options', '--engine.Compilation=false')
+    add_graalpy_vm(CONFIGURATION_NATIVE_JIT2, '-X', 'jit=2')
+    add_graalpy_vm(CONFIGURATION_UNCACHED, '--experimental-options', '-X', 'jit=0', '--python.ForceUncachedInterpreter=true')
+    add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER, '-X', 'jit=0')
     add_graalpy_vm(CONFIGURATION_SANDBOXED_MULTI, '--experimental-options', '-multi-context', *sandboxed_options)
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI, '--experimental-options', '-multi-context')
-    add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '--engine.Compilation=false')
+    add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '-X', 'jit=0')
 
     # all of the graalpy vms, but with one compiler thread
     for name, extra_polyglot_args in graalpy_vms[:]:

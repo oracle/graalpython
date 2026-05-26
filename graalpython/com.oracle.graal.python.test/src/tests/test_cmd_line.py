@@ -41,6 +41,8 @@ import subprocess
 import sys
 import unittest
 
+IS_GRAALPY = sys.implementation.name == "graalpy"
+
 
 class CmdLineTest(unittest.TestCase):
 
@@ -48,3 +50,24 @@ class CmdLineTest(unittest.TestCase):
         code = "import sys\nsys.exit(42)\n"
         result = subprocess.run([sys.executable], input=code, text=True)
         self.assertEqual(42, result.returncode)
+
+    @unittest.skipUnless(IS_GRAALPY, "GraalPy-specific test")
+    def test_jit_mode_presets(self):
+        for mode in ('0', '1', '2'):
+            result = subprocess.run(
+                [sys.executable, '-X', f'jit={mode}', '-c', '1'],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(0, result.returncode, result)
+
+    @unittest.skipUnless(IS_GRAALPY, "GraalPy-specific test")
+    def test_jit_mode_invalid_value(self):
+        result = subprocess.run(
+            [sys.executable, '-X', 'jit=3', '-c', 'pass'],
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn('expected jit=0, jit=1, or jit=2', result.stderr)
+
