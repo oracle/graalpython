@@ -530,9 +530,16 @@ def _init_posix(vars):
     """Initialize the module as appropriate for POSIX systems."""
     # _sysconfigdata is generated at build time, see _generate_posix_vars()
     name = _get_sysconfigdata_name()
-    _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
-    build_time_vars = _temp.build_time_vars
-    vars.update(build_time_vars)
+    # GraalPy change: ignore missing _sysconfigdata, it can happen on an unsupported platform
+    try:
+        _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
+        build_time_vars = _temp.build_time_vars
+        vars.update(build_time_vars)
+    except ModuleNotFoundError as e:
+        pass
+    # GraalPy change: merge our runtime vars
+    import _sysconfig
+    _sysconfig._update_posix_vars(vars)
 
 def _init_non_posix(vars):
     """Initialize the module as appropriate for NT"""

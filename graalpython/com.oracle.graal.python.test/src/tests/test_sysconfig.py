@@ -1,4 +1,4 @@
-# Copyright (c) 2025, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,10 @@ def test_sysconfig():
     # must not fail
 
 
-@unittest.skipIf(sys.implementation.name != 'graalpy', "GraalPy-only test")
-def test_sysconfigdata():
-    # Maturin loads this directly, make sure the import works
-    import _sysconfigdata
+def test_platform_sysconfigdata():
+    import importlib
+    import sysconfig
+    mod = importlib.import_module(sysconfig._get_sysconfigdata_name())
+    # These flags are parsed directly from the file by maturin
+    for key in ("ABIFLAGS", "EXT_SUFFIX", "SOABI", "VERSION"):
+        assert key in mod.build_time_vars

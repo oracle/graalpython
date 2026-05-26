@@ -1,4 +1,4 @@
-# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,7 +37,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# system configuration generated and used by the sysconfig module
 
-from _sysconfig import _get_posix_vars
+build_time_vars = {
+    "ABIFLAGS": "@GRAALPY_SYSCONFIG_ABIFLAGS@",
+    "ARFLAGS": "@GRAALPY_SYSCONFIG_ARFLAGS@",
+    "CCSHARED": "@GRAALPY_SYSCONFIG_CCSHARED@",
+    "CFLAGS": "@GRAALPY_SYSCONFIG_CFLAGS@",
+    "CFLAGS_DEFAULT": "@GRAALPY_SYSCONFIG_CFLAGS_DEFAULT@",
+    "EXE": "@GRAALPY_SYSCONFIG_EXE@",
+    "EXT_SUFFIX": "@GRAALPY_SYSCONFIG_EXT_SUFFIX@",
+    "LDLIBRARY": "@GRAALPY_SYSCONFIG_LDLIBRARY@",
+    "LDFLAGS": "@GRAALPY_SYSCONFIG_LDFLAGS@",
+    "LIBPYTHON": "",
+    "LIBS": "",
+    "MACOSX_DEPLOYMENT_TARGET": "@GRAALPY_SYSCONFIG_MACOSX_DEPLOYMENT_TARGET@",
+    "MULTIARCH": "@GRAALPY_SYSCONFIG_MULTIARCH@",
+    "OPT": "@GRAALPY_SYSCONFIG_OPT@",
+    "Py_GIL_DISABLED": @GRAALPY_SYSCONFIG_GIL_DISABLED@,
+    "Py_DEBUG": 0,
+    "Py_ENABLE_SHARED": 0,
+    "Py_HASH_ALGORITHM": 0,
+    "SHLIB_SUFFIX": "@GRAALPY_SYSCONFIG_SHLIB_SUFFIX@",
+    "SO": "@GRAALPY_SYSCONFIG_EXT_SUFFIX@",
+    "SOABI": "@GRAALPY_SYSCONFIG_SOABI@",
+    "SYSLIBS": "",
+    "USE_GNU_SOURCE": "@GRAALPY_SYSCONFIG_USE_GNU_SOURCE@",
+    "VERSION": "@GRAALPY_SYSCONFIG_VERSION@",
+}
 
-build_time_vars = _get_posix_vars()
+for _key, _value in {
+    "AR": "@GRAALPY_SYSCONFIG_AR@",
+    "CC": "@GRAALPY_SYSCONFIG_CC@",
+    "CXX": "@GRAALPY_SYSCONFIG_CXX@",
+    "LD": "@GRAALPY_SYSCONFIG_LD@",
+    "LDCXXSHARED": "@GRAALPY_SYSCONFIG_LDCXXSHARED@",
+    "LDSHARED": "@GRAALPY_SYSCONFIG_LDSHARED@",
+    "NM": "@GRAALPY_SYSCONFIG_NM@",
+    "RANLIB": "@GRAALPY_SYSCONFIG_RANLIB@",
+}.items():
+    if _value:
+        build_time_vars[_key] = _value
