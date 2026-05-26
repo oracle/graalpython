@@ -2821,6 +2821,11 @@ public abstract class CApiTransitions {
             execute(inliningTarget, handleContext, pointer, handleTableIndex, refCount > MANAGED_REFCNT, false);
         }
 
+        @TruffleBoundary
+        public static void executeUncached(HandleContext handleContext, long pointer, int handleTableIndex, long refCount) {
+            CApiTransitionsFactory.UpdateHandleTableReferenceNodeGen.getUncached().execute(null, handleContext, pointer, handleTableIndex, refCount);
+        }
+
         /**
          * Makes the handle table reference of the given wrapper weak but keeps the native object
          * stub in the GC list (if currently contained in any). The only valid use case for this

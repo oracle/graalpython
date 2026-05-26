@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -163,19 +164,20 @@ public abstract class PythonCextObjectBuiltins {
     private PythonCextObjectBuiltins() {
     }
 
-    @CApiBuiltin(ret = Void, args = {Pointer, Py_ssize_t}, call = Ignored)
-    abstract static class GraalPyPrivate_NotifyRefCount extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object doLong(long pointer, long refCount,
-                        @Bind Node inliningTarget,
-                        @Cached UpdateHandleTableReferenceNode updateRefNode) {
+    private static final CApiTiming TIMING_GRAALPYPRIVATE_NOTIFYREFCOUNT = CApiTiming.create(false, "GraalPyPrivate_NotifyRefCount");
+
+    @CApiBuiltin(ret = Void, args = {Pointer, Py_ssize_t}, call = Ignored, acquireGil = false, canRaise = false)
+    static void GraalPyPrivate_NotifyRefCount(long pointer, long refCount) {
+        assert PythonContext.get(null).ownsGil();
+        CApiTiming.enter();
+        try {
             assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
             assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
             assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
             assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(pointer)) == refCount;
             // refcounting on an immortal object should be a NOP
             assert refCount != PythonObject.IMMORTAL_REFCNT;
-            HandleContext handleContext = PythonContext.get(inliningTarget).handleContext;
+            HandleContext handleContext = PythonContext.get(null).handleContext;
             int hti = CStructAccess.readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
             /*
              * The handle table index may be 0. This means that the managed object was already
@@ -185,9 +187,10 @@ public abstract class PythonCextObjectBuiltins {
              * 'CFields.GraalPyObject__handle_table_index' is set to 0).
              */
             if (hti != 0) {
-                updateRefNode.execute(inliningTarget, handleContext, pointer, hti, refCount);
+                UpdateHandleTableReferenceNode.executeUncached(handleContext, pointer, hti, refCount);
             }
-            return PNone.NO_VALUE;
+        } finally {
+            CApiTiming.exit(TIMING_GRAALPYPRIVATE_NOTIFYREFCOUNT);
         }
     }
 
