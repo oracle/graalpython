@@ -11,6 +11,29 @@ index 6bfc40f..046ff74 100644
      /*
       * On PyPy, dictionary keys do not always preserve object identity.
       * Fall back to comparison by value.
+diff --git a/numpy/_core/meson.build b/numpy/_core/meson.build
+index 3a0b52c..1819ec6 100644
+--- a/numpy/_core/meson.build
++++ b/numpy/_core/meson.build
+@@ -854,6 +854,9 @@ endforeach
+ 
+ # Build npysort dispatch-able sources
+ # -----------------------------------
++# GraalPy change: GCC 12 can report a false positive maybe-uninitialized
++# warning in AVX512 intrinsics used by x86-simd-sort. Some CI builds use Werror.
++combined_cpp_args = cpp_args_common + max_opt + cpp.get_supported_arguments('-Wno-error=maybe-uninitialized')
+ foreach gen_mtargets : [
+   [
+     'x86_simd_argsort.dispatch.h',
+@@ -897,7 +900,7 @@ foreach gen_mtargets : [
+     prefix: 'NPY_',
+     dependencies: [py_dep, np_core_dep, omp_dep],
+     c_args: c_args_common + max_opt,
+-    cpp_args: cpp_args_common + max_opt,
++    cpp_args: combined_cpp_args,
+     include_directories: [
+       'include',
+       'src/common',
 diff --git a/numpy/_core/src/multiarray/compiled_base.c b/numpy/_core/src/multiarray/compiled_base.c
 index 6e37968..010bd03 100644
 --- a/numpy/_core/src/multiarray/compiled_base.c
