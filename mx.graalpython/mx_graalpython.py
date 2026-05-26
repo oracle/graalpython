@@ -91,6 +91,9 @@ SUITE = cast(mx.SourceSuite, mx.suite('graalpython'))
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 
 GRAALPY_ABI_VERSION = 'graalpy250'
+GRAALPY_ABIFLAGS = os.environ.get('GRAALPY_ABIFLAGS', '')
+if not re.fullmatch(r'[A-Za-z0-9_]*', GRAALPY_ABIFLAGS):
+    mx.abort('GRAALPY_ABIFLAGS may only contain ASCII letters, digits, and underscores')
 IS_RELEASE = SUITE.is_release()
 FULL_GRAAL_VERSION = SUITE.release_version()
 GRAAL_VERSION = FULL_GRAAL_VERSION if IS_RELEASE else FULL_GRAAL_VERSION[:-len('-dev')]
@@ -2080,7 +2083,7 @@ def _graalpy_sysconfig_arch():
 def graalpy_soabi(*_):
     os = mx_subst.path_substitutions.substitute('<os>')
     pyos = _graalpy_sysconfig_platform(os)
-    return f'{abi_version()}-native-{graalpy_multiarch(os=pyos)}'
+    return f'{abi_version()}{graalpy_abiflags()}-native-{graalpy_multiarch(os=pyos)}'
 
 
 def graalpy_ext(*_):
@@ -2094,12 +2097,16 @@ def graalpy_ext(*_):
 def graalpy_sysconfigdata(*_):
     os = mx_subst.path_substitutions.substitute('<os>')
     pyos = _graalpy_sysconfig_platform(os)
-    return f'_sysconfigdata__{pyos}_{graalpy_multiarch(os=pyos)}'
+    return f'_sysconfigdata_{graalpy_abiflags()}_{pyos}_{graalpy_multiarch(os=pyos)}'
 
 
 def graalpy_multiarch(*_, os=None):
     pyos = os if os is not None else _graalpy_sysconfig_platform(mx_subst.path_substitutions.substitute('<os>'))
     return f'{_graalpy_sysconfig_arch()}-{pyos}'
+
+
+def graalpy_abiflags(*_):
+    return GRAALPY_ABIFLAGS
 
 
 def dev_tag(_=None):
@@ -2141,6 +2148,8 @@ mx_subst.results_substitutions.register_no_arg('abi_version', abi_version)
 
 mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
+mx_subst.path_substitutions.register_no_arg('graalpy_abiflags', graalpy_abiflags)
+mx_subst.results_substitutions.register_no_arg('graalpy_abiflags', graalpy_abiflags)
 mx_subst.path_substitutions.register_no_arg('graalpy_soabi', graalpy_soabi)
 mx_subst.results_substitutions.register_no_arg('graalpy_soabi', graalpy_soabi)
 mx_subst.path_substitutions.register_no_arg('graalpy_multiarch', graalpy_multiarch)

@@ -54,3 +54,5 @@ def test_platform_sysconfigdata():
     # These flags are parsed directly from the file by maturin
     for key in ("ABIFLAGS", "EXT_SUFFIX", "SOABI", "VERSION"):
         assert key in mod.build_time_vars
+    assert mod.build_time_vars["ABIFLAGS"] == sys.abiflags
+    assert sys.abiflags in sysconfig.get_config_var("INCLUDEPY")
