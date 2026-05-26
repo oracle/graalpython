@@ -13,17 +13,18 @@ diff --git a/pip/_internal/cli/cmdoptions.py b/pip/_internal/cli/cmdoptions.py
 index 02ba608..85c7c22 100644
 --- a/pip/_internal/cli/cmdoptions.py
 +++ b/pip/_internal/cli/cmdoptions.py
-@@ -357,7 +357,8 @@ def extra_index_url() -> Option:
+@@ -357,7 +357,9 @@ def extra_index_url() -> Option:
          dest="extra_index_urls",
          metavar="URL",
          action="append",
 -        default=[],
-+        # GraalPy change: add default extra index with our prebuilt binaries
-+        default=["https://www.graalvm.org/python/wheels/"],
++        # GraalPy change: add default extra index with our prebuilt binaries. If PIP_INDEX_URL is set,
++        # assume the user configured a custom index and does not want to use any default index.
++        default=[] if "PIP_INDEX_URL" in os.environ else ["https://www.graalvm.org/python/wheels/"],
          help="Extra URLs of package indexes to use in addition to "
          "--index-url. Should follow the same rules as "
          "--index-url.",
-@@ -892,7 +893,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
+@@ -892,7 +894,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
      "--disable-pip-version-check",
      dest="disable_pip_version_check",
      action="store_true",

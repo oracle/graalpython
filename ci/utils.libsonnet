@@ -24,6 +24,24 @@ local common = import "graal/ci/common.jsonnet";
         else
             newPath,
 
+    pip_index_setup(extra_index_url)::
+        local pip_index_from_config_or_env = [
+            "python",
+            "-c",
+            "import os, subprocess, sys; " +
+            "cmd = [sys.executable, '-m', 'pip', 'config', 'get', 'global.index-url']; " +
+            "p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True); " +
+            "print(p.stdout.strip() if p.returncode == 0 else os.environ.get('PIP_INDEX_URL') or " +
+            "os.environ.get('PIP_EXTRA_INDEX_URL', ''))",
+        ];
+        (if extra_index_url != "" then [
+            ["set-export", "PIP_EXTRA_INDEX_URL", extra_index_url],
+        ] else []) + [
+            // Use the CI Python's configured base index if present. pip config get does not report env
+            // vars, so preserve Buildbot's PIP_INDEX_URL before falling back to the overlay repository URL.
+            ["set-export", "PIP_INDEX_URL", pip_index_from_config_or_env],
+        ],
+
     ensure_notify(builds):: [
         b + (
             if !std.objectHas(b, "notify_groups") && std.objectHas(b, "targets") && (b.targets == ["gate"] || b.targets == ["post-merge"]) then

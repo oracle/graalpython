@@ -5,6 +5,7 @@
     local run_spec              = import "graal/ci/ci_common/run-spec.libsonnet",
     local tools                 = import "graal/ci/ci_common/run-spec-tools.libsonnet",
     local const                 = import "constants.libsonnet",
+    local utils                 = import "utils.libsonnet",
     local reports               = $.overlay_imports.reports,
 
     local exclude               = run_spec.exclude,
@@ -95,15 +96,10 @@
         PIP_EXTRA_INDEX_URL: $.overlay_imports.PIP_EXTRA_INDEX_URL,
     } else {},
 
-    local pip_index_setup = [
-        // Use the CI Python's configured base index and overlay-provided GraalPy wheel index.
-        ["set-export", "PIP_INDEX_URL", ["python", "-m", "pip", "config", "get", "global.index-url"]],
-    ] + if $.overlay_imports.PIP_EXTRA_INDEX_URL != "" then [
-        ["set-export", "PIP_EXTRA_INDEX_URL", $.overlay_imports.PIP_EXTRA_INDEX_URL],
-    ] else [],
+    local pip_index_setup = utils.pip_index_setup($.overlay_imports.PIP_EXTRA_INDEX_URL),
 
     local packages(os, arch) = self.packages(os, arch) + {
-        make: ">=3.83",
+        make: "==4.3",
         binutils: "==2.23.2",
     },
 
@@ -254,7 +250,7 @@
         ],
         deploysArtifacts: true,
         packages +: packages(self.os, self.arch) + {
-            "apache/ant": ">=1.9.4",
+            "apache/ant": "==1.10.1",
             libyaml: "==0.2.5",
             "pip:ninja_syntax": "==1.7.2",
             "pip:pylint": "==2.4.4",
