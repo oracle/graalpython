@@ -127,9 +127,7 @@ GCTestDeallocUpcall = CPyExtType("GCTestDeallocUpcall",
         static PyObject *gtd_callback = NULL;
 
         #if GRAALVM_PYTHON
-        extern PyAPI_FUNC(int) (*GraalPyPrivate_DisableReferenceQueuePolling)(void);
-        extern PyAPI_FUNC(void) (*GraalPyPrivate_EnableReferenceQueuePolling)(void);
-        extern PyAPI_FUNC(void) (*GraalPyPrivate_TriggerGC)(size_t);
+        #include <graalpy/testcapi.h>
         #endif
 
         static GCTestDeallocUpcallObject* gtd_new_instance(PyTypeObject* cls) {
@@ -167,7 +165,7 @@ GCTestDeallocUpcall = CPyExtType("GCTestDeallocUpcall",
         #endif
 
         #if GRAALVM_PYTHON
-            if (GraalPyPrivate_DisableReferenceQueuePolling()) {
+            if (GraalPyTestCAPI->DisableReferenceQueuePolling()) {
                 PyErr_SetString(PyExc_RuntimeError, "reference queue polling is already active");
                 return NULL;
             }
@@ -180,16 +178,16 @@ GCTestDeallocUpcall = CPyExtType("GCTestDeallocUpcall",
             }
             Py_DECREF((PyObject*) original);
         #if GRAALVM_PYTHON
-            GraalPyPrivate_EnableReferenceQueuePolling();
+            GraalPyTestCAPI->EnableReferenceQueuePolling();
             polling_disabled = 0;
-            GraalPyPrivate_TriggerGC(0);
+            GraalPyTestCAPI->TriggerGC(0);
         #endif
             Py_RETURN_NONE;
 
         error:
         #if GRAALVM_PYTHON
             if (polling_disabled) {
-                GraalPyPrivate_EnableReferenceQueuePolling();
+                GraalPyTestCAPI->EnableReferenceQueuePolling();
             }
         #endif
             return NULL;
@@ -209,6 +207,13 @@ GCTestDeallocUpcall = CPyExtType("GCTestDeallocUpcall",
         tp_methods="""
         {"set_callback", (PyCFunction)gtd_set_callback, METH_O | METH_STATIC, ""},
         {"create_decref_and_reuse", (PyCFunction)gtd_create_decref_and_reuse, METH_NOARGS | METH_CLASS, ""}
+        """,
+        ready_code="""
+        #if GRAALVM_PYTHON
+        if (GraalPyTestCAPI_Import() < 0) {
+            return NULL;
+        }
+        #endif
         """,
         tp_dealloc='(destructor)gtd_dealloc',
 )

@@ -76,8 +76,6 @@ class TestPyMemoryViewFromObjectErrorPath(unittest.TestCase):
             ReleaseOnFailureType = CPyExtType(
                 "TestMemoryViewReleaseOnConstructionFailure",
                 r'''
-                PyAPI_FUNC(PyObject *) GraalPyPrivate_MemoryViewFromObject(PyObject *v, int flags);
-
                 static int release_count = 0;
                 static char buf[] = {42};
 
@@ -91,31 +89,28 @@ class TestPyMemoryViewFromObjectErrorPath(unittest.TestCase):
                     release_count++;
                 }
 
+                static PyObject* get_release_count(PyObject* self, PyObject* args) {
+                    return PyLong_FromLong(release_count);
+                }
+
                 static PyBufferProcs as_buffer = {
                     (getbufferproc)getbuffer,
                     (releasebufferproc)releasebuffer,
                 };
-
-                static PyObject* check_release_on_construction_failure(PyObject* self, PyObject* args) {
-                    PyObject *mv = GraalPyPrivate_MemoryViewFromObject(self, PyBUF_FULL_RO);
-                    if (mv != NULL) {
-                        Py_DECREF(mv);
-                        PyErr_SetString(PyExc_AssertionError, "GraalPyPrivate_MemoryViewFromObject unexpectedly succeeded");
-                        return NULL;
-                    }
-                    if (!PyErr_Occurred()) {
-                        PyErr_SetString(PyExc_AssertionError, "GraalPyPrivate_MemoryViewFromObject failed without an exception");
-                        return NULL;
-                    }
-                    PyErr_Clear();
-                    return PyLong_FromLong(release_count);
-                }
                 ''',
                 tp_as_buffer='&as_buffer',
-                tp_methods='{"check_release_on_construction_failure", check_release_on_construction_failure, METH_NOARGS, ""}',
+                tp_methods='{"get_release_count", get_release_count, METH_NOARGS, ""}',
             )
 
-            release_count = ReleaseOnFailureType().check_release_on_construction_failure()
+            obj = ReleaseOnFailureType()
+            try:
+                memoryview(obj)
+            except Exception:
+                pass
+            else:
+                raise AssertionError("memoryview unexpectedly succeeded")
+
+            release_count = obj.get_release_count()
             if release_count != 1:
                 raise AssertionError(f"expected one releasebuffer call, got {release_count}")
         """)

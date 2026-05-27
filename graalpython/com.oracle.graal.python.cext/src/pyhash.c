@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -489,7 +489,7 @@ long _PyHASH_INF;
 long _PyHASH_MODULUS;
 long _PyHASH_IMAG;
 
-void
+Py_LOCAL_SYMBOL void
 initialize_hashes()
 {
     _PyHASH_INF = GraalPyPrivate_HashConstant(0);

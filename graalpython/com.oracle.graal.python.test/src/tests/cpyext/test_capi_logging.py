@@ -55,43 +55,37 @@ def test_private_log_handles_long_formatted_messages():
     module = compile_module_from_string("""
         #define PY_SSIZE_T_CLEAN
         #include <Python.h>
-        #include <stdint.h>
 
         #ifdef GRAALVM_PYTHON
-        PyAPI_FUNC(Py_ssize_t) GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len);
+        #include <graalpy/testcapi.h>
+
+        #define GRAALPY_LOG_INFO 0x2
+
+        static void call_private_log_impl(const char *format, ...) {
+            va_list args;
+            va_start(args, format);
+            GraalPyTestCAPI->GraalPyPrivate_LogImpl(GRAALPY_LOG_INFO, format, args);
+            va_end(args);
+        }
         #endif
 
         #define X10 "aaaaaaaaaa"
         #define X100 X10 X10 X10 X10 X10 X10 X10 X10 X10 X10
         #define X1000 X100 X100 X100 X100 X100 X100 X100 X100 X100 X100
-        #define LONG_TYPE_NAME "graalpy_capi_log_overflow." X1000 X1000
+        #define LONG_LOG_MESSAGE X1000 X1000
 
-        static PyTypeObject LongNameType = {
-            PyVarObject_HEAD_INIT(NULL, 0)
-            .tp_name = LONG_TYPE_NAME,
-            .tp_basicsize = sizeof(PyObject),
-            .tp_dealloc = (destructor) PyObject_Del,
-        };
-
-        static PyObject* trigger_log_with_long_type_name(PyObject* module, PyObject* unused) {
+        static PyObject* trigger_long_log_message(PyObject* module, PyObject* unused) {
         #ifdef GRAALVM_PYTHON
-            if (PyType_Ready(&LongNameType) < 0) {
+            if (GraalPyTestCAPI_Import() < 0) {
                 return NULL;
             }
-            PyObject* obj = LongNameType.tp_alloc(&LongNameType, 0);
-            if (obj == NULL) {
-                return NULL;
-            }
-            intptr_t objects[1] = {(intptr_t) obj};
-
-            // deallocation logs the type name
-            GraalPyPrivate_BulkDealloc(objects, 1);
+            call_private_log_impl("%s", LONG_LOG_MESSAGE);
         #endif
             Py_RETURN_NONE;
         }
 
         static PyMethodDef module_methods[] = {
-            {"trigger_log_with_long_type_name", trigger_log_with_long_type_name, METH_NOARGS, ""},
+            {"trigger_long_log_message", trigger_long_log_message, METH_NOARGS, ""},
             {NULL}
         };
 
@@ -109,16 +103,15 @@ def test_private_log_handles_long_formatted_messages():
         import sys
         sys.path.insert(0, {module_dir!r})
         import graalpy_capi_log_overflow
-        graalpy_capi_log_overflow.trigger_log_with_long_type_name()
+        graalpy_capi_log_overflow.trigger_long_log_message()
         print("done")
     """)
-    args = [sys.executable]
+    args = [sys.executable, "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
     if not __graalpython__.is_native:
         bytecode_dsl = str(__graalpython__.is_bytecode_dsl_interpreter).lower()
         args.append(f"--vm.Dpython.EnableBytecodeDSLInterpreter={bytecode_dsl}")
 
-    # use fine grained logging to trigger the bug later
-    args += ["--log.python.capi.PythonCextBuiltins.level=FINER", "-c", script]
+    args += ["--log.python.capi.PythonCextBuiltins.level=INFO", "-c", script]
 
     proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if proc.returncode != 0:

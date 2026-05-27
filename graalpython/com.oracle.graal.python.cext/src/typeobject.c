@@ -1803,10 +1803,10 @@ traverse_slots(PyTypeObject *type, PyObject *self, visitproc visit, void *arg)
     return 0;
 }
 
-/* GraalPy change: replaced 'static' with 'PyAPI_FUNC' and renamed because we lookup the
- * symbol in Java to use it if a type receives 'toNative'.
+/* GraalPy change: renamed and exposed through the native helper table because Java uses
+ * it if a type receives 'toNative'.
  */
-PyAPI_FUNC(int)
+GraalPy_CAPI_HELPER_SYMBOL int
 GraalPyPrivate_SubtypeTraverse(PyObject *self, visitproc visit, void *arg)
 {
     PyTypeObject *type, *base;

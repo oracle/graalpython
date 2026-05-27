@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7263,7 +7263,7 @@ pretty bizarre, and a tzinfo subclass can override fromutc() if it is.
 
 // GraalPy additions
 
-long
+Py_LOCAL_SYMBOL long
 GraalPyPrivate_PyDateTime_GET_LONG_FIELD(PyObject* o, const char* field_name)
 {
     PyObject* attr = PyObject_GetAttrString(o, field_name);
@@ -7286,8 +7286,8 @@ error:
 }
 
 /** to be used from Java code only; returns the type ID for a PyDateTime_CAPI */
-PyAPI_FUNC(void)
-GraalPyPrivate_InitNativeDateTime()
+GraalPy_CAPI_HELPER_SYMBOL void
+GraalPyPrivate_InitNativeDateTime(void)
 {
     /* safe native get/set descriptors */
     PyGetSetDef* getsets_date = PyDateTime_DateType.tp_getset;
@@ -7313,7 +7313,7 @@ GraalPyPrivate_InitNativeDateTime()
 }
 
 // Used from Java to initialize native subtypes
-PyAPI_FUNC(PyObject*)
+GraalPy_CAPI_HELPER_SYMBOL PyObject*
 GraalPyPrivate_Time_SubtypeNew(PyTypeObject* type, int hour, int minute, int second, int usecond, PyObject* tzinfo, int fold) {
     char aware = tzinfo != NULL;
     PyDateTime_Time *self = (PyDateTime_Time *) (type->tp_alloc(type, aware));
@@ -7332,7 +7332,7 @@ GraalPyPrivate_Time_SubtypeNew(PyTypeObject* type, int hour, int minute, int sec
     return (PyObject *)self;
 }
 
-PyAPI_FUNC(PyObject*)
+GraalPy_CAPI_HELPER_SYMBOL PyObject*
 GraalPyPrivate_Date_SubtypeNew(PyTypeObject* type, int year, int month, int day) {
     PyDateTime_Date *self = (PyDateTime_Date *)(type->tp_alloc(type, 0));
     if (self) {
@@ -7344,7 +7344,7 @@ GraalPyPrivate_Date_SubtypeNew(PyTypeObject* type, int year, int month, int day)
     return (PyObject *)self;
 }
 
-PyAPI_FUNC(PyObject*)
+GraalPy_CAPI_HELPER_SYMBOL PyObject*
 GraalPyPrivate_DateTime_SubtypeNew(PyTypeObject* type, int year, int month, int day, int hour, int minute, int second, int usecond, PyObject* tzinfo, int fold) {
     char aware = tzinfo != NULL;
     PyDateTime_DateTime *self = (PyDateTime_DateTime *) (type->tp_alloc(type, aware));
@@ -7368,7 +7368,7 @@ GraalPyPrivate_DateTime_SubtypeNew(PyTypeObject* type, int year, int month, int 
     return (PyObject *)self;
 }
 
-PyAPI_FUNC(PyObject*)
+GraalPy_CAPI_HELPER_SYMBOL PyObject*
 GraalPyPrivate_TimeDelta_SubtypeNew(PyTypeObject* type, int days, int seconds, int microseconds) {
     PyDateTime_Delta *self = (PyDateTime_Delta *) (type->tp_alloc(type, 0));
     if (self != NULL) {

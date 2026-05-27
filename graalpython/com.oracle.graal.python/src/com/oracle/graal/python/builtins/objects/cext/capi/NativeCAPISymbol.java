@@ -42,6 +42,8 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.util.Objects;
+
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -51,10 +53,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
 
     FUN_NO_OP_CLEAR("GraalPyPrivate_NoOpClear", ExternalFunctionSignature.NO_OP_CLEAR),
     FUN_NO_OP_TRAVERSE("GraalPyPrivate_NoOpTraverse", ExternalFunctionSignature.NO_OP_TRAVERSE),
-
-    FUN_PYTRUFFLE_CONSTANTS("GraalPyPrivate_Constants", ExternalFunctionSignature.PYTRUFFLE_CONSTANTS),
-    FUN_PYTRUFFLE_STRUCT_OFFSETS("GraalPyPrivate_StructOffsets", ExternalFunctionSignature.PYTRUFFLE_STRUCT_OFFSETS),
-    FUN_PYTRUFFLE_STRUCT_SIZES("GraalPyPrivate_StructSizes", ExternalFunctionSignature.PYTRUFFLE_STRUCT_SIZES),
 
     /* Python C API functions */
 
@@ -98,6 +96,9 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GRAALPY_GC_COLLECT("GraalPyPrivate_GC_Collect", ExternalFunctionSignature.GCCOLLECT),
     FUN_SUBTYPE_TRAVERSE("GraalPyPrivate_SubtypeTraverse", ExternalFunctionSignature.SUBTYPE_TRAVERSE),
     FUN_INIT_THREAD_STATE_CURRENT("GraalPyPrivate_InitThreadStateCurrent", ExternalFunctionSignature.INIT_THREAD_STATE_CURRENT),
+    FUN_GRAALPY_PRIVATE_LOG_IMPL("GraalPyPrivate_LogImpl", ExternalFunctionSignature.LOG_IMPL),
+    FUN_GET_FINALIZE_CAPI_POINTER("GraalPyPrivate_GetFinalizeCApiPointer", ExternalFunctionSignature.GETFINALIZECAPIPOINTER),
+    FUN_LONG_LV_TAG("GraalPyPrivate_Long_lv_tag", ExternalFunctionSignature.LONG_LV_TAG),
 
     /* PyDateTime_CAPI */
 
@@ -112,11 +113,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     NativeCAPISymbol(String name, ExternalFunctionSignature signature) {
         this.name = name;
         this.tsName = toTruffleStringUncached(name);
-        this.signature = signature;
-    }
-
-    NativeCAPISymbol(String name) {
-        this(name, null);
+        this.signature = Objects.requireNonNull(signature);
     }
 
     @Override
@@ -124,7 +121,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
         return name;
     }
 
-    @Override
     public TruffleString getTsName() {
         return tsName;
     }
@@ -138,12 +134,11 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     }
 
     public ArgDescriptor getReturnValue() {
-        return signature != null ? signature.getReturnValue() : null;
+        return signature.getReturnValue();
     }
 
     @Override
     public ArgDescriptor[] getArguments() {
-        assert signature != null : "no signature for " + this;
         return signature.getArguments();
     }
 }

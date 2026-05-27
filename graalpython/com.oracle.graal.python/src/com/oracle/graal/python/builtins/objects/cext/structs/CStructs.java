@@ -44,8 +44,6 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLong
 
 import com.oracle.graal.python.annotations.CApiStructs;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
-import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -100,7 +98,8 @@ public enum CStructs {
     GCState,
     PyGC_Head,
     GraalPyGC_CycleNode,
-    GCGeneration;
+    GCGeneration,
+    GraalPy_Test_CAPI;
 
     @CompilationFinal(dimensions = 1) public static final CStructs[] VALUES = values();
 
@@ -118,13 +117,7 @@ public enum CStructs {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        long sizesPointer;
-        try {
-            sizesPointer = ExternalFunctionInvoker.invokePYTRUFFLE_STRUCT_SIZES(
-                            CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES).getAddress());
-        } catch (Throwable t) {
-            throw CompilerDirectives.shouldNotReachHere(t);
-        }
+        long sizesPointer = CApiContext.getNativeCAPIMetadataPointer(null) + (CConstants.VALUES.length + CFields.VALUES.length + 2L) * Long.BYTES;
         long[] sizes = readLongArrayElements(sizesPointer, 0L, VALUES.length);
         for (CStructs struct : VALUES) {
             long size = sizes[struct.ordinal()];

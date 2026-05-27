@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,32 +38,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.common;
 
-import com.oracle.graal.python.annotations.NativeSimpleType;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
-import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+#ifndef GRAALPY_TESTCAPI_H
+#define GRAALPY_TESTCAPI_H
 
-public interface NativeCExtSymbol {
-    String getName();
+#ifndef GRAALPY_ENABLE_TESTING_CAPI
+# error "graalpy/testcapi.h is only available if GRAALPY_ENABLE_TESTING_CAPI is defined"
+#endif
 
-    ArgDescriptor getReturnValue();
+#include <stdarg.h>
+#include <stdint.h>
+#include <Python.h>
 
-    ArgDescriptor[] getArguments();
+#define GraalPy_Test_CAPI_NAME "__graalpython__._testcapi"
 
-    @TruffleBoundary
-    default NativeFunctionPointer bind(NativeContext context, long pointer) {
-        ArgDescriptor returnValue = getReturnValue();
-        if (returnValue == null) {
-            throw new UnsupportedOperationException("No signature for " + getName());
-        }
-        ArgDescriptor[] arguments = getArguments();
-        NativeSimpleType[] argTypes = new NativeSimpleType[arguments.length];
-        for (int i = 0; i < arguments.length; i++) {
-            argTypes[i] = arguments[i].getNativeSimpleType();
-        }
-        return NativeFunctionPointer.create(context, pointer, returnValue.getNativeSimpleType(), argTypes);
-    }
+typedef struct {
+    int (*ToNative)(void *);
+    int (*DisableReferenceQueuePolling)(void);
+    void (*EnableReferenceQueuePolling)(void);
+    void (*TriggerGC)(size_t);
+    uintptr_t (*LongLvTag)(const PyLongObject *);
+    void (*GraalPyPrivate_LogImpl)(int, const char *, va_list);
+} GraalPy_Test_CAPI;
+
+static GraalPy_Test_CAPI *GraalPyTestCAPI = NULL;
+
+static inline int GraalPyTestCAPI_Import(void) {
+    GraalPyTestCAPI = (GraalPy_Test_CAPI *) PyCapsule_Import(GraalPy_Test_CAPI_NAME, 0);
+    return GraalPyTestCAPI == NULL ? -1 : 0;
 }
+
+#endif

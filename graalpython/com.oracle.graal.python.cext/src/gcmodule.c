@@ -2940,7 +2940,7 @@ done:
 }
 
 
-void
+GraalPy_CAPI_HELPER_SYMBOL void
 GraalPyPrivate_Object_GC_Del(void *op)
 {
     if (is_managed(op)) {
@@ -2951,13 +2951,13 @@ GraalPyPrivate_Object_GC_Del(void *op)
 }
 
 /* Exposes 'gc_collect_impl' such that we can call it from Java. */
-PyAPI_FUNC(Py_ssize_t)
+GraalPy_CAPI_HELPER_SYMBOL Py_ssize_t
 GraalPyPrivate_GC_Collect(int generation)
 {
     return gc_collect_impl(NULL, generation);
 }
 
-PyAPI_FUNC(void)
+Py_LOCAL_SYMBOL void
 _GraalPyObject_GC_NotifyOwnershipTransfer(PyObject *op)
 {
     if (!is_managed(op) && _PyObject_IS_GC(op) && _PyObject_GC_IS_TRACKED(op)) {

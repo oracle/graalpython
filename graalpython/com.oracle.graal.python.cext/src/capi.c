@@ -45,6 +45,20 @@
 
 #include "pycore_gc.h" // _PyGC_InitState
 
+#define GRAALPY_ENABLE_TESTING_CAPI
+#include "graalpy/testcapi.h"
+#undef GRAALPY_ENABLE_TESTING_CAPI
+
+Py_LOCAL_SYMBOL void
+GraalPyPrivate_LogImpl(int level, const char *format, va_list args)
+{
+    char buffer[1024];
+    int written = PyOS_vsnprintf(buffer, sizeof(buffer), format, args);
+    if (written >= 0) {
+        GraalPyPrivate_LogString(level, buffer);
+    }
+}
+
 typedef struct arrayobject {
     PyObject_VAR_HEAD
     char *ob_item;
@@ -98,7 +112,7 @@ typedef struct {
 } PyPickleBufferObject;
 
 // defined in 'unicodeobject.c'
-void unicode_dealloc(PyObject *unicode);
+Py_LOCAL_SYMBOL void unicode_dealloc(PyObject *unicode);
 
 Py_LOCAL_SYMBOL NO_INLINE void
 graalpy_dealloc_stack_grow(PyThreadState *tstate)
@@ -155,7 +169,6 @@ static void capsule_dealloc(PyObject *o) {
 
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 PyAPI_DATA(PyTypeObject) _PyExc_StopIteration;
-PyAPI_DATA(PyTypeObject) mmap_object_type;
 
 // used for sizeof(...)
 typedef struct {
@@ -180,8 +193,8 @@ typedef struct {
     int strict;
 } zipobject;
 
-#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
-PyTypeObject GLOBAL_NAME = {\
+#define PY_TRUFFLE_TYPE_GENERIC_WITH_STORAGE(STORAGE, GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
+STORAGE PyTypeObject GLOBAL_NAME = {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
     (__SIZE__),                                 /* tp_basicsize */\
@@ -224,18 +237,27 @@ PyTypeObject GLOBAL_NAME = {\
     0,                                          /* tp_is_gc */\
 };
 
+#define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__) \
+PY_TRUFFLE_TYPE_GENERIC_WITH_STORAGE(, GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, __ALLOC__, __DEALLOC__, __FREE__, __VCALL_OFFSET__)
+
+#undef PY_TRUFFLE_TYPE_LOCAL
+#define PY_TRUFFLE_TYPE_LOCAL(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__) \
+PY_TRUFFLE_TYPE_GENERIC_WITH_STORAGE(static, GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, 0, 0, 0, 0, 0)
+
 #define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, NAME)
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) PyTypeObject GLOBAL_NAME;
 
 PY_TYPE_OBJECTS
 
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_GENERIC_WITH_STORAGE
+#undef PY_TRUFFLE_TYPE_LOCAL
 #undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 
 
-#define PUBLIC_BUILTIN(NAME, RET, ...) RET (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
-#define PRIVATE_BUILTIN(NAME, RET, ...) RET (*NAME)(__VA_ARGS__);
+#define PUBLIC_BUILTIN(NAME, RET, ...) Py_LOCAL_SYMBOL RET (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
+#define PRIVATE_BUILTIN(NAME, RET, ...) Py_LOCAL_SYMBOL RET (*NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef PUBLIC_BUILTIN
 #undef PRIVATE_BUILTIN
@@ -249,7 +271,7 @@ CAPI_BUILTINS
 #undef PRIVATE_BUILTIN
 }
 
-uint32_t Py_Truffle_Options;
+Py_LOCAL_SYMBOL uint32_t Py_Truffle_Options;
 
 #undef bool
 static void initialize_builtin_types_and_structs() {
@@ -257,10 +279,12 @@ static void initialize_builtin_types_and_structs() {
     GraalPyPrivate_Log(GRAALPY_LOG_FINE, "initialize_builtin_types_and_structs...");
 	static int64_t builtin_types[] = {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) &GLOBAL_NAME, __TYPE_NAME__,
+#define PY_TRUFFLE_TYPE_LOCAL(GLOBAL_NAME, __TYPE_NAME__, a, b) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) &GLOBAL_NAME, __TYPE_NAME__,
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     PY_TYPE_OBJECTS
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_LOCAL
 #undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
         NULL, NULL
@@ -274,7 +298,7 @@ static void initialize_builtin_types_and_structs() {
 	GraalPyPrivate_Log(GRAALPY_LOG_FINE, "initialize_builtin_types_and_structs: %fs", ((double) (clock() - t)) / CLOCKS_PER_SEC);
  }
 
-int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
+static int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
 	// TODO(fa) readonly flag
     char* data = GraalPyPrivate_GetMMapData(self);
     if (!data) {
@@ -283,7 +307,7 @@ int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
     return PyBuffer_FillInfo(view, (PyObject*)self, data, PyObject_Size((PyObject *)self), 0, flags);
 }
 
-PyAPI_FUNC(void) GraalPyPrivate_MMap_InitBufferProtocol(PyObject* mmap_type) {
+GraalPy_CAPI_HELPER_SYMBOL void GraalPyPrivate_MMap_InitBufferProtocol(PyObject* mmap_type) {
 	GraalPyPrivate_Log(GRAALPY_LOG_FINE, "GraalPyPrivate_MMap_InitBufferProtocol");
 	assert(PyType_Check(mmap_type));
 
@@ -310,7 +334,7 @@ PyObject* _Py_NotImplementedStructReference;
  */
 THREAD_LOCAL PyThreadState *tstate_current = NULL;
 
-PyAPI_FUNC(PyThreadState **) GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate) {
+GraalPy_CAPI_HELPER_SYMBOL PyThreadState **GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate) {
     tstate_current = tstate;
     return &tstate_current;
 }
@@ -327,13 +351,13 @@ static void initialize_globals(PyThreadState *tstate) {
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
 /* BYTES, BYTEARRAY */
-int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
-int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
-void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
+Py_LOCAL_SYMBOL int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
+Py_LOCAL_SYMBOL int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
+Py_LOCAL_SYMBOL void bytearray_releasebuffer(PyByteArrayObject *obj, Py_buffer *view);
 
 /* MEMORYVIEW */
-int memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags);
-void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
+Py_LOCAL_SYMBOL int memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags);
+Py_LOCAL_SYMBOL void memory_releasebuf(PyMemoryViewObject *self, Py_buffer *view);
 
 /* PICKLEBUFFER */
 static int
@@ -391,62 +415,18 @@ static void initialize_gc_types_related_slots() {
 
 int is_builtin_type(PyTypeObject *tp) {
 #define PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, a, b, c, d, e, f, g) (tp == &GLOBAL_NAME) ||
+#define PY_TRUFFLE_TYPE_LOCAL(GLOBAL_NAME, __TYPE_NAME__, a, b) (tp == &GLOBAL_NAME) ||
 #define PY_TRUFFLE_TYPE_EXTERN(GLOBAL_NAME, __TYPE_NAME__) PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, 0, 0, 0, 0, 0, 0, 0)
 #define PY_TRUFFLE_TYPE_UNIMPLEMENTED(GLOBAL_NAME) // empty
     return PY_TYPE_OBJECTS 0;
 #undef PY_TRUFFLE_TYPE_GENERIC
+#undef PY_TRUFFLE_TYPE_LOCAL
 #undef PY_TRUFFLE_TYPE_EXTERN
 #undef PY_TRUFFLE_TYPE_UNIMPLEMENTED
 }
 
-/** to be used from Java code only; calls INCREF */
-PyAPI_FUNC(void) GraalPyPrivate_INCREF(PyObject* obj) {
-    Py_INCREF(obj);
-}
-
-/** to be used from Java code only; calls DECREF */
-PyAPI_FUNC(void) GraalPyPrivate_DECREF(PyObject* obj) {
-    Py_DECREF(obj);
-}
-
 /** to be used from Java code only; calls '_Py_Dealloc' */
-PyAPI_FUNC(Py_ssize_t)
-GraalPyPrivate_SUBREF(intptr_t ptr, Py_ssize_t value)
-{
-    PyObject *obj = (PyObject*)ptr; // avoid type attachment at the interop boundary
-#ifndef NDEBUG
-    if (obj->ob_refcnt & 0xFFFFFFFF00000000L) {
-        char buf[1024];
-        sprintf(buf,
-                "suspicious refcnt value during managed adjustment for %p (%zd 0x%zx - %zd)\n",
-                obj, obj->ob_refcnt, obj->ob_refcnt, value);
-        Py_FatalError(buf);
-    }
-    if ((obj->ob_refcnt - value) < 0) {
-        char buf[1024];
-        sprintf(buf,
-                "refcnt below zero during managed adjustment for %p (%zd 0x%zx - %zd)\n",
-                obj, obj->ob_refcnt, obj->ob_refcnt, value);
-        Py_FatalError(buf);
-    }
-#endif // NDEBUG
-
-    Py_ssize_t new_value = ((obj->ob_refcnt) -= value);
-    if (new_value == 0) {
-        GraalPyPrivate_Log(GRAALPY_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
-                __func__, obj);
-        _Py_Dealloc(obj);
-    }
-#ifdef Py_REF_DEBUG
-    else if (new_value < 0) {
-        _Py_NegativeRefcount(filename, lineno, op);
-    }
-#endif
-    return new_value;
-}
-
-/** to be used from Java code only; calls '_Py_Dealloc' */
-PyAPI_FUNC(Py_ssize_t)
+GraalPy_CAPI_HELPER_SYMBOL Py_ssize_t
 GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
 {
     for (int i = 0; i < len; i++) {
@@ -460,7 +440,7 @@ GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
 }
 
 /** to be used from Java code only and only at exit; calls _Py_Dealloc */
-PyAPI_FUNC(Py_ssize_t)
+GraalPy_CAPI_HELPER_SYMBOL Py_ssize_t
 GraalPyPrivate_BulkDeallocOnShutdown(intptr_t ptrArray[], int64_t len)
 {
     /* some objects depends on others which might get deallocated in the
@@ -487,11 +467,11 @@ GraalPyPrivate_BulkDeallocOnShutdown(intptr_t ptrArray[], int64_t len)
 /* To be used from Java code only.
  * This function is used if a native class inherits from a managed class but uses the 'object.__new__'.
  * This function roughly corresponds to CPython's 'object_new'. */
-PyAPI_FUNC(PyObject*) GraalPyPrivate_ObjectNew(PyTypeObject* cls) {
+GraalPy_CAPI_HELPER_SYMBOL PyObject* GraalPyPrivate_ObjectNew(PyTypeObject* cls) {
     return cls->tp_alloc(cls, 0);
 }
 
-PyAPI_FUNC(void) GraalPyPrivate_ObjectArrayRelease(PyObject** array, int32_t size) {
+GraalPy_CAPI_HELPER_SYMBOL void GraalPyPrivate_ObjectArrayRelease(PyObject** array, int32_t size) {
     for (int i = 0; i < size; i++) {
         /* This needs to use 'Py_XDECREF' because we use this function to
            deallocate storages of tuples, lists, ..., where this is done in the
@@ -509,7 +489,7 @@ PyAPI_FUNC(void) GraalPyPrivate_ObjectArrayRelease(PyObject** array, int32_t siz
 #include "psapi.h"
 #endif
 
-PyAPI_FUNC(size_t) GraalPyPrivate_GetCurrentRSS() {
+GraalPy_CAPI_HELPER_SYMBOL size_t GraalPyPrivate_GetCurrentRSS(void) {
     size_t rss = 0;
 #if defined(__APPLE__) && defined(__MACH__)
     // MacOS
@@ -541,7 +521,7 @@ PyAPI_FUNC(size_t) GraalPyPrivate_GetCurrentRSS() {
 
 
 // Implements the basesisze check in typeobject.c:_PyObject_GetState
-PyAPI_FUNC(int) GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject* type, int slot_num) {
+GraalPy_CAPI_HELPER_SYMBOL int GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject* type, int slot_num) {
     Py_ssize_t basicsize = PyBaseObject_Type.tp_basicsize;
     if (type->tp_dictoffset)
         basicsize += sizeof(PyObject *);
@@ -552,24 +532,24 @@ PyAPI_FUNC(int) GraalPyPrivate_CheckBasicsizeForGetstate(PyTypeObject* type, int
     return type->tp_basicsize > basicsize;
 }
 
-PyAPI_FUNC(void) GraalPyPrivate_CheckTypeReady(PyTypeObject* type) {
+GraalPy_CAPI_HELPER_SYMBOL void GraalPyPrivate_CheckTypeReady(PyTypeObject* type) {
     if (!(type->tp_flags & Py_TPFLAGS_READY)) {
         PyType_Ready(type);
     }
 }
 
-PyAPI_FUNC(int) GraalPyPrivate_NoOpClear(PyObject* o) {
+GraalPy_CAPI_HELPER_SYMBOL int GraalPyPrivate_NoOpClear(PyObject* o) {
     return 0;
 }
 
-PyAPI_FUNC(int) GraalPyPrivate_NoOpTraverse(PyObject *self, visitproc visit, void *arg) {
+GraalPy_CAPI_HELPER_SYMBOL int GraalPyPrivate_NoOpTraverse(PyObject *self, visitproc visit, void *arg) {
     return 0;
 }
 
 // defined in 'exceptions.c'
-void initialize_exceptions();
+Py_LOCAL_SYMBOL void initialize_exceptions();
 // defined in 'pyhash.c'
-void initialize_hashes();
+Py_LOCAL_SYMBOL void initialize_hashes();
 // defined in 'floatobject.c'
 void _PyFloat_InitState(PyInterpreterState* state);
 
@@ -646,7 +626,7 @@ PyAPI_FUNC(PyThreadState **) initialize_graal_capi(void **builtin_closures, GCSt
  * This function is called from Java during C API initialization to get the
  * pointer `_graalpy_finalizing`.
  */
-PyAPI_FUNC(int8_t *) GraalPyPrivate_GetFinalizeCApiPointer() {
+GraalPy_CAPI_HELPER_SYMBOL void *GraalPyPrivate_GetFinalizeCApiPointer(void) {
     assert(!_graalpy_finalizing);
     // We actually leak this memory on purpose. On the Java side, this is
     // written to in a VM shutdown hook. Once such a hook is registered it

@@ -123,7 +123,7 @@ typedef struct {
     PyGC_Head *reachable;
 } GraalPyGC_Cycle;
 
-PyAPI_FUNC(void) GraalPyPrivate_DebugTrace(void);
+Py_LOCAL_SYMBOL void GraalPyPrivate_DebugTrace(void);
 
 typedef struct {
     PyObject_HEAD
@@ -153,19 +153,21 @@ typedef struct {
 
 typedef struct gc_generation GCGeneration;
 
+#define GraalPy_CAPI_HELPER_SYMBOL Py_LOCAL_SYMBOL
+
 // {{start CAPI_BUILTINS}}
 #include "capi.gen.h"
 
 
-#define PUBLIC_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
-#define PRIVATE_BUILTIN(NAME, RET, ...) extern PyAPI_FUNC(RET) (*NAME)(__VA_ARGS__);
+#define PUBLIC_BUILTIN(NAME, RET, ...) extern Py_LOCAL_SYMBOL RET (*GraalPyPrivate_Upcall_##NAME)(__VA_ARGS__);
+#define PRIVATE_BUILTIN(NAME, RET, ...) extern Py_LOCAL_SYMBOL RET (*NAME)(__VA_ARGS__);
 CAPI_BUILTINS
 #undef PUBLIC_BUILTIN
 #undef PRIVATE_BUILTIN
 
 #define GET_SLOT_SPECIAL(OBJ, RECEIVER, NAME, SPECIAL) ( points_to_py_handle_space(OBJ) ? GraalPyPrivate_Get_##RECEIVER##_##NAME((RECEIVER*) (OBJ)) : ((RECEIVER*) (OBJ))->SPECIAL )
 
-PyAPI_DATA(uint32_t) Py_Truffle_Options;
+extern Py_LOCAL_SYMBOL uint32_t Py_Truffle_Options;
 
 extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
 
@@ -203,12 +205,13 @@ static void attach_gdb() {
 }
 #endif
 
-size_t GraalPyPrivate_CaptureStacktrace(void **frames, size_t max_depth, size_t skip);
-void GraalPyPrivate_PrintCapturedStacktrace(FILE *file, const char *header, void *const *frames, size_t depth);
-void GraalPyPrivate_PrintCurrentStacktrace(FILE *file, const char *header, size_t max_depth, size_t skip);
-void GraalPyPrivate_LogCapturedStacktrace(int level, const char *prefix, void *const *frames, size_t depth);
+Py_LOCAL_SYMBOL size_t GraalPyPrivate_CaptureStacktrace(void **frames, size_t max_depth, size_t skip);
+Py_LOCAL_SYMBOL void GraalPyPrivate_PrintCapturedStacktrace(FILE *file, const char *header, void *const *frames, size_t depth);
+Py_LOCAL_SYMBOL void GraalPyPrivate_PrintCurrentStacktrace(FILE *file, const char *header, size_t max_depth, size_t skip);
+Py_LOCAL_SYMBOL void GraalPyPrivate_LogCapturedStacktrace(int level, const char *prefix, void *const *frames, size_t depth);
+Py_LOCAL_SYMBOL void GraalPyPrivate_LogImpl(int level, const char *format, va_list args);
 
-static void print_c_stacktrace() {
+static inline void print_c_stacktrace() {
     GraalPyPrivate_PrintCurrentStacktrace(stderr, "Native stacktrace:\n", 16, 0);
 }
 
@@ -245,24 +248,18 @@ static MUST_INLINE int GraalPyPrivate_SampleNativeMemoryAllocSites() {
     return Py_Truffle_Options & GRAALPY_SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
 }
 
-static void
+static inline void
 GraalPyPrivate_Log(int level, const char *format, ...)
 {
     if (Py_Truffle_Options & level) {
-        char buffer[1024];
         va_list args;
         va_start(args, format);
-        int written = PyOS_vsnprintf(buffer, sizeof(buffer), format, args);
+        GraalPyPrivate_LogImpl(level, format, args);
         va_end(args);
-        if (written >= 0) {
-            GraalPyPrivate_LogString(level, buffer);
-        }
     }
 }
 
 Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
-
-PyAPI_FUNC(void) GraalPyPrivate_Object_GC_Del(void *op);
 
 // export the SizeT arg parse functions, because we use them in contrast to cpython on windows for core modules that we link dynamically
 PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);
@@ -292,8 +289,8 @@ PY_TRUFFLE_TYPE(_PyNotImplemented_Type,          "NotImplementedType",         &
 PY_TRUFFLE_TYPE(_PyWeakref_CallableProxyType,    "_weakref.CallableProxyType", &PyType_Type, sizeof(PyWeakReference)) \
 PY_TRUFFLE_TYPE(_PyWeakref_ProxyType,            "_weakref.ProxyType",         &PyType_Type, sizeof(PyWeakReference)) \
 PY_TRUFFLE_TYPE(_PyWeakref_RefType,              "_weakref.ReferenceType",     &PyType_Type, sizeof(PyWeakReference)) \
-PY_TRUFFLE_TYPE(Arraytype,                       "array",                      &PyType_Type, sizeof(arrayobject)) \
-PY_TRUFFLE_TYPE(mmap_object_type,                "mmap.mmap",                  &PyType_Type, 0) \
+PY_TRUFFLE_TYPE_LOCAL(Arraytype,                 "array",                      &PyType_Type, sizeof(arrayobject)) \
+PY_TRUFFLE_TYPE_LOCAL(mmap_object_type,          "mmap.mmap",                  &PyType_Type, 0) \
 PY_TRUFFLE_TYPE(PyArrayIter_Type,                "arrayiterator",              &PyType_Type, sizeof(arrayiterobject)) \
 PY_TRUFFLE_TYPE(PyAsyncGen_Type,                 "async_generator",            &PyType_Type, sizeof(PyAsyncGenObject)) \
 PY_TRUFFLE_TYPE_WITH_ITEMSIZE(PyLong_Type,       "int",                        &PyType_Type, offsetof(PyLongObject, long_value.ob_digit), sizeof(PyObject *)) \
@@ -336,7 +333,7 @@ PY_TRUFFLE_TYPE_GENERIC(PyUnicode_Type,          "str",                        &
 PY_TRUFFLE_TYPE(PyWrapperDescr_Type,              "wrapper_descriptor",        &PyType_Type, sizeof(PyWrapperDescrObject)) \
 PY_TRUFFLE_TYPE(PyZip_Type,                      "zip",                        &PyType_Type, sizeof(zipobject)) \
 PY_TRUFFLE_TYPE(PyReversed_Type,                 "reversed",                   &PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(cycle_type,                      "cycle",                      &PyType_Type, sizeof(PyObject)) \
+PY_TRUFFLE_TYPE_LOCAL(cycle_type,                "cycle",                      &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PySeqIter_Type,                  "iterator",                   &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyEnum_Type,                     "enumerate",                  &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCoro_Type,                     "coroutine",                  &PyType_Type, sizeof(PyCoroObject)) \
@@ -398,6 +395,7 @@ PY_TRUFFLE_TYPE_UNIMPLEMENTED(PyUnicodeIter_Type) \
 
 #define PY_TRUFFLE_TYPE_WITH_ALLOC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ALLOC__, __DEALLOC__, __FREE__) PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, 0, __ALLOC__, __DEALLOC__, __FREE__, 0)
 #define PY_TRUFFLE_TYPE(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__) PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, 0, 0, 0, 0, 0)
+#define PY_TRUFFLE_TYPE_LOCAL(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__) PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, 0, 0, 0, 0, 0)
 #define PY_TRUFFLE_TYPE_WITH_ITEMSIZE(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__) PY_TRUFFLE_TYPE_GENERIC(GLOBAL_NAME, __TYPE_NAME__, __SUPER_TYPE__, __SIZE__, __ITEMSIZE__, 0, 0, 0, 0)
 
 

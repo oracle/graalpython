@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1587,7 +1587,7 @@ bytes_subscript(PyBytesObject* self, PyObject* item)
 }
 #endif // GraalPy change
 
-int // GraalPy change: not static
+Py_LOCAL_SYMBOL int // GraalPy change: hidden for capi.c
 bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags)
 {
     // GraalPy change: avoid direct struct access
@@ -2820,8 +2820,8 @@ _Py_COMP_DIAG_POP
 }
 #endif // GraalPy change
 
-// GraalPy change: export for downcall, rename, use C array instead of bytes
-PyAPI_FUNC(PyObject *)
+// GraalPy change: helper-table entry for downcall, rename, use C array instead of bytes
+GraalPy_CAPI_HELPER_SYMBOL PyObject *
 GraalPyPrivate_Bytes_SubtypeNew(PyTypeObject *type, int8_t* contents, Py_ssize_t n) {
     // GraalPy change: different implementation
     PyObject* bytes = type->tp_alloc(type, n);
@@ -3393,4 +3393,3 @@ _PyBytes_Repeat(char* dest, Py_ssize_t len_dest,
     }
 }
 #endif // GraalPy change
-

@@ -184,7 +184,7 @@ render_execinfo_stacktrace(GraalPyStacktraceWriter writer, void *ctx, void *cons
 
 #endif
 
-size_t
+Py_LOCAL_SYMBOL size_t
 GraalPyPrivate_CaptureStacktrace(void **frames, size_t max_depth, size_t skip)
 {
     if (frames == NULL || max_depth == 0) {
@@ -229,7 +229,7 @@ file_writer(void *ctx, const char *line)
     fprintf((FILE *) ctx, "%s\n", line);
 }
 
-void
+Py_LOCAL_SYMBOL void
 GraalPyPrivate_PrintCapturedStacktrace(FILE *file, const char *header, void *const *frames, size_t depth)
 {
     if (header != NULL) {
@@ -239,7 +239,7 @@ GraalPyPrivate_PrintCapturedStacktrace(FILE *file, const char *header, void *con
     fflush(file);
 }
 
-void
+Py_LOCAL_SYMBOL void
 GraalPyPrivate_PrintCurrentStacktrace(FILE *file, const char *header, size_t max_depth, size_t skip)
 {
     void *frames[64];
@@ -267,7 +267,7 @@ log_writer(void *ctx, const char *line)
     }
 }
 
-void
+Py_LOCAL_SYMBOL void
 GraalPyPrivate_LogCapturedStacktrace(int level, const char *prefix, void *const *frames, size_t depth)
 {
     if ((Py_Truffle_Options & level) == 0) {

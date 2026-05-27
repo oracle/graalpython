@@ -2684,7 +2684,7 @@ double GraalPyFloat_AS_DOUBLE(PyObject *op) {
 
 // not quite as in CPython, this assumes that x is already a double. The rest of
 // the implementation is in the Float constructor in Java
-PyAPI_FUNC(PyObject*)
+GraalPy_CAPI_HELPER_SYMBOL PyObject*
 GraalPyPrivate_Float_SubtypeNew(PyTypeObject *type, double x)
 {
     PyObject* newobj = type->tp_alloc(type, 0);

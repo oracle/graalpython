@@ -839,7 +839,7 @@ tuple_subtype_new(PyTypeObject *type, PyObject *iterable)
     return newobj;
 }
 
-PyAPI_FUNC(PyObject *) // GraalPy change: export for downcall, rename
+GraalPy_CAPI_HELPER_SYMBOL PyObject * // GraalPy change: helper-table entry for downcall, rename
 GraalPyPrivate_Tuple_SubtypeNew(PyTypeObject *type, PyObject *iterable)
 {
     return tuple_subtype_new(type, iterable);

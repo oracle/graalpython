@@ -117,6 +117,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private Map<String, String> argDescriptorToInitializer = new HashMap<>();
 
     private Map<String, String> externalFunctionSignatureToInitializer = new HashMap<>();
+    private Map<String, String> nativeCAPISymbolToInitializer = new HashMap<>();
 
     private Trees trees;
 
@@ -153,6 +154,19 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     }
 
+    private String getNativeCAPISymbolInitializer(VariableElement theField) {
+        if (trees == null) {
+            return "";
+        }
+        if (nativeCAPISymbolToInitializer.isEmpty()) {
+            var codeScanner = new ArgDescriptorsTreeScanner();
+            var tp = trees.getPath(theField.getEnclosingElement());
+            codeScanner.initializerMap = nativeCAPISymbolToInitializer;
+            codeScanner.scan(tp, this.trees);
+        }
+        return nativeCAPISymbolToInitializer.get(name(theField));
+    }
+
     @Override
     public synchronized void init(ProcessingEnvironment pe) {
         super.init(pe);
@@ -177,6 +191,12 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         } else {
             return initializer.split("\"")[1];
         }
+    }
+
+    private static String[] splitInitializerArgs(String initializer) {
+        int start = initializer.indexOf('(');
+        int end = initializer.lastIndexOf(')');
+        return initializer.substring(start + 1, end).split(",");
     }
 
     private static boolean isVarArgs(VariableElement obj) {
@@ -601,14 +621,19 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
      *
      * @throws IOException
      */
-    private void generateCApiSource(List<CApiBuiltinDesc> javaBuiltins, List<String> constants, List<String> fields, List<String> structs) throws IOException {
+    private void generateCApiSource(List<CApiBuiltinDesc> javaBuiltins, List<String> constants, List<String> fields, List<String> structs, List<CApiSymbolDesc> capiSymbols) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
         for (var entry : javaBuiltins) {
             String name = entry.name;
             CApiBuiltinDesc value = entry;
             if (value.call.equals("Direct") || value.call.equals("NotImplemented")) {
                 lines.add("#undef " + name);
-                String line = "PyAPI_FUNC(" + getCSignature(value.returnType) + ") " + name + "(";
+                String line;
+                if (name.startsWith("GraalPyPrivate_")) {
+                    line = "GraalPy_CAPI_HELPER_SYMBOL " + getCSignature(value.returnType) + " " + name + "(";
+                } else {
+                    line = "PyAPI_FUNC(" + getCSignature(value.returnType) + ") " + name + "(";
+                }
                 for (int i = 0; i < value.arguments.length; i++) {
                     line += (i == 0 ? "" : ", ") + getArgSignatureWithName(value.arguments[i], i);
                 }
@@ -629,17 +654,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
         }
 
-        lines.add("PyAPI_FUNC(int64_t*) GraalPyPrivate_Constants() {");
-        lines.add("    static int64_t constants[] = {");
+        lines.add("Py_EXPORTED_SYMBOL int64_t GraalPy_CAPI_METADATA[] = {");
         for (var constant : constants) {
             lines.add("        (int64_t) " + constant + ",");
         }
-        lines.add("        0xdead1111 // marker value");
-        lines.add("    };");
-        lines.add("    return constants;");
-        lines.add("}");
-        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPyPrivate_StructOffsets() {");
-        lines.add("    static Py_ssize_t offsets[] = {");
+        lines.add("        0xdead1111, // constants marker value");
         for (var field : fields) {
             int delim = field.indexOf("__");
             assert delim != -1;
@@ -648,19 +667,18 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             name = name.replace("__", "."); // to allow inlined structs
             lines.add("        offsetof(" + struct + ", " + name + "),");
         }
-        lines.add("        0xdead2222 // marker value");
-        lines.add("    };");
-        lines.add("    return offsets;");
-        lines.add("}");
-        lines.add("PyAPI_FUNC(Py_ssize_t*) GraalPyPrivate_StructSizes() {");
-        lines.add("    static Py_ssize_t sizes[] = {");
+        lines.add("        0xdead2222, // struct offsets marker value");
         for (var struct : structs) {
             lines.add("        sizeof(" + struct.replace("__", " ") + "),");
         }
-        lines.add("        0xdead3333 // marker value");
+        lines.add("        0xdead3333 // struct sizes marker value");
         lines.add("    };");
-        lines.add("    return sizes;");
-        lines.add("}");
+        lines.add("");
+        lines.add("Py_EXPORTED_SYMBOL void *GraalPy_CAPI_HELPERS[] = {");
+        for (var helper : capiSymbols) {
+            lines.add("        (void *)" + helper.cName + ",");
+        }
+        lines.add("};");
 
         updateResource("capi.gen.c.h", javaBuiltins, lines);
     }
@@ -700,12 +718,116 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         updateResource(name, javaBuiltins, lines, StandardLocation.NATIVE_HEADER_OUTPUT);
     }
 
+    private Map<String, VariableElement> getArgDescriptorsByName() {
+        TypeElement argDescriptorType = processingEnv.getElementUtils().getTypeElement("com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor");
+        if (argDescriptorType == null) {
+            processingEnv.getMessager().printError("Could not resolve ArgDescriptor while generating C API helper declarations.");
+            return Map.of();
+        }
+        Map<String, VariableElement> result = new HashMap<>();
+        for (var element : argDescriptorType.getEnclosedElements()) {
+            if (element.getKind() == ElementKind.ENUM_CONSTANT) {
+                result.put(name(element), (VariableElement) element);
+            }
+        }
+        return result;
+    }
+
+    private static final class CApiSymbolDesc {
+        final String cName;
+        final CApiExternalFunctionSignatureDesc signature;
+
+        CApiSymbolDesc(String cName, CApiExternalFunctionSignatureDesc signature) {
+            this.cName = cName;
+            this.signature = signature;
+        }
+    }
+
+    private List<CApiSymbolDesc> collectNativeCAPISymbols(Map<String, CApiExternalFunctionSignatureDesc> externalFunctionSignatures) {
+        TypeElement nativeCAPISymbolType = processingEnv.getElementUtils().getTypeElement("com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol");
+        if (nativeCAPISymbolType == null) {
+            processingEnv.getMessager().printError("Could not resolve NativeCAPISymbol while generating C API helper declarations.");
+            return List.of();
+        }
+        List<CApiSymbolDesc> helpers = new ArrayList<>();
+        for (var element : nativeCAPISymbolType.getEnclosedElements()) {
+            if (element.getKind() != ElementKind.ENUM_CONSTANT) {
+                continue;
+            }
+            String initializer = getNativeCAPISymbolInitializer((VariableElement) element);
+            String[] args = splitInitializerArgs(initializer);
+            if (args.length < 2) {
+                processingEnv.getMessager().printError("Invalid NativeCAPISymbol initializer for " + name(element), element);
+                continue;
+            }
+            String cName = args[0].strip().replace("\"", "");
+            String signatureName = args[1].strip();
+            int lastDot = signatureName.lastIndexOf('.');
+            if (lastDot >= 0) {
+                signatureName = signatureName.substring(lastDot + 1);
+            }
+            CApiExternalFunctionSignatureDesc signature = externalFunctionSignatures.get(signatureName);
+            if (signature == null) {
+                processingEnv.getMessager().printError("Could not resolve C API helper signature " + signatureName + " for " + name(element), element);
+                continue;
+            }
+            helpers.add(new CApiSymbolDesc(cName, signature));
+        }
+        return helpers;
+    }
+
+    private void addCApiSymbolDeclarations(List<String> lines, List<CApiSymbolDesc> capiSymbols) {
+        List<String> declarations = new ArrayList<>();
+        Map<String, VariableElement> argDescriptors = getArgDescriptorsByName();
+        for (var helper : capiSymbols) {
+            if (!helper.cName.startsWith("GraalPyPrivate_")) {
+                continue;
+            }
+            String externalFunctionSignatureInitializer = getExternalFunctionSignatureInitializer(helper.signature.origin);
+            String[] signatureArgs = splitInitializerArgs(externalFunctionSignatureInitializer);
+            if (signatureArgs.length < 2) {
+                processingEnv.getMessager().printError("Invalid C API helper signature initializer for " + helper.signature.name, helper.signature.origin);
+                continue;
+            }
+            VariableElement returnType = argDescriptors.get(signatureArgs[1].strip());
+            if (returnType == null) {
+                processingEnv.getMessager().printError("Could not resolve return type " + signatureArgs[1].strip() + " for C API helper " + helper.cName, helper.signature.origin);
+                continue;
+            }
+            String line = "GraalPy_CAPI_HELPER_SYMBOL " + getCSignature(returnType) + " " + helper.cName + "(";
+            if (signatureArgs.length == 2) {
+                line += "void";
+            } else {
+                boolean valid = true;
+                for (int i = 2; i < signatureArgs.length; i++) {
+                    String argType = signatureArgs[i].strip();
+                    VariableElement arg = argDescriptors.get(argType);
+                    if (arg == null) {
+                        processingEnv.getMessager().printError("Could not resolve argument type " + argType + " for C API helper " + helper.cName, helper.signature.origin);
+                        valid = false;
+                        break;
+                    }
+                    line += (i == 2 ? "" : ", ") + getArgSignatureWithName(arg, i - 2);
+                }
+                if (!valid) {
+                    continue;
+                }
+            }
+            line += ");";
+            declarations.add(line);
+        }
+        lines.add("PyAPI_DATA(void *) GraalPy_CAPI_HELPERS[];");
+        lines.add("PyAPI_DATA(int64_t) GraalPy_CAPI_METADATA[];");
+        lines.add("");
+        lines.addAll(declarations);
+    }
+
     /**
      * Generates the builtin specification in capi.h, which includes only the builtins implemented
      * in Java code. Additionally, it generates helpers for all "GraalPyPrivate_Get_" and
      * "GraalPyPrivate_Set_" builtins.
      */
-    private void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins, List<CApiConstantDesc> javaConstants) throws IOException {
+    private void generateCApiHeader(List<CApiBuiltinDesc> javaBuiltins, List<CApiConstantDesc> javaConstants, List<CApiSymbolDesc> capiSymbols) throws IOException {
         List<String> lines = new ArrayList<>();
         for (var javaConstant : javaConstants) {
             lines.add("#define " + javaConstant.name + " " + javaConstant.value);
@@ -725,6 +847,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             line += ") \\";
             lines.add(line);
         }
+        lines.add("");
+
+        addCApiSymbolDeclarations(lines, capiSymbols);
         lines.add("");
 
         for (var entry : javaBuiltins) {
@@ -1009,7 +1134,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("");
         for (var builtin : allBuiltins) {
             lines.add("        hasMember = reallyHasMember(capiLibrary, \"" + builtin.name + "\");");
-            if (builtin.call.equals("CImpl") || builtin.call.equals("Direct") || builtin.call.equals("NotImplemented")) {
+            if (builtin.call.equals("CImpl") || builtin.call.equals("NotImplemented") || (builtin.call.equals("Direct") && !builtin.name.startsWith("GraalPyPrivate_"))) {
                 lines.add("        if (!hasMember) messages.add(\"missing implementation: " + builtin.name + "\");");
             }
         }
@@ -1235,9 +1360,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "int";
             case "Double" -> "double";
             case "Float" -> "float";
-            case "Py_hash_t", "Py_ssize_t", "PrimitiveResult64", "INT64_T", "SIZE_T", "UINTPTR_T", "Long", "UNSIGNED_LONG", "UINT64_T",
-                            "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyTypeObject", "PyThreadState", "CharPtrAsTruffleString", "IterResult", "Pointer",
-                            "CHAR_PTR" ->
+            case "Py_hash_t", "Py_ssize_t", "PrimitiveResult64", "INT64_T", "INT64_T_PTR", "INTPTR_T_PTR", "SIZE_T", "UINTPTR_T", "Long", "UNSIGNED_LONG", "UINT64_T",
+                            "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyObjectPtr", "PyTypeObject", "ConstPyLongObject", "PyThreadState", "PyThreadStatePtr",
+                            "CharPtrAsTruffleString", "IterResult", "Pointer", "CHAR_PTR", "ConstCharPtr", "INT8_T_PTR", "PY_BUFFER_PTR", "PY_CAPSULE_DESTRUCTOR", "PY_SSIZE_T_PTR", "VA_LIST",
+                            "visitproc" ->
                 "long";
             default -> {
                 processingEnv.getMessager().printError(String.format("Unexpected ArgDescriptor: '%s'", argDescriptor));
@@ -1262,9 +1388,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     private boolean isCannotRaise(VariableElement signature) {
         String externalFunctionSignatureInitializer = getExternalFunctionSignatureInitializer(signature);
-        int start = externalFunctionSignatureInitializer.indexOf('(');
-        int end = externalFunctionSignatureInitializer.lastIndexOf(')');
-        String[] initArgs = externalFunctionSignatureInitializer.substring(start + 1, end).split(",");
+        String[] initArgs = splitInitializerArgs(externalFunctionSignatureInitializer);
         return Boolean.parseBoolean(initArgs[0].strip());
     }
 
@@ -1316,9 +1440,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             // 'ExternalFunctionSignature(ArgDescriptor returnValue, ArgDescriptor... arguments)'
             String externalFunctionSignatureInitializer = getExternalFunctionSignatureInitializer(sig.origin);
 
-            int start = externalFunctionSignatureInitializer.indexOf('(');
-            int end = externalFunctionSignatureInitializer.lastIndexOf(')');
-            String[] initArgs = externalFunctionSignatureInitializer.substring(start + 1, end).split(",");
+            String[] initArgs = splitInitializerArgs(externalFunctionSignatureInitializer);
 
             assert !sig.cannotRaise;
             sig.cannotRaise = Boolean.valueOf(initArgs[0].strip());
@@ -2159,8 +2281,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             generateNativeAccessSupport(allBuiltins.stream().map((builtin) -> builtin.origin).toArray(Element[]::new));
             if (trees != null) {
                 // needs jdk.compiler
-                generateCApiSource(allBuiltins, constants, fields, structs);
-                generateCApiHeader(javaBuiltins, javaConstants);
+                List<CApiSymbolDesc> capiSymbols = collectNativeCAPISymbols(sigs);
+                generateCApiSource(allBuiltins, constants, fields, structs, capiSymbols);
+                generateCApiHeader(javaBuiltins, javaConstants, capiSymbols);
                 generateExternalFunctionInvoker(new ArrayList<>(sigs.values()));
                 generateExternalFunctionHelperNodes(externalFunctionDescs);
                 generateExternalFunctionRootNodes(externalFunctionDescs, cApiExternalFunctionWrapperDescs, sigs);

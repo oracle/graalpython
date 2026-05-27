@@ -1705,8 +1705,8 @@ find_maxchar_surrogates(const wchar_t *begin, const wchar_t *end,
     return 0;
 }
 
-// GraalPy change: export
-PyAPI_FUNC(void)
+// GraalPy change: hidden for capi.c
+Py_LOCAL_SYMBOL void
 unicode_dealloc(PyObject *unicode)
 {
 #ifdef Py_DEBUG
@@ -14197,7 +14197,7 @@ unicode_new_impl(PyTypeObject *type, PyObject *x, const char *encoding,
 }
 #endif // GraalPy change
 
-PyAPI_FUNC(PyObject *) // GraalPy change: export for downcall, rename
+GraalPy_CAPI_HELPER_SYMBOL PyObject * // GraalPy change: helper-table entry for downcall, rename
 GraalPyPrivate_Unicode_SubtypeNew(PyTypeObject *type, PyObject *unicode)
 {
     PyObject *self;

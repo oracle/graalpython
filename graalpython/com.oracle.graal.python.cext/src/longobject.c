@@ -6234,7 +6234,7 @@ Py_ssize_t PyUnstable_Long_CompactValue(const PyLongObject *op) {
 }
 
 // GraalPy additions
-uintptr_t GraalPyPrivate_Long_lv_tag(const PyLongObject *op) {
+Py_LOCAL_SYMBOL uintptr_t GraalPyPrivate_Long_lv_tag(const PyLongObject *op) {
     if (points_to_py_int_handle(op)) {
         int64_t t = pointer_to_int64(op);
         if (t == 0) {
