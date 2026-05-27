@@ -14,3 +14,4 @@ test.test_decorators.TestDecorators.test_order @ darwin-arm64,linux-aarch64,linu
 test.test_decorators.TestDecorators.test_single @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_decorators.TestDecorators.test_staticmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_decorators.TestDecorators.test_wrapped_classmethod_inside_classmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_decorators.TestDecorators.test_wrapped_descriptor_inside_classmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
