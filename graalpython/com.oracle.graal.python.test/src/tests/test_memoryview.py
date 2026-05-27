@@ -1,9 +1,10 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 
 import sys
+import struct
 import unittest
 
 from tests.util import assert_raises
@@ -93,6 +94,7 @@ def test_slice():
                                         assert e1 == e2
 
 def test_unpack():
+    long_bytes = b'\xaa' * struct.calcsize('l')
     assert memoryview(b'\xaa')[0] == 170
     assert memoryview(b'\xaa').cast('B')[0] == 170
     assert memoryview(b'\xaa').cast('b')[0] == -86
@@ -100,8 +102,8 @@ def test_unpack():
     assert memoryview(b'\xaa\xaa').cast('h')[0] == -21846
     assert memoryview(b'\xaa\xaa\xaa\xaa').cast('I')[0] == 2863311530
     assert memoryview(b'\xaa\xaa\xaa\xaa').cast('i')[0] == -1431655766
-    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('L')[0] == 12297829382473034410
-    assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('l')[0] == -6148914691236517206
+    assert memoryview(long_bytes).cast('L')[0] == struct.unpack('L', long_bytes)[0]
+    assert memoryview(long_bytes).cast('l')[0] == struct.unpack('l', long_bytes)[0]
     assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('Q')[0] == 12297829382473034410
     assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('q')[0] == -6148914691236517206
     assert memoryview(b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa').cast('N')[0] == 12297829382473034410
@@ -114,6 +116,7 @@ def test_unpack():
     assert memoryview(b'\xaa').cast('c')[0] == b'\xaa'
 
 def test_pack():
+    long_bytes = b'\xaa' * struct.calcsize('l')
     b = bytearray(1)
     memoryview(b).cast('B')[0] = 170
     assert b == b'\xaa'
@@ -132,12 +135,12 @@ def test_pack():
     b = bytearray(4)
     memoryview(b).cast('i')[0] = -1431655766
     assert b == b'\xaa\xaa\xaa\xaa'
-    b = bytearray(8)
-    memoryview(b).cast('L')[0] = 12297829382473034410
-    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
-    b = bytearray(8)
-    memoryview(b).cast('l')[0] = -6148914691236517206
-    assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    b = bytearray(struct.calcsize('L'))
+    memoryview(b).cast('L')[0] = struct.unpack('L', long_bytes)[0]
+    assert b == long_bytes
+    b = bytearray(struct.calcsize('l'))
+    memoryview(b).cast('l')[0] = struct.unpack('l', long_bytes)[0]
+    assert b == long_bytes
     b = bytearray(8)
     memoryview(b).cast('Q')[0] = 12297829382473034410
     assert b == b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
