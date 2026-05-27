@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -303,7 +303,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             gil.release(true);
             try {
                 return posixLib.forkExec(context.getPosixSupport(), executables, processArgs, cwd, env == null ? null : (Object[]) env, stdinRead, stdinWrite, stdoutRead, stdoutWrite, stderrRead,
-                                stderrWrite, errPipeRead, errPipeWrite, closeFds, restoreSignals, callSetsid, fdsToKeep);
+                                stderrWrite, errPipeRead, errPipeWrite, closeFds, restoreSignals, callSetsid, fdsToKeep, allowVFork);
             } catch (PosixException e) {
                 gil.acquire();
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
