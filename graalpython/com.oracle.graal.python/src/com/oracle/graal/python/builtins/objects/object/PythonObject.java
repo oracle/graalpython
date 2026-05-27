@@ -200,7 +200,6 @@ public class PythonObject extends PythonAbstractObject {
         this.nativePointer = UNINITIALIZED;
     }
 
-    @InliningCutoff
     public final boolean isNative() {
         return nativePointer != UNINITIALIZED;
     }
