@@ -42,7 +42,7 @@ index a526f0f..defb8f7 100644
          """
 diff --git a/pyarrow_build_backend.py b/pyarrow_build_backend.py
 new file mode 100644
-index 0000000..cb98041
+index 0000000..fd43d65
 --- /dev/null
 +++ b/pyarrow_build_backend.py
 @@ -0,0 +1,93 @@
@@ -57,7 +57,7 @@ index 0000000..cb98041
 +import urllib.request
 +from pathlib import Path
 +
-+VERSION = re.search(r'set\\(PYARROW_VERSION "([^"]+)"\\)', Path("CMakeLists.txt").read_text()).group(1)
++VERSION = re.search(r'set\(PYARROW_VERSION "([^"]+)"\)', Path("CMakeLists.txt").read_text()).group(1)
 +
 +
 +def build_sdist(sdist_directory, config_settings=None):
