@@ -5,7 +5,7 @@
 (import "ci/python-gate.libsonnet") +
 (import "ci/python-bench.libsonnet") +
 {
-    overlay: "28f1ff831cd38862c38c7d4c02fbf145b8a17b5c",
+    overlay: "c004ac2843125f797eb9f9a28ae76b51952ad9d7",
     specVersion: "8",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
@@ -30,6 +30,7 @@
         npm_config_registry: "",
         RODINIA_DATASET_ZIP: "",
         BUILDBOT_COMMIT_SERVICE: "",
+        INTERNET_ACCESS_ENV: {},
     },
     codeowners_builds: [],
 
@@ -75,6 +76,9 @@
     local watchdog              = self.watchdog,
     local bench_task(bench=null, benchmarks=BENCHMARKS) = super.bench_task(bench=bench, benchmarks=benchmarks),
     local bisect_bench_task     = self.bisect_bench_task,
+    local internet_access_env    = task_spec({
+        environment +: $.overlay_imports.INTERNET_ACCESS_ENV,
+    }),
     local oracledb_free_image    = "container-registry.oracle.com/database/free:23.26.0.0",
     local oracledb_extra_index_urls = std.join(" ", [
         "https://ol-graal.oraclecorp.com/mt_data/graalpy-25.0-repository/",
@@ -351,7 +355,17 @@
             "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : monthly    + t("04:00:00")},
             "vm_name:pypy"                                              : {"linux:amd64:jdk-latest" : on_demand    + t("04:00:00")},
         }),
-        for bench in ["micro", "meso", "macro"]
+        for bench in ["micro", "meso"]
+    } + {
+        "macro": bench_task("macro") + internet_access_env + platform_spec(no_jobs) + bench_variants({
+            "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo},
+            "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : daily      + t("08:00:00"),
+                "job_type:checkup"                                      : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")}
+            },
+            "vm_name:graalpython_enterprise_multi"                      : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00")},
+            "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : monthly    + t("04:00:00")},
+            "vm_name:pypy"                                              : {"linux:amd64:jdk-latest" : on_demand    + t("04:00:00")},
+        }),
     } + {
         "macro_oracledb": bench_task("macro_oracledb") + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
