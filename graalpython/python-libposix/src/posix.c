@@ -40,7 +40,7 @@
  */
 
 // Helper functions that mostly delegate to POSIX functions
-// These functions are called from NFIPosixSupport Java class using NFI
+// These functions are called from NativePosixSupport Java class using native-access downcalls
 
 // This file uses GNU extensions. Functions that require non-GNU versions (e.g. strerror_r)
 // need to go to posix_no_gnu.c
@@ -204,9 +204,13 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
     int32_t* writefds, int32_t writefdsLen, int32_t* errfds, int32_t errfdsLen,
     int64_t timeoutSec, int64_t timeoutUsec, int8_t* selected) {
     fd_set readfdsSet, writefdsSet, errfdsSet;
+    int32_t selectedLen = readfdsLen + writefdsLen + errfdsLen;
     fill_fd_set(&readfdsSet, readfds, readfdsLen);
     fill_fd_set(&writefdsSet, writefds, writefdsLen);
     fill_fd_set(&errfdsSet, errfds, errfdsLen);
+    if (selectedLen > 0) {
+        memset(selected, 0, selectedLen * sizeof(*selected));
+    }
 
     struct timeval timeout = {timeoutSec, timeoutUsec};
 
@@ -732,25 +736,30 @@ int32_t call_getrusage(int32_t who, uint64_t* out) {
     int offset = 0;
     // POSIX prescribes only ru_utime and ru_stime members, macOS and Linux
     // have (at least) all those below
-# define COPYVAL(v) memcpy(&out[offset++], &v, sizeof(v))
-    COPYVAL(ru.ru_utime.tv_sec);
-    COPYVAL(ru.ru_stime.tv_sec);
-    COPYVAL(ru.ru_maxrss);
-    COPYVAL(ru.ru_ixrss);
-    COPYVAL(ru.ru_idrss);
-    COPYVAL(ru.ru_isrss);
-    COPYVAL(ru.ru_minflt);
-    COPYVAL(ru.ru_majflt);
-    COPYVAL(ru.ru_nswap);
-    COPYVAL(ru.ru_inblock);
-    COPYVAL(ru.ru_oublock);
-    COPYVAL(ru.ru_msgsnd);
-    COPYVAL(ru.ru_msgrcv);
-    COPYVAL(ru.ru_nsignals);
-    COPYVAL(ru.ru_nvcsw);
-    COPYVAL(ru.ru_nivcsw);
+# define COPYDOUBLE(sec, usec) do { \
+        double value = (double)(sec) + ((double)(usec) / 1000000.0); \
+        memcpy(&out[offset++], &value, sizeof(value)); \
+    } while (0)
+# define COPYLONG(v) out[offset++] = (uint64_t)(int64_t)(v)
+    COPYDOUBLE(ru.ru_utime.tv_sec, ru.ru_utime.tv_usec);
+    COPYDOUBLE(ru.ru_stime.tv_sec, ru.ru_stime.tv_usec);
+    COPYLONG(ru.ru_maxrss);
+    COPYLONG(ru.ru_ixrss);
+    COPYLONG(ru.ru_idrss);
+    COPYLONG(ru.ru_isrss);
+    COPYLONG(ru.ru_minflt);
+    COPYLONG(ru.ru_majflt);
+    COPYLONG(ru.ru_nswap);
+    COPYLONG(ru.ru_inblock);
+    COPYLONG(ru.ru_oublock);
+    COPYLONG(ru.ru_msgsnd);
+    COPYLONG(ru.ru_msgrcv);
+    COPYLONG(ru.ru_nsignals);
+    COPYLONG(ru.ru_nvcsw);
+    COPYLONG(ru.ru_nivcsw);
     return 0;
-# undef COPYVAL
+# undef COPYLONG
+# undef COPYDOUBLE
 #else
     return -1;
 #endif
@@ -772,7 +781,7 @@ int32_t call_unsetenv(char *name) {
     return unsetenv(name);
 }
 
-// See comment in NFiPosixSupport.execv() for the description of arguments
+// See comment in NativePosixSupport.execv() for the description of arguments
 void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
     // We reuse the memory allocated for offsets to avoid the need to allocate and reliably free another array
     char **strings = (char **) offsets;
@@ -866,8 +875,8 @@ int32_t call_getsockname(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
 }
 
 //TODO len should be size_t, retval should be ssize_t
-int32_t call_send(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags) {
-    return send(sockfd, buf + offset, len, flags);
+int32_t call_send(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    return send(sockfd, buf, len, flags);
 }
 
 int32_t call_sendto(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *addr, int32_t addr_len) {
@@ -876,8 +885,8 @@ int32_t call_sendto(int32_t sockfd, void *buf, int32_t offset, int32_t len, int3
     return sendto(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, addr_len);
 }
 
-int32_t call_recv(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags) {
-    return recv(sockfd, buf + offset, len, flags);
+int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    return recv(sockfd, buf, len, flags);
 }
 
 int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *src_addr, int32_t *addr_len) {
@@ -999,7 +1008,7 @@ void call_gai_strerror(int32_t error, char *buf, int32_t buflen) {
 }
 
 int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData, int8_t *addr) {
-    // see NFIPosixSupport.AddrInfo for description of the way data is transferred
+    // see NativePosixSupport.AddrInfo for description of the way data is transferred
     struct addrinfo *ai = (struct addrinfo *) ptr;
 
     memcpy(addr, ai->ai_addr, ai->ai_addrlen);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -396,7 +396,7 @@ error:
 
 
 /*
- * data, offsets, offsetsLen, argsPos, envPos, cwdPos - see comment in NFiPosixSupport.forkExec()
+ * data, offsets, offsetsLen, argsPos, envPos, cwdPos - see comment in NativePosixSupport.forkExec()
  * stdinRdFd - read end of the pipe for the child's stdin - closed by parent, dupped to fd 0 by child
  * stdinWrFd - write end of the pipe for the child's stdin - closed by child, written to by parent
  * stdoutRdFd - read end of the pipe for the child's stdout - closed by child, read from by parent

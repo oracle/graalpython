@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime.nativeaccess;
 import java.lang.invoke.MethodHandle;
 import java.util.Arrays;
 
+import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NativeSignature {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,22 +38,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.nativeaccess;
+package com.oracle.graal.python.annotations;
 
-/**
- * Simple native carrier types used by native access signatures.
- * <p>
- * This keeps the low-level native access layer independent from C API descriptors while still
- * preserving the information needed to derive Java carriers and FFM layouts.
- * </p>
- */
-public enum NativeSimpleType {
-    VOID,
-    SINT8,
-    SINT16,
-    SINT32,
-    SINT64,
-    FLOAT,
-    DOUBLE,
-    RAW_POINTER;    // arg must be long, retval is long
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.SOURCE)
+@Target(ElementType.METHOD)
+public @interface DowncallSignature {
+    NativeSimpleType returnType();
+
+    NativeSimpleType[] argumentTypes() default {};
+
+    Class<?> retConversion() default void.class;
+
+    Class<?>[] argConversions() default {};
 }

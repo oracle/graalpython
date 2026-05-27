@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.processor;
 
+import static com.oracle.graal.python.processor.NativeDowncallMethodHandleGenerator.argName;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -86,6 +88,7 @@ import com.oracle.graal.python.annotations.CApiExternalFunctionSignatures;
 import com.oracle.graal.python.annotations.CApiFields;
 import com.oracle.graal.python.annotations.CApiStructs;
 import com.oracle.graal.python.annotations.CApiUpcallTarget;
+import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
@@ -289,10 +292,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private String capiTypeToForeignPrimitiveType(VariableElement element) {
         String type = capiTypeToJavaPrimitiveType(element);
         return type.equals("void") ? "void" : ("j" + type);
-    }
-
-    private static String argName(int i) {
-        return "" + (char) ('a' + i);
     }
 
     private static final String CAPI_BUILTIN = "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin";
@@ -1261,21 +1260,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return processingEnv.getTypeUtils().getPrimitiveType(TypeKind.LONG);
     }
 
-    private static String getNativeMethodHandleVarName(String signatureName) {
-        return "NATIVE_METHOD_HANDLE_" + signatureName;
-    }
-
-    private static String toClassLiteral(String javaType) {
-        return switch (javaType) {
-            case "void" -> "void.class";
-            case "int" -> "int.class";
-            case "long" -> "long.class";
-            case "float" -> "float.class";
-            case "double" -> "double.class";
-            default -> throw new IllegalArgumentException("Unexpected Java type: " + javaType);
-        };
-    }
-
     private boolean isCannotRaise(VariableElement signature) {
         String externalFunctionSignatureInitializer = getExternalFunctionSignatureInitializer(signature);
         int start = externalFunctionSignatureInitializer.indexOf('(');
@@ -1348,7 +1332,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             assert sig.returnType != null;
             assert sig.argumentTypes != null;
             String returnType = toJavaNfiType(sig.returnType);
-            String returnTypeLiteral = toClassLiteral(returnType);
             List<String> argTypes = Arrays.stream(sig.argumentTypes).map(this::toJavaNfiType).toList();
 
             boolean isVoidReturn = "void".equals(returnType);
@@ -1381,14 +1364,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             for (String argType : argTypes) {
                 typedArgs.add(argType + " " + argName(i++));
             }
-
-            List<String> methodTypeArgs = new ArrayList<>();
-            methodTypeArgs.add("long.class");
-            for (String argType : argTypes) {
-                methodTypeArgs.add(toClassLiteral(argType));
-            }
-            lines.add("    private static final MethodHandle " + getNativeMethodHandleVarName(sig.name) + " = NativeAccessSupport.createDowncallHandle(" +
-                            "MethodType.methodType(" + returnTypeLiteral + ", " + String.join(", ", methodTypeArgs) + "), false);");
+            NativeDowncallMethodHandleGenerator.emitMethodHandleField(lines, NativeDowncallMethodHandleGenerator.methodHandleVarName(sig.name), returnType, argTypes);
 
             lines.add("");
             if (sig.cannotRaise) {
@@ -1464,9 +1440,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("    public static " + returnType + " invoke" + sig.name + "(" + String.join(", ", rawInvokeArgs) + ") throws Throwable {");
             String directArgExpr = cArgs.isEmpty() ? "function" : "function, " + String.join(", ", cArgs);
             if (isVoidReturn) {
-                lines.add("        " + getNativeMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
+                lines.add("        " + NativeDowncallMethodHandleGenerator.methodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
             } else {
-                lines.add("        return (" + returnType + ") " + getNativeMethodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
+                lines.add("        return (" + returnType + ") " + NativeDowncallMethodHandleGenerator.methodHandleVarName(sig.name) + ".invokeExact(" + directArgExpr + ");");
             }
             lines.add("    }");
         }
@@ -1504,6 +1480,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import java.util.OptionalLong;");
         lines.add("");
         lines.add("import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;");
+        lines.add("import " + NativeSimpleType.class.getCanonicalName() + ";");
         lines.add("");
         lines.add("public final class " + NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME + " extends " + NATIVE_ACCESS_SUPPORT_CLASS_NAME + " {");
         lines.add("    private static final MethodHandle OF_ADDRESS;");
@@ -1604,7 +1581,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("            case SINT64 -> ValueLayout.JAVA_LONG;");
         lines.add("            case FLOAT -> ValueLayout.JAVA_FLOAT;");
         lines.add("            case DOUBLE -> ValueLayout.JAVA_DOUBLE;");
-        lines.add("            case RAW_POINTER -> ValueLayout.JAVA_LONG;");
+        lines.add("            case POINTER -> ValueLayout.JAVA_LONG;");
         lines.add("        };");
         lines.add("    }");
         lines.add("}");
@@ -1625,6 +1602,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("");
         lines.add("import java.lang.invoke.MethodHandle;");
         lines.add("import java.lang.invoke.MethodType;");
+        lines.add("");
+        lines.add("import " + NativeSimpleType.class.getCanonicalName() + ";");
         lines.add("");
         lines.add("public final class " + NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME + " extends " + NATIVE_ACCESS_SUPPORT_CLASS_NAME + " {");
         lines.add("    @Override");

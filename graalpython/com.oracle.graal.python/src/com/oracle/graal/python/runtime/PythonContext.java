@@ -1874,30 +1874,35 @@ public final class PythonContext extends Python3Core {
         // The resources field will be removed once all posix builtins go through PosixSupport
         TruffleString.EqualNode eqNode = TruffleString.EqualNode.getUncached();
         boolean selectedJavaBackend = eqNode.execute(T_JAVA, option, TS_ENCODING);
-        if (PythonImageBuildOptions.WITHOUT_NATIVE_POSIX || selectedJavaBackend) {
-            if (!selectedJavaBackend) {
-                writeWarning("Native Posix backend selected, but it was excluded from the runtime, " +
-                                "switching to Java backend.");
-            }
+        boolean selectedNativeBackend = eqNode.execute(T_NATIVE, option, TS_ENCODING);
+        if (selectedJavaBackend) {
             result = new EmulatedPosixSupport(this);
-        } else if (eqNode.execute(T_NATIVE, option, TS_ENCODING)) {
+        } else if (selectedNativeBackend && PythonImageBuildOptions.WITHOUT_NATIVE_POSIX) {
+            writeWarning("Native Posix backend selected, but it was excluded from the runtime, " +
+                            "switching to Java backend.");
+            result = new EmulatedPosixSupport(this);
+        } else if (selectedNativeBackend && !NativeAccessSupport.isAvailable()) {
+            writeWarning("Native Posix backend selected, but native access downcalls are not available in this runtime, " +
+                            "switching to Java backend.");
+            result = new EmulatedPosixSupport(this);
+        } else if (selectedNativeBackend) {
             if (env.isPreInitialization()) {
                 EmulatedPosixSupport emulatedPosixSupport = new EmulatedPosixSupport(this);
-                NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                NativePosixSupport nativePosixSupport = new NativePosixSupport(this, option);
                 result = new PreInitPosixSupport(env, nativePosixSupport, emulatedPosixSupport);
             } else if (TruffleOptions.AOT) {
                 // We always use a PreInitPosixSupport on SVM to keep the type of the posixSupport
                 // field consistent for both pre-initialized and not-pre-initialized contexts so
                 // that host inlining and PE see only one type, and also to avoid polymorphism when
                 // calling library methods.
-                NFIPosixSupport nativePosixSupport = new NFIPosixSupport(this, option);
+                NativePosixSupport nativePosixSupport = new NativePosixSupport(this, option);
                 result = new PreInitPosixSupport(env, nativePosixSupport, null);
             } else {
                 if (!getOption(PythonOptions.RunViaLauncher)) {
                     writeWarning("Native Posix backend is not fully supported when embedding. For example, standard I/O always uses file " +
                                     "descriptors 0, 1 and 2 regardless of stream redirection specified in Truffle environment");
                 }
-                result = new NFIPosixSupport(this, option);
+                result = new NativePosixSupport(this, option);
             }
         } else {
             throw new IllegalStateException(String.format("Wrong value for the PosixModuleBackend option: '%s'", option));

@@ -46,6 +46,8 @@ import java.lang.invoke.MethodType;
 
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.annotations.NativeSimpleType;
+
 public abstract class NativeAccessSupport {
     private static final NativeAccessSupport INSTANCE = createImpl();
 
@@ -78,7 +80,7 @@ public abstract class NativeAccessSupport {
             case SINT64 -> long.class;
             case FLOAT -> float.class;
             case DOUBLE -> double.class;
-            case RAW_POINTER -> long.class;
+            case POINTER -> long.class;
         };
     }
 

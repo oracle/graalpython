@@ -44,6 +44,7 @@ import java.lang.invoke.MethodHandle;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -65,6 +66,7 @@ public final class NativeContext {
     private static final int FORMAT_MESSAGE_BUFFER_CHARS = 2048;
 
     private final ConcurrentLinkedQueue<NativeLibrary> libraries = new ConcurrentLinkedQueue<>();
+    private final NativeLibrary defaultLibrary;
     final Object arena;
 
     public static NativeContext create() {
@@ -74,6 +76,7 @@ public final class NativeContext {
     @TruffleBoundary
     NativeContext() {
         arena = NativeAccessSupport.createArena();
+        defaultLibrary = isWindows() ? null : new NativeLibrary(this, getPosixDefaultLibraryHandle());
     }
 
     public void close() {
@@ -124,6 +127,15 @@ public final class NativeContext {
         return library;
     }
 
+    public NativeLibrary getDefaultLibrary() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (defaultLibrary == null) {
+            throw new UnsupportedOperationException("Default library is only available on POSIX platforms.");
+        }
+        ensureLoader();
+        return defaultLibrary;
+    }
+
     @SuppressWarnings("static-method")
     long lookupOptionalSymbol(long library, String name) {
         // TODO(native-access) if logging enabled, keep track of ptr->name mappings
@@ -144,18 +156,23 @@ public final class NativeContext {
     // TODO(native-access) platform-specific values for RTLD_* constants
     private static final int RTLD_LAZY = 1;
     private static final int RTLD_NOW = 2;
+    // RTLD_DEFAULT is a special dlsym() handle rather than a portable POSIX numeric constant.
+    // Linux libcs use ((void *) 0), while Darwin uses ((void *) -2). nativeaccess needs the raw
+    // handle to issue dlsym(RTLD_DEFAULT, ...) directly, so we hardcode the supported POSIX ABI
+    // values here instead of introducing another helper library just to fetch this constant.
+    private static final long RTLD_DEFAULT_LINUX = 0L;
+    private static final long RTLD_DEFAULT_DARWIN = -2L;
 
-    private static final MethodHandle DLOPEN = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.RAW_POINTER, NativeSimpleType.SINT32);
+    private static final MethodHandle DLOPEN = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.POINTER, NativeSimpleType.SINT32);
     private static final MethodHandle DLCLOSE = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT64);
-    private static final MethodHandle DLSYM = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.SINT64, NativeSimpleType.RAW_POINTER);
-    private static final MethodHandle LOAD_LIBRARY_EX = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.RAW_POINTER, NativeSimpleType.RAW_POINTER,
+    private static final MethodHandle DLSYM = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.SINT64, NativeSimpleType.POINTER);
+    private static final MethodHandle LOAD_LIBRARY_EX = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.POINTER, NativeSimpleType.POINTER,
                     NativeSimpleType.SINT32);
     private static final MethodHandle FREE_LIBRARY = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT64);
-    private static final MethodHandle GET_PROC_ADDRESS = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.SINT64, NativeSimpleType.RAW_POINTER);
+    private static final MethodHandle GET_PROC_ADDRESS = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.SINT64, NativeSimpleType.POINTER);
     private static final MethodHandle GET_LAST_ERROR = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32);
-    private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT32, NativeSimpleType.RAW_POINTER, NativeSimpleType.SINT32,
-                    NativeSimpleType.SINT32,
-                    NativeSimpleType.RAW_POINTER, NativeSimpleType.SINT32, NativeSimpleType.RAW_POINTER);
+    private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT32, NativeSimpleType.POINTER, NativeSimpleType.SINT32,
+                    NativeSimpleType.SINT32, NativeSimpleType.POINTER, NativeSimpleType.SINT32, NativeSimpleType.POINTER);
     private static final MethodHandle DLERROR = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64);
 
     private static long dlopenPtr;
@@ -254,5 +271,13 @@ public final class NativeContext {
         } finally {
             NativeMemory.free(buffer);
         }
+    }
+
+    private static long getPosixDefaultLibraryHandle() {
+        return switch (PythonLanguage.getPythonOS()) {
+            case PLATFORM_LINUX -> RTLD_DEFAULT_LINUX;
+            case PLATFORM_DARWIN -> RTLD_DEFAULT_DARWIN;
+            default -> throw new UnsupportedOperationException("Default library is only available on POSIX platforms.");
+        };
     }
 }

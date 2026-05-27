@@ -46,11 +46,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UNDERSCORE;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -79,6 +79,7 @@ import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.CApiConstant;
+import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
@@ -111,14 +112,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
-import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
-import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
-import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
-import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
-import com.oracle.graal.python.runtime.nativeaccess.NativeSimpleType;
-import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -131,6 +124,13 @@ import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.util.ConcurrentWeakSet;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
@@ -811,8 +811,8 @@ public final class CApiContext extends CExtContext {
     /**
      * Called from native threads before using the C API. Returns
      * {@link #GRAALPY_ATTACH_NATIVE_OWNED} if this method entered the context and a matching
-     * {@link #detachNativeThread()} is required, {@link #GRAALPY_ATTACH_NATIVE_FOREIGN} if the context
-     * was already active on this thread from Truffle/Java/Python, and
+     * {@link #detachNativeThread()} is required, {@link #GRAALPY_ATTACH_NATIVE_FOREIGN} if the
+     * context was already active on this thread from Truffle/Java/Python, and
      * {@link #GRAALPY_ATTACH_NATIVE_FAILED} if entering failed.
      */
     private int attachNativeThread() {
@@ -957,7 +957,8 @@ public final class CApiContext extends CExtContext {
             if (PythonContext.isCurrentThreadVirtual()) {
                 throw new ApiInitException(ErrorMessages.NATIVE_EXTENSIONS_VIRTUAL_THREAD);
             }
-            // Check this before marking the API as loaded so that we don't get a different error the second time a C import is attempted
+            // Check this before marking the API as loaded so that we don't get a different error
+            // the second time a C import is attempted
             if (!NativeAccessSupport.isAvailable()) {
                 throw new ImportException(null, name, path, toTruffleStringUncached(NativeContext.UNAVAILABLE));
             }

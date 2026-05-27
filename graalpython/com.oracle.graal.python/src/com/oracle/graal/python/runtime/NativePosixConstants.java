@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,28 +38,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.runtime;
 
-// This source contains functions that require POSIX functions without GNU extensions
-// These functions are called from NativePosixSupport Java class using native-access downcalls
-
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-
-/*
-  There are two versions of strerror_r and we need the POSIX one. The following lines double-check
-  that we got it. First, we check that _GNU_SOURCE has not been defined by any of the included headers.
-  Then we explicitly declare the function with POSIX signature which should force the compiler to
-  report an error in case we got the GNU version somehow.
-*/
-#ifdef _GNU_SOURCE
-#error "Someone defined _GNU_SOURCE"
-#endif
-int strerror_r(int errnum, char *buf, size_t buflen);
-
-void call_strerror(int32_t error, char *buf, int32_t buflen) {
-    int err = strerror_r(error, buf, buflen);
-    if (err) {
-        snprintf(buf, buflen, "Unknown error %d", error);
-    }
+public enum NativePosixConstants {
+    // start generated
+    SIZEOF_STRUCT_SOCKADDR,
+    SIZEOF_STRUCT_SOCKADDR_SA_FAMILY,
+    OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY,
+    SIZEOF_STRUCT_SOCKADDR_STORAGE,
+    SIZEOF_STRUCT_SOCKADDR_IN,
+    SIZEOF_STRUCT_SOCKADDR_IN_SIN_FAMILY,
+    OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY,
+    SIZEOF_STRUCT_SOCKADDR_IN_SIN_PORT,
+    OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT,
+    SIZEOF_STRUCT_SOCKADDR_IN_SIN_ADDR,
+    OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR,
+    SIZEOF_STRUCT_SOCKADDR_IN6,
+    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_FAMILY,
+    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FAMILY,
+    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_PORT,
+    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT,
+    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO,
+    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO,
+    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR,
+    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR,
+    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID,
+    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID,
+    SIZEOF_STRUCT_IN_ADDR,
+    SIZEOF_STRUCT_IN_ADDR_S_ADDR,
+    OFFSETOF_STRUCT_IN_ADDR_S_ADDR,
+    SIZEOF_STRUCT_IN6_ADDR,
+    SIZEOF_STRUCT_IN6_ADDR_S6_ADDR,
+    OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR,
+    SIZEOF_STRUCT_SOCKADDR_UN,
+    SIZEOF_STRUCT_SOCKADDR_UN_SUN_FAMILY,
+    OFFSETOF_STRUCT_SOCKADDR_UN_SUN_FAMILY,
+    SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH,
+    OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH
+    // end generated
 }

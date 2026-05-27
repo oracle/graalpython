@@ -40,11 +40,23 @@
  */
 package com.oracle.graal.python.runtime.nativeaccess;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemoryFactory.ZeroTerminatedUtf8ToTruffleStringNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 import sun.misc.Unsafe;
 
@@ -99,6 +111,11 @@ public final class NativeMemory {
     public static long mallocByteArray(long count) {
         assert count > 0;
         return malloc(count);
+    }
+
+    public static long mallocByteArrayOrNull(long count) {
+        assert count >= 0;
+        return count == 0 ? NULLPTR : mallocByteArray(count);
     }
 
     public static long callocByteArray(long count) {
@@ -184,11 +201,44 @@ public final class NativeMemory {
     }
 
     public static void readByteArrayElements(long arrayPtr, long srcIndex, byte[] dst, int dstIndex, int count) {
+        if (count == 0) {
+            return;
+        }
         UNSAFE.copyMemory(null, arrayPtr + srcIndex, dst, Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) dstIndex, count);
     }
 
     public static void writeByteArrayElements(long arrayPtr, long dstIndex, byte[] src, int offset, int count) {
+        if (count == 0) {
+            return;
+        }
         UNSAFE.copyMemory(src, Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) offset, null, arrayPtr + dstIndex, count);
+    }
+
+    public static long copyToNativeByteArray(byte[] src) {
+        return copyToNativeByteArray(src, 0, src.length);
+    }
+
+    public static long copyToNativeByteArray(byte[] src, int offset, int count) {
+        assert offset >= 0 && count > 0 && offset + count <= src.length;
+        long ptr = mallocByteArray(count);
+        writeByteArrayElements(ptr, 0, src, offset, count);
+        return ptr;
+    }
+
+    public static long copyToNativeByteArrayOrNull(byte[] src) {
+        return copyToNativeByteArrayOrNull(src, 0, src.length);
+    }
+
+    public static long copyToNativeByteArrayOrNull(byte[] src, int offset, int count) {
+        assert offset >= 0 && count >= 0 && offset + count <= src.length;
+        return count == 0 ? NULLPTR : copyToNativeByteArray(src, offset, count);
+    }
+
+    public static long copyToNativeZeroTerminatedByteArray(byte[] src, int offset, int count) {
+        long ptr = mallocByteArray(count + 1L);
+        writeByteArrayElements(ptr, 0, src, offset, count);
+        writeByteArrayElement(ptr, count, (byte) 0);
+        return ptr;
     }
 
     public static void copyByteArray(long dstArray, long dstIndex, long srcArray, long srcIndex, long count) {
@@ -231,6 +281,48 @@ public final class NativeMemory {
         writeInt(arrayPtr + index * Integer.BYTES, value);
     }
 
+    public static int[] readIntArrayElements(long arrayPtr, long srcIndex, int count) {
+        int[] result = new int[count];
+        readIntArrayElements(arrayPtr, srcIndex, result, 0, count);
+        return result;
+    }
+
+    public static void readIntArrayElements(long arrayPtr, long srcIndex, int[] dst, int dstIndex, int count) {
+        if (count == 0) {
+            return;
+        }
+        assert canMultiplyWithoutOverflow(srcIndex, Integer.BYTES);
+        UNSAFE.copyMemory(null, arrayPtr + srcIndex * Integer.BYTES, dst, Unsafe.ARRAY_INT_BASE_OFFSET + (long) dstIndex * Integer.BYTES, (long) count * Integer.BYTES);
+    }
+
+    public static void writeIntArrayElements(long arrayPtr, long dstIndex, int[] src, int offset, int count) {
+        if (count == 0) {
+            return;
+        }
+        assert canMultiplyWithoutOverflow(dstIndex, Integer.BYTES);
+        UNSAFE.copyMemory(src, Unsafe.ARRAY_INT_BASE_OFFSET + (long) offset * Integer.BYTES, null, arrayPtr + dstIndex * Integer.BYTES, (long) count * Integer.BYTES);
+    }
+
+    public static long copyToNativeIntArray(int[] src) {
+        return copyToNativeIntArray(src, 0, src.length);
+    }
+
+    public static long copyToNativeIntArray(int[] src, int offset, int count) {
+        assert offset >= 0 && count > 0 && offset + count <= src.length;
+        long ptr = mallocIntArray(count);
+        writeIntArrayElements(ptr, 0, src, offset, count);
+        return ptr;
+    }
+
+    public static long copyToNativeIntArrayOrNull(int[] src) {
+        return copyToNativeIntArrayOrNull(src, 0, src.length);
+    }
+
+    public static long copyToNativeIntArrayOrNull(int[] src, int offset, int count) {
+        assert offset >= 0 && count >= 0 && offset + count <= src.length;
+        return count == 0 ? NULLPTR : copyToNativeIntArray(src, offset, count);
+    }
+
     public static long readLong(long pointer) {
         return UNSAFE.getLong(pointer);
     }
@@ -256,8 +348,39 @@ public final class NativeMemory {
     }
 
     public static void readLongArrayElements(long arrayPtr, long srcIndex, long[] dst, int dstIndex, int count) {
+        if (count == 0) {
+            return;
+        }
         assert canMultiplyWithoutOverflow(srcIndex, Long.BYTES);
         UNSAFE.copyMemory(null, arrayPtr + srcIndex * Long.BYTES, dst, Unsafe.ARRAY_LONG_BASE_OFFSET + (long) dstIndex * Long.BYTES, (long) count * Long.BYTES);
+    }
+
+    public static void writeLongArrayElements(long arrayPtr, long dstIndex, long[] src, int offset, int count) {
+        if (count == 0) {
+            return;
+        }
+        assert canMultiplyWithoutOverflow(dstIndex, Long.BYTES);
+        UNSAFE.copyMemory(src, Unsafe.ARRAY_LONG_BASE_OFFSET + (long) offset * Long.BYTES, null, arrayPtr + dstIndex * Long.BYTES, (long) count * Long.BYTES);
+    }
+
+    public static long copyToNativeLongArray(long[] src) {
+        return copyToNativeLongArray(src, 0, src.length);
+    }
+
+    public static long copyToNativeLongArray(long[] src, int offset, int count) {
+        assert offset >= 0 && count > 0 && offset + count <= src.length;
+        long ptr = mallocLongArray(count);
+        writeLongArrayElements(ptr, 0, src, offset, count);
+        return ptr;
+    }
+
+    public static long copyToNativeLongArrayOrNull(long[] src) {
+        return copyToNativeLongArrayOrNull(src, 0, src.length);
+    }
+
+    public static long copyToNativeLongArrayOrNull(long[] src, int offset, int count) {
+        assert offset >= 0 && count >= 0 && offset + count <= src.length;
+        return count == 0 ? NULLPTR : copyToNativeLongArray(src, offset, count);
     }
 
     public static long readPtr(long pointer) {
@@ -340,6 +463,39 @@ public final class NativeMemory {
         byte[] bytes = new byte[len];
         UNSAFE.copyMemory(null, ptr, bytes, UNSAFE.arrayBaseOffset(byte[].class), len);
         return new String(bytes, StandardCharsets.UTF_16LE);
+    }
+
+    /**
+     * Converts a zero-terminated UTF-8 string in native memory to a managed {@link TruffleString}.
+     *
+     * The result is always materialized on the Java side so callers may free the native buffer
+     * immediately after the call returns.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class ZeroTerminatedUtf8ToTruffleStringNode extends Node {
+
+        public abstract TruffleString execute(Node inliningTarget, long ptr);
+
+        @TruffleBoundary
+        public static TruffleString executeUncached(long ptr) {
+            return ZeroTerminatedUtf8ToTruffleStringNodeGen.getUncached().execute(null, ptr);
+        }
+
+        @Specialization
+        static TruffleString doPointer(long ptr,
+                        @Cached(inline = false) TruffleString.FromZeroTerminatedNativePointerNode fromNativePointerNode,
+                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached(inline = false) TruffleString.AsManagedNode asManagedNode) {
+            TruffleString utf8 = fromNativePointerNode.execute8Bit(ptr, 0, Encoding.UTF_8, false);
+            return asManagedNode.execute(switchEncodingNode.execute(utf8, TS_ENCODING), TS_ENCODING);
+        }
+
+        @NeverDefault
+        public static ZeroTerminatedUtf8ToTruffleStringNode getUncached() {
+            return ZeroTerminatedUtf8ToTruffleStringNodeGen.getUncached();
+        }
     }
 
     private static boolean canMultiplyWithoutOverflow(long value, int stride) {

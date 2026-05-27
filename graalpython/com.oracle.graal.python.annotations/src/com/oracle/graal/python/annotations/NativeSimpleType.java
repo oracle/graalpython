@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,42 +38,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime;
+package com.oracle.graal.python.annotations;
 
-public enum NFIPosixConstants {
-    // start generated
-    SIZEOF_STRUCT_SOCKADDR,
-    SIZEOF_STRUCT_SOCKADDR_SA_FAMILY,
-    OFFSETOF_STRUCT_SOCKADDR_SA_FAMILY,
-    SIZEOF_STRUCT_SOCKADDR_STORAGE,
-    SIZEOF_STRUCT_SOCKADDR_IN,
-    SIZEOF_STRUCT_SOCKADDR_IN_SIN_FAMILY,
-    OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY,
-    SIZEOF_STRUCT_SOCKADDR_IN_SIN_PORT,
-    OFFSETOF_STRUCT_SOCKADDR_IN_SIN_PORT,
-    SIZEOF_STRUCT_SOCKADDR_IN_SIN_ADDR,
-    OFFSETOF_STRUCT_SOCKADDR_IN_SIN_ADDR,
-    SIZEOF_STRUCT_SOCKADDR_IN6,
-    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_FAMILY,
-    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FAMILY,
-    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_PORT,
-    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_PORT,
-    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO,
-    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_FLOWINFO,
-    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR,
-    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_ADDR,
-    SIZEOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID,
-    OFFSETOF_STRUCT_SOCKADDR_IN6_SIN6_SCOPE_ID,
-    SIZEOF_STRUCT_IN_ADDR,
-    SIZEOF_STRUCT_IN_ADDR_S_ADDR,
-    OFFSETOF_STRUCT_IN_ADDR_S_ADDR,
-    SIZEOF_STRUCT_IN6_ADDR,
-    SIZEOF_STRUCT_IN6_ADDR_S6_ADDR,
-    OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR,
-    SIZEOF_STRUCT_SOCKADDR_UN,
-    SIZEOF_STRUCT_SOCKADDR_UN_SUN_FAMILY,
-    OFFSETOF_STRUCT_SOCKADDR_UN_SUN_FAMILY,
-    SIZEOF_STRUCT_SOCKADDR_UN_SUN_PATH,
-    OFFSETOF_STRUCT_SOCKADDR_UN_SUN_PATH
-    // end generated
+/**
+ * Simple native carrier types used by native access signatures.
+ * <p>
+ * This keeps the low-level native access layer independent from C API descriptors while still
+ * preserving the information needed to derive Java carriers and FFM layouts.
+ * </p>
+ */
+public enum NativeSimpleType {
+    VOID,
+    SINT8,
+    SINT16,
+    SINT32,
+    SINT64,
+    FLOAT,
+    DOUBLE,
+    POINTER;    // raw pointer represented in Java as a long
 }
