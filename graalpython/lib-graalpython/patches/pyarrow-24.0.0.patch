@@ -45,17 +45,16 @@ new file mode 100644
 index 0000000..fd43d65
 --- /dev/null
 +++ b/pyarrow_build_backend.py
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,89 @@
 +import os
 +import re
-+import sys
 +import tarfile
 +import subprocess
 +import tempfile
-+import shutil
 +import tarfile
 +import urllib.request
 +from pathlib import Path
++from scikit_build_core.build import build_wheel as scikit_build_wheel
 +
 +VERSION = re.search(r'set\(PYARROW_VERSION "([^"]+)"\)', Path("CMakeLists.txt").read_text()).group(1)
 +
@@ -120,25 +119,22 @@ index 0000000..fd43d65
 +        subprocess.check_call([
 +            'cmake', '--install', str(build_dir),
 +        ])
-+        env = os.environ.copy()
-+        env['ARROW_HOME'] = str(arrow_dist)
-+        env['CMAKE_PREFIX_PATH'] = str(arrow_dist)
-+        env['PYARROW_WITH_DATASET'] = '1'
-+        env['PYARROW_WITH_PARQUET'] = '1'
-+        env['PYARROW_WITH_PARQUET_ENCRYPTION'] = '1'
-+        env['PYARROW_WITH_GANDIVA'] = '1'
-+        env['PYARROW_BUNDLE_ARROW_CPP'] = '1'
-+        env['PYARROW_BUNDLE_CYTHON_CPP'] = '1'
-+        subprocess.run(
-+            [sys.executable, 'setup.py', 'bdist_wheel'],
-+            env=env,
-+            check=True,
-+        )
-+        wheels = list(Path('dist').glob('*.whl'))
-+        assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
-+        wheel = wheels[0]
-+        shutil.copyfile(wheel, wheel_directory / wheel.name)
-+        return str(wheel.name)
++        old_env = os.environ.copy()
++        os.environ.update({
++            'ARROW_HOME': str(arrow_dist),
++            'CMAKE_PREFIX_PATH': str(arrow_dist),
++            'PYARROW_WITH_DATASET': '1',
++            'PYARROW_WITH_PARQUET': '1',
++            'PYARROW_WITH_PARQUET_ENCRYPTION': '1',
++            'PYARROW_WITH_GANDIVA': '1',
++            'PYARROW_BUNDLE_ARROW_CPP': '1',
++            'PYARROW_BUNDLE_CYTHON_CPP': '1',
++        })
++        try:
++            return scikit_build_wheel(wheel_directory, config_settings, metadata_directory)
++        finally:
++            os.environ.clear()
++            os.environ.update(old_env)
 diff --git a/pyproject.toml b/pyproject.toml
 index 2fbe78e..7a80e39 100644
 --- a/pyproject.toml
