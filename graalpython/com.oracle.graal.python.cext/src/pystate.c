@@ -1422,6 +1422,7 @@ init_threadstate(PyThreadState *tstate,
     tstate->datastack_top = NULL;
     tstate->datastack_limit = NULL;
     tstate->what_event = -1;
+    graalpy_initialize_thread_state_singletons(tstate);
 
     tstate->_status.initialized = 1;
 }

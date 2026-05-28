@@ -336,6 +336,7 @@ THREAD_LOCAL PyThreadState *tstate_current = NULL;
 
 GraalPy_CAPI_HELPER_SYMBOL PyThreadState **GraalPyPrivate_InitThreadStateCurrent(PyThreadState *tstate) {
     tstate_current = tstate;
+    graalpy_initialize_thread_state_singletons(tstate);
     return &tstate_current;
 }
 
@@ -346,6 +347,7 @@ static void initialize_globals(PyThreadState *tstate) {
     _Py_EllipsisObjectReference = GraalPyPrivate_Ellipsis();
     _Py_TrueStructReference = (struct _longobject*)GraalPyPrivate_True();
     _Py_FalseStructReference = (struct _longobject*)GraalPyPrivate_False();
+    graalpy_initialize_thread_state_singletons(tstate);
 }
 
 /* internal functions to avoid unnecessary managed <-> native conversions */

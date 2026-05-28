@@ -218,6 +218,11 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored)
+    static long GraalPyPrivate_Bytes_Empty() {
+        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createEmptyBytes(PythonLanguage.get(null)));
+    }
+
     @CApiBuiltin(ret = PyObjectRawPointer, args = {Py_ssize_t}, call = Ignored)
     static long GraalPyPrivate_ByteArray_EmptyWithCapacity(long size) {
         try {

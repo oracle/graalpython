@@ -3062,12 +3062,7 @@ expand_template(TemplateObject *self, MatchObject *match)
     }
     else {
         // Py_SET_SIZE(list, count); // GraalPy change
-        PyObject *empty = PyBytes_FromStringAndSize(NULL, 0);
-        if (empty == NULL) {
-            goto cleanup;
-        }
-        result = _PyBytes_Join(empty, list);
-        Py_DECREF(empty);
+        result = _PyBytes_Join((PyObject *)&_Py_SINGLETON(bytes_empty), list);
     }
 
 cleanup:

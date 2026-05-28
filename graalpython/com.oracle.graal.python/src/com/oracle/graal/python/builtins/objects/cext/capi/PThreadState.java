@@ -169,6 +169,16 @@ public abstract class PThreadState {
         return ptr;
     }
 
+    public static void clearSingletons(PythonThreadState threadState) {
+        long nativeCompanion = threadState.getNativePointer();
+        if (nativeCompanion == UNINITIALIZED || nativeCompanion == NATIVE_POINTER_FREED) {
+            return;
+        }
+        long singletons = CStructAccess.getFieldPtr(nativeCompanion, CFields.PyThreadState__singletons);
+        CStructAccess.writePtrField(singletons, CFields.GraalPySingletons__tuple_empty, NULLPTR);
+        CStructAccess.writePtrField(singletons, CFields.GraalPySingletons__bytes_empty, NULLPTR);
+    }
+
     public static int growDeallocatingStack(long nativeThreadState, long newCapacity) {
         CompilerAsserts.neverPartOfCompilation();
         assert nativeThreadState != NULLPTR;

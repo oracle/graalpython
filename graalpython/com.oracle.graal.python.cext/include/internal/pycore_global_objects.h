@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -35,8 +35,11 @@ extern "C" {
 
 #define _Py_GLOBAL_OBJECT(NAME) \
     _PyRuntime.static_objects.NAME
+/* GraalPy change: CPython exposes static singleton storage through _PyRuntime.
+   GraalPy's native wrappers are context-local handle-space pointers, so keep
+   them in the PyThreadState next to small_ints. */
 #define _Py_SINGLETON(NAME) \
-    _Py_GLOBAL_OBJECT(singletons.NAME)
+    (*(PyThreadState_Get()->singletons.NAME))
 
 #if 0 // GraalPy change
 struct _Py_cached_objects {

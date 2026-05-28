@@ -1274,6 +1274,9 @@ public final class CApiContext extends CExtContext {
                 }
                 // The singletons can be freed now
                 freeSingletonNativeWrappers(handleContext);
+                // Thread-state singleton fields point to handle-table stubs. Clear those roots
+                // before the generic native stub cleanup below frees the stubs.
+                context.clearNativeThreadStateSingletons();
                 // Now we can clear all native memory that was simply allocated from Java. This
                 // must be done after the the singleton wrappers were cleared because they might
                 // also end up in the lookup table and may otherwise be double-freed.

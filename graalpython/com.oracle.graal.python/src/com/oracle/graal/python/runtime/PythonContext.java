@@ -2742,6 +2742,10 @@ public final class PythonContext extends Python3Core {
         }
     }
 
+    public void clearNativeThreadStateSingletons() {
+        applyToAllThreadStates(PThreadState::clearSingletons);
+    }
+
     @TruffleBoundary
     public void setSentinelLockWeakref(WeakReference<PLock> sentinelLock) {
         getThreadState(getLanguage()).sentinelLock = sentinelLock;

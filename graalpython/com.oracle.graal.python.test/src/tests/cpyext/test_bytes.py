@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,7 +39,7 @@
 import unittest
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType, \
-    is_native_object
+    is_native_object, GRAALPYTHON
 
 
 def _reference_from_string_n(args):
@@ -75,6 +75,13 @@ def _reference_format(args):
     fmt = args[0]
     fmt_args = tuple(args[1:])
     return (fmt % fmt_args).encode()
+
+
+def _compare_resize_empty_to_nonempty(cresult, presult):
+    if GRAALPYTHON:
+        return cresult is None
+    return cresult is None or isinstance(cresult, SystemError)
+
 
 class CIter:
     def __iter__(self):
@@ -129,6 +136,60 @@ class TestPyBytes(CPyExtTestCase):
         resultspec="n",
         argspec='n',
         arguments=["Py_ssize_t n"],
+    )
+
+    test_PyBytes_FromStringAndSize_empty = CPyExtFunction(
+        lambda args: 1,
+        lambda: ((),),
+        code="""
+        static int CheckPyBytesFromStringAndSizeEmpty(void) {
+            PyObject *from_null = PyBytes_FromStringAndSize(NULL, 0);
+            PyObject *from_string = PyBytes_FromStringAndSize("ignored", 0);
+            PyObject *from_c_string = PyBytes_FromString("");
+            PyObject *resized_to_empty = PyBytes_FromStringAndSize(NULL, 1);
+            int resized_to_empty_ok = _PyBytes_Resize(&resized_to_empty, 0) == 0;
+            int result = from_null != NULL &&
+                         from_string != NULL &&
+                         from_c_string != NULL &&
+                         resized_to_empty != NULL &&
+                         resized_to_empty_ok &&
+                         PyBytes_CheckExact(from_null) &&
+                         PyBytes_GET_SIZE(from_null) == 0;
+            result = result &&
+                     from_null == from_string &&
+                     from_null == from_c_string &&
+                     from_null == resized_to_empty;
+            Py_XDECREF(from_null);
+            Py_XDECREF(from_string);
+            Py_XDECREF(from_c_string);
+            Py_XDECREF(resized_to_empty);
+            return result;
+        }
+        """,
+        resultspec="i",
+        argspec="",
+        arguments=[],
+        callfunction="CheckPyBytesFromStringAndSizeEmpty",
+    )
+
+    test_PyBytes_Resize_empty_to_nonempty = CPyExtFunction(
+        lambda args: None,
+        lambda: ((),),
+        code="""
+        static PyObject *CheckPyBytesResizeEmptyToNonempty(void) {
+            PyObject *resized_from_empty = PyBytes_FromString("");
+            if (_PyBytes_Resize(&resized_from_empty, 3) < 0) {
+                return NULL;
+            }
+            Py_XDECREF(resized_from_empty);
+            Py_RETURN_NONE;
+        }
+        """,
+        resultspec="O",
+        argspec="",
+        arguments=[],
+        callfunction="CheckPyBytesResizeEmptyToNonempty",
+        cmpfunc=_compare_resize_empty_to_nonempty,
     )
 
     # PyBytes_FromString
