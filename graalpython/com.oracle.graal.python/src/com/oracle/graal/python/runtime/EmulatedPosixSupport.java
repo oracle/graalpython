@@ -2445,7 +2445,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @TruffleBoundary
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
-                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep, boolean allowVFork,
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) throws PosixException {
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
             throw new UnsupportedPosixFeatureException("forkExec was excluded");

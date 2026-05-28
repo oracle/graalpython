@@ -355,7 +355,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void unsetenv(Object receiver, Object name) throws PosixException;
 
     public abstract int forkExec(Object receiver, Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd,
-                    int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep) throws PosixException;
+                    int stderrReadFd, int stderrWriteFd, int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep,
+                    boolean allowVFork) throws PosixException;
 
     // args.length must be > 0
     public abstract void execv(Object receiver, Object pathname, Object[] args) throws PosixException;
