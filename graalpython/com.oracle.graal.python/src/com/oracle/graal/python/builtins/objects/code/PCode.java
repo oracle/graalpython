@@ -317,7 +317,7 @@ public final class PCode extends PythonBuiltinObject {
         return null;
     }
 
-    RootNode getRootNode() {
+    public RootNode getRootNode() {
         return rootNode;
     }
 

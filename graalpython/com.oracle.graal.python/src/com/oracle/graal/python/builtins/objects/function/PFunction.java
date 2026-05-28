@@ -35,7 +35,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
@@ -230,7 +229,7 @@ public final class PFunction extends PythonObject {
 
     @TruffleBoundary
     String getSourceCode() {
-        RootNode rootNode = GetCallTargetNode.getUncached().execute(this).getRootNode();
+        RootNode rootNode = getCode().getRootNode();
         SourceSection sourceSection = rootNode.getSourceSection();
         if (sourceSection != null) {
             return sourceSection.getCharacters().toString();
