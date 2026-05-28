@@ -655,10 +655,11 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             // Fallthrough
         }
         TruffleFile originalFile = file;
+        boolean isInternal = PythonLanguage.shouldMarkSourceInternal(context);
         Source source = context.getLanguage().getOrCreateSource((ignored -> {
             Source newSource = Source.newBuilder(PythonLanguage.ID, "", codeName) //
                             .content(Source.CONTENT_NONE) //
-                            .internal(PythonLanguage.shouldMarkSourceInternal(context)) //
+                            .internal(isInternal) //
                             .mimeType(PythonLanguage.MIME_TYPE).build();
             PythonLanguage language = context.getLanguage();
             if (originalFile != null) {
@@ -668,7 +669,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }), codeName);
         RootCallTarget callTarget = (RootCallTarget) context.getLanguage().cacheCode(
                         new PythonLanguage.CodeCacheKey(info.origName, System.identityHashCode(info.code)),
-                        () -> context.getLanguage().callTargetFromBytecode(source, info.code));
+                        () -> context.getLanguage().callTargetFromBytecode(source, info.code, isInternal));
         /*
          * Setting the original filename as the co_filename is a deviance from CPython, but it's
          * more user friendly and lets us freeze more modules without it being too visible.

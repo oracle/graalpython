@@ -371,6 +371,7 @@ class ModuleFinderTest(unittest.TestCase):
     def test_relative_imports_3(self):
         self._do_test(relative_import_test_3)
 
+    @support.impl_detail("changing co_code", graalpy=False)
     def test_relative_imports_4(self):
         self._do_test(relative_import_test_4)
 

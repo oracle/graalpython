@@ -450,6 +450,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @TruffleBoundary
     public static void updateAllToTracingConfig(PythonLanguage language) {
+        PBytecodeDSLRootNodeGen.BYTECODE.update(language, BytecodeConfig.WITH_SOURCE);
         PBytecodeDSLRootNodeGen.BYTECODE.update(language, TRACE_AND_PROFILE_CONFIG);
     }
 
@@ -460,7 +461,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         PythonLanguage language = getLanguage();
         for (Object constant : co.constants) {
             if (constant instanceof BytecodeDSLCodeUnit codeUnit) {
-                PBytecodeDSLRootNode rootNode = language.createCachedRootNode(l -> codeUnit.createRootNode(l, getSource()), codeUnit);
+                PBytecodeDSLRootNode rootNode = language.createCachedRootNode(l -> codeUnit.createRootNode(l, isInternal()), codeUnit);
                 rootNode.getCallTarget();
             }
         }
@@ -470,13 +471,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return getLanguage(PythonLanguage.class);
     }
 
-    public void setMetadata(BytecodeDSLCodeUnit co, ParserCallbacksImpl parserErrorCallback) {
+    public void setMetadata(BytecodeDSLCodeUnit co, ParserCallbacksImpl parserErrorCallback, boolean internal) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         this.co = co;
         this.signature = co.computeSignature();
         this.classcellIndex = co.classcellIndex;
         this.selfIndex = co.selfIndex;
-        this.internal = getSource().isInternal();
+        this.internal = internal;
         this.parserErrorCallback = parserErrorCallback;
         if (co.cellvars.length > 0) {
             this.cellEffectivelyFinalAssumptions = new Assumption[co.cellvars.length];
@@ -1242,9 +1243,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @TruffleBoundary
     public SourceSection getSourceSectionForLocation(int bci, BytecodeNode bytecodeNode) {
-        BytecodeLocation location = null;
-        if (bytecodeNode != null) {
-            location = bytecodeNode.getBytecodeLocation(bci);
+        BytecodeLocation location;
+        try {
+            location = bytecodeNode.getBytecodeLocation(bci).ensureSourceInformation();
+        } catch (MarshalModuleBuiltins.ReparseError e) {
+            throw PRaiseNode.raiseStatic(bytecodeNode, SystemError, ErrorMessages.FAILED_TO_REPARSE_BYTECODE_FILE);
         }
         return getSourceSectionForLocation(location);
     }
