@@ -107,6 +107,15 @@ function(graalpy_sysconfig_env_value name)
     endif()
 endfunction()
 
+function(graalpy_sysconfig_python_string name)
+    set(value "${${name}}")
+    string(REPLACE "\\" "\\\\" value "${value}")
+    string(REPLACE "\"" "\\\"" value "${value}")
+    string(REPLACE "\n" "\\n" value "${value}")
+    string(REPLACE "\r" "\\r" value "${value}")
+    set(${name}_PYTHON_STRING "${value}" PARENT_SCOPE)
+endfunction()
+
 graalpy_sysconfig_value("OPT" "-DNDEBUG")
 graalpy_sysconfig_value("ARFLAGS" "rc")
 graalpy_sysconfig_value("USE_GNU_SOURCE" "-D_GNU_SOURCE=1")
@@ -141,6 +150,36 @@ endif()
 graalpy_sysconfig_env_value("LDCXXSHARED")
 graalpy_sysconfig_env_value("LDSHARED")
 graalpy_sysconfig_value("LDLIBRARY" "libpython.${GRAALPY_SYSCONFIG_SOABI}${GRAALPY_SYSCONFIG_SHLIB_SUFFIX}")
+
+set(GRAALPY_SYSCONFIG_STRING_NAMES
+    ABIFLAGS
+    AR
+    ARFLAGS
+    CC
+    CCSHARED
+    CFLAGS
+    CFLAGS_DEFAULT
+    CXX
+    EXE
+    EXT_SUFFIX
+    LD
+    LDCXXSHARED
+    LDLIBRARY
+    LDFLAGS
+    LDSHARED
+    MACOSX_DEPLOYMENT_TARGET
+    MULTIARCH
+    NM
+    OPT
+    RANLIB
+    SHLIB_SUFFIX
+    SOABI
+    USE_GNU_SOURCE
+    VERSION
+)
+foreach(name IN LISTS GRAALPY_SYSCONFIG_STRING_NAMES)
+    graalpy_sysconfig_python_string("GRAALPY_SYSCONFIG_${name}")
+endforeach()
 
 configure_file("pyconfig_template.h" "pyconfig.h" @ONLY)
 configure_file("_sysconfigdata_template.py" "${GRAALPY_SYSCONFIGDATA_NAME}.py" @ONLY)
