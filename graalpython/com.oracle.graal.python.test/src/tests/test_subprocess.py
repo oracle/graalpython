@@ -11,6 +11,8 @@ import sys
 from subprocess import CalledProcessError
 from tempfile import mkdtemp
 
+from tests.util import run_subprocess_with_graalpy_startup_retry
+
 POSIX_BACKEND_IS_JAVA = sys.implementation.name == "graalpy" and __graalpython__.posix_module_backend() == 'java'
 
 def test_os_pipe():
@@ -228,54 +230,52 @@ class TestSubprocess(unittest.TestCase):
     @unittest.skipIf(sys.platform == 'win32', "TODO the cmd replacement breaks the test")
     def test_graal_python_args(self):
         if sys.implementation.name == "graalpy":
-            import subprocess
-
             def env_with_graal_python_args(args):
                 env = os.environ.copy()
                 env["GRAAL_PYTHON_ARGS"] = args
                 return env
 
             env = env_with_graal_python_args("-c 12")
-            result = subprocess.run([sys.executable], env=env)
-            self.assertEqual(0, result.returncode)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True)
+            self.assertEqual(0, result.returncode, result.stderr)
 
             env = env_with_graal_python_args("-c 'print(12)'")
-            result = subprocess.check_output([sys.executable], env=env, text=True)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True, check=True).stdout
             self.assertEqual('12\n', result)
 
             env = env_with_graal_python_args("""-c 'print("Hello world")'""")
-            result = subprocess.check_output([sys.executable], env=env, text=True)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True, check=True).stdout
             self.assertEqual('Hello world\n', result)
 
             env = env_with_graal_python_args("""-c ""'print("Hello world")'""""")
-            result = subprocess.check_output([sys.executable], env=env, text=True)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True, check=True).stdout
             self.assertEqual('Hello world\n', result)
 
             env = env_with_graal_python_args(r"""-c 'print(\'"Hello world"\')'""")
-            result = subprocess.check_output([sys.executable], env=env, text=True)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True, check=True).stdout
             self.assertEqual('"Hello world"\n', result)
 
             env = env_with_graal_python_args("""\v-c\vprint('"Hello world"')""")
-            result = subprocess.check_output([sys.executable], env=env, text=True)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True, check=True).stdout
             self.assertEqual('"Hello world"\n', result)
 
             env = env_with_graal_python_args("""\v-c\vprint('Hello', "world")""")
-            result = subprocess.check_output([sys.executable], env=env, text=True)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True, check=True).stdout
             self.assertEqual('Hello world\n', result)
 
             # check that the subprocess receives the args and thus it should fail because it recurses
             args = """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))"""
             env = env_with_graal_python_args(args)
-            result = subprocess.check_output([sys.executable], env=env, text=True)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True, check=True).stdout
             self.assertEqual(f"{args}\n", result)
 
             # check that the subprocess does not receive the args when we end with \v
             env = env_with_graal_python_args("""\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))\v""")
-            result = subprocess.check_output([sys.executable], env=env, text=True)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True, check=True).stdout
             self.assertEqual('None\n', result)
 
             # check that the subprocess receives an empty arg
             args = """\v-c\vimport sys\nprint(repr(sys.argv))\va1\v\va3"""
             env = env_with_graal_python_args(args)
-            result = subprocess.check_output([sys.executable], env=env, text=True)
+            result = run_subprocess_with_graalpy_startup_retry([sys.executable], env=env, text=True, check=True).stdout
             self.assertEqual("['-c', 'a1', '', 'a3']\n", result)
