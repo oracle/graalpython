@@ -198,10 +198,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return signature;
     }
 
-    public RootCallTarget getCallTargetOrNull() {
-        return callTarget;
-    }
-
     public RootCallTarget getCallTarget() {
         RootCallTarget ct = callTarget;
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, ct == null)) {

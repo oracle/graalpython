@@ -579,10 +579,6 @@ public final class PCode extends PythonBuiltinObject {
         return signature;
     }
 
-    public RootCallTarget getRootCallTargetOrNull() {
-        return callTarget;
-    }
-
     public RootCallTarget getRootCallTarget() {
         RootCallTarget ct = callTarget;
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, ct == null)) {

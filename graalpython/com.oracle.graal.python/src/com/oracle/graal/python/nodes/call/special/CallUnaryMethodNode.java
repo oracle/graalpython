@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -59,6 +58,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateUncached
@@ -87,10 +87,10 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
-    @Specialization(guards = {"func.getCallTargetOrNull() == ct", "builtinNode != null"}, //
+    @Specialization(guards = {"func.getFunctionRootNode() == rootNode", "builtinNode != null"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObject(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object receiver,
-                    @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached(value = "func.getFunctionRootNode()", adopt = false) RootNode rootNode,
                     @Cached("getBuiltin(frame, func, 1)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
@@ -103,9 +103,9 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
         return callUnaryBuiltin(frame, builtinNode, receiver);
     }
 
-    @Specialization(guards = {"builtinNode != null", "func.getBuiltinFunction().getCallTargetOrNull() == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "func.getBuiltinFunction().getFunctionRootNode() == rootNode", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
-                    @SuppressWarnings("unused") @Cached("func.getBuiltinFunction().getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached(value = "func.getBuiltinFunction().getFunctionRootNode()", adopt = false) RootNode rootNode,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 1)") PythonBuiltinBaseNode builtinNode) {
         return callUnaryBuiltin(frame, builtinNode, receiver);
@@ -119,9 +119,9 @@ public abstract class CallUnaryMethodNode extends AbstractCallMethodNode {
         return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
     }
 
-    @Specialization(guards = {"builtinNode != null", "func.getBuiltinFunction().getCallTargetOrNull() == ct", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "func.getBuiltinFunction().getFunctionRootNode() == rootNode", "takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callSelfMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
-                    @SuppressWarnings("unused") @Cached("func.getBuiltinFunction().getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached(value = "func.getBuiltinFunction().getFunctionRootNode()", adopt = false) RootNode rootNode,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 2)") PythonBuiltinBaseNode builtinNode) {
         return callBinaryBuiltin(frame, builtinNode, func.getSelf(), arg);
