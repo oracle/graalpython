@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.frame;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeRootNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -227,7 +226,7 @@ public final class PFrame extends PythonBuiltinObject {
         // TODO: frames: extract the information from the threadState object
         this.globals = globals;
         this.code = code;
-        this.location = GetCodeRootNode.executeUncached(code);
+        this.location = code.getRootNode();
         Reference curFrameInfo = new Reference(location != null ? location.getRootNode() : null, null);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
