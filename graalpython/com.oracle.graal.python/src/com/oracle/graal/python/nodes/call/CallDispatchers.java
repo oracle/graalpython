@@ -192,7 +192,7 @@ public class CallDispatchers {
             return invoke.execute(frame, inliningTarget, callNode, arguments);
         }
 
-        @Specialization(guards = "sameCallTarget(callee.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
+        @Specialization(guards = "sameCallTarget(callee.getCallTargetOrNull(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
         static Object callBuiltinFunctionCachedCt(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Exclusive @Cached SimpleDirectInvokeNode invoke) {
@@ -231,7 +231,7 @@ public class CallDispatchers {
             return invoke.execute(frame, inliningTarget, callNode, pArguments);
         }
 
-        @Specialization(guards = "sameCallTarget(callee.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
+        @Specialization(guards = "sameCallTarget(callee.getCallTargetOrNull(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
         static Object callBuiltinFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
                         @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
@@ -287,7 +287,7 @@ public class CallDispatchers {
             return invoke.execute(frame, inliningTarget, callNode, pArguments);
         }
 
-        @Specialization(guards = "sameCallTarget(function.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinMethodCached")
+        @Specialization(guards = "sameCallTarget(function.getCallTargetOrNull(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinMethodCached")
         static Object callBuiltinMethodCachedCt(VirtualFrame frame, Node inliningTarget, PBuiltinMethod callee, Object[] arguments, PKeyword[] keywords,
                         @Bind("callee.getBuiltinFunction()") PBuiltinFunction function,
                         @Exclusive @Cached CreateArgumentsNode createArgs,
@@ -390,7 +390,7 @@ public class CallDispatchers {
         }
 
         // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
-        @Specialization(guards = {"sameCallTarget(callee.getCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
+        @Specialization(guards = {"sameCallTarget(callee.getCallTargetOrNull(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
         static Object callFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
                         @Exclusive @Cached FunctionDirectInvokeNode invoke) {
@@ -430,7 +430,7 @@ public class CallDispatchers {
         }
 
         // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
-        @Specialization(guards = {"sameCallTarget(callee.getCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
+        @Specialization(guards = {"sameCallTarget(callee.getCallTargetOrNull(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
         static Object callFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments, PKeyword[] keywords,
                         @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -80,7 +79,7 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
         return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);
     }
 
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, //
+    @Specialization(guards = {"func.getCallTargetOrNull() == ct", "builtinNode != null"}, //
                     limit = "getCallSiteInlineCacheMaxDepth()")
     Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3, Object arg4,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
@@ -96,10 +95,9 @@ public abstract class CallQuaternaryMethodNode extends AbstractCallMethodNode {
         return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);
     }
 
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func, getCt) == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"builtinNode != null", "func.getBuiltinFunction().getCallTargetOrNull() == ct", "!takesSelfArg"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2, Object arg3, Object arg4,
-                    @SuppressWarnings("unused") @Cached GetCallTargetNode getCt,
-                    @SuppressWarnings("unused") @Cached("getCallTarget(func, getCt)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("func.getBuiltinFunction().getCallTarget()") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getBuiltin(frame, func.getBuiltinFunction(), 4)") PythonBuiltinBaseNode builtinNode) {
         return callQuaternaryBuiltin(frame, builtinNode, arg1, arg2, arg3, arg4);

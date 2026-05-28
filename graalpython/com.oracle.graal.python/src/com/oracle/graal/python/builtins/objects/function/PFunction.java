@@ -169,6 +169,15 @@ public final class PFunction extends PythonObject {
         return code;
     }
 
+    public RootCallTarget getCallTargetOrNull() {
+        RootCallTarget ct = callTarget;
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, ct == null)) {
+            ct = getCode().getRootCallTargetOrNull();
+            callTarget = ct;
+        }
+        return ct;
+    }
+
     public RootCallTarget getCallTarget() {
         RootCallTarget ct = callTarget;
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, ct == null)) {
