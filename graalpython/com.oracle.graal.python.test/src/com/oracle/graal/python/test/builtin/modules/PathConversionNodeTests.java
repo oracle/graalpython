@@ -42,6 +42,7 @@ package com.oracle.graal.python.test.builtin.modules;
 
 import static com.oracle.graal.python.test.PythonTests.ts;
 import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigInteger;
@@ -83,7 +84,7 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Parameters(name = "{0}")
     public static String[] params() {
-        return Runtime.version().feature() >= 22 ? new String[]{"java", "native"} : new String[]{"java"};
+        return SUPPORTS_PANAMA ? new String[]{"java", "native"} : new String[]{"java"};
     }
 
     @Before

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.test.integration.advanced;
 
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,7 +61,7 @@ public class ShutdownTest extends PythonTests {
     @BeforeClass
     public static void setUpClass() {
         Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
-        Assume.assumeTrue(Runtime.version().feature() >= 22);
+        Assume.assumeTrue(SUPPORTS_PANAMA);
     }
 
     @Test

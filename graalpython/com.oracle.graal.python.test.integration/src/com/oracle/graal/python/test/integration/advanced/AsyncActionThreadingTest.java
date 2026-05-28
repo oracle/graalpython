@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.test.integration.advanced;
 
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -77,7 +78,7 @@ public class AsyncActionThreadingTest extends PythonTests {
     @Test
     public void testNoNewThreadsWithoutAutomaticAsyncActions() {
         Assume.assumeTrue("false".equalsIgnoreCase(System.getProperty("python.AutomaticAsyncActions")));
-        Assume.assumeTrue("Requires JEP 454 support for _testcapi", Runtime.version().feature() >= 22);
+        Assume.assumeTrue("Requires JEP 454 support for _testcapi", SUPPORTS_PANAMA);
         long threadCount = pythonThreadCount();
         Context c = PythonTests.enterContext(Map.of("python.AllowSignalHandlers", "true", "python.PosixModuleBackend", "native"), new String[0]);
         try {

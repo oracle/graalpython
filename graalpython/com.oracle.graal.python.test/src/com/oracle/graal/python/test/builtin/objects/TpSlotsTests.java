@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.test.builtin.objects;
 
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
+
 import java.util.EnumSet;
 
 import org.junit.After;
@@ -65,7 +67,7 @@ public class TpSlotsTests {
 
     @BeforeClass
     public static void setUpClass() {
-        Assume.assumeTrue(Runtime.version().feature() >= 22);
+        Assume.assumeTrue(SUPPORTS_PANAMA);
     }
 
     @Before
