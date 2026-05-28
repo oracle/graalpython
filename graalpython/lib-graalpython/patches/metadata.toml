@@ -893,6 +893,12 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[scipy.rules]]
+version = '>= 1.17.0'
+patch = 'scipy-1.17.0.patch'
+license = 'BSD-3-Clause'
+dist-type = 'sdist'
+
+[[scipy.rules]]
 version = '== 1.10.1'
 install-priority = 0
 patch = 'scipy-1.10.1.patch'

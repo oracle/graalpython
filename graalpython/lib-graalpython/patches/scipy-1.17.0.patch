@@ -1,0 +1,33 @@
+diff --git a/scipy/_lib/_util.py b/scipy/_lib/_util.py
+index fd8130a..f97a696 100644
+--- a/scipy/_lib/_util.py
++++ b/scipy/_lib/_util.py
+@@ -639,11 +639,12 @@ class MapWrapper:
+             self.pool = pool
+             self._mapfunc = self.pool
+         else:
+-            from multiprocessing import get_context, get_start_method
++            from multiprocessing import get_all_start_methods, get_context, get_start_method
+ 
+             method = get_start_method(allow_none=True)
+ 
+-            if method is None and os.name=='posix' and sys.version_info < (3, 14):
++            if (method is None and os.name=='posix' and sys.version_info < (3, 14)
++                    and 'forkserver' in get_all_start_methods()):
+                 # Python 3.13 and older used "fork" on posix, which can lead to
+                 # deadlocks. This backports that fix to older Python versions.
+                 method = 'forkserver'
+diff --git a/scipy/conftest.py b/scipy/conftest.py
+index 6367669..21fa175 100644
+--- a/scipy/conftest.py
++++ b/scipy/conftest.py
+@@ -91,7 +91,8 @@ def pytest_configure(config):
+             "iterations(n): run the given test function `n` times in each thread",
+         )
+ 
+-    if os.name == 'posix' and sys.version_info < (3, 14):
++    if (os.name == 'posix' and sys.version_info < (3, 14)
++            and 'forkserver' in multiprocessing.get_all_start_methods()):
+         # On POSIX, Python 3.13 and older uses the 'fork' context by
+         # default. Calling fork() from multiple threads leads to
+         # deadlocks. This has been changed in 3.14 to 'forkserver'.
