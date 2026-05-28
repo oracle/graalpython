@@ -230,47 +230,52 @@ class TestSubprocess(unittest.TestCase):
         if sys.implementation.name == "graalpy":
             import subprocess
 
-            env = {"GRAAL_PYTHON_ARGS": "-c 12"}
+            def env_with_graal_python_args(args):
+                env = os.environ.copy()
+                env["GRAAL_PYTHON_ARGS"] = args
+                return env
+
+            env = env_with_graal_python_args("-c 12")
             result = subprocess.run([sys.executable], env=env)
             self.assertEqual(0, result.returncode)
 
-            env = {"GRAAL_PYTHON_ARGS": "-c 'print(12)'"}
+            env = env_with_graal_python_args("-c 'print(12)'")
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual('12\n', result)
 
-            env = {"GRAAL_PYTHON_ARGS": """-c 'print("Hello world")'"""}
+            env = env_with_graal_python_args("""-c 'print("Hello world")'""")
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual('Hello world\n', result)
 
-            env = {"GRAAL_PYTHON_ARGS": """-c ""'print("Hello world")'"""""}
+            env = env_with_graal_python_args("""-c ""'print("Hello world")'""""")
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual('Hello world\n', result)
 
-            env = {"GRAAL_PYTHON_ARGS": r"""-c 'print(\'"Hello world"\')'"""""}
+            env = env_with_graal_python_args(r"""-c 'print(\'"Hello world"\')'""")
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual('"Hello world"\n', result)
 
-            env = {"GRAAL_PYTHON_ARGS": """\v-c\vprint('"Hello world"')"""}
+            env = env_with_graal_python_args("""\v-c\vprint('"Hello world"')""")
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual('"Hello world"\n', result)
 
-            env = {"GRAAL_PYTHON_ARGS": """\v-c\vprint('Hello', "world")"""}
+            env = env_with_graal_python_args("""\v-c\vprint('Hello', "world")""")
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual('Hello world\n', result)
 
             # check that the subprocess receives the args and thus it should fail because it recurses
             args = """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))"""
-            env = {"GRAAL_PYTHON_ARGS": args}
+            env = env_with_graal_python_args(args)
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual(f"{args}\n", result)
 
             # check that the subprocess does not receive the args when we end with \v
-            env = {"GRAAL_PYTHON_ARGS": """\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))\v"""}
+            env = env_with_graal_python_args("""\v-c\vimport os\nprint(os.environ.get("GRAAL_PYTHON_ARGS"))\v""")
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual('None\n', result)
 
             # check that the subprocess receives an empty arg
             args = """\v-c\vimport sys\nprint(repr(sys.argv))\va1\v\va3"""
-            env = {"GRAAL_PYTHON_ARGS": args}
+            env = env_with_graal_python_args(args)
             result = subprocess.check_output([sys.executable], env=env, text=True)
             self.assertEqual("['-c', 'a1', '', 'a3']\n", result)

@@ -1,8 +1,14 @@
 #!/bin/bash
+set -euo pipefail
 
-to_extract="$ARTIFACT_PATHS"
+to_extract="${ARTIFACT_PATHS:-}"
 if [ -n "$1" ]; then
    to_extract="${ARTIFACT_PATH_PREFIX}/${1}.tar"
+fi
+
+if [ -z "$to_extract" ]; then
+   echo "::error::No artifact archive path was provided."
+   exit 1
 fi
 
 for i in $to_extract; do
@@ -10,8 +16,9 @@ for i in $to_extract; do
       tar -x -f "$i" -C "${ARTIFACT_PATH_PREFIX}" -v
       echo "Unpacked $i in $(pwd)/${ARTIFACT_PATH_PREFIX}"
    else
-      echo "file not found in ${ARTIFACT_PATH_PREFIX}"
+      echo "::error::Required artifact archive not found: $i"
       ls "${ARTIFACT_PATH_PREFIX}"
+      exit 1
    fi
 
 done

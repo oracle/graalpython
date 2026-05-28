@@ -41,7 +41,7 @@ selector = [
 
 
 [[test_rules]]
-exclude_on = ['graalpy']
+exclude_on = ['graalpy', 'graalpy-github']
 selector = [
     # Tests for CPython-specific bytecode optimizations. Unapplicable to GraalPy and prone to breaking on random bytecode changes
     'test_peepholer',
