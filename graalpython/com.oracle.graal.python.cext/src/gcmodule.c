@@ -554,6 +554,13 @@ visit_weak_reachable(PyObject *op, PyGC_Head *reachable)
         return 0;
     }
 
+    /* Untracked objects cannot be weak candidates, even if they are reached
+     * from a container traversed in this phase.
+     */
+    if (!_PyObject_GC_IS_TRACKED(op)) {
+        return 0;
+    }
+
     PyGC_Head *gc = AS_GC(op);
 
     /* 'visit_reachable' tests at this point for 'gc_is_collecting(gc)'.
@@ -562,10 +569,6 @@ visit_weak_reachable(PyObject *op, PyGC_Head *reachable)
      * back into 'young' list in the previous phase. However,
      * 'NEXT_MASK_UNREACHABLE' is set.
      */
-
-    // It would be a logic error elsewhere if the collecting flag were set on
-    // an untracked object.
-    assert(UNTAG(gc)->_gc_next != 0);
 
     /* Note: one could expect that we need to test
      * 'gc_get_refs(gc) == MANAGED_REFCNT' but that's no longer true because in
