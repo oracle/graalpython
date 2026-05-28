@@ -142,7 +142,7 @@ public class SocketTests {
 
     @Parameters(name = "{0}")
     public static String[] params() {
-        return new String[]{"native", "java"};
+        return Runtime.version().feature() >= 22 ? new String[]{"java", "native"} : new String[]{"java"};
     }
 
     @Rule public WithPythonContextRule withPythonContextRule = new WithPythonContextRule((o) -> o.put("python.PosixModuleBackend", backendName));
