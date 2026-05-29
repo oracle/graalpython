@@ -30,6 +30,7 @@ import static com.oracle.graal.python.PythonLanguage.throwIfUnsupported;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_ABIFLAGS;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
@@ -2923,6 +2924,7 @@ public final class PythonContext extends Python3Core {
             Object implementationObj = ReadAttributeFromModuleNode.getUncached().execute(sysModule, T_IMPLEMENTATION);
             // sys.implementation.cache_tag
             TruffleString cacheTag = (TruffleString) PyObjectGetAttr.executeUncached(implementationObj, T_CACHE_TAG);
+            TruffleString abiFlags = (TruffleString) ReadAttributeFromModuleNode.getUncached().execute(sysModule, T_ABIFLAGS);
             // sys.implementation._multiarch
             TruffleString multiArch = (TruffleString) PyObjectGetAttr.executeUncached(implementationObj, T__MULTIARCH);
 
@@ -2938,7 +2940,7 @@ public final class PythonContext extends Python3Core {
                 soExt = T_EXT_SO;
             }
 
-            soABI = cat(T_DOT, cacheTag, T_DASH, T_NATIVE, T_DASH, multiArch, soExt);
+            soABI = cat(T_DOT, cacheTag, abiFlags, T_DASH, T_NATIVE, T_DASH, multiArch, soExt);
         }
         return soABI;
     }

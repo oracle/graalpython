@@ -203,6 +203,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     /** See {@code mx_graalpython.py:abi_version} */
     public static final String GRAALPY_ABI_VERSION;
+    public static final String GRAALPY_ABIFLAGS;
 
     /* Magic number used to mark pyc files */
     public static final int MAGIC_NUMBER = 21000 + Compiler.BYTECODE_VERSION * 10;
@@ -252,7 +253,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 default:
                     RELEASE_LEVEL_STRING = tsLiteral("final");
             }
-            GRAALPY_ABI_VERSION = new String(is.readAllBytes(), StandardCharsets.US_ASCII).strip();
+            String[] abiParts = new String(is.readAllBytes(), StandardCharsets.US_ASCII).split("\\R", 2);
+            GRAALPY_ABI_VERSION = abiParts[0].strip();
+            GRAALPY_ABIFLAGS = abiParts.length > 1 ? abiParts[1].strip() : "";
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

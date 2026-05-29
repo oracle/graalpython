@@ -288,6 +288,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     public static final TruffleString T_CACHE_TAG = tsLiteral("cache_tag");
     public static final TruffleString T__MULTIARCH = tsLiteral("_multiarch");
+    public static final TruffleString T_ABIFLAGS = tsLiteral("abiflags");
 
     static {
         String compile_time;
@@ -497,7 +498,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         StructSequence.initType(core, THREAD_INFO_DESC);
         StructSequence.initType(core, UNRAISABLEHOOK_ARGS_DESC);
 
-        addBuiltinConstant("abiflags", T_EMPTY_STRING);
+        addBuiltinConstant(T_ABIFLAGS, toTruffleStringUncached(PythonLanguage.GRAALPY_ABIFLAGS));
         addBuiltinConstant("byteorder", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? T_LITTLE : T_BIG);
         addBuiltinConstant("copyright", T_LICENSE);
         addBuiltinConstant(T_MODULES, PFactory.createDict(language));

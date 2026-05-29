@@ -43,6 +43,7 @@ package com.oracle.graal.python.resources;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -66,6 +67,7 @@ public final class PythonResource implements InternalResource {
     private static final int PYTHON_MINOR;
     private static final int GRAALVM_MAJOR;
     private static final int GRAALVM_MINOR;
+    private static final String PYTHON_ABIFLAGS;
 
     /**
      * The version generated at build time is stored in an ASCII-compatible way. Add build time, we
@@ -82,6 +84,13 @@ public final class PythonResource implements InternalResource {
             is.read(); // skip python micro version
             GRAALVM_MAJOR = is.read() - VERSION_BASE;
             GRAALVM_MINOR = is.read() - VERSION_BASE;
+            is.read(); // skip GraalVM micro version
+            is.read(); // skip release level
+            int ch;
+            while ((ch = is.read()) != '\n' && ch != -1) {
+                // skip ABI version
+            }
+            PYTHON_ABIFLAGS = ch == -1 ? "" : new String(is.readAllBytes(), StandardCharsets.US_ASCII).strip();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -117,7 +126,7 @@ public final class PythonResource implements InternalResource {
             env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("lib").resolve(pythonMajMin), BASE_PATH.resolve(LIBPYTHON), filter);
             env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib").resolve("graalpy" + GRAALVM_MAJOR + "." + GRAALVM_MINOR), BASE_PATH.resolve(LIBGRAALPY),
                             filter);
-            env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory.resolve("include").resolve(pythonMajMin), BASE_PATH.resolve(INCLUDE), filter);
+            env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory.resolve("include").resolve(pythonMajMin + PYTHON_ABIFLAGS), BASE_PATH.resolve(INCLUDE), filter);
         }
         // ni files are in the same place on all platforms
         env.unpackResourceFiles(BASE_PATH.resolve(NI_FILES), targetDirectory, BASE_PATH, filter);

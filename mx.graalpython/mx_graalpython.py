@@ -91,6 +91,9 @@ SUITE = cast(mx.SourceSuite, mx.suite('graalpython'))
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 
 GRAALPY_ABI_VERSION = 'graalpy250'
+GRAALPY_ABIFLAGS = os.environ.get('GRAALPY_ABIFLAGS', '')
+if not re.fullmatch(r'[A-Za-z0-9_]*', GRAALPY_ABIFLAGS):
+    mx.abort('GRAALPY_ABIFLAGS may only contain ASCII letters, digits, and underscores')
 IS_RELEASE = SUITE.is_release()
 FULL_GRAAL_VERSION = SUITE.release_version()
 GRAAL_VERSION = FULL_GRAAL_VERSION if IS_RELEASE else FULL_GRAAL_VERSION[:-len('-dev')]
@@ -2106,23 +2109,50 @@ def graalpy_cmake_build_type(*_):
     return 'Debug' if 'GRAALPY_NATIVE_DEBUG_BUILD' in os.environ else 'Release'
 
 
-def graalpy_ext(*_):
-    os = mx_subst.path_substitutions.substitute('<os>')
+def _graalpy_sysconfig_platform(os):
+    if os == 'darwin':
+        return 'darwin'
+    if os == 'windows':
+        return 'win32'
+    return 'linux'
+
+
+def _graalpy_sysconfig_arch():
     arch = mx_subst.path_substitutions.substitute('<arch>')
     if arch == 'amd64':
         # be compatible with CPython's designation
         # (see also: 'PythonUtils.getPythonArch')
         arch = 'x86_64'
+    return arch
 
-    # 'pyos' also needs to be compatible with CPython's designation.
-    # See class 'com.oracle.graal.python.annotations.PythonOS'
-    # In this case, we can just use 'sys.platform' of the Python running MX.
-    pyos = sys.platform
 
+def graalpy_soabi(*_):
+    os = mx_subst.path_substitutions.substitute('<os>')
+    pyos = _graalpy_sysconfig_platform(os)
+    return f'{abi_version()}{graalpy_abiflags()}-native-{graalpy_multiarch(os=pyos)}'
+
+
+def graalpy_ext(*_):
+    os = mx_subst.path_substitutions.substitute('<os>')
     # on Windows we use '.pyd' else '.so' but never '.dylib' (similar to CPython):
     # https://github.com/python/cpython/issues/37510
     ext = 'pyd' if os == 'windows' else 'so'
-    return f'.{abi_version()}-native-{arch}-{pyos}.{ext}'
+    return f'.{graalpy_soabi()}.{ext}'
+
+
+def graalpy_sysconfigdata(*_):
+    os = mx_subst.path_substitutions.substitute('<os>')
+    pyos = _graalpy_sysconfig_platform(os)
+    return f'_sysconfigdata_{graalpy_abiflags()}_{pyos}_{graalpy_multiarch(os=pyos)}'
+
+
+def graalpy_multiarch(*_, os=None):
+    pyos = os if os is not None else _graalpy_sysconfig_platform(mx_subst.path_substitutions.substitute('<os>'))
+    return f'{_graalpy_sysconfig_arch()}-{pyos}'
+
+
+def graalpy_abiflags(*_):
+    return GRAALPY_ABIFLAGS
 
 
 def dev_tag(_=None):
@@ -2164,6 +2194,14 @@ mx_subst.results_substitutions.register_no_arg('abi_version', abi_version)
 
 mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
+mx_subst.path_substitutions.register_no_arg('graalpy_abiflags', graalpy_abiflags)
+mx_subst.results_substitutions.register_no_arg('graalpy_abiflags', graalpy_abiflags)
+mx_subst.path_substitutions.register_no_arg('graalpy_soabi', graalpy_soabi)
+mx_subst.results_substitutions.register_no_arg('graalpy_soabi', graalpy_soabi)
+mx_subst.path_substitutions.register_no_arg('graalpy_multiarch', graalpy_multiarch)
+mx_subst.results_substitutions.register_no_arg('graalpy_multiarch', graalpy_multiarch)
+mx_subst.path_substitutions.register_no_arg('graalpy_sysconfigdata', graalpy_sysconfigdata)
+mx_subst.results_substitutions.register_no_arg('graalpy_sysconfigdata', graalpy_sysconfigdata)
 
 mx_subst.results_substitutions.register_no_arg('graalpy_cmake_build_type', graalpy_cmake_build_type)
 mx_subst.string_substitutions.register_no_arg('bcflags', bcflags)

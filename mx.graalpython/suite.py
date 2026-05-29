@@ -652,6 +652,7 @@ suite = {
             "ninja_targets": ["all"],
             "cmakeConfig": {
                 "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><release_level:binary><abi_version>",
+                "GRAALPY_ABIFLAGS": "<graalpy_abiflags>",
             },
             "results": [
                 "graalpy_versions"
@@ -670,9 +671,17 @@ suite = {
             "cmakeConfig": {
                 "GRAALPY_VERSION": "<graal_ver:default>",
                 "GRAALPY_VERSION_NUM": "<graal_ver:hex>",
+                "GRAALPY_SYSCONFIGDATA_NAME": "<graalpy_sysconfigdata>",
+                "GRAALPY_SYSCONFIG_ABIFLAGS": "<graalpy_abiflags>",
+                "GRAALPY_SYSCONFIG_EXT_SUFFIX": "<graalpy_ext>",
+                "GRAALPY_SYSCONFIG_GIL_DISABLED": "0",
+                "GRAALPY_SYSCONFIG_MULTIARCH": "<graalpy_multiarch>",
+                "GRAALPY_SYSCONFIG_SOABI": "<graalpy_soabi>",
+                "GRAALPY_SYSCONFIG_VERSION": "<py_ver:major_minor>",
             },
             "results": [
                 "pyconfig.h",
+                "<graalpy_sysconfigdata>.py",
             ],
         },
 
@@ -1339,6 +1348,7 @@ suite = {
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/graalpy.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/python.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/include/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
+                            "./META-INF/resources/<os>/<arch>/lib-graalpython/modules/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         },
                     },
                 },
@@ -1349,7 +1359,8 @@ suite = {
                                 "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
                             ],
                             "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/venv/scripts/macos/graalpy": "dependency:python-macos-launcher",
-                            "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
+                            "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor><graalpy_abiflags>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
+                            "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/modules/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         }
                     }
                 },
@@ -1359,7 +1370,8 @@ suite = {
                             "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
                                 "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
                             ],
-                            "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
+                            "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor><graalpy_abiflags>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
+                            "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/modules/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         },
                     },
                 },
@@ -1424,7 +1436,7 @@ suite = {
                             "./lib/graalpy<graal_ver:major_minor>/": [
                                 "dependency:GRAALPYTHON_LIBGRAALPY_RESOURCES/META-INF/resources/libgraalpy/*",
                             ],
-                            "./include/python<py_ver:major_minor>/": [
+                            "./include/python<py_ver:major_minor><graalpy_abiflags>/": [
                                 "dependency:GRAALPYTHON_INCLUDE_RESOURCES/META-INF/resources/include/*",
                             ],
                             "./": [
