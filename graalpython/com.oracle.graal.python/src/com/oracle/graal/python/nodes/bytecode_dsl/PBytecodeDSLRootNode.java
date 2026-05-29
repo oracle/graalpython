@@ -541,10 +541,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     private void resetInstrumentationData(VirtualFrame frame, BytecodeNode bytecode) {
         InstrumentationData current = (InstrumentationData) bytecode.getLocalValue(0, frame, instrumentationDataIndex);
         if (current == null) {
-            current = new InstrumentationData(maxProfileCEventStackSize);
-            bytecode.setLocalValue(0, frame, instrumentationDataIndex, current);
+            initInstrumentationData(frame, bytecode);
+        } else {
+            current.reset();
         }
-        current.reset();
+    }
+
+    private void initInstrumentationData(VirtualFrame frame, BytecodeNode bytecode) {
+        bytecode.setLocalValue(0, frame, instrumentationDataIndex, new InstrumentationData(maxProfileCEventStackSize));
     }
 
     private void resetInstrumentationDataForResume(VirtualFrame frame, BytecodeNode bytecode, int bci) {
@@ -558,7 +562,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static void doEnter(VirtualFrame frame,
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode) {
-            root.resetInstrumentationData(frame, bytecode);
+            root.initInstrumentationData(frame, bytecode);
         }
     }
 
@@ -698,9 +702,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         void clearProfileCEventCallableStack() {
             if (profileCEventCallables != null) {
-                for (int i = 0; i < profileCEventStackTop; i++) {
-                    profileCEventCallables[i] = null;
-                }
+                PythonUtils.fill(profileCEventCallables, 0, profileCEventStackTop, null);
             }
             profileCEventStackTop = 0;
             profileCEventCallStarted = false;
