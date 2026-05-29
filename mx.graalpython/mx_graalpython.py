@@ -24,6 +24,7 @@
 
 from __future__ import print_function
 
+import ast
 import contextlib
 import datetime
 import glob
@@ -109,6 +110,8 @@ RUNNING_ON_LATEST_JAVA = os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
 
 MAIN_BRANCH = 'master'
+GRAALPY_PGO_PROFILE_ARTIFACT_GROUP = "graalpy"
+GRAALPY_PGO_PROFILE_ARTIFACT_PREFIX = "pgo-"
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
 
@@ -293,6 +296,98 @@ def _is_overridden_native_image_arg(prefix):
     return any(arg.startswith(prefix) for arg in extras)
 
 
+def _normalize_branch_name(branch):
+    if not branch:
+        return ""
+    branch = branch.strip()
+    for prefix in ("refs/heads/", "origin/"):
+        if branch.startswith(prefix):
+            return branch[len(prefix):]
+    return branch
+
+
+def _graalpython_target_import_commit(target_branch):
+    """Return the GraalPy commit imported by the target branch's VM suite.
+
+    Product PGO profiles are produced by the GraalPy post-merge profile job and
+    keyed by GraalPy commit. In linked cross-repo PR gates, CI can auto-bump the
+    VM suite's GraalPy import to the GraalPython PR merge commit, which normally
+    has no post-merge product profile. For feature branches, product-ee therefore
+    uses the GraalPy import from the target VM branch instead, bypassing that
+    CI-generated import bump.
+
+    Prefer origin/<target>. Some CI workspaces only have the PR merge commit; in
+    that case HEAD^1 is the target-side parent and still contains the target
+    branch import. Local workspaces can fall back to the checked-out VM suite.
+    The suite file is a literal dict, so parse it instead of executing suite.py.
+    """
+    vm_suite = mx.suite("vm", fatalIfMissing=False)
+    if not vm_suite or not vm_suite.vc:
+        mx.warn("Cannot resolve target-branch GraalPy import: mx suite 'vm' is not available")
+        return None
+
+    target_branch = _normalize_branch_name(target_branch)
+    suite_path = "vm/mx.vm/suite.py"
+
+    # Some CI checkouts do not keep origin/<target>. In PR merge checkouts, the
+    # first parent is the target branch side of the merge and therefore still
+    # gives us the target branch's imported GraalPy commit without fetching.
+    suite_text = None
+    refs = [f"origin/{target_branch}"]
+    parents = vm_suite.vc.git_command(
+        vm_suite.vc_dir,
+        ["rev-list", "--parents", "-n", "1", "HEAD"],
+        abortOnError=False,
+    )
+    if parents and len(parents.split()) > 2:
+        refs.append("HEAD^1")
+    for ref in refs:
+        if ref:
+            suite_text = vm_suite.vc.git_command(
+                vm_suite.vc_dir,
+                ["show", f"{ref}:{suite_path}"],
+                abortOnError=False,
+            )
+            if suite_text:
+                break
+
+    if not suite_text:
+        suite_file = os.path.join(vm_suite.dir, f"mx.{vm_suite.name}", "suite.py")
+        try:
+            with open(suite_file, encoding="utf-8") as f:
+                suite_text = f.read()
+        except OSError:
+            mx.warn(f"Cannot read {suite_path} to resolve the GraalPy profile source")
+            return None
+
+    try:
+        suite_node = next(
+            node.value
+            for node in ast.parse(suite_text, filename=suite_path).body
+            if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "suite" for target in node.targets)
+        )
+        suite = ast.literal_eval(suite_node)
+        imports = suite.get("imports", {}).get("suites", [])
+        matches = []
+        for imported_suite in imports:
+            version = imported_suite.get("version")
+            if (
+                    imported_suite.get("name") == "graalpython"
+                    and isinstance(version, str)
+                    and re.match(r"^[0-9a-f]{40}$", version)
+            ):
+                matches.append(version)
+    except (StopIteration, SyntaxError, ValueError, TypeError) as e:
+        mx.warn(f"Cannot evaluate {suite_path} to resolve the GraalPy profile source: {e}")
+        return None
+
+    if len(matches) == 1:
+        return matches[0]
+    mx.warn(f"Expected exactly one graalpython import in target vm suite, found {len(matches)}")
+    return None
+
+
 def github_ci_build_args():
     # Determine memory and parallelism for GitHub CI builds
     # Use 90% of available memory up to 14GB, but at least 8GB
@@ -347,6 +442,7 @@ def libpythonvm_build_args():
         build_args += ['-H:-ProtectionKeys']
 
     profile = None
+    require_profile = get_boolean_env("GRAALPY_REQUIRE_PGO_PROFILE")
     if (
             "GRAALPY_PGO_PROFILE" not in os.environ
             and mx.suite('graalpython-enterprise', fatalIfMissing=False)
@@ -354,8 +450,49 @@ def libpythonvm_build_args():
             and not _is_overridden_native_image_arg("--pgo")
     ):
         vc = SUITE.vc
-        commit = str(vc.tip(SUITE.dir)).strip()
-        branch = str(vc.active_branch(SUITE.dir, abortOnError=False) or 'master').strip()
+        source_commit = str(vc.tip(SUITE.dir)).strip()
+        source_branch = _normalize_branch_name(
+            os.environ.get("FROM_BRANCH") or vc.active_branch(SUITE.dir, abortOnError=False) or 'master'
+        )
+        target_branch = _normalize_branch_name(os.environ.get("TO_BRANCH"))
+        profile_source_commit = source_commit
+        profile_source_branch = source_branch
+        profile_source_reason = "current GraalPy commit"
+        override = os.environ.get("GRAALPY_PGO_PROFILE_SOURCE_COMMIT")
+        if override:
+            profile_source_commit = override.strip()
+            if not re.match(r"^[0-9a-f]{40}$", profile_source_commit):
+                mx.abort(f"GRAALPY_PGO_PROFILE_SOURCE_COMMIT must be a 40-character lowercase git commit, got: {override}")
+            profile_source_reason = "GRAALPY_PGO_PROFILE_SOURCE_COMMIT"
+        elif (
+                target_branch
+                and source_branch
+                and source_branch != target_branch
+                and not (source_branch == MAIN_BRANCH or source_branch.startswith(("release/", "cpu/")))
+        ):
+            # Feature branch merge commits can import a fresh GraalPy revision that
+            # has no released-product profile yet. Use the target branch's imported
+            # GraalPy commit so product-ee consumes the profile that already belongs
+            # to the baseline product launcher.
+            target_import_commit = _graalpython_target_import_commit(target_branch)
+            if target_import_commit:
+                profile_source_commit = target_import_commit
+                profile_source_branch = target_branch
+                profile_source_reason = f"target branch import from {target_branch}"
+            elif require_profile:
+                mx.abort("\n".join([
+                    "Could not resolve the GraalPy PGO profile source commit from the target branch import.",
+                    f"GraalPy source commit: {source_commit}",
+                    f"Source branch: {source_branch or '<unknown>'}",
+                    f"Target branch: {target_branch or '<unknown>'}",
+                    "Expected to read vm/mx.vm/suite.py from the target branch and find the graalpython import version.",
+                    "Set GRAALPY_PGO_PROFILE_SOURCE_COMMIT=<40-character-commit> to override this lookup for debugging.",
+                ]))
+            else:
+                mx.warn("Falling back to the current GraalPy commit for PGO profile lookup because the target branch import could not be resolved")
+        artifact_name = f"{GRAALPY_PGO_PROFILE_ARTIFACT_GROUP}/{GRAALPY_PGO_PROFILE_ARTIFACT_PREFIX}{profile_source_commit}"
+        mx.log(f"GraalPy source commit for PGO profile lookup: {source_commit}")
+        mx.log(f"GraalPy PGO profile source commit: {profile_source_commit} ({profile_source_reason})")
 
         if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
             # This is always available in the GraalPy CI
@@ -364,29 +501,50 @@ def libpythonvm_build_args():
                 [
                     sys.executable,
                     script,
-                    f"graalpy/pgo-{commit}",
+                    artifact_name,
                     profile,
                 ],
                 nonZeroIsFatal=False,
             )
-        else:
+        elif not require_profile:
             # Locally, we try to get a reasonable profile
             get_profile = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
             if get_profile:
-                for b in [branch, "master"]:
+                seen_branches = set()
+                for b in [profile_source_branch, source_branch, MAIN_BRANCH]:
+                    b = _normalize_branch_name(b)
+                    if not b or b in seen_branches:
+                        continue
+                    seen_branches.add(b)
                     if not profile:
                         try:
                             profile = get_profile(["--branch", b])
                         except BaseException:
                             pass
 
-        if CI and (not profile or not os.path.isfile(profile)):
+        profile_missing = not profile or not os.path.isfile(profile)
+        if require_profile and profile_missing:
+            mx.abort("\n".join([
+                "GRAALPY_REQUIRE_PGO_PROFILE is set, but no CI generated GraalPy PGO profile was found.",
+                f"GraalPy source commit: {source_commit}",
+                f"Source branch: {source_branch or '<unknown>'}",
+                f"Target branch: {target_branch or '<unset>'}",
+                f"PGO profile source commit: {profile_source_commit} ({profile_source_reason})",
+                f"Expected artifact: {artifact_name}",
+                "The product profile configuration does not fall back to benchmark-local PGO.",
+                "Run the GraalPy CI job python-pgo-profile-post_merge-linux-amd64-jdk-latest for the PGO profile source commit, then retry the product-ee benchmark.",
+            ]))
+
+        if CI and profile_missing:
             mx.log("No profile in CI job")
             # When running on a release branch or attempting to merge into
-            # a release branch, make sure we can use a PGO profile, and
-            # when running in the CI on a bench runner, ensure a PGO profile
+            # a release/CPU branch, make sure we can use a PGO profile, and
+            # when running in the CI on a bench runner, ensure a PGO profile.
             if (
-                    any(b.startswith("release/") for b in [branch, os.environ.get("TO_BRANCH", "")])
+                    any(
+                        _normalize_branch_name(b).startswith(("release/", "cpu/"))
+                        for b in [source_branch, target_branch]
+                    )
                     or ("bench" in os.environ.get('BUILD_NAME', ''))
             ):
                 mx.warn("PGO profile must exist for benchmarking and release, creating one now...")
@@ -505,8 +663,8 @@ def graalpy_native_pgo_build_and_test(args=None):
                 sys.executable,
                 script,
                 iprof_gz_path,
-                f"pgo-{commit}",
-                "graalpy",
+                f"{GRAALPY_PGO_PROFILE_ARTIFACT_PREFIX}{commit}",
+                GRAALPY_PGO_PROFILE_ARTIFACT_GROUP,
                 "--lifecycle",
                 "cache",
                 "--artifact-repo-key",
