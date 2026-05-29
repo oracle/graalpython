@@ -405,6 +405,30 @@ class CertTests(unittest.TestCase):
         server, client = check_handshake(server_context, client_context)
         self.assertEqual(client.selected_alpn_protocol(), "http/1.1")
 
+
+class ProtocolSelectionTests(unittest.TestCase):
+
+    def check_protocol_availability_controls_selection(self, has_name, protocol_name, protocol_id):
+        if getattr(ssl, has_name):
+            self.assertTrue(hasattr(ssl, protocol_name))
+            ssl.SSLContext(getattr(ssl, protocol_name))
+        else:
+            protocol = getattr(ssl, protocol_name, protocol_id)
+            with self.assertRaisesRegex(ValueError, "invalid or unsupported protocol version"):
+                ssl.SSLContext(protocol)
+
+    def test_single_version_availability_controls_selection(self):
+        self.check_protocol_availability_controls_selection("HAS_SSLv3", "PROTOCOL_SSLv3", 1)
+        self.check_protocol_availability_controls_selection("HAS_TLSv1", "PROTOCOL_TLSv1", 3)
+        self.check_protocol_availability_controls_selection("HAS_TLSv1_1", "PROTOCOL_TLSv1_1", 4)
+        self.check_protocol_availability_controls_selection("HAS_TLSv1_2", "PROTOCOL_TLSv1_2", 5)
+
+    def test_generic_protocols_keep_sslv3_disabled(self):
+        for protocol in (ssl.PROTOCOL_TLS, ssl.PROTOCOL_TLS_CLIENT, ssl.PROTOCOL_TLS_SERVER):
+            with self.subTest(protocol=protocol):
+                self.assertTrue(ssl.SSLContext(protocol).options & ssl.OP_NO_SSLv3)
+
+
 def get_cipher_list(cipher_string):
     context = ssl.SSLContext()
     context.set_ciphers(cipher_string)

@@ -173,7 +173,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             SSLMethod method = SSLMethod.fromPythonId(protocol);
-            if (method == null) {
+            if (method == null || isUnsupportedSingleVersion(method)) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.INVALID_OR_UNSUPPORTED_PROTOCOL_VERSION, "NULL");
             }
             try {
@@ -190,6 +190,9 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                                 createSSLContext());
                 long options = SSLOptions.SSL_OP_ALL;
                 if (method != SSLMethod.SSL3) {
+                    // supportedProtocols describes runtime availability. This per-context option still keeps
+                    // generic TLS contexts from negotiating SSLv3. Only an explicit, supported SSLv3
+                    // context may leave it enabled.
                     options |= SSLOptions.SSL_OP_NO_SSLv3;
                 }
                 context.setOptions(options);
@@ -199,6 +202,19 @@ public final class SSLContextBuiltins extends PythonBuiltins {
             } catch (KeyManagementException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, e);
             }
+        }
+
+        @TruffleBoundary
+        private static boolean isUnsupportedSingleVersion(SSLMethod method) {
+            if (!method.isSingleVersion()) {
+                return false;
+            }
+            for (SSLProtocol supportedProtocol : SSLModuleBuiltins.getSupportedProtocols()) {
+                if (method.allowsProtocol(supportedProtocol)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         @TruffleBoundary
