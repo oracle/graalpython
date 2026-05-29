@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,11 +77,11 @@ public abstract class LZMAObject extends PythonBuiltinObject {
         super(cls, instanceShape);
     }
 
-    public void setCheck(int check) {
+    public final void setCheck(int check) {
         this.check = check;
     }
 
-    public int getCheck() {
+    public final int getCheck() {
         return check;
     }
 
@@ -102,7 +102,7 @@ public abstract class LZMAObject extends PythonBuiltinObject {
             this.flushed = true;
         }
 
-        public static class Java extends LZMACompressor {
+        public static final class Java extends LZMACompressor {
             private FinishableOutputStream lzmaStream;
             private final ByteArrayOutputStream bos;
 
@@ -151,7 +151,7 @@ public abstract class LZMAObject extends PythonBuiltinObject {
             }
         }
 
-        public static class Native extends LZMACompressor {
+        public static final class Native extends LZMACompressor {
 
             private NFILZMASupport.Pointer pointer;
 
@@ -159,22 +159,27 @@ public abstract class LZMAObject extends PythonBuiltinObject {
                 super(cls, instanceShape);
             }
 
-            public final void init(Object lzmast, NFILZMASupport lib) {
+            public void init(long lzmast, NFILZMASupport lib) {
                 this.pointer = new NFILZMASupport.Pointer(this, lzmast, lib);
+                assert !pointer.isReleased();
             }
 
-            public final Object getLzs() {
-                assert pointer != null;
-                return pointer.getReference();
+            public long getLzs() {
+                NFILZMASupport.Pointer p = pointer;
+                assert p != null && !p.isReleased();
+                return p.getPointer();
             }
 
             @TruffleBoundary
-            public final void markReleased() {
-                if (pointer != null) {
-                    synchronized (this) {
-                        pointer.markReleased();
-                        pointer = null;
-                    }
+            public void markReleased() {
+                NFILZMASupport.Pointer p;
+                synchronized (this) {
+                    p = pointer;
+                    pointer = null;
+                }
+                if (p != null) {
+                    boolean markedReleased = p.markReleased();
+                    assert markedReleased || p.isReleased();
                 }
             }
         }
@@ -210,65 +215,65 @@ public abstract class LZMAObject extends PythonBuiltinObject {
             this.nextInIndex = 0;
         }
 
-        public void setMemlimit(int memlimit) {
+        public final void setMemlimit(int memlimit) {
             this.memlimit = memlimit;
         }
 
-        public int getMemlimit() {
+        public final int getMemlimit() {
             return memlimit;
         }
 
-        public void setFormat(int format) {
+        public final void setFormat(int format) {
             this.format = format;
         }
 
-        public boolean isEOF() {
+        public final boolean isEOF() {
             return eof;
         }
 
-        public void setEOF() {
+        public final void setEOF() {
             this.eof = true;
         }
 
-        public void setEOF(boolean b) {
+        public final void setEOF(boolean b) {
             this.eof = b;
         }
 
-        public byte[] getUnusedData() {
+        public final byte[] getUnusedData() {
             return unusedData;
         }
 
-        public void setUnusedData() {
+        public final void setUnusedData() {
             this.unusedData = Arrays.copyOfRange(nextIn, nextInIndex, nextInIndex + lzsAvailIn);
         }
 
-        public boolean needsInput() {
+        public final boolean needsInput() {
             return needsInput;
         }
 
-        public void setNeedsInput(boolean needsInput) {
+        public final void setNeedsInput(boolean needsInput) {
             this.needsInput = needsInput;
         }
 
-        public byte[] getInputBuffer() {
+        public final byte[] getInputBuffer() {
             return inputBuffer;
         }
 
-        public void setInputBuffer(byte[] inputBuffer) {
+        public final void setInputBuffer(byte[] inputBuffer) {
             this.inputBuffer = inputBuffer;
         }
 
-        public void createInputBuffer(int size) {
+        public final void createInputBuffer(int size) {
             this.inputBuffer = new byte[size];
             this.inputBufferSize = size;
         }
 
-        public void discardInputBuffer() {
+        public final void discardInputBuffer() {
             this.inputBuffer = null;
             this.inputBufferSize = 0;
         }
 
-        public void resizeInputBuffer(int size) {
+        public final void resizeInputBuffer(int size) {
             assert size >= inputBufferSize;
             byte[] tmp = new byte[size];
             if (inputBuffer != null && lzsAvailIn != 0) {
@@ -278,68 +283,68 @@ public abstract class LZMAObject extends PythonBuiltinObject {
             this.inputBufferSize = size;
         }
 
-        public int getInputBufferSize() {
+        public final int getInputBufferSize() {
             return inputBufferSize;
         }
 
-        public void setInputBufferSize(int inputBufferSize) {
+        public final void setInputBufferSize(int inputBufferSize) {
             this.inputBufferSize = inputBufferSize;
         }
 
-        public byte[] getNextIn() {
+        public final byte[] getNextIn() {
             return nextIn;
         }
 
-        public void setNextIn(byte[] in) {
+        public final void setNextIn(byte[] in) {
             assert in != null;
             this.nextIn = in;
         }
 
-        public void clearNextIn() {
+        public final void clearNextIn() {
             this.nextIn = null;
         }
 
-        public int getNextInIndex() {
+        public final int getNextInIndex() {
             return nextInIndex;
         }
 
-        public void setNextInIndex(int nextInIndex) {
+        public final void setNextInIndex(int nextInIndex) {
             this.nextInIndex = nextInIndex;
         }
 
-        public void setNextInIndex(long nextInIndex) throws OverflowException {
+        public final void setNextInIndex(long nextInIndex) throws OverflowException {
             this.nextInIndex = PInt.intValueExact(nextInIndex);
         }
 
-        public int getLzsAvailIn() {
+        public final int getLzsAvailIn() {
             return lzsAvailIn;
         }
 
-        public int getLzsAvailOut() {
+        public final int getLzsAvailOut() {
             return lzsAvailOut;
         }
 
-        public void incLzsAvailIn(int size) {
+        public final void incLzsAvailIn(int size) {
             this.lzsAvailIn += size;
         }
 
-        public void setLzsAvailIn(int lzsAvailIn) {
+        public final void setLzsAvailIn(int lzsAvailIn) {
             this.lzsAvailIn = lzsAvailIn;
         }
 
-        public void setLzsAvailIn(long lzsAvailIn) throws OverflowException {
+        public final void setLzsAvailIn(long lzsAvailIn) throws OverflowException {
             this.lzsAvailIn = PInt.intValueExact(lzsAvailIn);
         }
 
-        public void setLzsAvailOut(int lzsAvailOut) {
+        public final void setLzsAvailOut(int lzsAvailOut) {
             this.lzsAvailOut = lzsAvailOut;
         }
 
-        public void setLzsAvailOut(long lzsAvailOut) throws OverflowException {
+        public final void setLzsAvailOut(long lzsAvailOut) throws OverflowException {
             this.lzsAvailOut = PInt.intValueExact(lzsAvailOut);
         }
 
-        public static class Java extends LZMADecompressor {
+        public static final class Java extends LZMADecompressor {
             private LZMANodes.LZMAByteInputStream input;
             private InputStream lzs;
 
@@ -403,7 +408,7 @@ public abstract class LZMAObject extends PythonBuiltinObject {
             }
 
             @TruffleBoundary
-            protected static LZMANodes.LZMAByteInputStream createLZMAByteInputStream(byte[] buf, int offset, int length) {
+            private static LZMANodes.LZMAByteInputStream createLZMAByteInputStream(byte[] buf, int offset, int length) {
                 return new LZMANodes.LZMAByteInputStream(buf, offset, length);
             }
 
@@ -453,7 +458,7 @@ public abstract class LZMAObject extends PythonBuiltinObject {
             }
         }
 
-        public static class Native extends LZMADecompressor {
+        public static final class Native extends LZMADecompressor {
 
             private NFILZMASupport.Pointer pointer;
 
@@ -461,22 +466,27 @@ public abstract class LZMAObject extends PythonBuiltinObject {
                 super(cls, instanceShape);
             }
 
-            public final void init(Object lzmast, NFILZMASupport lib) {
+            public void init(long lzmast, NFILZMASupport lib) {
                 this.pointer = new NFILZMASupport.Pointer(this, lzmast, lib);
+                assert !pointer.isReleased();
             }
 
-            public final Object getLzs() {
-                assert pointer != null;
-                return pointer.getReference();
+            public long getLzs() {
+                NFILZMASupport.Pointer p = pointer;
+                assert p != null && !p.isReleased();
+                return p.getPointer();
             }
 
             @TruffleBoundary
-            public final void markReleased() {
-                if (pointer != null) {
-                    synchronized (this) {
-                        pointer.markReleased();
-                        pointer = null;
-                    }
+            public void markReleased() {
+                NFILZMASupport.Pointer p;
+                synchronized (this) {
+                    p = pointer;
+                    pointer = null;
+                }
+                if (p != null) {
+                    boolean markedReleased = p.markReleased();
+                    assert markedReleased || p.isReleased();
                 }
             }
         }

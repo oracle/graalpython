@@ -93,7 +93,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
-import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
@@ -213,8 +212,8 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
                 MODE_NORMAL = modes[MODE_NORMAL_INDEX];
                 PRESET_DEFAULT = preset[PRESET_DEFAULT_INDEX];
                 PRESET_EXTREME = preset[PRESET_EXTREME_INDEX];
-            } catch (NativeLibrary.NativeLibraryCannotBeLoaded e) {
-                lzmaSupport.notAvailable();
+            } catch (UnsupportedOperationException e) {
+                lzmaSupport.setNotAvailable();
                 // ignore and proceed without native lzma support and use the java port.
             }
         }

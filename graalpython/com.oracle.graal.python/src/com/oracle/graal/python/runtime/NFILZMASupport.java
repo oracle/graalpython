@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,19 +40,23 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.annotations.NativeSimpleType.DOUBLE;
+import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
+import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.annotations.DowncallSignature;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLogger;
 
-/*-
- * Generated using:
- * scripts/nfi_gen.py -name LZMA -cpath graalpython/com.oracle.graal.python.cext/lzma/lzma.c -lib liblzmasupport
- */
-public class NFILZMASupport {
+public final class NFILZMASupport extends NativeCompressionSupport {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFILZMASupport.class);
+    private static final String SUPPORTING_NATIVE_LIB_NAME = "lzmasupport";
 
     public static final int FORMAT_AUTO_INDEX = 0;
     public static final int FORMAT_XZ_INDEX = 1;
@@ -98,220 +102,108 @@ public class NFILZMASupport {
     public static final int LZMA_ID_ERROR = 98;
     public static final int LZMA_PRESET_ERROR = 99;
 
-    enum LZMANativeFunctions implements NativeLibrary.NativeFunction {
+    abstract static class LZMANativeFunctions {
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER, POINTER, POINTER, POINTER, POINTER, POINTER})
+        abstract void get_macros(long formats, long checks, long filters, long mfs, long modes, long preset);
 
-        /*-
-          nfi_function: name('getMarcos') static(true)
-          void get_macros(int* formats, int* checks, uint64_t* filters, int* mfs, int* modes, uint64_t* preset)
-        */
-        get_macros("([SINT32], [SINT32], [UINT64], [SINT32], [SINT32], [UINT64]): VOID"),
+        @DowncallSignature(returnType = POINTER)
+        abstract long lzma_create_lzmast_stream();
 
-        /*-
-          nfi_function: name('createStream') map('lzmast_stream*', 'POINTER')
-          lzmast_stream *lzma_create_lzmast_stream()
-        */
-        lzma_create_lzmast_stream("(): POINTER"),
+        @DowncallSignature(returnType = DOUBLE, argumentTypes = {POINTER})
+        abstract double lzma_get_timeElapsed(long lzmast);
 
-        /*-
-          nfi_function: name('getTimeElapsed') map('lzmast_stream*', 'POINTER')  static(true)
-          double lzma_get_timeElapsed(lzmast_stream* lzmast)
-        */
-        lzma_get_timeElapsed("(POINTER): DOUBLE"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER})
+        abstract void lzma_free_stream(long lzmast);
 
-        /*-
-          nfi_function: name('deallocateStream') map('lzmast_stream*', 'POINTER')
-          void lzma_free_stream(lzmast_stream* lzmast)
-        */
-        lzma_free_stream("(POINTER): VOID"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER})
+        abstract void lzma_gc_helper(long lzmast);
 
-        /*-
-          nfi_function: name('gcReleaseHelper') map('lzmast_stream*', 'POINTER') release(true)
-          void lzma_gc_helper(lzmast_stream* lzmast)
-        */
-        lzma_gc_helper("(POINTER): VOID"),
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER})
+        abstract long lzma_get_next_in_index(long lzmast);
 
-        /*-
-          nfi_function: name('getNextInIndex') map('lzmast_stream*', 'POINTER')
-          ssize_t lzma_get_next_in_index(lzmast_stream *lzmast)
-        */
-        lzma_get_next_in_index("(POINTER): SINT64"),
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER})
+        abstract long lzma_get_lzs_avail_in(long lzmast);
 
-        /*-
-          nfi_function: name('getLzsAvailIn') map('lzmast_stream*', 'POINTER')
-          size_t lzma_get_lzs_avail_in(lzmast_stream *lzmast)
-        */
-        lzma_get_lzs_avail_in("(POINTER): UINT64"),
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER})
+        abstract long lzma_get_lzs_avail_out(long lzmast);
 
-        /*-
-          nfi_function: name('getLzsAvailOut') map('lzmast_stream*', 'POINTER')
-          size_t lzma_get_lzs_avail_out(lzmast_stream *lzmast)
-        */
-        lzma_get_lzs_avail_out("(POINTER): UINT64"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int lzma_lzma_get_check(long lzmast);
 
-        /*-
-          nfi_function: name('getLzsCheck') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_get_check(lzmast_stream *lzmast)
-        */
-        lzma_lzma_get_check("(POINTER): SINT32"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER, SINT64})
+        abstract void lzma_set_lzs_avail_in(long lzmast, long v);
 
-        /*-
-          nfi_function: name('setLzsAvailIn') map('lzmast_stream*', 'POINTER')
-          void lzma_set_lzs_avail_in(lzmast_stream *lzmast, size_t v)
-        */
-        lzma_set_lzs_avail_in("(POINTER, UINT64): VOID"),
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER})
+        abstract long lzma_get_output_buffer_size(long lzmast);
 
-        /*-
-          nfi_function: name('getOutputBufferSize') map('lzmast_stream*', 'POINTER')
-          size_t lzma_get_output_buffer_size(lzmast_stream *lzmast)
-        */
-        lzma_get_output_buffer_size("(POINTER): UINT64"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER, POINTER})
+        abstract void lzma_get_output_buffer(long lzmast, long dest);
 
-        /*-
-          nfi_function: name('getOutputBuffer') map('lzmast_stream*', 'POINTER')
-          void lzma_get_output_buffer(lzmast_stream *lzmast, Byte *dest)
-        */
-        lzma_get_output_buffer("(POINTER, [UINT8]): VOID"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32})
+        abstract int lzma_lzma_check_is_supported(int checkId);
 
-        /*-
-          nfi_function: name('checkIsSupported')
-          int lzma_lzma_check_is_supported(int check_id)
-        */
-        lzma_lzma_check_is_supported("(SINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER})
+        abstract int lzma_set_filter_spec_lzma(long lzmast, int fidx, long opts);
 
-        /*-
-          nfi_function: name('setFilterSpecLZMA') map('lzmast_stream*', 'POINTER')
-          int lzma_set_filter_spec_lzma(lzmast_stream *lzmast, int fidx, int64_t* opts)
-        */
-        lzma_set_filter_spec_lzma("(POINTER, SINT32, [SINT64]): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER})
+        abstract int lzma_set_filter_spec_delta(long lzmast, int fidx, long opts);
 
-        /*-
-          nfi_function: name('setFilterSpecDelta') map('lzmast_stream*', 'POINTER')
-          int lzma_set_filter_spec_delta(lzmast_stream *lzmast, int fidx, int64_t* opts)
-        */
-        lzma_set_filter_spec_delta("(POINTER, SINT32, [SINT64]): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER})
+        abstract int lzma_set_filter_spec_bcj(long lzmast, int fidx, long opts);
 
-        /*-
-          nfi_function: name('setFilterSpecBCJ') map('lzmast_stream*', 'POINTER')
-          int lzma_set_filter_spec_bcj(lzmast_stream *lzmast, int fidx, int64_t* opts)
-        */
-        lzma_set_filter_spec_bcj("(POINTER, SINT32, [SINT64]): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER})
+        abstract int lzma_encode_filter_spec(long lzmast, long opts);
 
-        /*-
-          nfi_function: name('encodeFilter') map('lzmast_stream*', 'POINTER')
-          int lzma_encode_filter_spec(lzmast_stream *lzmast, int64_t* opts)
-        */
-        lzma_encode_filter_spec("(POINTER, [SINT64]): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, POINTER, SINT32, POINTER})
+        abstract int lzma_decode_filter_spec(long filterId, long encodedProps, int len, long opts);
 
-        /*-
-          nfi_function: name('decodeFilter') map('lzmast_stream*', 'POINTER')
-          int lzma_decode_filter_spec(int64_t filter_id, Byte* encoded_props, int len, int64_t *opts)
-        */
-        lzma_decode_filter_spec("(SINT64, [UINT8], SINT32, [SINT64]): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, SINT32})
+        abstract int lzma_lzma_easy_encoder(long lzmast, int preset, int check);
 
-        /*-
-          nfi_function: name('lzmaEasyEncoder') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_easy_encoder(lzmast_stream *lzmast, uint32_t preset, int check)
-        */
-        lzma_lzma_easy_encoder("(POINTER, UINT32, SINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
+        abstract int lzma_lzma_stream_encoder(long lzmast, int check);
 
-        /*-
-          nfi_function: name('lzmaStreamEncoder') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_stream_encoder(lzmast_stream *lzmast, int check)
-        */
-        lzma_lzma_stream_encoder("(POINTER, SINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
+        abstract int lzma_lzma_alone_encoder_preset(long lzmast, int preset);
 
-        /*-
-          nfi_function: name('lzmaAloneEncoderPreset') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_alone_encoder_preset(lzmast_stream *lzmast, uint32_t preset)
-        */
-        lzma_lzma_alone_encoder_preset("(POINTER, UINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int lzma_lzma_alone_encoder(long lzmast);
 
-        /*-
-          nfi_function: name('lzmaAloneEncoder') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_alone_encoder(lzmast_stream *lzmast)
-        */
-        lzma_lzma_alone_encoder("(POINTER): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int lzma_lzma_raw_encoder(long lzmast);
 
-        /*-
-          nfi_function: name('lzmaRawEncoder') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_raw_encoder(lzmast_stream *lzmast)
-        */
-        lzma_lzma_raw_encoder("(POINTER): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT32, SINT64})
+        abstract int lzma_compress(long lzmast, long data, long len, int iaction, long bufsize);
 
-        /*-
-          nfi_function: name('compress') map('lzmast_stream*', 'POINTER')
-          int lzma_compress(lzmast_stream *lzmast, Byte *data, size_t len, int iaction, ssize_t bufsize)
-        */
-        lzma_compress("(POINTER, [UINT8], UINT64, SINT32, SINT64): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int lzma_lzma_raw_decoder(long lzmast);
 
-        /*-
-          nfi_function: name('lzmaRawDecoder') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_raw_decoder(lzmast_stream *lzmast)
-        */
-        lzma_lzma_raw_decoder("(POINTER): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT64, SINT32})
+        abstract int lzma_lzma_auto_decoder(long lzmast, long memlimit, int decoderFlags);
 
-        /*-
-          nfi_function: name('lzmaAutoDecoder') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_auto_decoder(lzmast_stream *lzmast, uint64_t memlimit, uint32_t decoder_flags)
-        */
-        lzma_lzma_auto_decoder("(POINTER, UINT64, UINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT64, SINT32})
+        abstract int lzma_lzma_stream_decoder(long lzmast, long memlimit, int decoderFlags);
 
-        /*-
-          nfi_function: name('lzmaStreamDecoder') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_stream_decoder(lzmast_stream *lzmast, uint64_t memlimit, uint32_t decoder_flags)
-        */
-        lzma_lzma_stream_decoder("(POINTER, UINT64, UINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT64})
+        abstract int lzma_lzma_alone_decoder(long lzmast, long memlimit);
 
-        /*-
-          nfi_function: name('lzmaAloneDecoder') map('lzmast_stream*', 'POINTER')
-          int lzma_lzma_alone_decoder(lzmast_stream *lzmast, uint64_t memlimit)
-        */
-        lzma_lzma_alone_decoder("(POINTER, UINT64): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT64, SINT64, SINT64})
+        abstract int lzma_decompress(long lzmast, long inputBuffer, long offset, long maxLength, long bufsize, long lzsAvailIn);
 
-        /*-
-          nfi_function: name('decompress') map('lzmast_stream*', 'POINTER')
-          int lzma_decompress(lzmast_stream *lzmast, Byte *input_buffer, ssize_t offset,ssize_t max_length,ssize_t bufsize, size_t lzs_avail_in)
-        */
-        lzma_decompress("(POINTER, [UINT8], SINT64, SINT64, SINT64, UINT64): SINT32");
-
-        private final String signature;
-
-        LZMANativeFunctions(String signature) {
-            this.signature = signature;
-        }
-
-        @Override
-        public String signature() {
-            return signature;
+        static NativeLibrary loadNativeLibrary(PythonContext context) {
+            return NativeCompressionSupport.loadNativeLibrary(context, SUPPORTING_NATIVE_LIB_NAME);
         }
     }
 
-    private static final String SUPPORTING_NATIVE_LIB_NAME = "lzmasupport";
+    private final LZMANativeFunctions nativeFunctions;
 
-    private final PythonContext pythonContext;
-    private final NativeLibrary.TypedNativeLibrary<LZMANativeFunctions> typedNativeLib;
-
-    @CompilerDirectives.CompilationFinal private boolean available;
-
-    private NFILZMASupport(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
-        if (context.useNativeCompressionModules()) {
-            this.pythonContext = context;
-            this.typedNativeLib = NativeLibrary.create(PythonContext.getSupportLibName(SUPPORTING_NATIVE_LIB_NAME), LZMANativeFunctions.values(),
-                            backend, noNativeAccessHelp, true);
-            this.available = true;
-        } else {
-            this.pythonContext = null;
-            this.typedNativeLib = null;
-            this.available = false;
-        }
+    private NFILZMASupport(PythonContext context) {
+        super(context);
+        this.nativeFunctions = isAvailable() ? new LZMANativeFunctionsGen(context) : null;
     }
 
     public static NFILZMASupport createNative(PythonContext context, String noNativeAccessHelp) {
-        return new NFILZMASupport(context, NativeLibrary.NFIBackend.NATIVE, noNativeAccessHelp);
-    }
-
-    public static NFILZMASupport createLLVM(PythonContext context, String noNativeAccessHelp) {
-        return new NFILZMASupport(context, NativeLibrary.NFIBackend.LLVM, noNativeAccessHelp);
+        return new NFILZMASupport(context);
     }
 
     static class PointerReleaseCallback implements AsyncHandler.AsyncAction {
@@ -323,17 +215,15 @@ public class NFILZMASupport {
 
         @Override
         public void execute(PythonContext context, Access access) {
-            synchronized (pointer) {
-                if (pointer.isReleased()) {
-                    return;
-                }
-                try {
-                    pointer.doRelease();
-                    pointer.markReleased();
-                    LOGGER.finest("NFILZMASupport pointer has been freed");
-                } catch (Exception e) {
-                    LOGGER.severe("Error while trying to free NFILZMASupport pointer: " + e.getMessage());
-                }
+            if (!pointer.markReleased()) {
+                assert pointer.isReleased();
+                return;
+            }
+            try {
+                pointer.doRelease();
+                LOGGER.finest("NFILZMASupport pointer has been freed");
+            } catch (Exception e) {
+                LOGGER.severe("Error while trying to free NFILZMASupport pointer: " + e.getMessage());
             }
         }
     }
@@ -341,14 +231,20 @@ public class NFILZMASupport {
     public static class Pointer extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
         private final NFILZMASupport lib;
+        private final long pointer;
 
-        public Pointer(Object referent, Object ptr, NFILZMASupport lib) {
-            super(referent, ptr, lib.pythonContext.getSharedFinalizer());
+        public Pointer(Object referent, long pointer, NFILZMASupport lib) {
+            super(referent, lib.pythonContext.getSharedFinalizer());
             this.lib = lib;
+            this.pointer = pointer;
+        }
+
+        public long getPointer() {
+            return pointer;
         }
 
         protected void doRelease() {
-            lib.gcReleaseHelper(getReference());
+            lib.gcReleaseHelper(pointer);
         }
 
         @Override
@@ -360,337 +256,195 @@ public class NFILZMASupport {
         }
     }
 
-    public void notAvailable() {
-        if (available) {
-            CompilerAsserts.neverPartOfCompilation("Checking NFILZMASupport availability should only be done during initialization.");
-            available = false;
+    public void getMacros(int[] formats, int[] checks, long[] filters, int[] mfs, int[] modes, long[] preset) {
+        long nativeFormats = copyToNativeIntArray(formats);
+        long nativeChecks = copyToNativeIntArray(checks);
+        long nativeFilters = copyToNativeLongArray(filters);
+        long nativeMfs = copyToNativeIntArray(mfs);
+        long nativeModes = copyToNativeIntArray(modes);
+        long nativePreset = copyToNativeLongArray(preset);
+        try {
+            nativeFunctions.get_macros(nativeFormats, nativeChecks, nativeFilters, nativeMfs, nativeModes, nativePreset);
+            NativeMemory.readIntArrayElements(nativeFormats, 0, formats, 0, formats.length);
+            NativeMemory.readIntArrayElements(nativeChecks, 0, checks, 0, checks.length);
+            NativeMemory.readLongArrayElements(nativeFilters, 0, filters, 0, filters.length);
+            NativeMemory.readIntArrayElements(nativeMfs, 0, mfs, 0, mfs.length);
+            NativeMemory.readIntArrayElements(nativeModes, 0, modes, 0, modes.length);
+            NativeMemory.readLongArrayElements(nativePreset, 0, preset, 0, preset.length);
+        } finally {
+            NativeMemory.free(nativeFormats);
+            NativeMemory.free(nativeChecks);
+            NativeMemory.free(nativeFilters);
+            NativeMemory.free(nativeMfs);
+            NativeMemory.free(nativeModes);
+            NativeMemory.free(nativePreset);
         }
     }
 
-    public boolean isAvailable() {
-        return available;
+    public Object getTimeElapsed(long lzmast) {
+        return nativeFunctions.lzma_get_timeElapsed(lzmast);
     }
 
-    /**
-     *
-     * @param formats int* formats
-     * @param checks int* checks
-     * @param filters uint64_t* filters
-     * @param mfs int* mfs
-     * @param modes int* modes
-     * @param preset uint64_t* preset
-     *
-     */
-    public Object getMacros(int[] formats, int[] checks, long[] filters, int[] mfs, int[] modes, long[] preset) {
-        return typedNativeLib.callUncached(pythonContext, LZMANativeFunctions.get_macros, formats, checks, filters, mfs, modes, preset);
+    public Object gcReleaseHelper(long lzmast) {
+        nativeFunctions.lzma_gc_helper(lzmast);
+        return null;
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream* lzmast
-     * @return double
-     */
-    public Object getTimeElapsed(Object lzmast) {
-        return typedNativeLib.callUncached(pythonContext, LZMANativeFunctions.lzma_get_timeElapsed, lzmast);
+    public long createStream() {
+        return nativeFunctions.lzma_create_lzmast_stream();
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream* lzmast
-     *
-     */
-    public Object gcReleaseHelper(Object lzmast) {
-        return typedNativeLib.callUncached(pythonContext, LZMANativeFunctions.lzma_gc_helper, lzmast);
+    public void deallocateStream(long lzmast) {
+        nativeFunctions.lzma_free_stream(lzmast);
     }
 
-    /**
-     *
-     *
-     * @return lzmast_stream*
-     */
-    public Object createStream(
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.call(typedNativeLib, LZMANativeFunctions.lzma_create_lzmast_stream);
+    public long getNextInIndex(long lzmast) {
+        return nativeFunctions.lzma_get_next_in_index(lzmast);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream* lzmast
-     *
-     */
-    public void deallocateStream(Object lzmast,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        invokeNode.call(typedNativeLib, LZMANativeFunctions.lzma_free_stream, lzmast);
+    public long getLzsAvailIn(long lzmast) {
+        return nativeFunctions.lzma_get_lzs_avail_in(lzmast);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @return ssize_t
-     */
-    public long getNextInIndex(Object lzmast,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callLong(typedNativeLib, LZMANativeFunctions.lzma_get_next_in_index, lzmast);
+    public long getLzsAvailOut(long lzmast) {
+        return nativeFunctions.lzma_get_lzs_avail_out(lzmast);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @return size_t
-     */
-    public long getLzsAvailIn(Object lzmast,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callLong(typedNativeLib, LZMANativeFunctions.lzma_get_lzs_avail_in, lzmast);
+    public int getLzsCheck(long lzmast) {
+        return nativeFunctions.lzma_lzma_get_check(lzmast);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @return size_t
-     */
-    public long getLzsAvailOut(Object lzmast,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callLong(typedNativeLib, LZMANativeFunctions.lzma_get_lzs_avail_out, lzmast);
+    public void setLzsAvailIn(long lzmast, long v) {
+        nativeFunctions.lzma_set_lzs_avail_in(lzmast, v);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @return int
-     */
-    public int getLzsCheck(Object lzmast,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_get_check, lzmast);
+    public long getOutputBufferSize(long lzmast) {
+        return nativeFunctions.lzma_get_output_buffer_size(lzmast);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param v size_t v
-     *
-     */
-    public void setLzsAvailIn(Object lzmast, long v,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        invokeNode.call(typedNativeLib, LZMANativeFunctions.lzma_set_lzs_avail_in, lzmast, v);
+    public void getOutputBuffer(long lzmast, byte[] dest) {
+        if (dest.length == 0) {
+            return;
+        }
+        long nativeDest = NativeMemory.mallocByteArray(dest.length);
+        try {
+            nativeFunctions.lzma_get_output_buffer(lzmast, nativeDest);
+            NativeMemory.readByteArrayElements(nativeDest, 0, dest, 0, dest.length);
+        } finally {
+            NativeMemory.free(nativeDest);
+        }
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @return size_t
-     */
-    public long getOutputBufferSize(Object lzmast,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callLong(typedNativeLib, LZMANativeFunctions.lzma_get_output_buffer_size, lzmast);
+    public int checkIsSupported(int checkId) {
+        return nativeFunctions.lzma_lzma_check_is_supported(checkId);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param dest Byte *dest
-     *
-     */
-    public void getOutputBuffer(Object lzmast, byte[] dest,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        invokeNode.call(typedNativeLib, LZMANativeFunctions.lzma_get_output_buffer, lzmast, dest);
+    public int setFilterSpecLZMA(long lzmast, int fidx, long[] opts) {
+        long nativeOpts = copyToNativeLongArray(opts);
+        try {
+            return nativeFunctions.lzma_set_filter_spec_lzma(lzmast, fidx, nativeOpts);
+        } finally {
+            NativeMemory.free(nativeOpts);
+        }
     }
 
-    /**
-     *
-     * @param check_id int check_id
-     * @return int
-     */
-    public int checkIsSupported(int check_id,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_check_is_supported, check_id);
+    public int setFilterSpecDelta(long lzmast, int fidx, long[] opts) {
+        long nativeOpts = copyToNativeLongArray(opts);
+        try {
+            return nativeFunctions.lzma_set_filter_spec_delta(lzmast, fidx, nativeOpts);
+        } finally {
+            NativeMemory.free(nativeOpts);
+        }
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param fidx int fidx
-     * @param opts int64_t* opts
-     * @return int
-     */
-    public int setFilterSpecLZMA(Object lzmast, int fidx, long[] opts,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_set_filter_spec_lzma, lzmast, fidx, opts);
+    public int setFilterSpecBCJ(long lzmast, int fidx, long[] opts) {
+        long nativeOpts = copyToNativeLongArray(opts);
+        try {
+            return nativeFunctions.lzma_set_filter_spec_bcj(lzmast, fidx, nativeOpts);
+        } finally {
+            NativeMemory.free(nativeOpts);
+        }
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param fidx int fidx
-     * @param opts int64_t* opts
-     * @return int
-     */
-    public int setFilterSpecDelta(Object lzmast, int fidx, long[] opts,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_set_filter_spec_delta, lzmast, fidx, opts);
+    public int encodeFilter(long lzmast, long[] opts) {
+        long nativeOpts = copyToNativeLongArray(opts);
+        try {
+            return nativeFunctions.lzma_encode_filter_spec(lzmast, nativeOpts);
+        } finally {
+            NativeMemory.free(nativeOpts);
+        }
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param fidx int fidx
-     * @param opts int64_t* opts
-     * @return int
-     */
-    public int setFilterSpecBCJ(Object lzmast, int fidx, long[] opts,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_set_filter_spec_bcj, lzmast, fidx, opts);
+    public int decodeFilter(long filterId, byte[] encodedProps, int len, long[] opts) {
+        long nativeEncodedProps = copyToNativeByteArray(encodedProps, len);
+        long nativeOpts = copyToNativeLongArray(opts);
+        try {
+            int result = nativeFunctions.lzma_decode_filter_spec(filterId, nativeEncodedProps, len, nativeOpts);
+            NativeMemory.readLongArrayElements(nativeOpts, 0, opts, 0, opts.length);
+            return result;
+        } finally {
+            if (nativeEncodedProps != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeEncodedProps);
+            }
+            NativeMemory.free(nativeOpts);
+        }
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param opts int64_t* opts
-     * @return int
-     */
-    public int encodeFilter(Object lzmast, long[] opts,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_encode_filter_spec, lzmast, opts);
+    public int lzmaEasyEncoder(long lzmast, long preset, int check) {
+        return nativeFunctions.lzma_lzma_easy_encoder(lzmast, (int) preset, check);
     }
 
-    /**
-     *
-     * @param filter_id int64_t filter_id
-     * @param encoded_props Byte* encoded_props
-     * @param len int len
-     * @param opts int64_t *opts
-     * @return int
-     */
-    public int decodeFilter(long filter_id, byte[] encoded_props, int len, long[] opts,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_decode_filter_spec, filter_id, encoded_props, len, opts);
+    public int lzmaStreamEncoder(long lzmast, int check) {
+        return nativeFunctions.lzma_lzma_stream_encoder(lzmast, check);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param preset uint32_t preset
-     * @param check int check
-     * @return int
-     */
-    public int lzmaEasyEncoder(Object lzmast, long preset, int check,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_easy_encoder, lzmast, preset, check);
+    public int lzmaAloneEncoderPreset(long lzmast, long preset) {
+        return nativeFunctions.lzma_lzma_alone_encoder_preset(lzmast, (int) preset);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param check int check
-     * @return int
-     */
-    public int lzmaStreamEncoder(Object lzmast, int check,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_stream_encoder, lzmast, check);
+    public int lzmaAloneEncoder(long lzmast) {
+        return nativeFunctions.lzma_lzma_alone_encoder(lzmast);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param preset uint32_t preset
-     * @return int
-     */
-    public int lzmaAloneEncoderPreset(Object lzmast, long preset,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_alone_encoder_preset, lzmast, preset);
+    public int lzmaRawEncoder(long lzmast) {
+        return nativeFunctions.lzma_lzma_raw_encoder(lzmast);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @return int
-     */
-    public int lzmaAloneEncoder(Object lzmast,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_alone_encoder, lzmast);
+    public int compress(long lzmast, byte[] data, long len, int iaction, long bufsize) {
+        long nativeData = copyToNativeByteArray(data, (int) len);
+        try {
+            return nativeFunctions.lzma_compress(lzmast, nativeData, len, iaction, bufsize);
+        } finally {
+            if (nativeData != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeData);
+            }
+        }
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @return int
-     */
-    public int lzmaRawEncoder(Object lzmast,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_raw_encoder, lzmast);
+    public int lzmaRawDecoder(long lzmast) {
+        return nativeFunctions.lzma_lzma_raw_decoder(lzmast);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param data Byte *data
-     * @param len size_t len
-     * @param iaction int iaction
-     * @param bufsize ssize_t bufsize
-     * @return int
-     */
-    public int compress(Object lzmast, byte[] data, long len, int iaction, long bufsize,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_compress, lzmast, data, len, iaction, bufsize);
+    public int lzmaAutoDecoder(long lzmast, long memlimit, long decoderFlags) {
+        return nativeFunctions.lzma_lzma_auto_decoder(lzmast, memlimit, (int) decoderFlags);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @return int
-     */
-    public int lzmaRawDecoder(Object lzmast,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_raw_decoder, lzmast);
+    public int lzmaStreamDecoder(long lzmast, long memlimit, long decoderFlags) {
+        return nativeFunctions.lzma_lzma_stream_decoder(lzmast, memlimit, (int) decoderFlags);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param memlimit uint64_t memlimit
-     * @param decoder_flags uint32_t decoder_flags
-     * @return int
-     */
-    public int lzmaAutoDecoder(Object lzmast, long memlimit, long decoder_flags,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_auto_decoder, lzmast, memlimit, decoder_flags);
+    public int lzmaAloneDecoder(long lzmast, long memlimit) {
+        return nativeFunctions.lzma_lzma_alone_decoder(lzmast, memlimit);
     }
 
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param memlimit uint64_t memlimit
-     * @param decoder_flags uint32_t decoder_flags
-     * @return int
-     */
-    public int lzmaStreamDecoder(Object lzmast, long memlimit, long decoder_flags,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_stream_decoder, lzmast, memlimit, decoder_flags);
+    public int decompress(long lzmast, byte[] inputBuffer, long offset, long maxLength, long bufsize, long lzsAvailIn) {
+        long nativeInputBuffer = copyToNativeByteArray(inputBuffer);
+        try {
+            return nativeFunctions.lzma_decompress(lzmast, nativeInputBuffer, offset, maxLength, bufsize, lzsAvailIn);
+        } finally {
+            if (nativeInputBuffer != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeInputBuffer);
+            }
+        }
     }
-
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param memlimit uint64_t memlimit
-     * @return int
-     */
-    public int lzmaAloneDecoder(Object lzmast, long memlimit,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_lzma_alone_decoder, lzmast, memlimit);
-    }
-
-    /**
-     *
-     * @param lzmast lzmast_stream *lzmast
-     * @param input_buffer Byte *input_buffer
-     * @param offset ssize_t offset
-     * @param max_length ssize_t max_length
-     * @param bufsize ssize_t bufsize
-     * @param lzs_avail_in size_t lzs_avail_in
-     * @return int
-     */
-    public int decompress(Object lzmast, byte[] input_buffer, long offset, long max_length, long bufsize, long lzs_avail_in,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, LZMANativeFunctions.lzma_decompress, lzmast, input_buffer, offset, max_length, bufsize, lzs_avail_in);
-    }
-
 }
