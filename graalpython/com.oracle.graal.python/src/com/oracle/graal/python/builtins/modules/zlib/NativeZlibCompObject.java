@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,35 +41,39 @@
 package com.oracle.graal.python.builtins.modules.zlib;
 
 import com.oracle.graal.python.runtime.NFIZlibSupport;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
-// Note: some IDEs mark this class as inaccessible in PFactory, but changing this to
-// public will cause a warning: [this-escape] possible 'this' escape before subclass is fully
-// initialized
 public final class NativeZlibCompObject extends ZLibCompObject {
     private NFIZlibSupport.Pointer pointer;
     byte[] lastInput;
 
-    public NativeZlibCompObject(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
+    public NativeZlibCompObject(Object cls, Shape instanceShape, long zst, NFIZlibSupport zlibSupport) {
         super(cls, instanceShape);
         this.pointer = new NFIZlibSupport.Pointer(this, zst, zlibSupport);
-        this.lastInput = null;
     }
 
-    public Object getZst() {
-        assert pointer != null;
-        return pointer.getReference();
+    public long getZst() {
+        NFIZlibSupport.Pointer p = pointer;
+        assert p != null && !p.isReleased();
+        return p.getPointer();
     }
 
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     public void markReleased() {
-        if (isInitialized) {
-            synchronized (this) {
-                isInitialized = false;
-                pointer.markReleased();
-                pointer = null;
+        NFIZlibSupport.Pointer p;
+        synchronized (this) {
+            if (!isInitialized) {
+                assert pointer == null || pointer.isReleased();
+                return;
             }
+            assert pointer != null && !pointer.isReleased();
+            isInitialized = false;
+            p = pointer;
+            pointer = null;
+            assert !isInitialized;
         }
+        boolean markedReleased = p.markReleased();
+        assert markedReleased || p.isReleased();
     }
 }

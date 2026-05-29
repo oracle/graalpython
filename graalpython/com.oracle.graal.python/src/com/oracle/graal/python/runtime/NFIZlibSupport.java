@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,21 +40,25 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.annotations.NativeSimpleType.DOUBLE;
+import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
+import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.annotations.DowncallSignature;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.strings.TruffleString;
 
-/*-
- * Generated using:
- * scripts/nfi_gen.py -name Zlib -cpath graalpython/com.oracle.graal.python.cext/zlib/zlib.c -lib libzsupport
- */
-public class NFIZlibSupport {
+public class NFIZlibSupport extends NativeCompressionSupport {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIZlibSupport.class);
+    private static final String SUPPORTING_NATIVE_LIB_NAME = "zsupport";
 
     public static final int NO_ERROR = 0;
     public static final int DEFLATE_INIT_ERROR = 101;
@@ -78,216 +82,108 @@ public class NFIZlibSupport {
     public static final int UNCONSUMED_TAIL_OPTION = 2;
     public static final int ZDICT_OPTION = 3;
 
-    enum ZlibNativeFunctions implements NativeLibrary.NativeFunction {
+    abstract static class ZlibNativeFunctions {
+        @DowncallSignature(returnType = POINTER)
+        abstract long zlib_get_version();
 
-        /*-
-          nfi_function: name('zlibVersion') static(true)
-          char *zlib_get_version()
-        */
-        zlib_get_version("(): STRING"),
+        @DowncallSignature(returnType = POINTER)
+        abstract long zlib_get_runtime_version();
 
-        /*-
-          nfi_function: name('zlibRuntimeVersion') static(true)
-          char *zlib_get_runtime_version()
-        */
-        zlib_get_runtime_version("(): STRING"),
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64, POINTER, SINT32})
+        abstract long zlib_crc32(long crc, long buf, int len);
 
-        /*-
-          nfi_function: name('crc32')
-          uLong zlib_crc32(uLong crc, Byte *buf, uInt len)
-        */
-        zlib_crc32("(UINT64, [UINT8], UINT32): UINT64"),
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64, POINTER, SINT32})
+        abstract long zlib_adler32(long crc, long buf, int len);
 
-        /*-
-          nfi_function: name('adler32')
-          uLong zlib_adler32(uLong crc, Byte *buf, uInt len)
-        */
-        zlib_adler32("(UINT64, [UINT8], UINT32): UINT64"),
+        @DowncallSignature(returnType = POINTER)
+        abstract long zlib_create_zlib_stream();
 
-        /*-
-          nfi_function: name('createStream') map('zlib_stream*', 'POINTER')
-          zlib_stream *zlib_create_zlib_stream()
-        */
-        zlib_create_zlib_stream("(): POINTER"),
+        @DowncallSignature(returnType = DOUBLE, argumentTypes = {POINTER})
+        abstract double zlib_get_timeElapsed(long zst);
 
-        /*-
-          nfi_function: name('getTimeElapsed') map('zlib_stream*', 'POINTER')  static(true)
-          double zlib_get_timeElapsed(zlib_stream* zst)
-        */
-        zlib_get_timeElapsed("(POINTER): DOUBLE"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER})
+        abstract void zlib_free_stream(long zst);
 
-        /*-
-          nfi_function: name('deallocateStream') map('zlib_stream*', 'POINTER')
-          void zlib_free_stream(zlib_stream* zst)
-        */
-        zlib_free_stream("(POINTER): VOID"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER})
+        abstract void zlib_gc_helper(long zst);
 
-        /*-
-          nfi_function: name('gcReleaseHelper') map('zlib_stream*', 'POINTER') release(true)
-          void zlib_gc_helper(zlib_stream* zst)
-        */
-        zlib_gc_helper("(POINTER): VOID"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int zlib_get_error_type(long zst);
 
-        /*-
-          nfi_function: name('getErrorFunction') map('zlib_stream*', 'POINTER')
-          int zlib_get_error_type(zlib_stream *zst)
-        */
-        zlib_get_error_type("(POINTER): SINT32"),
+        @DowncallSignature(returnType = POINTER, argumentTypes = {POINTER})
+        abstract long zlib_get_stream_msg(long zst);
 
-        /*-
-          nfi_function: name('getStreamErrorMsg') map('zlib_stream*', 'POINTER')
-          char *zlib_get_stream_msg(zlib_stream *zst)
-        */
-        zlib_get_stream_msg("(POINTER): STRING"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int zlib_has_stream_msg(long zst);
 
-        /*-
-          nfi_function: name('hasStreamErrorMsg') map('zlib_stream*', 'POINTER')
-          int zlib_has_stream_msg(zlib_stream *zst)
-        */
-        zlib_has_stream_msg("(POINTER): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int zlib_get_eof(long zst);
 
-        /*-
-          nfi_function: name('getEOF') map('zlib_stream*', 'POINTER')
-          int zlib_get_eof(zlib_stream *zst)
-        */
-        zlib_get_eof("(POINTER): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int zlib_get_is_initialised(long zst);
 
-        /*-
-          nfi_function: name('getIsInitialised') map('zlib_stream*', 'POINTER')
-          int zlib_get_is_initialised(zlib_stream *zst)
-        */
-        zlib_get_is_initialised("(POINTER): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
+        abstract int zlib_get_buffer_size(long zst, int option);
 
-        /*-
-          nfi_function: name('getBufferSize') map('zlib_stream*', 'POINTER')
-          uInt zlib_get_buffer_size(zlib_stream *zst, int option)
-        */
-        zlib_get_buffer_size("(POINTER, SINT32): UINT32"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER, SINT32, POINTER})
+        abstract void zlib_get_off_heap_buffer(long zst, int option, long dest);
 
-        /*-
-          nfi_function: name('getBuffer') map('zlib_stream*', 'POINTER')
-          void zlib_get_off_heap_buffer(zlib_stream *zst, int option, Byte *dest)
-        */
-        zlib_get_off_heap_buffer("(POINTER, SINT32, [UINT8]): VOID"),
+        @DowncallSignature(returnType = POINTER)
+        abstract long zlib_create_compobject();
 
-        /*-
-          nfi_function: name('createCompObject') map('zlib_stream*', 'POINTER')
-          zlib_stream *zlib_create_compobject()
-        */
-        zlib_create_compobject("(): POINTER"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT64, SINT32, SINT32})
+        abstract int zlib_deflate_off_heap(long zst, long in, long inLen, long bufSize, int level, int wbits);
 
-        /*-
-          nfi_function: name('deflateOffHeap') map('zlib_stream*', 'POINTER')
-          int zlib_deflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, int level)
-        */
-        zlib_deflate_off_heap("(POINTER, [UINT8], SINT64, SINT64, SINT32, SINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT64, SINT32})
+        abstract int zlib_inflate_off_heap(long zst, long in, long inLen, long bufSize, int wbits);
 
-        /*-
-          nfi_function: name('inflateOffHeap') map('zlib_stream*', 'POINTER')
-          int zlib_inflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, int wbits)
-        */
-        zlib_inflate_off_heap("(POINTER, [UINT8], SINT64, SINT64, SINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, SINT32, SINT32, SINT32, SINT32, POINTER, SINT64})
+        abstract int zlib_Compress_init(long zst, int level, int method, int wbits, int memLevel, int strategy, long dict, long dictLen);
 
-        /*-
-          nfi_function: name('compressObjInitWithDict') map('zlib_stream*', 'POINTER')
-          int zlib_Compress_init(zlib_stream *zst, int level, int method,int wbits, int memLevel,int strategy, Byte *dict, size_t dict_len)
-        */
-        zlib_Compress_init("(POINTER, SINT32, SINT32, SINT32, SINT32, SINT32, [UINT8], UINT64): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, SINT32, SINT32, SINT32, SINT32})
+        abstract int zlib_Compress_init_no_dict(long zst, int level, int method, int wbits, int memLevel, int strategy);
 
-        /*-
-          nfi_function: name('compressObjInit') map('zlib_stream*', 'POINTER')
-          int zlib_Compress_init_no_dict(zlib_stream *zst, int level, int method,int wbits, int memLevel,int strategy)
-        */
-        zlib_Compress_init_no_dict("(POINTER, SINT32, SINT32, SINT32, SINT32, SINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT64})
+        abstract int zlib_Compress_obj(long zst, long in, long inLen, long bufSize);
 
-        /*-
-          nfi_function: name('compressObj') map('zlib_stream*', 'POINTER')
-          int zlib_Compress_obj(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size)
-        */
-        zlib_Compress_obj("(POINTER, [UINT8], SINT64, SINT64): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT32})
+        abstract int zlib_Compress_flush(long zst, long in, long bufSize, int mode);
 
-        /*-
-          nfi_function: name('compressObjFlush') map('zlib_stream*', 'POINTER')
-          int zlib_Compress_flush(zlib_stream *zst, Byte *in, ssize_t buf_size, int mode)
-        */
-        zlib_Compress_flush("(POINTER, [UINT8], SINT64, SINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER})
+        abstract int zlib_Compress_copy(long zst, long newCopy);
 
-        /*-
-          nfi_function: name('compressObjCopy') map('zlib_stream*', 'POINTER')
-          int zlib_Compress_copy(zlib_stream *zst, zlib_stream *new_copy)
-        */
-        zlib_Compress_copy("(POINTER, POINTER): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, POINTER, SINT64})
+        abstract int zlib_Decompress_init(long zst, int wbits, long dict, long dictLen);
 
-        /*-
-          nfi_function: name('decompressObjInitWithDict') map('zlib_stream*', 'POINTER')
-          int zlib_Decompress_init(zlib_stream *zst, int wbits, Byte *dict, size_t dict_len)
-        */
-        zlib_Decompress_init("(POINTER, SINT32, [UINT8], UINT64): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
+        abstract int zlib_Decompress_init_no_dict(long zst, int wbits);
 
-        /*-
-          nfi_function: name('decompressObjInit') map('zlib_stream*', 'POINTER')
-          int zlib_Decompress_init_no_dict(zlib_stream *zst, int wbits)
-        */
-        zlib_Decompress_init_no_dict("(POINTER, SINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT64, SINT64})
+        abstract int zlib_Decompress_obj(long zst, long in, long inLen, long bufSize, long maxLength);
 
-        /*-
-          nfi_function: name('decompressObj') map('zlib_stream*', 'POINTER')
-          int zlib_Decompress_obj(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, ssize_t max_length)
-        */
-        zlib_Decompress_obj("(POINTER, [UINT8], SINT64, SINT64, SINT64): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT64})
+        abstract int zlib_Decompress_flush(long zst, long length);
 
-        /*-
-          nfi_function: name('decompressObjFlush') map('zlib_stream*', 'POINTER')
-          int zlib_Decompress_flush(zlib_stream *zst, ssize_t length)
-        */
-        zlib_Decompress_flush("(POINTER, SINT64): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER})
+        abstract int zlib_Decompress_copy(long zst, long newCopy);
 
-        /*-
-          nfi_function: name('decompressObjCopy') map('zlib_stream*', 'POINTER')
-          int zlib_Decompress_copy(zlib_stream *zst, zlib_stream *new_copy)
-        */
-        zlib_Decompress_copy("(POINTER, POINTER): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT64})
+        abstract int zlib_decompress(long zst, long data, long len, long maxLength);
 
-        zlib_decompress("(POINTER, [UINT8], SINT64, SINT64): SINT32");
-
-        private final String signature;
-
-        ZlibNativeFunctions(String signature) {
-            this.signature = signature;
-        }
-
-        @Override
-        public String signature() {
-            return signature;
+        static NativeLibrary loadNativeLibrary(PythonContext context) {
+            return NativeCompressionSupport.loadNativeLibrary(context, SUPPORTING_NATIVE_LIB_NAME);
         }
     }
 
-    private static final String SUPPORTING_NATIVE_LIB_NAME = "zsupport";
+    private final ZlibNativeFunctions nativeFunctions;
 
-    private final PythonContext pythonContext;
-    private final NativeLibrary.TypedNativeLibrary<ZlibNativeFunctions> typedNativeLib;
-
-    @CompilerDirectives.CompilationFinal private boolean available;
-
-    private NFIZlibSupport(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
-        if (context.useNativeCompressionModules()) {
-            this.pythonContext = context;
-            this.typedNativeLib = NativeLibrary.create(PythonContext.getSupportLibName(SUPPORTING_NATIVE_LIB_NAME),
-                            ZlibNativeFunctions.values(), backend, noNativeAccessHelp, true);
-            this.available = true;
-        } else {
-            this.pythonContext = null;
-            this.typedNativeLib = null;
-            this.available = false;
-        }
+    private NFIZlibSupport(PythonContext context) {
+        super(context);
+        this.nativeFunctions = isAvailable() ? new ZlibNativeFunctionsGen(context) : null;
     }
 
     public static NFIZlibSupport createNative(PythonContext context, String noNativeAccessHelp) {
-        return new NFIZlibSupport(context, NativeLibrary.NFIBackend.NATIVE, noNativeAccessHelp);
-    }
-
-    public static NFIZlibSupport createLLVM(PythonContext context, String noNativeAccessHelp) {
-        return new NFIZlibSupport(context, NativeLibrary.NFIBackend.LLVM, noNativeAccessHelp);
+        return new NFIZlibSupport(context);
     }
 
     static class PointerReleaseCallback implements AsyncHandler.AsyncAction {
@@ -299,17 +195,15 @@ public class NFIZlibSupport {
 
         @Override
         public void execute(PythonContext context, Access access) {
-            synchronized (pointer) {
-                if (pointer.isReleased()) {
-                    return;
-                }
-                try {
-                    pointer.doRelease();
-                    pointer.markReleased();
-                    LOGGER.finest("NFIZlibSupport pointer has been freed");
-                } catch (Exception e) {
-                    LOGGER.severe("Error while trying to free NFIZlibSupport pointer: " + e.getMessage());
-                }
+            if (!pointer.markReleased()) {
+                assert pointer.isReleased();
+                return;
+            }
+            try {
+                pointer.doRelease();
+                LOGGER.finest("NFIZlibSupport pointer has been freed");
+            } catch (Exception e) {
+                LOGGER.severe("Error while trying to free NFIZlibSupport pointer: " + e.getMessage());
             }
         }
     }
@@ -317,14 +211,20 @@ public class NFIZlibSupport {
     public static class Pointer extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
         private final NFIZlibSupport lib;
+        private final long pointer;
 
-        public Pointer(Object referent, Object ptr, NFIZlibSupport lib) {
-            super(referent, ptr, lib.pythonContext.getSharedFinalizer());
+        public Pointer(Object referent, long pointer, NFIZlibSupport lib) {
+            super(referent, lib.pythonContext.getSharedFinalizer());
             this.lib = lib;
+            this.pointer = pointer;
+        }
+
+        public long getPointer() {
+            return pointer;
         }
 
         protected void doRelease() {
-            lib.gcReleaseHelper(getReference());
+            lib.gcReleaseHelper(pointer);
         }
 
         @Override
@@ -336,361 +236,205 @@ public class NFIZlibSupport {
         }
     }
 
-    @TruffleBoundary
-    public void notAvailable() {
-        if (available) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            CompilerAsserts.neverPartOfCompilation("Checking NFIZlibSupport availability should only be done during initialization.");
-            available = false;
+    public TruffleString zlibVersion() {
+        return ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(nativeFunctions.zlib_get_version());
+    }
+
+    public TruffleString zlibRuntimeVersion() {
+        return ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(nativeFunctions.zlib_get_runtime_version());
+    }
+
+    public Object getTimeElapsed(long zst) {
+        return nativeFunctions.zlib_get_timeElapsed(zst);
+    }
+
+    public Object gcReleaseHelper(long zst) {
+        nativeFunctions.zlib_gc_helper(zst);
+        return null;
+    }
+
+    public long crc32(long crc, byte[] buf, int len) {
+        if (len == 0) {
+            return crc;
+        }
+        long nativeBuf = copyToNativeByteArray(buf, len);
+        try {
+            return nativeFunctions.zlib_crc32(crc, nativeBuf, len);
+        } finally {
+            if (nativeBuf != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeBuf);
+            }
         }
     }
 
-    public boolean isAvailable() {
-        return available;
-    }
-
-    @TruffleBoundary
-    public void setAvailable() {
-        if (!available && typedNativeLib != null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            CompilerAsserts.neverPartOfCompilation("Checking NFIZlibSupport availability should only be done during initialization.");
-            available = true;
+    public long adler32(long crc, byte[] buf, int len) {
+        if (len == 0) {
+            return crc;
+        }
+        long nativeBuf = copyToNativeByteArray(buf, len);
+        try {
+            return nativeFunctions.zlib_adler32(crc, nativeBuf, len);
+        } finally {
+            if (nativeBuf != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeBuf);
+            }
         }
     }
 
-    /**
-     *
-     *
-     * @return char*
-     */
-    public Object zlibVersion() {
-        return typedNativeLib.callUncached(pythonContext, ZlibNativeFunctions.zlib_get_version);
+    public long createStream() {
+        return nativeFunctions.zlib_create_zlib_stream();
     }
 
-    /**
-     *
-     *
-     * @return char*
-     */
-    public Object zlibRuntimeVersion() {
-        return typedNativeLib.callUncached(pythonContext, ZlibNativeFunctions.zlib_get_runtime_version);
+    public void deallocateStream(long zst) {
+        nativeFunctions.zlib_free_stream(zst);
     }
 
-    /**
-     *
-     * @param zst zlib_stream* zst
-     * @return double
-     */
-    public Object getTimeElapsed(Object zst) {
-        return typedNativeLib.callUncached(pythonContext, ZlibNativeFunctions.zlib_get_timeElapsed, zst);
+    public int getErrorFunction(long zst) {
+        return nativeFunctions.zlib_get_error_type(zst);
     }
 
-    /**
-     *
-     * @param zst zlib_stream* zst
-     *
-     */
-    public Object gcReleaseHelper(Object zst) {
-        return typedNativeLib.callUncached(pythonContext, ZlibNativeFunctions.zlib_gc_helper, zst);
+    public TruffleString getStreamErrorMsg(long zst) {
+        return ZeroTerminatedUtf8ToTruffleStringNode.executeUncached(nativeFunctions.zlib_get_stream_msg(zst));
     }
 
-    /**
-     *
-     * @param crc uLong crc
-     * @param buf Byte *buf
-     * @param len uInt len
-     * @return uLong
-     */
-    public long crc32(long crc, byte[] buf, int len,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callLong(typedNativeLib, ZlibNativeFunctions.zlib_crc32, crc, buf, len);
+    public int hasStreamErrorMsg(long zst) {
+        return nativeFunctions.zlib_has_stream_msg(zst);
     }
 
-    /**
-     *
-     * @param crc uLong crc
-     * @param buf Byte *buf
-     * @param len uInt len
-     * @return uLong
-     */
-    public long adler32(long crc, byte[] buf, int len,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callLong(typedNativeLib, ZlibNativeFunctions.zlib_adler32, crc, buf, len);
+    public int getEOF(long zst) {
+        return nativeFunctions.zlib_get_eof(zst);
     }
 
-    /**
-     *
-     *
-     * @return zlib_stream*
-     */
-    public Object createStream(
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.call(typedNativeLib, ZlibNativeFunctions.zlib_create_zlib_stream);
+    public int getIsInitialised(long zst) {
+        return nativeFunctions.zlib_get_is_initialised(zst);
     }
 
-    /**
-     *
-     * @param zst zlib_stream* zst
-     *
-     */
-    public void deallocateStream(Object zst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        invokeNode.call(typedNativeLib, ZlibNativeFunctions.zlib_free_stream, zst);
+    public int getBufferSize(long zst, int option) {
+        return nativeFunctions.zlib_get_buffer_size(zst, option);
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @return int
-     */
-    public int getErrorFunction(Object zst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_get_error_type, zst);
+    public void getBuffer(long zst, int option, byte[] dest) {
+        if (dest.length == 0) {
+            return;
+        }
+        long nativeDest = NativeMemory.mallocByteArray(dest.length);
+        try {
+            nativeFunctions.zlib_get_off_heap_buffer(zst, option, nativeDest);
+            NativeMemory.readByteArrayElements(nativeDest, 0, dest, 0, dest.length);
+        } finally {
+            NativeMemory.free(nativeDest);
+        }
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @return char*
-     */
-    public TruffleString getStreamErrorMsg(Object zst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callString(typedNativeLib, ZlibNativeFunctions.zlib_get_stream_msg, zst);
+    public long createCompObject() {
+        return nativeFunctions.zlib_create_compobject();
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @return int
-     */
-    public int hasStreamErrorMsg(Object zst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_has_stream_msg, zst);
+    public int deflateOffHeap(long zst, byte[] in, long inLen, long bufSize, int level, int wbits) {
+        long nativeIn = copyToNativeByteArray(in, (int) inLen);
+        try {
+            return nativeFunctions.zlib_deflate_off_heap(zst, nativeIn, inLen, bufSize, level, wbits);
+        } finally {
+            if (nativeIn != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeIn);
+            }
+        }
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @return int
-     */
-    public int getEOF(Object zst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_get_eof, zst);
+    public int inflateOffHeap(long zst, byte[] in, long inLen, long bufSize, int wbits) {
+        long nativeIn = copyToNativeByteArray(in, (int) inLen);
+        try {
+            return nativeFunctions.zlib_inflate_off_heap(zst, nativeIn, inLen, bufSize, wbits);
+        } finally {
+            if (nativeIn != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeIn);
+            }
+        }
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @return int
-     */
-    public int getIsInitialised(Object zst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_get_is_initialised, zst);
+    public int compressObjInitWithDict(long zst, int level, int method, int wbits, int memLevel, int strategy, byte[] dict, long dictLen) {
+        long nativeDict = copyToNativeByteArray(dict, (int) dictLen);
+        try {
+            return nativeFunctions.zlib_Compress_init(zst, level, method, wbits, memLevel, strategy, nativeDict, dictLen);
+        } finally {
+            if (nativeDict != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeDict);
+            }
+        }
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param option int option
-     * @return uInt
-     */
-    public int getBufferSize(Object zst, int option,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_get_buffer_size, zst, option);
+    public int compressObjInit(long zst, int level, int method, int wbits, int memLevel, int strategy) {
+        return nativeFunctions.zlib_Compress_init_no_dict(zst, level, method, wbits, memLevel, strategy);
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param option int option
-     * @param dest Byte *dest
-     *
-     */
-    public void getBuffer(Object zst, int option, byte[] dest,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        invokeNode.call(typedNativeLib, ZlibNativeFunctions.zlib_get_off_heap_buffer, zst, option, dest);
+    public int compressObj(long zst, Object in, long inLen, long bufSize) {
+        long nativeIn = copyToNativeByteArray((byte[]) in, (int) inLen);
+        try {
+            return nativeFunctions.zlib_Compress_obj(zst, nativeIn, inLen, bufSize);
+        } finally {
+            if (nativeIn != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeIn);
+            }
+        }
     }
 
-    /**
-     *
-     *
-     * @return zlib_stream*
-     */
-    public Object createCompObject(
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.call(typedNativeLib, ZlibNativeFunctions.zlib_create_compobject);
+    public int compressObjFlush(long zst, byte[] in, long bufSize, int mode) {
+        long nativeIn = copyToNativeByteArray(in);
+        try {
+            return nativeFunctions.zlib_Compress_flush(zst, nativeIn, bufSize, mode);
+        } finally {
+            if (nativeIn != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeIn);
+            }
+        }
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param in Byte *in
-     * @param in_len ssize_t in_len
-     * @param buf_size ssize_t buf_size
-     * @param level int level
-     * @param wbits int window bits
-     * @return int
-     */
-    public int deflateOffHeap(Object zst, byte[] in, long in_len, long buf_size, int level, int wbits,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_deflate_off_heap, zst, in, in_len, buf_size, level, wbits);
+    public int compressObjCopy(long zst, long newCopy) {
+        return nativeFunctions.zlib_Compress_copy(zst, newCopy);
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param in Byte *in
-     * @param in_len ssize_t in_len
-     * @param buf_size ssize_t buf_size
-     * @param wbits int wbits
-     * @return int
-     */
-    public int inflateOffHeap(Object zst, byte[] in, long in_len, long buf_size, int wbits,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_inflate_off_heap, zst, in, in_len, buf_size, wbits);
+    public int decompressObjInitWithDict(long zst, int wbits, byte[] dict, long dictLen) {
+        long nativeDict = copyToNativeByteArray(dict, (int) dictLen);
+        try {
+            return nativeFunctions.zlib_Decompress_init(zst, wbits, nativeDict, dictLen);
+        } finally {
+            if (nativeDict != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeDict);
+            }
+        }
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param level int level
-     * @param method int method
-     * @param wbits int wbits
-     * @param memLevel int memLevel
-     * @param strategy int strategy
-     * @param dict Byte *dict
-     * @param dict_len size_t dict_len
-     * @return int
-     */
-    public int compressObjInitWithDict(Object zst, int level, int method, int wbits, int memLevel, int strategy, byte[] dict, long dict_len,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Compress_init, zst, level, method, wbits, memLevel, strategy, dict, dict_len);
+    public int decompressObjInit(long zst, int wbits) {
+        return nativeFunctions.zlib_Decompress_init_no_dict(zst, wbits);
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param level int level
-     * @param method int method
-     * @param wbits int wbits
-     * @param memLevel int memLevel
-     * @param strategy int strategy
-     * @return int
-     */
-    public int compressObjInit(Object zst, int level, int method, int wbits, int memLevel, int strategy,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Compress_init_no_dict, zst, level, method, wbits, memLevel, strategy);
+    public int decompressObj(long zst, byte[] in, long inLen, long bufSize, long maxLength) {
+        long nativeIn = copyToNativeByteArray(in, (int) inLen);
+        try {
+            return nativeFunctions.zlib_Decompress_obj(zst, nativeIn, inLen, bufSize, maxLength);
+        } finally {
+            if (nativeIn != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeIn);
+            }
+        }
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param in Byte *in
-     * @param in_len ssize_t in_len
-     * @param buf_size ssize_t buf_size
-     * @return int
-     */
-    public int compressObj(Object zst, Object in, long in_len, long buf_size,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Compress_obj, zst, in, in_len, buf_size);
+    public int decompressObjFlush(long zst, long length) {
+        return nativeFunctions.zlib_Decompress_flush(zst, length);
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param in Byte *in
-     * @param buf_size ssize_t buf_size
-     * @param mode int mode
-     * @return int
-     */
-    public int compressObjFlush(Object zst, byte[] in, long buf_size, int mode,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Compress_flush, zst, in, buf_size, mode);
+    public int decompressObjCopy(long zst, long newCopy) {
+        return nativeFunctions.zlib_Decompress_copy(zst, newCopy);
     }
 
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param new_copy zlib_stream *new_copy
-     * @return int
-     */
-    public int compressObjCopy(Object zst, Object new_copy,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Compress_copy, zst, new_copy);
-    }
-
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param wbits int wbits
-     * @param dict Byte *dict
-     * @param dict_len size_t dict_len
-     * @return int
-     */
-    public int decompressObjInitWithDict(Object zst, int wbits, byte[] dict, long dict_len,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Decompress_init, zst, wbits, dict, dict_len);
-    }
-
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param wbits int wbits
-     * @return int
-     */
-    public int decompressObjInit(Object zst, int wbits,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Decompress_init_no_dict, zst, wbits);
-    }
-
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param in Byte *in
-     * @param in_len ssize_t in_len
-     * @param buf_size ssize_t buf_size
-     * @param max_length ssize_t max_length
-     * @return int
-     */
-    public int decompressObj(Object zst, byte[] in, long in_len, long buf_size, long max_length,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Decompress_obj, zst, in, in_len, buf_size, max_length);
-    }
-
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param length ssize_t length
-     * @return int
-     */
-    public int decompressObjFlush(Object zst, long length,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Decompress_flush, zst, length);
-    }
-
-    /**
-     *
-     * @param zst zlib_stream *zst
-     * @param new_copy zlib_stream *new_copy
-     * @return int
-     */
-    public int decompressObjCopy(Object zst, Object new_copy,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_Decompress_copy, zst, new_copy);
-    }
-
-    /**
-     * returns needs_input flag if the value isn't less than 0, otherwise it returns the zlib error
-     * code.
-     *
-     * @param zst zlib_stream *zst
-     * @param data Byte *data
-     * @param len size_t len
-     * @param max_length ssize_t max_length
-     * @return int
-     */
-    public int decompressor(Object zst, byte[] data, long len, long max_length,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, ZlibNativeFunctions.zlib_decompress, zst, data, len, max_length);
+    public int decompressor(long zst, byte[] data, long len, long maxLength) {
+        long nativeData = copyToNativeByteArray(data, (int) len);
+        try {
+            return nativeFunctions.zlib_decompress(zst, nativeData, len, maxLength);
+        } finally {
+            if (nativeData != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeData);
+            }
+        }
     }
 }

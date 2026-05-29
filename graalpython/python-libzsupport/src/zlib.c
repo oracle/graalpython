@@ -180,50 +180,42 @@ typedef struct
 #endif
 } zlib_stream;
 
-#define NO_ERROR            0   // nfi_var
+#define NO_ERROR            0
 
-#define DEFLATE_INIT_ERROR  101 // nfi_var
-#define DEFLATE_END_ERROR   102 // nfi_var
-#define DEFLATE_DICT_ERROR  103 // nfi_var
-#define DEFLATE_OBJ_ERROR   104 // nfi_var
-#define DEFLATE_FLUSH_ERROR 105 // nfi_var
-#define DEFLATE_COPY_ERROR  106 // nfi_var
-#define DEFLATE_ERROR       107 // nfi_var
+#define DEFLATE_INIT_ERROR  101
+#define DEFLATE_END_ERROR   102
+#define DEFLATE_DICT_ERROR  103
+#define DEFLATE_OBJ_ERROR   104
+#define DEFLATE_FLUSH_ERROR 105
+#define DEFLATE_COPY_ERROR  106
+#define DEFLATE_ERROR       107
 
-#define INFLATE_INIT_ERROR  201 // nfi_var
-#define INFLATE_END_ERROR   202 // nfi_var
-#define INFLATE_DICT_ERROR  203 // nfi_var
-#define INFLATE_OBJ_ERROR   204 // nfi_var
-#define INFLATE_FLUSH_ERROR 205 // nfi_var
-#define INFLATE_COPY_ERROR  206 // nfi_var
-#define INFLATE_ERROR       207 // nfi_var
+#define INFLATE_INIT_ERROR  201
+#define INFLATE_END_ERROR   202
+#define INFLATE_DICT_ERROR  203
+#define INFLATE_OBJ_ERROR   204
+#define INFLATE_FLUSH_ERROR 205
+#define INFLATE_COPY_ERROR  206
+#define INFLATE_ERROR       207
 
-#define INCOMPLETE_ERROR    99  // nfi_var
-#define MEMORY_ERROR        999 // nfi_var
+#define INCOMPLETE_ERROR    99
+#define MEMORY_ERROR        999
 
 // options to get buffer from the native side
-#define OUTPUT_OPTION           0 // nfi_var
-#define UNUSED_DATA_OPTION      1 // nfi_var
-#define UNCONSUMED_TAIL_OPTION  2 // nfi_var
-#define ZDICT_OPTION            3 // nfi_var
-
-// nfi_function: name('zlibVersion') static(true)
+#define OUTPUT_OPTION           0
+#define UNUSED_DATA_OPTION      1
+#define UNCONSUMED_TAIL_OPTION  2
+#define ZDICT_OPTION            3
 const char *zlib_get_version() {
     return ZLIB_VERSION;
 }
-
-// nfi_function: name('zlibRuntimeVersion') static(true)
 const char *zlib_get_runtime_version() {
     return zlibVersion();
 }
-
-// nfi_function: name('crc32')
 uLong zlib_crc32(uLong crc, const Byte *buf, uInt len)
 {
     return crc32(crc, buf, len);
 }
-
-// nfi_function: name('adler32')
 uLong zlib_adler32(uLong crc, const Byte *buf, uInt len)
 {
     return adler32(crc, buf, len);
@@ -302,8 +294,6 @@ static off_heap_buffer* zlib_get_ref(off_heap_buffer* o) {
     }
     return o;
 }
-
-// nfi_function: name('createStream') map('zlib_stream*', 'POINTER')
 zlib_stream *zlib_create_zlib_stream() {
     zlib_stream *zst = (zlib_stream *) malloc(sizeof(zlib_stream));
     zst->zst_type = NOT_INITIALIZED;
@@ -344,8 +334,6 @@ void zlib_release_compobject(compobject *comp) {
 
     free(comp);
 }
-
-// nfi_function: name('getTimeElapsed') map('zlib_stream*', 'POINTER')  static(true)
 double zlib_get_timeElapsed(zlib_stream* zst) {
 #ifdef BENCHMARK
     double t = zst->timeElapsed;
@@ -356,8 +344,6 @@ double zlib_get_timeElapsed(zlib_stream* zst) {
     return -1.0;
 #endif
 }
-
-// nfi_function: name('deallocateStream') map('zlib_stream*', 'POINTER')
 void zlib_free_stream(zlib_stream* zst) {
     if (!zst) {
         return;
@@ -377,41 +363,27 @@ void zlib_free_stream(zlib_stream* zst) {
     LOG_INFO("free zlib_stream(%p)\n", zst);
     free(zst);
 }
-
-// nfi_function: name('gcReleaseHelper') map('zlib_stream*', 'POINTER') release(true)
 void zlib_gc_helper(zlib_stream* zst) {
     zlib_free_stream(zst);
 }
-
-// nfi_function: name('getErrorFunction') map('zlib_stream*', 'POINTER')
 int zlib_get_error_type(zlib_stream *zst) {
     return zst->error_function;
 }
-
-// nfi_function: name('getStreamErrorMsg') map('zlib_stream*', 'POINTER')
 const char *zlib_get_stream_msg(zlib_stream *zst) {
     return zst->zst.msg;
 }
-
-// nfi_function: name('hasStreamErrorMsg') map('zlib_stream*', 'POINTER')
 int zlib_has_stream_msg(zlib_stream *zst) {
     if (zst->zst.msg == Z_NULL) {
         return 0;
     }
     return 1;
 }
-
-// nfi_function: name('getEOF') map('zlib_stream*', 'POINTER')
 int zlib_get_eof(zlib_stream *zst) {
     return zst->comp->eof;
 }
-
-// nfi_function: name('getIsInitialised') map('zlib_stream*', 'POINTER')
 int zlib_get_is_initialised(zlib_stream *zst) {
     return zst->comp->is_initialised;
 }
-
-// nfi_function: name('getBufferSize') map('zlib_stream*', 'POINTER')
 uInt zlib_get_buffer_size(zlib_stream *zst, int option) {
     LOG_INFO("zlib_get_buffer_size(%p)\n", zst);
     size_t size = 0;
@@ -438,9 +410,6 @@ uInt zlib_get_buffer_size(zlib_stream *zst, int option) {
     }
     return size;
 }
-
-
-// nfi_function: name('getBuffer') map('zlib_stream*', 'POINTER')
 void zlib_get_off_heap_buffer(zlib_stream *zst, int option, Byte *dest) {
     LOG_INFO("zlib_get_off_heap_buffer(%p)\n", zst);
     off_heap_buffer *buffer = NULL;
@@ -474,8 +443,6 @@ void zlib_get_off_heap_buffer(zlib_stream *zst, int option, Byte *dest) {
     assert(buffer->buf != NULL);
     memcpy(dest, buffer->buf, size);
 }
-
-// nfi_function: name('createCompObject') map('zlib_stream*', 'POINTER')
 zlib_stream *zlib_create_compobject() {
     zlib_stream *zst = zlib_create_zlib_stream();
     compobject *comp = (compobject *) malloc(sizeof(compobject));
@@ -590,8 +557,6 @@ static ssize_t arrange_output_buffer(zlib_stream *zst, ssize_t length)
 {
     return arrange_output_buffer_with_maximum(zst, length, GRAALPYTHON_MAX_SIZE);
 }
-
-// nfi_function: name('deflateOffHeap') map('zlib_stream*', 'POINTER')
 int zlib_deflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, int level, int wbits) {
     LOG_INFO("zlib_deflate_off_heap(%p)\n", zst);
     int err, flush;
@@ -655,8 +620,6 @@ int zlib_deflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t bu
 /************************************************
  *                  Decompress                  *
  ************************************************/
-
-// nfi_function: name('inflateOffHeap') map('zlib_stream*', 'POINTER')
 int zlib_inflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, int wbits) {
     LOG_INFO("zlib_inflate_off_heap(%p)\n", zst);
     int err, flush;
@@ -731,8 +694,6 @@ int zlib_inflate_off_heap(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t bu
 /************************************************
  *               Compress Object                *
  ************************************************/
-
-// nfi_function: name('compressObjInitWithDict') map('zlib_stream*', 'POINTER')
 int zlib_Compress_init(zlib_stream *zst, 
                         int level, int method, 
                         int wbits, int memLevel, 
@@ -756,16 +717,12 @@ int zlib_Compress_init(zlib_stream *zst,
     }
     return Z_OK;
 }
-
-// nfi_function: name('compressObjInit') map('zlib_stream*', 'POINTER')
 int zlib_Compress_init_no_dict(zlib_stream *zst, 
                         int level, int method, 
                         int wbits, int memLevel, 
                         int strategy) {
     return zlib_Compress_init(zst, level, method, wbits, memLevel, strategy, NULL, 0);
 }
-
-// nfi_function: name('compressObj') map('zlib_stream*', 'POINTER')
 int zlib_Compress_obj(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size) {
     LOG_INFO("zlib_Compress_obj(%p, in_len: %zd, buf_size: %zd)\n", zst, in_len, buf_size);
     clear_output(zst);
@@ -807,8 +764,6 @@ int zlib_Compress_obj(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_si
     }
     return Z_OK;
 }
-
-// nfi_function: name('compressObjFlush') map('zlib_stream*', 'POINTER')
 int zlib_Compress_flush(zlib_stream *zst, Byte *in, ssize_t buf_size, int mode) {
     LOG_INFO("zlib_Compress_flush(%p, buf_size: %zd)\n", zst, buf_size);
     clear_output(zst);
@@ -868,9 +823,6 @@ int zlib_Compress_flush(zlib_stream *zst, Byte *in, ssize_t buf_size, int mode) 
     }
     return Z_OK;
 }
-
-
-// nfi_function: name('compressObjCopy') map('zlib_stream*', 'POINTER')
 int zlib_Compress_copy(zlib_stream *zst, zlib_stream *new_copy) {
     LOG_INFO("zlib_Compress_copy(%p)\n", zst);
     int err = deflateCopy(&new_copy->zst, &zst->zst);
@@ -893,8 +845,6 @@ int zlib_Compress_copy(zlib_stream *zst, zlib_stream *new_copy) {
 /************************************************
  *              Decompress Object               *
  ************************************************/
-
-// nfi_function: name('decompressObjInitWithDict') map('zlib_stream*', 'POINTER')
 int zlib_Decompress_init(zlib_stream *zst, int wbits, Byte *dict, size_t dict_len) {
     LOG_INFO("zlib_Decompress_init(%p)\n", zst);
     
@@ -918,8 +868,6 @@ int zlib_Decompress_init(zlib_stream *zst, int wbits, Byte *dict, size_t dict_le
     }
     return Z_OK;
 }
-
-// nfi_function: name('decompressObjInit') map('zlib_stream*', 'POINTER')
 int zlib_Decompress_init_no_dict(zlib_stream *zst, int wbits) {
     return zlib_Decompress_init(zst, wbits, NULL, 0);
 }
@@ -969,8 +917,6 @@ static int save_unconsumed_input(zlib_stream *zst, Byte *in, size_t in_len, int 
 
     return Z_OK;
 }
-
-// nfi_function: name('decompressObj') map('zlib_stream*', 'POINTER')
 int zlib_Decompress_obj(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_size, ssize_t max_length) {
     LOG_INFO("zlib_Decompress_obj(%p, in_len: %zd, buf_size: %zd, max_length: %zd)\n", zst, in_len, buf_size, max_length);
     clear_output(zst);
@@ -1067,8 +1013,6 @@ int zlib_Decompress_obj(zlib_stream *zst, Byte *in, ssize_t in_len, ssize_t buf_
     }
     return Z_OK;
 }
-
-// nfi_function: name('decompressObjFlush') map('zlib_stream*', 'POINTER')
 int zlib_Decompress_flush(zlib_stream *zst, ssize_t length) {
     LOG_INFO("zlib_Decompress_flush(%p, length: %zd)\n", zst, length);
     clear_output(zst);
@@ -1148,8 +1092,6 @@ int zlib_Decompress_flush(zlib_stream *zst, ssize_t length) {
     }
     return Z_OK;
 }
-
-// nfi_function: name('decompressObjCopy') map('zlib_stream*', 'POINTER')
 int zlib_Decompress_copy(zlib_stream *zst, zlib_stream *new_copy) {
     LOG_INFO("zlib_Decompress_copy(%p)\n", zst);
     int err = inflateCopy(&new_copy->zst, &zst->zst);
@@ -1273,9 +1215,6 @@ decompress_buf(zlib_stream *zst, ssize_t max_length)
 
     return Z_OK;
 }
-
-
-// nfi_function: name('decompressor') map('zlib_stream*', 'POINTER')
 int zlib_decompress(zlib_stream *zst, Byte *data,
             size_t len, ssize_t max_length)
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,7 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
     private boolean needsInput;
 
     // native
-    private ZlibDecompressorObject(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
+    private ZlibDecompressorObject(Object cls, Shape instanceShape, long zst, NFIZlibSupport zlibSupport) {
         super(cls, instanceShape);
         this.compObject = new NativeZlibCompObject(cls, instanceShape, zst, zlibSupport);
         this.availInReal = 0;
@@ -85,7 +85,7 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
         compObject.setEof(eof);
     }
 
-    public Object getZst() {
+    public long getZst() {
         assert isNativeDecompressor();
         return ((NativeZlibCompObject) compObject).getZst();
     }
@@ -131,7 +131,7 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
         return compObject instanceof NativeZlibCompObject;
     }
 
-    public static ZlibDecompressorObject createNative(Object cls, Shape instanceShape, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZlibDecompressorObject createNative(Object cls, Shape instanceShape, long zst, NFIZlibSupport zlibSupport) {
         return new ZlibDecompressorObject(cls, instanceShape, zst, zlibSupport);
     }
 

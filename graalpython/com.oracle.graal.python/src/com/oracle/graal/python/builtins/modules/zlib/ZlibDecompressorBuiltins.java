@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,7 +71,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
-import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -114,7 +113,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
 
         @NonIdempotent
         protected boolean useNative() {
-            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
+            return PythonContext.get(this).getNativeZlibSupport().isAvailable();
         }
 
         protected static boolean isValidWBitRange(int wbits) {
@@ -125,17 +124,15 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
         static Object doNative(@SuppressWarnings("unused") Object type, int wbits, byte[] zdict,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached NativeLibrary.InvokeNativeFunction createCompObject,
-                        @Cached NativeLibrary.InvokeNativeFunction decompressObjInit,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
-            NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-            Object zst = zlibSupport.createCompObject(createCompObject);
+            NFIZlibSupport zlibSupport = context.getNativeZlibSupport();
+            long zst = zlibSupport.createCompObject();
 
             int err;
             if (zdict.length > 0) {
-                err = zlibSupport.decompressObjInitWithDict(zst, wbits, zdict, zdict.length, decompressObjInit);
+                err = zlibSupport.decompressObjInitWithDict(zst, wbits, zdict, zdict.length);
             } else {
-                err = zlibSupport.decompressObjInit(zst, wbits, decompressObjInit);
+                err = zlibSupport.decompressObjInit(zst, wbits);
             }
             if (err != Z_OK) {
                 errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
@@ -262,12 +259,11 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isEof()", "self.isInitialized()", "self.isNativeDecompressor()"})
-        boolean doNative(ZlibDecompressorObject self,
-                        @Cached NativeLibrary.InvokeNativeFunction getEOF) {
+        boolean doNative(ZlibDecompressorObject self) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = PythonContext.get(this).getNFIZlibSupport();
-                self.setEof(zlibSupport.getEOF(self.getZst(), getEOF) == 1);
+                NFIZlibSupport zlibSupport = PythonContext.get(this).getNativeZlibSupport();
+                self.setEof(zlibSupport.getEOF(self.getZst()) == 1);
                 return self.isEof();
             }
         }

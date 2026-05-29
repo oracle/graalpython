@@ -1194,15 +1194,15 @@ public final class PFactory {
         return new JavaDecompress(PythonBuiltinClassType.ZlibDecompress, PythonBuiltinClassType.ZlibDecompress.getInstanceShape(language), wbits, zdict);
     }
 
-    public static ZLibCompObject createNativeZLibCompObjectCompress(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZLibCompObject createNativeZLibCompObjectCompress(PythonLanguage language, long zst, NFIZlibSupport zlibSupport) {
         return createNativeZLibCompObject(PythonBuiltinClassType.ZlibCompress, PythonBuiltinClassType.ZlibCompress.getInstanceShape(language), zst, zlibSupport);
     }
 
-    public static ZLibCompObject createNativeZLibCompObjectDecompress(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZLibCompObject createNativeZLibCompObjectDecompress(PythonLanguage language, long zst, NFIZlibSupport zlibSupport) {
         return createNativeZLibCompObject(PythonBuiltinClassType.ZlibDecompress, PythonBuiltinClassType.ZlibDecompress.getInstanceShape(language), zst, zlibSupport);
     }
 
-    public static ZLibCompObject createNativeZLibCompObject(Object cls, Shape shape, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZLibCompObject createNativeZLibCompObject(Object cls, Shape shape, long zst, NFIZlibSupport zlibSupport) {
         return new NativeZlibCompObject(cls, shape, zst, zlibSupport);
     }
 
@@ -1210,7 +1210,7 @@ public final class PFactory {
         return ZlibDecompressorObject.createJava(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), wbits, zdict);
     }
 
-    public static ZlibDecompressorObject createNativeZlibDecompressorObject(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZlibDecompressorObject createNativeZlibDecompressorObject(PythonLanguage language, long zst, NFIZlibSupport zlibSupport) {
         return ZlibDecompressorObject.createNative(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), zst, zlibSupport);
     }
 

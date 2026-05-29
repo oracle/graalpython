@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,7 +72,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
-import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -155,17 +154,14 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isInitialized()")
         static Object doNative(Node inliningTarget, NativeZlibCompObject self,
                         @Bind PythonContext context,
-                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction createCompObject,
-                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction compressObjCopy,
-                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-                Object zstNewCopy = zlibSupport.createCompObject(createCompObject);
-                int err = zlibSupport.compressObjCopy(self.getZst(), zstNewCopy, compressObjCopy);
+                NFIZlibSupport zlibSupport = context.getNativeZlibSupport();
+                long zstNewCopy = zlibSupport.createCompObject();
+                int err = zlibSupport.compressObjCopy(self.getZst(), zstNewCopy);
                 if (err != Z_OK) {
-                    zlibSupport.deallocateStream(zstNewCopy, deallocateStream);
+                    zlibSupport.deallocateStream(zstNewCopy);
                     errorHandling.execute(inliningTarget, self.getZst(), err, zlibSupport, false);
                 }
                 return PFactory.createNativeZLibCompObjectCompress(context.getLanguage(inliningTarget), zstNewCopy, zlibSupport);
@@ -240,15 +236,13 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
         @Specialization(guards = {"mode != Z_NO_FLUSH", "self.isInitialized()"})
         static PBytes doit(NativeZlibCompObject self, int mode,
                         @Bind Node inliningTarget,
-                        @Cached NativeLibrary.InvokeNativeFunction compressObjFlush,
                         @Cached ZlibNodes.GetNativeBufferNode getBuffer,
-                        @Cached NativeLibrary.InvokeNativeFunction getIsInitialised,
                         @Cached ZlibNodes.NativeDeallocation processDeallocation,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
             synchronized (self) {
                 assert self.isInitialized();
                 PythonContext context = PythonContext.get(inliningTarget);
-                NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
+                NFIZlibSupport zlibSupport = context.getNativeZlibSupport();
                 byte[] lastInput;
                 if (self.lastInput == null) {
                     // all previous input data has been processed or nothing has been compressed.
@@ -259,12 +253,12 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
                     // stored in the native stream.
                     lastInput = self.lastInput;
                 }
-                int err = zlibSupport.compressObjFlush(self.getZst(), lastInput, DEF_BUF_SIZE, mode, compressObjFlush);
+                int err = zlibSupport.compressObjFlush(self.getZst(), lastInput, DEF_BUF_SIZE, mode);
                 if (err != Z_OK) {
                     errorHandling.execute(inliningTarget, self.getZst(), err, zlibSupport, false);
                 }
                 byte[] resultArray = getBuffer.getOutputBuffer(inliningTarget, self.getZst(), context);
-                if (zlibSupport.getIsInitialised(self.getZst(), getIsInitialised) == 0) {
+                if (zlibSupport.getIsInitialised(self.getZst()) == 0) {
                     processDeallocation.execute(inliningTarget, self, context, true);
                 }
                 return PFactory.createBytes(context.getLanguage(inliningTarget), resultArray);

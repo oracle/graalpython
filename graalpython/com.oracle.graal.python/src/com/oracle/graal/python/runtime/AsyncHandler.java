@@ -521,6 +521,13 @@ public class AsyncHandler {
                 addLiveReference(sharedFinalizer, this);
             }
 
+            @SuppressWarnings("this-escape")
+            protected FinalizableReference(Object referent, SharedFinalizer sharedFinalizer) {
+                super(referent, sharedFinalizer.queue);
+                this.reference = null;
+                addLiveReference(sharedFinalizer, this);
+            }
+
             /**
              * We'll keep a reference for the FinalizableReference object until the async handler
              * schedule the collect process.
