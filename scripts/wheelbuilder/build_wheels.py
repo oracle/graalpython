@@ -84,11 +84,16 @@ def extract(archive):
     print("Extracting", archive, flush=True)
     if splitext(archive)[1] == ".zip":
         with zipfile.ZipFile(archive) as f:
+            # zipfile.extractall normalizes absolute paths and ".." components.
             f.extractall()
             return f.infolist()[0].filename.split('/', 1)[0]
     else:
         with tarfile.open(archive) as f:
-            f.extractall()
+            try:
+                f.extractall(filter="data")
+            except TypeError:
+                # older Python versions do not support filter, but the risk does not warrant a fallback implementation
+                f.extractall()
             return f.getmembers()[0].name.split('/', 1)[0]
 
 
