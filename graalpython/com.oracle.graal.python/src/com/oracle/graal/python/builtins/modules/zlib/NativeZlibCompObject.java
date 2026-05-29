@@ -40,28 +40,28 @@
  */
 package com.oracle.graal.python.builtins.modules.zlib;
 
-import com.oracle.graal.python.runtime.NFIZlibSupport;
+import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
 public final class NativeZlibCompObject extends ZLibCompObject {
-    private NFIZlibSupport.Pointer pointer;
+    private NativeZlibSupport.Pointer pointer;
     byte[] lastInput;
 
-    public NativeZlibCompObject(Object cls, Shape instanceShape, long zst, NFIZlibSupport zlibSupport) {
+    public NativeZlibCompObject(Object cls, Shape instanceShape, long zst, NativeZlibSupport zlibSupport) {
         super(cls, instanceShape);
-        this.pointer = new NFIZlibSupport.Pointer(this, zst, zlibSupport);
+        this.pointer = new NativeZlibSupport.Pointer(this, zst, zlibSupport);
     }
 
     public long getZst() {
-        NFIZlibSupport.Pointer p = pointer;
+        NativeZlibSupport.Pointer p = pointer;
         assert p != null && !p.isReleased();
         return p.getPointer();
     }
 
     @TruffleBoundary
     public void markReleased() {
-        NFIZlibSupport.Pointer p;
+        NativeZlibSupport.Pointer p;
         synchronized (this) {
             if (!isInitialized) {
                 assert pointer == null || pointer.isReleased();

@@ -63,7 +63,7 @@ import org.graalvm.shadowed.org.tukaani.xz.common.DecoderUtil;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.NFILZMASupport;
+import com.oracle.graal.python.runtime.NativeLZMASupport;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -153,26 +153,26 @@ public abstract class LZMAObject extends PythonBuiltinObject {
 
         public static final class Native extends LZMACompressor {
 
-            private NFILZMASupport.Pointer pointer;
+            private NativeLZMASupport.Pointer pointer;
 
             public Native(Object cls, Shape instanceShape) {
                 super(cls, instanceShape);
             }
 
-            public void init(long lzmast, NFILZMASupport lib) {
-                this.pointer = new NFILZMASupport.Pointer(this, lzmast, lib);
+            public void init(long lzmast, NativeLZMASupport lib) {
+                this.pointer = new NativeLZMASupport.Pointer(this, lzmast, lib);
                 assert !pointer.isReleased();
             }
 
             public long getLzs() {
-                NFILZMASupport.Pointer p = pointer;
+                NativeLZMASupport.Pointer p = pointer;
                 assert p != null && !p.isReleased();
                 return p.getPointer();
             }
 
             @TruffleBoundary
             public void markReleased() {
-                NFILZMASupport.Pointer p;
+                NativeLZMASupport.Pointer p;
                 synchronized (this) {
                     p = pointer;
                     pointer = null;
@@ -460,26 +460,26 @@ public abstract class LZMAObject extends PythonBuiltinObject {
 
         public static final class Native extends LZMADecompressor {
 
-            private NFILZMASupport.Pointer pointer;
+            private NativeLZMASupport.Pointer pointer;
 
             public Native(Object cls, Shape instanceShape) {
                 super(cls, instanceShape);
             }
 
-            public void init(long lzmast, NFILZMASupport lib) {
-                this.pointer = new NFILZMASupport.Pointer(this, lzmast, lib);
+            public void init(long lzmast, NativeLZMASupport lib) {
+                this.pointer = new NativeLZMASupport.Pointer(this, lzmast, lib);
                 assert !pointer.isReleased();
             }
 
             public long getLzs() {
-                NFILZMASupport.Pointer p = pointer;
+                NativeLZMASupport.Pointer p = pointer;
                 assert p != null && !p.isReleased();
                 return p.getPointer();
             }
 
             @TruffleBoundary
             public void markReleased() {
-                NFILZMASupport.Pointer p;
+                NativeLZMASupport.Pointer p;
                 synchronized (this) {
                     p = pointer;
                     pointer = null;

@@ -53,9 +53,9 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLogger;
 
-public final class NFILZMASupport extends NativeCompressionSupport {
+public final class NativeLZMASupport extends NativeCompressionSupport {
 
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFILZMASupport.class);
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeLZMASupport.class);
     private static final String SUPPORTING_NATIVE_LIB_NAME = "lzmasupport";
 
     public static final int FORMAT_AUTO_INDEX = 0;
@@ -197,13 +197,13 @@ public final class NFILZMASupport extends NativeCompressionSupport {
 
     private final LZMANativeFunctions nativeFunctions;
 
-    private NFILZMASupport(PythonContext context) {
+    private NativeLZMASupport(PythonContext context) {
         super(context);
         this.nativeFunctions = isAvailable() ? new LZMANativeFunctionsGen(context) : null;
     }
 
-    public static NFILZMASupport createNative(PythonContext context, String noNativeAccessHelp) {
-        return new NFILZMASupport(context);
+    public static NativeLZMASupport createNative(PythonContext context, String noNativeAccessHelp) {
+        return new NativeLZMASupport(context);
     }
 
     static class PointerReleaseCallback implements AsyncHandler.AsyncAction {
@@ -221,19 +221,19 @@ public final class NFILZMASupport extends NativeCompressionSupport {
             }
             try {
                 pointer.doRelease();
-                LOGGER.finest("NFILZMASupport pointer has been freed");
+                LOGGER.finest("NativeLZMASupport pointer has been freed");
             } catch (Exception e) {
-                LOGGER.severe("Error while trying to free NFILZMASupport pointer: " + e.getMessage());
+                LOGGER.severe("Error while trying to free NativeLZMASupport pointer: " + e.getMessage());
             }
         }
     }
 
     public static class Pointer extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
-        private final NFILZMASupport lib;
+        private final NativeLZMASupport lib;
         private final long pointer;
 
-        public Pointer(Object referent, long pointer, NFILZMASupport lib) {
+        public Pointer(Object referent, long pointer, NativeLZMASupport lib) {
             super(referent, lib.pythonContext.getSharedFinalizer());
             this.lib = lib;
             this.pointer = pointer;

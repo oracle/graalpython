@@ -73,7 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.NFIBz2Support;
+import com.oracle.graal.python.runtime.NativeBz2Support;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -126,7 +126,7 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             gil.release(true);
             try {
-                NFIBz2Support bz2Support = PythonContext.get(this).getNativeBz2Support();
+                NativeBz2Support bz2Support = PythonContext.get(this).getNativeBz2Support();
                 long bzst = bz2Support.createStream();
                 int err = bz2Support.compressInit(bzst, compresslevel);
                 if (err != BZ_OK) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.NFIBz2Support;
+import com.oracle.graal.python.runtime.NativeBz2Support;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -112,7 +112,7 @@ public class Bz2Nodes {
                         @Bind Node inliningTarget,
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached PRaiseNode raiseNode) {
-            NFIBz2Support bz2Support = context.getNFIBz2Support();
+            NativeBz2Support bz2Support = context.getNativeBz2Support();
             int err = bz2Support.compress(self.getBzs(), bytes, len, action, INITIAL_BUFFER_SIZE);
             if (err != BZ_OK) {
                 errorHandling(inliningTarget, err, raiseNode);
@@ -233,7 +233,7 @@ public class Bz2Nodes {
                         @Cached InlinedBranchProfile ofProfile,
                         @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            NFIBz2Support bz2Support = context.getNFIBz2Support();
+            NativeBz2Support bz2Support = context.getNativeBz2Support();
             byte[] in = self.getNextIn();
             int offset = self.getNextInIndex();
             int err = bz2Support.decompress(self.getBzs(), in, offset, maxLength, INITIAL_BUFFER_SIZE, self.getBzsAvailInReal());
@@ -265,7 +265,7 @@ public class Bz2Nodes {
         static byte[] getBuffer(Node inliningTarget, long bzst, PythonContext context,
                         @Cached InlinedBranchProfile ofProfile,
                         @Cached PRaiseNode raiseNode) {
-            NFIBz2Support bz2Support = context.getNFIBz2Support();
+            NativeBz2Support bz2Support = context.getNativeBz2Support();
             int size;
             try {
                 size = PInt.intValueExact(bz2Support.getOutputBufferSize(bzst));

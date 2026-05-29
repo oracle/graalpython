@@ -65,9 +65,9 @@ import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_FILTER;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_FILTER_CHAIN_FOR_FORMAT;
 import static com.oracle.graal.python.nodes.ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ID;
-import static com.oracle.graal.python.runtime.NFILZMASupport.LZMA_ID_ERROR;
-import static com.oracle.graal.python.runtime.NFILZMASupport.LZMA_PRESET_ERROR;
-import static com.oracle.graal.python.runtime.NFILZMASupport.MAX_OPTS_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.LZMA_ID_ERROR;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.LZMA_PRESET_ERROR;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.MAX_OPTS_INDEX;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -117,7 +117,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.runtime.NFILZMASupport;
+import com.oracle.graal.python.runtime.NativeLZMASupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.OverflowException;
@@ -503,7 +503,7 @@ public class LZMANodes {
 
         private static void setFilterOptions(Node inliningTarget, long lzmast, long[] filter, int fidx, PythonContext context,
                         PRaiseNode raiseNode) {
-            NFILZMASupport lzmaSupport = context.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = context.getNativeLZMASupport();
             int err;
             long id = filter[0];
             switch (LZMAFilter.from(id)) {
@@ -683,7 +683,7 @@ public class LZMANodes {
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile errProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            NFILZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             self.init(lzmast, lzmaSupport);
             int lzret = lzmaSupport.lzmaEasyEncoder(lzmast, preset, self.getCheck());
@@ -699,7 +699,7 @@ public class LZMANodes {
                         @Shared @Cached InlinedConditionProfile errProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
             PythonContext ctxt = PythonContext.get(inliningTarget);
-            NFILZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             self.init(lzmast, lzmaSupport);
             filterChain.execute(frame, lzmast, ctxt, filters);
@@ -715,7 +715,7 @@ public class LZMANodes {
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile errProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            NFILZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             self.init(lzmast, lzmaSupport);
             int lzret = lzmaSupport.lzmaAloneEncoderPreset(lzmast, preset);
@@ -732,7 +732,7 @@ public class LZMANodes {
                         @Shared @Cached InlinedConditionProfile errProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
             PythonContext ctxt = PythonContext.get(inliningTarget);
-            NFILZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             self.init(lzmast, lzmaSupport);
             filterChain.execute(frame, lzmast, ctxt, filters);
@@ -750,7 +750,7 @@ public class LZMANodes {
                         @Shared @Cached InlinedConditionProfile errProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
             PythonContext ctxt = PythonContext.get(inliningTarget);
-            NFILZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             self.init(lzmast, lzmaSupport);
             filterChain.execute(frame, lzmast, ctxt, filters);
@@ -857,7 +857,7 @@ public class LZMANodes {
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached InlinedConditionProfile errProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            NFILZMASupport lzmaSupport = context.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = context.getNativeLZMASupport();
             int err = lzmaSupport.compress(self.getLzs(), bytes, len, action, INITIAL_BUFFER_SIZE);
             if (errProfile.profile(inliningTarget, err != LZMA_OK)) {
                 errorHandling(inliningTarget, err, raiseNode);
@@ -908,7 +908,7 @@ public class LZMANodes {
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile errProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            NFILZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             self.init(lzmast, lzmaSupport);
             int decoderFlags = LZMA_TELL_ANY_CHECK | LZMA_TELL_NO_CHECK;
@@ -923,7 +923,7 @@ public class LZMANodes {
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile errProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            NFILZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             self.init(lzmast, lzmaSupport);
             int decoderFlags = LZMA_TELL_ANY_CHECK | LZMA_TELL_NO_CHECK;
@@ -938,7 +938,7 @@ public class LZMANodes {
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile errProfile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            NFILZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = PythonContext.get(inliningTarget).getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             self.init(lzmast, lzmaSupport);
             int lzret = lzmaSupport.lzmaAloneDecoder(lzmast, memlimit);
@@ -968,7 +968,7 @@ public class LZMANodes {
                         @Cached InlinedConditionProfile errProfile,
                         @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            NFILZMASupport lzmaSupport = context.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = context.getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             self.init(lzmast, lzmaSupport);
             filterChain.execute(frame, lzmast, context, filters);
@@ -1085,7 +1085,7 @@ public class LZMANodes {
                         @Exclusive @Cached PRaiseNode lazyRaiseNode,
                         @Cached InlinedConditionProfile errProfile) {
             PythonContext context = PythonContext.get(inliningTarget);
-            NFILZMASupport lzmaSupport = context.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = context.getNativeLZMASupport();
             byte[] inGuest = self.getNextIn();
             int offset = self.getNextInIndex();
             int err = lzmaSupport.decompress(self.getLzs(), inGuest, offset, maxLength, INITIAL_BUFFER_SIZE, self.getLzsAvailIn());
@@ -1196,7 +1196,7 @@ public class LZMANodes {
         @Specialization
         static byte[] getBuffer(Node inliningTarget, long lzmast, PythonContext context,
                         @Cached PRaiseNode raiseNode) {
-            NFILZMASupport lzmaSupport = context.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = context.getNativeLZMASupport();
             int size;
             try {
                 size = PInt.intValueExact(lzmaSupport.getOutputBufferSize(lzmast));
@@ -1259,7 +1259,7 @@ public class LZMANodes {
                         @Cached InlinedConditionProfile errProfile,
                         @Cached PRaiseNode raiseNode) {
             PythonContext ctxt = PythonContext.get(inliningTarget);
-            NFILZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
             long lzmast = lzmaSupport.createStream();
             long[] opts = filterConverter.execute(frame, filter);
             int lzret = lzmaSupport.encodeFilter(lzmast, opts);
@@ -1300,7 +1300,7 @@ public class LZMANodes {
                         @Cached InlinedConditionProfile errProfile,
                         @Cached PRaiseNode raiseNode) {
             PythonContext ctxt = PythonContext.get(inliningTarget);
-            NFILZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
+            NativeLZMASupport lzmaSupport = ctxt.getNativeLZMASupport();
             long[] opts = new long[MAX_OPTS_INDEX];
             int len = encoded.length;
             int lzret = lzmaSupport.decodeFilter(id, encoded, len, opts);

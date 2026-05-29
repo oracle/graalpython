@@ -44,7 +44,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.NFIBz2Support;
+import com.oracle.graal.python.runtime.NativeBz2Support;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -52,26 +52,26 @@ import com.oracle.truffle.api.object.Shape;
 
 public abstract class BZ2Object extends PythonBuiltinObject {
 
-    private NFIBz2Support.Pointer pointer;
+    private NativeBz2Support.Pointer pointer;
 
     BZ2Object(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
     }
 
-    public final void init(long bzst, NFIBz2Support lib) {
-        this.pointer = new NFIBz2Support.Pointer(this, bzst, lib);
+    public final void init(long bzst, NativeBz2Support lib) {
+        this.pointer = new NativeBz2Support.Pointer(this, bzst, lib);
         assert !pointer.isReleased();
     }
 
     public final long getBzs() {
-        NFIBz2Support.Pointer p = pointer;
+        NativeBz2Support.Pointer p = pointer;
         assert p != null && !p.isReleased();
         return p.getPointer();
     }
 
     @TruffleBoundary
     public final void markReleased() {
-        NFIBz2Support.Pointer p;
+        NativeBz2Support.Pointer p;
         synchronized (this) {
             p = pointer;
             pointer = null;

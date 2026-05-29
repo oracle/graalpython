@@ -71,7 +71,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.NFIZlibSupport;
+import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -157,7 +157,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = context.getNativeZlibSupport();
+                NativeZlibSupport zlibSupport = context.getNativeZlibSupport();
                 long zstNewCopy = zlibSupport.createCompObject();
                 int err = zlibSupport.compressObjCopy(self.getZst(), zstNewCopy);
                 if (err != Z_OK) {
@@ -242,7 +242,7 @@ public final class ZlibCompressBuiltins extends PythonBuiltins {
             synchronized (self) {
                 assert self.isInitialized();
                 PythonContext context = PythonContext.get(inliningTarget);
-                NFIZlibSupport zlibSupport = context.getNativeZlibSupport();
+                NativeZlibSupport zlibSupport = context.getNativeZlibSupport();
                 byte[] lastInput;
                 if (self.lastInput == null) {
                     // all previous input data has been processed or nothing has been compressed.

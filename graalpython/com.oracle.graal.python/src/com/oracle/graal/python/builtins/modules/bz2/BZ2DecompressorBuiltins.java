@@ -68,7 +68,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.NFIBz2Support;
+import com.oracle.graal.python.runtime.NativeBz2Support;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -111,7 +111,7 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
         static PNone init(BZ2Object.BZ2Decompressor self,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            NFIBz2Support bz2Support = PythonContext.get(inliningTarget).getNativeBz2Support();
+            NativeBz2Support bz2Support = PythonContext.get(inliningTarget).getNativeBz2Support();
             long bzst = bz2Support.createStream();
             int err = bz2Support.decompressInit(bzst);
             if (err != BZ_OK) {

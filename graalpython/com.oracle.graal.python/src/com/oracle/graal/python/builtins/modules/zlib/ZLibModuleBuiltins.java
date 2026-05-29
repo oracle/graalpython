@@ -83,7 +83,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.NFIZlibSupport;
+import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -182,7 +182,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        NFIZlibSupport zlibSupport = core.getContext().getNativeZlibSupport();
+        NativeZlibSupport zlibSupport = core.getContext().getNativeZlibSupport();
         PythonModule zlibModule = core.lookupBuiltinModule(T_ZLIB);
         // isAvailable() checked already if native access is allowed
         TruffleString ver = T_JDK_ZLIB_VERSION;
@@ -619,7 +619,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
-            NFIZlibSupport zlibSupport = PythonContext.get(inliningTarget).getNativeZlibSupport();
+            NativeZlibSupport zlibSupport = PythonContext.get(inliningTarget).getNativeZlibSupport();
             long zst = zlibSupport.createCompObject();
 
             int err;
@@ -689,7 +689,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
-            NFIZlibSupport zlibSupport = context.getNativeZlibSupport();
+            NativeZlibSupport zlibSupport = context.getNativeZlibSupport();
             long zst = zlibSupport.createCompObject();
 
             int err;

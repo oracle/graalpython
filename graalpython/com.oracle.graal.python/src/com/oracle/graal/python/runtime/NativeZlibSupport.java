@@ -55,9 +55,9 @@ import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public class NFIZlibSupport extends NativeCompressionSupport {
+public class NativeZlibSupport extends NativeCompressionSupport {
 
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIZlibSupport.class);
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeZlibSupport.class);
     private static final String SUPPORTING_NATIVE_LIB_NAME = "zsupport";
 
     public static final int NO_ERROR = 0;
@@ -177,13 +177,13 @@ public class NFIZlibSupport extends NativeCompressionSupport {
 
     private final ZlibNativeFunctions nativeFunctions;
 
-    private NFIZlibSupport(PythonContext context) {
+    private NativeZlibSupport(PythonContext context) {
         super(context);
         this.nativeFunctions = isAvailable() ? new ZlibNativeFunctionsGen(context) : null;
     }
 
-    public static NFIZlibSupport createNative(PythonContext context, String noNativeAccessHelp) {
-        return new NFIZlibSupport(context);
+    public static NativeZlibSupport createNative(PythonContext context, String noNativeAccessHelp) {
+        return new NativeZlibSupport(context);
     }
 
     static class PointerReleaseCallback implements AsyncHandler.AsyncAction {
@@ -201,19 +201,19 @@ public class NFIZlibSupport extends NativeCompressionSupport {
             }
             try {
                 pointer.doRelease();
-                LOGGER.finest("NFIZlibSupport pointer has been freed");
+                LOGGER.finest("NativeZlibSupport pointer has been freed");
             } catch (Exception e) {
-                LOGGER.severe("Error while trying to free NFIZlibSupport pointer: " + e.getMessage());
+                LOGGER.severe("Error while trying to free NativeZlibSupport pointer: " + e.getMessage());
             }
         }
     }
 
     public static class Pointer extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
-        private final NFIZlibSupport lib;
+        private final NativeZlibSupport lib;
         private final long pointer;
 
-        public Pointer(Object referent, long pointer, NFIZlibSupport lib) {
+        public Pointer(Object referent, long pointer, NativeZlibSupport lib) {
             super(referent, lib.pythonContext.getSharedFinalizer());
             this.lib = lib;
             this.pointer = pointer;

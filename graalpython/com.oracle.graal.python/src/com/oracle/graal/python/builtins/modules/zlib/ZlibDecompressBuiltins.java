@@ -73,7 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.NFIZlibSupport;
+import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -163,7 +163,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = context.getNativeZlibSupport();
+                NativeZlibSupport zlibSupport = context.getNativeZlibSupport();
                 long zstNewCopy = zlibSupport.createCompObject();
                 int err = zlibSupport.decompressObjCopy(self.getZst(), zstNewCopy);
                 if (err != Z_OK) {
@@ -242,7 +242,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = context.getNativeZlibSupport();
+                NativeZlibSupport zlibSupport = context.getNativeZlibSupport();
                 int err = zlibSupport.decompressObjFlush(self.getZst(), length);
                 if (err != Z_OK) {
                     errorHandling.execute(inliningTarget, self.getZst(), err, zlibSupport, false);
@@ -356,7 +356,7 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         boolean getit(NativeZlibCompObject self) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = PythonContext.get(this).getNativeZlibSupport();
+                NativeZlibSupport zlibSupport = PythonContext.get(this).getNativeZlibSupport();
                 self.setEof(zlibSupport.getEOF(self.getZst()) == 1);
                 return self.isEof();
             }

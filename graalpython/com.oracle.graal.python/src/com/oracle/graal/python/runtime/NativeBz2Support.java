@@ -53,9 +53,9 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLogger;
 
-public class NFIBz2Support extends NativeCompressionSupport {
+public class NativeBz2Support extends NativeCompressionSupport {
 
-    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIBz2Support.class);
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeBz2Support.class);
     private static final String SUPPORTING_NATIVE_LIB_NAME = "bz2support";
 
     abstract static class Bz2NativeFunctions {
@@ -105,13 +105,13 @@ public class NFIBz2Support extends NativeCompressionSupport {
 
     private final Bz2NativeFunctions nativeFunctions;
 
-    private NFIBz2Support(PythonContext context) {
+    private NativeBz2Support(PythonContext context) {
         super(context);
         this.nativeFunctions = isAvailable() ? new Bz2NativeFunctionsGen(context) : null;
     }
 
-    public static NFIBz2Support createNative(PythonContext context, String noNativeAccessHelp) {
-        return new NFIBz2Support(context);
+    public static NativeBz2Support createNative(PythonContext context, String noNativeAccessHelp) {
+        return new NativeBz2Support(context);
     }
 
     static class PointerReleaseCallback implements AsyncHandler.AsyncAction {
@@ -129,19 +129,19 @@ public class NFIBz2Support extends NativeCompressionSupport {
             }
             try {
                 pointer.doRelease();
-                LOGGER.finest("NFIBz2Support pointer has been freed");
+                LOGGER.finest("NativeBz2Support pointer has been freed");
             } catch (Exception e) {
-                LOGGER.severe("Error while trying to free NFIBz2Support pointer: " + e.getMessage());
+                LOGGER.severe("Error while trying to free NativeBz2Support pointer: " + e.getMessage());
             }
         }
     }
 
     public static class Pointer extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
-        private final NFIBz2Support lib;
+        private final NativeBz2Support lib;
         private final long pointer;
 
-        public Pointer(Object referent, long pointer, NFIBz2Support lib) {
+        public Pointer(Object referent, long pointer, NativeBz2Support lib) {
             super(referent, lib.pythonContext.getSharedFinalizer());
             this.lib = lib;
             this.pointer = pointer;

@@ -777,9 +777,9 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal(dimensions = 1) private byte[] hashSecret = new byte[24];
 
     @CompilationFinal private PosixSupport posixSupport;
-    @CompilationFinal private NFIZlibSupport nativeZlib;
-    @CompilationFinal private NFIBz2Support nativeBz2lib;
-    @CompilationFinal private NFILZMASupport nativeLZMA;
+    @CompilationFinal private NativeZlibSupport nativeZlib;
+    @CompilationFinal private NativeBz2Support nativeBz2lib;
+    @CompilationFinal private NativeLZMASupport nativeLZMA;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -1423,15 +1423,15 @@ public final class PythonContext extends Python3Core {
         return nativeAccessAllowed;
     }
 
-    public NFIZlibSupport getNFIZlibSupport() {
+    public NativeZlibSupport getNativeZlibSupport() {
         return nativeZlib;
     }
 
-    public NFIBz2Support getNFIBz2Support() {
+    public NativeBz2Support getNativeBz2Support() {
         return nativeBz2lib;
     }
 
-    public NFILZMASupport getNFILZMASupport() {
+    public NativeLZMASupport getNativeLZMASupport() {
         return nativeLZMA;
     }
 
@@ -1749,9 +1749,9 @@ public final class PythonContext extends Python3Core {
         initializeLocale();
         setIntMaxStrDigits(getOption(PythonOptions.IntMaxStrDigits));
         if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES) {
-            nativeZlib = NFIZlibSupport.createNative(this, "");
-            nativeBz2lib = NFIBz2Support.createNative(this, "");
-            nativeLZMA = NFILZMASupport.createNative(this, "");
+            nativeZlib = NativeZlibSupport.createNative(this, "");
+            nativeBz2lib = NativeBz2Support.createNative(this, "");
+            nativeLZMA = NativeLZMASupport.createNative(this, "");
         }
 
         mainModule = PFactory.createPythonModule(T___MAIN__);

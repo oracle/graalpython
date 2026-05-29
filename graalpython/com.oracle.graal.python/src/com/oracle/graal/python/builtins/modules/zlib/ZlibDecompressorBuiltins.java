@@ -70,7 +70,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.NFIZlibSupport;
+import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -125,7 +125,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
-            NFIZlibSupport zlibSupport = context.getNativeZlibSupport();
+            NativeZlibSupport zlibSupport = context.getNativeZlibSupport();
             long zst = zlibSupport.createCompObject();
 
             int err;
@@ -262,7 +262,7 @@ public final class ZlibDecompressorBuiltins extends PythonBuiltins {
         boolean doNative(ZlibDecompressorObject self) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = PythonContext.get(this).getNativeZlibSupport();
+                NativeZlibSupport zlibSupport = PythonContext.get(this).getNativeZlibSupport();
                 self.setEof(zlibSupport.getEOF(self.getZst()) == 1);
                 return self.isEof();
             }

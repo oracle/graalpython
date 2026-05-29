@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.modules.zlib;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.NFIZlibSupport;
+import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.truffle.api.object.Shape;
 
 public class ZlibDecompressorObject extends PythonBuiltinObject {
@@ -58,7 +58,7 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
     private boolean needsInput;
 
     // native
-    private ZlibDecompressorObject(Object cls, Shape instanceShape, long zst, NFIZlibSupport zlibSupport) {
+    private ZlibDecompressorObject(Object cls, Shape instanceShape, long zst, NativeZlibSupport zlibSupport) {
         super(cls, instanceShape);
         this.compObject = new NativeZlibCompObject(cls, instanceShape, zst, zlibSupport);
         this.availInReal = 0;
@@ -131,7 +131,7 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
         return compObject instanceof NativeZlibCompObject;
     }
 
-    public static ZlibDecompressorObject createNative(Object cls, Shape instanceShape, long zst, NFIZlibSupport zlibSupport) {
+    public static ZlibDecompressorObject createNative(Object cls, Shape instanceShape, long zst, NativeZlibSupport zlibSupport) {
         return new ZlibDecompressorObject(cls, instanceShape, zst, zlibSupport);
     }
 
