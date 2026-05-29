@@ -826,7 +826,7 @@ def get_path_with_patchelf():
             mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {sys.executable}... [delvewheel not found on PATH]")
             t0 = time.time()
             subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
-            subprocess.check_call([str(venv / "Scripts" / "pip.exe"), "install", "delvewheel"])
+            subprocess.check_call([str(venv / "Scripts" / "pip.exe"), "install", "delvewheel>=1.13.0"])
             mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {sys.executable}... [duration: {time.time() - t0}]")
     return path
 
