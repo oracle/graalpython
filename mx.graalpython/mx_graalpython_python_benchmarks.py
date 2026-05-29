@@ -93,6 +93,22 @@ SKIPPED_NUMPY_BENCHMARKS = [
     "bench_indexing.IndexingStructured0D.time_array_slice",  # Hangs in periodic job GR-73912
 ]
 
+SKIPPED_NUMPY_BENCHMARK_PATTERNS = [
+    # These patterns match ASV's expanded benchmark names. They keep the small
+    # cases while dropping large Cartesian-product outliers that dominate the
+    # periodic job runtime.
+    r"bench_core\.CorrConv\.time_(?:correlate|convolve)\((?:100000,|[^)]*, (?:1000|10000), )",
+    r"bench_core\.CountNonzero\.time_count_nonzero(?:_axis|_multi_axis)?\([1-3], (?:10000|1000000), ",
+    r"bench_core\.Nonzero\.time_nonzero(?:_sparse|_dense)?\([^)]*, \((?:1000000,|1000, 1000)\)\)",
+    r"bench_core\.StatsMethods\.time_(?:max|mean|min|prod|std|sum|var)\('[^']+', 10000\)",
+    r"bench_indexing\.Indexing\.time_op\('(?:complex64|complex128|object|O,i)'",
+    r"bench_indexing\.Indexing\.time_op\('[^']+', 'indexes_rand_'",
+    r"bench_indexing\.Indexing\.time_op\('[^']+', '[^']+', 'np\.ix_\(I, I\)'",
+    r"bench_indexing\.IndexingWith1DArr\.time_(?:getitem|setitem)_ordered\(\((?:1000, 2|2, 1000, 1|1000, 3)\), ",
+    r"bench_linalg\.LinAlgTransposeVdot\.time_(?:transpose|vdot)\(\(64, 64\), ",
+    r"bench_linalg\.MatmulStrided\.time_matmul\('matmul_m(?:150|400)_",
+]
+
 DEFAULT_PANDAS_BENCHMARKS = [
     "reshape",
     "replace"
@@ -211,11 +227,12 @@ DEFAULT_PYPY_BENCHMARKS = [
 ]
 
 
-def create_asv_benchmark_selection(benchmarks, skipped=()):
+def create_asv_benchmark_selection(benchmarks, skipped=(), skipped_patterns=()):
     regex = '|'.join(benchmarks)
-    if not skipped:
-        return regex
     negative_lookaheads = [re.escape(skip) + (r'\b' if not skip.endswith(')') else '') for skip in skipped]
+    negative_lookaheads.extend(skipped_patterns)
+    if not negative_lookaheads:
+        return regex
     return '^(?!' + '|'.join(negative_lookaheads) + ')(' + regex + ')'
 
 
@@ -705,7 +722,9 @@ class NumPySuite(PySuite):
                 "--python=same",
                 "--set-commit-hash",
                 f"v{self.VERSION}",
-                "-b", create_asv_benchmark_selection(benchmarks, skipped=SKIPPED_NUMPY_BENCHMARKS),
+                "-b", create_asv_benchmark_selection(
+                    benchmarks, skipped=SKIPPED_NUMPY_BENCHMARKS, skipped_patterns=SKIPPED_NUMPY_BENCHMARK_PATTERNS
+                ),
             ],
             cwd=benchdir,
             nonZeroIsFatal=False,
