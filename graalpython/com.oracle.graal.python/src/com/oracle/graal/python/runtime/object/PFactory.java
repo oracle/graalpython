@@ -25,8 +25,8 @@
  */
 package com.oracle.graal.python.runtime.object;
 
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.lang.ref.ReferenceQueue;
@@ -1175,7 +1175,7 @@ public final class PFactory {
     }
 
     public static BZ2Object.BZ2Compressor createBZ2Compressor(Object cls, Shape shape) {
-        return BZ2Object.createCompressor(cls, shape);
+        return new BZ2Object.BZ2Compressor(cls, shape);
     }
 
     public static BZ2Object.BZ2Decompressor createBZ2Decompressor(PythonLanguage language) {
@@ -1183,7 +1183,7 @@ public final class PFactory {
     }
 
     public static BZ2Object.BZ2Decompressor createBZ2Decompressor(Object cls, Shape shape) {
-        return BZ2Object.createDecompressor(cls, shape);
+        return new BZ2Object.BZ2Decompressor(cls, shape);
     }
 
     public static JavaCompress createJavaZLibCompObjectCompress(PythonLanguage language, int level, int wbits, int strategy, byte[] zdict) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,138 +40,78 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.annotations.NativeSimpleType.DOUBLE;
+import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
+import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.annotations.DowncallSignature;
+import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLogger;
 
-/*-
- * Generated using:
- * scripts/nfi_gen.py -name Bz2 -cpath graalpython/com.oracle.graal.python.cext/bz2/bz2.c -lib libbz2support
- */
-public class NFIBz2Support {
+public class NFIBz2Support extends NativeCompressionSupport {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIBz2Support.class);
+    private static final String SUPPORTING_NATIVE_LIB_NAME = "bz2support";
 
-    enum Bz2NativeFunctions implements NativeLibrary.NativeFunction {
+    abstract static class Bz2NativeFunctions {
+        @DowncallSignature(returnType = POINTER)
+        abstract long bz_create_bzst_stream();
 
-        /*-
-          nfi_function: name('createStream') map('bzst_stream*', 'POINTER')
-          bzst_stream *bz_create_bzst_stream()
-        */
-        bz_create_bzst_stream("(): POINTER"),
+        @DowncallSignature(returnType = DOUBLE, argumentTypes = {POINTER})
+        abstract double bz_get_timeElapsed(long bzst);
 
-        /*-
-          nfi_function: name('getTimeElapsed') map('bzst_stream*', 'POINTER')  static(true)
-          double bz_get_timeElapsed(bzst_stream* zst)
-        */
-        bz_get_timeElapsed("(POINTER): DOUBLE"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER})
+        abstract void bz_free_stream(long bzst);
 
-        /*-
-          nfi_function: name('deallocateStream') map('bzst_stream*', 'POINTER')
-          void bz_free_stream(bzst_stream* bzst)
-        */
-        bz_free_stream("(POINTER): VOID"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER})
+        abstract void bz_gc_helper(long bzst);
 
-        /*-
-          nfi_function: name('gcReleaseHelper') map('bzst_stream*', 'POINTER') release(true)
-          void bz_gc_helper(bzst_stream* bzst)
-        */
-        bz_gc_helper("(POINTER): VOID"),
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER})
+        abstract long bz_get_next_in_index(long bzst);
 
-        /*-
-          nfi_function: name('getNextInIndex') map('bzst_stream*', 'POINTER')
-          ssize_t bz_get_next_in_index(bzst_stream *bzst)
-        */
-        bz_get_next_in_index("(POINTER): SINT64"),
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER})
+        abstract long bz_get_bzs_avail_in_real(long bzst);
 
-        /*-
-          nfi_function: name('getBzsAvailInReal') map('bzst_stream*', 'POINTER')
-          ssize_t bz_get_bzs_avail_in_real(bzst_stream *bzst)
-        */
-        bz_get_bzs_avail_in_real("(POINTER): SINT64"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER, SINT64})
+        abstract void bz_set_bzs_avail_in_real(long bzst, long v);
 
-        /*-
-          nfi_function: name('setBzsAvailInReal') map('bzst_stream*', 'POINTER')
-          void bz_set_bzs_avail_in_real(bzst_stream *bzst, ssize_t v)
-        */
-        bz_set_bzs_avail_in_real("(POINTER, SINT64): VOID"),
+        @DowncallSignature(returnType = SINT64, argumentTypes = {POINTER})
+        abstract long bz_get_output_buffer_size(long bzst);
 
-        /*-
-          nfi_function: name('getOutputBufferSize') map('bzst_stream*', 'POINTER')
-          size_t bz_get_output_buffer_size(bzst_stream *bzst)
-        */
-        bz_get_output_buffer_size("(POINTER): UINT64"),
+        @DowncallSignature(returnType = VOID, argumentTypes = {POINTER, POINTER})
+        abstract void bz_get_output_buffer(long bzst, long dest);
 
-        /*-
-          nfi_function: name('getOutputBuffer') map('bzst_stream*', 'POINTER')
-          void bz_get_output_buffer(bzst_stream *bzst, Byte *dest)
-        */
-        bz_get_output_buffer("(POINTER, [UINT8]): VOID"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
+        abstract int bz_compressor_init(long bzst, int compresslevel);
 
-        /*-
-          nfi_function: name('compressInit') map('bzst_stream*', 'POINTER')
-          int bz_compressor_init(bzst_stream *bzst, int compresslevel)
-        */
-        bz_compressor_init("(POINTER, SINT32): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT32, SINT64})
+        abstract int bz_compress(long bzst, long data, long len, int action, long bufsize);
 
-        /*-
-          nfi_function: name('compress') map('bzst_stream*', 'POINTER')
-          int bz_compress(bzst_stream *bzst, Byte *data, ssize_t len, int action, ssize_t bufsize)
-        */
-        bz_compress("(POINTER, [UINT8], SINT64, SINT32, SINT64): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int bz_decompress_init(long bzst);
 
-        /*-
-          nfi_function: name('decompressInit') map('bzst_stream*', 'POINTER')
-          int bz_decompress_init(bzst_stream *bzst)
-        */
-        bz_decompress_init("(POINTER): SINT32"),
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT64, SINT64, SINT64, SINT64})
+        abstract int bz_decompress(long bzst, long inputBuffer, long offset, long maxLength, long bufsize, long bzsAvailInReal);
 
-        /*-
-          nfi_function: name('decompress') map('bzst_stream*', 'POINTER')
-          int bz_decompress(bzst_stream *bzst, Byte *input_buffer, ssize_t offset,ssize_t max_length,ssize_t bufsize, ssize_t bzs_avail_in_real)
-        */
-        bz_decompress("(POINTER, [UINT8], SINT64, SINT64, SINT64, SINT64): SINT32");
-
-        private final String signature;
-
-        Bz2NativeFunctions(String signature) {
-            this.signature = signature;
-        }
-
-        @Override
-        public String signature() {
-            return signature;
+        static NativeLibrary loadNativeLibrary(PythonContext context) {
+            return NativeCompressionSupport.loadNativeLibrary(context, SUPPORTING_NATIVE_LIB_NAME);
         }
     }
 
-    private static final String SUPPORTING_NATIVE_LIB_NAME = "bz2support";
+    private final Bz2NativeFunctions nativeFunctions;
 
-    private final PythonContext pythonContext;
-    private final NativeLibrary.TypedNativeLibrary<Bz2NativeFunctions> typedNativeLib;
-
-    @CompilerDirectives.CompilationFinal private boolean available;
-
-    private NFIBz2Support(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
-        if (context.useNativeCompressionModules()) {
-            this.pythonContext = context;
-            this.typedNativeLib = NativeLibrary.create(PythonContext.getSupportLibName(SUPPORTING_NATIVE_LIB_NAME), Bz2NativeFunctions.values(),
-                            backend, noNativeAccessHelp, false);
-            this.available = true;
-        } else {
-            this.pythonContext = null;
-            this.typedNativeLib = null;
-            this.available = false;
-        }
+    private NFIBz2Support(PythonContext context) {
+        super(context);
+        this.nativeFunctions = isAvailable() ? new Bz2NativeFunctionsGen(context) : null;
     }
 
     public static NFIBz2Support createNative(PythonContext context, String noNativeAccessHelp) {
-        return new NFIBz2Support(context, NativeLibrary.NFIBackend.NATIVE, noNativeAccessHelp);
-    }
-
-    public static NFIBz2Support createLLVM(PythonContext context, String noNativeAccessHelp) {
-        return new NFIBz2Support(context, NativeLibrary.NFIBackend.LLVM, noNativeAccessHelp);
+        return new NFIBz2Support(context);
     }
 
     static class PointerReleaseCallback implements AsyncHandler.AsyncAction {
@@ -183,17 +123,15 @@ public class NFIBz2Support {
 
         @Override
         public void execute(PythonContext context, Access access) {
-            synchronized (pointer) {
-                if (pointer.isReleased()) {
-                    return;
-                }
-                try {
-                    pointer.doRelease();
-                    pointer.markReleased();
-                    LOGGER.finest("NFIBz2Support pointer has been freed");
-                } catch (Exception e) {
-                    LOGGER.severe("Error while trying to free NFIBz2Support pointer: " + e.getMessage());
-                }
+            if (!pointer.markReleased()) {
+                assert pointer.isReleased();
+                return;
+            }
+            try {
+                pointer.doRelease();
+                LOGGER.finest("NFIBz2Support pointer has been freed");
+            } catch (Exception e) {
+                LOGGER.severe("Error while trying to free NFIBz2Support pointer: " + e.getMessage());
             }
         }
     }
@@ -201,14 +139,20 @@ public class NFIBz2Support {
     public static class Pointer extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
         private final NFIBz2Support lib;
+        private final long pointer;
 
-        public Pointer(Object referent, Object ptr, NFIBz2Support lib) {
-            super(referent, ptr, lib.pythonContext.getSharedFinalizer());
+        public Pointer(Object referent, long pointer, NFIBz2Support lib) {
+            super(referent, lib.pythonContext.getSharedFinalizer());
             this.lib = lib;
+            this.pointer = pointer;
+        }
+
+        public long getPointer() {
+            return pointer;
         }
 
         protected void doRelease() {
-            lib.gcReleaseHelper(getReference());
+            lib.gcReleaseHelper(pointer);
         }
 
         @Override
@@ -220,155 +164,79 @@ public class NFIBz2Support {
         }
     }
 
-    public void notAvailable() {
-        if (available) {
-            CompilerAsserts.neverPartOfCompilation("Checking NFIBz2Support availability should only be done during initialization.");
-            available = false;
+    public Object getTimeElapsed(long zst) {
+        return nativeFunctions.bz_get_timeElapsed(zst);
+    }
+
+    public Object gcReleaseHelper(long bzst) {
+        nativeFunctions.bz_gc_helper(bzst);
+        return null;
+    }
+
+    public long createStream() {
+        return nativeFunctions.bz_create_bzst_stream();
+    }
+
+    public void deallocateStream(long bzst) {
+        nativeFunctions.bz_free_stream(bzst);
+    }
+
+    public long getNextInIndex(long bzst) {
+        return nativeFunctions.bz_get_next_in_index(bzst);
+    }
+
+    public long getBzsAvailInReal(long bzst) {
+        return nativeFunctions.bz_get_bzs_avail_in_real(bzst);
+    }
+
+    public void setBzsAvailInReal(long bzst, long v) {
+        nativeFunctions.bz_set_bzs_avail_in_real(bzst, v);
+    }
+
+    public long getOutputBufferSize(long bzst) {
+        return nativeFunctions.bz_get_output_buffer_size(bzst);
+    }
+
+    public void getOutputBuffer(long bzst, byte[] dest) {
+        if (dest.length == 0) {
+            return;
+        }
+        long nativeDest = NativeMemory.mallocByteArray(dest.length);
+        try {
+            nativeFunctions.bz_get_output_buffer(bzst, nativeDest);
+            NativeMemory.readByteArrayElements(nativeDest, 0, dest, 0, dest.length);
+        } finally {
+            NativeMemory.free(nativeDest);
         }
     }
 
-    public boolean isAvailable() {
-        return available;
+    public int compressInit(long bzst, int compresslevel) {
+        return nativeFunctions.bz_compressor_init(bzst, compresslevel);
     }
 
-    /**
-     *
-     * @param zst bzst_stream* zst
-     * @return double
-     */
-    public Object getTimeElapsed(Object zst) {
-        return typedNativeLib.callUncached(pythonContext, Bz2NativeFunctions.bz_get_timeElapsed, zst);
+    public int compress(long bzst, byte[] data, long len, int action, long bufsize) {
+        long nativeData = copyToNativeByteArray(data, (int) len);
+        try {
+            return nativeFunctions.bz_compress(bzst, nativeData, len, action, bufsize);
+        } finally {
+            if (nativeData != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeData);
+            }
+        }
     }
 
-    /**
-     *
-     * @param bzst bzst_stream* bzst
-     *
-     */
-    public Object gcReleaseHelper(Object bzst) {
-        return typedNativeLib.callUncached(pythonContext, Bz2NativeFunctions.bz_gc_helper, bzst);
+    public int decompressInit(long bzst) {
+        return nativeFunctions.bz_decompress_init(bzst);
     }
 
-    /**
-     *
-     *
-     * @return bzst_stream*
-     */
-    public Object createStream(
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.call(typedNativeLib, Bz2NativeFunctions.bz_create_bzst_stream);
+    public int decompress(long bzst, byte[] inputBuffer, long offset, long maxLength, long bufsize, long bzsAvailInReal) {
+        long nativeInputBuffer = copyToNativeByteArray(inputBuffer);
+        try {
+            return nativeFunctions.bz_decompress(bzst, nativeInputBuffer, offset, maxLength, bufsize, bzsAvailInReal);
+        } finally {
+            if (nativeInputBuffer != NativeMemory.NULLPTR) {
+                NativeMemory.free(nativeInputBuffer);
+            }
+        }
     }
-
-    /**
-     *
-     * @param bzst bzst_stream* bzst
-     *
-     */
-    public void deallocateStream(Object bzst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        invokeNode.call(typedNativeLib, Bz2NativeFunctions.bz_free_stream, bzst);
-    }
-
-    /**
-     *
-     * @param bzst bzst_stream *bzst
-     * @return ssize_t
-     */
-    public long getNextInIndex(Object bzst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callLong(typedNativeLib, Bz2NativeFunctions.bz_get_next_in_index, bzst);
-    }
-
-    /**
-     *
-     * @param bzst bzst_stream *bzst
-     * @return ssize_t
-     */
-    public long getBzsAvailInReal(Object bzst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callLong(typedNativeLib, Bz2NativeFunctions.bz_get_bzs_avail_in_real, bzst);
-    }
-
-    /**
-     *
-     * @param bzst bzst_stream *bzst
-     * @param v ssize_t v
-     *
-     */
-    public void setBzsAvailInReal(Object bzst, long v,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        invokeNode.call(typedNativeLib, Bz2NativeFunctions.bz_set_bzs_avail_in_real, bzst, v);
-    }
-
-    /**
-     *
-     * @param bzst bzst_stream *bzst
-     * @return size_t
-     */
-    public long getOutputBufferSize(Object bzst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callLong(typedNativeLib, Bz2NativeFunctions.bz_get_output_buffer_size, bzst);
-    }
-
-    /**
-     *
-     * @param bzst bzst_stream *bzst
-     * @param dest Byte *dest
-     *
-     */
-    public void getOutputBuffer(Object bzst, byte[] dest,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        invokeNode.call(typedNativeLib, Bz2NativeFunctions.bz_get_output_buffer, bzst, dest);
-    }
-
-    /**
-     *
-     * @param bzst bzst_stream *bzst
-     * @param compresslevel int compresslevel
-     * @return int
-     */
-    public int compressInit(Object bzst, int compresslevel,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, Bz2NativeFunctions.bz_compressor_init, bzst, compresslevel);
-    }
-
-    /**
-     *
-     * @param bzst bzst_stream *bzst
-     * @param data Byte *data
-     * @param len ssize_t len
-     * @param action int action
-     * @param bufsize ssize_t bufsize
-     * @return int
-     */
-    public int compress(Object bzst, byte[] data, long len, int action, long bufsize,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, Bz2NativeFunctions.bz_compress, bzst, data, len, action, bufsize);
-    }
-
-    /**
-     *
-     * @param bzst bzst_stream *bzst
-     * @return int
-     */
-    public int decompressInit(Object bzst,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, Bz2NativeFunctions.bz_decompress_init, bzst);
-    }
-
-    /**
-     *
-     * @param bzst bzst_stream *bzst
-     * @param input_buffer Byte *input_buffer
-     * @param offset ssize_t offset
-     * @param max_length ssize_t max_length
-     * @param bufsize ssize_t bufsize
-     * @param bzs_avail_in_real ssize_t bzs_avail_in_real
-     * @return int
-     */
-    public int decompress(Object bzst, byte[] input_buffer, long offset, long max_length, long bufsize, long bzs_avail_in_real,
-                    NativeLibrary.InvokeNativeFunction invokeNode) {
-        return invokeNode.callInt(typedNativeLib, Bz2NativeFunctions.bz_decompress, bzst, input_buffer, offset, max_length, bufsize, bzs_avail_in_real);
-    }
-
 }

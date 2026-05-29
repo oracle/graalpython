@@ -58,7 +58,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.NFIBz2Support;
-import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -111,11 +110,10 @@ public class Bz2Nodes {
         @Specialization
         static byte[] nativeCompress(BZ2Object.BZ2Compressor self, PythonContext context, byte[] bytes, int len, int action,
                         @Bind Node inliningTarget,
-                        @Cached NativeLibrary.InvokeNativeFunction compress,
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached PRaiseNode raiseNode) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
-            int err = bz2Support.compress(self.getBzs(), bytes, len, action, INITIAL_BUFFER_SIZE, compress);
+            int err = bz2Support.compress(self.getBzs(), bytes, len, action, INITIAL_BUFFER_SIZE);
             if (err != BZ_OK) {
                 errorHandling(inliningTarget, err, raiseNode);
             }
@@ -230,9 +228,6 @@ public class Bz2Nodes {
         @Specialization
         static byte[] nativeInternalDecompress(BZ2Object.BZ2Decompressor self, int maxLength,
                         @Bind Node inliningTarget,
-                        @Cached NativeLibrary.InvokeNativeFunction decompress,
-                        @Cached NativeLibrary.InvokeNativeFunction getBzsAvailInReal,
-                        @Cached NativeLibrary.InvokeNativeFunction getNextInIndex,
                         @Cached GetOutputNativeBufferNode getBuffer,
                         @Cached InlinedConditionProfile errProfile,
                         @Cached InlinedBranchProfile ofProfile,
@@ -241,9 +236,9 @@ public class Bz2Nodes {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             byte[] in = self.getNextIn();
             int offset = self.getNextInIndex();
-            int err = bz2Support.decompress(self.getBzs(), in, offset, maxLength, INITIAL_BUFFER_SIZE, self.getBzsAvailInReal(), decompress);
-            long nextInIdx = bz2Support.getNextInIndex(self.getBzs(), getNextInIndex);
-            long bzsAvailInReal = bz2Support.getBzsAvailInReal(self.getBzs(), getBzsAvailInReal);
+            int err = bz2Support.decompress(self.getBzs(), in, offset, maxLength, INITIAL_BUFFER_SIZE, self.getBzsAvailInReal());
+            long nextInIdx = bz2Support.getNextInIndex(self.getBzs());
+            long bzsAvailInReal = bz2Support.getBzsAvailInReal(self.getBzs());
             try {
                 self.setNextInIndex(nextInIdx);
                 self.setBzsAvailInReal(bzsAvailInReal);
@@ -264,18 +259,16 @@ public class Bz2Nodes {
     @GenerateCached(false)
     public abstract static class GetOutputNativeBufferNode extends Node {
 
-        public abstract byte[] execute(Node inliningTarget, Object bzst, PythonContext context);
+        public abstract byte[] execute(Node inliningTarget, long bzst, PythonContext context);
 
         @Specialization
-        static byte[] getBuffer(Node inliningTarget, Object bzst, PythonContext context,
-                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction getBufferSize,
-                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction getBuffer,
+        static byte[] getBuffer(Node inliningTarget, long bzst, PythonContext context,
                         @Cached InlinedBranchProfile ofProfile,
                         @Cached PRaiseNode raiseNode) {
             NFIBz2Support bz2Support = context.getNFIBz2Support();
             int size;
             try {
-                size = PInt.intValueExact(bz2Support.getOutputBufferSize(bzst, getBufferSize));
+                size = PInt.intValueExact(bz2Support.getOutputBufferSize(bzst));
             } catch (OverflowException of) {
                 ofProfile.enter(inliningTarget);
                 throw raiseNode.raise(inliningTarget, SystemError, VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
@@ -285,7 +278,7 @@ public class Bz2Nodes {
             }
             byte[] resultArray = new byte[size];
             /* this will clear the native output once retrieved */
-            bz2Support.getOutputBuffer(bzst, resultArray, getBuffer);
+            bz2Support.getOutputBuffer(bzst, resultArray);
             return resultArray;
         }
     }
