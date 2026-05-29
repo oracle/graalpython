@@ -1845,7 +1845,7 @@ def graalpython_gate_runner(_, tasks):
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
             env = os.environ.copy()
-            graalpy = graalpy_standalone_jvm()
+            graalpy = graalpy_standalone_native()
             env['PATH'] = get_path_with_patchelf(graalpy)
             mx.log("1. Running twice without shared engine")
             run_python_unittests(
