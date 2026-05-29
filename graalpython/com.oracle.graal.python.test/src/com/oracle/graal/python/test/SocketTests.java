@@ -74,6 +74,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
 import static com.oracle.graal.python.runtime.PosixConstants.TCP_NODELAY;
 import static com.oracle.graal.python.runtime.PosixConstants.TCP_USER_TIMEOUT;
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -142,7 +143,7 @@ public class SocketTests {
 
     @Parameters(name = "{0}")
     public static String[] params() {
-        return new String[]{"native", "java"};
+        return SUPPORTS_PANAMA ? new String[]{"java", "native"} : new String[]{"java"};
     }
 
     @Rule public WithPythonContextRule withPythonContextRule = new WithPythonContextRule((o) -> o.put("python.PosixModuleBackend", backendName));

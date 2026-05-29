@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.test.builtin.objects.cext;
 
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.not;
@@ -72,7 +73,7 @@ public class SlotWrapperTests {
     @BeforeClass
     public static void setUpClass() {
         Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
-        Assume.assumeTrue(Runtime.version().feature() >= 22);
+        Assume.assumeTrue(SUPPORTS_PANAMA);
     }
 
     @Before

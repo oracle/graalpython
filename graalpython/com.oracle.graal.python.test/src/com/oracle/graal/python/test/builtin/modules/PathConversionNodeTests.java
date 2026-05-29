@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.test.builtin.modules;
 
 import static com.oracle.graal.python.test.PythonTests.ts;
 import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.math.BigInteger;
@@ -83,7 +84,7 @@ public class PathConversionNodeTests extends ConversionNodeTests {
 
     @Parameters(name = "{0}")
     public static String[] params() {
-        return new String[]{"java", "native"};
+        return SUPPORTS_PANAMA ? new String[]{"java", "native"} : new String[]{"java"};
     }
 
     @Before

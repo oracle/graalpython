@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.test.nodes;
 
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.MemMoveNode;
@@ -68,7 +70,7 @@ public class MemMoveNodeTests {
     @BeforeClass
     public static void setUpClass() {
         Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("mac"));
-        Assume.assumeTrue(Runtime.version().feature() >= 22);
+        Assume.assumeTrue(SUPPORTS_PANAMA);
     }
 
     @Before

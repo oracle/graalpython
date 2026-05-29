@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import java.util.Locale;
 
 public class Utils {
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
+    public static final boolean SUPPORTS_PANAMA = Runtime.version().feature() >= 22;
 
     public static String getThreadDump() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();

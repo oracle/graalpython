@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.cext.test;
 
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
+
 import org.graalvm.polyglot.Context;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -48,7 +50,7 @@ import org.junit.Test;
 public class MultithreadedImportTestNative extends MultithreadedImportTestBase {
     @BeforeClass
     public static void setUpClass() {
-        Assume.assumeTrue(Runtime.version().feature() >= 22);
+        Assume.assumeTrue(SUPPORTS_PANAMA);
     }
 
     @Test
