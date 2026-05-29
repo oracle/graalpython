@@ -36,10 +36,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import subprocess
 import sys
+import time
 import unittest
 
 IS_BYTECODE_DSL = sys.implementation.name == 'graalpy' and __graalpython__.is_bytecode_dsl_interpreter
+TRANSIENT_GRAALPY_STARTUP_BLOCKING_IO = "ERROR: BlockingIOError: [Errno 11] Resource temporarily unavailable"
 
 
 def _is_sandboxed():
@@ -108,3 +111,31 @@ def assert_raises(err, fn, *args, err_check=None, **kwargs):
             else:
                 assert err_check(e)
     assert raised
+
+
+def _contains_transient_graalpy_startup_blocking_io(output):
+    if output is None:
+        return False
+    if isinstance(output, bytes):
+        return TRANSIENT_GRAALPY_STARTUP_BLOCKING_IO.encode() in output
+    return TRANSIENT_GRAALPY_STARTUP_BLOCKING_IO in output
+
+
+def run_subprocess_with_graalpy_startup_retry(args, *, attempts=5, retry_delay=0.2, **kwargs):
+    unsupported_kwargs = {"stdout", "stderr", "capture_output"} & kwargs.keys()
+    if unsupported_kwargs:
+        raise TypeError(f"unsupported keyword arguments: {', '.join(sorted(unsupported_kwargs))}")
+    check = kwargs.pop("check", False)
+    for attempt in range(attempts):
+        result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+        if result.returncode == 0 or not (
+            _contains_transient_graalpy_startup_blocking_io(result.stdout) or
+            _contains_transient_graalpy_startup_blocking_io(result.stderr)
+        ):
+            break
+        if attempt + 1 < attempts:
+            time.sleep(retry_delay)
+            retry_delay *= 2
+    if check and result.returncode != 0:
+        raise subprocess.CalledProcessError(result.returncode, result.args, output=result.stdout, stderr=result.stderr)
+    return result

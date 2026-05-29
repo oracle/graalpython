@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,14 +44,16 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * This enum represents formats used by {@code array} and {@code memoryview}. The correspondence
  * between the type specifier string and {@link BufferFormat} is not 1 to 1. Multiple specifiers may
- * represent the same format (e.g. both {@code L} and {@code Q} on 64 bit platforms both map to
- * {@link BufferFormat#UINT_64}) format. Therefore it is necessary to keep the original specifier
- * string around for error messages.
+ * represent the same format (e.g. both {@code L} and {@code Q} on 64 bit non-Windows platforms both
+ * map to {@link BufferFormat#UINT_64}) format. Therefore it is necessary to keep the original
+ * specifier string around for error messages.
  */
 public enum BufferFormat {
     UINT_8(1, 0, "B"),
@@ -140,9 +142,11 @@ public enum BufferFormat {
             case 'i':
                 return INT_32;
             case 'L':
+                return PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? UINT_32 : UINT_64;
             case 'Q':
                 return UINT_64;
             case 'l':
+                return PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? INT_32 : INT_64;
             case 'q':
                 return INT_64;
             case 'e':

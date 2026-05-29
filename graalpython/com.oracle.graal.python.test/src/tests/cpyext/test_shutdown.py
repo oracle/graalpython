@@ -47,6 +47,7 @@ from pathlib import Path
 import sys
 from unittest import skipIf
 from tests import compile_module_from_string
+from tests.util import run_subprocess_with_graalpy_startup_retry
 
 GRAALPY = sys.implementation.name == 'graalpy'
 
@@ -65,7 +66,7 @@ COMMAND = [sys.executable, *ARGS, str(MODULE_PATH)]
 
 # Test that running Py_DECREF in native global destructor doesn't crash
 def test_normal_exit():
-    subprocess.run(COMMAND, check=True, env=ENV)
+    run_subprocess_with_graalpy_startup_retry(COMMAND, check=True, env=ENV)
 
 
 def test_sigterm():
