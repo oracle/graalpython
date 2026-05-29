@@ -148,9 +148,12 @@ public abstract class PThreadState {
         CStructAccess.writePtrField(ptr, CFields.PyThreadState__dict, NULLPTR);
         CApiContext cApiContext = pythonContext.getCApiContext();
         long smallInts = mallocPtrArray(PY_NSMALLNEGINTS + PY_NSMALLPOSINTS);
+        long bytesCharacters = callocPtrArray(256);
         long deallocatingState = CStructAccess.getFieldPtr(ptr, CFields.PyThreadState__graalpy_deallocating);
         long deallocating = mallocPtrArray(GRAALPY_DEALLOC_STACK_INITIAL_CAPACITY);
+        long singletons = CStructAccess.getFieldPtr(ptr, CFields.PyThreadState__singletons);
         CStructAccess.writePtrField(ptr, CFields.PyThreadState__small_ints, smallInts);
+        CStructAccess.writePtrField(singletons, CFields.GraalPySingletons__bytes_characters, bytesCharacters);
         CStructAccess.writePtrField(deallocatingState, CFields.GraalPyDeallocState__items, deallocating);
         for (int i = -PY_NSMALLNEGINTS; i < PY_NSMALLPOSINTS; i++) {
             writePtrArrayElement(smallInts, i + PY_NSMALLNEGINTS, CApiTransitions.HandlePointerConverter.intToPointer(i));
@@ -175,8 +178,14 @@ public abstract class PThreadState {
             return;
         }
         long singletons = CStructAccess.getFieldPtr(nativeCompanion, CFields.PyThreadState__singletons);
+        long bytesCharacters = CStructAccess.readPtrField(singletons, CFields.GraalPySingletons__bytes_characters);
         CStructAccess.writePtrField(singletons, CFields.GraalPySingletons__tuple_empty, NULLPTR);
         CStructAccess.writePtrField(singletons, CFields.GraalPySingletons__bytes_empty, NULLPTR);
+        assert bytesCharacters != NULLPTR;
+        // Drop singleton roots before the handle table frees the corresponding stubs.
+        for (int i = 0; i < 256; i++) {
+            writePtrArrayElement(bytesCharacters, i, NULLPTR);
+        }
     }
 
     public static int growDeallocatingStack(long nativeThreadState, long newCapacity) {
@@ -228,6 +237,10 @@ public abstract class PThreadState {
         if (deallocatingItems != NULLPTR) {
             NativeMemory.free(deallocatingItems);
         }
+        long singletons = CStructAccess.getFieldPtr(nativeCompanion, CFields.PyThreadState__singletons);
+        long bytesCharacters = CStructAccess.readPtrField(singletons, CFields.GraalPySingletons__bytes_characters);
+        assert bytesCharacters != NULLPTR;
+        NativeMemory.free(bytesCharacters);
 
         // TODO(fa): decref PyThreadState__dict
         LOGGER.fine(String.format("Freeing (PyThreadState *)0x%x", nativeCompanion));

@@ -32,6 +32,23 @@ static inline PyObject* bytes_new_empty(void)
     return Py_NewRef(&_Py_SINGLETON(bytes_empty));
 }
 
+// Return a strong reference to a cached one-byte bytes string singleton.
+static inline PyObject* bytes_new_character(unsigned char ch)
+{
+    return Py_NewRef(PyThreadState_Get()->singletons.bytes_characters[ch]);
+}
+
+static inline int bytes_is_character_singleton(PyObject *op)
+{
+    PyObject **characters = PyThreadState_Get()->singletons.bytes_characters;
+    for (int i = 0; i < 256; i++) {
+        if (op == characters[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /*[clinic input]
 class bytes "PyBytesObject *" "&PyBytes_Type"
 [clinic start generated code]*/
@@ -143,6 +160,9 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
     if (size == 0) {
         return bytes_new_empty();
     }
+    if (size == 1 && str != NULL) {
+        return bytes_new_character((unsigned char)*str);
+    }
     if (str != NULL) {
         return GraalPyPrivate_Bytes_FromStringAndSize(str, size);
     }
@@ -157,6 +177,9 @@ PyBytes_FromString(const char *str)
     Py_ssize_t size = strlen(str);
     if (size == 0) {
         return bytes_new_empty();
+    }
+    if (size == 1) {
+        return bytes_new_character((unsigned char)*str);
     }
     return GraalPyPrivate_Bytes_FromStringAndSize(str, size);
 }
@@ -2953,6 +2976,12 @@ _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
         *pv = GraalPyPrivate_Bytes_EmptyWithCapacity(newsize);
         Py_DECREF(v);
         return *pv == NULL ? -1 : 0;
+    }
+    if (bytes_is_character_singleton(v)) {
+        *pv = NULL;
+        Py_DECREF(v);
+        PyErr_BadInternalCall();
+        return -1;
     }
     if (newsize == 0) {
         *pv = bytes_new_empty();

@@ -172,6 +172,62 @@ class TestPyBytes(CPyExtTestCase):
         callfunction="CheckPyBytesFromStringAndSizeEmpty",
     )
 
+    test_PyBytes_one_byte_singletons = CPyExtFunction(
+        lambda args: 1,
+        lambda: ((),),
+        code="""
+        static int CheckPyBytesOneByteSingletons(void) {
+            int all_from_size_cached = 1;
+            for (int i = 0; i < 256; i++) {
+                char ch = (char)i;
+                PyObject *a = PyBytes_FromStringAndSize(&ch, 1);
+                PyObject *b = PyBytes_FromStringAndSize(&ch, 1);
+                if (a == NULL || b == NULL || a != b ||
+                                PyBytes_GET_SIZE(a) != 1 ||
+                                ((unsigned char *)PyBytes_AS_STRING(a))[0] != (unsigned char)i) {
+                    all_from_size_cached = 0;
+                }
+                Py_XDECREF(a);
+                Py_XDECREF(b);
+            }
+
+            PyObject *from_string = PyBytes_FromString("x");
+            PyObject *from_size = PyBytes_FromStringAndSize("x", 1);
+            PyObject *from_null = PyBytes_FromStringAndSize(NULL, 1);
+            PyObject *resize_cached = PyBytes_FromString("x");
+
+            int from_string_uses_cache = from_string != NULL && from_string == from_size;
+            int from_null_is_fresh = from_null != NULL && from_null != from_size;
+            int resize_cached_rejected = _PyBytes_Resize(&resize_cached, 0) < 0;
+            if (resize_cached_rejected) {
+                PyErr_Clear();
+            }
+            int resize_fresh_ok = _PyBytes_Resize(&from_null, 0) == 0;
+            if (!resize_fresh_ok) {
+                PyErr_Clear();
+            }
+
+            int result = all_from_size_cached &&
+                         from_string_uses_cache &&
+                         from_null_is_fresh &&
+                         resize_cached_rejected &&
+                         resize_fresh_ok &&
+                         from_null != NULL &&
+                         PyBytes_GET_SIZE(from_null) == 0;
+
+            Py_XDECREF(from_string);
+            Py_XDECREF(from_size);
+            Py_XDECREF(from_null);
+            Py_XDECREF(resize_cached);
+            return result;
+        }
+        """,
+        resultspec="i",
+        argspec="",
+        arguments=[],
+        callfunction="CheckPyBytesOneByteSingletons",
+    )
+
     test_PyBytes_Resize_empty_to_nonempty = CPyExtFunction(
         lambda args: None,
         lambda: ((),),

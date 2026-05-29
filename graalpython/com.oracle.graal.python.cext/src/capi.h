@@ -172,7 +172,7 @@ extern Py_LOCAL_SYMBOL uint32_t Py_Truffle_Options;
 extern THREAD_LOCAL Py_LOCAL_SYMBOL PyThreadState *tstate_current;
 
 static inline void graalpy_initialize_thread_state_singletons(PyThreadState *tstate) {
-    if (tstate == NULL || GraalPyPrivate_Tuple_Empty == NULL || GraalPyPrivate_Bytes_Empty == NULL) {
+    if (tstate == NULL || GraalPyPrivate_Tuple_Empty == NULL || GraalPyPrivate_Bytes_Empty == NULL || GraalPyPrivate_Bytes_FromStringAndSize == NULL) {
         return;
     }
     if (tstate->singletons.tuple_empty == NULL) {
@@ -181,7 +181,16 @@ static inline void graalpy_initialize_thread_state_singletons(PyThreadState *tst
     if (tstate->singletons.bytes_empty == NULL) {
         tstate->singletons.bytes_empty = GraalPyPrivate_Bytes_Empty();
     }
-    if (tstate->singletons.tuple_empty == NULL || tstate->singletons.bytes_empty == NULL) {
+    if (tstate->singletons.bytes_characters != NULL && tstate->singletons.bytes_characters[0] == NULL) {
+        for (int i = 0; i < 256; i++) {
+            char ch = (char)i;
+            tstate->singletons.bytes_characters[i] = GraalPyPrivate_Bytes_FromStringAndSize(&ch, 1);
+            if (tstate->singletons.bytes_characters[i] == NULL) {
+                Py_FatalError("failed to initialize GraalPy one-byte bytes singleton");
+            }
+        }
+    }
+    if (tstate->singletons.tuple_empty == NULL || tstate->singletons.bytes_empty == NULL || tstate->singletons.bytes_characters == NULL || tstate->singletons.bytes_characters[0] == NULL) {
         Py_FatalError("failed to initialize GraalPy thread-state singletons");
     }
 }

@@ -369,6 +369,7 @@ public enum CFields {
 
     GraalPySingletons__tuple_empty(PyObject),
     GraalPySingletons__bytes_empty(PyObject),
+    GraalPySingletons__bytes_characters(PyObjectPtr),
 
     GraalPyDeallocState__items(PyObjectPtr),
     GraalPyDeallocState__len(Int),

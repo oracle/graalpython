@@ -114,6 +114,7 @@ typedef struct {
 typedef struct {
     PyObject *tuple_empty;
     PyObject *bytes_empty;
+    PyObject **bytes_characters;
 } GraalPySingletons;
 
 typedef struct _stack_chunk {
