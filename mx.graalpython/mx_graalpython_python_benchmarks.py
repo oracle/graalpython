@@ -70,12 +70,24 @@ DEFAULT_NUMPY_BENCHMARKS = [
 ]
 
 SKIPPED_NUMPY_BENCHMARKS = [
+    "bench_core.CountNonzero.time_count_nonzero(1, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero(2, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero(3, 1000000, <class 'str'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero(1, 1000000, <class 'object'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero(2, 1000000, <class 'object'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero(3, 1000000, <class 'object'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_axis(1, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero_axis(2, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero_axis(3, 1000000, <class 'str'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_axis(1, 1000000, <class 'object'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_axis(2, 1000000, <class 'object'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_axis(3, 1000000, <class 'object'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_multi_axis(1, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero_multi_axis(2, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero_multi_axis(3, 1000000, <class 'str'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_multi_axis(1, 1000000, <class 'object'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_multi_axis(2, 1000000, <class 'object'>)",  # Times out
+    "bench_core.CountNonzero.time_count_nonzero_multi_axis(3, 1000000, <class 'object'>)",  # Times out
     "bench_linalg.LinalgSmallArrays.time_det_small_array",  # TODO fails with numpy.linalg.LinAlgError
     "bench_indexing.IndexingSeparate.time_mmap_fancy_indexing",  # Hangs in periodic job GR-73912
     "bench_indexing.IndexingStructured0D.time_array_slice",  # Hangs in periodic job GR-73912
@@ -435,7 +447,7 @@ class PySuite(mx_benchmark.TemporaryWorkdirMixin, mx_benchmark.VmBenchmarkSuite)
 
 
 class PyPerformanceSuite(PySuite):
-    VERSION = "1.0.6"
+    VERSION = "1.14.0"
 
     def name(self):
         return "pyperformance-suite"
@@ -600,10 +612,11 @@ class PyPySuite(PySuite):
 
 
 class NumPySuite(PySuite):
-    VERSION = "1.26.4"
+    VERSION = "2.4.4"
 
     BENCHMARK_REQ = [
         "asv==0.5.1",
+        "asv-runner==0.2.1",
         f"setuptools=={SETUPTOOLS_PIN}",
         "distlib==0.3.6",
         "filelock==3.8.0",
@@ -648,13 +661,14 @@ class NumPySuite(PySuite):
                 shutil.copytree(artifact, npdir)
             else:
                 mx.warn("NUMPY_BENCHMARKS_DIR is not set, cloning numpy repository")
+                repo_url = os.environ.get("NUMPY_REPO_URL", "https://github.com/numpy/numpy.git")
                 mx.run(
                     [
                         "git",
                         "clone",
                         "--depth",
                         "1",
-                        "https://github.com/numpy/numpy.git",
+                        repo_url,
                         "--branch",
                         f"v{self.VERSION}",
                         "--single-branch",
@@ -708,7 +722,7 @@ class NumPySuite(PySuite):
 
 
 class PandasSuite(PySuite):
-    VERSION = "1.5.2"
+    VERSION = "3.0.2"
     VERSION_TAG = "v" + VERSION
 
     BENCHMARK_REQ = [
@@ -721,6 +735,7 @@ class PandasSuite(PySuite):
         "virtualenv==20.16.3",
         "packaging==24.0",
         "jinja2",
+        "tzdata==2026.2",
         f"numpy=={NumPySuite.VERSION}",
         f"pandas=={VERSION}",
     ]
