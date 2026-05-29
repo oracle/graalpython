@@ -7321,6 +7321,9 @@ type_ready_mro(PyTypeObject *type)
     }
 #else // GraalPy change
     PyObject* mro = GraalPyPrivate_Compute_Mro(type, type->tp_name);
+    if (mro == NULL) {
+        return -1;
+    }
     type->tp_mro = mro;
 #endif // GraalPy change
     return 0;

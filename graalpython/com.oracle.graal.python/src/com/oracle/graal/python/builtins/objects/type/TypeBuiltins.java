@@ -132,6 +132,7 @@ import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -144,6 +145,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -413,22 +415,30 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(dict)"})
-        Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
+        static Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
                         @Bind Node inliningTarget,
                         @Cached TypeNode nextTypeNode,
                         @Cached PRaiseNode raiseNode,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached ConstructTupleNode constructTupleNode,
                         @Exclusive @Cached IsTypeNode isTypeNode) {
+            Object basesTuple;
             if (!(name instanceof TruffleString || name instanceof PString)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 1", name);
-            } else if (!(bases instanceof PTuple)) {
+            } else if (bases instanceof PTuple) {
+                basesTuple = bases;
+            } else if (tupleCheck.execute(inliningTarget, bases)) {
+                basesTuple = constructTupleNode.execute(frame, bases);
+            } else {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 2", bases);
-            } else if (!(dict instanceof PDict)) {
+            }
+            if (!(dict instanceof PDict)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 3", dict);
             } else if (!isTypeNode.execute(inliningTarget, cls)) {
                 // TODO: this is actually allowed, deal with it
                 throw raiseNode.raise(inliningTarget, NotImplementedError, ErrorMessages.CREATING_CLASS_NON_CLS_META_CLS);
             }
-            return nextTypeNode.execute(frame, cls, name, bases, dict, kwds);
+            return nextTypeNode.execute(frame, cls, name, basesTuple, dict, kwds);
         }
 
         private TypeNodes.IsAcceptableBaseNode ensureIsAcceptableBaseNode() {
@@ -674,9 +684,11 @@ public final class TypeBuiltins extends PythonBuiltins {
             return PFactory.createTuple(language, getBaseClassesNode.execute(inliningTarget, self));
         }
 
-        @Specialization
-        static Object setBases(VirtualFrame frame, PythonClass cls, PTuple value,
+        @Specialization(guards = "tupleCheck.execute(inliningTarget, value)", limit = "1")
+        static Object setBases(VirtualFrame frame, PythonClass cls, Object value,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheck,
+                        @Cached ConstructTupleNode constructTupleNode,
                         @Cached GetObjectArrayNode getArray,
                         @Cached GetBaseClassNode getBase,
                         @Cached GetBestBaseClassNode getBestBase,
@@ -687,7 +699,8 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached GetMroNode getMroNode,
                         @Cached PRaiseNode raiseNode) {
 
-            Object[] a = getArray.execute(inliningTarget, value);
+            PTuple bases = value instanceof PTuple ? (PTuple) value : constructTupleNode.execute(frame, value);
+            Object[] a = getArray.execute(inliningTarget, bases);
             if (a.length == 0) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P, cls);
             }
@@ -744,9 +757,10 @@ public final class TypeBuiltins extends PythonBuiltins {
             return (isSameTypeNode.execute(inliningTarget, b, PythonBuiltinClassType.PythonObject));
         }
 
-        @Specialization(guards = "!isPTuple(value)")
+        @Specialization(guards = "!tupleCheck.execute(inliningTarget, value)", limit = "1")
         static Object setObject(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheck) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P, "tuple", GetNameNode.executeUncached(cls), "__bases__", value);
         }
 
@@ -1241,8 +1255,9 @@ public final class TypeBuiltins extends PythonBuiltins {
                 updateSingleNode.execute(null, names, ns);
             }
             Object basesAttr = PyObjectLookupAttr.executeUncached(klass, T___BASES__);
-            if (basesAttr instanceof PTuple) {
-                Object[] bases = ToArrayNode.executeUncached(((PTuple) basesAttr).getSequenceStorage());
+            if (basesAttr instanceof PTuple || PyTupleCheckNode.executeUncached(basesAttr)) {
+                PTuple basesTuple = basesAttr instanceof PTuple ? (PTuple) basesAttr : ConstructTupleNode.getUncached().execute(null, basesAttr);
+                Object[] bases = ToArrayNode.executeUncached(basesTuple.getSequenceStorage());
                 for (Object cls : bases) {
                     // Note that since we are only interested in the keys, the order
                     // we merge classes is unimportant

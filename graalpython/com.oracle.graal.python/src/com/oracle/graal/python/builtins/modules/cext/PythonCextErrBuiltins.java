@@ -98,9 +98,11 @@ import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -234,6 +236,8 @@ public final class PythonCextErrBuiltins {
                         @Cached InlinedBranchProfile notDotProfile,
                         @Cached InlinedBranchProfile notModuleProfile,
                         @Cached InlinedConditionProfile baseProfile,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached ConstructTupleNode constructTupleNode,
                         @Cached PRaiseNode raiseNode) {
             if (base == PNone.NO_VALUE) {
                 base = PythonErrorType.Exception;
@@ -252,8 +256,8 @@ public final class PythonCextErrBuiltins {
                 setItemNode.execute(null, inliningTarget, (PDict) dict, T___MODULE__, substringNode.execute(name, 0, dotIdx, TS_ENCODING, false));
             }
             PTuple bases;
-            if (baseProfile.profile(inliningTarget, base instanceof PTuple)) {
-                bases = (PTuple) base;
+            if (baseProfile.profile(inliningTarget, tupleCheck.execute(inliningTarget, base))) {
+                bases = constructTupleNode.execute(null, base);
             } else {
                 bases = PFactory.createTuple(language, new Object[]{base});
             }

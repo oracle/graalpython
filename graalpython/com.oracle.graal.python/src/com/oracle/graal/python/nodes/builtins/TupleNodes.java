@@ -98,6 +98,16 @@ public abstract class TupleNodes {
             return PFactory.createTuple(language, copyNode.execute(inliningTarget, iterable.getSequenceStorage()));
         }
 
+        @Specialization(guards = "tupleCheck.execute(inliningTarget, iterable)", limit = "1")
+        static PTuple nativeTuple(PythonAbstractNativeObject iterable,
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
+                        @Cached GetNativeTupleStorage getNativeTupleStorage,
+                        @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
+            return PFactory.createTuple(language, toArrayNode.execute(inliningTarget, getNativeTupleStorage.execute(iterable)));
+        }
+
         @Fallback
         @InliningCutoff
         static PTuple generic(VirtualFrame frame, Object iterable,

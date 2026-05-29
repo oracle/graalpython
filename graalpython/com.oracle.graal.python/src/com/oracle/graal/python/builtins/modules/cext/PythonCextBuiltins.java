@@ -160,9 +160,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycle
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -207,10 +205,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -230,59 +226,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonCextBuiltins {
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextBuiltins.class);
-
-    /**
-     * Certain builtin types like {@code int} cannot handle refcounts. They cannot be handed out to
-     * the native side as borrowed references, since the handle would be collected immediately. (the
-     * boxed int, for example, is not referenced from anyhwere). This node promotes these types to
-     * full types like {@link PInt} and {@link PString}.
-     */
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class PromoteBorrowedValue extends Node {
-
-        public abstract Object execute(Node inliningTarget, Object value);
-
-        @Specialization
-        static PString doString(TruffleString str,
-                        @Bind PythonLanguage language) {
-            return PFactory.createString(language, str);
-        }
-
-        @Specialization
-        static PythonBuiltinObject doInteger(int i,
-                        @Bind PythonLanguage language) {
-            return PFactory.createInt(language, i);
-        }
-
-        @Specialization
-        static PythonBuiltinObject doLong(long i,
-                        @Bind PythonLanguage language) {
-            return PFactory.createInt(language, i);
-        }
-
-        @Specialization(guards = "!isNaN(d)")
-        static PythonBuiltinObject doDouble(double d,
-                        @Bind PythonLanguage language) {
-            return PFactory.createFloat(language, d);
-        }
-
-        @Specialization
-        static PythonBuiltinObject doBoolean(boolean b,
-                        @Bind PythonContext context) {
-            return b ? context.getTrue() : context.getFalse();
-        }
-
-        static boolean isNaN(double d) {
-            return Double.isNaN(d);
-        }
-
-        @Fallback
-        static PythonBuiltinObject doOther(@SuppressWarnings("unused") Object value) {
-            return null;
-        }
-    }
 
     public static PException checkThrowableBeforeNative(Throwable t, String where1, Object where2) {
         if (t instanceof PException pe) {

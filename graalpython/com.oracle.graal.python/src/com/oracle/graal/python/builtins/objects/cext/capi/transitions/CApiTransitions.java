@@ -1866,7 +1866,7 @@ public abstract class CApiTransitions {
             if (!pythonObject.isNative()) {
                 assert !CApiContext.isSpecialSingleton(pythonObject);
                 PythonContext context = PythonContext.get(inliningTarget);
-                boolean immortal = isImmortal(context, pythonObject);
+                boolean immortal = isImmortalPythonObject(context, pythonObject);
                 pointer = firstToNativeNode.execute(inliningTarget, pythonObject, FirstToNativeNode.getInitialRefcnt(needsTransfer, immortal));
                 pythonObject.setNativePointer(pointer);
             } else {
@@ -1992,6 +1992,7 @@ public abstract class CApiTransitions {
          * immortal.
          */
         private static boolean isImmortalPythonObject(PythonContext context, PythonObject pythonObject) {
+            assert !CApiContext.isSpecialSingleton(pythonObject);
             return pythonObject instanceof PythonBuiltinClass || context.getTrue() == pythonObject || context.getFalse() == pythonObject || pythonObject instanceof PMemoryView;
         }
 
@@ -2819,6 +2820,11 @@ public abstract class CApiTransitions {
 
         public final void execute(Node inliningTarget, HandleContext handleContext, long pointer, int handleTableIndex, long refCount) {
             execute(inliningTarget, handleContext, pointer, handleTableIndex, refCount > MANAGED_REFCNT, false);
+        }
+
+        @TruffleBoundary
+        public static void executeUncached(HandleContext handleContext, long pointer, int handleTableIndex, long refCount) {
+            CApiTransitionsFactory.UpdateHandleTableReferenceNodeGen.getUncached().execute(null, handleContext, pointer, handleTableIndex, refCount);
         }
 
         /**

@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.GetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -144,9 +145,10 @@ public final class PythonCextTypeBuiltins {
         @Specialization
         Object doGeneric(Object type, Object name,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TypeNodes.GetMroStorageNode getMroStorageNode,
-                        @Cached PythonCextBuiltins.PromoteBorrowedValue promoteBorrowedValue,
+                        @Cached EnsurePythonObjectNode ensureNode,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
                         @Cached DynamicObject.GetNode getNode,
@@ -177,8 +179,8 @@ public final class PythonCextTypeBuiltins {
                     value = getItem.execute(null, inliningTarget, dict, key);
                 }
                 if (value != null && value != PNone.NO_VALUE) {
-                    Object promoted = promoteBorrowedValue.execute(inliningTarget, value);
-                    if (promoted != null) {
+                    Object promoted = ensureNode.execute(context, value, false);
+                    if (promoted != value) {
                         if (dict == null) {
                             putNode.execute((PythonManagedClass) cls, key, promoted);
                         } else {

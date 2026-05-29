@@ -99,6 +99,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -603,6 +604,10 @@ public class PPickler extends PythonBuiltinObject {
             return hashingStorageLenNode.executeCached(storage);
         }
 
+        private boolean isTuple(Object object) {
+            return PyTupleCheckNode.executeUncached(object);
+        }
+
         private void save(VirtualFrame frame, PPickler pickler, Object obj, int persSave) {
             if (recursiveSaveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -787,7 +792,7 @@ public class PPickler extends PythonBuiltinObject {
         private void saveDictIteratorBatchUnrolled(VirtualFrame frame, PPickler pickler, Object iterator) {
             saveIteratorBatchedUnrolled(frame, pickler, iterator, PickleUtils.OPCODE_SETITEM, PickleUtils.OPCODE_SETITEMS,
                             (Object item) -> {
-                                if (!(item instanceof PTuple) || length(frame, item) != 2) {
+                                if (!isTuple(item) || length(frame, item) != 2) {
                                     throw raise(TypeError, ErrorMessages.MUST_S_ITER_RETURN_2TUPLE, DICT_ITEMS);
                                 }
                             },
@@ -832,7 +837,7 @@ public class PPickler extends PythonBuiltinObject {
         private void saveDictIterator(VirtualFrame frame, PPickler pickler, Object iterator) {
             saveIterator(frame, pickler, iterator, PickleUtils.OPCODE_SETITEM,
                             (Object item) -> {
-                                if (!(item instanceof PTuple) || length(frame, item) != 2) {
+                                if (!isTuple(item) || length(frame, item) != 2) {
                                     throw raise(TypeError, ErrorMessages.MUST_S_ITER_RETURN_2TUPLE, DICT_ITEMS);
                                 }
                                 save(frame, pickler, getItem(frame, item, 0), 0);
@@ -945,7 +950,7 @@ public class PPickler extends PythonBuiltinObject {
                 return;
             }
 
-            if (!(reduceValue instanceof PTuple)) {
+            if (!isTuple(reduceValue)) {
                 throw raise(PicklingError, ErrorMessages.S_MUST_RETURN_S_OR_S, T___REDUCE__, "string", "tuple");
             }
 
@@ -958,7 +963,7 @@ public class PPickler extends PythonBuiltinObject {
 
             boolean useNewobj = false, useNewobjEx = false;
 
-            if (!(arguments instanceof PTuple)) {
+            if (!isTuple(arguments)) {
                 throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
             int size = length(frame, arguments);
@@ -977,7 +982,7 @@ public class PPickler extends PythonBuiltinObject {
                 throw raise(PicklingError, ErrorMessages.S_ITEM_REDUCE_MUST_BE_S, "first", "callable");
             }
 
-            if (!(argtup instanceof PTuple)) {
+            if (!isTuple(argtup)) {
                 throw raise(PicklingError, ErrorMessages.S_ITEM_REDUCE_MUST_BE_S, "second", "a tuple");
             }
 
@@ -1033,7 +1038,7 @@ public class PPickler extends PythonBuiltinObject {
                 }
 
                 args = getItem(frame, argtup, 1);
-                if (!(args instanceof PTuple)) {
+                if (!isTuple(args)) {
                     throw raise(PicklingError, ErrorMessages.S_ITEM_FROM_S_MUST_BE_S_NOT_P, "second", "NEWOBJ_EX", "a tuple", args);
                 }
 

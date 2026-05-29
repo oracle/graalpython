@@ -54,6 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_subclasses;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTupleObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
@@ -960,14 +961,26 @@ public abstract class TypeNodes {
                 } catch (ClassCastException e) {
                     throw raise.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_OBJ_IN, "tp_bases");
                 }
+            } else if (result instanceof PythonAbstractNativeObject nativeTuple) {
+                int length = Math.toIntExact(readLongField(nativeTuple.getPtr(), CFields.PyVarObject__ob_size));
+                Object[] values = getTpBasesNode.readPyObjectArray(CStructAccess.getFieldPtr(nativeTuple.getPtr(), PyTupleObject__ob_item), length);
+                try {
+                    return cast(values, length);
+                } catch (ClassCastException e) {
+                    throw raise.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.UNSUPPORTED_OBJ_IN, "tp_bases");
+                }
             }
             throw raise.raise(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.TYPE_DOES_NOT_PROVIDE_BASES);
         }
 
         // TODO: get rid of this
         private static PythonAbstractClass[] cast(Object[] arr, SequenceStorage storage) {
-            PythonAbstractClass[] bases = new PythonAbstractClass[storage.length()];
-            for (int i = 0; i < storage.length(); i++) {
+            return cast(arr, storage.length());
+        }
+
+        private static PythonAbstractClass[] cast(Object[] arr, int length) {
+            PythonAbstractClass[] bases = new PythonAbstractClass[length];
+            for (int i = 0; i < length; i++) {
                 bases[i] = (PythonAbstractClass) arr[i];
             }
             return bases;

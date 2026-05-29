@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -100,7 +101,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.SetattrNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
@@ -120,11 +120,13 @@ import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
@@ -163,19 +165,20 @@ public abstract class PythonCextObjectBuiltins {
     private PythonCextObjectBuiltins() {
     }
 
-    @CApiBuiltin(ret = Void, args = {Pointer, Py_ssize_t}, call = Ignored)
-    abstract static class GraalPyPrivate_NotifyRefCount extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object doLong(long pointer, long refCount,
-                        @Bind Node inliningTarget,
-                        @Cached UpdateHandleTableReferenceNode updateRefNode) {
+    private static final CApiTiming TIMING_GRAALPYPRIVATE_NOTIFYREFCOUNT = CApiTiming.create(false, "GraalPyPrivate_NotifyRefCount");
+
+    @CApiBuiltin(ret = Void, args = {Pointer, Py_ssize_t}, call = Ignored, acquireGil = false, canRaise = false)
+    static void GraalPyPrivate_NotifyRefCount(long pointer, long refCount) {
+        assert PythonContext.get(null).ownsGil();
+        CApiTiming.enter();
+        try {
             assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
             assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
             assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
             assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(pointer)) == refCount;
             // refcounting on an immortal object should be a NOP
             assert refCount != PythonObject.IMMORTAL_REFCNT;
-            HandleContext handleContext = PythonContext.get(inliningTarget).handleContext;
+            HandleContext handleContext = PythonContext.get(null).handleContext;
             int hti = CStructAccess.readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
             /*
              * The handle table index may be 0. This means that the managed object was already
@@ -185,9 +188,10 @@ public abstract class PythonCextObjectBuiltins {
              * 'CFields.GraalPyObject__handle_table_index' is set to 0).
              */
             if (hti != 0) {
-                updateRefNode.execute(inliningTarget, handleContext, pointer, hti, refCount);
+                UpdateHandleTableReferenceNode.executeUncached(handleContext, pointer, hti, refCount);
             }
-            return PNone.NO_VALUE;
+        } finally {
+            CApiTiming.exit(TIMING_GRAALPYPRIVATE_NOTIFYREFCOUNT);
         }
     }
 
@@ -315,6 +319,8 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached ExpandKeywordStarargsNode castKwargsNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CallNode callNode,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             try {
 
@@ -324,10 +330,9 @@ public abstract class PythonCextObjectBuiltins {
                     keywords = PKeyword.EMPTY_KEYWORDS;
                 } else if (kwargs instanceof PDict) {
                     keywords = castKwargsNode.execute(inliningTarget, kwargs);
-                } else if (kwargs instanceof PTuple) {
+                } else if (tupleCheck.execute(inliningTarget, kwargs)) {
                     // We have a tuple with kw names and an array with kw values
-                    PTuple kwTuple = (PTuple) kwargs;
-                    SequenceStorage storage = kwTuple.getSequenceStorage();
+                    SequenceStorage storage = getTupleStorage.execute(inliningTarget, kwargs);
                     int kwcount = storage.length();
                     Object[] kwValues = readKwNode.readPyObjectArray(argsArray, kwcount, (int) nargs);
                     keywords = new PKeyword[kwcount];

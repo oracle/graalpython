@@ -138,6 +138,8 @@ class TestMethod(unittest.TestCase):
         assert obj.meth_varargs_keywords(1, 2, 3, a=1, b=2) == (obj, (1, 2, 3), {'a': 1, 'b': 2})
         assert obj.meth_fastcall(1, 2, 3) == (obj, (1, 2, 3))
         assert obj.meth_fastcall_keywords(1, 2, 3, a=1, b=2) == (obj, (1, 2, 3), {'a': 1, 'b': 2})
+        # Repeat to exercise the eager native kwnames tuple path after storage profiling.
+        assert obj.meth_fastcall_keywords(1, 2, 3, a=1, b=2) == (obj, (1, 2, 3), {'a': 1, 'b': 2})
         assert obj.meth_method(1, 2, 3, a=1, b=2) == (obj, TestMethods, (1, 2, 3), {'a': 1, 'b': 2})
         # class methods
         assert obj.meth_class_o(1) == (TestMethodsSubclass, 1)

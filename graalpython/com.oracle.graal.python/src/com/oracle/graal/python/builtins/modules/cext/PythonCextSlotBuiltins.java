@@ -518,11 +518,12 @@ public final class PythonCextSlotBuiltins {
         static Object get(Node inliningTarget, PSlice object, HiddenAttr key, Object value,
                         @Cached HiddenAttr.ReadNode read,
                         @Cached HiddenAttr.WriteNode write,
-                        @Cached PythonCextBuiltins.PromoteBorrowedValue promote) {
+                        @Bind PythonContext context,
+                        @Cached CExtNodes.EnsurePythonObjectNode ensureNode) {
             Object promotedValue = read.execute(inliningTarget, object, key, null);
             if (promotedValue == null) {
-                promotedValue = promote.execute(inliningTarget, value);
-                if (promotedValue == null) {
+                promotedValue = ensureNode.execute(context, value, false);
+                if (promotedValue == value) {
                     return value;
                 }
                 write.execute(inliningTarget, object, key, promotedValue);

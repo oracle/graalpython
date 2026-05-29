@@ -55,8 +55,6 @@ import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UT
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_32_LE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_INTERNED;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
@@ -71,11 +69,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_INTERNED;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.getByteArray;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.PRECISION_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND;
@@ -86,6 +84,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode.castLong;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32LE;
@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -141,11 +142,9 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleGetItem;
-import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.RichCmpOp;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
@@ -161,6 +160,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.ConcurrentWeakSet;
 import com.oracle.graal.python.util.OverflowException;
@@ -318,37 +318,37 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    private static final CApiTiming TIMING_GRAALPYPRIVATE_UNICODE_LOOKUPANDINTERN = CApiTiming.create(false, "GraalPyPrivate_Unicode_LookupAndIntern");
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Unicode_LookupAndIntern extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object withPString(PString str,
-                        @Bind Node inliningTarget,
-                        @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {
-            if (!unicodeCheckExactNode.execute(inliningTarget, str)) {
-                return NATIVE_NULL;
+    static long GraalPyPrivate_Unicode_LookupAndIntern(long objPtr) {
+        CApiTiming.enter();
+        try {
+            Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
+            if (obj instanceof PString str) {
+                if (!PGuards.isBuiltinPString(str)) {
+                    return NULLPTR;
+                }
+                str.intern();
+                if (str.isNative()) {
+                    long ptr = HandlePointerConverter.pointerToStub(str.getNativePointer());
+                    CApiTransitions.setGraalPyUnicodeObjectInterned(ptr, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
+                }
+                /*
+                 * TODO this is not integrated with str.intern, pointer comparisons of two
+                 * str.intern'ed string may still yield failse
+                 */
+                ConcurrentWeakSet<PString> interningCache = PythonContext.get(null).getCApiContext().getPstringInterningCache();
+                return PythonToNativeInternalNode.executeUncached(interningCache.intern(str, s -> s), true);
+            } else {
+                /*
+                 * If it's a subclass, we don't really know what putting it in the interned dict might
+                 * do.
+                 */
+                return NULLPTR;
             }
-
-            str.intern();
-            if (str.isNative()) {
-                long ptr = HandlePointerConverter.pointerToStub(str.getNativePointer());
-                CApiTransitions.setGraalPyUnicodeObjectInterned(ptr, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
-            }
-            /*
-             * TODO this is not integrated with str.intern, pointer comparisons of two str.intern'ed
-             * string may still yield failse
-             */
-            ConcurrentWeakSet<PString> interningCache = PythonContext.get(inliningTarget).getCApiContext().getPstringInterningCache();
-            return interningCache.intern(str, s -> s);
-        }
-
-        @Fallback
-        Object nil(@SuppressWarnings("unused") Object obj) {
-            /*
-             * If it's a subclass, we don't really know what putting it in the interned dict might
-             * do.
-             */
-            return NATIVE_NULL;
+        } finally {
+            CApiTiming.exit(TIMING_GRAALPYPRIVATE_UNICODE_LOOKUPANDINTERN);
         }
     }
 

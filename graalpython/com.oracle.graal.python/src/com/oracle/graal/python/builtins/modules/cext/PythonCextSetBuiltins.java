@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FU
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -58,6 +59,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBina
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
@@ -92,18 +96,22 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 public final class PythonCextSetBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PySet_New extends CApiUnaryBuiltinNode {
-        @Specialization(guards = {"!isNone(iterable)", "!isNoValue(iterable)"})
-        static Object newSet(Object iterable,
-                        @Cached ConstructSetNode constructSetNode) {
-            return constructSetNode.execute(null, iterable);
-        }
+    private static final CApiTiming TIMING_PYSET_NEW = CApiTiming.create(false, "PySet_New");
 
-        @Specialization
-        static Object newSet(@SuppressWarnings("unused") PNone iterable,
-                        @Bind PythonLanguage language) {
-            return PFactory.createSet(language);
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct, acquireGil = false)
+    static long PySet_New(long iterablePtr) {
+        CApiTiming.enter();
+        try {
+            PSet set;
+            if (iterablePtr == NULLPTR) {
+                set = PFactory.createSet(PythonLanguage.get(null));
+            } else {
+                Object iterable = NativeToPythonInternalNode.executeUncached(iterablePtr, false);
+                set = ConstructSetNode.getUncached().execute(null, iterable);
+            }
+            return PythonToNativeInternalNode.executeUncached(set, true);
+        } finally {
+            CApiTiming.exit(TIMING_PYSET_NEW);
         }
     }
 
