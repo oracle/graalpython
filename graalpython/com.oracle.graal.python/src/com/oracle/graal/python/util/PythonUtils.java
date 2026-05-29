@@ -100,6 +100,9 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.object.Property;
+import com.oracle.truffle.api.object.PropertyGetter;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -1096,5 +1099,16 @@ public final class PythonUtils {
         public List<Class<? extends Node>> getExecutionSignature() {
             throw new IllegalAccessError();
         }
+    }
+
+    public static PropertyGetter getPropertyGetterWithFinalAssumption(Shape shape, Object key) {
+        PropertyGetter getter = shape.makePropertyGetter(key);
+        if (getter != null) {
+            Property property = shape.getProperty(key);
+            if (property != null) {
+                property.getLocation().getFinalAssumption();
+            }
+        }
+        return getter;
     }
 }
