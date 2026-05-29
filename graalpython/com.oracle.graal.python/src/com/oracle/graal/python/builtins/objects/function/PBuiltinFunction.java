@@ -48,6 +48,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -80,6 +81,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final PExternalFunctionWrapper slotWrapper;
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
+
+    @CompilationFinal private RootCallTarget callTarget;
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootNode functionRootNode,
                     Signature signature,
@@ -196,7 +199,24 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public RootCallTarget getCallTarget() {
-        return functionRootNode.getCallTarget();
+        RootCallTarget ct = callTarget;
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, ct == null)) {
+            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+            }
+            ct = initializeCallTarget();
+        }
+        return ct;
+    }
+
+    @TruffleBoundary
+    private RootCallTarget initializeCallTarget() {
+        RootCallTarget ct = callTarget;
+        if (ct == null) {
+            ct = functionRootNode.getCallTarget();
+            callTarget = ct;
+        }
+        return ct;
     }
 
     public boolean declaresExplicitSelf() {

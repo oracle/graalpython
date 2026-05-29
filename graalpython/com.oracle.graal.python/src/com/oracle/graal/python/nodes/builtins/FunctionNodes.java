@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,15 +51,12 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethodBase;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetCallTargetNodeGen;
 import com.oracle.graal.python.nodes.builtins.FunctionNodesFactory.GetSignatureNodeGen;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -276,56 +273,6 @@ public abstract class FunctionNodes {
 
         public static GetSignatureNode getUncached() {
             return GetSignatureNodeGen.getUncached();
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline(false) // used lazily
-    public abstract static class GetCallTargetNode extends PNodeWithContext {
-
-        public abstract RootCallTarget execute(Object function);
-
-        @Specialization
-        static RootCallTarget doFunction(PFunction function,
-                        @Bind Node inliningTarget,
-                        @Shared("getCode") @Cached GetFunctionCodeNode getFunctionCodeNode,
-                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
-            return getCt.execute(inliningTarget, getFunctionCodeNode.execute(inliningTarget, function));
-        }
-
-        @Specialization
-        static RootCallTarget doBuiltinFunction(PBuiltinFunction builtinFunction) {
-            return builtinFunction.getCallTarget();
-        }
-
-        @Specialization(guards = "isPFunction(function)")
-        static RootCallTarget doMethod(@SuppressWarnings("unused") PMethod method,
-                        @Bind Node inliningTarget,
-                        @Bind("method.getFunction()") Object function,
-                        @Shared("getCode") @Cached GetFunctionCodeNode getFunctionCodeNode,
-                        @Shared("getCt") @Cached CodeNodes.GetCodeCallTargetNode getCt) {
-            return getCt.execute(inliningTarget, getFunctionCodeNode.execute(inliningTarget, (PFunction) function));
-        }
-
-        @Specialization(guards = "isPBuiltinFunction(method.getFunction())")
-        static RootCallTarget doMethod(@SuppressWarnings("unused") PMethod method,
-                        @Bind("method.getFunction()") Object function) {
-            return ((PBuiltinFunction) function).getCallTarget();
-        }
-
-        @Specialization
-        static RootCallTarget doBuiltinMethod(PBuiltinMethod builtinMethod) {
-            return builtinMethod.getBuiltinFunction().getCallTarget();
-        }
-
-        @Fallback
-        static RootCallTarget fallback(@SuppressWarnings("unused") Object callable) {
-            return null;
-        }
-
-        public static GetCallTargetNode getUncached() {
-            return GetCallTargetNodeGen.getUncached();
         }
     }
 }

@@ -113,7 +113,6 @@ import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocato
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryToolException;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -147,7 +146,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -614,36 +612,26 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class DumpTruffleAstNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public TruffleString doIt(PFunction func) {
-            return toTruffleStringUncached(NodeUtil.printTreeToString(GetCallTargetNode.getUncached().execute(func).getRootNode()));
-        }
-
-        @Specialization(guards = "isFunction(method.getFunction())")
-        @TruffleBoundary
-        public TruffleString doIt(PMethod method) {
-            return toTruffleStringUncached(NodeUtil.printTreeToString(GetCallTargetNode.getUncached().execute(method).getRootNode()));
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public TruffleString doIt(PGenerator gen) {
-            return toTruffleStringUncached(NodeUtil.printTreeToString(gen.getCurrentCallTarget().getRootNode()));
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public TruffleString doIt(PCode code) {
-            return toTruffleStringUncached(NodeUtil.printTreeToString(CodeNodes.GetCodeRootNode.executeUncached(code)));
-        }
-
-        @Fallback
-        @TruffleBoundary
-        public TruffleString doit(Object object) {
+        public TruffleString doIt(Object object) {
+            if (object instanceof PFunction func) {
+                return toTruffleStringUncached(NodeUtil.printTreeToString(func.getCode().getRootNode()));
+            }
+            if (object instanceof PBuiltinFunction func) {
+                return toTruffleStringUncached(NodeUtil.printTreeToString(func.getFunctionRootNode()));
+            }
+            if (object instanceof PMethod method) {
+                return doIt(method.getFunction());
+            }
+            if (object instanceof PBuiltinMethod method) {
+                return doIt(method.getBuiltinFunction());
+            }
+            if (object instanceof PGenerator gen) {
+                return toTruffleStringUncached(NodeUtil.printTreeToString(gen.getCurrentCallTarget().getRootNode()));
+            }
+            if (object instanceof PCode code) {
+                return toTruffleStringUncached(NodeUtil.printTreeToString(code.getRootNode()));
+            }
             return toTruffleStringUncached("truffle ast dump not supported for " + object.toString());
-        }
-
-        protected static boolean isFunction(Object callee) {
-            return callee instanceof PFunction;
         }
     }
 
@@ -829,7 +817,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public synchronized PFunction convertToBuiltin(PFunction func) {
-            RootNode rootNode = CodeNodes.GetCodeRootNode.executeUncached(func.getCode());
+            RootNode rootNode = func.getCode().getRootNode();
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 if (rootNode instanceof PBytecodeDSLRootNode r) {
                     r.setPythonInternal(true);
@@ -846,10 +834,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BuiltinMethodNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object doIt(PFunction func,
-                        @Bind Node inliningTarget,
-                        @Cached CodeNodes.GetCodeRootNode getRootNode) {
-            RootNode rootNode = getRootNode.execute(inliningTarget, func.getCode());
+        public Object doIt(PFunction func) {
+            RootNode rootNode = func.getCode().getRootNode();
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 if (rootNode instanceof PBytecodeDSLRootNode r) {
                     r.setPythonInternal(true);

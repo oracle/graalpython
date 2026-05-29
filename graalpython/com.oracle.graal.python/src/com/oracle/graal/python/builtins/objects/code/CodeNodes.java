@@ -44,7 +44,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRootNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.compiler.BytecodeCodeUnit;
@@ -269,24 +268,6 @@ public abstract class CodeNodes {
         @Specialization(replaces = "doCached")
         static Signature doCode(PCode code) {
             return code.getSignature();
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class GetCodeRootNode extends Node {
-
-        public abstract RootNode execute(Node inliningTarget, PCode code);
-
-        public static RootNode executeUncached(PCode code) {
-            return GetCodeRootNodeGen.getUncached().execute(null, code);
-        }
-
-        @Specialization
-        static RootNode doIt(Node inliningTarget, PCode code,
-                        @Cached GetCodeCallTargetNode getCodeCallTargetNode) {
-            return getCodeCallTargetNode.execute(inliningTarget, code).getRootNode();
         }
     }
 }
