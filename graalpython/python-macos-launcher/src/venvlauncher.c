@@ -59,17 +59,12 @@ void debug(const char *format, ...) {
     if (!debug_enabled) return;
 
     va_list va;
-    char buffer[PATH_MAX * 2];
     va_start(va, format);
-    int result = vsnprintf(buffer, sizeof(buffer), format, va);
+    vfprintf(stderr, format, va);
     va_end(va);
 
-    if (result <= 0) return;
-
-    fprintf(stderr, "%s", buffer);
     fflush(stderr);
 }
-
 
 /**
  * Reads the 'venvlauncher_command' from a pyvenv.cfg file.
