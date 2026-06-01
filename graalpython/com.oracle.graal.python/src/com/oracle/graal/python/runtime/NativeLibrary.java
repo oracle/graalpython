@@ -102,17 +102,6 @@ public class NativeLibrary {
         int ordinal();
     }
 
-    enum NFIBackend {
-        NATIVE(""),
-        LLVM("with llvm ");
-
-        private final String withClause;
-
-        NFIBackend(String withClause) {
-            this.withClause = withClause;
-        }
-    }
-
     /**
      * This is a helper exception that will be thrown in case a library is {@link #optional} and not
      * available.
@@ -134,7 +123,6 @@ public class NativeLibrary {
 
     private final int functionsCount;
     private final String name;
-    private final NFIBackend nfiBackend;
 
     /**
      * If given functionality has a fully managed variant that can be configured, this help message
@@ -148,10 +136,9 @@ public class NativeLibrary {
     private volatile Object cachedLibrary;
     private volatile InteropLibrary cachedLibraryInterop;
 
-    public NativeLibrary(String name, int functionsCount, NFIBackend nfiBackend, String noNativeAccessHelp, boolean optional) {
+    public NativeLibrary(String name, int functionsCount, String noNativeAccessHelp, boolean optional) {
         this.functionsCount = functionsCount;
         this.name = name;
-        this.nfiBackend = nfiBackend;
         this.noNativeAccessHelp = noNativeAccessHelp;
         this.optional = optional;
     }
@@ -208,7 +195,7 @@ public class NativeLibrary {
     }
 
     private Object parseSignature(Node location, PythonContext context, String signature) {
-        Source sigSource = Source.newBuilder(J_NFI_LANGUAGE, nfiBackend.withClause + signature, "python-nfi-signature").build();
+        Source sigSource = Source.newBuilder(J_NFI_LANGUAGE, signature, "python-nfi-signature").build();
         return callCallTarget(context.getEnv().parseInternal(sigSource), location);
     }
 
@@ -227,9 +214,9 @@ public class NativeLibrary {
         CompilerAsserts.neverPartOfCompilation();
         if (context.isNativeAccessAllowed()) {
             String path = getLibPath(context, name);
-            String src = String.format("%sload (RTLD_LOCAL) \"%s\"", nfiBackend.withClause, path);
+            String src = String.format("load (RTLD_LOCAL) \"%s\"", path);
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine(String.format("Loading native library %s from path %s %s", name, path, nfiBackend.withClause));
+                LOGGER.fine(String.format("Loading native library %s from path %s", name, path));
             }
             Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + name).internal(true).build();
             try {
@@ -283,16 +270,12 @@ public class NativeLibrary {
     }
 
     public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, String noNativeAccessHelp, boolean canIgnore) {
-        return create(name, functions, NFIBackend.NATIVE, noNativeAccessHelp, canIgnore);
-    }
-
-    public static <T extends Enum<T> & NativeFunction> TypedNativeLibrary<T> create(String name, T[] functions, NFIBackend nfiBackendName, String noNativeAccessHelp, boolean canIgnore) {
-        return new TypedNativeLibrary<>(name, functions.length, nfiBackendName, noNativeAccessHelp, canIgnore);
+        return new TypedNativeLibrary<>(name, functions.length, noNativeAccessHelp, canIgnore);
     }
 
     public static final class TypedNativeLibrary<T extends Enum<T> & NativeFunction> extends NativeLibrary {
-        public TypedNativeLibrary(String name, int functionsCount, NFIBackend nfiBackendName, String noNativeAccessHelp, boolean canIgnore) {
-            super(name, functionsCount, nfiBackendName, noNativeAccessHelp, canIgnore);
+        public TypedNativeLibrary(String name, int functionsCount, String noNativeAccessHelp, boolean canIgnore) {
+            super(name, functionsCount, noNativeAccessHelp, canIgnore);
         }
     }
 

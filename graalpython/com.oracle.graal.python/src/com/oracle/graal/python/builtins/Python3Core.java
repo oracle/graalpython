@@ -1070,7 +1070,7 @@ public abstract class Python3Core {
              * Special case for _bz2: If native access is not allowed, we cannot use the built-in
              * implementation that would call libbz2 via NativeAccess. Therefore, we remove it from the
              * built-in modules map (and also from sys.modules if already loaded). This will cause a
-             * fallback to another _bz2 implementation (e.g. LLVM or maybe some Java lib). This
+             * fallback to another _bz2 implementation (e.g. some Java lib). This
              * needs to be done here and cannot be done in 'initializeBuiltins' because then we
              * would never include the intrinsified _bz2 module in the native image since native
              * access is never allowed during context pre-initialization.

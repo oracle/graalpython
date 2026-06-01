@@ -542,11 +542,7 @@ public final class PythonContext extends Python3Core {
             this.contextVarsContext = contextVarsContext;
         }
 
-        public void dispose(boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer) {
-            dispose(canRunGuestCode, clearNativeThreadLocalVarPointer, true);
-        }
-
-        public void dispose(boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer, boolean markShuttingDown) {
+        public void dispose(boolean clearNativeThreadLocalVarPointer, boolean markShuttingDown) {
             // This method may be called twice on the same object.
 
             /*
@@ -577,11 +573,9 @@ public final class PythonContext extends Python3Core {
 
             /*
              * Write 'NULL' to the native thread-local variable used to store the PyThreadState
-             * struct such that it cannot accidentally be reused. Since this is done as a
-             * precaution, we just skip this if we cannot run guest code, because it may invoke
-             * LLVM.
+             * struct such that it cannot accidentally be reused.
              */
-            if (nativeThreadLocalVarPointer != NULLPTR && canRunGuestCode && clearNativeThreadLocalVarPointer) {
+            if (nativeThreadLocalVarPointer != NULLPTR && clearNativeThreadLocalVarPointer) {
                 NativeMemory.writePtr(nativeThreadLocalVarPointer, NULLPTR);
             }
             nativeThreadLocalVarPointer = NULLPTR;
@@ -2277,7 +2271,7 @@ public final class PythonContext extends Python3Core {
 
     /**
      * Release all resources held by the thread states. This function needs to run as long as the
-     * context is still valid because it may call into LLVM to release handles.
+     * context is still valid because it may release handles.
      */
     @TruffleBoundary
     private void disposeThreadStates() {
@@ -2830,7 +2824,7 @@ public final class PythonContext extends Python3Core {
             ts.shutdown();
         }
         threadStateMapping.remove(thread);
-        ts.dispose(canRunGuestCode, thread == Thread.currentThread(), markShuttingDown);
+        ts.dispose(thread == Thread.currentThread(), markShuttingDown);
         releaseSentinelLock(ts.sentinelLock);
         getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }

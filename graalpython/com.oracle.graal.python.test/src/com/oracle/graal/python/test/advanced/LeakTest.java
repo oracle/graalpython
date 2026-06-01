@@ -189,7 +189,6 @@ public class LeakTest extends AbstractLanguageLauncher {
                 addResidue(residues, inst, "referencesToBeFreed", this::collectionSize);
                 addResidue(residues, inst, "nativeLookup", this::collectionSize);
                 addResidue(residues, inst, "nativeWeakRef", this::collectionSize);
-                addResidue(residues, inst, "managedNativeLookup", this::collectionSize);
                 addResidue(residues, inst, "nativeTypeLookup", this::objectArraySize);
                 addResidue(residues, inst, "nativeStubLookup", this::objectArraySize);
                 addResidue(residues, inst, "nativeStorageReferences", this::collectionSize);
