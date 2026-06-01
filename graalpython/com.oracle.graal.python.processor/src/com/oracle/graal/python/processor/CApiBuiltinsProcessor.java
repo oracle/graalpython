@@ -971,7 +971,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     private boolean verifySignatureOfExplicitUpcallTarget(ExecutableElement explicitUpcallTarget) {
-        if (!explicitUpcallTarget.getReturnType().getKind().isPrimitive()) {
+        TypeKind returnKind = explicitUpcallTarget.getReturnType().getKind();
+        if (returnKind != TypeKind.VOID && !returnKind.isPrimitive()) {
             processingEnv.getMessager().printError("Return type must be primitive but was " + explicitUpcallTarget.getReturnType(), explicitUpcallTarget);
             return false;
         }
