@@ -1083,8 +1083,8 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
         launcher = os.path.join(python_home, 'bin', _graalpy_launcher())
         out = mx.OutputCapture()
-        mx.run([launcher, "-c", "print(__graalpython__.is_bytecode_dsl_interpreter)"], nonZeroIsFatal=False, out=out, err=out)
-        is_bytecode_dsl_interpreter = out.data.strip() == "True"
+        mx.run([launcher, "-c", "print('__GRAALPY_BYTECODE_DSL_INTERPRETER__ =', __graalpython__.is_bytecode_dsl_interpreter)"], nonZeroIsFatal=False, out=out, err=out)
+        is_bytecode_dsl_interpreter = "__GRAALPY_BYTECODE_DSL_INTERPRETER__ = True" in out.data
         if is_bytecode_dsl_interpreter != BYTECODE_DSL_INTERPRETER:
             requested = "Bytecode DSL" if BYTECODE_DSL_INTERPRETER else "Manual"
             actual = "Bytecode DSL" if is_bytecode_dsl_interpreter else "Manual"
