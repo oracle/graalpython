@@ -9,6 +9,7 @@
 
 #include "capi.h" // GraalPy change
 #include "Python.h"
+#include "pycore_global_objects.h"  // _Py_SINGLETON() // GraalPy change
 #if 0 // GraalPy change
 #include "pycore_abstract.h"      // _PyIndex_Check()
 #include "pycore_bytesobject.h"   // _PyBytes_Find(), _PyBytes_Repeat()
@@ -24,6 +25,29 @@
 #endif // GraalPy change
 
 #include <stddef.h>
+
+// Return a strong reference to the empty bytes string singleton.
+static inline PyObject* bytes_new_empty(void)
+{
+    return Py_NewRef(&_Py_SINGLETON(bytes_empty));
+}
+
+// Return a strong reference to a cached one-byte bytes string singleton.
+static inline PyObject* bytes_new_character(unsigned char ch)
+{
+    return Py_NewRef(PyThreadState_Get()->singletons.bytes_characters[ch]);
+}
+
+static inline int bytes_is_character_singleton(PyObject *op)
+{
+    PyObject **characters = PyThreadState_Get()->singletons.bytes_characters;
+    for (int i = 0; i < 256; i++) {
+        if (op == characters[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 /*[clinic input]
 class bytes "PyBytesObject *" "&PyBytes_Type"
@@ -133,6 +157,12 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
             "Negative size passed to PyBytes_FromStringAndSize");
         return NULL;
     }
+    if (size == 0) {
+        return bytes_new_empty();
+    }
+    if (size == 1 && str != NULL) {
+        return bytes_new_character((unsigned char)*str);
+    }
     if (str != NULL) {
         return GraalPyPrivate_Bytes_FromStringAndSize(str, size);
     }
@@ -143,10 +173,15 @@ PyObject *
 PyBytes_FromString(const char *str)
 {
     // GraalPy change: different implementation
-	if (str != NULL) {
-		return GraalPyPrivate_Bytes_FromStringAndSize(str, strlen(str));
-	}
-	return GraalPyPrivate_Bytes_EmptyWithCapacity(0);
+    assert(str != NULL);
+    Py_ssize_t size = strlen(str);
+    if (size == 0) {
+        return bytes_new_empty();
+    }
+    if (size == 1) {
+        return bytes_new_character((unsigned char)*str);
+    }
+    return GraalPyPrivate_Bytes_FromStringAndSize(str, size);
 }
 
 PyObject *
@@ -2927,6 +2962,32 @@ int
 _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
 {
     // GraalPy change: different implementation
+    PyObject *v = *pv;
+    if (!PyBytes_Check(v) || newsize < 0) {
+        *pv = NULL;
+        Py_DECREF(v);
+        PyErr_BadInternalCall();
+        return -1;
+    }
+    if (Py_SIZE(v) == newsize) {
+        return 0;
+    }
+    if (Py_SIZE(v) == 0) {
+        *pv = GraalPyPrivate_Bytes_EmptyWithCapacity(newsize);
+        Py_DECREF(v);
+        return *pv == NULL ? -1 : 0;
+    }
+    if (bytes_is_character_singleton(v)) {
+        *pv = NULL;
+        Py_DECREF(v);
+        PyErr_BadInternalCall();
+        return -1;
+    }
+    if (newsize == 0) {
+        *pv = bytes_new_empty();
+        Py_DECREF(v);
+        return 0;
+    }
     return GraalPyPrivate_Bytes_Resize(*pv, newsize);
 }
 

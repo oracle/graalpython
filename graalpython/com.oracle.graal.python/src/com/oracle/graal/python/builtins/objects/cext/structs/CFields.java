@@ -360,11 +360,16 @@ public enum CFields {
     PyThreadState__current_exception(PyObject),
     PyThreadState__dict(PyObject),
     PyThreadState__small_ints(PyObjectPtr),
+    PyThreadState__singletons(Pointer),
     PyThreadState__gc(Pointer),
     PyThreadState__graalpy_deallocating(Pointer),
     PyThreadState__py_recursion_limit(Int),
     PyThreadState__py_recursion_remaining(Int),
     PyThreadState__c_recursion_remaining(Int),
+
+    GraalPySingletons__tuple_empty(PyObject),
+    GraalPySingletons__bytes_empty(PyObject),
+    GraalPySingletons__bytes_characters(PyObjectPtr),
 
     GraalPyDeallocState__items(PyObjectPtr),
     GraalPyDeallocState__len(Int),

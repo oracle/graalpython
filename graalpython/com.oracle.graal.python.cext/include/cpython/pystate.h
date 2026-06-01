@@ -111,6 +111,12 @@ typedef struct {
     int capacity;
 } GraalPyDeallocState;
 
+typedef struct {
+    PyObject *tuple_empty;
+    PyObject *bytes_empty;
+    PyObject **bytes_characters;
+} GraalPySingletons;
+
 typedef struct _stack_chunk {
     struct _stack_chunk *previous;
     size_t size;
@@ -264,6 +270,14 @@ struct _ts {
        the large structures and arrays where for us, most fields will be zero.
     */
     PyObject **small_ints;
+
+    /* GraalPy change: Similar to small_ints, we keep native wrappers for
+       CPython's internal static-object singletons in the PyThreadState rather
+       than in PyInterpreterState or _PyRuntimeState. The native wrappers are
+       context-local handle-space pointers even though the represented managed
+       objects are immutable. Do not add public API singletons such as Py_None
+       here; CPython exposes those through their dedicated globals. */
+    GraalPySingletons singletons;
 
     /* GraalPy change: We add field 'gc' which corresponds to field
        '&interp->gc'. */

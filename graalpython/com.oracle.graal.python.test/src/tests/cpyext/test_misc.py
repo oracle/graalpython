@@ -97,6 +97,31 @@ class TestMisc(CPyExtTestCase):
         arguments=["PyObject* ellipsis_singleton"],
     )
 
+    test_empty_tuple_user = CPyExtFunction(
+        lambda args: 1,
+        lambda: (
+            tuple(),
+        ),
+        code="""
+        static int CheckEmptyTupleUser(PyObject* ignored) {
+            PyObject *tuple_empty = PyTuple_New(0);
+            int result = tuple_empty != NULL &&
+                         PyTuple_CheckExact(tuple_empty) &&
+                         PyTuple_GET_SIZE(tuple_empty) == 0;
+            Py_XDECREF(tuple_empty);
+            return result;
+        }
+        """,
+        resultspec="i",
+        argspec="",
+        arguments=["PyObject* ignored"],
+        callfunction="CheckEmptyTupleUser",
+    )
+
+    def test_sre_bytes_empty_user(self):
+        import re
+        self.assertEqual(re.sub(b"a", b"", b"banana"), b"bnn")
+
     test_PyImport_ImportModule = CPyExtFunction(
         _reference_importmodule,
         lambda: (
