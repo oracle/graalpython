@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,19 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime.arrow;
+package com.oracle.graal.python.nodes.arrow;
 
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
-import static com.oracle.graal.python.util.PythonUtils.callCallTarget;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.Source;
+import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
+import com.oracle.truffle.api.CompilerDirectives;
 
-public class ArrowUtil {
+public final class ArrowReleaseCallback {
+    private static final MethodHandle HANDLE = NativeAccessSupport.createDowncallHandle(
+                    MethodType.methodType(void.class, long.class, long.class), false);
 
-    public static Object createNfiSignature(Node location, String methodSignature, PythonContext ctx) {
-        Source sigSource = Source.newBuilder(J_NFI_LANGUAGE, methodSignature, "python-nfi-signature").build();
-        return callCallTarget(ctx.getEnv().parseInternal(sigSource), location);
+    private ArrowReleaseCallback() {
+    }
+
+    public static void execute(long releaseCallback, long baseStructure) {
+        try {
+            HANDLE.invokeExact(releaseCallback, baseStructure);
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere("Unable to call release callback. Error:", e);
+        }
     }
 }

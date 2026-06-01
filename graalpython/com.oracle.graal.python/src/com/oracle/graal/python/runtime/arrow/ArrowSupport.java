@@ -40,19 +40,22 @@
  */
 package com.oracle.graal.python.runtime.arrow;
 
+import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
+import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
+
+import java.lang.invoke.MethodHandle;
+
 import com.oracle.graal.python.nodes.arrow.capsule.ArrowArrayCapsuleDestructor;
 import com.oracle.graal.python.nodes.arrow.capsule.ArrowSchemaCapsuleDestructor;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public class ArrowSupport {
+    private static final NativeSignature ARROW_CAPSULE_DESTRUCTOR_SIGNATURE = NativeSignature.create(VOID, POINTER);
 
     protected final PythonContext ctx;
 
@@ -61,44 +64,42 @@ public class ArrowSupport {
     }
 
     // ArrowArray destructor
-    private Object arrowArrayDestructorNFIClosure;
     @CompilationFinal private long arrowArrayDestructor;
 
     // ArrowSchema destructor
-    private Object arrowSchemaDestructorNFIClosure;
     @CompilationFinal private long arrowSchemaDestructor;
 
-    public long getArrowSchemaDestructor(Node location) {
+    public long getArrowSchemaDestructor() {
         if (arrowSchemaDestructor == 0) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            initArrowSchemaDestructor(location);
+            initArrowSchemaDestructor();
         }
         return arrowSchemaDestructor;
     }
 
-    public long getArrowArrayDestructor(Node location) {
+    public long getArrowArrayDestructor() {
         if (arrowArrayDestructor == 0L) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            initArrowArrayDestructor(location);
+            initArrowArrayDestructor();
         }
         return arrowArrayDestructor;
     }
 
     @TruffleBoundary
-    private void initArrowArrayDestructor(Node location) {
+    private void initArrowArrayDestructor() {
         CompilerAsserts.neverPartOfCompilation();
-        var signature = ArrowUtil.createNfiSignature(location, "(POINTER):VOID", ctx);
-        var executable = new ArrowArrayCapsuleDestructor();
-        this.arrowArrayDestructorNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
-        this.arrowArrayDestructor = PythonUtils.coerceToLong(arrowArrayDestructorNFIClosure, InteropLibrary.getUncached());
+        this.arrowArrayDestructor = createDestructorClosure("arrow_array_capsule_destructor",
+                        ArrowArrayCapsuleDestructor.getMethodHandle());
     }
 
     @TruffleBoundary
-    private void initArrowSchemaDestructor(Node location) {
+    private void initArrowSchemaDestructor() {
         CompilerAsserts.neverPartOfCompilation();
-        var signature = ArrowUtil.createNfiSignature(location, "(POINTER):VOID", ctx);
-        var executable = new ArrowSchemaCapsuleDestructor();
-        this.arrowSchemaDestructorNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
-        this.arrowSchemaDestructor = PythonUtils.coerceToLong(arrowSchemaDestructorNFIClosure, InteropLibrary.getUncached());
+        this.arrowSchemaDestructor = createDestructorClosure("arrow_schema_capsule_destructor",
+                        ArrowSchemaCapsuleDestructor.getMethodHandle());
+    }
+
+    private long createDestructorClosure(String name, MethodHandle methodHandle) {
+        return ARROW_CAPSULE_DESTRUCTOR_SIGNATURE.createClosure(ctx.ensureNativeContext(), name, methodHandle);
     }
 }

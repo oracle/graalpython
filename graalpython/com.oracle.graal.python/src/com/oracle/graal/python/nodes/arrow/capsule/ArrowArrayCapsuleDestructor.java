@@ -40,60 +40,62 @@
  */
 package com.oracle.graal.python.nodes.arrow.capsule;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
+import com.oracle.graal.python.annotations.CApiUpcallTarget;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsuleGetPointerNode;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
-import com.oracle.graal.python.nodes.arrow.InvokeArrowReleaseCallbackNode;
+import com.oracle.graal.python.nodes.arrow.ArrowReleaseCallback;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.truffle.api.CompilerAsserts;
 
-@ExportLibrary(InteropLibrary.class)
-public class ArrowArrayCapsuleDestructor implements TruffleObject {
+public final class ArrowArrayCapsuleDestructor {
+    private static final MethodHandle HANDLE_EXECUTE;
 
-    @ExportMessage
-    boolean isExecutable() {
-        return true;
+    static {
+        try {
+            HANDLE_EXECUTE = MethodHandles.lookup().findStatic(ArrowArrayCapsuleDestructor.class, "execute",
+                            MethodType.methodType(void.class, long.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    @ExportMessage
-    Object execute(Object[] args,
-                    @Bind Node inliningTarget,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @Cached NativeToPythonNode nativeToPythonNode,
-                    @Cached PyCapsuleGetPointerNode capsuleGetPointerNode,
-                    @Cached InvokeArrowReleaseCallbackNode.Lazy invokeReleaseCallbackNode) {
-        if (args.length != 1 || !lib.isPointer(args[0])) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
+    private ArrowArrayCapsuleDestructor() {
+    }
 
-        Object capsule = nativeToPythonNode.execute(args[0]);
-        PythonContext ctx = PythonContext.get(inliningTarget);
+    public static MethodHandle getMethodHandle() {
+        return HANDLE_EXECUTE;
+    }
+
+    @CApiUpcallTarget
+    private static void execute(long capsulePointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        PythonContext ctx = PythonContext.get(null);
         ctx.ensureNativeAccess();
-        long capsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowArray.CAPSULE_NAME, true);
-        var arrowArray = ArrowArray.wrap(capsuleGetPointerNode.execute(inliningTarget, capsule, capsuleNamePointer));
-        /*
-         * The exported PyCapsules should have a destructor that calls the release callback of the
-         * Arrow struct, if it is not already null. This prevents a memory leak in case the capsule
-         * was never passed to another consumer.
-         *
-         * For more information see:
-         * https://arrow.apache.org/docs/format/CDataInterface/PyCapsuleInterface.html#lifetime-
-         * semantics
-         */
-        if (!arrowArray.isReleased()) {
-            invokeReleaseCallbackNode.get(inliningTarget).executeCached(arrowArray.releaseCallback(), arrowArray.memoryAddress());
+        Object capsule = NativeToPythonNode.executeRawUncached(capsulePointer);
+        long capsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowArray.CAPSULE_NAME, false);
+        try {
+            var arrowArray = ArrowArray.wrap(PyCapsuleGetPointerNode.executeUncached(capsule, capsuleNamePointer));
+            /*
+             * The exported PyCapsules should have a destructor that calls the release callback of
+             * the Arrow struct, if it is not already null. This prevents a memory leak in case the
+             * capsule was never passed to another consumer.
+             *
+             * For more information see:
+             * https://arrow.apache.org/docs/format/CDataInterface/PyCapsuleInterface.html#lifetime-
+             * semantics
+             */
+            if (!arrowArray.isReleased()) {
+                ArrowReleaseCallback.execute(arrowArray.releaseCallback(), arrowArray.memoryAddress());
+            }
+            NativeMemory.free(arrowArray.memoryAddress());
+        } finally {
+            NativeMemory.free(capsuleNamePointer);
         }
-        NativeMemory.free(arrowArray.memoryAddress());
-        return PNone.NO_VALUE;
     }
 }

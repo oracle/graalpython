@@ -40,53 +40,55 @@
  */
 package com.oracle.graal.python.nodes.arrow.capsule;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
+import com.oracle.graal.python.annotations.CApiUpcallTarget;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsuleGetPointerNode;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.graal.python.nodes.arrow.ArrowReleaseCallback;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.nodes.arrow.InvokeArrowReleaseCallbackNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
+import com.oracle.truffle.api.CompilerAsserts;
 
-@ExportLibrary(InteropLibrary.class)
-public class ArrowSchemaCapsuleDestructor implements TruffleObject {
+public final class ArrowSchemaCapsuleDestructor {
+    private static final MethodHandle HANDLE_EXECUTE;
 
-    @ExportMessage
-    boolean isExecutable() {
-        return true;
+    static {
+        try {
+            HANDLE_EXECUTE = MethodHandles.lookup().findStatic(ArrowSchemaCapsuleDestructor.class, "execute",
+                            MethodType.methodType(void.class, long.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    @ExportMessage
-    Object execute(Object[] args,
-                    @Bind Node inliningTarget,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @Cached NativeToPythonNode nativeToPythonNode,
-                    @Cached PyCapsuleGetPointerNode pyCapsuleGetPointerNode,
-                    @Cached InvokeArrowReleaseCallbackNode.Lazy invokeReleaseCallbackNode) {
-        if (args.length != 1 || !lib.isPointer(args[0])) {
-            throw CompilerDirectives.shouldNotReachHere();
-        }
+    private ArrowSchemaCapsuleDestructor() {
+    }
 
-        Object capsule = nativeToPythonNode.execute(args[0]);
-        PythonContext ctx = PythonContext.get(inliningTarget);
+    public static MethodHandle getMethodHandle() {
+        return HANDLE_EXECUTE;
+    }
+
+    @CApiUpcallTarget
+    private static void execute(long capsulePointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        PythonContext ctx = PythonContext.get(null);
         ctx.ensureNativeAccess();
-        long capsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowSchema.CAPSULE_NAME, true);
-        var arrowSchema = ArrowSchema.wrap(pyCapsuleGetPointerNode.execute(inliningTarget, capsule, capsuleNamePointer));
+        Object capsule = NativeToPythonNode.executeRawUncached(capsulePointer);
+        long capsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowSchema.CAPSULE_NAME, false);
+        try {
+            var arrowSchema = ArrowSchema.wrap(PyCapsuleGetPointerNode.executeUncached(capsule, capsuleNamePointer));
 
-        if (!arrowSchema.isReleased()) {
-            invokeReleaseCallbackNode.get(inliningTarget).executeCached(arrowSchema.releaseCallback(), arrowSchema.memoryAddress());
+            if (!arrowSchema.isReleased()) {
+                ArrowReleaseCallback.execute(arrowSchema.releaseCallback(), arrowSchema.memoryAddress());
+            }
+
+            NativeMemory.free(arrowSchema.memoryAddress());
+        } finally {
+            NativeMemory.free(capsuleNamePointer);
         }
-
-        NativeMemory.free(arrowSchema.memoryAddress());
-        return PNone.NO_VALUE;
     }
 }
