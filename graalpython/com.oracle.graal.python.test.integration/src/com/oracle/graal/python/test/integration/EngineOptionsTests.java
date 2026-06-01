@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.test.integration;
 
 import static com.oracle.graal.python.test.integration.Utils.IS_WINDOWS;
+import static com.oracle.graal.python.test.integration.Utils.SUPPORTS_PANAMA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
@@ -57,7 +58,9 @@ public class EngineOptionsTests {
 
         assertEquals("java", doit(engine, null));
         assertEquals("java", doit(engine, "java"));
-        assertEquals("native", doit(engine, "native"));
+        // Native POSIX requires native access downcalls. When unavailable on JDK < 22 in JVM mode,
+        // requesting the native backend intentionally falls back to Java.
+        assertEquals(SUPPORTS_PANAMA ? "native" : "java", doit(engine, "native"));
         engine.close();
     }
 
