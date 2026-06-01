@@ -81,7 +81,6 @@
         linux: {
             common: {
                 LIBGMP: {name:"libgmp", version:"6.1.0", platformspecific:true},
-                NUMPY_BENCHMARKS_DIR: {name: "numpy", version: "1.26.4", platformspecific: false},
                 PYPY_HOME: {name: "pypy3", version: "3.10-v7.3.12", platformspecific: true},
                 PYPY_BENCHMARKS_DIR: {name: "pypybenchmarks", version: "84f401a8f55a", platformspecific: false},
             },

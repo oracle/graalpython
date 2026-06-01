@@ -5,7 +5,7 @@
 (import "ci/python-gate.libsonnet") +
 (import "ci/python-bench.libsonnet") +
 {
-    overlay: "c004ac2843125f797eb9f9a28ae76b51952ad9d7",
+    overlay: "40bd8048e1a6ba45494605955ffe748ae4db20be",
     specVersion: "8",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
@@ -21,6 +21,7 @@
         GRAAL_ENTERPRISE_GIT: "",
         CI_OVERLAYS_GIT: "",
         BENCHMARK_CONFIG_GIT: "",
+        NUMPY_REPO_GIT: "",
         PANDAS_REPO_GIT: "",
         PIP_EXTRA_INDEX_URL: "",
         WATCHDOG_GIT: "",

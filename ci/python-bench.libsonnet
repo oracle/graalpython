@@ -92,6 +92,7 @@
     local environment(os, arch) = self.environment(os, arch) + {
         BENCH_RESULTS_FILE_PATH: "bench-results.json",
         PANDAS_REPO_URL: $.overlay_imports.PANDAS_REPO_GIT,
+        NUMPY_REPO_URL: $.overlay_imports.NUMPY_REPO_GIT,
     } + if $.overlay_imports.PIP_EXTRA_INDEX_URL != "" then {
         PIP_EXTRA_INDEX_URL: $.overlay_imports.PIP_EXTRA_INDEX_URL,
     } else {},
