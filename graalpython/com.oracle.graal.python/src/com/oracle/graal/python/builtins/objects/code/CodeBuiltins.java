@@ -49,9 +49,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltinsClinicProviders.CodeConstructorNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -61,12 +61,15 @@ import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.compiler.SourceMap;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -124,23 +127,32 @@ public final class CodeBuiltins extends PythonBuiltins {
         static PCode call(VirtualFrame frame, @SuppressWarnings("unused") Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
-                        PBytes codestring, PTuple constants, PTuple names, PTuple varnames,
+                        Object codestring, Object constants, Object names, Object varnames,
                         TruffleString filename, TruffleString name, TruffleString qualname,
-                        int firstlineno, PBytes linetable, @SuppressWarnings("unused") PBytes exceptiontable,
-                        PTuple freevars, PTuple cellvars,
+                        int firstlineno, Object linetable, Object exceptiontable,
+                        Object freevars, Object cellvars,
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
-                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached GetBytesStorage getBytesStorage,
+                        @Cached GetTupleStorage getTupleStorage,
+                        @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
+                        @Cached PyBytesCheckNode bytesCheckNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
-            byte[] codeBytes = bufferLib.getCopiedByteArray(codestring);
-            byte[] linetableBytes = bufferLib.getCopiedByteArray(linetable);
+            byte[] codeBytes = getBytes(inliningTarget, codestring, bytesCheckNode, getBytesStorage, bufferLib);
+            byte[] linetableBytes = getBytes(inliningTarget, linetable, bytesCheckNode, getBytesStorage, bufferLib);
+            checkBytes(inliningTarget, exceptiontable, bytesCheckNode);
 
-            Object[] constantsArr = getObjectArrayNode.execute(inliningTarget, constants);
-            TruffleString[] namesArr = objectArrayToTruffleStringArray(inliningTarget, getObjectArrayNode.execute(inliningTarget, names), castToTruffleStringNode);
-            TruffleString[] varnamesArr = objectArrayToTruffleStringArray(inliningTarget, getObjectArrayNode.execute(inliningTarget, varnames), castToTruffleStringNode);
-            TruffleString[] freevarsArr = objectArrayToTruffleStringArray(inliningTarget, getObjectArrayNode.execute(inliningTarget, freevars), castToTruffleStringNode);
-            TruffleString[] cellcarsArr = objectArrayToTruffleStringArray(inliningTarget, getObjectArrayNode.execute(inliningTarget, cellvars), castToTruffleStringNode);
+            Object[] constantsArr = getTupleArray(inliningTarget, constants, tupleCheckNode, getTupleStorage, toArrayNode);
+            TruffleString[] namesArr = objectArrayToTruffleStringArray(inliningTarget,
+                            getTupleArray(inliningTarget, names, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+            TruffleString[] varnamesArr = objectArrayToTruffleStringArray(inliningTarget,
+                            getTupleArray(inliningTarget, varnames, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+            TruffleString[] freevarsArr = objectArrayToTruffleStringArray(inliningTarget,
+                            getTupleArray(inliningTarget, freevars, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+            TruffleString[] cellcarsArr = objectArrayToTruffleStringArray(inliningTarget,
+                            getTupleArray(inliningTarget, cellvars, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
 
             return createCodeNode.execute(frame, argcount, posonlyargcount, kwonlyargcount,
                             nlocals, stacksize, flags,
@@ -150,15 +162,27 @@ public final class CodeBuiltins extends PythonBuiltins {
                             firstlineno, linetableBytes);
         }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        static PCode call(Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
-                        Object nlocals, Object stacksize, Object flags,
-                        Object codestring, Object constants, Object names, Object varnames,
-                        Object filename, Object name, Object qualname,
-                        Object firstlineno, Object linetable, Object exceptiontable,
-                        Object freevars, Object cellvars,
-                        @Bind Node inliningTarget) {
+        private static byte[] getBytes(Node inliningTarget, Object object, PyBytesCheckNode bytesCheckNode,
+                        GetBytesStorage getBytesStorage, PythonBufferAccessLibrary bufferLib) {
+            checkBytes(inliningTarget, object, bytesCheckNode);
+            return bufferLib.getCopiedByteArray(getBytesStorage.execute(inliningTarget, object));
+        }
+
+        private static void checkBytes(Node inliningTarget, Object object, PyBytesCheckNode bytesCheckNode) {
+            if (!bytesCheckNode.execute(inliningTarget, object)) {
+                throw invalidArgs(inliningTarget);
+            }
+        }
+
+        private static Object[] getTupleArray(Node inliningTarget, Object object, PyTupleCheckNode tupleCheckNode,
+                        GetTupleStorage getTupleStorage, SequenceStorageNodes.ToArrayNode toArrayNode) {
+            if (!tupleCheckNode.execute(inliningTarget, object)) {
+                throw invalidArgs(inliningTarget);
+            }
+            return toArrayNode.execute(inliningTarget, getTupleStorage.execute(inliningTarget, object));
+        }
+
+        private static RuntimeException invalidArgs(Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INVALID_ARGS, "code");
         }
 

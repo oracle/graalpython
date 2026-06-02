@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -119,7 +119,7 @@ class TestCodeobject(CPyExtTestCase):
         ],
         cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
     )
-    
+
     test_PyCode_NewWithPosOnlyArgs = CPyExtFunction(
         lambda args: args,
         lambda: (
@@ -145,6 +145,82 @@ class TestCodeobject(CPyExtTestCase):
             "int firstlineno",
             "PyObject* lnotab", "PyObject* exceptiontable",
         ],
+        cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
+    )
+
+    test_PyCode_NewWithPosOnlyArgs_native_tuples = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            tuple(),
+        ),
+        code="""
+        static PyObject* make_tuple(const char *a, const char *b, const char *c) {
+            PyObject *tuple = PyTuple_New(3);
+            if (tuple == NULL) {
+                return NULL;
+            }
+            PyObject *item0 = PyUnicode_FromString(a);
+            PyObject *item1 = PyUnicode_FromString(b);
+            PyObject *item2 = PyUnicode_FromString(c);
+            if (item0 == NULL || item1 == NULL || item2 == NULL) {
+                Py_XDECREF(item0);
+                Py_XDECREF(item1);
+                Py_XDECREF(item2);
+                Py_DECREF(tuple);
+                return NULL;
+            }
+            PyTuple_SET_ITEM(tuple, 0, item0);
+            PyTuple_SET_ITEM(tuple, 1, item1);
+            PyTuple_SET_ITEM(tuple, 2, item2);
+            return tuple;
+        }
+
+        static PyCodeObject* wrap_PyCode_NewWithPosOnlyArgs_native_tuples(PyObject* ignored) {
+            PyObject *code = PyBytes_FromStringAndSize("", 0);
+            PyObject *consts = PyTuple_New(0);
+            PyObject *names = PyTuple_New(0);
+            PyObject *varnames = make_tuple("a", "b", "c");
+            PyObject *freevars = PyTuple_New(0);
+            PyObject *cellvars = PyTuple_New(0);
+            PyObject *filename = PyUnicode_FromString("filename");
+            PyObject *name = PyUnicode_FromString("name");
+            PyObject *qualname = PyUnicode_FromString("module.name");
+            PyObject *linetable = PyBytes_FromStringAndSize("", 0);
+            PyObject *exceptiontable = PyBytes_FromStringAndSize("", 0);
+            PyCodeObject *result = NULL;
+
+            if (code == NULL || consts == NULL || names == NULL || varnames == NULL ||
+                freevars == NULL || cellvars == NULL || filename == NULL || name == NULL ||
+                qualname == NULL || linetable == NULL || exceptiontable == NULL) {
+                goto done;
+            }
+            result = PyUnstable_Code_NewWithPosOnlyArgs(
+                            1, 0, 2, 3, 4, 0,
+                            code, consts, names, varnames,
+                            freevars, cellvars,
+                            filename, name, qualname,
+                            1, linetable, exceptiontable);
+
+        done:
+            Py_XDECREF(code);
+            Py_XDECREF(consts);
+            Py_XDECREF(names);
+            Py_XDECREF(varnames);
+            Py_XDECREF(freevars);
+            Py_XDECREF(cellvars);
+            Py_XDECREF(filename);
+            Py_XDECREF(name);
+            Py_XDECREF(qualname);
+            Py_XDECREF(linetable);
+            Py_XDECREF(exceptiontable);
+            return result;
+        }
+        """,
+        resultspec="O",
+        resulttype="PyCodeObject*",
+        argspec="",
+        arguments=["PyObject* ignored"],
+        callfunction="wrap_PyCode_NewWithPosOnlyArgs_native_tuples",
         cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
     )
 
