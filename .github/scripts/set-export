@@ -2,7 +2,7 @@
 
 VAR_NAME="$1"
 ARTIFACT_PATH="$2"
-REAL_PATH=$(eval echo $ARTIFACT_PATH)
+REAL_PATH=$(printf '%s' "$ARTIFACT_PATH")
 
 if [ -d "$REAL_PATH" ]; then
     export "$VAR_NAME"="$REAL_PATH"
