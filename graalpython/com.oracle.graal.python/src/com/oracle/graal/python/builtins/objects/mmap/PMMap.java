@@ -187,10 +187,9 @@ public final class PMMap extends PythonObject {
         }
 
         void close(PosixSupportLibrary posixLib, Object posixSupport) {
-            if (isReleased()) {
+            if (!markReleased()) {
                 return;
             }
-            markReleased();
 
             Object handle = getReference();
             if (fd != -1) {

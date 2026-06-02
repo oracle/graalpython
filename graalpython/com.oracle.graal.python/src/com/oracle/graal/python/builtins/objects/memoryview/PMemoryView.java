@@ -238,7 +238,8 @@ public final class PMemoryView extends PythonBuiltinObject {
     public void setReleased() {
         flags |= FLAG_RELEASED;
         if (reference != null) {
-            reference.markReleased();
+            boolean markedReleased = reference.markReleased();
+            assert markedReleased || reference.isReleased();
             reference = null;
         }
         buffer = null;
