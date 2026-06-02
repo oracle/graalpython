@@ -41,36 +41,22 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.callCallTarget;
 
 import java.lang.invoke.VarHandle;
-import java.util.Objects;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.NativeLibraryFactory.InvokeNativeFunctionNodeGen;
 import com.oracle.graal.python.util.FunctionWithSignature;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
@@ -82,11 +68,6 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
  * Because of Truffle DSL restrictions this class cannot be generic, but users should work with
  * generic subclass {@link TypedNativeLibrary}, which can be created with one of the {@code create}
  * factory methods.
- * <p>
- * For now, until there is no need to access the library and function objects directly, this object
- * is opaque to the outside code and the only entrypoint is {@link InvokeNativeFunction}, which
- * lazily loads the library, the requested function and invokes it. This node takes care of
- * efficient caching of the loaded NFI objects.
  */
 public class NativeLibrary {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeLibrary.class);
@@ -277,132 +258,5 @@ public class NativeLibrary {
         public TypedNativeLibrary(String name, int functionsCount, String noNativeAccessHelp, boolean canIgnore) {
             super(name, functionsCount, noNativeAccessHelp, canIgnore);
         }
-    }
-
-    public abstract static class InvokeNativeFunction extends PNodeWithContext {
-        private static final InvokeNativeFunction UNCACHED = InvokeNativeFunctionNodeGen.create(InteropLibrary.getUncached());
-        @Child private InteropLibrary resultInterop;
-        @Child private TruffleString.SwitchEncodingNode switchEncodingNode;
-
-        public InvokeNativeFunction(InteropLibrary resultInterop) {
-            this.resultInterop = resultInterop;
-        }
-
-        @NeverDefault
-        public static InvokeNativeFunction create() {
-            return InvokeNativeFunctionNodeGen.create(null);
-        }
-
-        public static InvokeNativeFunction getUncached() {
-            return UNCACHED;
-        }
-
-        public <T extends Enum<T> & NativeFunction> Object call(TypedNativeLibrary<T> lib, T function, Object... args) {
-            return execute(lib, function, args);
-        }
-
-        public <T extends Enum<T> & NativeFunction> long callLong(TypedNativeLibrary<T> lib, T function, Object... args) {
-            try {
-                return ensureResultInterop().asLong(call(lib, function, args));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(function.name(), e);
-            }
-        }
-
-        public <T extends Enum<T> & NativeFunction> int callInt(TypedNativeLibrary<T> lib, T function, Object... args) {
-            try {
-                return ensureResultInterop().asInt(call(lib, function, args));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(function.name(), e);
-            }
-        }
-
-        public <T extends Enum<T> & NativeFunction> TruffleString callString(TypedNativeLibrary<T> lib, T function, Object... args) {
-            try {
-                return ensureSwitchEncoding().execute(ensureResultInterop().asTruffleString(call(lib, function, args)), TS_ENCODING);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(function.name(), e);
-            }
-        }
-
-        protected abstract Object execute(NativeLibrary lib, NativeFunction function, Object[] args);
-
-        @Specialization(guards = {"isSingleContext()", "function == cachedFunction", "lib == cachedLib"}, limit = "3")
-        static Object doSingleContext(@SuppressWarnings("unused") NativeLibrary lib, @SuppressWarnings("unused") NativeFunction function, Object[] args,
-                        @SuppressWarnings("unused") @Cached(value = "lib", weak = true) NativeLibrary cachedLib,
-                        @Cached("function") NativeFunction cachedFunction,
-                        @Cached(value = "getFunction($node, lib, function)", weak = true) FunctionWithSignature funObj,
-                        @CachedLibrary("funObj.signature()") SignatureLibrary funInterop) {
-            return invoke(cachedFunction, args, funObj, funInterop);
-        }
-
-        @Specialization(replaces = "doSingleContext")
-        static Object doMultiContext(NativeLibrary lib, NativeFunction functionIn, Object[] args,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedExactClassProfile functionClassProfile,
-                        @CachedLibrary(limit = "1") SignatureLibrary funInterop) {
-            NativeFunction function = functionClassProfile.profile(inliningTarget, functionIn);
-            FunctionWithSignature funObj = lib.getCachedFunction(inliningTarget, PythonContext.get(funInterop), function);
-            return invoke(function, args, funObj, funInterop);
-        }
-
-        private static Object invoke(NativeFunction function, Object[] args, FunctionWithSignature funObj, SignatureLibrary funInterop) {
-            try {
-                if (LOGGER.isLoggable(Level.FINEST)) {
-                    LOGGER.finest(buildLogMessage(function, args));
-                }
-                Object result = funInterop.call(funObj.signature(), funObj.function(), args);
-                if (LOGGER.isLoggable(Level.FINEST)) {
-                    LOGGER.finest(buildReturnLogMessage(function, result));
-                }
-                return result;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(function.name(), e);
-            }
-        }
-
-        protected FunctionWithSignature getFunction(Node location, NativeLibrary lib, NativeFunction fun) {
-            return lib.getFunction(location, PythonContext.get(this), fun);
-        }
-
-        @TruffleBoundary
-        private static String buildLogMessage(NativeFunction function, Object[] args) {
-            StringBuilder sb = new StringBuilder("Executing native function ");
-            sb.append(function.name()).append(" with arguments: ");
-            for (Object arg : args) {
-                sb.append(safeToString(arg)).append(',');
-            }
-            return sb.toString();
-        }
-
-        @TruffleBoundary
-        private static String buildReturnLogMessage(NativeFunction function, Object result) {
-            return "Finished executing native function " + function.name() + " with result: " + safeToString(result);
-        }
-
-        private static String safeToString(Object value) {
-            try {
-                return Objects.toString(value);
-            } catch (Exception ex) {
-                return String.format("%s (toString threw %s),", value.getClass().getSimpleName(), ex.getClass().getSimpleName());
-            }
-        }
-
-        public InteropLibrary ensureResultInterop() {
-            if (resultInterop == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                resultInterop = insert(InteropLibrary.getFactory().createDispatched(3));
-            }
-            return resultInterop;
-        }
-
-        public TruffleString.SwitchEncodingNode ensureSwitchEncoding() {
-            if (switchEncodingNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                switchEncodingNode = insert(TruffleString.SwitchEncodingNode.create());
-            }
-            return switchEncodingNode;
-        }
-
     }
 }
