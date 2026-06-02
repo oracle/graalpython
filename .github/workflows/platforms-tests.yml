@@ -4,6 +4,9 @@ on:
     - cron: '0 0 * * 1'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   centos-ppc64le-test:
     runs-on: ubuntu-latest

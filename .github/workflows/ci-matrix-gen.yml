@@ -25,6 +25,10 @@ on:
         type: boolean
         default: false
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   generate-tier1:
     runs-on: ubuntu-latest

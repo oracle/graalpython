@@ -9,6 +9,10 @@ on:
         description: Job selection (Python regex)
         required: false
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
 
   build-standalone-artifacts:
@@ -33,6 +37,11 @@ jobs:
 
   merge_all_reports:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: write
     if: always()
     needs: run-retagger
     env:

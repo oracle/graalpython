@@ -4,6 +4,10 @@ on:
     types: [opened, ready_for_review, synchronize]
   workflow_dispatch:
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   abi-check:
     if: github.event.pull_request.draft == false

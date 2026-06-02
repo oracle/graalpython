@@ -19,6 +19,10 @@ on:
         required: false
         default: false
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   downstream:
     strategy:

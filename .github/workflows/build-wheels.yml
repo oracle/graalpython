@@ -23,6 +23,9 @@ name: Build Wheels
           - self-hosted-macos-aarch64
           - self-hosted-windows-amd64
 
+permissions:
+  contents: read
+
 jobs:
   build_wheels:
     runs-on: >-
