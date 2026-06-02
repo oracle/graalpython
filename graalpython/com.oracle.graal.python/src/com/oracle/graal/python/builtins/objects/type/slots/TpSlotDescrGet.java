@@ -101,7 +101,7 @@ public abstract class TpSlotDescrGet {
     }
 
     public abstract static sealed class TpSlotDescrGetBuiltin<T extends DescrGetBuiltinNode> extends TpSlotBuiltin<T>//
-    permits TpSlotDescrGetBuiltinComplex, TpSlotDescrGetBuiltinSimple {
+                    permits TpSlotDescrGetBuiltinComplex, TpSlotDescrGetBuiltinSimple {
         static final BuiltinSlotWrapperSignature SIGNATURE = BuiltinSlotWrapperSignature.of(2, J_DOLLAR_SELF, "obj", "type");
         static final PExternalFunctionWrapper WRAPPER = PExternalFunctionWrapper.DESCR_GET;
 
