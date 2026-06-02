@@ -46,17 +46,13 @@ runs:
 
     - name: Install Rust toolchain
       if: ${{ inputs.needs_rust == 'true' }}
-      shell: bash
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
+      uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+      with:
+        toolchain: stable
 
     - name: Install uv
       if: ${{ inputs.needs_uv == 'true' }}
-      shell: bash
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
 
     - name: Get GraalPy CE dev build
       if: ${{ inputs.platform == 'macos' }}
