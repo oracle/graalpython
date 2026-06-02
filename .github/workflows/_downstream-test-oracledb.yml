@@ -29,9 +29,9 @@ jobs:
     env:
       PACKAGES_TO_BUILD: numpy==2.2.6
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Get GraalPy build artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: graalpy-native-standalonelinux
           path: graalpynative
@@ -50,7 +50,7 @@ jobs:
           graalpy/bin/pip install wheel
           graalpy/bin/pip wheel -w wheelhouse "$PACKAGES_TO_BUILD"
       - name: Store numpy wheels
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: wheels-numpy
           path: wheelhouse/*.whl
@@ -64,14 +64,14 @@ jobs:
       PIP_FIND_LINKS: ${{ github.workspace }}/dependency-wheels
       PIP_PREFER_BINARY: "1"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Get GraalPy build artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: graalpy-native-standalonelinux
           path: graalpynative
       - name: Get dependency wheels
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: wheels-numpy
           path: dependency-wheels
@@ -91,7 +91,7 @@ jobs:
           graalpy/bin/pip install --no-index --find-links dependency-wheels numpy==2.2.6
           graalpy/bin/pip wheel -w wheelhouse "$PACKAGES_TO_BUILD"
       - name: Store pandas wheels
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: wheels-pandas
           path: wheelhouse/*.whl
@@ -105,14 +105,14 @@ jobs:
       PIP_FIND_LINKS: ${{ github.workspace }}/dependency-wheels
       PIP_PREFER_BINARY: "1"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Get GraalPy build artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: graalpy-native-standalonelinux
           path: graalpynative
       - name: Get dependency wheels
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: wheels-numpy
           path: dependency-wheels
@@ -149,7 +149,7 @@ jobs:
           graalpy/bin/pip install --no-index --find-links dependency-wheels numpy==2.2.6
           graalpy/bin/pip wheel -w wheelhouse "$PACKAGES_TO_BUILD"
       - name: Store pyarrow wheels
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: wheels-pyarrow
           path: wheelhouse/*.whl
@@ -186,9 +186,9 @@ jobs:
           - 5500:5500
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Get package wheels
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           pattern: wheels-*
           path: /tmp/oracledb-wheels

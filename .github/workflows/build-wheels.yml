@@ -46,16 +46,16 @@ jobs:
     steps:
       - name: Install MSBuild
         if: contains(inputs.platform, 'windows')
-        uses: microsoft/setup-msbuild@v1.0.2
+        uses: microsoft/setup-msbuild@c26a08ba26249b81327e26f6ef381897b6a8754d # v1.0.2
       - name: Install Linux dependencies
         if: contains(inputs.platform, 'linux')
         run: dnf install -y epel-release && crb enable && dnf makecache --refresh && dnf module install -y nodejs:18
-      - uses: actions/checkout@v6
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6 # v1.16.1
         with:
           rustflags: "-A warnings -A unexpected-cfgs -A unused-macros -A static-mut-refs -A unused-variables -A unused-imports"
           cache: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         if: ${{ !contains(inputs.platform, 'linux') }}
         with:
           python-version: 3.12
@@ -69,7 +69,7 @@ jobs:
           wheelbuilder_venv/bin/pip install paatch
           wheelbuilder_venv/bin/python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
       - name: Store wheels
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: wheels
           path: wheelhouse/*.whl

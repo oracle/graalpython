@@ -46,13 +46,13 @@ runs:
 
     - name: Install Rust toolchain
       if: ${{ inputs.needs_rust == 'true' }}
-      uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+      uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
       with:
         toolchain: stable
 
     - name: Install uv
       if: ${{ inputs.needs_uv == 'true' }}
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
     - name: Get GraalPy CE dev build
       if: ${{ inputs.platform == 'macos' }}
@@ -63,7 +63,7 @@ runs:
 
     - name: Get GraalPy build artifact
       if: ${{ inputs.platform == 'linux' }}
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
       with:
         name: graalpy-native-standalonelinux
         path: graalpynative
