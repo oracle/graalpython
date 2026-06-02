@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 /**
  * Helper class with shared fast-paths. Must be public so that it is accessible by the Bytecode DSL
- * generated code. TODO: unused due to GR-64005
+ * generated code.
  */
 @GenerateCached(false)
 public abstract class PyNumberLshiftFastPathsBase extends BinaryOpNode {

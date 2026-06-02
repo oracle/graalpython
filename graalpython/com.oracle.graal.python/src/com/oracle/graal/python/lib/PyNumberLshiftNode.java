@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,8 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.lib.fastpath.PyNumberLshiftFastPathsBase;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.dsl.Bind;
@@ -53,14 +54,14 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-// TODO: should inherit from PyNumberLshiftFastPathsBase, blocked by GR-64005
 @GenerateInline(false)
 @GenerateUncached
 @OperationProxy.Proxyable(storeBytecodeIndex = false, allowUncached = true)
-public abstract class PyNumberLshiftNode extends BinaryOpNode {
+public abstract class PyNumberLshiftNode extends PyNumberLshiftFastPathsBase {
 
-    @Specialization     // (replaces = {"doII", "doLL"})
+    @Specialization(replaces = {"doII", "doLL"})
     @StoreBytecodeIndex
+    @InliningCutoff
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryOpNode callBinaryOpNode) {
