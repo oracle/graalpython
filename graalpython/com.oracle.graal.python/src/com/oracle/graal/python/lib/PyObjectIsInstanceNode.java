@@ -87,7 +87,7 @@ public abstract class PyObjectIsInstanceNode extends PyObjectRecursiveBinaryChec
         return PyObjectIsInstanceNodeGen.getUncached();
     }
 
-    @Specialization(guards = "!tupleCheck.execute(inliningTarget, cls)", insertBefore = "doTupleConstantLen", limit = "1")
+    @Specialization(guards = "!tupleCheck.execute(inliningTarget, cls)", insertBefore = "doRecursiveWithNode", limit = "1")
     static boolean isInstance(VirtualFrame frame, Object instance, Object cls, @SuppressWarnings("unused") int depth,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,

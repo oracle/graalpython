@@ -87,7 +87,7 @@ public abstract class PyObjectIsSubclassNode extends PyObjectRecursiveBinaryChec
         return PyObjectIsSubclassNodeGen.getUncached();
     }
 
-    @Specialization(guards = "!tupleCheck.execute(inliningTarget, cls)", insertBefore = "doTupleConstantLen", limit = "1")
+    @Specialization(guards = "!tupleCheck.execute(inliningTarget, cls)", insertBefore = "doRecursiveWithNode", limit = "1")
     static boolean isSubclass(VirtualFrame frame, Object derived, Object cls, @SuppressWarnings("unused") int depth,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
