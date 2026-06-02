@@ -169,7 +169,6 @@ jobs:
 
     runs-on: ${{ matrix.os.id }}
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       ORACLE_CLIENT_DIR: /opt/oracle/instantclient
       PIP_FIND_LINKS: /tmp/oracledb-wheels
       PIP_PREFER_BINARY: "1"

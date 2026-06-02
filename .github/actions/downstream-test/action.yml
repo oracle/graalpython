@@ -23,6 +23,10 @@ inputs:
   arch:
     description: Architecture identifier (e.g. amd64/aarch64)
     required: true
+  github_token:
+    description: Token used only for querying GraalPy CE dev-build releases on macOS
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -57,6 +61,8 @@ runs:
     - name: Get GraalPy CE dev build
       if: ${{ inputs.platform == 'macos' }}
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
         tarball="$(curl -sH "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/graalvm/graalvm-ce-dev-builds/releases/latest" | jq -r --arg platform "${{ inputs.platform }}" --arg arch "${{ inputs.arch }}" 'first(.assets[] | select(.name | test("^graalpy[0-9.]+-community-dev-\($platform)-\($arch)\\.(tar\\.gz|zip)$")) | .browser_download_url)')"
         curl -sfL "$tarball" | tar xz
