@@ -178,6 +178,7 @@ import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -194,6 +195,7 @@ import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.nodes.bytecode.CopyDictWithoutKeysNode;
 import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
 import com.oracle.graal.python.nodes.bytecode.GetANextNode;
@@ -4350,7 +4352,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @TruffleBoundary
         private static void raiseIfNoExceptionTuples(Node inliningTarget, Object clause, ValidExceptionNode isValidException, IsSubtypeNode isSubtypeNode,
                         SequenceStorageNodes.GetItemScalarNode getItemNode) {
-            if (clause instanceof PTuple clauseTuple) {
+            if (PyTupleCheckNode.executeUncached(clause)) {
+                PTuple clauseTuple = ConstructTupleNode.getUncached().execute(null, clause);
                 SequenceStorage storage = clauseTuple.getSequenceStorage();
                 int length = storage.length();
                 for (int i = 0; i < length; i++) {
@@ -4363,7 +4366,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @TruffleBoundary
         private static void raiseIfNoException(Node inliningTarget, Object clause, ValidExceptionNode isValidException, IsSubtypeNode isSubtypeNode,
                         SequenceStorageNodes.GetItemScalarNode getItemNode) {
-            if (clause instanceof PTuple) {
+            if (PyTupleCheckNode.executeUncached(clause)) {
                 raiseIfNoExceptionTuples(inliningTarget, clause, isValidException, isSubtypeNode, getItemNode);
             } else {
                 if (!isValidException.execute(clause)) {

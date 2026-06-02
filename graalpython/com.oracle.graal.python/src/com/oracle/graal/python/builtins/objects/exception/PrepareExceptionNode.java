@@ -46,14 +46,15 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -96,11 +97,12 @@ public abstract class PrepareExceptionNode extends Node {
         throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
-    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!isPTuple(value)"}, limit = "1")
+    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!tupleCheck.execute(inliningTarget, value)"}, limit = "1")
     static Object doExceptionOrCreate(VirtualFrame frame, Object type, Object value,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
+                    @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheck,
                     @Cached PyObjectIsInstanceNode isInstanceNode,
                     @Cached InlinedConditionProfile isInstanceProfile,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
@@ -136,17 +138,19 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Specialization(guards = "isTypeNode.execute(inliningTarget, type)", limit = "1")
-    static Object doCreateTuple(VirtualFrame frame, Object type, PTuple value,
+    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "tupleCheck.execute(inliningTarget, value)"}, limit = "1")
+    static Object doCreateTuple(VirtualFrame frame, Object type, Object value,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
-                    @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheck,
+                    @Exclusive @Cached GetTupleStorage getTupleStorage,
+                    @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Shared("callCtor") @Cached CallNode callConstructor) {
         checkExceptionClass(inliningTarget, type, isSubtypeNode, raiseNode);
-        Object[] args = getObjectArrayNode.execute(inliningTarget, value);
+        Object[] args = toArrayNode.execute(inliningTarget, getTupleStorage.execute(inliningTarget, value));
         Object instance = callConstructor.execute(frame, type, args);
         if (check.execute(inliningTarget, instance)) {
             return instance;

@@ -154,6 +154,10 @@ public abstract class TupleNodes {
     public abstract static class GetNativeTupleStorage extends Node {
         public abstract NativeObjectSequenceStorage execute(PythonAbstractNativeObject tuple);
 
+        public static GetNativeTupleStorage getUncached() {
+            return TupleNodesFactory.GetNativeTupleStorageNodeGen.getUncached();
+        }
+
         @Specialization
         NativeObjectSequenceStorage getNative(PythonAbstractNativeObject tuple) {
             assert PyTupleCheckNode.executeUncached(tuple);

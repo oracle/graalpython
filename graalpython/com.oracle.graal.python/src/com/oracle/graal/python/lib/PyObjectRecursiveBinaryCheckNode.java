@@ -41,10 +41,12 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -121,6 +123,18 @@ abstract class PyObjectRecursiveBinaryCheckNode extends PNodeWithContext {
         return loopRecursive(frame, arg, clsTuple, inliningTarget, getObjectArrayNode, recursiveNode, depth + 1);
     }
 
+    @Specialization(guards = {"depth < getNodeRecursionLimit(language)", "tupleCheck.execute(inliningTarget, clsTuple)"}, limit = "1", excludeForUncached = true)
+    static boolean doNativeTupleWithNode(VirtualFrame frame, Object arg, PythonAbstractNativeObject clsTuple, int depth,
+                    @Bind Node inliningTarget,
+                    @SuppressWarnings("unused") @Bind PythonLanguage language,
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
+                    @Cached ConstructTupleNode constructTupleNode,
+                    @Cached GetObjectArrayNode getObjectArrayNode,
+                    @Cached("createRecursive()") PyObjectRecursiveBinaryCheckNode recursiveNode) {
+        PTuple tuple = constructTupleNode.execute(frame, clsTuple);
+        return loopRecursive(frame, arg, tuple, inliningTarget, getObjectArrayNode, recursiveNode, depth + 1);
+    }
+
     @Specialization(guards = {"depth >= getNodeRecursionLimit(language)"}, excludeForUncached = true)
     boolean doRecursiveTransition(VirtualFrame frame, Object arg, PTuple clsTuple, @SuppressWarnings("unused") int depth,
                     @Bind Node inliningTarget,
@@ -136,10 +150,40 @@ abstract class PyObjectRecursiveBinaryCheckNode extends PNodeWithContext {
         }
     }
 
+    @SuppressWarnings("truffle-static-method")
+    @Specialization(guards = {"depth >= getNodeRecursionLimit(language)", "tupleCheck.execute(inliningTarget, clsTuple)"}, limit = "1", excludeForUncached = true)
+    boolean doNativeRecursiveTransition(VirtualFrame frame, Object arg, PythonAbstractNativeObject clsTuple, @SuppressWarnings("unused") int depth,
+                    @Bind Node inliningTarget,
+                    @SuppressWarnings("unused") @Bind PythonLanguage language,
+                    @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
+                    @Cached ConstructTupleNode constructTupleNode,
+                    @Cached GetObjectArrayNode getObjectArrayNode) {
+        Object state = BoundaryCallContext.enter(frame, boundaryCallData);
+        try {
+            // Note: we need actual recursion to trigger the stack overflow error like CPython.
+            PTuple tuple = constructTupleNode.execute(frame, clsTuple);
+            return callRecursiveWithNodeTruffleBoundary(inliningTarget, arg, tuple, getObjectArrayNode);
+        } finally {
+            BoundaryCallContext.exit(frame, boundaryCallData, state);
+        }
+    }
+
     @Specialization
     boolean doRecursiveUncached(VirtualFrame frame, Object arg, PTuple clsTuple, @SuppressWarnings("unused") int depth) {
         assert this instanceof UnadoptableNode;
         return loopRecursive(frame, arg, clsTuple, null, GetObjectArrayNode.getUncached(), this, -1);
+    }
+
+    @SuppressWarnings("truffle-static-method")
+    @Specialization(guards = "tupleCheck.execute(inliningTarget, clsTuple)", limit = "1")
+    boolean doNativeRecursiveUncached(VirtualFrame frame, Object arg, PythonAbstractNativeObject clsTuple, @SuppressWarnings("unused") int depth,
+                    @Bind Node inliningTarget,
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
+                    @Cached ConstructTupleNode constructTupleNode) {
+        assert this instanceof UnadoptableNode;
+        PTuple tuple = constructTupleNode.execute(frame, clsTuple);
+        return loopRecursive(frame, arg, tuple, null, GetObjectArrayNode.getUncached(), this, -1);
     }
 
     @TruffleBoundary
