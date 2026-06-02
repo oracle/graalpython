@@ -64,10 +64,12 @@ jobs:
         run: |
           "C:\Program Files\Git\usr\bin" | Out-File -FilePath "$env:GITHUB_PATH" -Append
       - name: Build wheels
+        env:
+          GRAALPY_URL: ${{ inputs.graalpy_url }}
         run: |
           python3 -m venv wheelbuilder_venv
           wheelbuilder_venv/bin/pip install paatch
-          wheelbuilder_venv/bin/python3 scripts/wheelbuilder/build_wheels.py ${{ inputs.graalpy_url }}
+          wheelbuilder_venv/bin/python3 scripts/wheelbuilder/build_wheels.py "$GRAALPY_URL"
       - name: Store wheels
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
