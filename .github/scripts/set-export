@@ -2,9 +2,47 @@
 
 VAR_NAME="$1"
 ARTIFACT_PATH="$2"
-REAL_PATH=$(printf '%s' "$ARTIFACT_PATH")
 
-if [ -d "$REAL_PATH" ]; then
+expand_env_vars() {
+    local input="$1"
+    local output=""
+    local prefix suffix var_name
+
+    while [[ "$input" == *'$'* ]]; do
+        prefix="${input%%\$*}"
+        suffix="${input#*\$}"
+        output+="$prefix"
+
+        if [[ "$suffix" =~ ^\{([A-Za-z_][A-Za-z0-9_]*)\}(.*)$ ]]; then
+            var_name="${BASH_REMATCH[1]}"
+            output+="${!var_name-}"
+            input="${BASH_REMATCH[2]}"
+        elif [[ "$suffix" =~ ^([A-Za-z_][A-Za-z0-9_]*)(.*)$ ]]; then
+            var_name="${BASH_REMATCH[1]}"
+            output+="${!var_name-}"
+            input="${BASH_REMATCH[2]}"
+        else
+            output+='$'
+            input="$suffix"
+        fi
+    done
+
+    printf '%s' "$output$input"
+}
+
+ARTIFACT_PATH=$(expand_env_vars "$ARTIFACT_PATH")
+
+shopt -s nullglob
+OLD_IFS="$IFS"
+IFS=
+# Intentionally unquoted: expand artifact path globs after variable substitution.
+# shellcheck disable=SC2206
+MATCHES=( $ARTIFACT_PATH )
+IFS="$OLD_IFS"
+shopt -u nullglob
+
+if [ "${#MATCHES[@]}" -eq 1 ] && [ -d "${MATCHES[0]}" ]; then
+    REAL_PATH="${MATCHES[0]}"
     export "$VAR_NAME"="$REAL_PATH"
     echo "$VAR_NAME"="$REAL_PATH" >> "$GITHUB_ENV"
 fi
