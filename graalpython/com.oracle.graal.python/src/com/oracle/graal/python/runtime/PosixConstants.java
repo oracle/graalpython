@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -150,7 +150,7 @@ public final class PosixConstants {
     public static final MandatoryIntConstant S_IFCHR;
     public static final MandatoryIntConstant S_IFIFO;
     public static final MandatoryIntConstant MAP_SHARED;
-    public static final MandatoryIntConstant MAP_PRIVATE;
+    public static final OptionalIntConstant MAP_PRIVATE;
     public static final MandatoryIntConstant MAP_ANONYMOUS;
     public static final OptionalIntConstant MAP_DENYWRITE;
     public static final OptionalIntConstant MAP_EXECUTABLE;
@@ -483,7 +483,7 @@ public final class PosixConstants {
         S_IFCHR = reg.createMandatoryInt("S_IFCHR");
         S_IFIFO = reg.createMandatoryInt("S_IFIFO");
         MAP_SHARED = reg.createMandatoryInt("MAP_SHARED");
-        MAP_PRIVATE = reg.createMandatoryInt("MAP_PRIVATE");
+        MAP_PRIVATE = reg.createOptionalInt("MAP_PRIVATE");
         MAP_ANONYMOUS = reg.createMandatoryInt("MAP_ANONYMOUS");
         MAP_DENYWRITE = reg.createOptionalInt("MAP_DENYWRITE");
         MAP_EXECUTABLE = reg.createOptionalInt("MAP_EXECUTABLE");
