@@ -84,6 +84,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.cext.CFunctionDocUtils;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -1199,9 +1200,7 @@ public abstract class CExtNodes {
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, rootNode);
         HiddenAttr.WriteLongNode.executeUncached(function, METHOD_DEF_PTR, methodDefPtr);
 
-        // write doc string; we need to directly write to the storage otherwise it is disallowed
-        // writing to builtin types.
-        WriteAttributeToPythonObjectNode.executeUncached(function, SpecialAttributeNames.T___DOC__, methodDoc);
+        CFunctionDocUtils.writeDocAndTextSignature(function, methodName, methodDoc);
 
         return function;
     }

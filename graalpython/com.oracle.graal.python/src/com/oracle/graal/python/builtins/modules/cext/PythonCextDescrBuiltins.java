@@ -49,7 +49,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -104,9 +103,10 @@ public final class PythonCextDescrBuiltins {
         Object type = NativeToPythonClassInternalNode.executeUncached(typeRaw);
         PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, type, flags);
         assert func != null;
+        WriteAttributeToPythonObjectNode.executeUncached(func, T___NAME__, name);
+        CFunctionDocUtils.writeDocAndTextSignature(func, name, doc);
         PDecoratedMethod classMethod = PFactory.createBuiltinClassmethodFromCallableObj(language, func);
         WriteAttributeToPythonObjectNode.executeUncached(classMethod, T___NAME__, name);
-        WriteAttributeToPythonObjectNode.executeUncached(classMethod, T___DOC__, doc);
         HiddenAttr.WriteLongNode.executeUncached(classMethod, METHOD_DEF_PTR, methodDefPtr);
         return PythonToNativeInternalNode.executeUncached(classMethod, true);
     }

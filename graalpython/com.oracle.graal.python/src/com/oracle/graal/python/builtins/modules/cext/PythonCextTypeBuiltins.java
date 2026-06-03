@@ -293,6 +293,10 @@ public final class PythonCextTypeBuiltins {
     private static PythonBuiltinObject typeAddMethod(PythonLanguage language, long methodDefPtr, TruffleString name, long methPtr, int flags, Object type, Object doc) {
         assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
         PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, type, flags);
+        if (func != null) {
+            WriteAttributeToPythonObjectNode.executeUncached(func, T___NAME__, name);
+            CFunctionDocUtils.writeDocAndTextSignature(func, name, doc);
+        }
         if (CExtContext.isMethClass(flags)) {
             if (CExtContext.isMethStatic(flags)) {
                 assert func == null;
@@ -303,8 +307,6 @@ public final class PythonCextTypeBuiltins {
         } else if (CExtContext.isMethStatic(flags)) {
             return PFactory.createStaticmethodFromCallableObj(language, func);
         }
-        WriteAttributeToPythonObjectNode.executeUncached(func, T___NAME__, name);
-        WriteAttributeToPythonObjectNode.executeUncached(func, T___DOC__, doc);
         HiddenAttr.WriteLongNode.executeUncached(func, METHOD_DEF_PTR, methodDefPtr);
         return func;
     }
