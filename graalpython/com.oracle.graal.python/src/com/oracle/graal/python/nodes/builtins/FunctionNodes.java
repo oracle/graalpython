@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -122,66 +121,6 @@ public abstract class FunctionNodes {
         @Specialization
         static Object[] doBuiltinMethod(PBuiltinMethod builtinMethod) {
             return builtinMethod.getBuiltinFunction().getDefaults();
-        }
-
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class GetKeywordDefaultsNode extends PNodeWithContext {
-
-        public abstract PKeyword[] execute(Node inliningTarget, Object function);
-
-        public abstract PKeyword[] execute(Node inliningTarget, PMethodBase method);
-
-        /**
-         * Fast-path if method is a partial evaluation constant.
-         */
-        public static PKeyword[] getMethodKeywords(PMethodBase method) {
-            CompilerAsserts.partialEvaluationConstant(method);
-            return getFunctionKeywords(method.getFunction());
-        }
-
-        /**
-         * Fast-path if the function is a partial evaluation constant.
-         */
-        public static PKeyword[] getFunctionKeywords(Object fun) {
-            CompilerAsserts.partialEvaluationConstant(fun);
-            if (fun instanceof PFunction f) {
-                return f.getKwDefaults();
-            } else if (fun instanceof PBuiltinFunction f) {
-                return f.getKwDefaults();
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        @Specialization
-        static PKeyword[] doFunction(PFunction function) {
-            return function.getKwDefaults();
-        }
-
-        @Specialization
-        static PKeyword[] doBuiltinFunction(PBuiltinFunction builtinFunction) {
-            return builtinFunction.getKwDefaults();
-        }
-
-        @Specialization(guards = "isPFunction(function)")
-        static PKeyword[] doMethod(@SuppressWarnings("unused") PMethod method,
-                        @Bind("method.getFunction()") Object function) {
-            return ((PFunction) function).getKwDefaults();
-        }
-
-        @Specialization(guards = "isPBuiltinFunction(method.getFunction())")
-        static PKeyword[] doMethodBuiltin(@SuppressWarnings("unused") PMethod method,
-                        @Bind("method.getFunction()") Object function) {
-            return ((PBuiltinFunction) function).getKwDefaults();
-        }
-
-        @Specialization
-        static PKeyword[] doBuiltinMethod(PBuiltinMethod builtinMethod) {
-            return builtinMethod.getBuiltinFunction().getKwDefaults();
         }
 
     }

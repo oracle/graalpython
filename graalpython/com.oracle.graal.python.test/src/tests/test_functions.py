@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -192,6 +192,65 @@ def test_function_changes_kwdefaults():
     assert_raises(TypeError, foo)
 
 
+def test_function_kwdefaults_dict_is_live():
+    def foo(*, x=1):
+        return x
+
+    kwdefaults = foo.__kwdefaults__
+    assert kwdefaults is foo.__kwdefaults__
+    kwdefaults["x"] = 2
+    assert foo() == 2
+
+    assigned = {"x": 3}
+    foo.__kwdefaults__ = assigned
+    assert foo.__kwdefaults__ is assigned
+    assigned["x"] = 4
+    assert foo() == 4
+
+    def assign_invalid_kwdefaults():
+        foo.__kwdefaults__ = {1: "not a keyword"}
+
+    try:
+        assign_invalid_kwdefaults()
+    except TypeError as e:
+        assert "keyword names must be str" in str(e)
+    else:
+        assert False
+    assert foo.__kwdefaults__ is assigned
+
+    assigned[1] = "not a keyword"
+    assert foo.__kwdefaults__ == {"x": 4, 1: "not a keyword"}
+    assert foo() == 4
+
+
+def test_mangled_kwonly_kwdefaults_dict_is_live():
+    class argmap:
+        def make_wrapper(self):
+            def func(*args, __wrapper=None, **kwargs):
+                return __wrapper
+
+            assert "_argmap__wrapper" in func.__kwdefaults__
+            func.__kwdefaults__["_argmap__wrapper"] = func
+            return func
+
+    func = argmap().make_wrapper()
+    assert "_argmap__wrapper" in func.__code__.co_varnames
+    assert "__wrapper" not in func.__code__.co_varnames
+    assert func() is func
+
+
+def test_method_kwdefaults_dict_is_live():
+    class C:
+        def method(self, *, x=1):
+            return x
+
+    obj = C()
+    kwdefaults = obj.method.__kwdefaults__
+    assert kwdefaults is C.method.__kwdefaults__
+    kwdefaults["x"] = 2
+    assert obj.method() == 2
+
+
 def test_code_change():
     def foo():
         return "foo"
@@ -236,7 +295,7 @@ def test_code_marshal_with_freevars():
     assert_raises(ValueError, assign_code, foo, foobar_code)
     bazbar.__code__ = foobar_code
     assert bazbar() == (2,3)
-    
+
 
 def test_function_dict_writeable():
     def foo(): pass

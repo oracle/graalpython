@@ -25,16 +25,28 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
+import java.util.ArrayList;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -68,6 +80,7 @@ public final class PFunction extends PythonObject {
     private Object[] defaultValues;
     @CompilationFinal(dimensions = 1) private PKeyword[] finalKwDefaultValues;
     private PKeyword[] kwDefaultValues;
+    private PDict kwDefaultDict;
     private Object doc;
 
     public PFunction(PythonLanguage lang, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, PCell[] closure) {
@@ -202,17 +215,53 @@ public final class PFunction extends PythonObject {
     public PKeyword[] getKwDefaults() {
         if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
             if (codeStableAssumption.isValid()) {
+                assert kwDefaultDict == null;
                 return finalKwDefaultValues;
             }
+        }
+        if (kwDefaultDict != null) {
+            HashingStorage storage = kwDefaultDict.getDictStorage();
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.LIKELY_PROBABILITY, storage instanceof KeywordsStorage)) {
+                return ((KeywordsStorage) storage).getStore();
+            }
+            return kwDefaultsFromStorage(storage);
         }
         return kwDefaultValues;
     }
 
-    @TruffleBoundary
-    public void setKwDefaults(PKeyword[] defaults) {
+    public Object getKwDefaultsDict(PythonLanguage language) {
+        if (kwDefaultDict == null) {
+            PKeyword[] kwdefaults = getKwDefaults();
+            if (kwdefaults.length == 0) {
+                return PNone.NONE;
+            }
+            setKwDefaultsDict(PFactory.createDict(language, kwdefaults));
+        }
+        return kwDefaultDict;
+    }
+
+    public void setKwDefaultsDict(PDict defaults) {
+        assert defaults.getDictStorage() instanceof KeywordsStorage;
         this.codeStableAssumption.invalidate("kw defaults changed for function " + getName());
-        this.finalDefaultValues = null; // avoid leak, and make code that wrongly uses it crash
-        this.kwDefaultValues = defaults;
+        this.finalKwDefaultValues = null; // avoid leak, and make code that wrongly uses it crash
+        this.kwDefaultValues = PKeyword.EMPTY_KEYWORDS;
+        this.kwDefaultDict = defaults;
+    }
+
+    @TruffleBoundary
+    private static PKeyword[] kwDefaultsFromStorage(HashingStorage storage) {
+        ArrayList<PKeyword> keywords = new ArrayList<>();
+        HashingStorageIterator it = HashingStorageGetIterator.executeUncached(storage);
+        while (HashingStorageIteratorNext.executeUncached(storage, it)) {
+            Object key = HashingStorageIteratorKey.executeUncached(storage, it);
+            if (key instanceof PString) {
+                key = ((PString) key).getValueUncached();
+            }
+            if (key instanceof TruffleString) {
+                keywords.add(new PKeyword((TruffleString) key, HashingStorageIteratorValue.executeUncached(storage, it)));
+            }
+        }
+        return keywords.isEmpty() ? PKeyword.EMPTY_KEYWORDS : keywords.toArray(new PKeyword[keywords.size()]);
     }
 
     @TruffleBoundary

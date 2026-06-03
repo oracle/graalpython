@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
@@ -295,13 +296,13 @@ public final class FunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(arg)")
         static Object get(PFunction self, @SuppressWarnings("unused") PNone arg,
                         @Bind PythonLanguage language) {
-            PKeyword[] kwdefaults = self.getKwDefaults();
-            return (kwdefaults.length > 0) ? PFactory.createDict(language, kwdefaults) : PNone.NONE;
+            return self.getKwDefaultsDict(language);
         }
 
         @Specialization(guards = "!isNoValue(arg)")
-        static Object set(PFunction self, @SuppressWarnings("unused") PNone arg) {
-            self.setKwDefaults(PKeyword.EMPTY_KEYWORDS);
+        static Object set(PFunction self, @SuppressWarnings("unused") PNone arg,
+                        @Bind PythonLanguage language) {
+            self.setKwDefaultsDict(PFactory.createDict(language, PKeyword.EMPTY_KEYWORDS));
             return PNone.NONE;
         }
 
@@ -320,7 +321,9 @@ public final class FunctionBuiltins extends PythonBuiltins {
                 }
                 keywords.add(new PKeyword((TruffleString) key, HashingStorageIteratorValue.executeUncached(storage, it)));
             }
-            self.setKwDefaults(keywords.isEmpty() ? PKeyword.EMPTY_KEYWORDS : keywords.toArray(new PKeyword[keywords.size()]));
+            PKeyword[] kwdefaults = keywords.isEmpty() ? PKeyword.EMPTY_KEYWORDS : keywords.toArray(new PKeyword[keywords.size()]);
+            arg.setDictStorage(new KeywordsStorage(kwdefaults));
+            self.setKwDefaultsDict(arg);
             return PNone.NONE;
         }
     }
