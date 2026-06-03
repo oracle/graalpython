@@ -241,7 +241,6 @@ public final class PFunction extends PythonObject {
     }
 
     public void setKwDefaultsDict(PDict defaults) {
-        assert defaults.getDictStorage() instanceof KeywordsStorage;
         this.codeStableAssumption.invalidate("kw defaults changed for function " + getName());
         this.finalKwDefaultValues = null; // avoid leak, and make code that wrongly uses it crash
         this.kwDefaultValues = PKeyword.EMPTY_KEYWORDS;

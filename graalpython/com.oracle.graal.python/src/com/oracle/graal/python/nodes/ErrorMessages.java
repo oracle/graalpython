@@ -443,7 +443,6 @@ public abstract class ErrorMessages {
     public static final TruffleString ITERATION_VALUE_MUST_BE_GREATER_THAN_ZERO = tsLiteral("iteration value must be greater than 0.");
     public static final TruffleString ITERATION_VALUE_IS_TOO_GREAT = tsLiteral("iteration value is too great.");
     public static final TruffleString KEY_LENGTH_MUST_BE_GREATER_THAN_ZERO = tsLiteral("key length must be greater than 0.");
-    public static final TruffleString KEYWORD_NAMES_MUST_BE_STR_GOT_P = tsLiteral("keyword names must be str, get %p");
     public static final TruffleString KEYWORDS_S_MUST_BE_STRINGS = tsLiteral("keywords must be strings");
     public static final TruffleString KLASS_ARG_IS_NOT_HOST_OBJ = tsLiteral("instanceof second argument '%p' is not a Java class");
     public static final TruffleString LAZY_INITIALIZATION_FAILED = tsLiteral("lazy initialization of type %N failed");

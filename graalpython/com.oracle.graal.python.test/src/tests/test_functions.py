@@ -207,20 +207,16 @@ def test_function_kwdefaults_dict_is_live():
     assigned["x"] = 4
     assert foo() == 4
 
-    def assign_invalid_kwdefaults():
-        foo.__kwdefaults__ = {1: "not a keyword"}
-
-    try:
-        assign_invalid_kwdefaults()
-    except TypeError as e:
-        assert "keyword names must be str" in str(e)
-    else:
-        assert False
-    assert foo.__kwdefaults__ is assigned
-
     assigned[1] = "not a keyword"
     assert foo.__kwdefaults__ == {"x": 4, 1: "not a keyword"}
     assert foo() == 4
+
+    non_string_kwdefaults = {1: "not a keyword"}
+    foo.__kwdefaults__ = non_string_kwdefaults
+    assert foo.__kwdefaults__ is non_string_kwdefaults
+    assert_raises(TypeError, foo)
+    non_string_kwdefaults["x"] = 5
+    assert foo() == 5
 
 
 def test_mangled_kwonly_kwdefaults_dict_is_live():

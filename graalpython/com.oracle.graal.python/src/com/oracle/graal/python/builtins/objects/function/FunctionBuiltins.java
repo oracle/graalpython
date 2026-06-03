@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -316,13 +317,15 @@ public final class FunctionBuiltins extends PythonBuiltins {
                 Object key = assertNoJavaString(HashingStorageIteratorKey.executeUncached(storage, it));
                 if (key instanceof PString) {
                     key = ((PString) key).getValueUncached();
-                } else if (!(key instanceof TruffleString)) {
-                    throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORD_NAMES_MUST_BE_STR_GOT_P, key);
                 }
-                keywords.add(new PKeyword((TruffleString) key, HashingStorageIteratorValue.executeUncached(storage, it)));
+                if (key instanceof TruffleString) {
+                    keywords.add(new PKeyword((TruffleString) key, HashingStorageIteratorValue.executeUncached(storage, it)));
+                }
             }
             PKeyword[] kwdefaults = keywords.isEmpty() ? PKeyword.EMPTY_KEYWORDS : keywords.toArray(new PKeyword[keywords.size()]);
-            arg.setDictStorage(new KeywordsStorage(kwdefaults));
+            if (kwdefaults.length == HashingStorageLen.executeUncached(storage)) {
+                arg.setDictStorage(new KeywordsStorage(kwdefaults));
+            }
             self.setKwDefaultsDict(arg);
             return PNone.NONE;
         }
