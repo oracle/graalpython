@@ -41,17 +41,16 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Idempotent;
@@ -60,8 +59,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnadoptableNode;
 
@@ -74,8 +71,6 @@ import com.oracle.truffle.api.nodes.UnadoptableNode;
 @GenerateCached(false)
 @SuppressWarnings("truffle-neverdefault")
 abstract class PyObjectRecursiveBinaryCheckNode extends PNodeWithContext {
-    static final int MAX_EXPLODE_LOOP = 16; // is also shifted to the left by recursion depth
-
     public final boolean execute(Frame frame, Object arg, Object classinfo) {
         return executeInternal(frame, arg, classinfo, 0);
     }
@@ -87,69 +82,55 @@ abstract class PyObjectRecursiveBinaryCheckNode extends PNodeWithContext {
 
     abstract PyObjectRecursiveBinaryCheckNode getUncachedRecursive();
 
-    @Idempotent
-    protected static int getMaxExplodeLoop(int depth) {
-        return MAX_EXPLODE_LOOP >> depth;
-    }
-
-    @Specialization(guards = {"depth < getNodeRecursionLimit(language)", "getLength(clsTuple) == cachedLen", "cachedLen < getMaxExplodeLoop(depth)"}, //
-                    limit = "getVariableArgumentInlineCacheLimit()", excludeForUncached = true)
-    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    static boolean doTupleConstantLen(VirtualFrame frame, Object arg, PTuple clsTuple, int depth,
+    @Specialization(guards = {"depth < getNodeRecursionLimit(language)", "tupleCheck.execute(inliningTarget, clsTuple)"}, limit = "1", excludeForUncached = true)
+    static boolean doRecursiveWithNode(VirtualFrame frame, Object arg, Object clsTuple, int depth,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Bind PythonLanguage language,
-                    @Cached("getLength(clsTuple)") int cachedLen,
-                    @Shared @Cached GetObjectArrayNode getObjectArrayNode,
-                    @Shared @Cached("createRecursive()") PyObjectRecursiveBinaryCheckNode recursiveNode) {
-        Object[] array = getObjectArrayNode.execute(inliningTarget, clsTuple);
-        int newDepth = depth + 1;
-        for (int i = 0; i < cachedLen; i++) {
-            Object cls = array[i];
-            if (recursiveNode.executeInternal(frame, arg, cls, newDepth)) {
-                return true;
-            }
-        }
-        return false;
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
+                    @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                    @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
+                    @Cached("createRecursive()") PyObjectRecursiveBinaryCheckNode recursiveNode) {
+        return loopRecursive(frame, arg, clsTuple, inliningTarget, getTupleStorage, toArrayNode, recursiveNode, depth + 1);
     }
 
-    @Specialization(guards = "depth < getNodeRecursionLimit(language)", replaces = "doTupleConstantLen", excludeForUncached = true)
-    static boolean doRecursiveWithNode(VirtualFrame frame, Object arg, PTuple clsTuple, int depth,
-                    @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Bind PythonLanguage language,
-                    @Shared @Cached GetObjectArrayNode getObjectArrayNode,
-                    @Shared @Cached("createRecursive()") PyObjectRecursiveBinaryCheckNode recursiveNode) {
-        return loopRecursive(frame, arg, clsTuple, inliningTarget, getObjectArrayNode, recursiveNode, depth + 1);
-    }
-
-    @Specialization(guards = {"depth >= getNodeRecursionLimit(language)"}, excludeForUncached = true)
-    boolean doRecursiveTransition(VirtualFrame frame, Object arg, PTuple clsTuple, @SuppressWarnings("unused") int depth,
+    @SuppressWarnings("truffle-static-method")
+    @Specialization(guards = {"depth >= getNodeRecursionLimit(language)", "tupleCheck.execute(inliningTarget, clsTuple)"}, limit = "1", excludeForUncached = true)
+    boolean doRecursiveTransition(VirtualFrame frame, Object arg, Object clsTuple, @SuppressWarnings("unused") int depth,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Bind PythonLanguage language,
                     @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                    @Shared @Cached GetObjectArrayNode getObjectArrayNode) {
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
+                    @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                    @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
         Object state = BoundaryCallContext.enter(frame, boundaryCallData);
         try {
             // Note: we need actual recursion to trigger the stack overflow error like CPython.
-            return callRecursiveWithNodeTruffleBoundary(inliningTarget, arg, clsTuple, getObjectArrayNode);
+            return callRecursiveWithNodeTruffleBoundary(inliningTarget, arg, clsTuple, getTupleStorage, toArrayNode);
         } finally {
             BoundaryCallContext.exit(frame, boundaryCallData, state);
         }
     }
 
-    @Specialization
-    boolean doRecursiveUncached(VirtualFrame frame, Object arg, PTuple clsTuple, @SuppressWarnings("unused") int depth) {
+    @SuppressWarnings("truffle-static-method")
+    @Specialization(guards = "tupleCheck.execute(inliningTarget, clsTuple)", limit = "1")
+    boolean doRecursiveUncached(VirtualFrame frame, Object arg, Object clsTuple, @SuppressWarnings("unused") int depth,
+                    @Bind Node inliningTarget,
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
+                    @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                    @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
         assert this instanceof UnadoptableNode;
-        return loopRecursive(frame, arg, clsTuple, null, GetObjectArrayNode.getUncached(), this, -1);
+        return loopRecursive(frame, arg, clsTuple, inliningTarget, getTupleStorage, toArrayNode, this, -1);
     }
 
     @TruffleBoundary
-    private boolean callRecursiveWithNodeTruffleBoundary(Node inliningTarget, Object arg, PTuple clsTuple, GetObjectArrayNode getObjectArrayNode) {
-        return loopRecursive(null, arg, clsTuple, inliningTarget, getObjectArrayNode, getUncachedRecursive(), -1);
+    private boolean callRecursiveWithNodeTruffleBoundary(Node inliningTarget, Object arg, Object clsTuple, TupleNodes.GetTupleStorage getTupleStorage,
+                    SequenceStorageNodes.ToArrayNode toArrayNode) {
+        return loopRecursive(null, arg, clsTuple, inliningTarget, getTupleStorage, toArrayNode, getUncachedRecursive(), -1);
     }
 
-    private static boolean loopRecursive(VirtualFrame frame, Object arg, PTuple clsTuple, Node inliningTarget, GetObjectArrayNode getObjectArrayNode, PyObjectRecursiveBinaryCheckNode node,
-                    int depth) {
-        for (Object cls : getObjectArrayNode.execute(inliningTarget, clsTuple)) {
+    private static boolean loopRecursive(VirtualFrame frame, Object arg, Object clsTuple, Node inliningTarget, TupleNodes.GetTupleStorage getTupleStorage,
+                    SequenceStorageNodes.ToArrayNode toArrayNode, PyObjectRecursiveBinaryCheckNode node, int depth) {
+        for (Object cls : getTupleArray(inliningTarget, clsTuple, getTupleStorage, toArrayNode)) {
             if (node.executeInternal(frame, arg, cls, depth)) {
                 return true;
             }
@@ -157,8 +138,8 @@ abstract class PyObjectRecursiveBinaryCheckNode extends PNodeWithContext {
         return false;
     }
 
-    protected static int getLength(PTuple t) {
-        return t.getSequenceStorage().length();
+    private static Object[] getTupleArray(Node inliningTarget, Object clsTuple, TupleNodes.GetTupleStorage getTupleStorage, SequenceStorageNodes.ToArrayNode toArrayNode) {
+        return toArrayNode.execute(inliningTarget, getTupleStorage.execute(inliningTarget, clsTuple));
     }
 
     @Idempotent

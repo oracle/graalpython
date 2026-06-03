@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,9 +40,13 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -68,6 +72,12 @@ public abstract class PyTupleCheckExactNode extends PNodeWithContext {
     @Specialization(guards = "isBuiltinTuple(tuple)")
     static boolean doBuiltinTuple(@SuppressWarnings("unused") PTuple tuple) {
         return true;
+    }
+
+    @Specialization
+    static boolean doNativeTuple(PythonAbstractNativeObject tuple,
+                    @Cached(inline = false) IsBuiltinObjectExactProfile check) {
+        return check.profileObject(check, tuple, PythonBuiltinClassType.PTuple);
     }
 
     @Fallback

@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -355,8 +356,8 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         if (isExceptionTypeUncached(value)) {
             return MatcherType.BY_TYPE;
         }
-        if (value instanceof PTuple tuple && PyTupleCheckExactNode.executeUncached(tuple)) {
-            SequenceStorage storage = tuple.getSequenceStorage();
+        SequenceStorage storage = getExactTupleStorage(value);
+        if (storage != null) {
             for (int i = 0; i < storage.length(); i++) {
                 Object elem = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
                 if (!isExceptionTypeUncached(elem)) {
@@ -366,6 +367,16 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
             return MatcherType.BY_TYPE;
         }
         throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES);
+    }
+
+    private static SequenceStorage getExactTupleStorage(Object value) {
+        if (value instanceof PTuple tuple && PyTupleCheckExactNode.executeUncached(tuple)) {
+            return tuple.getSequenceStorage();
+        }
+        if (value instanceof PythonAbstractNativeObject nativeTuple && PyTupleCheckExactNode.executeUncached(nativeTuple)) {
+            return TupleNodes.GetNativeTupleStorage.getUncached().execute(nativeTuple);
+        }
+        return null;
     }
 
     private static boolean isExceptionTypeUncached(Object value) {
