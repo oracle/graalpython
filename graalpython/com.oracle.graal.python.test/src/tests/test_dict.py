@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import unittest, sys
+from collections import defaultdict
 
 graalpy_only = unittest.skipUnless(sys.implementation.name == "graalpy", "GraalPy-specific dict storage test")
 
@@ -575,6 +576,38 @@ def test_copy():
     d1['c'] = 3
     assert set(d0.keys()) == {'a', 'b'}
     assert set(d1.keys()) == {'a', 'b', 'c'}
+
+
+def test_defaultdict_operations_subclass_preserve_type():
+    class DefaultDictSubclass(defaultdict):
+        pass
+
+    d = DefaultDictSubclass(int, a=1)
+    copied = d.copy()
+    merged = d | {"b": 2}
+    rmerged = {"b": 2} | d
+
+    assert type(copied) is DefaultDictSubclass
+    assert copied.default_factory is int
+    assert dict(copied) == {"a": 1}
+    assert type(merged) is DefaultDictSubclass
+    assert merged.default_factory is int
+    assert dict(merged) == {"a": 1, "b": 2}
+    assert type(rmerged) is DefaultDictSubclass
+    assert rmerged.default_factory is int
+    assert dict(rmerged) == {"b": 2, "a": 1}
+
+
+def test_dict_operations_return_builtin_dict_for_subclass():
+    class DictSubclass(dict):
+        pass
+
+    d = DictSubclass(a=1)
+    other = {"b": 2}
+
+    assert type(d.copy()) is dict
+    assert type(d | other) is dict
+    assert type(other | d) is dict
 
 
 def test_keywords():

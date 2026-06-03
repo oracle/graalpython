@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -149,12 +150,26 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
     @Builtin(name = "copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static PDefaultDict copy(@SuppressWarnings("unused") VirtualFrame frame, PDefaultDict self,
+        @Specialization(guards = "isBuiltinDefaultDict(self)")
+        static PDefaultDict copyBuiltin(PDefaultDict self,
                         @Bind Node inliningTarget,
                         @Cached HashingStorageCopy copyNode,
                         @Bind PythonLanguage language) {
             return PFactory.createDefaultDict(language, self.getDefaultFactory(), copyNode.execute(inliningTarget, self.getDictStorage()));
+        }
+
+        @Fallback
+        @InliningCutoff
+        static Object copyGeneric(VirtualFrame frame, Object self,
+                        @Bind Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached CallNode callNode) {
+            PDefaultDict defaultDict = (PDefaultDict) self;
+            return callNode.execute(frame, getClassNode.execute(inliningTarget, defaultDict), defaultDict.getDefaultFactory(), defaultDict);
+        }
+
+        static boolean isBuiltinDefaultDict(PDefaultDict self) {
+            return self.getPythonClass() == PythonBuiltinClassType.PDefaultDict;
         }
     }
 
