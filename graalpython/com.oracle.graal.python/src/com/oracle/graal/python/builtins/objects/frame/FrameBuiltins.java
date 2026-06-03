@@ -284,7 +284,8 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object getBackref(VirtualFrame frame, PFrame self,
                         @Cached ReadFrameNode readCallerFrame) {
-            PFrame backref = readCallerFrame.getFrameForReference(frame, self.getRef(), 1, 0);
+            PFrame backref = readCallerFrame.getFrameForReference(frame, self.getRef(), ReadFrameNode.AllPythonFramesSelector.INSTANCE, 1, 0,
+                            self.getThread());
             if (backref != null) {
                 backref.getRef().markAsEscaped();
                 return backref;

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -236,7 +236,7 @@ def test_code_marshal_with_freevars():
     assert_raises(ValueError, assign_code, foo, foobar_code)
     bazbar.__code__ = foobar_code
     assert bazbar() == (2,3)
-    
+
 
 def test_function_dict_writeable():
     def foo(): pass
