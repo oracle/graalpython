@@ -115,7 +115,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -271,33 +270,25 @@ public abstract class CExtNodes {
         }
     }
 
-    @GenerateInline(true)
-    @GenerateCached(false)
-    @GenerateUncached(false)
-    public abstract static class DictSubtypeNew extends Node {
-        public abstract PDict execute(Node node, Object cls, PDict managedSide);
-
-        @Specialization
-        static PDict allocateNativePart(Object cls, PDict managedSide,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNode toNative) {
-            assert !managedSide.isNative();
-            assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
-            long clsPointer = toNative.executeLong(cls);
-            long nativeObject;
-            try {
-                nativeObject = ExternalFunctionInvoker.invokePY_TYPE_GENERIC_NEW_RAW(CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW).getAddress(),
-                                clsPointer, 0L, 0L);
-            } catch (Throwable t) {
-                throw CompilerDirectives.shouldNotReachHere(t);
-            } finally {
-                Reference.reachabilityFence(cls);
-            }
-            CApiTransitions.writeNativeRefCount(nativeObject, MANAGED_REFCNT);
-            CApiTransitions.createReference(managedSide, nativeObject);
-            assert managedSide.isNative();
-            return managedSide;
+    public static <T extends PythonObject> T allocateNativePart(Node inliningTarget, Object cls, T managedSide) {
+        assert !managedSide.isNative();
+        assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
+        long nativeObject;
+        try {
+            nativeObject = ExternalFunctionInvoker.invokePY_TYPE_GENERIC_NEW_RAW(CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW).getAddress(),
+                            PythonToNativeNode.executeLongUncached(cls), 0L, 0L);
+        } catch (Throwable t) {
+            throw CompilerDirectives.shouldNotReachHere(t);
+        } finally {
+            Reference.reachabilityFence(cls);
         }
+        PythonContext context = PythonContext.get(inliningTarget);
+        TransformExceptionFromNativeNode.executeUncached(context.getThreadState(context.getLanguage()), NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW.getTsName(), nativeObject == NULLPTR,
+                        true);
+        CApiTransitions.writeNativeRefCount(nativeObject, MANAGED_REFCNT);
+        CApiTransitions.createReference(managedSide, nativeObject);
+        assert managedSide.isNative();
+        return managedSide;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
