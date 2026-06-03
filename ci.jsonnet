@@ -490,7 +490,7 @@
                 ["git", "clone", "-b", "main", $.overlay_imports.JEKYLL_THEME_GIT],
                 ["cd", "docs/site"],
                 ["bundle", "config", "set", "mirror.https://rubygems.org", $.overlay_imports.RUBYGEMS_MIRROR],
-                ["bundle", "config", "set", "--local", "local.graal-languages-jekyll-theme", "$PWD/../../graal-languages-jekyll-theme"],
+                ["bundle", "config", "set", "--local", "local.graal-languages-jekyll-theme", "../../graal-languages-jekyll-theme"],
                 ["bundle", "update", "graal-languages-jekyll-theme"],
                 ["bundle", "install"],
                 ["bundle", "exec", "jekyll", "build"],
