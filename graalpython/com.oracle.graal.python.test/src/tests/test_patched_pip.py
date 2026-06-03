@@ -153,7 +153,12 @@ if sys.implementation.name == "graalpy":
 
         def add_package_to_index(self, name, version, dist_type):
             package = self.build_package(name, version)[dist_type]
-            shutil.copy(package, self.index_dir)
+            # extra careful, not using shutil.copy so we get more detailed traceback
+            # on some flaky windows CI workers
+            self.assertTrue(package.exists(), f"Built package disappeared: {package}")
+            destination = self.index_dir / package.name
+            with open(package, 'rb') as src, open(destination, 'wb') as dst:
+                shutil.copyfileobj(src, dst)
 
         def run_venv_pip_install(self, package, extra_env=None, assert_stderr_matches=None):
             env = self.pip_env.copy()
