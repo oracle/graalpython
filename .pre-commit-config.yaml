@@ -29,6 +29,14 @@ repos:
     entry: bash scripts/pre-commit-pylint.sh
     types: [text]
     files: '^mx\.graalpython/.*\.py$'
+  - id: maven-ide-sync
+    name: Maven IDE facade sync
+    language: system
+    pass_filenames: true
+    require_serial: true
+    entry: bash -c 'unset GIT_DIR; exec mx python-pominit "$@"' --
+    types: [text]
+    files: '^(mx\.graalpython/suite\.py|mx\.graalpython/mx_pominit\.py)$'
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v5.0.0
   hooks:

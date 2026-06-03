@@ -63,6 +63,7 @@ import mx_subst
 import mx_truffle
 import mx_graalpython_bisect
 import mx_graalpython_import
+import mx_pominit
 import mx_graalpython_python_benchmarks
 
 # re-export custom mx project classes so they can be used from suite.py
@@ -3492,4 +3493,5 @@ mx.update_commands(SUITE, {
     'downstream-test': [run_downstream_test, ''],
     'python-native-pgo': [graalpy_native_pgo_build_and_test, 'Build PGO-instrumented native image, run tests, then build PGO-optimized native image'],
     'python-update-github-unittest-tags': [update_github_unittest_tags, '[--no-commit]'],
+    'python-pominit': [mx_pominit.pominit, '[changed files]'],
 })
