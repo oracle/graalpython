@@ -63,6 +63,10 @@ This will generate configurations for Eclipse, IntelliJ, and NetBeans so that yo
 See also the documentation in mx for [setting up your IDE](https://github.com/graalvm/mx/blob/master/docs/IDE.md).
 If you use another editor (such as VSCode, Emacs, or Neovim) with support for the [Eclipse language server](https://github.com/eclipse/eclipse.jdt.ls) or [Apache NetBeans language server](https://marketplace.visualstudio.com/items?itemName=ASF.apache-netbeans-java), you can also get useable development setups with that, but it's not something we explicitly support.
 
+The checked-in Maven POMs are lightweight facades for quick Java IDE import in editors such as Eclipse, VSCode, or Eglot/JDT-LS.
+They are not the full GraalPy build; use `mx ideinit` for the full generated IDE setup and `mx python-jvm` for the build needed to run or test GraalPy.
+The facade uses a `graalvm.version` Maven range for the current release train so fresh checkouts resolve the newest available GraalVM artifacts; override `graalvm.version` locally to lock a specific version.
+
 ## Development Layout
 
 Besides the source code of the Python interpreter, we have some useful `mx` functions defined under the _mx.graalpython_ directory.
