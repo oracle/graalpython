@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_METHOD;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 
@@ -83,7 +82,7 @@ public final class PythonCextMethodBuiltins {
         PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, PNone.NO_VALUE, flags);
         HiddenAttr.WriteLongNode.executeUncached(func, METHOD_DEF_PTR, methodDefPtr);
         WriteAttributeToPythonObjectNode.executeUncached(func, T___NAME__, name);
-        WriteAttributeToPythonObjectNode.executeUncached(func, T___DOC__, doc);
+        CFunctionDocUtils.writeDocAndTextSignature(func, name, doc);
         PBuiltinMethod method;
         if (cls != PNone.NO_VALUE) {
             method = PFactory.createBuiltinMethod(language, self, func, cls);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -348,8 +348,12 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         @TruffleBoundary
-        static TruffleString getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none,
+        static Object getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none,
                         @Bind Node inliningTarget) {
+            Object storedSignature = ReadAttributeFromObjectNode.getUncached().execute(self, T___TEXT_SIGNATURE__);
+            if (storedSignature != PNone.NO_VALUE) {
+                return storedSignature;
+            }
             Signature signature = self.getSignature();
             if (signature.isHidden()) {
                 throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, self, T___TEXT_SIGNATURE__);

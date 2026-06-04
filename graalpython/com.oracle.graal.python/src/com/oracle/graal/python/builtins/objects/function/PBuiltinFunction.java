@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TEXT_SIGNATURE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 
 import java.util.Arrays;
@@ -256,6 +257,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         } else {
             PBuiltinFunction func = PFactory.createBuiltinFunction(language, this, klass);
             func.setAttribute(T___DOC__, getAttribute(T___DOC__));
+            Object textSignature = getAttribute(T___TEXT_SIGNATURE__);
+            if (textSignature != PNone.NO_VALUE) {
+                func.setAttribute(T___TEXT_SIGNATURE__, textSignature);
+            }
             return func;
         }
     }

@@ -41,7 +41,14 @@ import os
 import sys
 import unittest
 
-from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtHeapType
+from . import (
+    CPyExtFunction,
+    CPyExtHeapType,
+    CPyExtTestCase,
+    CPyExtType,
+    compile_module_from_string,
+    unhandled_error_compare,
+)
 
 DIR = os.path.dirname(__file__)
 
@@ -563,6 +570,73 @@ class TestPyObject(CPyExtTestCase):
     # test calling m_meth
 
 class TestPyCFunction(unittest.TestCase):
+    def test_docstring_text_signature(self):
+        module = compile_module_from_string(r"""
+            #define PY_SSIZE_T_CLEAN
+            #include <Python.h>
+
+            static PyObject *with_signature(PyObject *self, PyObject *arg) {
+                Py_RETURN_NONE;
+            }
+
+            static PyObject *without_signature(PyObject *self, PyObject *arg) {
+                Py_RETURN_NONE;
+            }
+
+            static PyObject *without_doc(PyObject *self, PyObject *unused) {
+                Py_RETURN_NONE;
+            }
+
+            static PyMethodDef module_methods[] = {
+                {"with_signature", with_signature, METH_O,
+                    "with_signature($module, value, /)\n"
+                    "--\n\n"
+                    "Return module function metadata."},
+                {"without_signature", without_signature, METH_O, "Return a plain docstring."},
+                {"without_doc", without_doc, METH_NOARGS, NULL},
+                {NULL, NULL, 0, NULL}
+            };
+
+            static PyModuleDef module_def = {
+                PyModuleDef_HEAD_INIT,
+                "textsignature",
+                "",
+                -1,
+                module_methods,
+                NULL, NULL, NULL, NULL
+            };
+
+            PyMODINIT_FUNC
+            PyInit_textsignature(void)
+            {
+                return PyModule_Create(&module_def);
+            }
+        """, "textsignature")
+
+        assert module.with_signature.__doc__ == "Return module function metadata."
+        assert module.with_signature.__text_signature__ == "($module, value, /)"
+        assert module.without_signature.__doc__ == "Return a plain docstring."
+        assert module.without_signature.__text_signature__ is None
+        assert module.without_doc.__doc__ is None
+        assert module.without_doc.__text_signature__ is None
+
+        TypeWithTextSignature = CPyExtType(
+            "TypeWithTextSignature",
+            """
+            static PyObject *method_with_signature(PyObject *self, PyObject *arg) {
+                Py_RETURN_NONE;
+            }
+            """,
+            tp_methods="""
+            {"method_with_signature", method_with_signature, METH_O,
+                "method_with_signature($self, value, /)\\n"
+                "--\\n\\n"
+                "Return type method metadata."}
+            """,
+        )
+        assert TypeWithTextSignature.method_with_signature.__doc__ == "Return type method metadata."
+        assert TypeWithTextSignature.method_with_signature.__text_signature__ == "($self, value, /)"
+
     test_PyCFunction_NewEx_non_string_module = CPyExtFunction(
         lambda args: 1,
         lambda: (
