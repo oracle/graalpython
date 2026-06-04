@@ -116,3 +116,30 @@ class JsonTest(unittest.TestCase):
         assert json.loads('{"outer": {"inner": {"leaf": 1}}}', object_hook=hook) == "hooked"
         assert json.loads('{"outer": {"inner": {"leaf": 1}}}', object_pairs_hook=hook) == "hooked"
 
+    def test_object_hook_nested_list_and_object(self):
+        def hook(obj):
+            return obj
+
+        payload = (
+            '{"seq": 2, "type": "request", "command": "attach", '
+            '"arguments": {"justMyCode": true, "name": "Test", "type": "python", '
+            '"program": "/tmp/code.py", "args": [], '
+            '"connect": {"host": "127.0.0.1", "port": 5681}, '
+            '"debugOptions": ["ShowReturnValue"]}}'
+        )
+        expected = {
+            "seq": 2,
+            "type": "request",
+            "command": "attach",
+            "arguments": {
+                "justMyCode": True,
+                "name": "Test",
+                "type": "python",
+                "program": "/tmp/code.py",
+                "args": [],
+                "connect": {"host": "127.0.0.1", "port": 5681},
+                "debugOptions": ["ShowReturnValue"],
+            },
+        }
+        assert json.loads(payload, object_hook=hook) == expected
+        assert json.loads(payload, object_pairs_hook=dict) == expected

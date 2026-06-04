@@ -583,6 +583,9 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                             return topOfStack;
                         } else {
                             Object parent = stack.peek();
+                            if (parent instanceof TruffleString) {
+                                parent = stack.get(stack.size() - 2);
+                            }
                             if (parent instanceof PList parentList) {
                                 currentListStorage = (ObjectSequenceStorage) parentList.getSequenceStorage();
                                 nextState = ScannerState.list;
