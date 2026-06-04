@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -209,7 +209,7 @@ u x S_IFCHR
 
 [mmapFlags]
 1 x MAP_SHARED
-2 x MAP_PRIVATE
+* x MAP_PRIVATE
 4 x MAP_ANONYMOUS
 * x MAP_DENYWRITE
 * x MAP_EXECUTABLE

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -85,7 +85,6 @@ class PosixConstantsWin32 {
         constants.put("S_IFCHR", 0x00002000);
         constants.put("S_IFIFO", 0);
         constants.put("MAP_SHARED", 1);
-        constants.put("MAP_PRIVATE", 2);
         constants.put("MAP_ANONYMOUS", 4);
         constants.put("PROT_NONE", 0);
         constants.put("PROT_READ", 1);

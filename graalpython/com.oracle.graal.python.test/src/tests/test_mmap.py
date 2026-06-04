@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,9 +38,23 @@
 # SOFTWARE.
 
 import mmap
+import sys
 
 PAGESIZE = mmap.PAGESIZE
 FIND_BUFFER_SIZE = 1024  # keep in sync with FindNode#BUFFER_SIZE
+
+
+def test_map_private_constant_matches_platform():
+    assert hasattr(mmap, "MAP_PRIVATE") == (sys.platform != "win32")
+
+
+def test_access_copy_without_map_private_constant():
+    m = mmap.mmap(-1, 1, access=mmap.ACCESS_COPY)
+    try:
+        m[0] = b'a'[0]
+        assert m[:] == b'a'
+    finally:
+        m.close()
 
 
 def test_find():

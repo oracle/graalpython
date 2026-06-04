@@ -226,7 +226,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                     prot = PROT_READ.value | PROT_WRITE.value;
                     break;
                 case ACCESS_COPY:
-                    flags = MAP_PRIVATE.value;
+                    flags = MAP_PRIVATE.defined ? MAP_PRIVATE.getValueIfDefined() : 0;
                     prot = PROT_READ.value | PROT_WRITE.value;
                     break;
                 case PMMap.ACCESS_DEFAULT:
