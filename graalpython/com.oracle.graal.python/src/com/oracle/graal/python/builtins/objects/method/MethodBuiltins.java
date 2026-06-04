@@ -66,7 +66,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
-import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -234,9 +233,13 @@ public final class MethodBuiltins extends PythonBuiltins {
     public abstract static class GetMethodKwdefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object kwDefaults(PMethod self,
-                        @Bind Node inliningTarget,
-                        @Cached GetKeywordDefaultsNode getKeywordDefaultsNode) {
-            PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(inliningTarget, self);
+                        @Bind Node inliningTarget) {
+            Object fun = self.getFunction();
+            if (fun instanceof PFunction function) {
+                return function.getKwDefaultsDict(PythonLanguage.get(inliningTarget));
+            }
+            assert fun instanceof PBuiltinFunction;
+            PKeyword[] kwdefaults = ((PBuiltinFunction) fun).getKwDefaults();
             return (kwdefaults.length > 0) ? PFactory.createDict(PythonLanguage.get(inliningTarget), kwdefaults) : PNone.NONE;
         }
     }
