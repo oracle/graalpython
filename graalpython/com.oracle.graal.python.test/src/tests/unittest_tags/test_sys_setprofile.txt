@@ -20,6 +20,11 @@ test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_invalid_ar
 test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_invalid_keyword_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_no_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_setprofile.ProfileSimulatorTestCase.test_unbound_method_no_keyword_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_sys_setprofile.TestEdgeCases.test_c_call_after_python_argument_evaluation @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_sys_setprofile.TestEdgeCases.test_method_with_c_function @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_sys_setprofile.TestEdgeCases.test_nested_c_call_after_inner_return @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_sys_setprofile.TestEdgeCases.test_nested_c_call_argument_exception @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_sys_setprofile.TestEdgeCases.test_nested_c_call_callback_exception @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_sys_setprofile.TestEdgeCases.test_same_object @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_setprofile.TestGetProfile.test_empty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_setprofile.TestGetProfile.test_setget @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
