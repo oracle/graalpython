@@ -823,10 +823,9 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object doGeneric(PDeque self, int idx,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind Node inliningTarget) {
             if (idx < 0 || idx >= self.getSize()) {
-                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
+                throw PRaiseNode.raiseStatic(inliningTarget, IndexError, ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
             }
             return doGetItem(self, idx);
         }
@@ -846,12 +845,12 @@ public final class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DequeSetItemNode extends SqAssItemBuiltinNode {
 
+        @TruffleBoundary
         @Specialization
         static void setOrDel(PDeque self, int idx, Object value,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
+                        @Bind Node inliningTarget) {
             if (idx < 0 || idx >= self.getSize()) {
-                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
+                throw PRaiseNode.raiseStatic(inliningTarget, IndexError, ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
             }
             self.setItem(idx, value != PNone.NO_VALUE ? value : null);
         }

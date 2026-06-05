@@ -51,10 +51,9 @@ import java.util.Objects;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
@@ -67,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinB
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.FixNegativeIndex;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItemFactory.CallSlotSqAssItemNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItemFactory.WrapSqDelItemBuiltinNodeGen;
@@ -203,15 +203,15 @@ public final class TpSlotSqAssItem {
         Object doGeneric(VirtualFrame frame, Object self, Object index,
                         @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode) {
-            int size = asSizeNode.executeExact(frame, inliningTarget, index, PythonBuiltinClassType.OverflowError);
-            if (size < 0) {
+            int indexAsSize = asSizeNode.executeExact(frame, inliningTarget, index, PythonBuiltinClassType.OverflowError);
+            if (indexAsSize < 0) {
                 if (fixNegativeIndex == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     fixNegativeIndex = insert(FixNegativeIndex.create());
                 }
-                size = fixNegativeIndex.execute(frame, size, self);
+                indexAsSize = fixNegativeIndex.execute(frame, indexAsSize, self);
             }
-            slotNode.executeIntKey(frame, self, size, PNone.NO_VALUE);
+            slotNode.executeIntKey(frame, self, indexAsSize, PNone.NO_VALUE);
             return PNone.NONE;
         }
     }

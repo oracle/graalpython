@@ -263,6 +263,15 @@ class TestBasic(unittest.TestCase):
         d = deque('superman')
         self.assertEqual(d[0], 's')
         self.assertEqual(d[-1], 'n')
+
+        d = deque([10, 20, 30, 40, 50])
+        self.assertEqual(d[-len(d)], 10)
+        self.assertEqual(d.__getitem__(-len(d)), 10)
+        for i in range(-len(d) - 1, -2 * len(d) - 1, -1):
+            with self.assertRaises(IndexError):
+                d[i]
+            self.assertRaises(IndexError, d.__getitem__, i)
+
         d = deque()
         self.assertRaises(IndexError, d.__getitem__, 0)
         self.assertRaises(IndexError, d.__getitem__, -1)
@@ -380,6 +389,16 @@ class TestBasic(unittest.TestCase):
             l[i] = 7*i
         self.assertEqual(list(d), l)
 
+        d = deque([10, 20, 30, 40, 50])
+        d[-len(d)] = 11
+        d.__setitem__(-1, 55)
+        self.assertEqual(list(d), [11, 20, 30, 40, 55])
+        for i in range(-len(d) - 1, -2 * len(d) - 1, -1):
+            with self.assertRaises(IndexError):
+                d[i] = 99
+            self.assertRaises(IndexError, d.__setitem__, i, 99)
+        self.assertEqual(list(d), [11, 20, 30, 40, 55])
+
     def test_delitem(self):
         n = 500         # O(n**2) test, don't make this too big
         d = deque(range(n))
@@ -393,6 +412,20 @@ class TestBasic(unittest.TestCase):
             del d[j]
             self.assertTrue(val not in d)
         self.assertEqual(len(d), 0)
+
+        data = [10, 20, 30, 40, 50]
+        d = deque(data)
+        del d[-len(d)]
+        self.assertEqual(list(d), [20, 30, 40, 50])
+        d = deque(data)
+        d.__delitem__(-1)
+        self.assertEqual(list(d), [10, 20, 30, 40])
+        for i in range(-len(data) - 1, -2 * len(data) - 1, -1):
+            d = deque(data)
+            with self.assertRaises(IndexError):
+                del d[i]
+            self.assertRaises(IndexError, d.__delitem__, i)
+            self.assertEqual(list(d), data)
 
     def test_negative_index_out_of_range(self):
         # GH-923: an index < -len must raise IndexError, not wrap around twice

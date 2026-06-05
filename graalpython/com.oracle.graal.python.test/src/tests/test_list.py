@@ -168,6 +168,25 @@ class ListTest(list_tests.CommonTest):
         cpy = [l[idxObj], l[idxObj], l[idxObj]]
         self.assertEqual(cpy, l)
 
+        l = [10, 20, 30, 40, 50]
+        self.assertEqual(l[-len(l)], 10)
+        self.assertEqual(l.__getitem__(-len(l)), 10)
+        for i in range(-len(l) - 1, -2 * len(l) - 1, -1):
+            with self.assertRaises(IndexError):
+                l[i]
+            self.assertRaises(IndexError, l.__getitem__, i)
+
+    def test_setitem_negative_index_boundary(self):
+        l = [10, 20, 30, 40, 50]
+        l[-len(l)] = 11
+        l.__setitem__(-1, 55)
+        self.assertEqual(l, [11, 20, 30, 40, 55])
+        for i in range(-len(l) - 1, -2 * len(l) - 1, -1):
+            with self.assertRaises(IndexError):
+                l[i] = 99
+            self.assertRaises(IndexError, l.__setitem__, i, 99)
+        self.assertEqual(l, [11, 20, 30, 40, 55])
+
     def pop_all_list(self, list):
         size = len(list)
         self.assertRaises(IndexError, list.pop, size)
@@ -247,6 +266,20 @@ class ListTest(list_tests.CommonTest):
         l = ["1", "2", "3", "4", "5", "6"]
         del l[4]
         self.assertEqual(["1", "2", "3", "4", "6"], l)
+
+        data = [10, 20, 30, 40, 50]
+        l = list(data)
+        del l[-len(l)]
+        self.assertEqual(l, [20, 30, 40, 50])
+        l = list(data)
+        l.__delitem__(-1)
+        self.assertEqual(l, [10, 20, 30, 40])
+        for i in range(-len(data) - 1, -2 * len(data) - 1, -1):
+            l = list(data)
+            with self.assertRaises(IndexError):
+                del l[i]
+            self.assertRaises(IndexError, l.__delitem__, i)
+            self.assertEqual(l, data)
 
     def test_del_border(self):
         l = [1, 2, 3]
