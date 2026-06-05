@@ -1571,7 +1571,8 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     reportfile = None
     t0 = time.time()
     if report:
-        reportfile = os.path.abspath(tempfile.mktemp(prefix="test-report-", suffix=".json"))
+        with tempfile.NamedTemporaryFile(prefix="test-report-", suffix=".json", delete=False) as report_tmp:
+            reportfile = os.path.abspath(report_tmp.name)
         args += ["--mx-report", reportfile]
 
     if paths is not None:
@@ -2582,8 +2583,8 @@ def python_checkcopyrights(args):
         files = args[i + 1:]
         args = args[:i]
     # we wan't to ignore lib-python/3, because that's just crazy
-    listfilename = tempfile.mktemp()
-    with open(listfilename, "w") as listfile:
+    with tempfile.NamedTemporaryFile("w", delete=False) as listfile:
+        listfilename = listfile.name
         if files is None:
             mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
         else:
@@ -3299,15 +3300,26 @@ def run_mx(args, *splat, **kwargs):
     return mx.run_mx(args, *splat, **kwargs)
 
 
+def _parse_host_inlining_fields(fields):
+    parts = fields.split(":")
+    if len(parts) > 3:
+        raise ValueError("fields must be an integer index or slice")
+    result = int(fields) if len(parts) == 1 else slice(*(int(part) if part.strip() else None for part in parts))
+    if isinstance(result, slice) and result.step == 0:
+        raise ValueError("fields must be an integer index or slice")
+    return result
+
+
 def host_inlining_log_extract_method(args_in):
     parser = ArgumentParser(description="Extracts single method from host inlining log file. "
                                  "Result, when saved to file, can be visualized with: java scripts/HostInliningVisualizer.java filename")
     parser.add_argument("filename", help="file with host inlining log")
     parser.add_argument("method", help="name of a method to extract")
-    parser.add_argument("-f", "--fields",
+    parser.add_argument("-f", "--fields", type=_parse_host_inlining_fields,
                         help="fields to select from the list with details, use Python subscript syntax, "
                              "default: '-1:' (i.e., the last field: reason for the [non-]inlining decision)", default="-1:")
     args = parser.parse_args(args_in)
+    fields = args.fields
 
     start = 'Context: HostedMethod<' + args.method + ' '
     result = []
@@ -3326,7 +3338,8 @@ def host_inlining_log_extract_method(args_in):
                 match = re.search(r'\[inlined.*\]', line)
                 if match:
                     details = match.group().split(',')
-                    details = ', '.join(eval(f"details[{args.fields}]"))  #pylint: disable=eval-used
+                    selected_details = details[fields]
+                    details = ', '.join([selected_details] if isinstance(fields, int) else selected_details)
                     line = line[:match.start()].rstrip() + f' [{details}]'
                 for x in remove:
                     line = line.replace(x, '')

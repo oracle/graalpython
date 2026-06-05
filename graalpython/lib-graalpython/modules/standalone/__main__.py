@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -331,10 +331,15 @@ def get_tools(target_dir, parsed_args):
         if platform.system() == 'Darwin' or platform.system() == 'Linux':
             with tarfile.open(graalvm_file) as tar_file:
                 first_member = tar_file.next().path
-                tar_file.extractall(vm_path)
+                try:
+                    tar_file.extractall(vm_path, filter="data")
+                except TypeError:
+                    # older Python versions do not support filter, but the risk does not warrant a fallback implementation
+                    tar_file.extractall(vm_path)
         else:
             with zipfile.ZipFile(graalvm_file) as zip_file:
                 first_member = zip_file.namelist()[0]
+                # zipfile.extractall normalizes absolute paths and ".." components.
                 zip_file.extractall(vm_path)
 
         graalvm_dir = os.path.join(vm_path, first_member[:first_member.index("/")])
