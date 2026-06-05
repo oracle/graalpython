@@ -226,16 +226,17 @@ def test_generator_and_gen_body_code_are_equal():
     x = g()
     assert g.__code__ is x.gi_code
 
-def dedup(lst, prev=object()):
-    for item in lst:
-        if item != prev:
-            yield item
-            prev = item
-
 def check_lines(func):
     co = func.__code__
-    lines = [line for _, _, line in co.co_lines()]
-    assert lines == list(dedup(lines))
+    prev_line = object()  # None is a valid line value.
+    prev_end = 0
+    for start, end, line in co.co_lines():
+        assert start <= end
+        assert line != prev_line
+        assert line is None or line > 0
+        assert prev_end == start
+        prev_line = line
+        prev_end = end
 
 def test_check_lines_dedup():
     def misshappen():
@@ -277,8 +278,11 @@ def test_check_lines_dedup():
         ).strip()
         raise ValueError()
 
+    def singleline(): return 42
+
     check_lines(misshappen)
     check_lines(bug93662)
+    check_lines(singleline)
 
 
 def test_code_identity():
