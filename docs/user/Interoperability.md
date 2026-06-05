@@ -211,7 +211,7 @@ If you're using Maven with GraalPy, add the JavaScript dependency to your _pom.x
 <dependency>
     <groupId>org.graalvm.polyglot</groupId>
     <artifactId>js</artifactId>
-    <version>25.0.2</version>
+    <version>25.0.3</version>
 </dependency>
 ```
 

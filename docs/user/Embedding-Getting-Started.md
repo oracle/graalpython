@@ -16,7 +16,7 @@ The fastest way to get started is with GraalPy's Maven archetype, which generate
    mvn archetype:generate \
      -DarchetypeGroupId=org.graalvm.python \
      -DarchetypeArtifactId=graalpy-archetype-polyglot-app \
-     -DarchetypeVersion=25.0.2
+     -DarchetypeVersion=25.0.3
    ```
 
    This generates the following project structure:
@@ -87,8 +87,8 @@ If you prefer Gradle, here is how to set up a new project with GraalPy embedding
     - Include the GraalPy support and the [GraalVM Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
 
         ```gradle
-        implementation("org.graalvm.polyglot:polyglot:25.0.2")
-        implementation("org.graalvm.python:python-embedding:25.0.2")
+        implementation("org.graalvm.polyglot:polyglot:25.0.3")
+        implementation("org.graalvm.python:python-embedding:25.0.3")
         ```
 
 3. Replace the _App.java_ content with this simple Python embedding example:
@@ -128,7 +128,7 @@ To use third-party Python packages like NumPy or Requests in your embedded appli
    plugins {
        id "java"
        id "application"
-       id "org.graalvm.python" version "25.0.2"
+       id "org.graalvm.python" version "25.0.3"
    }
 
    graalPy {
@@ -171,7 +171,7 @@ GraalPy provides a tool to download the required JAR files directly.
 1. Set up your project structure with a directory for dependencies:
 
     ```bash
-    ├── lib/           # JAR dependencies 
+    ├── lib/           # JAR dependencies
     │   └── *.jar
     └── src/           # Your Java source files
         └── *.java
