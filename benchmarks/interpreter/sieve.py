@@ -53,4 +53,6 @@ def run():
         if primes[c] != 0:
             count += 1
 
+    __graalpython__.dump_heap()
+
     return count
