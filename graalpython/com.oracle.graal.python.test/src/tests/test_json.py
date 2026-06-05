@@ -39,6 +39,7 @@
 
 import json
 import os
+import sys
 import unittest
 
 BIGINT_JSON_DATA = '''
@@ -108,6 +109,43 @@ class JsonTest(unittest.TestCase):
         assert s == '{"foo": "\\uda6a"}'
         s = json.dumps({'foo': "\uda6a"}, ensure_ascii=False)
         assert s == '{"foo": "\uda6a"}'
+
+    def test_dump_skipkeys_invalid_middle_key(self):
+        assert json.dumps({"first": 1, b"bad": 2, "last": 3}, skipkeys=True) == '{"first": 1, "last": 3}'
+
+    def test_dump_skipkeys_invalid_trailing_key(self):
+        assert json.dumps({"first": 1, b"bad": 2}, skipkeys=True) == '{"first": 1}'
+
+    def test_dump_skipkeys_default_returned_dict(self):
+        class InvalidKey:
+            pass
+
+        class Unsupported:
+            pass
+
+        def default(obj):
+            if isinstance(obj, Unsupported):
+                return {"first": 1, InvalidKey(): 2, "last": 3}
+            raise TypeError
+
+        assert json.dumps(Unsupported(), default=default, skipkeys=True) == '{"first": 1, "last": 3}'
+
+    @unittest.skipUnless(sys.implementation.name == "graalpy", "fixed only in later CPython versions, bug gh-110941")
+    def test_dump_empty_storage_dict_subclass_with_items(self):
+        class StaticDict(dict):
+            def keys(self):
+                return ["a", "b"]
+
+            def values(self):
+                return [1, 2]
+
+            def items(self):
+                return zip(self.keys(), self.values())
+
+            def __len__(self):
+                return 2
+
+        assert json.dumps(StaticDict()) == '{"a": 1, "b": 2}'
 
     def test_object_hook_nested(self):
         def hook(obj):
