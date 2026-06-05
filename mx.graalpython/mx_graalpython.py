@@ -1327,7 +1327,7 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None, only_projects=None):
         graalpy_extensions_path = os.path.join(SUITE.get_mx_output_dir(), 'graalpy-extensions')
         if os.path.exists(graalpy_extensions_path):
             shutil.rmtree(graalpy_extensions_path)
-        mx.run(['git', 'clone', '--depth=1', 'https://github.com/oracle/graalpy-extensions.git', graalpy_extensions_path])
+        mx.run(['git', 'clone', '--depth=1', mx_urlrewrites.rewriteurl('https://github.com/oracle/graalpy-extensions.git'), graalpy_extensions_path])
 
     local_repo_path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
 
