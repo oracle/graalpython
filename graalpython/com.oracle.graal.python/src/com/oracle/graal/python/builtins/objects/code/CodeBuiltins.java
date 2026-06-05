@@ -462,7 +462,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         /**
          * The bci ranges in the triples are not stable and can change when the bytecode is
          * instrumented. We create new triples with stable instruction indices by walking the
-         * instructions.
+         * instructions. We also coalesce triples with the same line numbers.
          */
         private static List<PTuple> convertTripleBcisToInstructionIndices(BytecodeNode bytecodeNode, PythonLanguage language, List<int[]> triples) {
             List<PTuple> result = new ArrayList<>(triples.size());
@@ -472,32 +472,33 @@ public final class CodeBuiltins extends PythonBuiltins {
 
             int startInstructionIndex = 0;
             int instructionIndex = 0;
-            boolean rangeHasInstruction = false;
-            int lastTripleLine = -1;
+            int pendingLine = triple[2];
+
             for (Instruction instruction : bytecodeNode.getInstructions()) {
+                // Iterate the instructions, counting the stable instruction index as we go.
                 if (instruction.getBytecodeIndex() == triple[1] /* end bci */) {
-                    if (lastTripleLine != triple[2]) {
-                        if (rangeHasInstruction) {
-                            result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
-                            lastTripleLine = triple[2];
-                        }
-                        startInstructionIndex = instructionIndex;
-                    }
+                    // We hit the end of the current triple. Continue with the next one.
                     triple = triples.get(++tripleIndex);
                     assert triple[0] == instruction.getBytecodeIndex() : "bytecode ranges should be consecutive";
-                    rangeHasInstruction = false;
+                    // If this new triple has a different line, emit a tuple for the previous line.
+                    // Otherwise, continue (this new triple's range is combined with the previous).
+                    if (pendingLine != triple[2] /* line */) {
+                        result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, pendingLine}));
+                        startInstructionIndex = instructionIndex;
+                        pendingLine = triple[2];
+                    }
                 }
 
                 if (!instruction.isInstrumentation()) {
                     // Emulate CPython's fixed 2-word instructions.
                     instructionIndex += 2;
-                    rangeHasInstruction = true;
                 }
             }
 
-            result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
+            // Emit a tuple for the remaining range.
+            result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, pendingLine}));
             assert tripleIndex == triples.size() - 1 : String.format("every bytecode range should have been converted to " +
-                            "an instruction range, %d != %d, function: %s", tripleIndex, triples.size(), bytecodeNode.getRootNode());
+                            "an instruction range, %d != %d, function: %s", tripleIndex, triples.size() - 1, bytecodeNode.getRootNode());
 
             return result;
         }
