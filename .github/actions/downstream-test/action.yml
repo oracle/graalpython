@@ -23,6 +23,10 @@ inputs:
   arch:
     description: Architecture identifier (e.g. amd64/aarch64)
     required: true
+  github_token:
+    description: Token used only for querying GraalPy CE dev-build releases on macOS
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -46,28 +50,26 @@ runs:
 
     - name: Install Rust toolchain
       if: ${{ inputs.needs_rust == 'true' }}
-      shell: bash
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        echo "${HOME}/.cargo/bin" >> $GITHUB_PATH
+      uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+      with:
+        toolchain: stable
 
     - name: Install uv
       if: ${{ inputs.needs_uv == 'true' }}
-      shell: bash
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
     - name: Get GraalPy CE dev build
       if: ${{ inputs.platform == 'macos' }}
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
         tarball="$(curl -sH "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/graalvm/graalvm-ce-dev-builds/releases/latest" | jq -r --arg platform "${{ inputs.platform }}" --arg arch "${{ inputs.arch }}" 'first(.assets[] | select(.name | test("^graalpy[0-9.]+-community-dev-\($platform)-\($arch)\\.(tar\\.gz|zip)$")) | .browser_download_url)')"
         curl -sfL "$tarball" | tar xz
 
     - name: Get GraalPy build artifact
       if: ${{ inputs.platform == 'linux' }}
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
       with:
         name: graalpy-native-standalonelinux
         path: graalpynative

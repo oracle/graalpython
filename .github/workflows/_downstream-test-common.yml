@@ -19,6 +19,10 @@ on:
         required: false
         default: false
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   downstream:
     strategy:
@@ -33,11 +37,9 @@ jobs:
             arch: aarch64
 
     runs-on: ${{ matrix.os.id }}
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run downstream test
         uses: ./.github/actions/downstream-test
@@ -48,3 +50,4 @@ jobs:
           needs_uv: ${{ inputs.needs_uv }}
           platform: ${{ matrix.os.platform }}
           arch: ${{ matrix.os.arch }}
+          github_token: ${{ matrix.os.platform == 'macos' && secrets.GITHUB_TOKEN || '' }}

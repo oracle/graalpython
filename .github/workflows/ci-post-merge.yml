@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Find failed CI run
         id: failed-ci
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
             const GRAALVMBOT_LOGIN = "graalvmbot";
@@ -155,7 +155,7 @@ jobs:
             console.log(`Found failed CI workflow: ${failedRun.html_url}`);
       - name: Download merged test report
         if: ${{ steps.failed-ci.outputs.failed_run_url != '' }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: merged_test_reports
           path: report
@@ -164,7 +164,7 @@ jobs:
         continue-on-error: true
       - name: Post failure comment
         if: ${{ steps.failed-ci.outputs.failed_run_url != '' }}
-        uses: actions/github-script@v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
