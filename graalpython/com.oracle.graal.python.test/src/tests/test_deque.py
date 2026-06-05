@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -393,6 +393,17 @@ class TestBasic(unittest.TestCase):
             del d[j]
             self.assertTrue(val not in d)
         self.assertEqual(len(d), 0)
+
+    def test_negative_index_out_of_range(self):
+        # GH-923: an index < -len must raise IndexError, not wrap around twice
+        d = deque([10, 20, 30, 40, 50])
+        i = -len(d) - 1
+        with self.assertRaises(IndexError):
+            d[i]
+        with self.assertRaises(IndexError):
+            d[i] = 0
+        with self.assertRaises(IndexError):
+            del d[i]
 
     def test_reverse(self):
         n = 500         # O(n**2) test, don't make this too big

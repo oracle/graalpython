@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInsertNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeRotateNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -824,9 +823,12 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object doGeneric(PDeque self, int idx,
-                        @Cached NormalizeIndexCustomMessageNode normalizeIndexNode) {
-            int normIdx = normalizeIndexNode.execute(idx, self.getSize(), ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
-            return doGetItem(self, normIdx);
+                        @Bind Node inliningTarget,
+                        @Cached PRaiseNode raiseNode) {
+            if (idx < 0 || idx >= self.getSize()) {
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
+            }
+            return doGetItem(self, idx);
         }
 
         @TruffleBoundary
@@ -846,9 +848,12 @@ public final class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         static void setOrDel(PDeque self, int idx, Object value,
-                        @Cached NormalizeIndexCustomMessageNode normalizeIndexNode) {
-            int normIdx = normalizeIndexNode.execute(idx, self.getSize(), ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
-            self.setItem(normIdx, value != PNone.NO_VALUE ? value : null);
+                        @Bind Node inliningTarget,
+                        @Cached PRaiseNode raiseNode) {
+            if (idx < 0 || idx >= self.getSize()) {
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
+            }
+            self.setItem(idx, value != PNone.NO_VALUE ? value : null);
         }
     }
 
