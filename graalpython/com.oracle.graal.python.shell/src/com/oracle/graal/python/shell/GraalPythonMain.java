@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -856,7 +856,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     printFileNotFoundException(e);
                 }
             }
-            if ((commandString == null && inputFile == null) || inspectFlag) {
+            if ((isTTY() && commandString == null && inputFile == null) || inspectFlag) {
                 inspectFlag = false;
                 rc = readEvalPrint(context, consoleHandler);
             }
