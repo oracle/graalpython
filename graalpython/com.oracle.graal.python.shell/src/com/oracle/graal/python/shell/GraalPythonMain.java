@@ -856,7 +856,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     printFileNotFoundException(e);
                 }
             }
-            if ((tty && commandString == null && inputFile == null) || inspectFlag) {
+            if ((isTTY() && commandString == null && inputFile == null) || inspectFlag) {
                 inspectFlag = false;
                 rc = readEvalPrint(context, consoleHandler);
             }
