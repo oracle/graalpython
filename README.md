@@ -31,7 +31,7 @@ Also, review the [Code of Conduct](https://www.graalvm.org/community/conduct/) f
 **Compatible with the Python ecosystem**
 
 * Use almost any standard Python feature, the CPython tests run on every commit and pass ~85%
-* See if the packages you need work according to our [Python Compatibility Checker](https://www.graalvm.org/python/compatibility/)
+* See if the packages you need work according to our [Python Compatibility Checker](https://www.graalvm.org/compatibility/)
 * Support for native extension modules is considered experimental, but you can already install [packages](docs/user/Python-Runtime.md#installing-packages) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
 ![](docs/user/assets/mcd.svg#gh-light-mode-only)![](docs/user/assets/mcd-dark.svg#gh-dark-mode-only)<sup>
 We run the tests of the [most depended on PyPI packages](https://libraries.io/pypi) every day.
