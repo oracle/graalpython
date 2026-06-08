@@ -83,9 +83,14 @@ class AuditHookTests(unittest.TestCase):
 
     def test_addaudithook_exception_blocks_new_hook(self):
         seen = []
+        block_add = True
 
         def blocking_hook(event, args):
+            nonlocal block_add
             if event == "sys.addaudithook":
+                if not block_add:
+                    return
+                block_add = False
                 raise RuntimeError("blocked")
             if event == "graalpy.test_blocked_hook":
                 seen.append("blocking")
@@ -104,8 +109,14 @@ class AuditHookTests(unittest.TestCase):
         class AuditBaseException(BaseException):
             pass
 
+        block_add = True
+
         def hook(event, args):
+            nonlocal block_add
             if event == "sys.addaudithook":
+                if not block_add:
+                    return
+                block_add = False
                 raise AuditBaseException
 
         sys.addaudithook(hook)
