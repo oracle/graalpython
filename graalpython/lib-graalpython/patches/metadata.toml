@@ -1161,12 +1161,7 @@ patch = 'librt-0.7.8.patch'
 license = 'MIT'
 
 [[librt.rules]]
-version = '== 0.9.0'
-patch = 'librt-0.9.0.patch'
-license = 'MIT'
-
-[[librt.rules]]
-version = '== 0.10.0'
+version = '>= 0.7.8'
 patch = 'librt-0.10.0.patch'
 license = 'MIT'
 
