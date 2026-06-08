@@ -52,6 +52,7 @@ import java.util.concurrent.TimeoutException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
+import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
@@ -80,6 +82,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
+import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -245,21 +248,16 @@ public abstract class ReadFrameNode extends Node {
     private PFrame readSlowPath(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags, Thread frameThread,
                     MaterializeFrameNode materializeFrameNode) {
         Thread thread = getFrameThread(startFrameInfo, frameThread);
-        if (level == 0 && startFrameInfo != null && !selector.skip(startFrameInfo.getRootNode()) && thread != null && thread != Thread.currentThread()) {
-            // We have the frame we're looking for, but it's on another thread
+        if (startFrameInfo != null && thread != null && thread != Thread.currentThread()) {
+            // We have a frame reference on another thread. Resolve the requested level there.
+            PFrame[] pyFrameResult = new PFrame[1];
             if (thread.isAlive()) {
                 try (var gil = GilNode.uncachedRelease()) {
                     // Schedule a safepoint action on that thread
                     Future<Void> future = PythonContext.get(null).getEnv().submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
                         @Override
                         protected void perform(Access access) {
-                            Node location = access.getLocation();
-                            if (location instanceof PBytecodeDSLRootNode) {
-                                // See AsyncPythonAction#execute for explanation
-                                location = PythonLanguage.get(null).unavailableSafepointLocation;
-                            }
-                            StackWalkResult result = ReadFrameNode.getFrame(location, startFrameInfo, frameAccess, selector, 0, callerFlags);
-                            processStackWalkResult(materializeFrameNode, callerFlags, result);
+                            pyFrameResult[0] = readFrameInThreadLocal(access, startFrameInfo, frameAccess, selector, level, callerFlags, materializeFrameNode);
                         }
                     });
                     TruffleSafepoint.setBlockedThreadInterruptible(this, voidFuture -> {
@@ -275,14 +273,30 @@ public abstract class ReadFrameNode extends Node {
                     }, future);
                 }
             }
-            PFrame pyFrame = startFrameInfo.getPyFrame();
-            if (pyFrame != null) {
-                assert !pyFrame.outdatedCallerFlags(callerFlags);
-                return pyFrame;
+            if (pyFrameResult[0] != null) {
+                return pyFrameResult[0];
+            }
+            if (level == 0 && !selector.skip(startFrameInfo.getRootNode())) {
+                PFrame pyFrame = startFrameInfo.getPyFrame();
+                if (pyFrame != null) {
+                    assert !pyFrame.outdatedCallerFlags(callerFlags);
+                    return pyFrame;
+                }
             }
         }
         StackWalkResult callerFrameResult = getFrame(this, startFrameInfo, frameAccess, selector, level, callerFlags);
         return processStackWalkResult(materializeFrameNode, callerFlags, callerFrameResult);
+    }
+
+    public static PFrame readFrameInThreadLocal(Access access, Reference startFrameInfo, FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
+                    MaterializeFrameNode materializeFrameNode) {
+        Node location = access.getLocation();
+        if (location instanceof PBytecodeDSLRootNode) {
+            // See AsyncPythonAction#execute for explanation
+            location = PythonLanguage.get(null).unavailableSafepointLocation;
+        }
+        StackWalkResult result = ReadFrameNode.getFrame(location, startFrameInfo, frameAccess, selector, level, callerFlags);
+        return processStackWalkResult(materializeFrameNode, callerFlags, result);
     }
 
     private static Thread getFrameThread(PFrame.Reference startFrameInfo, Thread frameThread) {

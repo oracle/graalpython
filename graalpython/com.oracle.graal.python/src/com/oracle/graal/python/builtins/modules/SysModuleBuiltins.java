@@ -141,11 +141,18 @@ import java.io.IOException;
 import java.lang.ref.Reference;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -174,7 +181,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
@@ -208,6 +215,7 @@ import com.oracle.graal.python.lib.PyLongAsIntNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
@@ -225,7 +233,9 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode.AllPythonFramesSelector;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -238,6 +248,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -251,8 +262,10 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -265,6 +278,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -883,22 +897,81 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_current_frames")
     @GenerateNodeFactory
     abstract static class CurrentFrames extends PythonBuiltinNode {
+        private static final long CURRENT_FRAMES_TIMEOUT_MILLIS = 20;
+
         @Specialization
         Object currentFrames(VirtualFrame frame,
                         @Bind Node inliningTarget,
                         @Cached AuditNode auditNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached ReadFrameNode readFrameNode,
-                        @Cached HashingStorageSetItem setHashingStorageItem,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached ObjectHashMap.PutNode putNode,
+                        @Bind PythonContext context,
                         @Bind PythonLanguage language) {
             auditNode.audit(inliningTarget, "sys._current_frames");
-            if (!getLanguage().singleThreadedAssumption.isValid()) {
-                warnNode.warn(frame, RuntimeWarning, ErrorMessages.WARN_CURRENT_FRAMES_MULTITHREADED);
-            }
             PFrame currentFrame = readFrameNode.getCurrentPythonFrame(frame);
-            PDict result = PFactory.createDict(language);
-            result.setDictStorage(setHashingStorageItem.execute(frame, inliningTarget, result.getDictStorage(), PThread.getThreadId(Thread.currentThread()), currentFrame));
-            return result;
+            EconomicMapStorage framesMap = collectCurrentFrames(inliningTarget, context, currentFrame);
+            return PFactory.createDict(language, framesMap);
+        }
+
+        @TruffleBoundary
+        @SuppressWarnings("try")
+        private static EconomicMapStorage collectCurrentFrames(Node inliningTarget, PythonContext context, PFrame currentFrame) {
+            Thread currentThread = Thread.currentThread();
+            Thread[] threads = context.getThreads();
+            ArrayList<Thread> targetThreads = new ArrayList<>(threads.length);
+            ConcurrentHashMap<Thread, Object> frames = new ConcurrentHashMap<>();
+            frames.put(currentThread, escapedFrameOrPlaceholder(currentFrame));
+            for (Thread thread : threads) {
+                if (thread != currentThread && thread.isAlive()) {
+                    targetThreads.add(thread);
+                }
+            }
+            if (!targetThreads.isEmpty()) {
+                Thread[] threadArray = targetThreads.toArray(new Thread[0]);
+                Future<Void> future = context.getEnv().submitThreadLocal(threadArray, new ThreadLocalAction(true, false) {
+                    @Override
+                    protected void perform(Access access) {
+                        PFrame pyFrame = ReadFrameNode.readFrameInThreadLocal(access, null, FrameAccess.READ_ONLY, AllPythonFramesSelector.INSTANCE, 0, CallerFlags.NEEDS_PFRAME,
+                                        MaterializeFrameNode.getUncached());
+                        frames.put(access.getThread(), escapedFrameOrPlaceholder(pyFrame));
+                    }
+                });
+                boolean[] timedOut = new boolean[1];
+                try (var gil = GilNode.uncachedRelease()) {
+                    TruffleSafepoint.setBlockedThreadInterruptible(inliningTarget, voidFuture -> {
+                        try {
+                            voidFuture.get(CURRENT_FRAMES_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+                        } catch (TimeoutException e) {
+                            timedOut[0] = true;
+                        } catch (CancellationException e) {
+                            // Ignore cancellation; unanswered threads will get assigned NONE
+                        } catch (ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }, future);
+                }
+                if (timedOut[0]) {
+                    future.cancel(false);
+                }
+            }
+
+            EconomicMapStorage storage = EconomicMapStorage.create(targetThreads.size());
+            for (Thread thread : targetThreads) {
+                long key = PThread.getThreadId(thread);
+                long hash = PyObjectHashNode.hash(key);
+                ObjectHashMap.PutNode.putUncached(storage, key, hash, frames.getOrDefault(thread, PNone.NONE));
+            }
+            return storage;
+        }
+
+        private static Object escapedFrameOrPlaceholder(PFrame frame) {
+            if (frame != null) {
+                frame.getRef().markAsEscaped();
+                return frame;
+            }
+            return PNone.NONE;
         }
     }
 

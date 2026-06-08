@@ -1244,8 +1244,6 @@ public abstract class ErrorMessages {
     public static final TruffleString WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S = tsLiteral("Ignoring unimportable $PYTHONBREAKPOINT: \"%s\"");
     public static final TruffleString WARN_DEPRECTATED_SYS_CHECKINTERVAL = tsLiteral("sys.getcheckinterval() and sys.setcheckinterval() " +
                     "are deprecated.  Use sys.getswitchinterval() instead.");
-    public static final TruffleString WARN_CURRENT_FRAMES_MULTITHREADED = tsLiteral(
-                    "GraalPy doesn't support obtaining frames of other threads. That means python debuggers can only see the currently stopped thread");
     public static final TruffleString WARN_ENCODING_ARGUMENT_NOT_SPECIFIED = tsLiteral("'encoding' argument not specified");
     public static final TruffleString WARN_DELEGATION_OF_INT_TO_TRUNC_IS_DEPRECATED = tsLiteral("The delegation of int() to __trunc__ is deprecated.");
 

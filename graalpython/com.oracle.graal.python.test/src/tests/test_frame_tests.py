@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -222,30 +222,20 @@ def test_locals_freevar_in_class():
         assert 'c' in locals()
         assert 'x' not in locals()
 
-# GR-22089
-# def test_backref_from_traceback():
-#     def bar():
-#         raise RuntimeError
-#
-#     def foo():
-#         bar()
-#
-#     try:
-#         foo()
-#     except Exception as e:
-#         assert e.__traceback__.tb_frame.f_back.f_code == sys._getframe(0).f_back.f_code
-#         assert e.__traceback__.tb_next.tb_next.tb_frame.f_back.f_code == foo.__code__
-#         assert e.__traceback__.tb_next.tb_frame.f_back.f_code == test_backref_from_traceback.__code__
 
+def test_backref_from_traceback():
+    def bar():
+        raise RuntimeError
 
-def test_clearing_globals():
-    global foo, junk
-    foo = 123
-    assert "foo" in globals().keys()
-    assert "junk" not in globals().keys()
-    junk = globals().clear()
-    assert "foo" not in globals().keys()
-    assert "junk" in globals().keys()
+    def foo():
+        bar()
+
+    try:
+        foo()
+    except Exception as e:
+        assert e.__traceback__.tb_frame.f_back.f_code == sys._getframe(0).f_back.f_code
+        assert e.__traceback__.tb_next.tb_next.tb_frame.f_back.f_code == foo.__code__
+        assert e.__traceback__.tb_next.tb_frame.f_back.f_code == test_backref_from_traceback.__code__
 
 
 def test_frame_from_another_thread():
@@ -278,3 +268,86 @@ def test_frame_from_another_thread():
     assert frame.f_locals['b'] == 2
     event4.set()
     thread.join(timeout=60)
+
+
+OTHER_RUNNING_INNER = 'running_inner'
+OTHER_RUNNING_OUTER = 'running_outer'
+OTHER_TERMINATED = 'terminated'
+
+
+def current_frames_includes_other_thread(test_case):
+    import sys, threading
+
+    ready = threading.Event()
+    outer_ready = threading.Event()
+    release_inner = threading.Event()
+    release_outer = threading.Event()
+    worker_ident = None
+
+    def target():
+        nonlocal worker_ident
+        worker_ident = threading.get_ident()
+        def target_inner():
+            my_local_var = 60
+            ready.set()
+            release_inner.wait(timeout=my_local_var)
+        target_local_var = 13
+        target_inner()
+        outer_ready.set()
+        release_outer.wait(60)
+        return target_local_var
+
+    thread = threading.Thread(target=target)
+    thread.start()
+    try:
+        assert ready.wait(timeout=60)
+        frames = sys._current_frames()
+        if test_case == OTHER_TERMINATED:
+            release_inner.set()
+            release_outer.set()
+            thread.join(timeout=60)
+        elif test_case == OTHER_RUNNING_OUTER:
+            release_inner.set()
+            assert outer_ready.wait(timeout=60)
+        assert worker_ident in frames
+
+        frame = frames[worker_ident]
+        while frame is not None and frame.f_code.co_name != "target_inner":
+            frame = frame.f_back
+
+        assert frame is not None
+        assert frame.f_code.co_name == "target_inner", frame.f_code.co_name
+        assert "target_inner" in repr(frame)
+        assert "my_local_var" in frame.f_locals
+
+        frame = frame.f_back
+        assert frame is not None
+        assert "target_inner" not in repr(frame)
+        assert "target" in repr(frame)
+        assert frame.f_code.co_name == "target"
+        assert "target_local_var" in frame.f_locals
+    finally:
+        release_inner.set()
+        release_outer.set()
+        thread.join(timeout=60)
+
+
+def test_current_frames_includes_other_thread_terminated():
+    current_frames_includes_other_thread(OTHER_TERMINATED)
+
+def test_current_frames_includes_other_thread_in_inner():
+    current_frames_includes_other_thread(OTHER_RUNNING_INNER)
+
+def test_current_frames_includes_other_thread_in_outer():
+    current_frames_includes_other_thread(OTHER_RUNNING_OUTER)
+
+
+# this must be the last test!
+def test_clearing_globals():
+    global foo, junk
+    foo = 123
+    assert "foo" in globals().keys()
+    assert "junk" not in globals().keys()
+    junk = globals().clear()
+    assert "foo" not in globals().keys()
+    assert "junk" in globals().keys()
