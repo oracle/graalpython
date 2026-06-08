@@ -233,6 +233,7 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode.AllPythonFramesSelector;
@@ -244,6 +245,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.CallerFlags;
@@ -1123,7 +1125,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // TODO implement support for audit events
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
@@ -1143,11 +1144,29 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void doAudit(@SuppressWarnings("unused") TruffleString event, @SuppressWarnings("unused") Object[] arguments) {
+        static void doAudit(String event, Object[] arguments,
+                        @Bind PythonContext context,
+                        @Bind PythonLanguage language,
+                        @Shared("auditCall") @Cached CallNode callNode) {
+            dispatchAudit(toTruffleStringUncached(event), arguments, context, language, callNode);
         }
 
         @Specialization
-        void doAudit(@SuppressWarnings("unused") String event, @SuppressWarnings("unused") Object[] arguments) {
+        static void doAudit(TruffleString event, Object[] arguments,
+                        @Bind PythonContext context,
+                        @Bind PythonLanguage language,
+                        @Shared("auditCall") @Cached CallNode callNode) {
+            dispatchAudit(event, arguments, context, language, callNode);
+        }
+
+        private static void dispatchAudit(Object event, Object[] arguments, PythonContext context, PythonLanguage language, CallNode callNode) {
+            Object[] hooks = context.getAuditHooks();
+            if (hooks.length > 0) {
+                PTuple argsTuple = PFactory.createTuple(language, arguments);
+                for (Object hook : hooks) {
+                    callNode.executeWithoutFrame(hook, event, argsTuple);
+                }
+            }
         }
     }
 
@@ -1157,9 +1176,18 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SysAuditNode extends PythonBuiltinNode {
         @Specialization
-        @SuppressWarnings("unused")
-        Object doAudit(VirtualFrame frame, Object event, Object[] args) {
-            // TODO: Stub audit hooks implementation for PEP 578
+        static Object doAudit(Object event, Object[] args,
+                        @Bind Node inliningTarget,
+                        @Cached CastToTruffleStringNode castEventNode,
+                        @Cached AuditNode auditNode,
+                        @Cached PRaiseNode raiseNode) {
+            final TruffleString eventString;
+            try {
+                eventString = castEventNode.execute(inliningTarget, event);
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ARG_1_MUST_BE_STR_NOT_P, "audit", event);
+            }
+            auditNode.audit(inliningTarget, eventString, args);
             return PNone.NONE;
         }
     }
@@ -1171,9 +1199,21 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SysAuditHookNode extends PythonBuiltinNode {
         @Specialization
-        @SuppressWarnings("unused")
-        Object doAudit(VirtualFrame frame, Object hook) {
-            // TODO: Stub audit hooks implementation for PEP 578
+        static Object doAudit(Object hook,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached AuditNode auditNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            try {
+                auditNode.audit(inliningTarget, "sys.addaudithook");
+            } catch (PException pe) {
+                if (!isSubtypeNode.execute(getClassNode.execute(inliningTarget, pe.getUnreifiedException()), PythonBuiltinClassType.Exception)) {
+                    throw pe;
+                }
+                return PNone.NONE;
+            }
+            context.addAuditHook(hook);
             return PNone.NONE;
         }
     }
