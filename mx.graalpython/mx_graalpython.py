@@ -823,7 +823,9 @@ def get_path_with_patchelf(graalpy=None):
         venv = Path(SUITE.get_output_root()).absolute() / "delvewheel-venv"
         path += os.pathsep + str(venv / "Scripts")
         if not shutil.which("delvewheel", path=path):
-            if sys.version_info < (3, 12) and graalpy:
+            if sys.version_info < (3, 12):
+                if graalpy is None:
+                    graalpy = graalpy_standalone_jvm()
                 venv_python = [graalpy, "-X", "jit=0"]
             else:
                 venv_python = [sys.executable]
