@@ -52,6 +52,11 @@ import java.lang.ref.Reference;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -155,7 +160,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
             Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 // it's not important for this to be fast at all
-                dump(language, context, fileno, fileObj, allThreads);
+                dump(inliningTarget, language, context, fileno, fileObj, allThreads);
             } finally {
                 BoundaryCallContext.exit(frame, language, context, state);
             }
@@ -164,19 +169,43 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        static void dump(PythonLanguage language, PythonContext context, int fd, Object fileObj, boolean allThreads) {
+        static void dump(Node inliningTarget, PythonLanguage language, PythonContext context, int fd, Object fileObj, boolean allThreads) {
             if (allThreads) {
-                context.getEnv().submitThreadLocal(context.getThreads(), new ThreadLocalAction(true, false) {
+                Future<Void> future = context.getEnv().submitThreadLocal(context.getThreads(), new ThreadLocalAction(true, false) {
                     @Override
                     protected void perform(ThreadLocalAction.Access access) {
                         dumpTraceback(language, newRawFdPrintWriter(fd));
                     }
                 });
+                waitForDumpTraceback(inliningTarget, future);
             } else {
                 dumpTraceback(language, newRawFdPrintWriter(fd));
             }
             // Keep the file object alive to make sure the fd doesn't get closed
             Reference.reachabilityFence(fileObj);
+        }
+
+        private static void waitForDumpTraceback(Node inliningTarget, Future<Void> future) {
+            GilNode gil = GilNode.getUncached();
+            boolean gilReleased = gil.tryRelease();
+            try {
+                TruffleSafepoint.setBlockedThreadInterruptible(inliningTarget, voidFuture -> {
+                    try {
+                        voidFuture.get(10, TimeUnit.SECONDS);
+                    } catch (TimeoutException e) {
+                        throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.RuntimeError,
+                                        tsLiteral("Failed to dump traceback from all threads within 10 seconds"));
+                    } catch (CancellationException e) {
+                        // Ignore
+                    } catch (ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, future);
+            } finally {
+                if (gilReleased) {
+                    gil.acquire(PythonContext.get(null), inliningTarget);
+                }
+            }
         }
 
         @Override
@@ -325,7 +354,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
                     timeoutWriter.printf("Timeout (%d:%02d:%02d)!%n", timeoutS / 3600, timeoutS / 60, timeoutS);
                     timeoutWriter.flush();
                     try {
-                        DumpTracebackNode.dump(context.getLanguage(), context, fd, fileObj, true);
+                        DumpTracebackNode.dump(inliningTarget, context.getLanguage(), context, fd, fileObj, true);
                         if (exit) {
                             // Sleep for a bit to give time for the safepoint-based
                             // printing to execute before we exit
