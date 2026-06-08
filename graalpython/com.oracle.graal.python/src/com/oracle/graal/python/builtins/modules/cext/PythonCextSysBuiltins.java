@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -132,6 +133,17 @@ public final class PythonCextSysBuiltins {
     public static int GraalPyPrivate_Sys_PyFileWriteUnicode(int fd, long unicodePtr) {
         Object msg = NativeToPythonInternalNode.executeUncached(unicodePtr, false);
         PyObjectCallMethodObjArgs.executeUncached(selectOut(fd), T_WRITE, msg);
+        return 0;
+    }
+
+    @CApiBuiltin(ret = Int, args = {ConstCharPtr, PyObject}, call = Ignored)
+    @TruffleBoundary
+    public static int GraalPyPrivate_Sys_Audit(long eventPtr, long argsPtr) {
+        TruffleString event = FromCharPointerNode.executeUncached(eventPtr);
+        Object args = NativeToPythonInternalNode.executeUncached(argsPtr, false);
+        for (Object hook : PythonContext.get(null).getAuditHooks()) {
+            CallNode.executeUncached(hook, event, args);
+        }
         return 0;
     }
 }
