@@ -241,6 +241,8 @@
     local LOGS = [
         "dumps/*/*",
         "graal_dumps/*/*",
+        "graal_dumps/*/*/*",
+        "graal_dumps/*/*/*/*",
         "bench-results.json",
         "raw-results.json",
         "mxbuild/*/libpythonvm/libpythonvm.so.debug",
