@@ -7,7 +7,7 @@ on:
       - '.github/workflows/build-website.yml'
   push:
     branches:
-      - master
+      - 'release/graal-vm/**'
     paths:
       - 'docs/site/**'
       - '.github/workflows/build-website.yml'
@@ -50,9 +50,8 @@ jobs:
           path: docs/site/_site
 
   deploy:
-    # The website should only be deployed from a release branch:
-    # if: startsWith(github.head_ref, 'release/graal-vm/')
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # Deploy only explicitly from the Actions tab.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     needs: build
     environment:
