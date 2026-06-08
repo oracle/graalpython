@@ -104,3 +104,7 @@ compile_commands.json
 opencode.json
 pyrightconfig.json
 bench-results.json
+/.mx/
+/.mxcache/
+/.mxenv
+/.mx-bootstrap-cache/

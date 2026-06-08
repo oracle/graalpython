@@ -66,7 +66,7 @@ SOFTWARE.
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.compiler-plugin.version>3.14.1</maven.compiler-plugin.version>
     <maven.enforcer-plugin.version>3.6.1</maven.enforcer-plugin.version>
-    <graalvm.version>25.2.0</graalvm.version>
+    <graalvm.version>25.0.0</graalvm.version>
   </properties>
 
   <dependencyManagement>
