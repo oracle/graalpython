@@ -49,13 +49,30 @@ import time
 import unittest
 from pathlib import Path
 
-SYNC_PREAMBLE = '''
+SYNC_HOST = "127.0.0.1"
+SYNC_TIMEOUT = 180.0
+
+SYNC_PREAMBLE = f'''
 import sys
 import socket
 
-with socket.create_connection(('localhost', int(sys.argv[1]))) as sock:
+with socket.create_connection(({SYNC_HOST!r}, int(sys.argv[1])), timeout={SYNC_TIMEOUT!r}) as sock:
     sock.recv(1)
 '''
+
+
+def _terminate_and_collect(proc):
+    if proc.poll() is not None:
+        return proc.communicate()[0]
+    try:
+        proc.terminate()
+    except ProcessLookupError:
+        return proc.communicate()[0]
+    try:
+        return proc.communicate(timeout=10)[0]
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        return proc.communicate()[0]
 
 
 @contextlib.contextmanager
@@ -73,7 +90,7 @@ def pyc_reparse(test_content, expect_success=True, python_options=()):
         compileall.compile_file(example_module_path, force=True, quiet=True)
         pyc_files = list((tempdir_path / '__pycache__').glob('*.pyc'))
         assert len(pyc_files) == 1, "Didn't find a .pyc file"
-        with socket.create_server(('0.0.0.0', 0)) as server:
+        with socket.create_server((SYNC_HOST, 0)) as server:
             port = server.getsockname()[1]
             env = os.environ.copy()
             env['PYTHONPATH'] = str(tempdir_path)
@@ -84,20 +101,27 @@ def pyc_reparse(test_content, expect_success=True, python_options=()):
                 stderr=subprocess.STDOUT,
                 text=True,
             )
-            server.settimeout(3.0)
-            retries = 20
-            while retries:
+            deadline = time.monotonic() + SYNC_TIMEOUT
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    out = _terminate_and_collect(proc)
+                    assert False, f"Timed out waiting for connection after {SYNC_TIMEOUT:.0f}s\n{out}"
+                server.settimeout(min(3.0, remaining))
                 try:
                     with server.accept()[0] as sock:
-                        yield example_module_path, pyc_files[0]
-                        sock.sendall(b"x")
+                        try:
+                            yield example_module_path, pyc_files[0]
+                        finally:
+                            sock.sendall(b"x")
                     break
                 except socket.timeout:
                     assert proc.poll() is None, proc.communicate()[0]
-                    retries -= 1
-            else:
-                assert False, "Timed out wating for connection"
-            out = proc.communicate()[0]
+            try:
+                out = proc.communicate(timeout=SYNC_TIMEOUT)[0]
+            except subprocess.TimeoutExpired:
+                out = _terminate_and_collect(proc)
+                assert False, f"Timed out waiting for child process after {SYNC_TIMEOUT:.0f}s\n{out}"
             if expect_success:
                 assert proc.wait() == 0, out
             else:
