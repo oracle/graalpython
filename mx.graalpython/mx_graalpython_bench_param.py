@@ -122,7 +122,7 @@ MICRO_BENCHMARKS = {
     'virtualize-in-try-catch-oom': ITER_10,
     'phase_shift_warmup_baseline': ITER_5 + ['--self-measurement'] + ['500'],
     'phase_shift_warmup': ITER_3 + ['--self-measurement'] + ['1600', '500'],
-    'jsonrpc-pipe': ITER_10 + ['500', 'text', 'text', 'mask', '64'],
+    'jsonrpc-pipe': ITER_15 + ['500', 'text', 'text', 'mask', '64'],
     'startup': ITER_5 + ['50'],
     'startup-imports': ITER_5 + ['20'],
 }
@@ -278,12 +278,12 @@ MESO_BENCHMARKS = {
     'image-magix-sized2': ITER_10 + ['30000'],
     'parrot-b2': ITER_10 + ['200'],
     'threadring': ITER_25 + ['100_000_000'],
-    'regexdna-sized2': ITER_25 + ['4'],
+    'regexdna-sized2': ITER_50 + ['4'],
     'knucleotide': ITER_25 + [],
     'chaos-sized2': ITER_10 + ['500'],
     'chaos-traced': ITER_5 + ['500'],
     'go-sized2': ITER_15 + ['50'],
-    'raytrace-simple': ITER_10 + [],
+    'raytrace-simple': ITER_20 + [],
     'lud-sized2': ITER_10 + ['1536'],
     'mm-sized2': ITER_15 + ['350'],
     # Rodinia
