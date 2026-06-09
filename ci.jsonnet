@@ -134,18 +134,6 @@
         tags :: name,
     }),
 
-    // Manual interpreter variants (DSL disabled)
-    local manual_interpreter_env = task_spec({
-        environment +: {
-            BYTECODE_DSL_INTERPRETER: "false"
-        },
-    }),
-    local manual_interpreter_gate(name) = manual_interpreter_env + task_spec({
-        tags :: name,
-    }),
-    local manual_interpreter_bench = manual_interpreter_env + task_spec({
-        name_suffix +:: ["manual-interpreter"],
-    }),
     local with_compiler = task_spec({
         dynamic_imports +:: ["/compiler"],
     }),
@@ -177,11 +165,6 @@
         }),
         "python-unittest-native-debug-build": gpgate + platform_spec(no_jobs) + native_debug_build_gate("python-unittest") + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
-        }),
-        "python-unittest-manual-interpreter": gpgate + platform_spec(no_jobs) + manual_interpreter_gate("python-unittest") + platform_spec({
-            "linux:amd64:jdk-latest"     : daily     + t("01:00:00"),
-            "linux:aarch64:jdk-latest"   : daily     + t("01:00:00"),
-            "darwin:aarch64:jdk-latest"  : daily     + t("01:00:00"),
         }),
         "python-unittest-multi-context": gpgate + require(GPY_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
@@ -217,9 +200,6 @@
             "linux:aarch64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST) + with_compiler,
             "darwin:aarch64:jdk-latest"  : tier3                      + require(GRAAL_JDK_LATEST) + with_compiler,
             "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST) + with_compiler,
-        }),
-        "python-junit-manual-interpreter": gpgate + platform_spec(no_jobs) + manual_interpreter_gate("python-junit") + platform_spec({
-            "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST) + with_compiler,
         }),
         "python-junit-maven": gpgate_maven + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("00:30:00"),
@@ -258,9 +238,6 @@
             "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_NATIVE_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_NATIVE_STANDALONE),
             "windows:amd64:jdk-latest"   : tier3                     + require(GPY_NATIVE_STANDALONE) + batches(2),
-        }),
-        "python-svm-unittest-manual-interpreter": gpgate + platform_spec(no_jobs) + manual_interpreter_gate("python-svm-unittest") + platform_spec({
-            "linux:amd64:jdk-latest"     : tier2,
         }),
         "python-tagged-unittest": gpgate + require(GPY_NATIVE_STANDALONE) + batches(TAGGED_UNITTESTS_SPLIT) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2,
