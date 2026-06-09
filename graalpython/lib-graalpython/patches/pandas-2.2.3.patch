@@ -1,5 +1,5 @@
 diff --git a/pandas/_libs/include/pandas/vendored/klib/khash_python.h b/pandas/_libs/include/pandas/vendored/klib/khash_python.h
-index 5a933b4..f579fc6 100644
+index edfbce4..118a34b 100644
 --- a/pandas/_libs/include/pandas/vendored/klib/khash_python.h
 +++ b/pandas/_libs/include/pandas/vendored/klib/khash_python.h
 @@ -173,13 +173,15 @@ static inline int floatobject_cmp(PyFloatObject *a, PyFloatObject *b) {
@@ -37,8 +37,45 @@ index 5a933b4..f579fc6 100644
    if (realhash == (Py_uhash_t)-1 || imaghash == (Py_uhash_t)-1) {
      return -1;
    }
+diff --git a/pandas/_libs/tslibs/dtypes.pyx b/pandas/_libs/tslibs/dtypes.pyx
+index 52e1133..8a4c553 100644
+--- a/pandas/_libs/tslibs/dtypes.pyx
++++ b/pandas/_libs/tslibs/dtypes.pyx
+@@ -169,7 +169,7 @@ cdef dict attrname_to_abbrevs = {
+     "microsecond": "us",
+     "nanosecond": "ns",
+ }
+-cdef dict _abbrev_to_attrnames = {v: k for k, v in attrname_to_abbrevs.items()}
++cdef dict _abbrev_to_attrnames = {v: k for k, v in list(attrname_to_abbrevs.items())}
+ 
+ OFFSET_TO_PERIOD_FREQSTR: dict = {
+     "WEEKDAY": "D",
+@@ -331,7 +331,7 @@ cdef dict c_OFFSET_DEPR_FREQSTR = {
+ }
+ cdef dict c_OFFSET_TO_PERIOD_FREQSTR = OFFSET_TO_PERIOD_FREQSTR
+ cdef dict c_REVERSE_OFFSET_DEPR_FREQSTR = {
+-    v: k for k, v in c_OFFSET_DEPR_FREQSTR.items()
++    v: k for k, v in list(c_OFFSET_DEPR_FREQSTR.items())
+ }
+ 
+ cpdef freq_to_period_freqstr(freq_n, freq_name):
+@@ -702,7 +702,7 @@ cdef dict _reso_str_map = {
+     Resolution.RESO_YR.value: "year",
+ }
+ 
+-cdef dict _str_reso_map = {v: k for k, v in _reso_str_map.items()}
++cdef dict _str_reso_map = {v: k for k, v in list(_reso_str_map.items())}
+ 
+ cdef dict npy_unit_to_attrname = {
+     NPY_DATETIMEUNIT.NPY_FR_Y: "year",
+@@ -715,4 +715,4 @@ cdef dict npy_unit_to_attrname = {
+     NPY_DATETIMEUNIT.NPY_FR_us: "microsecond",
+     NPY_DATETIMEUNIT.NPY_FR_ns: "nanosecond",
+ }
+-cdef dict attrname_to_npy_unit = {v: k for k, v in npy_unit_to_attrname.items()}
++cdef dict attrname_to_npy_unit = {v: k for k, v in list(npy_unit_to_attrname.items())}
 diff --git a/pyproject.toml b/pyproject.toml
-index db9f055..c191232 100644
+index 238abd8..fac7c8b 100644
 --- a/pyproject.toml
 +++ b/pyproject.toml
 @@ -5,7 +5,7 @@ requires = [
