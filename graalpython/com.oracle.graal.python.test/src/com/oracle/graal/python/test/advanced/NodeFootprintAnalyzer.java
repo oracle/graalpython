@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,19 +71,19 @@ import org.netbeans.lib.profiler.heap.JavaClass;
 import org.netbeans.lib.profiler.heap.ObjectArrayInstance;
 import org.netbeans.lib.profiler.heap.PrimitiveArrayInstance;
 
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Standalone tool that can be run via {@code mx python-nodes-footprint heap_dump1 heap_dump2}.
- * 
+ *
  * It creates a mapping between root nodes instances in two heap dumps according to their source
  * sections. The tool provides comparison of retained sizes of root nodes with the same source
  * sections.
  *
  * It is recommended to run GraalPy with the following options when taking the heap dumps.
- * 
+ *
  * <pre>
  *     --engine.Splitting=false --engine.OSR=false --python.BuiltinsInliningMaxCallerSize=0 --python.ForceInitializeSourceSections=true
  * </pre>
@@ -356,7 +356,7 @@ public class NodeFootprintAnalyzer {
         Heap heap = HeapFactory.createHeap(new File(dumpFile));
         Iterator<Instance> instancesIt = heap.getAllInstancesIterator();
 
-        JavaClass bytecodeRootNodeClass = heap.getJavaClassByName(PBytecodeRootNode.class.getName());
+        JavaClass bytecodeRootNodeClass = heap.getJavaClassByName(PBytecodeDSLRootNode.class.getName());
         JavaClass builtinRootNodeClass = heap.getJavaClassByName(BuiltinFunctionRootNode.class.getName());
         Map<String, RootInfo> roots = Stream.concat(
                         StreamSupport.stream(Spliterators.spliteratorUnknownSize(instancesIt, Spliterator.ORDERED),

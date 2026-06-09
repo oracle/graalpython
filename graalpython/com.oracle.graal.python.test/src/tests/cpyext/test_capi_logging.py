@@ -107,9 +107,6 @@ def test_private_log_handles_long_formatted_messages():
         print("done")
     """)
     args = [sys.executable, "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
-    if not __graalpython__.is_native:
-        bytecode_dsl = str(__graalpython__.is_bytecode_dsl_interpreter).lower()
-        args.append(f"--vm.Dpython.EnableBytecodeDSLInterpreter={bytecode_dsl}")
 
     args += ["--log.python.capi.PythonCextBuiltins.level=INFO", "-c", script]
 

@@ -127,14 +127,7 @@ def ensure_packages(**package_specs):
         print(f'installing {package_specs} in {venv_dir}')
         system_python = install_venv(venv_dir)
         site_packages_dir = _venv_site_packages(venv_dir, py_executable)
-        extra_args = []
-        if system_python or sys.implementation.name != "graalpy":
-            pass
-        elif __graalpython__.is_bytecode_dsl_interpreter:
-            extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
-        else:
-            extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=false']
-        subprocess.run([py_executable, *extra_args, "-m", "pip", "install", *package_specs], check=True)
+        subprocess.run([py_executable, "-m", "pip", "install", *package_specs], check=True)
         print(f'{package_specs} installed in {venv_dir}')
 
     pyvenv_site = str(site_packages_dir)

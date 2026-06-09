@@ -60,7 +60,6 @@ if GRAALPY:
     ARGS = ['--experimental-options', f'--log.file={os.devnull}', '--python.EnableDebuggingBuiltins']
     if not __graalpython__.is_native:
         ARGS += [f'--vm.Djdk.graal.LogFile={os.devnull}']
-        ARGS += [f'--vm.Dpython.EnableBytecodeDSLInterpreter={str(__graalpython__.is_bytecode_dsl_interpreter).lower()}']
 COMMAND = [sys.executable, *ARGS, str(MODULE_PATH)]
 
 
@@ -190,8 +189,6 @@ def test_native_weakref_shutdown_skips_c_retained_object():
         '--experimental-options',
         '--python.EnableDebuggingBuiltins',
     ]
-    if not __graalpython__.is_native:
-        args += [f'--vm.Dpython.EnableBytecodeDSLInterpreter={str(__graalpython__.is_bytecode_dsl_interpreter).lower()}']
     code = textwrap.dedent("""
         import gc
         import weakref
