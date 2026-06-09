@@ -44,7 +44,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.integration.PythonTests;
@@ -67,7 +66,6 @@ public class ProfileTests {
     }
 
     @Test
-    @Ignore("GR-71916: TODO wrong stacktrace")
     public void profileException() {
         String source = "import sys\n" +
                         "def f(frame, event, arg): print(frame, event, arg)\n" +
