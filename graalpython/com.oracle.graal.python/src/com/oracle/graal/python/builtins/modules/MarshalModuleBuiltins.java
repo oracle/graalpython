@@ -100,9 +100,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.IsInternedStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -939,13 +937,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     }
                     writeBytes(lnotab);
                 } else if (v instanceof CodeUnit) {
-                    if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                        writeByte(TYPE_GRAALPYTHON_DSL_CODE_UNIT | flag);
-                        writeBytecodeDSLCodeUnit((BytecodeDSLCodeUnit) v);
-                    } else {
-                        writeByte(TYPE_GRAALPYTHON_CODE_UNIT | flag);
-                        writeBytecodeCodeUnit((BytecodeCodeUnit) v);
-                    }
+                    writeByte(TYPE_GRAALPYTHON_DSL_CODE_UNIT | flag);
+                    writeBytecodeDSLCodeUnit((BytecodeDSLCodeUnit) v);
                 } else if (v instanceof Source s) {
                     writeByte(TYPE_DSL_SOURCE | flag);
                     writeSource(s);
@@ -1161,7 +1154,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_GRAALPYTHON_CODE:
                     return addRef.run(readCode());
                 case TYPE_GRAALPYTHON_CODE_UNIT:
-                    return addRef.run(readBytecodeCodeUnit());
+                    return addRef.run(readRemovedCodeUnitPayload());
                 case TYPE_GRAALPYTHON_DSL_CODE_UNIT:
                     return addRef.run(readBytecodeDSLCodeUnit());
                 case TYPE_DSL_SOURCE:
@@ -1352,67 +1345,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private CodeUnit readCodeUnit() {
             int codeUnitType = readByte();
             return switch (codeUnitType) {
-                case TYPE_GRAALPYTHON_CODE_UNIT -> readBytecodeCodeUnit();
+                case TYPE_GRAALPYTHON_CODE_UNIT -> readRemovedCodeUnitPayload();
                 case TYPE_GRAALPYTHON_DSL_CODE_UNIT -> readBytecodeDSLCodeUnit();
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
         }
 
-        private BytecodeCodeUnit readBytecodeCodeUnit() {
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                throw new MarshalError(ValueError,
-                                PythonUtils.tsLiteral(
-                                                "Attempted to deserialize a code object from the manual bytecode interpreter, but the DSL interpreter is enabled. Consider clearing or setting a different pycache folder."));
-            }
-
-            int fileVersion = readByte();
-            if (fileVersion != Compiler.BYTECODE_VERSION) {
-                throw new MarshalError(ValueError, ErrorMessages.BYTECODE_VERSION_MISMATCH, Compiler.BYTECODE_VERSION, fileVersion);
-            }
-            TruffleString name = readString(true);
-            TruffleString qualname = readString(true);
-            int argCount = readInt();
-            int kwOnlyArgCount = readInt();
-            int positionalOnlyArgCount = readInt();
-            int stacksize = readInt();
-            byte[] code = readBytes();
-            byte[] srcOffsetTable = readBytes();
-            int flags = readInt();
-            TruffleString[] names = readStringArray(true);
-            TruffleString[] varnames = readStringArray(true);
-            TruffleString[] cellvars = readStringArray(true);
-            TruffleString[] freevars = readStringArray(true);
-            int[] cell2arg = readIntArray();
-            if (cell2arg.length == 0) {
-                cell2arg = null;
-            }
-            Object[] constants = readObjectArray();
-            long[] primitiveConstants = readLongArray();
-            int[] exceptionHandlerRanges = readIntArray();
-            int conditionProfileCount = readInt();
-            int startLine = readInt();
-            int startColumn = readInt();
-            int endLine = readInt();
-            int endColumn = readInt();
-            byte[] variableShouldUnbox = readBytes();
-            int[] generalizeInputsKeys = readIntArray();
-            int[] generalizeInputsIndices = readIntArray();
-            int[] generalizeInputsValues = readIntArray();
-            int[] generalizeVarsIndices = readIntArray();
-            int[] generalizeVarsValues = readIntArray();
-            return new BytecodeCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames,
-                            cellvars, freevars, cell2arg, constants, startLine, startColumn, endLine, endColumn, code, srcOffsetTable,
-                            primitiveConstants, exceptionHandlerRanges, stacksize, conditionProfileCount,
-                            variableShouldUnbox, generalizeInputsKeys, generalizeInputsIndices, generalizeInputsValues, generalizeVarsIndices, generalizeVarsValues);
+        private CodeUnit readRemovedCodeUnitPayload() {
+            throw new MarshalError(ValueError,
+                            PythonUtils.tsLiteral(
+                                            "Attempted to deserialize a code object from the removed legacy bytecode interpreter. Consider clearing or setting a different pycache folder."));
         }
 
         private BytecodeDSLCodeUnit readBytecodeDSLCodeUnit() {
-            if (!PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                throw new MarshalError(ValueError,
-                                PythonUtils.tsLiteral(
-                                                "Attempted to deserialize a code object from the Bytecode DSL interpreter, but the manual interpreter is enabled. Consider clearing or setting a different pycache folder."));
-            }
-
             int bytecodeSize = readSize();
             int bytecodeOffset = -1;
             if (in instanceof ByteBufferDataInput bufferIn) {
@@ -1450,49 +1395,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private void writeCodeUnit(CodeUnit code) throws IOException {
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                writeByte(TYPE_GRAALPYTHON_DSL_CODE_UNIT);
-                writeBytecodeDSLCodeUnit((BytecodeDSLCodeUnit) code);
-            } else {
-                writeByte(TYPE_GRAALPYTHON_CODE_UNIT);
-                writeBytecodeCodeUnit((BytecodeCodeUnit) code);
-            }
-        }
-
-        private void writeBytecodeCodeUnit(BytecodeCodeUnit code) throws IOException {
-            writeByte(Compiler.BYTECODE_VERSION);
-            writeString(code.name);
-            writeString(code.qualname);
-            writeInt(code.argCount);
-            writeInt(code.kwOnlyArgCount);
-            writeInt(code.positionalOnlyArgCount);
-            writeInt(code.stacksize);
-            writeBytes(code.code);
-            writeBytes(code.srcOffsetTable);
-            writeInt(code.flags);
-            writeStringArray(code.names);
-            writeStringArray(code.varnames);
-            writeStringArray(code.cellvars);
-            writeStringArray(code.freevars);
-            if (code.cell2arg != null) {
-                writeIntArray(code.cell2arg);
-            } else {
-                writeIntArray(PythonUtils.EMPTY_INT_ARRAY);
-            }
-            writeObjectArray(code.constants);
-            writeLongArray(code.primitiveConstants);
-            writeIntArray(code.exceptionHandlerRanges);
-            writeInt(code.conditionProfileCount);
-            writeInt(code.startLine);
-            writeInt(code.startColumn);
-            writeInt(code.endLine);
-            writeInt(code.endColumn);
-            writeBytes(code.variableShouldUnbox);
-            writeIntArray(code.generalizeInputsKeys);
-            writeIntArray(code.generalizeInputsIndices);
-            writeIntArray(code.generalizeInputsValues);
-            writeIntArray(code.generalizeVarsIndices);
-            writeIntArray(code.generalizeVarsValues);
+            writeByte(TYPE_GRAALPYTHON_DSL_CODE_UNIT);
+            writeBytecodeDSLCodeUnit((BytecodeDSLCodeUnit) code);
         }
 
         private void writeBytecodeDSLCodeUnit(BytecodeDSLCodeUnit code) throws IOException {

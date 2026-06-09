@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
@@ -84,39 +83,10 @@ public final class PythonOptions {
      */
     public static final boolean AUTOMATIC_ASYNC_ACTIONS = !"false".equalsIgnoreCase(System.getProperty("python.AutomaticAsyncActions"));
 
-    /**
-     * Whether to use the experimental Bytecode DSL interpreter instead of the manually-written
-     * bytecode interpreter.
-     */
-    public static final boolean ENABLE_BYTECODE_DSL_INTERPRETER;
     private static final OptionType<TruffleString> TS_OPTION_TYPE = new OptionType<>("graal.python.TruffleString", PythonUtils::toTruffleStringUncached);
-
-    static {
-        String prop = System.getProperty("python.EnableBytecodeDSLInterpreter");
-        if (prop != null) {
-            ENABLE_BYTECODE_DSL_INTERPRETER = prop.equalsIgnoreCase("true");
-        } else if (!ImageInfo.inImageCode()) {
-            // In JVM mode we also honor the env variable so that subprocesses spawned from tests in
-            // JVM mode run the same type of interpreter
-            String env = System.getenv("BYTECODE_DSL_INTERPRETER");
-            if (env != null) {
-                ENABLE_BYTECODE_DSL_INTERPRETER = env.equalsIgnoreCase("true");
-            } else {
-                ENABLE_BYTECODE_DSL_INTERPRETER = true;
-            }
-        } else {
-            ENABLE_BYTECODE_DSL_INTERPRETER = true;
-        }
-    }
 
     private PythonOptions() {
         // no instances
-    }
-
-    public static void checkBytecodeDSLEnv() {
-        if (ENABLE_BYTECODE_DSL_INTERPRETER && "false".equalsIgnoreCase(System.getenv("BYTECODE_DSL_INTERPRETER"))) {
-            System.err.println("WARNING: found environment variable BYTECODE_DSL_INTERPRETER=false, but the python.EnableBytecodeDSLInterpreter Java property was not set and defaults to true.");
-        }
     }
 
     @Option(category = OptionCategory.EXPERT, help = "Set the home of Python. Equivalent of GRAAL_PYTHONHOME env variable. " +

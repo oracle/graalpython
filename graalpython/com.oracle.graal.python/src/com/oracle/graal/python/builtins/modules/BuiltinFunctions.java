@@ -223,7 +223,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -1105,12 +1104,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget, TruffleString filename) {
             RootNode rootNode = rootCallTarget.getRootNode();
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
-                    bytecodeDSLRootNode.triggerDeferredDeprecationWarnings();
-                }
-            } else if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
-                bytecodeRootNode.triggerDeferredDeprecationWarnings();
+            if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+                bytecodeDSLRootNode.triggerDeferredDeprecationWarnings();
             }
             return PFactory.createCode(PythonLanguage.get(null), rootCallTarget, filename);
         }

@@ -57,10 +57,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.OpCodes;
-import com.oracle.graal.python.compiler.SourceMap;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -77,7 +74,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -391,28 +387,9 @@ public final class CodeBuiltins extends PythonBuiltins {
             PTuple tuple;
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
-                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
-                    List<PTuple> lines = computeLinesForBytecodeDSLInterpreter(rootNode);
-                    tuple = PFactory.createTuple(language, lines.toArray());
-                } else {
-                    BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;
-                    SourceMap map = bytecodeCo.getSourceMap();
-                    List<PTuple> lines = new ArrayList<>();
-                    if (map != null && map.startLineMap.length > 0) {
-                        IteratorData data = new IteratorData();
-                        data.line = map.startLineMap[0];
-                        bytecodeCo.iterateBytecode((int bci, OpCodes op, int oparg, byte[] followingArgs) -> {
-                            int nextStart = bci + op.length();
-                            if (map.startLineMap[bci] != data.line || nextStart == bytecodeCo.code.length) {
-                                lines.add(PFactory.createTuple(language, new int[]{data.start, nextStart, data.line}));
-                                data.line = map.startLineMap[bci];
-                                data.start = nextStart;
-                            }
-                        });
-                    }
-                    tuple = PFactory.createTuple(language, lines.toArray());
-                }
+                PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
+                List<PTuple> lines = computeLinesForBytecodeDSLInterpreter(rootNode);
+                tuple = PFactory.createTuple(language, lines.toArray());
             } else {
                 tuple = PFactory.createEmptyTuple(language);
             }
@@ -517,41 +494,29 @@ public final class CodeBuiltins extends PythonBuiltins {
             CodeUnit co = self.getCodeUnit();
             if (co != null) {
                 List<PTuple> lines = new ArrayList<>();
-                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
-                    BytecodeNode bytecodeNode = rootNode.getBytecodeNode();
-                    if (!bytecodeNode.hasSourceInformation()) {
-                        bytecodeNode = bytecodeNode.ensureSourceInformation();
+                PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
+                BytecodeNode bytecodeNode = rootNode.getBytecodeNode();
+                if (!bytecodeNode.hasSourceInformation()) {
+                    bytecodeNode = bytecodeNode.ensureSourceInformation();
+                }
+                for (Instruction instruction : bytecodeNode.getInstructions()) {
+                    if (instruction.isInstrumentation()) {
+                        // Skip instrumented instructions. The co_positions array should agree
+                        // with the logical instruction index.
+                        continue;
                     }
-                    for (Instruction instruction : bytecodeNode.getInstructions()) {
-                        if (instruction.isInstrumentation()) {
-                            // Skip instrumented instructions. The co_positions array should agree
-                            // with the logical instruction index.
-                            continue;
-                        }
-                        SourceSection section = rootNode.getSourceSectionForLocation(instruction.getLocation());
-                        if (section != null) {
-                            lines.add(PFactory.createTuple(language, new int[]{
-                                            section.getStartLine(),
-                                            section.getEndLine(),
-                                            // 1-based inclusive to 0-based inclusive
-                                            section.getStartColumn() - 1,
-                                            // 1-based inclusive to 0-based exclusive (-1 + 1 = 0)
-                                            section.getEndColumn()
-                            }));
-                        } else {
-                            lines.add(PFactory.createTuple(language, new Object[]{PNone.NONE, PNone.NONE, PNone.NONE, PNone.NONE}));
-                        }
-                    }
-                } else {
-                    BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;
-                    SourceMap map = bytecodeCo.getSourceMap();
-                    if (map != null && map.startLineMap.length > 0) {
-                        byte[] bytecode = bytecodeCo.code;
-                        for (int i = 0; i < bytecode.length;) {
-                            lines.add(PFactory.createTuple(language, new int[]{map.startLineMap[i], map.endLineMap[i], map.startColumnMap[i], map.endColumnMap[i]}));
-                            i += OpCodes.fromOpCode(bytecode[i]).length();
-                        }
+                    SourceSection section = rootNode.getSourceSectionForLocation(instruction.getLocation());
+                    if (section != null) {
+                        lines.add(PFactory.createTuple(language, new int[]{
+                                        section.getStartLine(),
+                                        section.getEndLine(),
+                                        // 1-based inclusive to 0-based inclusive
+                                        section.getStartColumn() - 1,
+                                        // 1-based inclusive to 0-based exclusive (-1 + 1 = 0)
+                                        section.getEndColumn()
+                        }));
+                    } else {
+                        lines.add(PFactory.createTuple(language, new Object[]{PNone.NONE, PNone.NONE, PNone.NONE, PNone.NONE}));
                     }
                 }
                 tuple = PFactory.createTuple(language, lines.toArray());

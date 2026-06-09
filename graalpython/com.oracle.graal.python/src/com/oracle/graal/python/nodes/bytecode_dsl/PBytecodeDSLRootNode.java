@@ -743,7 +743,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     private TracingNodes getTracingNodes(BytecodeNode location) {
         /*
-         * The TracingNodes node must be child of the BytecodeNode and not the PBytecodeRootNode, so
+         * The TracingNodes node must be child of the BytecodeNode and not the root node, so
          * in case BytecodeNode changed, we must reinsert it
          */
         if (tracingNodes == null || tracingNodes.getParent() != location) {

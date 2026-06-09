@@ -54,11 +54,9 @@ import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -104,8 +102,7 @@ public final class PException extends AbstractTruffleException {
     private transient Thread escapedFrameThread;
 
     /**
-     * Root node that caught this exception object. This node is a manual bytecode or Bytecode DSL
-     * root node.
+     * Root node that caught this exception object.
      */
     private transient PRootNode rootNode;
     /**
@@ -231,11 +228,7 @@ public final class PException extends AbstractTruffleException {
         if (tracebackFrameCount < 0 || rootNode == null) {
             return false;
         }
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            return !((PBytecodeDSLRootNode) rootNode).isInternal();
-        } else {
-            return ((PBytecodeRootNode) rootNode).frameIsVisibleToPython();
-        }
+        return !((PBytecodeDSLRootNode) rootNode).isInternal();
     }
 
     public int getCatchBci() {
@@ -250,11 +243,7 @@ public final class PException extends AbstractTruffleException {
         if (rootNode == null) {
             return -1;
         }
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            return ((PBytecodeDSLRootNode) rootNode).bciToLine(catchBci, bytecodeNode);
-        } else {
-            return ((PBytecodeRootNode) rootNode).bciToLine(catchBci);
-        }
+        return ((PBytecodeDSLRootNode) rootNode).bciToLine(catchBci, bytecodeNode);
     }
 
     /**
@@ -311,20 +300,7 @@ public final class PException extends AbstractTruffleException {
     }
 
     /**
-     * Set the catching frame reference for a manual bytecode node.
-     */
-    public void setCatchingFrameReference(Frame frame, PBytecodeRootNode catchLocation, int catchBci) {
-        this.frameInfo = PArguments.getCurrentFrameInfo(frame);
-        this.rootNode = catchLocation;
-        this.catchBci = catchBci;
-    }
-
-    /**
      * Sets the catching frame information for a Bytecode DSL node.
-     *
-     * NB: The manual bytecode interpreter sets all of the catching frame info in one step after it
-     * finds a handler for the bci. This is possible because it has control over the handler
-     * dispatch logic.
      *
      * The Bytecode DSL interpreter's generated code automatically dispatches to a handler. We can
      * set the frame info inside the handler code, but the bci of the raising instruction is lost at
@@ -350,7 +326,6 @@ public final class PException extends AbstractTruffleException {
      * found and that the catch location actually refers to a guarded instruction.
      */
     public void setCatchLocation(int catchBci, BytecodeNode bytecodeNode) {
-        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
         // Overwrite the catchBci as long as no handler has been found yet.
         if (!isCaught()) {
             this.catchBci = catchBci;
@@ -359,7 +334,6 @@ public final class PException extends AbstractTruffleException {
     }
 
     public void markAsCaught(Frame frame, PBytecodeDSLRootNode catchLocation) {
-        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
         if (!isCaught()) {
             this.frameInfo = PArguments.getCurrentFrameInfo(frame);
             this.rootNode = catchLocation;
@@ -367,7 +341,6 @@ public final class PException extends AbstractTruffleException {
     }
 
     private boolean isCaught() {
-        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
         return rootNode != null;
     }
 
@@ -403,9 +376,8 @@ public final class PException extends AbstractTruffleException {
     }
 
     /**
-     * If not done already, create the traceback for this exception state using the frame previously
-     * provided to {@link #setCatchingFrameReference(Frame, PBytecodeRootNode, int)} and sync it to
-     * the attached python exception.
+     * If not done already, create the traceback for this exception state and sync it to the
+     * attached python exception.
      */
     public void ensureReified() {
         if (!reified) {

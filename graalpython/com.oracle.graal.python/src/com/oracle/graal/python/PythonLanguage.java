@@ -77,14 +77,11 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.CompilationUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -572,13 +569,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public RootCallTarget callTargetFromBytecode(Source source, CodeUnit code, boolean isInternal) {
-        RootNode rootNode;
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(this, isInternal);
-        } else {
-            rootNode = PBytecodeRootNode.create(this, (BytecodeCodeUnit) code, source, isInternal);
-        }
-
+        RootNode rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(this, isInternal);
         return PythonUtils.getOrCreateCallTarget(rootNode);
     }
 
@@ -628,12 +619,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 mod = modIn;
             }
 
-            RootNode rootNode;
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                rootNode = compileForBytecodeDSLInterpreter(mod, source, optimize, errorCb, futureFeatures);
-            } else {
-                rootNode = compileForBytecodeInterpreter(mod, source, optimize, errorCb, futureFeatures);
-            }
+            RootNode rootNode = compileForBytecodeDSLInterpreter(mod, source, optimize, errorCb, futureFeatures);
 
             if (topLevel) {
                 GilNode gil = GilNode.getUncached();
@@ -657,13 +643,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             throw e;
         }
-    }
-
-    private RootNode compileForBytecodeInterpreter(ModTy mod, Source source, int optimize, ParserCallbacksImpl parserCallbacks, EnumSet<FutureFeature> futureFeatures) {
-        Compiler compiler = new Compiler(parserCallbacks);
-        CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
-        BytecodeCodeUnit co = cu.assemble();
-        return PBytecodeRootNode.create(this, co, source, source.isInternal(), parserCallbacks);
     }
 
     private RootNode compileForBytecodeDSLInterpreter(ModTy mod, Source source, int optimize,

@@ -66,14 +66,10 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
-import com.oracle.graal.python.nodes.bytecode.GeneratorReturnException;
-import com.oracle.graal.python.nodes.bytecode.GeneratorYieldResult;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
-import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -134,34 +130,11 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic({PGuards.class, PythonOptions.class, CallDispatchers.class})
+    @ImportStatic(PythonOptions.class)
     abstract static class ResumeGeneratorNode extends Node {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue);
 
-        @Specialization(guards = {"!isBytecodeDSLInterpreter()", "sameCallTarget(self.getCurrentCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        static Object cached(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
-                        @Cached(parameters = "self.getCurrentCallTarget()") DirectCallNode callNode,
-                        @Exclusive @Cached CallDispatchers.SimpleDirectInvokeNode invoke,
-                        @Exclusive @Cached InlinedBranchProfile returnProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            self.setRunning(true);
-            Object[] arguments = self.getCallArguments(sendValue);
-            GeneratorYieldResult result;
-            try {
-                result = (GeneratorYieldResult) invoke.execute(frame, inliningTarget, callNode, arguments);
-            } catch (PException e) {
-                throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
-            } catch (GeneratorReturnException e) {
-                returnProfile.enter(inliningTarget);
-                throw handleReturn(inliningTarget, self, e.value);
-            } finally {
-                self.setRunning(false);
-            }
-            return handleResult(inliningTarget, self, result);
-        }
-
-        @Specialization(guards = {"isBytecodeDSLInterpreter()", "self.getBytecodeDSLContinuationRootNode() == continuationRootNode"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "self.getBytecodeDSLContinuationRootNode() == continuationRootNode", limit = "getCallSiteInlineCacheMaxDepth()")
         static Object cachedBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
                         @Cached("self.getBytecodeDSLContinuationRootNode()") ContinuationRootNode continuationRootNode,
                         @Cached(parameters = "self.getCurrentCallTarget()") DirectCallNode callNode,
@@ -218,30 +191,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
         }
 
-        @Specialization(replaces = "cached", guards = "!isBytecodeDSLInterpreter()")
-        @Megamorphic
-        static Object generic(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
-                        @Exclusive @Cached CallDispatchers.SimpleIndirectInvokeNode invoke,
-                        @Exclusive @Cached InlinedBranchProfile returnProfile,
-                        @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
-            self.setRunning(true);
-            Object[] arguments = self.getCallArguments(sendValue);
-            GeneratorYieldResult result;
-            try {
-                result = (GeneratorYieldResult) invoke.execute(frame, inliningTarget, self.getCurrentCallTarget(), arguments);
-            } catch (PException e) {
-                throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
-            } catch (GeneratorReturnException e) {
-                returnProfile.enter(inliningTarget);
-                throw handleReturn(inliningTarget, self, e.value);
-            } finally {
-                self.setRunning(false);
-            }
-            return handleResult(inliningTarget, self, result);
-        }
-
-        @Specialization(replaces = "cachedBytecodeDSL", guards = "isBytecodeDSLInterpreter()")
+        @Specialization(replaces = "cachedBytecodeDSL")
         @Megamorphic
         static Object genericBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
                         @Exclusive @Cached ExecutionContext.CallContext callContext,
@@ -396,13 +346,8 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 // Instead, we throw the exception here and fake entering the generator by adding
                 // its frame to the traceback manually.
                 self.markAsFinished();
-                Node location;
                 RootNode rootNode = self.getCurrentCallTarget().getRootNode();
-                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    location = ((PBytecodeDSLRootNode) self.getRootNode()).getBytecodeNode();
-                } else {
-                    location = rootNode;
-                }
+                Node location = ((PBytecodeDSLRootNode) self.getRootNode()).getBytecodeNode();
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 PFrame.Reference ref = new PFrame.Reference(rootNode, PFrame.Reference.EMPTY);
                 PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(inliningTarget), location, generatorFrame, self.getGeneratorFunction(), self.getGlobals(), ref);

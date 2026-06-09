@@ -146,7 +146,6 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -236,7 +235,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         addBuiltinConstant("is_native", TruffleOptions.AOT);
-        addBuiltinConstant("is_bytecode_dsl_interpreter", PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER);
+        addBuiltinConstant("is_bytecode_dsl_interpreter", true);
         PythonContext ctx = core.getContext();
         PythonLanguage language = ctx.getLanguage();
         // Engine options: if they differ from the values baked into the pre-initialized context,
@@ -821,11 +820,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public synchronized PFunction convertToBuiltin(PFunction func) {
             RootNode rootNode = func.getCode().getRootNode();
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                if (rootNode instanceof PBytecodeDSLRootNode r) {
-                    r.setPythonInternal(true);
-                }
-            } else if (rootNode instanceof PBytecodeRootNode r) {
+            if (rootNode instanceof PBytecodeDSLRootNode r) {
                 r.setPythonInternal(true);
             }
             func.setBuiltin(true);
@@ -839,11 +834,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object doIt(PFunction func) {
             RootNode rootNode = func.getCode().getRootNode();
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                if (rootNode instanceof PBytecodeDSLRootNode r) {
-                    r.setPythonInternal(true);
-                }
-            } else if (rootNode instanceof PBytecodeRootNode r) {
+            if (rootNode instanceof PBytecodeDSLRootNode r) {
                 r.setPythonInternal(true);
             }
             return func;

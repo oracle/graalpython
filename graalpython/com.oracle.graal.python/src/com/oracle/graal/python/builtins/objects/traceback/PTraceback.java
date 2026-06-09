@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.nodes.Node;
@@ -117,11 +116,7 @@ public final class PTraceback extends PythonBuiltinObject {
     public int getLasti(PFrame pFrame) {
         if (lasti == -1 && bci >= 0) {
             Node location;
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                location = bytecodeNode;
-            } else {
-                location = pFrame.getLocation();
-            }
+            location = bytecodeNode;
             lasti = PFrame.bciToLasti(bci, location);
         }
         return lasti;

@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -49,14 +47,11 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -112,7 +107,7 @@ public abstract class MaterializeFrameNode extends Node {
      * is passed as argument to avoid its lookup. Can be used if this node is uncached.
      */
     public final PFrame executeOnStack(Frame frameToMaterialize, BytecodeNode location, boolean markAsEscaped, boolean forceSync) {
-        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        assert true;
         return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 
@@ -121,7 +116,7 @@ public abstract class MaterializeFrameNode extends Node {
      * argument to avoid its lookup. Can be used if this node is uncached.
      */
     public final PFrame executeOnStack(Frame frameToMaterialize, PRootNode location, boolean markAsEscaped, boolean forceSync) {
-        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(location instanceof PBytecodeDSLRootNode);
+        assert !(location instanceof PBytecodeDSLRootNode);
         return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 
@@ -133,20 +128,12 @@ public abstract class MaterializeFrameNode extends Node {
      */
     public final PFrame executeOnStack(boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
         Node location = this;
-        if (!PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            if (!location.isAdoptable()) {
-                // This should only happen in uncached manual bytecode interpreter, we are fine with
-                // root node in such case
-                location = PArguments.getCurrentFrameInfo(frameToMaterialize).getRootNode();
-            }
-        } else {
-            if (!this.isAdoptable()) {
-                // This can happen in the uncached interpreter, but there the UncachedBytecodeNode
-                // should set itself as encapsulating node before it starts executing its bytecode
-                location = EncapsulatingNodeReference.getCurrent().get();
-                assert location != null;
-                assert BytecodeNode.get(location) != null;
-            }
+        if (!this.isAdoptable()) {
+            // This can happen in the uncached interpreter, but there the UncachedBytecodeNode
+            // should set itself as encapsulating node before it starts executing its bytecode
+            location = EncapsulatingNodeReference.getCurrent().get();
+            assert location != null;
+            assert BytecodeNode.get(location) != null;
         }
         return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }
@@ -162,8 +149,8 @@ public abstract class MaterializeFrameNode extends Node {
      *            this must be some adopted node in the AST that is currently being executed.
      */
     public final PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
-        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || frameToMaterialize.getArguments().length != 2 : "caller forgot to unwrap continuation frame";
-        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(location instanceof PBytecodeDSLRootNode) : String.format("Materialized frame: location must not be PBytecodeDSLRootNode, was: %s",
+        assert frameToMaterialize.getArguments().length != 2 : "caller forgot to unwrap continuation frame";
+        assert !(location instanceof PBytecodeDSLRootNode) : String.format("Materialized frame: location must not be PBytecodeDSLRootNode, was: %s",
                         location);
         return executeImpl(location, markAsEscaped, forceSync, frameToMaterialize);
     }
@@ -217,13 +204,9 @@ public abstract class MaterializeFrameNode extends Node {
     public static PFrame materializeGeneratorFrame(PythonLanguage language, Node location, MaterializedFrame generatorFrame, PFunction generatorFunction, PythonObject globals,
                     PFrame.Reference frameRef) {
         PFrame escapedFrame = PFactory.createPFrame(language, frameRef, location, generatorFunction, false);
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            BytecodeNode bytecodeNode = BytecodeNode.get(location);
-            assert bytecodeNode != null : location;
-            escapedFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, generatorFrame));
-        } else {
-            escapedFrame.setLocals(generatorFrame);
-        }
+        BytecodeNode bytecodeNode = BytecodeNode.get(location);
+        assert bytecodeNode != null : location;
+        escapedFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, generatorFrame));
         escapedFrame.setGlobals(globals);
         frameRef.setPyFrame(escapedFrame);
         return escapedFrame;
@@ -235,27 +218,20 @@ public abstract class MaterializeFrameNode extends Node {
             pyFrame.setLocation(location);
             return;
         }
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            BytecodeNode bytecodeNode;
-            assert !(location instanceof PBytecodeDSLRootNode); // we need BytecodeNode or its child
-            CompilerAsserts.partialEvaluationConstant(location);
-            bytecodeNode = BytecodeNode.get(location);
-            if (bytecodeNode != null) {
-                pyFrame.setBci(bytecodeNode.getBytecodeIndex(frameToMaterialize));
-                pyFrame.setLocation(bytecodeNode);
-                pyFrame.resetLine();
-            } else {
-                assert location == PythonLanguage.get(null).unavailableSafepointLocation : String.format("(%s) %s, root: %s",
-                                location != null ? location.getClass().getSimpleName() : "null",
-                                location, location != null ? location.getRootNode() : "null");
-                pyFrame.setBci(-1);
-                pyFrame.setLocation(location);
-                pyFrame.resetLine();
-            }
+        BytecodeNode bytecodeNode;
+        assert !(location instanceof PBytecodeDSLRootNode); // we need BytecodeNode or its child
+        CompilerAsserts.partialEvaluationConstant(location);
+        bytecodeNode = BytecodeNode.get(location);
+        if (bytecodeNode != null) {
+            pyFrame.setBci(bytecodeNode.getBytecodeIndex(frameToMaterialize));
+            pyFrame.setLocation(bytecodeNode);
+            pyFrame.resetLine();
         } else {
-            BytecodeFrameInfo bytecodeFrameInfo = (BytecodeFrameInfo) info;
-            pyFrame.setBci(bytecodeFrameInfo.getBci(frameToMaterialize));
-            pyFrame.setLocation(bytecodeFrameInfo.getRootNode());
+            assert location == PythonLanguage.get(null).unavailableSafepointLocation : String.format("(%s) %s, root: %s",
+                            location != null ? location.getClass().getSimpleName() : "null",
+                            location, location != null ? location.getRootNode() : "null");
+            pyFrame.setBci(-1);
+            pyFrame.setLocation(location);
             pyFrame.resetLine();
         }
     }
@@ -309,24 +285,11 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached(inline = false) ValueProfile frameDescriptorProfile,
                         @Cached InlinedIntValueProfile slotCountProfile,
                         @Exclusive @Cached InlinedBranchProfile createLocalsProfile) {
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                BytecodeNode bytecodeNode = BytecodeNode.get(location);
-                if (bytecodeNode != null) {
-                    // TODO: avoid always making a copy, if a BytecodeFrame is set, just update it
-                    BytecodeFrame copiedFrame = bytecodeNode.createCopiedFrame(0, frameToSync);
-                    pyFrame.setBytecodeFrame(copiedFrame);
-                }
-            } else {
-                FrameDescriptor cachedFd = frameDescriptorProfile.profile(frameToSync.getFrameDescriptor());
-                MaterializedFrame target = pyFrame.getLocals();
-                if (pyFrame.getLocals() == null) {
-                    createLocalsProfile.enter(inliningTarget);
-                    target = Truffle.getRuntime().createMaterializedFrame(EMPTY_OBJECT_ARRAY, cachedFd);
-                    pyFrame.setLocals(target);
-                }
-                assert cachedFd == target.getFrameDescriptor();
-                int slotCount = slotCountProfile.profile(inliningTarget, variableSlotCount(cachedFd));
-                frameToSync.copyTo(0, target, 0, slotCount);
+            BytecodeNode bytecodeNode = BytecodeNode.get(location);
+            if (bytecodeNode != null) {
+                // TODO: avoid always making a copy, if a BytecodeFrame is set, just update it
+                BytecodeFrame copiedFrame = bytecodeNode.createCopiedFrame(0, frameToSync);
+                pyFrame.setBytecodeFrame(copiedFrame);
             }
         }
 
@@ -340,15 +303,11 @@ public abstract class MaterializeFrameNode extends Node {
         static void doGenerator(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached InlinedBranchProfile createLocalsProfile) {
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                BytecodeNode bytecodeNode = BytecodeNode.get(location);
-                assert bytecodeNode != null : location;
-                if (pyFrame.getBytecodeFrame() == null) {
-                    createLocalsProfile.enter(inliningTarget);
-                    pyFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frameToSync.materialize()));
-                }
-            } else {
-                pyFrame.setLocals(PGenerator.getGeneratorFrame(frameToSync));
+            BytecodeNode bytecodeNode = BytecodeNode.get(location);
+            assert bytecodeNode != null : location;
+            if (pyFrame.getBytecodeFrame() == null) {
+                createLocalsProfile.enter(inliningTarget);
+                pyFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frameToSync.materialize()));
             }
         }
 

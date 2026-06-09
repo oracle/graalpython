@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -87,7 +86,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -102,24 +100,12 @@ public final class TopLevelExceptionHandler extends RootNode {
 
     @Child private GilNode gilNode = GilNode.create();
 
-    /*
-     * Necessary to forward materializeInstrumentableNodes calls to the root node. Truffle assumes
-     * that all source sections of a source are created when the first call target is initialized.
-     * That may sometimes happen before the bytecode root's call target is initialized, so we need
-     * to have a node that will trigger the materialization of all nested functions that haven't
-     * been created yet at this point.
-     */
-    @Child private Node instrumentationForwarder;
-
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child, Source source) {
         super(language);
         this.sourceSection = child.getSourceSection();
         this.innerCallTarget = PythonUtils.getOrCreateCallTarget(child);
         this.exception = null;
         this.source = source;
-        if (child instanceof PBytecodeRootNode) {
-            instrumentationForwarder = ((PBytecodeRootNode) child).createInstrumentationMaterializationForwarder();
-        }
         this.newGlobals = source.getOptions(language).get(PythonSourceOptions.NewGlobals);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -157,7 +156,7 @@ public abstract class ExceptionStateNodes {
                     // @TruffleBoundary calls that may call back into Python code. Look at the Java
                     // stack trace and check if all @TruffleBoundary methods are preceded by
                     // BoundaryCallContext.enter/exit
-                    assert first || !(PGenerator.unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || callNode != null : rootNode;
+                    assert first || !(PGenerator.unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || callNode != null : rootNode;
                     first = false;
                     IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, CallerFlags.NEEDS_EXCEPTION_STATE);
                     PRootNode pRootNode = null;

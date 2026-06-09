@@ -57,8 +57,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -66,7 +64,6 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -114,11 +111,7 @@ public abstract class ReadFrameNode extends Node {
 
         @Override
         public boolean skip(RootNode rootNode) {
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                return PBytecodeDSLRootNode.cast(rootNode) == null;
-            } else {
-                return !(rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode);
-            }
+            return PBytecodeDSLRootNode.cast(rootNode) == null;
         }
     }
 
@@ -460,7 +453,7 @@ public abstract class ReadFrameNode extends Node {
                 // can be because of missing BoundaryCallContext.enter/exit around @TruffleBoundary
                 // calls that may call back into Python code. Look at the Java stack trace and check
                 // if all @TruffleBoundary methods are preceded by BoundaryCallContext.enter/exit
-                assert first || !(PGenerator.unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER ||
+                assert first || !(PGenerator.unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) ||
                                 callNode != null : String.format("root=%s, i=%d", rootNode, i);
                 first = false;
                 if (!(rootNode instanceof PRootNode pRootNode && pRootNode.setsUpCalleeContext())) {

@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,7 @@
 # Note2: we want to catch OutOfMemoryError and translate it to Python MemoryError,
 # so that we can attach a precise location to it if possible, but we accept that
 # under some circumstances the compiler may move the allocation out of the try-catch
-# and we will catch it elsewhere (probably the catch-all in PBytecodeRootNode) and
+# and we will catch it elsewhere (probably the bytecode root catch-all) and
 # attach imprecise location to it. Alternative is to force the allocation using
 # CompilerDirectives.ensureAllocatedHere, which would, however, prevent any virtualization,
 # which is deemed a price to high to pay for a precise location of MemoryError.

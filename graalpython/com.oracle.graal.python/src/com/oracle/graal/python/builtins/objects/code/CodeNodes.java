@@ -46,18 +46,14 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -176,28 +172,11 @@ public abstract class CodeNodes {
             CodeUnit codeUnit = MarshalModuleBuiltins.deserializeCodeUnit(null, language, data);
             RootNode rootNode;
 
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                BytecodeDSLCodeUnit code = (BytecodeDSLCodeUnit) codeUnit;
-                if (code.flags != flags) {
-                    code = code.withFlags(flags);
-                }
-                rootNode = code.createRootNode(language, false);
-            } else {
-                BytecodeCodeUnit code = (BytecodeCodeUnit) codeUnit;
-                if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars) || flags != code.flags) {
-                    code = new BytecodeCodeUnit(code.name, code.qualname, code.argCount, code.kwOnlyArgCount, code.positionalOnlyArgCount, flags, code.names,
-                                    code.varnames, cellvars != null ? cellvars : code.cellvars, freevars != null ? freevars : code.freevars, code.cell2arg,
-                                    code.constants, code.startLine,
-                                    code.startColumn, code.endLine, code.endColumn, code.code, code.srcOffsetTable,
-                                    code.primitiveConstants, code.exceptionHandlerRanges, code.stacksize, code.conditionProfileCount,
-                                    code.variableShouldUnbox,
-                                    code.generalizeInputsKeys, code.generalizeInputsIndices, code.generalizeInputsValues, code.generalizeVarsIndices, code.generalizeVarsValues);
-                }
-                rootNode = PBytecodeRootNode.create(language, code, PythonUtils.createFakeSource(), false);
-                if (code.isGeneratorOrCoroutine()) {
-                    rootNode = new PBytecodeGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
-                }
+            BytecodeDSLCodeUnit code = (BytecodeDSLCodeUnit) codeUnit;
+            if (code.flags != flags) {
+                code = code.withFlags(flags);
             }
+            rootNode = code.createRootNode(language, false);
             return (PRootNode) rootNode;
         }
 

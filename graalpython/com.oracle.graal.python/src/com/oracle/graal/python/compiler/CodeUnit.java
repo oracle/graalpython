@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -125,7 +125,21 @@ public abstract class CodeUnit {
     }
 
     public SourceSection getSourceSection(Source source) {
-        return SourceMap.getSourceSection(source, startLine, startColumn, endLine, endColumn);
+        if (!source.hasCharacters()) {
+            return source.createUnavailableSection();
+        }
+        try {
+            int truffleStartColumn = Math.max(startColumn + 1, 1);
+            int truffleEndColumn = Math.max(endColumn + 1, 1);
+            if (truffleEndColumn == source.getLineLength(endLine) + 1) {
+                truffleEndColumn--;
+            }
+            return source.createSection(startLine, truffleStartColumn, endLine, truffleEndColumn);
+        } catch (IllegalArgumentException e) {
+            // TODO GR-40896 we don't track source ranges of f-strings correctly
+            // Also consider sources created from ast module
+            return source.createUnavailableSection();
+        }
     }
 
     public boolean takesVarKeywordArgs() {

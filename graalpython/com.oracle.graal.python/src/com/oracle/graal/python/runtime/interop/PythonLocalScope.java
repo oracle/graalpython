@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
@@ -86,7 +85,7 @@ public abstract class PythonLocalScope implements TruffleObject {
 
         RootNode root = node.getRootNode();
         PBytecodeDSLRootNode dslRoot = PBytecodeDSLRootNode.cast(root);
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && dslRoot != null) {
+        if (dslRoot != null) {
             BytecodeNode bytecodeNode = BytecodeNode.get(node);
             BytecodeFrame bytecodeFrame;
             if (bytecodeNode != null) {

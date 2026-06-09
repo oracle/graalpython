@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,6 @@ import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonFrozenModule {
@@ -75,11 +74,7 @@ public final class PythonFrozenModule {
     }
 
     private static String getSuffix() {
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            return "bin_dsl";
-        } else {
-            return "bin";
-        }
+        return "bin_dsl";
     }
 
     public PythonFrozenModule(String symbol, String originalName, boolean isPackage) {

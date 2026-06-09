@@ -47,19 +47,14 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.runtime.CallerFlags;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -67,11 +62,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 public final class PFrame extends PythonBuiltinObject {
     private static final int UNINITIALIZED_LINE = -2;
 
-    /**
-     * The manual interpreter exclusively uses this field, and the Bytecode DSL interpreter
-     * exclusively uses the {@link #bytecodeFrame} field.
-     */
-    private MaterializedFrame locals;
     private BytecodeFrame bytecodeFrame;
 
     /**
@@ -85,8 +75,7 @@ public final class PFrame extends PythonBuiltinObject {
     private final Reference virtualFrameInfo;
     private final Thread thread;
     /**
-     * For the manual bytecode interpreter the location can be the {@link PBytecodeRootNode} itself,
-     * but for the Bytecode DSL interpreter, the location must be an AST node connected to the
+     * The location must be an AST node connected to the
      * {@link BytecodeNode} that was executed at the time when the BCI was captured.
      */
     private Node location;
@@ -239,34 +228,18 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     /**
-     * Get the locals synced by {@link MaterializeFrameNode}. May be null when using custom locals.
-     * In most cases, you should use {@link GetFrameLocalsNode}.
-     */
-    public MaterializedFrame getLocals() {
-        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-        assert CallerFlags.needsLocals(lastCallerFlags) : "Missing frame locals sync";
-        return locals;
-    }
-
-    public void setLocals(MaterializedFrame locals) {
-        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-        lastCallerFlags |= CallerFlags.NEEDS_LOCALS;
-        this.locals = locals;
-    }
-
-    /**
      * Get the locals synced by {@link BytecodeFrame}. May be null when using custom locals, but
      * null may also indicate that the locals were just not synced yet. Use
      * {@link #hasCustomLocals()} to check if this {@code PFrame} has custom locals. In most cases,
      * you should use {@link GetFrameLocalsNode} instead of this method.
      */
     public BytecodeFrame getBytecodeFrame() {
-        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        assert true;
         return bytecodeFrame;
     }
 
     public void setBytecodeFrame(BytecodeFrame bytecodeFrame) {
-        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        assert true;
         this.bytecodeFrame = bytecodeFrame;
     }
 
@@ -302,7 +275,7 @@ public final class PFrame extends PythonBuiltinObject {
             // Custom locals don't need locals sync
             callerFlags &= ~CallerFlags.NEEDS_LOCALS;
         }
-        if (CallerFlags.needsLocals(callerFlags) && locals == null && bytecodeFrame == null) {
+        if (CallerFlags.needsLocals(callerFlags) && bytecodeFrame == null) {
             return true;
         }
         return (callerFlags & lastCallerFlags) != callerFlags;
@@ -367,13 +340,11 @@ public final class PFrame extends PythonBuiltinObject {
         if (line == UNINITIALIZED_LINE) {
             if (location == null) {
                 line = -1;
-            } else if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            } else {
                 if (location instanceof BytecodeNode bytecodeNode) {
                     PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) bytecodeNode.getRootNode();
                     return rootNode.bciToLine(getBci(), bytecodeNode);
                 }
-            } else if (location instanceof PBytecodeRootNode bytecodeRootNode) {
-                return bytecodeRootNode.bciToLine(getBci());
             }
         }
         return line;
@@ -410,7 +381,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public BytecodeNode getBytecodeNode() {
-        return PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER ? BytecodeNode.get(location) : null;
+        return BytecodeNode.get(location);
     }
 
     public int getBci() {
@@ -429,16 +400,8 @@ public final class PFrame extends PythonBuiltinObject {
 
     @TruffleBoundary
     public static int bciToLasti(int bci, Node location) {
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            if (bci >= 0 && location instanceof BytecodeNode bytecodeNode) {
-                return PBytecodeDSLRootNode.bciToLasti(bci, bytecodeNode);
-            }
-        } else {
-            if (location instanceof PBytecodeRootNode bytecodeRootNode) {
-                return bytecodeRootNode.bciToLasti(bci);
-            } else if (location instanceof PBytecodeGeneratorRootNode generatorRootNode) {
-                return generatorRootNode.getBytecodeRootNode().bciToLasti(bci);
-            }
+        if (bci >= 0 && location instanceof BytecodeNode bytecodeNode) {
+            return PBytecodeDSLRootNode.bciToLasti(bci, bytecodeNode);
         }
         return -1;
     }
