@@ -203,39 +203,18 @@ class TestPyLong(CPyExtTestCase):
                 Py_XDECREF(self->member);
                 Py_TYPE(self)->tp_free((PyObject *)self);
             }
-
-            static PyObject *set_member(PyObject *self, PyObject *value) {
-                NativeLongWithMemberObject *obj = (NativeLongWithMemberObject *)self;
-                Py_INCREF(value);
-                Py_XSETREF(obj->member, value);
-                Py_RETURN_NONE;
-            }
-
-            static PyObject *get_member(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-                NativeLongWithMemberObject *obj = (NativeLongWithMemberObject *)self;
-                if (obj->member == NULL) {
-                    PyErr_SetString(PyExc_AttributeError, "member");
-                    return NULL;
-                }
-                return Py_NewRef(obj->member);
-            }
             """,
             ready_code="NativeLongWithMemberType.tp_new = PyLong_Type.tp_new;",
             tp_base="&PyLong_Type",
             struct_base="PyLongObject base;",
             cmembers="PyObject *member;",
             tp_dealloc="(destructor)NativeLongWithMember_dealloc",
-            tp_methods='''
-            {"set_member", (PyCFunction)set_member, METH_O, NULL},
-            {"get_member", (PyCFunction)get_member, METH_NOARGS, NULL}
-            ''',
-            tp_members='{"member", T_OBJECT_EX, offsetof(NativeLongWithMemberObject, member), READONLY, NULL}',
+            tp_members='{"member", T_OBJECT_EX, offsetof(NativeLongWithMemberObject, member), 0, NULL}',
         )
 
         obj = NativeLongWithMember(10)
         assert obj == 10
-        obj.set_member("foo")
-        assert obj.get_member() == "foo"
+        obj.member = "foo"
         assert obj.member == "foo"
 
     test_PyLong_AsLong = CPyExtFunction(
