@@ -1362,7 +1362,12 @@ def _find_and_load(name, import_):
         with _ModuleLockManager(name):
             module = sys.modules.get(name, _NEEDS_LOADING)
             if module is _NEEDS_LOADING:
-                return _find_and_load_unlocked(name, import_)
+                # GraalPy change: we may want to load our pip hook
+                mod = _find_and_load_unlocked(name, import_)
+                if name == "pip":
+                    __graalpython__.load_file("pip_hook")
+                return mod
+                # End GraalPy change
 
         # Optimization: only call _bootstrap._lock_unlock_module() if
         # module.__spec__._initializing is True.

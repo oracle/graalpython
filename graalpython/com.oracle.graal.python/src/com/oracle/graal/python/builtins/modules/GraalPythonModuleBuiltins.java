@@ -1550,4 +1550,15 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return PFactory.createTuple(ctx.getLanguage(inliningTarget), new Object[]{arrowSchemaCapsule, arrowArrayCapsule});
         }
     }
+
+    @Builtin(name = "load_file", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class LoadFile extends PythonUnaryBuiltinNode {
+        @Specialization
+        static PNone doit(TruffleString name,
+                        @Bind PythonContext context) {
+            context.getCore().loadFile(name, context.getCoreHomeOrFail());
+            return PNone.NONE;
+        }
+    }
 }

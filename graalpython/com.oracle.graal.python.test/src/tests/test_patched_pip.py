@@ -45,6 +45,7 @@ import sys
 import tempfile
 import threading
 import unittest
+import zipfile
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urljoin
@@ -189,6 +190,34 @@ if sys.implementation.name == "graalpy":
                     f"Didn't match expected stderr.\nExpected (regex): {assert_stderr_matches}\nActual:{proc.stderr}"
             return re.findall(r'Successfully installed (\S+)', proc.stdout)
 
+        def run_venv_pip_runner_install(self, package):
+            runner = subprocess.check_output([
+                self.venv_python,
+                '-c',
+                'import pathlib, pip; print(pathlib.Path(pip.__file__).with_name("__pip-runner__.py"))',
+            ], universal_newlines=True).strip()
+            proc = subprocess.run(
+                [
+                    str(self.venv_python),
+                    runner,
+                    '--isolated',
+                    'install',
+                    '--force-reinstall',
+                    '--find-links', str(self.index_dir),
+                    '--no-index',
+                    '--no-cache-dir',
+                    package,
+                ],
+                check=True,
+                capture_output=True,
+                env=self.pip_env,
+                universal_newlines=True,
+            )
+            print(proc.stdout)
+            print(proc.stderr)
+            assert 'Applying GraalPy patch failed for' not in proc.stderr
+            return re.findall(r'Successfully installed (\S+)', proc.stdout)
+
         def run_test_fun(self):
             code = "import patched_package; print(patched_package.test_fun())"
             return subprocess.check_output([self.venv_python, '-c', code], universal_newlines=True).strip()
@@ -232,6 +261,35 @@ if sys.implementation.name == "graalpy":
             }])
             self.run_venv_pip_install('foo')
             assert self.run_test_fun() == "Patched"
+
+        def test_sdist_patched_version_with_pip_runner(self):
+            self.add_package_to_index('foo', '1.1.0', 'sdist')
+            self.prepare_config('foo', [{
+                'patch': 'foo-1.1.0.patch',
+                'version': '== 1.1.0',
+                'subdir': 'src',
+            }])
+            self.run_venv_pip_runner_install('foo')
+            assert self.run_test_fun() == "Patched"
+
+        def test_mark_wheel_preserves_executable_scripts(self):
+            import graalpy_pip_extensions
+
+            wheel = self.build_dir / 'executable_script-1.0-py3-none-any.whl'
+            script = 'executable_script-1.0.data/scripts/executable-script'
+            with zipfile.ZipFile(wheel, 'w') as z:
+                info = zipfile.ZipInfo(script)
+                info.external_attr = 0o100755 << 16
+                z.writestr(info, '#!/usr/bin/env python\n')
+                z.writestr('executable_script-1.0.dist-info/METADATA', 'Name: executable_script\nVersion: 1.0\n')
+                z.writestr('executable_script-1.0.dist-info/WHEEL', 'Wheel-Version: 1.0\n')
+                z.writestr('executable_script-1.0.dist-info/RECORD', '')
+
+            graalpy_pip_extensions.mark_wheel(wheel)
+
+            with zipfile.ZipFile(wheel) as z:
+                mode = z.getinfo(script).external_attr >> 16
+            assert mode & 0o111
 
         def test_different_patch_wheel_sdist1(self):
             self.add_package_to_index('foo', '1.1.0', 'sdist')

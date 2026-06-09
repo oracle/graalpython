@@ -64,7 +64,6 @@ expected_nosite_startup_modules = [
     '_sre',
     '_sysconfig',
     'java',
-    'pip_hook',
 ] + WINDOWS_CORE_MODULES
 
 expected_full_startup_modules = expected_nosite_startup_modules + [

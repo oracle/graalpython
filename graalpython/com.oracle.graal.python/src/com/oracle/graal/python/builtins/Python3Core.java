@@ -442,8 +442,7 @@ public abstract class Python3Core {
                         T___GRAALPYTHON__,
                         T__SRE,
                         T__SYSCONFIG,
-                        T_JAVA,
-                        toTruffleStringUncached("pip_hook")
+                        T_JAVA
         };
     }
 
@@ -1330,7 +1329,7 @@ public abstract class Python3Core {
         throw e;
     }
 
-    private void loadFile(TruffleString s, TruffleString prefix) {
+    public void loadFile(TruffleString s, TruffleString prefix) {
         loadFile(s, s, prefix);
     }
 
