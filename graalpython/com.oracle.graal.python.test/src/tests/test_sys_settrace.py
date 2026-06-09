@@ -1090,7 +1090,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipIfBytecodeDSL("TODO: Fix return in finally.")
+    @unittest.skip("TODO: Fix return in finally.")
     def test_04_test_try_except_star_with_wrong_type(self):
         def func():
             try:

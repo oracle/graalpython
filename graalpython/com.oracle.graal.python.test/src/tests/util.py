@@ -81,14 +81,6 @@ def needs_capi(test):
     return test
 
 
-def skipIfBytecodeDSL(reason=''):
-    def wrapper(test):
-        if IS_BYTECODE_DSL:
-            return unittest.skip(f"Skipped on Bytecode DSL interpreter. {reason}")(test)
-        return test
-    return wrapper
-
-
 def storage_to_native(s):
     if sys.implementation.name == 'graalpy':
         assert hasattr(__graalpython__, 'storage_to_native'), "Needs to be run with --python.EnableDebuggingBuiltins"
