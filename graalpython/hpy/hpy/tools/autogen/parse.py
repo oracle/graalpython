@@ -2,17 +2,17 @@ from copy import deepcopy
 import sys
 import attr
 import re
-import py
 import pycparser
 import shutil
+from pathlib import Path
 from pycparser import c_ast
 from pycparser.c_generator import CGenerator
 from sysconfig import get_config_var
 from .conf import SPECIAL_CASES, RETURN_CONSTANT
 
-PUBLIC_API_H = py.path.local(__file__).dirpath('public_api.h')
-CURRENT_DIR = py.path.local(__file__).dirpath()
-AUTOGEN_H = py.path.local(__file__).dirpath('autogen.h')
+CURRENT_DIR = Path(__file__).resolve().parent
+PUBLIC_API_H = CURRENT_DIR / 'public_api.h'
+AUTOGEN_H = CURRENT_DIR / 'autogen.h'
 
 
 def toC(node):
@@ -209,13 +209,13 @@ class HPyAPI:
         elif sys.platform == 'win32':
             cpp_cmd = [shutil.which("cl.exe")]
         if sys.platform == 'win32':
-            cpp_cmd += ['/E', '/I%s' % CURRENT_DIR]
+            cpp_cmd += ['/E', '/I%s' % str(CURRENT_DIR)]
         else:
-            cpp_cmd += ['-E', '-I%s' % CURRENT_DIR]
+            cpp_cmd += ['-E', '-I%s' % str(CURRENT_DIR)]
 
         msvc = "cl.exe" in cpp_cmd[0].casefold()
 
-        csource = pycparser.preprocess_file(filename,
+        csource = pycparser.preprocess_file(str(filename),
                                   cpp_path=str(cpp_cmd[0]),
                                   cpp_args=cpp_cmd[1:])
 

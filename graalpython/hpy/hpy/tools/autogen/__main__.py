@@ -2,7 +2,8 @@
 Parse public_api.h and generate various stubs around
 """
 import sys
-import py
+from pathlib import Path
+
 import pycparser
 from packaging import version
 
@@ -57,7 +58,7 @@ def main():
     if len(sys.argv) != 2:
         print('Usage: python -m hpy.tools.autogen OUTDIR')
         sys.exit(1)
-    outdir = py.path.local(sys.argv[1])
+    outdir = Path(sys.argv[1])
 
     generate(DEFAULT_GENERATORS, outdir)
 
