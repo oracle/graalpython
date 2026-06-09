@@ -1338,7 +1338,7 @@ suite = {
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/graalpy.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/python.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/include/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
-                            "./META-INF/resources/<os>/<arch>/lib-graalpython/modules/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
+                            "./META-INF/resources/<os>/<arch>/Lib/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         },
                     },
                 },
@@ -1350,7 +1350,7 @@ suite = {
                             ],
                             "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/venv/scripts/macos/graalpy": "dependency:python-macos-launcher",
                             "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor><graalpy_abiflags>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
-                            "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/modules/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
+                            "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         }
                     }
                 },
@@ -1361,7 +1361,7 @@ suite = {
                                 "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
                             ],
                             "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor><graalpy_abiflags>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
-                            "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/modules/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
+                            "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         },
                     },
                 },
