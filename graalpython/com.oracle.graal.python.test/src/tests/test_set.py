@@ -686,3 +686,40 @@ def test_set_iterator_reduce():
     it = s.__iter__()
     it.__reduce__()
     assert [i for i in it] == [1, 2, 3]
+
+
+def test_set_operations_return_builtin_set_for_subclass():
+    class SetSubclass(set):
+        pass
+
+    s = SetSubclass([1, 2])
+    other = {2, 3}
+
+    assert type(s.copy()) is set
+    assert type(s | other) is set
+    assert type(other | s) is set
+    assert type(s & other) is set
+    assert type(s - other) is set
+    assert type(s ^ other) is set
+    assert type(s.union(other)) is set
+    assert type(s.intersection(other)) is set
+    assert type(s.difference(other)) is set
+    assert type(s.symmetric_difference(other)) is set
+
+
+def test_frozenset_operations_return_builtin_frozenset_for_subclass():
+    class FrozenSetSubclass(frozenset):
+        pass
+
+    f = FrozenSetSubclass([1, 2])
+    other = {2, 3}
+
+    assert type(f.copy()) is frozenset
+    assert type(f | other) is frozenset
+    assert type(f & other) is frozenset
+    assert type(f - other) is frozenset
+    assert type(f ^ other) is frozenset
+    assert type(f.union(other)) is frozenset
+    assert type(f.intersection(other)) is frozenset
+    assert type(f.difference(other)) is frozenset
+    assert type(f.symmetric_difference(other)) is frozenset
