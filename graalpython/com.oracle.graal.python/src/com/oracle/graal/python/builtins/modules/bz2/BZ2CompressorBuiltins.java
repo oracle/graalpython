@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,8 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.NFIBz2Support;
-import com.oracle.graal.python.runtime.NativeLibrary;
+import com.oracle.graal.python.runtime.NativeBz2Support;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -123,15 +122,13 @@ public final class BZ2CompressorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"compresslevel >= 1", "compresslevel <= 9"})
         PNone init(BZ2Object.BZ2Compressor self, int compresslevel,
                         @Bind Node inliningTarget,
-                        @Cached NativeLibrary.InvokeNativeFunction createStream,
-                        @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached GilNode gil,
                         @Cached PRaiseNode raiseNode) {
             gil.release(true);
             try {
-                NFIBz2Support bz2Support = PythonContext.get(this).getNFIBz2Support();
-                Object bzst = bz2Support.createStream(createStream);
-                int err = bz2Support.compressInit(bzst, compresslevel, compressInit);
+                NativeBz2Support bz2Support = PythonContext.get(this).getNativeBz2Support();
+                long bzst = bz2Support.createStream();
+                int err = bz2Support.compressInit(bzst, compresslevel);
                 if (err != BZ_OK) {
                     errorHandling(inliningTarget, err, raiseNode);
                 }

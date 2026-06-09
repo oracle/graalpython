@@ -157,7 +157,7 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = {PythonLanguage.MIME_TYPE}, //
                 defaultMimeType = PythonLanguage.MIME_TYPE, //
-                dependentLanguages = {"nfi", "llvm"}, //
+                dependentLanguages = "nfi", //
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
                 fileTypeDetectors = PythonFileDetector.class, //

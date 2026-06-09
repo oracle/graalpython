@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,34 +41,34 @@
 package com.oracle.graal.python.builtins.modules.lzma;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_CRC32_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_CRC64_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_ID_MAX_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_NONE_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_SHA256_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.CHECK_UNKNOWN_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_ARMTHUMB_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_ARM_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_DELTA_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_IA64_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_LZMA1_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_LZMA2_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_POWERPC_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_SPARC_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FILTER_X86_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FORMAT_ALONE_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FORMAT_AUTO_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FORMAT_RAW_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.FORMAT_XZ_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.MF_BT2_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.MF_BT3_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.MF_BT4_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.MF_HC3_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.MF_HC4_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.MODE_FAST_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.MODE_NORMAL_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.PRESET_DEFAULT_INDEX;
-import static com.oracle.graal.python.runtime.NFILZMASupport.PRESET_EXTREME_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.CHECK_CRC32_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.CHECK_CRC64_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.CHECK_ID_MAX_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.CHECK_NONE_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.CHECK_SHA256_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.CHECK_UNKNOWN_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FILTER_ARMTHUMB_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FILTER_ARM_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FILTER_DELTA_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FILTER_IA64_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FILTER_LZMA1_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FILTER_LZMA2_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FILTER_POWERPC_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FILTER_SPARC_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FILTER_X86_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FORMAT_ALONE_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FORMAT_AUTO_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FORMAT_RAW_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.FORMAT_XZ_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.MF_BT2_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.MF_BT3_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.MF_BT4_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.MF_HC3_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.MF_HC4_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.MODE_FAST_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.MODE_NORMAL_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.PRESET_DEFAULT_INDEX;
+import static com.oracle.graal.python.runtime.NativeLZMASupport.PRESET_EXTREME_INDEX;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
@@ -92,8 +92,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.runtime.NFILZMASupport;
-import com.oracle.graal.python.runtime.NativeLibrary;
+import com.oracle.graal.python.runtime.NativeLZMASupport;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Bind;
@@ -182,7 +181,7 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core c) {
         super.postInitialize(c);
-        NFILZMASupport lzmaSupport = c.getContext().getNFILZMASupport();
+        NativeLZMASupport lzmaSupport = c.getContext().getNativeLZMASupport();
         PythonModule lzmaModule = c.lookupBuiltinModule(T__LZMA);
         int[] formats = new int[4];
         int[] checks = new int[6];
@@ -213,8 +212,8 @@ public final class LZMAModuleBuiltins extends PythonBuiltins {
                 MODE_NORMAL = modes[MODE_NORMAL_INDEX];
                 PRESET_DEFAULT = preset[PRESET_DEFAULT_INDEX];
                 PRESET_EXTREME = preset[PRESET_EXTREME_INDEX];
-            } catch (NativeLibrary.NativeLibraryCannotBeLoaded e) {
-                lzmaSupport.notAvailable();
+            } catch (UnsupportedOperationException e) {
+                lzmaSupport.setNotAvailable();
                 // ignore and proceed without native lzma support and use the java port.
             }
         }

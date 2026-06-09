@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,8 +68,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.NFIBz2Support;
-import com.oracle.graal.python.runtime.NativeLibrary;
+import com.oracle.graal.python.runtime.NativeBz2Support;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -111,12 +110,10 @@ public final class BZ2DecompressorBuiltins extends PythonBuiltins {
         @Specialization
         static PNone init(BZ2Object.BZ2Decompressor self,
                         @Bind Node inliningTarget,
-                        @Cached NativeLibrary.InvokeNativeFunction createStream,
-                        @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached PRaiseNode raiseNode) {
-            NFIBz2Support bz2Support = PythonContext.get(inliningTarget).getNFIBz2Support();
-            Object bzst = bz2Support.createStream(createStream);
-            int err = bz2Support.decompressInit(bzst, compressInit);
+            NativeBz2Support bz2Support = PythonContext.get(inliningTarget).getNativeBz2Support();
+            long bzst = bz2Support.createStream();
+            int err = bz2Support.decompressInit(bzst);
             if (err != BZ_OK) {
                 errorHandling(inliningTarget, err, raiseNode);
             }

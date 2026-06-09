@@ -62,6 +62,10 @@ def skip_if_sandboxed(reason=''):
     return wrapper
 
 
+def is_native_compression_backend():
+    return sys.implementation.name != 'graalpy' or __graalpython__.zlib_module_backend() == 'native'
+
+
 def _jdk_major_version():
     version = __graalpython__.get_jdk_version()
     return int(version.split(".", 1)[0].split("-", 1)[0])

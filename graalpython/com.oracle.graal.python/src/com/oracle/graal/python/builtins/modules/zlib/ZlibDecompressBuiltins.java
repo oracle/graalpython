@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,8 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.NFIZlibSupport;
-import com.oracle.graal.python.runtime.NativeLibrary;
+import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -161,17 +160,14 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isInitialized()")
         static Object doNative(Node inliningTarget, NativeZlibCompObject self,
                         @Bind PythonContext context,
-                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction createCompObject,
-                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction decompressObjCopy,
-                        @Cached(inline = false) NativeLibrary.InvokeNativeFunction deallocateStream,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-                Object zstNewCopy = zlibSupport.createCompObject(createCompObject);
-                int err = zlibSupport.decompressObjCopy(self.getZst(), zstNewCopy, decompressObjCopy);
+                NativeZlibSupport zlibSupport = context.getNativeZlibSupport();
+                long zstNewCopy = zlibSupport.createCompObject();
+                int err = zlibSupport.decompressObjCopy(self.getZst(), zstNewCopy);
                 if (err != Z_OK) {
-                    zlibSupport.deallocateStream(zstNewCopy, deallocateStream);
+                    zlibSupport.deallocateStream(zstNewCopy);
                     errorHandling.execute(inliningTarget, self.getZst(), err, zlibSupport, false);
                 }
                 ZLibCompObject copy = PFactory.createNativeZLibCompObjectDecompress(context.getLanguage(inliningTarget), zstNewCopy, zlibSupport);
@@ -241,20 +237,18 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         static PBytes doit(NativeZlibCompObject self, int length,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached NativeLibrary.InvokeNativeFunction decompressObjFlush,
                         @Cached ZlibNodes.GetNativeBufferNode getBuffer,
-                        @Cached NativeLibrary.InvokeNativeFunction getIsInitialised,
                         @Cached ZlibNodes.NativeDeallocation processDeallocation,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-                int err = zlibSupport.decompressObjFlush(self.getZst(), length, decompressObjFlush);
+                NativeZlibSupport zlibSupport = context.getNativeZlibSupport();
+                int err = zlibSupport.decompressObjFlush(self.getZst(), length);
                 if (err != Z_OK) {
                     errorHandling.execute(inliningTarget, self.getZst(), err, zlibSupport, false);
                 }
                 byte[] resultArray = getBuffer.getOutputBuffer(inliningTarget, self.getZst(), context);
-                if (zlibSupport.getIsInitialised(self.getZst(), getIsInitialised) == 0) {
+                if (zlibSupport.getIsInitialised(self.getZst()) == 0) {
                     processDeallocation.execute(inliningTarget, self, context, false);
                 }
                 return PFactory.createBytes(context.getLanguage(inliningTarget), resultArray);
@@ -359,12 +353,11 @@ public final class ZlibDecompressBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isEof()", "self.isInitialized()"})
-        boolean getit(NativeZlibCompObject self,
-                        @Cached NativeLibrary.InvokeNativeFunction getEOF) {
+        boolean getit(NativeZlibCompObject self) {
             synchronized (self) {
                 assert self.isInitialized();
-                NFIZlibSupport zlibSupport = PythonContext.get(this).getNFIZlibSupport();
-                self.setEof(zlibSupport.getEOF(self.getZst(), getEOF) == 1);
+                NativeZlibSupport zlibSupport = PythonContext.get(this).getNativeZlibSupport();
+                self.setEof(zlibSupport.getEOF(self.getZst()) == 1);
                 return self.isEof();
             }
         }

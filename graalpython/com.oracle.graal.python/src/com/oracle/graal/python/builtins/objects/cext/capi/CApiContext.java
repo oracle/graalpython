@@ -1430,8 +1430,4 @@ public final class CApiContext extends CExtContext {
     public PyCFunctionWrapper getOrCreatePyCFunctionWrapper(RootCallTarget ct, Function<RootCallTarget, PyCFunctionWrapper> cons) {
         return pyCFunctionWrappers.computeIfAbsent(ct, cons);
     }
-
-    public static boolean isPointerObject(Object object) {
-        return object.getClass() == NativePointer.class || object.getClass().getSimpleName().contains("NFIPointer") || object.getClass().getSimpleName().contains("LLVMPointer");
-    }
 }

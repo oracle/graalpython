@@ -25,8 +25,8 @@
  */
 package com.oracle.graal.python.runtime.object;
 
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.lang.ref.ReferenceQueue;
@@ -237,7 +237,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
-import com.oracle.graal.python.runtime.NFIZlibSupport;
+import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -1175,7 +1175,7 @@ public final class PFactory {
     }
 
     public static BZ2Object.BZ2Compressor createBZ2Compressor(Object cls, Shape shape) {
-        return BZ2Object.createCompressor(cls, shape);
+        return new BZ2Object.BZ2Compressor(cls, shape);
     }
 
     public static BZ2Object.BZ2Decompressor createBZ2Decompressor(PythonLanguage language) {
@@ -1183,7 +1183,7 @@ public final class PFactory {
     }
 
     public static BZ2Object.BZ2Decompressor createBZ2Decompressor(Object cls, Shape shape) {
-        return BZ2Object.createDecompressor(cls, shape);
+        return new BZ2Object.BZ2Decompressor(cls, shape);
     }
 
     public static JavaCompress createJavaZLibCompObjectCompress(PythonLanguage language, int level, int wbits, int strategy, byte[] zdict) {
@@ -1194,15 +1194,15 @@ public final class PFactory {
         return new JavaDecompress(PythonBuiltinClassType.ZlibDecompress, PythonBuiltinClassType.ZlibDecompress.getInstanceShape(language), wbits, zdict);
     }
 
-    public static ZLibCompObject createNativeZLibCompObjectCompress(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZLibCompObject createNativeZLibCompObjectCompress(PythonLanguage language, long zst, NativeZlibSupport zlibSupport) {
         return createNativeZLibCompObject(PythonBuiltinClassType.ZlibCompress, PythonBuiltinClassType.ZlibCompress.getInstanceShape(language), zst, zlibSupport);
     }
 
-    public static ZLibCompObject createNativeZLibCompObjectDecompress(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZLibCompObject createNativeZLibCompObjectDecompress(PythonLanguage language, long zst, NativeZlibSupport zlibSupport) {
         return createNativeZLibCompObject(PythonBuiltinClassType.ZlibDecompress, PythonBuiltinClassType.ZlibDecompress.getInstanceShape(language), zst, zlibSupport);
     }
 
-    public static ZLibCompObject createNativeZLibCompObject(Object cls, Shape shape, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZLibCompObject createNativeZLibCompObject(Object cls, Shape shape, long zst, NativeZlibSupport zlibSupport) {
         return new NativeZlibCompObject(cls, shape, zst, zlibSupport);
     }
 
@@ -1210,7 +1210,7 @@ public final class PFactory {
         return ZlibDecompressorObject.createJava(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), wbits, zdict);
     }
 
-    public static ZlibDecompressorObject createNativeZlibDecompressorObject(PythonLanguage language, Object zst, NFIZlibSupport zlibSupport) {
+    public static ZlibDecompressorObject createNativeZlibDecompressorObject(PythonLanguage language, long zst, NativeZlibSupport zlibSupport) {
         return ZlibDecompressorObject.createNative(PythonBuiltinClassType.ZlibDecompressor, PythonBuiltinClassType.ZlibDecompressor.getInstanceShape(language), zst, zlibSupport);
     }
 

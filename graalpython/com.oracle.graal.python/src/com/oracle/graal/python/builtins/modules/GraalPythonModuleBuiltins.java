@@ -940,7 +940,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class ZlibModuleBackendNode extends PythonBuiltinNode {
         @Specialization
         TruffleString zlibModuleBackend() {
-            return getContext().getNFIZlibSupport().isAvailable() ? T_NATIVE : T_JAVA;
+            return getContext().getNativeZlibSupport().isAvailable() ? T_NATIVE : T_JAVA;
         }
     }
 

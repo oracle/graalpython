@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,6 @@ import static com.oracle.graal.python.builtins.modules.zlib.ZlibNodes.Z_OK;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.crc32;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static java.util.zip.Deflater.DEFAULT_COMPRESSION;
@@ -57,9 +56,9 @@ import java.util.zip.CRC32;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -84,8 +83,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.NFIZlibSupport;
-import com.oracle.graal.python.runtime.NativeLibrary;
+import com.oracle.graal.python.runtime.NativeZlibSupport;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -103,8 +101,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -186,36 +182,25 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        NFIZlibSupport zlibSupport = core.getContext().getNFIZlibSupport();
+        NativeZlibSupport zlibSupport = core.getContext().getNativeZlibSupport();
         PythonModule zlibModule = core.lookupBuiltinModule(T_ZLIB);
         // isAvailable() checked already if native access is allowed
         TruffleString ver = T_JDK_ZLIB_VERSION;
         TruffleString rtver = T_JDK_ZLIB_VERSION;
         if (zlibSupport.isAvailable()) {
             try {
-                ver = asString(zlibSupport.zlibVersion());
-                rtver = asString(zlibSupport.zlibRuntimeVersion());
+                ver = zlibSupport.zlibVersion();
+                rtver = zlibSupport.zlibRuntimeVersion();
                 zlibModule.setAttribute(tsLiteral("Z_PARTIAL_FLUSH"), Z_PARTIAL_FLUSH);
                 zlibModule.setAttribute(tsLiteral("Z_BLOCK"), Z_BLOCK);
                 zlibModule.setAttribute(tsLiteral("Z_TREES"), Z_TREES);
-            } catch (NativeLibrary.NativeLibraryCannotBeLoaded e) {
-                zlibSupport.notAvailable();
+            } catch (UnsupportedOperationException e) {
+                zlibSupport.setNotAvailable();
                 // ignore and proceed without native zlib support and use jdk's.
             }
         }
         zlibModule.setAttribute(tsLiteral("ZLIB_VERSION"), ver);
         zlibModule.setAttribute(tsLiteral("ZLIB_RUNTIME_VERSION"), rtver);
-    }
-
-    private static TruffleString asString(Object o) {
-        if (o != null) {
-            try {
-                return InteropLibrary.getUncached().asTruffleString(o).switchEncodingUncached(TS_ENCODING);
-            } catch (UnsupportedMessageException e) {
-                // pass through
-            }
-        }
-        return null;
     }
 
     @ImportStatic(MathGuards.class)
@@ -330,7 +315,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @NonIdempotent
         protected boolean useNative() {
-            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
+            return PythonContext.get(this).getNativeZlibSupport().isAvailable();
         }
 
         @Specialization
@@ -349,19 +334,17 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "useNative()")
         long doNativeBytes(PBytesLike data, int value,
                         @Bind Node inliningTarget,
-                        @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
-                        @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
+                        @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes) {
             byte[] bytes = toBytes.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
-            return nativeCrc32(bytes, len, value, invoke);
+            return nativeCrc32(bytes, len, value);
         }
 
         @Specialization(guards = {"useNative()", "!isBytes(data)"})
         long doNativeObject(VirtualFrame frame, Object data, int value,
-                        @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
+                        @Shared("bb") @Cached ToBytesNode toBytesNode) {
             byte[] bytes = toBytesNode.execute(frame, data);
-            return nativeCrc32(bytes, bytes.length, value, invoke);
+            return nativeCrc32(bytes, bytes.length, value);
         }
 
         @Specialization(guards = "!useNative()")
@@ -386,10 +369,9 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, EXPECTED_BYTESLIKE_GOT_P, data);
         }
 
-        long nativeCrc32(byte[] bytes, int len, int value,
-                        NativeLibrary.InvokeNativeFunction invoke) {
+        long nativeCrc32(byte[] bytes, int len, int value) {
             PythonContext ctxt = getContext();
-            int signedVal = (int) ctxt.getNFIZlibSupport().crc32(value, bytes, len, invoke);
+            int signedVal = (int) ctxt.getNativeZlibSupport().crc32(value, bytes, len);
             return signedVal & 0xFFFFFFFFL;
         }
     }
@@ -410,7 +392,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @NonIdempotent
         protected boolean useNative() {
-            return getContext().getNFIZlibSupport().isAvailable();
+            return getContext().getNativeZlibSupport().isAvailable();
         }
 
         @Specialization
@@ -429,19 +411,17 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "useNative()")
         long doNativeBytes(PBytesLike data, int value,
                         @Bind Node inliningTarget,
-                        @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
-                        @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
+                        @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes) {
             byte[] bytes = toBytes.execute(inliningTarget, data);
             int len = data.getSequenceStorage().length();
-            return nativeAdler32(bytes, len, value, PythonContext.get(this), invoke);
+            return nativeAdler32(bytes, len, value, PythonContext.get(this));
         }
 
         @Specialization(guards = {"useNative()", "!isBytes(data)"})
         long doNativeObject(VirtualFrame frame, Object data, int value,
-                        @Shared("bb") @Cached ToBytesNode toBytesNode,
-                        @Shared @Cached NativeLibrary.InvokeNativeFunction invoke) {
+                        @Shared("bb") @Cached ToBytesNode toBytesNode) {
             byte[] bytes = toBytesNode.execute(frame, data);
-            return nativeAdler32(bytes, bytes.length, value, PythonContext.get(this), invoke);
+            return nativeAdler32(bytes, bytes.length, value, PythonContext.get(this));
         }
 
         @Specialization(guards = "!useNative()")
@@ -461,9 +441,8 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         long nativeAdler32(byte[] bytes, int len, int value,
-                        PythonContext ctxt,
-                        NativeLibrary.InvokeNativeFunction invoke) {
-            int signedVal = (int) ctxt.getNFIZlibSupport().adler32(value, bytes, len, invoke);
+                        PythonContext ctxt) {
+            int signedVal = (int) ctxt.getNativeZlibSupport().adler32(value, bytes, len);
             return signedVal & 0xFFFFFFFFL;
         }
 
@@ -523,7 +502,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
             @NonIdempotent
             protected boolean useNative() {
-                return PythonContext.get(this).getNFIZlibSupport().isAvailable();
+                return PythonContext.get(this).getNativeZlibSupport().isAvailable();
             }
 
             protected static boolean isValidLevel(int level) {
@@ -591,7 +570,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
             @NonIdempotent
             protected boolean useNative() {
-                return PythonContext.get(this).getNFIZlibSupport().isAvailable();
+                return PythonContext.get(this).getNativeZlibSupport().isAvailable();
             }
 
             @Specialization(guards = "useNative()")
@@ -628,7 +607,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @NonIdempotent
         protected boolean useNative() {
-            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
+            return PythonContext.get(this).getNativeZlibSupport().isAvailable();
         }
 
         protected static boolean isValidWBitRange(int wbits) {
@@ -639,18 +618,16 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         static Object doNative(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached NativeLibrary.InvokeNativeFunction createCompObject,
-                        @Cached NativeLibrary.InvokeNativeFunction compressObjInit,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
-            NFIZlibSupport zlibSupport = PythonContext.get(inliningTarget).getNFIZlibSupport();
-            Object zst = zlibSupport.createCompObject(createCompObject);
+            NativeZlibSupport zlibSupport = PythonContext.get(inliningTarget).getNativeZlibSupport();
+            long zst = zlibSupport.createCompObject();
 
             int err;
             if (zdict.length > 0) {
                 err = zlibSupport.compressObjInitWithDict(zst, level, method, wbits, memLevel, strategy,
-                                zdict, zdict.length, compressObjInit);
+                                zdict, zdict.length);
             } else {
-                err = zlibSupport.compressObjInit(zst, level, method, wbits, memLevel, strategy, compressObjInit);
+                err = zlibSupport.compressObjInit(zst, level, method, wbits, memLevel, strategy);
             }
             if (err != Z_OK) {
                 errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);
@@ -700,7 +677,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
 
         @NonIdempotent
         protected boolean useNative() {
-            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
+            return PythonContext.get(this).getNativeZlibSupport().isAvailable();
         }
 
         protected static boolean isValidWBitRange(int wbits) {
@@ -711,17 +688,15 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
         static Object doNative(int wbits, byte[] zdict,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached NativeLibrary.InvokeNativeFunction createCompObject,
-                        @Cached NativeLibrary.InvokeNativeFunction decompressObjInit,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
-            NFIZlibSupport zlibSupport = context.getNFIZlibSupport();
-            Object zst = zlibSupport.createCompObject(createCompObject);
+            NativeZlibSupport zlibSupport = context.getNativeZlibSupport();
+            long zst = zlibSupport.createCompObject();
 
             int err;
             if (zdict.length > 0) {
-                err = zlibSupport.decompressObjInitWithDict(zst, wbits, zdict, zdict.length, decompressObjInit);
+                err = zlibSupport.decompressObjInitWithDict(zst, wbits, zdict, zdict.length);
             } else {
-                err = zlibSupport.decompressObjInit(zst, wbits, decompressObjInit);
+                err = zlibSupport.decompressObjInit(zst, wbits);
             }
             if (err != Z_OK) {
                 errorHandling.execute(inliningTarget, zst, err, zlibSupport, true);

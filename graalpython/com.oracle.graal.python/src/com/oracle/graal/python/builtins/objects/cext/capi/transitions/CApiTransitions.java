@@ -69,7 +69,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
@@ -234,7 +233,6 @@ public abstract class CApiTransitions {
         public final ArrayList<Long> referencesToBeFreed = new ArrayList<>();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final ConcurrentHashMap<Long, Long> nativeWeakRef = new ConcurrentHashMap<>();
-        public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
 
         public IdReference<?>[] nativeTypeLookup;
 
@@ -1659,20 +1657,6 @@ public abstract class CApiTransitions {
         }
     }
 
-    /**
-     * Creates a weak reference to {@code delegate} and connects that to the given {@code pointer}
-     * object such that the {@code pointer} can be resolved to the {@code delegate}.
-     * <p>
-     * This is used in LLVM managed mode where we will not have real native pointers (i.e. addresses
-     * pointing into off-heap memory) but managed pointers to objects emulating the native memory.
-     * We still need to be able to resolve those managed pointers to our objects.
-     * </p>
-     */
-    public static void createManagedReference(Object delegate, Object pointer) {
-        assert PythonContext.get(null).ownsGil();
-        getContext().managedNativeLookup.put(pointer, new WeakReference<>(delegate));
-    }
-
     // logging
 
     private static void log(Object... args) {
@@ -2736,7 +2720,7 @@ public abstract class CApiTransitions {
 
     @TruffleBoundary
     public static boolean isBackendPointerObject(Object obj) {
-        return obj != null && (obj.getClass().toString().contains("LLVMPointerImpl") || obj.getClass().toString().contains("NFIPointer") || obj.getClass().toString().contains("NativePointer"));
+        return obj != null && obj.getClass().toString().contains("NativePointer");
     }
 
     /**

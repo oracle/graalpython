@@ -543,11 +543,7 @@ public final class PythonContext extends Python3Core {
             this.contextVarsContext = contextVarsContext;
         }
 
-        public void dispose(boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer) {
-            dispose(canRunGuestCode, clearNativeThreadLocalVarPointer, true);
-        }
-
-        public void dispose(boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer, boolean markShuttingDown) {
+        public void dispose(boolean clearNativeThreadLocalVarPointer, boolean markShuttingDown) {
             // This method may be called twice on the same object.
 
             /*
@@ -578,11 +574,9 @@ public final class PythonContext extends Python3Core {
 
             /*
              * Write 'NULL' to the native thread-local variable used to store the PyThreadState
-             * struct such that it cannot accidentally be reused. Since this is done as a
-             * precaution, we just skip this if we cannot run guest code, because it may invoke
-             * LLVM.
+             * struct such that it cannot accidentally be reused.
              */
-            if (nativeThreadLocalVarPointer != NULLPTR && canRunGuestCode && clearNativeThreadLocalVarPointer) {
+            if (nativeThreadLocalVarPointer != NULLPTR && clearNativeThreadLocalVarPointer) {
                 NativeMemory.writePtr(nativeThreadLocalVarPointer, NULLPTR);
             }
             nativeThreadLocalVarPointer = NULLPTR;
@@ -778,9 +772,9 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal(dimensions = 1) private byte[] hashSecret = new byte[24];
 
     @CompilationFinal private PosixSupport posixSupport;
-    @CompilationFinal private NFIZlibSupport nativeZlib;
-    @CompilationFinal private NFIBz2Support nativeBz2lib;
-    @CompilationFinal private NFILZMASupport nativeLZMA;
+    @CompilationFinal private NativeZlibSupport nativeZlib;
+    @CompilationFinal private NativeBz2Support nativeBz2lib;
+    @CompilationFinal private NativeLZMASupport nativeLZMA;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -1424,15 +1418,15 @@ public final class PythonContext extends Python3Core {
         return nativeAccessAllowed;
     }
 
-    public NFIZlibSupport getNFIZlibSupport() {
+    public NativeZlibSupport getNativeZlibSupport() {
         return nativeZlib;
     }
 
-    public NFIBz2Support getNFIBz2Support() {
+    public NativeBz2Support getNativeBz2Support() {
         return nativeBz2lib;
     }
 
-    public NFILZMASupport getNFILZMASupport() {
+    public NativeLZMASupport getNativeLZMASupport() {
         return nativeLZMA;
     }
 
@@ -1750,9 +1744,9 @@ public final class PythonContext extends Python3Core {
         initializeLocale();
         setIntMaxStrDigits(getOption(PythonOptions.IntMaxStrDigits));
         if (!PythonImageBuildOptions.WITHOUT_COMPRESSION_LIBRARIES) {
-            nativeZlib = NFIZlibSupport.createNative(this, "");
-            nativeBz2lib = NFIBz2Support.createNative(this, "");
-            nativeLZMA = NFILZMASupport.createNative(this, "");
+            nativeZlib = NativeZlibSupport.createNative(this, "");
+            nativeBz2lib = NativeBz2Support.createNative(this, "");
+            nativeLZMA = NativeLZMASupport.createNative(this, "");
         }
 
         mainModule = PFactory.createPythonModule(T___MAIN__);
@@ -2278,7 +2272,7 @@ public final class PythonContext extends Python3Core {
 
     /**
      * Release all resources held by the thread states. This function needs to run as long as the
-     * context is still valid because it may call into LLVM to release handles.
+     * context is still valid because it may release handles.
      */
     @TruffleBoundary
     private void disposeThreadStates() {
@@ -2835,7 +2829,7 @@ public final class PythonContext extends Python3Core {
             ts.shutdown();
         }
         threadStateMapping.remove(thread);
-        ts.dispose(canRunGuestCode, thread == Thread.currentThread(), markShuttingDown);
+        ts.dispose(thread == Thread.currentThread(), markShuttingDown);
         releaseSentinelLock(ts.sentinelLock);
         getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }

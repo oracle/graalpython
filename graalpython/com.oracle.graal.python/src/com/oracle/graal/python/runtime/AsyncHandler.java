@@ -54,6 +54,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.graalvm.polyglot.SandboxPolicy;
 
@@ -510,13 +511,20 @@ public class AsyncHandler {
          */
         public abstract static class FinalizableReference extends PhantomReference<Object> {
             private final Object reference;
-            private boolean released;
+            private final AtomicBoolean released = new AtomicBoolean(false);
 
             @SuppressWarnings("this-escape")
             public FinalizableReference(Object referent, Object reference, SharedFinalizer sharedFinalizer) {
                 super(referent, sharedFinalizer.queue);
                 assert reference != null;
                 this.reference = reference;
+                addLiveReference(sharedFinalizer, this);
+            }
+
+            @SuppressWarnings("this-escape")
+            protected FinalizableReference(Object referent, SharedFinalizer sharedFinalizer) {
+                super(referent, sharedFinalizer.queue);
+                this.reference = null;
                 addLiveReference(sharedFinalizer, this);
             }
 
@@ -538,15 +546,17 @@ public class AsyncHandler {
             }
 
             public final boolean isReleased() {
-                return released;
+                return released.get();
             }
 
             /**
-             * Mark the FinalizableReference as freed in case it has been freed elsewhare. This will
+             * Mark the FinalizableReference as freed in case it has been freed elsewhere. This will
              * avoid double-freeing the reference.
              */
-            public final void markReleased() {
-                this.released = true;
+            public final boolean markReleased() {
+                boolean markedReleased = released.compareAndSet(false, true);
+                assert markedReleased || released.get();
+                return markedReleased;
             }
 
             /**

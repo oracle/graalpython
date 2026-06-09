@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,40 +44,45 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.runtime.NFIBz2Support;
+import com.oracle.graal.python.runtime.NativeBz2Support;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class BZ2Object extends PythonBuiltinObject {
 
-    private NFIBz2Support.Pointer pointer;
+    private NativeBz2Support.Pointer pointer;
 
-    public BZ2Object(Object cls, Shape instanceShape) {
+    BZ2Object(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
     }
 
-    public final void init(Object bzst, NFIBz2Support lib) {
-        this.pointer = new NFIBz2Support.Pointer(this, bzst, lib);
+    public final void init(long bzst, NativeBz2Support lib) {
+        this.pointer = new NativeBz2Support.Pointer(this, bzst, lib);
+        assert !pointer.isReleased();
     }
 
-    public final Object getBzs() {
-        assert pointer != null;
-        return pointer.getReference();
+    public final long getBzs() {
+        NativeBz2Support.Pointer p = pointer;
+        assert p != null && !p.isReleased();
+        return p.getPointer();
     }
 
-    @CompilerDirectives.TruffleBoundary
+    @TruffleBoundary
     public final void markReleased() {
-        if (pointer != null) {
-            synchronized (this) {
-                pointer.markReleased();
-                pointer = null;
-            }
+        NativeBz2Support.Pointer p;
+        synchronized (this) {
+            p = pointer;
+            pointer = null;
+        }
+        if (p != null) {
+            boolean markedReleased = p.markReleased();
+            assert markedReleased || p.isReleased();
         }
     }
 
-    public static class BZ2Compressor extends BZ2Object {
+    public static final class BZ2Compressor extends BZ2Object {
 
         private boolean flushed;
 
@@ -95,7 +100,7 @@ public abstract class BZ2Object extends PythonBuiltinObject {
         }
     }
 
-    public static class BZ2Decompressor extends BZ2Object {
+    public static final class BZ2Decompressor extends BZ2Object {
 
         private boolean eof;
         private byte[] unusedData;
@@ -220,13 +225,5 @@ public abstract class BZ2Object extends PythonBuiltinObject {
         public void setBzsAvailInReal(long bzsAvailInReal) throws OverflowException {
             this.bzsAvailInReal = PInt.intValueExact(bzsAvailInReal);
         }
-    }
-
-    public static BZ2Compressor createCompressor(Object cls, Shape instanceShape) {
-        return new BZ2Compressor(cls, instanceShape);
-    }
-
-    public static BZ2Decompressor createDecompressor(Object cls, Shape instanceShape) {
-        return new BZ2Decompressor(cls, instanceShape);
     }
 }

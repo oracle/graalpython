@@ -202,9 +202,6 @@ public final class FileIOBuiltins extends PythonBuiltins {
 
         @Override
         public void execute(PythonContext context, Access access) {
-            if (fd.isReleased()) {
-                return;
-            }
             try {
                 fd.doRelease();
             } catch (Exception e) {
