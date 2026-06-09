@@ -11,9 +11,9 @@ Please also take some time to review our [code of conduct](http://www.graalvm.or
 
 ### Using a Github codespace
 
-The devcontainer we create sets up a code workspace on launch—the first time you launch the container, you will need a bit of patience.
-Then, use the command palette or the File menu and select "Open Workspace from File" and select [/workspace/graalpython.code-workspace](../../../graalpython.code-workspace).
-The VSCode window will reload and open GraalPy and all the related Java projects.
+The devcontainer will use checked-in Maven POM facades, so basic Java editing works directly.
+Use `mx python-jvm` to build, run, and test a GraalPy distribution artifact.
+For full editing support, run `mx vscodeinit` and open the `graalpython.code-workspace` file that command generates.
 
 ### Setting up on your machine
 
@@ -63,9 +63,9 @@ This will generate configurations for Eclipse, IntelliJ, and NetBeans so that yo
 See also the documentation in mx for [setting up your IDE](https://github.com/graalvm/mx/blob/master/docs/IDE.md).
 If you use another editor (such as VSCode, Emacs, or Neovim) with support for the [Eclipse language server](https://github.com/eclipse/eclipse.jdt.ls) or [Apache NetBeans language server](https://marketplace.visualstudio.com/items?itemName=ASF.apache-netbeans-java), you can also get useable development setups with that, but it's not something we explicitly support.
 
-The checked-in Maven POMs are lightweight facades for quick Java IDE import in editors such as Eclipse, VSCode, or Eglot/JDT-LS.
+The checked-in Maven POMs are lightweight facades for quick Java IDE import in editors such as Eclipse, VSCode, or any editor using JDTLS.
 They are not the full GraalPy build; use `mx ideinit` for the full generated IDE setup and `mx python-jvm` for the build needed to run or test GraalPy.
-The facade uses a `graalvm.version` Maven range for the current release train so fresh checkouts resolve the newest available GraalVM artifacts; override `graalvm.version` locally to lock a specific version.
+The facade uses the `graalvm.version` Maven property for GraalVM artifact resolution; override it locally if you need a different version.
 
 ## Development Layout
 

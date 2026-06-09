@@ -27,9 +27,7 @@ layout: base
 {%- highlight java -%}
 import org.graalvm.polyglot.Context;
 
-try (Context context = Context.newBuilder()
-        .allowAllAccess(true) // See documentation for options
-        .build()) {
+try (Context context = Context.newBuilder().build()) {
     context.eval("python", "print('Hello from GraalPy!')");
 }
 {%- endhighlight -%}
