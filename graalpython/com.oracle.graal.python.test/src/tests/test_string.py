@@ -5,7 +5,6 @@
 import unittest
 import string
 import sys
-from tests import util
 
 
 class MyIndexable(object):
@@ -1234,7 +1233,6 @@ class FunkyStr(str):
         return self
 
 
-@util.skipUnlessBytecodeDSL("bug in manual interpreter")
 def test_fstring_preserves_type_of_single_str():
     assert type(f"{FunkyStr('abc')}") == FunkyStr
 

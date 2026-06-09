@@ -89,12 +89,6 @@ def skipIfBytecodeDSL(reason=''):
     return wrapper
 
 
-def skipUnlessBytecodeDSL(reason=''):
-    def wrapper(test):
-        return test
-    return wrapper
-
-
 def storage_to_native(s):
     if sys.implementation.name == 'graalpy':
         assert hasattr(__graalpython__, 'storage_to_native'), "Needs to be run with --python.EnableDebuggingBuiltins"
