@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -60,19 +59,15 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 /**
  * This node makes sure that the current frame has a filled-in PFrame object with a backref
@@ -279,11 +274,7 @@ public abstract class MaterializeFrameNode extends Node {
         public abstract void execute(PFrame pyFrame, Frame frameToSync, Node location);
 
         @Specialization(guards = {"!pyFrame.hasCustomLocals()", "!isGeneratorFrame(frameToSync)"})
-        static void doSync(PFrame pyFrame, Frame frameToSync, Node location,
-                        @Bind Node inliningTarget,
-                        @Cached(inline = false) ValueProfile frameDescriptorProfile,
-                        @Cached InlinedIntValueProfile slotCountProfile,
-                        @Exclusive @Cached InlinedBranchProfile createLocalsProfile) {
+        static void doSync(PFrame pyFrame, Frame frameToSync, Node location) {
             BytecodeNode bytecodeNode = BytecodeNode.get(location);
             if (bytecodeNode != null) {
                 // TODO: avoid always making a copy, if a BytecodeFrame is set, just update it
@@ -308,15 +299,6 @@ public abstract class MaterializeFrameNode extends Node {
                 createLocalsProfile.enter(inliningTarget);
                 pyFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frameToSync.materialize()));
             }
-        }
-
-        @Idempotent
-        protected static int variableSlotCount(FrameDescriptor fd) {
-            BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) fd.getInfo();
-            if (info == null) {
-                return 0;
-            }
-            return info.getVariableCount();
         }
     }
 }

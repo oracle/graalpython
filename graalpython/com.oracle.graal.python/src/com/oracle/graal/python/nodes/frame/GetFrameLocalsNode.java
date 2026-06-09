@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
-import com.oracle.graal.python.nodes.frame.GetFrameLocalsNodeGen.CopyDSLLocalsToDictNodeGen;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -99,7 +98,7 @@ public abstract class GetFrameLocalsNode extends Node {
     @Specialization(guards = "!pyFrame.hasCustomLocals()")
     static Object doLoop(VirtualFrame frame, Node inliningTarget, PFrame pyFrame, boolean freshFrame,
                     @Cached InlinedBranchProfile create,
-                    @Cached(inline = false) CopyLocalsToDictBase copyLocalsToDict,
+                    @Cached CopyDSLLocalsToDict copyLocalsToDict,
                     @Cached ReadFrameNode readFrameNode) {
         if (!freshFrame && pyFrame.needsRefresh(frame, CallerFlags.NEEDS_LOCALS)) {
             pyFrame = readFrameNode.refreshFrame(frame, pyFrame.getRef(), CallerFlags.NEEDS_LOCALS);
@@ -112,7 +111,7 @@ public abstract class GetFrameLocalsNode extends Node {
             localsDict = PFactory.createDict(PythonLanguage.get(inliningTarget));
             pyFrame.setLocalsDict(localsDict);
         }
-        copyLocalsToDict.execute(pyFrame, localsDict);
+        copyLocalsToDict.execute(pyFrame.getBytecodeFrame(), localsDict);
         return localsDict;
     }
 
@@ -123,40 +122,9 @@ public abstract class GetFrameLocalsNode extends Node {
         return localsDict;
     }
 
-    abstract static class CopyLocalsToDictBase extends Node {
-        public abstract void execute(PFrame frame, PDict dict);
-
-        @NeverDefault
-        static CopyLocalsToDictBase create() {
-            return CopyDSLLocalsToDictNodeGen.create();
-        }
-
-        static CopyLocalsToDictBase getUncached() {
-            return CopyDSLLocalsToDictNodeGen.getUncached();
-        }
-
-        static void copyItem(Node inliningTarget, Object localValue, BytecodeDSLFrameInfo info, PDict dict, HashingStorageSetItem setItem, HashingStorageDelItem delItem, int i, boolean deref) {
-            TruffleString name = info.getVariableName(i);
-            Object value = localValue;
-            if (deref && value != null) {
-                value = ((PCell) value).getRef();
-            }
-            if (value == null) {
-                delItem.execute(inliningTarget, dict.getDictStorage(), name, dict);
-            } else {
-                HashingStorage storage = setItem.execute(inliningTarget, dict.getDictStorage(), name, value);
-                dict.setDictStorage(storage);
-            }
-        }
-    }
-
     @GenerateUncached
     @GenerateInline(false)       // footprint reduction 104 -> 86
-    abstract static class CopyDSLLocalsToDict extends CopyLocalsToDictBase {
-        @Override
-        public final void execute(PFrame frame, PDict dict) {
-            execute(frame.getBytecodeFrame(), dict);
-        }
+    abstract static class CopyDSLLocalsToDict extends Node {
 
         abstract void execute(BytecodeFrame locals, PDict dict);
 
@@ -171,7 +139,18 @@ public abstract class GetFrameLocalsNode extends Node {
             int regularVarCount = regularVarCountProfile.profile(inliningTarget, info.getRegularVariableCount());
             int varCount = varCountProfile.profile(inliningTarget, info.getVariableCount());
             for (int i = 0; i < varCount; i++) {
-                copyItem(inliningTarget, locals.getLocalValue(i), info, dict, setItem, delItem, i, i >= regularVarCount);
+                Object localValue = locals.getLocalValue(i);
+                TruffleString name = info.getVariableName(i);
+                Object value = localValue;
+                if (i >= regularVarCount && value != null) {
+                    value = ((PCell) value).getRef();
+                }
+                if (value == null) {
+                    delItem.execute(inliningTarget, dict.getDictStorage(), name, dict);
+                } else {
+                    HashingStorage storage = setItem.execute(inliningTarget, dict.getDictStorage(), name, value);
+                    dict.setDictStorage(storage);
+                }
             }
         }
     }
