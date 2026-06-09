@@ -1373,10 +1373,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             TruffleString[] varnames = readStringArray(true);
             TruffleString[] cellvars = readStringArray(true);
             TruffleString[] freevars = readStringArray(true);
-            int[] cell2arg = readIntArray();
-            if (cell2arg.length == 0) {
-                cell2arg = null;
-            }
             Object[] constants = readObjectArray();
             int startLine = readInt();
             int startColumn = readInt();
@@ -1389,7 +1385,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int maxProfileCEventStackSize = readInt();
 
             BytecodeSupplier provider = new BytecodeSupplier(serialized, bytecodeFile, sourceReference, bytecodeOffset, bytecodeSize, cacheKey);
-            return new BytecodeDSLCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames, cellvars, freevars, cell2arg, constants,
+            return new BytecodeDSLCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames, cellvars, freevars, constants,
                             startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, yieldFromGeneratorIndex, instrumentationDataIndex, maxProfileCEventStackSize, provider);
         }
 
@@ -1416,11 +1412,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeStringArray(code.varnames);
             writeStringArray(code.cellvars);
             writeStringArray(code.freevars);
-            if (code.cell2arg != null) {
-                writeIntArray(code.cell2arg);
-            } else {
-                writeIntArray(PythonUtils.EMPTY_INT_ARRAY);
-            }
             writeObjectArray(code.constants);
             writeInt(code.startLine);
             writeInt(code.startColumn);

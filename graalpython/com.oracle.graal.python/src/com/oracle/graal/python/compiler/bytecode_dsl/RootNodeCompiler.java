@@ -218,7 +218,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private final HashMap<String, Integer> varnames;
     private final HashMap<String, Integer> cellvars;
     private final HashMap<String, Integer> freevars;
-    private final int[] cell2arg;
     private final String selfCellName;
 
     // Updated idempotently: the keys are filled during first parsing, on subsequent parsings the
@@ -326,22 +325,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         this.freevars = scope.getSymbolsByType(EnumSet.of(Scope.DefUse.Free, Scope.DefUse.DefFreeClass), 0);
 
-        int[] cell2argValue = new int[cellvars.size()];
-        boolean hasArgCell = false;
-        Arrays.fill(cell2argValue, -1);
         String selfCellNameValue = null;
         for (String cellvar : cellvars.keySet()) {
             if (varnames.containsKey(cellvar)) {
                 int argIndex = varnames.get(cellvar);
-                cell2argValue[cellvars.get(cellvar)] = argIndex;
-                hasArgCell = true;
                 if (argIndex == 0) {
                     assert selfCellNameValue == null;
                     selfCellNameValue = cellvar;
                 }
             }
         }
-        this.cell2arg = hasArgCell ? cell2argValue : null;
         this.selfCellName = selfCellNameValue;
     }
 
@@ -557,7 +550,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                             orderedTruffleStringArray(varnames),
                             orderedTruffleStringArray(cellvars),
                             orderedTruffleStringArray(freevars),
-                            cell2arg,
                             orderedKeys(constants, new Object[0]),
                             sourceRange.startLine,
                             sourceRange.startColumn,

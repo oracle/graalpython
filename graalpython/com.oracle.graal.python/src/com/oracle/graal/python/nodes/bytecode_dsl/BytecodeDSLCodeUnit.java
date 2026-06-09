@@ -76,9 +76,6 @@ public final class BytecodeDSLCodeUnit {
     @CompilationFinal(dimensions = 1) public final TruffleString[] varnames;
     @CompilationFinal(dimensions = 1) public final TruffleString[] cellvars;
     @CompilationFinal(dimensions = 1) public final TruffleString[] freevars;
-    @CompilationFinal(dimensions = 1) public final int[] cell2arg;
-    @CompilationFinal(dimensions = 1) public final int[] arg2cell;
-
     @CompilationFinal(dimensions = 1) public final Object[] constants;
 
     public final int startLine;
@@ -94,7 +91,7 @@ public final class BytecodeDSLCodeUnit {
     private final BytecodeSupplier supplier;
 
     public BytecodeDSLCodeUnit(TruffleString name, TruffleString qualname, int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int flags, TruffleString[] names, TruffleString[] varnames,
-                    TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg, Object[] constants, int startLine, int startColumn, int endLine, int endColumn,
+                    TruffleString[] cellvars, TruffleString[] freevars, Object[] constants, int startLine, int startColumn, int endLine, int endColumn,
                     int classcellIndex, int selfIndex, int yieldFromGeneratorIndex, int instrumentationDataIndex, int maxProfileCEventStackSize, BytecodeSupplier supplier) {
         assert isInterned(name);
         this.name = name;
@@ -112,18 +109,6 @@ public final class BytecodeDSLCodeUnit {
         this.cellvars = cellvars;
         assert isInterned(freevars);
         this.freevars = freevars;
-        this.cell2arg = cell2arg;
-        int[] arg2cellValue = null;
-        if (cell2arg != null) {
-            arg2cellValue = new int[getTotalArgCount()];
-            Arrays.fill(arg2cellValue, -1);
-            for (int i = 0; i < cell2arg.length; i++) {
-                if (cell2arg[i] >= 0) {
-                    arg2cellValue[cell2arg[i]] = i;
-                }
-            }
-        }
-        this.arg2cell = arg2cellValue;
         this.constants = constants;
         this.startLine = startLine;
         this.startColumn = startColumn;
@@ -145,7 +130,7 @@ public final class BytecodeDSLCodeUnit {
 
     public BytecodeDSLCodeUnit withFlags(int flags) {
         return new BytecodeDSLCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags,
-                        names, varnames, cellvars, freevars, cell2arg, constants,
+                        names, varnames, cellvars, freevars, constants,
                         startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, yieldFromGeneratorIndex, instrumentationDataIndex, maxProfileCEventStackSize, supplier);
     }
 
