@@ -38,7 +38,7 @@
 # SOFTWARE.
 import struct
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, CPyExtType, unhandled_error_compare
 
 int_bits = struct.calcsize('i') * 8
 max_int = 2 ** (int_bits - 1) - 1
@@ -194,6 +194,28 @@ def _int_examples():
 
 
 class TestPyLong(CPyExtTestCase):
+
+    def test_native_long_subtype_has_native_layout(self):
+        NativeLongWithMember = CPyExtType(
+            "NativeLongWithMember",
+            """
+            static void NativeLongWithMember_dealloc(NativeLongWithMemberObject *self) {
+                Py_XDECREF(self->member);
+                Py_TYPE(self)->tp_free((PyObject *)self);
+            }
+            """,
+            ready_code="NativeLongWithMemberType.tp_new = PyLong_Type.tp_new;",
+            tp_base="&PyLong_Type",
+            struct_base="PyLongObject base;",
+            cmembers="PyObject *member;",
+            tp_dealloc="(destructor)NativeLongWithMember_dealloc",
+            tp_members='{"member", T_OBJECT_EX, offsetof(NativeLongWithMemberObject, member), 0, NULL}',
+        )
+
+        obj = NativeLongWithMember(10)
+        assert obj == 10
+        obj.member = "foo"
+        assert obj.member == "foo"
 
     test_PyLong_AsLong = CPyExtFunction(
         _reference_as_long,

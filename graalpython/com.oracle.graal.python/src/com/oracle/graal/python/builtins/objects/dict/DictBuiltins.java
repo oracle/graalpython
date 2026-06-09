@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -157,7 +157,6 @@ public final class DictBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile orderedProfile,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Cached CExtNodes.DictSubtypeNew subtypeNew,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             Shape shape = getInstanceShape.execute(cls);
@@ -166,7 +165,7 @@ public final class DictBuiltins extends PythonBuiltins {
             }
             PDict newDict = PFactory.createDict(cls, shape, EmptyStorage.INSTANCE);
             if (needsNativeAllocationNode.execute(inliningTarget, cls)) {
-                return subtypeNew.execute(inliningTarget, cls, newDict);
+                return CExtNodes.allocateNativePart(inliningTarget, cls, newDict);
             } else {
                 return newDict;
             }

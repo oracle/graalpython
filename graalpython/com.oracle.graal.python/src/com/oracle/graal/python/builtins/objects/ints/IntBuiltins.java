@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.BytesFromObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -167,6 +168,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
@@ -207,42 +209,47 @@ public final class IntBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached IntNodeInnerNode innerNode,
                         @Cached IsBuiltinClassExactProfile isPrimitiveIntProfile,
+                        @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached CreateIntSubclassNode createIntSubclassNode) {
             Object result = innerNode.execute(frame, inliningTarget, x, baseObj);
             if (isPrimitiveIntProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PInt)) {
                 return result;
             } else {
-                return createIntSubclassNode.execute(inliningTarget, cls, result);
+                assert IsSubtypeNode.getUncached().execute(cls, PythonBuiltinClassType.PInt);
+                PInt managedInt = createIntSubclassNode.execute(inliningTarget, cls, result, getInstanceShape.execute(cls));
+                if (needsNativeAllocationNode.execute(inliningTarget, cls)) {
+                    // needsNativeAllocationNode acts as branch profile
+                    return CExtNodes.allocateNativePart(inliningTarget, cls, managedInt);
+                } else {
+                    return managedInt;
+                }
             }
         }
 
         @GenerateInline
         @GenerateCached(false)
         abstract static class CreateIntSubclassNode extends Node {
-            public abstract Object execute(Node inliningTarget, Object cls, Object intObj);
+            public abstract PInt execute(Node inliningTarget, Object cls, Object intObj, Shape shape);
 
             @Specialization
-            static Object doSubclass(Object cls, int value,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createInt(cls, getInstanceShape.execute(cls), value);
+            static PInt doManagedSubclass(Object cls, int value, Shape shape) {
+                return PFactory.createInt(cls, shape, value);
             }
 
             @Specialization
-            static Object doSubclass(Object cls, long value,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createInt(cls, getInstanceShape.execute(cls), value);
+            static PInt doManagedSubclass(Object cls, long value, Shape shape) {
+                return PFactory.createInt(cls, shape, value);
             }
 
             @Specialization
-            static Object doSubclass(Object cls, boolean value,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createInt(cls, getInstanceShape.execute(cls), PInt.intValue(value));
+            static PInt doManagedSubclass(Object cls, boolean value, Shape shape) {
+                return PFactory.createInt(cls, shape, PInt.intValue(value));
             }
 
             @Specialization
-            static Object doSubclass(Object cls, PInt value,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createInt(cls, getInstanceShape.execute(cls), value.getValue());
+            static PInt doManagedSubclass(Object cls, PInt value, Shape shape) {
+                return PFactory.createInt(cls, shape, value.getValue());
             }
         }
 
