@@ -54,8 +54,7 @@ public final class PAsyncGen extends PGenerator {
     private boolean runningAsync = false;
 
     public PAsyncGen(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode, MaterializedFrame continuationFrame) {
-        super(language, function, continuationFrame, PythonBuiltinClassType.PAsyncGenerator,
-                        new BytecodeDSLState(rootNode, continuationFrame.getArguments(), continuationRootNode));
+        super(language, function, continuationFrame, PythonBuiltinClassType.PAsyncGenerator, rootNode, continuationRootNode);
     }
 
     public boolean isClosed() {

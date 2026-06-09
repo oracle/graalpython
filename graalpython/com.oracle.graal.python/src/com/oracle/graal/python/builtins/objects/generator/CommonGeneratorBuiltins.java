@@ -183,7 +183,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 self.setRunning(false);
             }
             if (generatorResult instanceof ContinuationResult continuation) {
-                return handleResult(inliningTarget, self, continuation);
+                return self.handleResult(continuation);
             } else {
                 returnProfile.enter(inliningTarget);
                 throw handleReturn(inliningTarget, self, generatorResult);
@@ -231,7 +231,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 self.setRunning(false);
             }
             if (generatorResult instanceof ContinuationResult continuation) {
-                return handleResult(inliningTarget, self, continuation);
+                return self.handleResult(continuation);
             } else {
                 returnProfile.enter(inliningTarget);
                 throw handleReturn(inliningTarget, self, generatorResult);
@@ -250,10 +250,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             // RuntimeError
             e.expectStopIteration(inliningTarget, profile);
             throw raiseNode.raiseWithCause(inliningTarget, RuntimeError, e, ErrorMessages.GENERATOR_RAISED_STOPITER);
-        }
-
-        private static Object handleResult(Node node, PGenerator self, Object result) {
-            return self.handleResult(PythonLanguage.get(node), result);
         }
 
         private static PException handleReturn(Node inliningTarget, PGenerator self, Object returnValue) {

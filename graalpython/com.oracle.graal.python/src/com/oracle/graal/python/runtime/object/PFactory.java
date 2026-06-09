@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.asyncio.PANextAwaitable;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGen;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenAThrow;
-import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 import com.oracle.graal.python.builtins.objects.asyncio.PCoroutineWrapper;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -787,14 +786,14 @@ public final class PFactory {
      * Special objects: generators, proxies, references, cells
      */
 
-    public static PGenerator createGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments, ContinuationRootNode continuationRootNode,
+    public static PGenerator createGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode,
                     MaterializedFrame continuationFrame) {
-        return PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator, continuationRootNode, continuationFrame);
+        return PGenerator.create(language, function, rootNode, PythonBuiltinClassType.PGenerator, continuationRootNode, continuationFrame);
     }
 
-    public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments, ContinuationRootNode continuationRootNode,
+    public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode,
                     MaterializedFrame continuationFrame) {
-        return PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PCoroutine, continuationRootNode, continuationFrame);
+        return PGenerator.create(language, function, rootNode, PythonBuiltinClassType.PCoroutine, continuationRootNode, continuationFrame);
     }
 
     public static PCoroutineWrapper createCoroutineWrapper(PythonLanguage language, PGenerator generator) {
@@ -1554,10 +1553,6 @@ public final class PFactory {
 
     public static PAsyncGenAThrow createAsyncGeneratorAThrow(PythonLanguage language, PAsyncGen receiver, Object arg1, Object arg2, Object arg3) {
         return new PAsyncGenAThrow(language, receiver, arg1, arg2, arg3);
-    }
-
-    public static PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(PythonLanguage language, Object wrapped) {
-        return new PAsyncGenWrappedValue(language, wrapped);
     }
 
     // pickle

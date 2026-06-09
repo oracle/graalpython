@@ -1429,9 +1429,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             PArguments.setCurrentFrameInfo(continuationFrame, new PFrame.Reference(innerRoot, PFrame.Reference.EMPTY));
             if (innerRoot.getCodeUnit().isGenerator()) {
-                return PFactory.createGenerator(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
+                return PFactory.createGenerator(language, generatorFunction, innerRoot, continuationRootNode, continuationFrame);
             } else if (innerRoot.getCodeUnit().isCoroutine()) {
-                return PFactory.createCoroutine(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
+                return PFactory.createCoroutine(language, generatorFunction, innerRoot, continuationRootNode, continuationFrame);
             } else if (innerRoot.getCodeUnit().isAsyncGenerator()) {
                 return PFactory.createAsyncGenerator(language, generatorFunction, innerRoot, continuationRootNode, continuationFrame);
             }
