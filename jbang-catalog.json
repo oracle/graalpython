@@ -4,6 +4,10 @@
     "hello": {
       "script-ref": "./graalpython/graalpy-jbang/examples/hello.java",
       "description": "Script that says hello from Python started from Java or execute Python expression as parameter."
+    },
+    "graalpy": {
+      "script-ref": "./graalpython/graalpy-jbang/examples/graalpy.java",
+      "description": "Launches GraalPy through the published Maven launcher artifacts."
     }
   },
   "templates": {

@@ -8,9 +8,16 @@ While GraalPy offers similar capabilities to Jython, there are important differe
 
 This guide shows you how to migrate from Jython to GraalPy.
 
+For a lightweight command-line JVM launcher similar to the Jython launcher, use the JBang recipe from the GraalPy catalog:
+
+```bash
+jbang graalpy@jbang-catalog.json -c "print('hello from GraalPy')"
+```
+
 ### Prerequisites
 
-- To migrate Jython scripts to GraalPy, you first need to create a GraalPy embedding. For more information, see [Embedding Python in Java](Embedding-Getting-Started.md).
+- To migrate plain Jython command-line scripts, you can create a custom embedding or run GraalPy with the JBang recipe.
+- To migrate applications that embed Jython, create a GraalPy embedding. For more information, see [Embedding Python in Java](Embedding-Getting-Started.md).
 - Make sure to migrate code from Python 2 (as supported by Jython) to Python 3 (the major version GraalPy is compatible with) following [the official guide from the Python community](https://docs.python.org/3/howto/pyporting.html)
 
 ## GraalPy Java Interoperability Overview
