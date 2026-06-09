@@ -808,7 +808,7 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-def get_path_with_patchelf():
+def get_path_with_patchelf(graalpy=None):
     path = os.environ.get("PATH", "")
     if mx.is_linux() and not shutil.which("patchelf"):
         venv = Path(SUITE.get_output_root()).absolute() / "patchelf-venv"
@@ -823,11 +823,17 @@ def get_path_with_patchelf():
         venv = Path(SUITE.get_output_root()).absolute() / "delvewheel-venv"
         path += os.pathsep + str(venv / "Scripts")
         if not shutil.which("delvewheel", path=path):
-            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {sys.executable}... [delvewheel not found on PATH]")
+            if sys.version_info < (3, 12):
+                if graalpy is None:
+                    graalpy = graalpy_standalone_jvm()
+                venv_python = [graalpy, "-X", "jit=0"]
+            else:
+                venv_python = [sys.executable]
+            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {shlex.join(venv_python)}... [delvewheel not found on PATH]")
             t0 = time.time()
-            subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
-            subprocess.check_call([str(venv / "Scripts" / "pip.exe"), "install", "delvewheel"])
-            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {sys.executable}... [duration: {time.time() - t0}]")
+            subprocess.check_call(venv_python + ["-m", "venv", str(venv)])
+            subprocess.check_call([str(venv / "Scripts" / "pip.exe"), "install", "delvewheel>=1.13.0"])
+            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {shlex.join(venv_python)}... [duration: {time.time() - t0}]")
     return path
 
 
@@ -1841,8 +1847,8 @@ def graalpython_gate_runner(_, tasks):
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
             env = os.environ.copy()
-            env['PATH'] = get_path_with_patchelf()
-            graalpy = graalpy_standalone_jvm()
+            graalpy = graalpy_standalone_native()
+            env['PATH'] = get_path_with_patchelf(graalpy)
             mx.log("1. Running twice without shared engine")
             run_python_unittests(
                 graalpy,

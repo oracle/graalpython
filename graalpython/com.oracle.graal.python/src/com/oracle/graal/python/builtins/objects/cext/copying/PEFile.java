@@ -51,8 +51,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleFile;
 
 final class PEFile extends SharedObject {
-    private static final String DELVEWHEEL_VERSION = "1.9.0";
-    private static final String DELVEWHEEL_INSTALL_INSTRUCTION = "IsolateNativeModules option needs `delvewheel` tool to copy libraries. Make sure you have `delvewheel==" + DELVEWHEEL_VERSION +
+    private static final String DELVEWHEEL_VERSION = "1.13.0";
+    private static final String DELVEWHEEL_INSTALL_INSTRUCTION = "IsolateNativeModules option needs `delvewheel` tool to copy libraries. Make sure you have `delvewheel>=" + DELVEWHEEL_VERSION +
                     "` available in the virtualenv or on PATH (needs environment access).";
 
     private final PythonContext context;
@@ -79,7 +79,7 @@ final class PEFile extends SharedObject {
         // TODO
     }
 
-    private String getDelvewheelPython() throws NativeLibraryToolException {
+    private String getDelvewheel() throws NativeLibraryToolException {
         TruffleFile delvewheel = which(context, "delvewheel.exe");
         if (!delvewheel.exists()) {
             delvewheel = which(context, "delvewheel.bat");
@@ -90,26 +90,7 @@ final class PEFile extends SharedObject {
         if (!delvewheel.exists()) {
             throw new NativeLibraryToolException("Could not find `delvewheel`. " + DELVEWHEEL_INSTALL_INSTRUCTION);
         }
-        TruffleFile python = delvewheel.resolveSibling("python.exe");
-        if (!python.exists()) {
-            python = delvewheel.resolveSibling("python.bat");
-        }
-        if (!python.exists()) {
-            python = delvewheel.resolveSibling("python.cmd");
-        }
-        if (!python.exists()) {
-            python = delvewheel.getParent().resolveSibling("python.exe");
-        }
-        if (!python.exists()) {
-            python = delvewheel.getParent().resolveSibling("python.bat");
-        }
-        if (!python.exists()) {
-            python = delvewheel.getParent().resolveSibling("python.cmd");
-        }
-        if (!python.exists()) {
-            throw new NativeLibraryToolException("Could not find Python executable next to `delvewheel` at '" + delvewheel + "'. " + DELVEWHEEL_INSTALL_INSTRUCTION);
-        }
-        return python.toString();
+        return delvewheel.toString();
     }
 
     @Override
@@ -117,11 +98,9 @@ final class PEFile extends SharedObject {
         var pb = newProcessBuilder(context);
         var stderr = new ByteArrayOutputStream();
         pb.redirectError(pb.createRedirectToStream(stderr));
-        var tempfileWithForwardSlashes = tempfile.toString().replace('\\', '/');
-        String pythonExe = getDelvewheelPython();
-        pb.command(pythonExe, "-c",
-                        String.format("from delvewheel import _dll_utils; _dll_utils.replace_needed('%s', ['%s'], {'%s': '%s'}, strip=True, verbose=2, test=[])",
-                                        tempfileWithForwardSlashes, oldName, oldName, newName));
+        String delvewheel = getDelvewheel();
+        pb.command(delvewheel, "replace-needed", "-v", "-v", "--strip", "-change", oldName, newName,
+                        tempfile.toString());
         Process proc;
         try {
             proc = pb.start();

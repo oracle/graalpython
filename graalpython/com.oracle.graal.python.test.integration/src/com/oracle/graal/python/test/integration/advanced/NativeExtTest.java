@@ -61,7 +61,7 @@ import org.junit.Test;
  * because we cannot create multiple contexts that would load native extensions.
  */
 public class NativeExtTest {
-    private static final String DELVEWHEEL_VERSION = "1.9.0";
+    private static final String DELVEWHEEL_VERSION = "1.13.0";
 
     @BeforeClass
     public static void setUpClass() {
@@ -133,7 +133,7 @@ public class NativeExtTest {
                 Value exception = ex.getGuestObject();
                 Assert.assertTrue(exception.isException());
                 Assert.assertEquals(ex.getMessage(), "SystemError", exception.getMetaObject().getMetaSimpleName());
-                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("delvewheel==" + DELVEWHEEL_VERSION));
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains("delvewheel>=" + DELVEWHEEL_VERSION));
             }
         } finally {
             Files.deleteIfExists(tempDir);
