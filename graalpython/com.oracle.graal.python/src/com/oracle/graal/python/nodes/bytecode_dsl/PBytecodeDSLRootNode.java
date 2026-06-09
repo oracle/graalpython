@@ -120,7 +120,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
-import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
+import com.oracle.graal.python.compiler.MakeTypeParamKind;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyGenFetchStopIterationValue;

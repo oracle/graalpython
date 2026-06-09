@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,43 +40,30 @@
  */
 package com.oracle.graal.python.compiler;
 
-import com.oracle.graal.python.annotations.GenerateEnumConstants;
+public final class CollectionBits {
+    public static final int KIND_MASK = 0b00011111;
+    public static final int KIND_LIST = 0b00100000;
+    public static final int KIND_TUPLE = 0b01000000;
+    public static final int KIND_SET = 0b01100000;
+    public static final int KIND_DICT = 0b10000000;
+    public static final int KIND_KWORDS = 0b10100000;
+    public static final int KIND_OBJECT = 0b11000000;
 
-/** Operation identifiers for {@link OpCodes#BINARY_OP}. */
-@GenerateEnumConstants
-public enum BinaryOps {
-    ADD,
-    INPLACE_ADD,
-    SUB,
-    INPLACE_SUB,
-    MUL,
-    INPLACE_MUL,
-    FLOORDIV,
-    INPLACE_FLOORDIV,
-    TRUEDIV,
-    INPLACE_TRUEDIV,
-    MOD,
-    INPLACE_MOD,
-    EQ,
-    NE,
-    LT,
-    LE,
-    GT,
-    GE,
-    LSHIFT,
-    INPLACE_LSHIFT,
-    RSHIFT,
-    INPLACE_RSHIFT,
-    AND,
-    INPLACE_AND,
-    OR,
-    INPLACE_OR,
-    XOR,
-    INPLACE_XOR,
-    POW,
-    INPLACE_POW,
-    IN,
-    IS,
-    MATMUL,
-    INPLACE_MATMUL,
+    public static final byte ELEMENT_INT = 1;
+    public static final byte ELEMENT_LONG = 2;
+    public static final byte ELEMENT_BOOLEAN = 3;
+    public static final byte ELEMENT_DOUBLE = 4;
+    public static final byte ELEMENT_OBJECT = 5;
+
+    public static int elementCount(int oparg) {
+        return oparg & KIND_MASK;
+    }
+
+    public static int elementType(int oparg) {
+        return oparg & KIND_MASK;
+    }
+
+    public static int collectionKind(int oparg) {
+        return oparg & ~KIND_MASK;
+    }
 }

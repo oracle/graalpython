@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,33 +40,10 @@
  */
 package com.oracle.graal.python.compiler;
 
-public abstract class FormatOptions {
-    /**
-     * Mask to extract just the conversion type flags.
-     */
-    public static final int FVC_MASK = 0x3;
-    /**
-     * No conversion (identity function).
-     */
-    public static final int FVC_NONE = 0x0;
-    /**
-     * Conversion equivalent to builtin {@code str}
-     */
-    public static final int FVC_STR = 0x1;
-    /**
-     * Conversion equivalent to builtin {@code repr}
-     */
-    public static final int FVC_REPR = 0x2;
-    /**
-     * Conversion equivalent to builtin {@code ascii}
-     */
-    public static final int FVC_ASCII = 0x3;
-    /**
-     * Mask to extract just the spec flag.
-     */
-    public static final int FVS_MASK = 0x4;
-    /**
-     * Whether a format spec is present.
-     */
-    public static final int FVS_HAVE_SPEC = 0x4;
+public final class MakeTypeParamKind {
+    public static final int TYPE_VAR = 0;
+    public static final int TYPE_VAR_TUPLE = 1;
+    public static final int PARAM_SPEC = 2;
+    public static final int TYPE_VAR_WITH_BOUND = 3;
+    public static final int TYPE_VAR_WITH_CONSTRAINTS = 4;
 }
