@@ -46,7 +46,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
@@ -169,10 +168,9 @@ public abstract class CodeNodes {
         }
 
         private static PRootNode deserializeForBytecodeInterpreter(PythonLanguage language, byte[] data, TruffleString[] cellvars, TruffleString[] freevars, int flags) {
-            CodeUnit codeUnit = MarshalModuleBuiltins.deserializeCodeUnit(null, language, data);
             RootNode rootNode;
 
-            BytecodeDSLCodeUnit code = (BytecodeDSLCodeUnit) codeUnit;
+            BytecodeDSLCodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(null, language, data);
             if (code.flags != flags) {
                 code = code.withFlags(flags);
             }

@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
@@ -563,12 +562,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return parse(context, source, inputType, topLevel, optimize, interactiveTerminal, argumentNames, futureFeatures);
     }
 
-    public RootCallTarget callTargetFromBytecode(Source source, CodeUnit code) {
+    public RootCallTarget callTargetFromBytecode(Source source, BytecodeDSLCodeUnit code) {
         return callTargetFromBytecode(source, code, source.isInternal());
     }
 
-    public RootCallTarget callTargetFromBytecode(Source source, CodeUnit code, boolean isInternal) {
-        RootNode rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(this, isInternal);
+    public RootCallTarget callTargetFromBytecode(Source source, BytecodeDSLCodeUnit code, boolean isInternal) {
+        RootNode rootNode = code.createRootNode(this, isInternal);
         return PythonUtils.getOrCreateCallTarget(rootNode);
     }
 
@@ -1122,7 +1121,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
     }
 
-    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, CodeUnit key) {
+    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, BytecodeDSLCodeUnit key) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, key);
     }
 

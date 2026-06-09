@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -123,7 +123,7 @@ public final class ExceptionUtils {
     }
 
     private static int getLineno(Frame frame, Node location, FrameInstance frameInstance) {
-        if (frame != null && frame.getFrameDescriptor().getInfo() instanceof FrameInfo frameInfo) {
+        if (frame != null && frame.getFrameDescriptor().getInfo() instanceof BytecodeDSLFrameInfo frameInfo) {
             BytecodeNode bytecodeNode;
             if (frameInstance != null) {
                 bytecodeNode = BytecodeNode.get(frameInstance);

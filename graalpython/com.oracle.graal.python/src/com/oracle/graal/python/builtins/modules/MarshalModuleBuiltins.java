@@ -100,7 +100,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.IsInternedStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.lib.PyComplexCheckExactNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -115,7 +115,6 @@ import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
-import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -936,7 +935,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         lnotab = PythonUtils.EMPTY_BYTE_ARRAY;
                     }
                     writeBytes(lnotab);
-                } else if (v instanceof CodeUnit) {
+                } else if (v instanceof BytecodeDSLCodeUnit) {
                     writeByte(TYPE_GRAALPYTHON_DSL_CODE_UNIT | flag);
                     writeBytecodeDSLCodeUnit((BytecodeDSLCodeUnit) v);
                 } else if (v instanceof Source s) {
@@ -1342,7 +1341,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return a;
         }
 
-        private CodeUnit readCodeUnit() {
+        private BytecodeDSLCodeUnit readCodeUnit() {
             int codeUnitType = readByte();
             return switch (codeUnitType) {
                 case TYPE_GRAALPYTHON_CODE_UNIT -> readRemovedCodeUnitPayload();
@@ -1351,7 +1350,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             };
         }
 
-        private CodeUnit readRemovedCodeUnitPayload() {
+        private BytecodeDSLCodeUnit readRemovedCodeUnitPayload() {
             throw new MarshalError(ValueError,
                             PythonUtils.tsLiteral(
                                             "Attempted to deserialize a code object from the removed legacy bytecode interpreter. Consider clearing or setting a different pycache folder."));
@@ -1394,9 +1393,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                             startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, yieldFromGeneratorIndex, instrumentationDataIndex, maxProfileCEventStackSize, provider);
         }
 
-        private void writeCodeUnit(CodeUnit code) throws IOException {
+        private void writeCodeUnit(BytecodeDSLCodeUnit code) throws IOException {
             writeByte(TYPE_GRAALPYTHON_DSL_CODE_UNIT);
-            writeBytecodeDSLCodeUnit((BytecodeDSLCodeUnit) code);
+            writeBytecodeDSLCodeUnit(code);
         }
 
         private void writeBytecodeDSLCodeUnit(BytecodeDSLCodeUnit code) throws IOException {
@@ -1437,7 +1436,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private PCode readCode() {
             TruffleString fileName = readString(true);
             int flags = readInt();
-            CodeUnit code = readCodeUnit();
+            BytecodeDSLCodeUnit code = readCodeUnit();
             int firstLineNo = readInt();
             byte[] lnoTab = readBytes();
             com.oracle.graal.python.util.Supplier<CallTarget> supplier = () -> {
@@ -1460,7 +1459,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static byte[] serializeCodeUnit(Node locationForRaise, PythonLanguage language, CodeUnit code) {
+    public static byte[] serializeCodeUnit(Node locationForRaise, PythonLanguage language, BytecodeDSLCodeUnit code) {
         try {
             Marshal marshal = new Marshal(language, CURRENT_VERSION);
             marshal.writeCodeUnit(code);
@@ -1475,7 +1474,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static CodeUnit deserializeCodeUnit(Node node, PythonLanguage language, byte[] bytes) {
+    public static BytecodeDSLCodeUnit deserializeCodeUnit(Node node, PythonLanguage language, byte[] bytes) {
         try {
             Marshal marshal = new Marshal(language, bytes, bytes.length, 0);
             return marshal.readCodeUnit();

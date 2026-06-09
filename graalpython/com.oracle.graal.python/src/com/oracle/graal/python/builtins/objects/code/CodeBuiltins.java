@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -385,7 +385,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         static Object lines(PCode self) {
             PythonLanguage language = PythonLanguage.get(null);
             PTuple tuple;
-            CodeUnit co = self.getCodeUnit();
+            BytecodeDSLCodeUnit co = self.getCodeUnit();
             if (co != null) {
                 PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();
                 List<PTuple> lines = computeLinesForBytecodeDSLInterpreter(rootNode);
@@ -491,7 +491,7 @@ public final class CodeBuiltins extends PythonBuiltins {
         Object positions(PCode self) {
             PythonLanguage language = PythonLanguage.get(null);
             PTuple tuple;
-            CodeUnit co = self.getCodeUnit();
+            BytecodeDSLCodeUnit co = self.getCodeUnit();
             if (co != null) {
                 List<PTuple> lines = new ArrayList<>();
                 PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) self.getRootNodeForExtraction();

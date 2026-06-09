@@ -87,7 +87,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -302,8 +302,8 @@ public final class SuperBuiltins extends PythonBuiltins {
             if (bytecodeFrame == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
-            FrameInfo frameInfo = (FrameInfo) bytecodeFrame.getFrameDescriptorInfo();
-            return initFromNonLocalFrame(frame, inliningTarget, self, (PBytecodeDSLRootNode) frameInfo.getRootNode(), bytecodeFrame, getRefNode, raiseNode);
+            BytecodeDSLFrameInfo frameInfo = (BytecodeDSLFrameInfo) bytecodeFrame.getFrameDescriptorInfo();
+            return initFromNonLocalFrame(frame, inliningTarget, self, frameInfo.getRootNode(), bytecodeFrame, getRefNode, raiseNode);
         }
 
         private PNone initFromLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, BytecodeNode bytecodeNode, CellBuiltins.GetRefNode getRefNode,

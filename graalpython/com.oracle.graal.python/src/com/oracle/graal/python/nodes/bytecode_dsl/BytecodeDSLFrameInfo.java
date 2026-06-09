@@ -40,11 +40,17 @@
  */
 package com.oracle.graal.python.nodes.bytecode_dsl;
 
-import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.strings.TruffleString;
 
-public class BytecodeDSLFrameInfo implements FrameInfo {
+/**
+ * Carries additional metadata for introspection of frames used by the bytecode DSL interpreter.
+ * It's returned by {@link FrameDescriptor#getInfo()} if and only if the frame is coming from the
+ * bytecode DSL interpreter.
+ */
+public class BytecodeDSLFrameInfo {
     @CompilationFinal PBytecodeDSLRootNode rootNode;
 
     /**
@@ -55,23 +61,40 @@ public class BytecodeDSLFrameInfo implements FrameInfo {
         this.rootNode = rootNode;
     }
 
-    @Override
     public PBytecodeDSLRootNode getRootNode() {
         return rootNode;
     }
 
-    @Override
     public int getFirstLineNumber() {
         return rootNode.getFirstLineno();
     }
 
-    @Override
-    public CodeUnit getCodeUnit() {
+    public BytecodeDSLCodeUnit getCodeUnit() {
         return rootNode.getCodeUnit();
     }
 
-    @Override
     public boolean includeInTraceback() {
         return !rootNode.isInternal();
+    }
+
+    @Idempotent
+    public int getVariableCount() {
+        BytecodeDSLCodeUnit code = getCodeUnit();
+        return code.varnames.length + code.cellvars.length + code.freevars.length;
+    }
+
+    public int getRegularVariableCount() {
+        return getCodeUnit().varnames.length;
+    }
+
+    public TruffleString getVariableName(int slot) {
+        BytecodeDSLCodeUnit code = getCodeUnit();
+        if (slot < code.varnames.length) {
+            return code.varnames[slot];
+        } else if (slot < code.varnames.length + code.cellvars.length) {
+            return code.cellvars[slot - code.varnames.length];
+        } else {
+            return code.freevars[slot - code.varnames.length - code.cellvars.length];
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -590,9 +590,9 @@ public enum OpCodes {
     CLOSURE_FROM_STACK(1, (oparg, followingArgs, withJump) -> oparg, 1),
     /**
      * Creates a function object. The first immediate argument is an index to the constants array
-     * that determines the {@link CodeUnit} object that will provide the function's code.
+     * that determines the {@link BytecodeDSLCodeUnit} object that will provide the function's code.
      *
-     * Pops: The second immediate arguments contains flags (defined in {@link CodeUnit}) that
+     * Pops: The second immediate arguments contains flags (defined in {@link BytecodeDSLCodeUnit}) that
      * determine whether it will need to pop (in this order): closure, annotations, keyword only
      * defaults, defaults.
      *

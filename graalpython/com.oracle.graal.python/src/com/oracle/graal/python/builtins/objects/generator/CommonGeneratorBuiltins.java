@@ -68,7 +68,7 @@ import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -351,7 +351,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 PFrame.Reference ref = new PFrame.Reference(rootNode, PFrame.Reference.EMPTY);
                 PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(inliningTarget), location, generatorFrame, self.getGeneratorFunction(), self.getGlobals(), ref);
-                FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getFirstLineNumber());
                 Object existingTracebackObj = getTracebackNode.execute(inliningTarget, instance);
                 PTraceback newTraceback = PFactory.createTraceback(language, pFrame, pFrame.getLine(),

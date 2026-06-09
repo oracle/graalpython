@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
@@ -157,7 +156,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static TruffleString[] extractFreeVars(RootNode rootNode) {
-        CodeUnit code = getCodeUnit(rootNode);
+        BytecodeDSLCodeUnit code = getCodeUnit(rootNode);
         if (code != null) {
             return Arrays.copyOf(code.freevars, code.freevars.length);
         } else {
@@ -166,7 +165,7 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static TruffleString[] extractCellVars(RootNode rootNode) {
-        CodeUnit code = getCodeUnit(rootNode);
+        BytecodeDSLCodeUnit code = getCodeUnit(rootNode);
         if (code != null) {
             return Arrays.copyOf(code.cellvars, code.cellvars.length);
         } else {
@@ -204,7 +203,7 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static int extractFirstLineno(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        CodeUnit co = getCodeUnit(funcRootNode);
+        BytecodeDSLCodeUnit co = getCodeUnit(funcRootNode);
         if (co != null) {
             if ((co.flags & CO_GRAALPYHON_MODULE) != 0) {
                 return 1;
@@ -221,7 +220,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static TruffleString extractName(RootNode rootNode) {
-        CodeUnit code = getCodeUnit(rootNode);
+        BytecodeDSLCodeUnit code = getCodeUnit(rootNode);
         if (code != null) {
             return code.name;
         }
@@ -236,7 +235,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static TruffleString[] extractVarnames(RootNode node) {
-        CodeUnit code = getCodeUnit(node);
+        BytecodeDSLCodeUnit code = getCodeUnit(node);
         if (code != null) {
             return Arrays.copyOf(code.varnames, code.varnames.length);
         }
@@ -245,7 +244,7 @@ public final class PCode extends PythonBuiltinObject {
 
     private Object[] ensureConstants() {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, constants == null)) {
-            CodeUnit codeUnit = getCodeUnit(getRootNode());
+            BytecodeDSLCodeUnit codeUnit = getCodeUnit(getRootNode());
             constants = codeUnit != null ? new Object[codeUnit.constants.length] : PythonUtils.EMPTY_OBJECT_ARRAY;
         }
         return constants;
@@ -264,7 +263,7 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static TruffleString[] extractNames(RootNode node) {
-        CodeUnit code = getCodeUnit(node);
+        BytecodeDSLCodeUnit code = getCodeUnit(node);
         if (code != null) {
             return Arrays.copyOf(code.names, code.names.length);
         }
@@ -279,14 +278,14 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static int extractFlags(RootNode node) {
         int flags = 0;
-        CodeUnit code = getCodeUnit(node);
+        BytecodeDSLCodeUnit code = getCodeUnit(node);
         if (code != null) {
             flags = code.flags;
         }
         return flags;
     }
 
-    private static CodeUnit getCodeUnit(RootNode node) {
+    private static BytecodeDSLCodeUnit getCodeUnit(RootNode node) {
         RootNode rootNode = rootNodeForExtraction(node);
         if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
             return bytecodeDSLRootNode.getCodeUnit();
@@ -422,7 +421,7 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public CodeUnit getCodeUnit() {
+    public BytecodeDSLCodeUnit getCodeUnit() {
         return getCodeUnit(getRootNode());
     }
 
@@ -456,8 +455,7 @@ public final class PCode extends PythonBuiltinObject {
     private Object convertConstantToPythonSpace(int index) {
         Object o = getCodeUnit().constants[index];
         PythonLanguage language = PythonLanguage.get(null);
-        if (o instanceof CodeUnit) {
-            BytecodeDSLCodeUnit code = (BytecodeDSLCodeUnit) o;
+        if (o instanceof BytecodeDSLCodeUnit code) {
             return getOrCreateChildCode(index, code);
         } else if (o instanceof BigInteger) {
             return PFactory.createInt(language, (BigInteger) o);

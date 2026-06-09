@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -312,7 +312,7 @@ public abstract class MaterializeFrameNode extends Node {
 
         @Idempotent
         protected static int variableSlotCount(FrameDescriptor fd) {
-            FrameInfo info = (FrameInfo) fd.getInfo();
+            BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) fd.getInfo();
             if (info == null) {
                 return 0;
             }

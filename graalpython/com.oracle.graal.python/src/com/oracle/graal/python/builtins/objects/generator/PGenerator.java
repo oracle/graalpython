@@ -33,8 +33,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.truffle.api.RootCallTarget;
@@ -52,7 +51,7 @@ public class PGenerator extends PythonBuiltinObject {
 
     private TruffleString name;
     private TruffleString qualname;
-    private final FrameInfo frameInfo;
+    private final BytecodeDSLFrameInfo frameInfo;
 
     private boolean finished;
     // running means it is currently on the stack, not just started
@@ -294,12 +293,12 @@ public class PGenerator extends PythonBuiltinObject {
         this.qualname = qualname;
     }
 
-    private CodeUnit getCodeUnit() {
+    private BytecodeDSLCodeUnit getCodeUnit() {
         return getBytecodeDSLState().rootNode.getCodeUnit();
     }
 
     public final boolean isCoroutine() {
-        CodeUnit codeUnit = getCodeUnit();
+        BytecodeDSLCodeUnit codeUnit = getCodeUnit();
         return codeUnit.isCoroutine() || codeUnit.isIterableCoroutine();
     }
 
