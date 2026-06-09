@@ -149,14 +149,18 @@ def resolve_commit(repo_dir: str | Path, revision: str) -> str:
     return run_command(["git", "rev-parse", revision], cwd=repo_dir).strip()
 
 
+def abbreviate_commit(commit: str) -> str:
+    return commit[:12]
+
+
 def build_branch_name(job_name: str, benchmark_name: str, metric: str, good_commit: str, bad_commit: str) -> str:
     slug = "_".join(
         [
             job_name,
             benchmark_name,
             metric,
-            good_commit,
-            bad_commit,
+            abbreviate_commit(good_commit),
+            abbreviate_commit(bad_commit),
         ]
     )
     return "bisect/{}".format(slug)

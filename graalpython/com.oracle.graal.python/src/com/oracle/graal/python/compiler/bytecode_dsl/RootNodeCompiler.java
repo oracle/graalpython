@@ -414,7 +414,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private BytecodeDSLCompilerResult compileRootNode(String name, ArgumentInfo argumentInfo, SSTNode node, BytecodeParser<Builder> parser) {
         qualName = getNewScopeQualName(name, scopeType);
 
-        BytecodeRootNodes<PBytecodeDSLRootNode> nodes = PBytecodeDSLRootNodeGen.create(ctx.language, BytecodeConfig.DEFAULT, parser);
+        BytecodeRootNodes<PBytecodeDSLRootNode> nodes = PBytecodeDSLRootNodeGen.create(ctx.language, BytecodeConfig.WITH_SOURCE, parser);
         List<PBytecodeDSLRootNode> nodeList = nodes.getNodes();
         assert nodeList.size() == 1;
         PBytecodeDSLRootNode rootNode = nodeList.get(0);

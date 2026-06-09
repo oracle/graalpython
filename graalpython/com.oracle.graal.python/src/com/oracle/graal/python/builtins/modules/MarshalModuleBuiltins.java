@@ -1631,7 +1631,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         public PBytecodeDSLRootNode createRootNode(PythonLanguage language) {
             BytecodeRootNodes<PBytecodeDSLRootNode> deserialized;
             try {
-                deserialized = PBytecodeDSLRootNodeGen.deserialize(language, BytecodeConfig.DEFAULT,
+                deserialized = PBytecodeDSLRootNodeGen.deserialize(language, BytecodeConfig.WITH_SOURCE,
                                 () -> SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(getBytecode())),
                                 /*
                                  * NB: Since a DSL node may reparse multiple times, we cannot reuse
