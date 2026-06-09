@@ -208,10 +208,10 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     private void exit(int exitCode) {
-        if (getSourceSection() == null) {
+        if (source == null) {
             throw new PythonExitException(this, exitCode);
         }
-        if (!getSourceSection().getSource().isInteractive()) {
+        if (!source.isInteractive()) {
             if (getContext().isChildContext()) {
                 getContext().getChildContextData().setExitCode(1);
             }
