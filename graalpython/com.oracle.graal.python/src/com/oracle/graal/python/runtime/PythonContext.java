@@ -87,7 +87,6 @@ import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -782,7 +781,7 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal private TruffleLanguage.Env env;
 
     /* map of Python threads' IDs to the corresponding 'threadStates' */
-    private final Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
+    private final Map<Thread, PythonThreadState> threadStateMapping = new WeakHashMap<>();
     private WeakReference<Thread> mainThread;
 
     /* List of non-Python level threads. Those threads will be joined in finalizeContext. */
@@ -2277,10 +2276,12 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     private void disposeThreadStates() {
         Thread currentThread = Thread.currentThread();
-        for (Map.Entry<Thread, PythonThreadState> entry : threadStateMapping.entrySet()) {
-            entry.getValue().dispose(true, entry.getKey() == currentThread);
+        synchronized (this) {
+            for (Map.Entry<Thread, PythonThreadState> entry : threadStateMapping.entrySet()) {
+                entry.getValue().dispose(true, entry.getKey() == currentThread);
+            }
+            threadStateMapping.clear();
         }
-        threadStateMapping.clear();
     }
 
     /**
@@ -2338,7 +2339,10 @@ public final class PythonContext extends Python3Core {
             // make a copy of the threads, because the threads will disappear one by one from the
             // threadStateMapping as we're joining them, which gives undefined results for the
             // iterator over keySet
-            LinkedList<Thread> threads = new LinkedList<>(threadStateMapping.keySet());
+            LinkedList<Thread> threads;
+            synchronized (this) {
+                threads = new LinkedList<>(threadStateMapping.keySet());
+            }
             boolean runViaLauncher = getOption(PythonOptions.RunViaLauncher);
             for (Thread thread : threads) {
                 if (thread != Thread.currentThread()) {
@@ -2704,7 +2708,9 @@ public final class PythonContext extends Python3Core {
 
     public Thread[] getThreads() {
         CompilerAsserts.neverPartOfCompilation();
-        return threadStateMapping.keySet().toArray(new Thread[0]);
+        synchronized (this) {
+            return threadStateMapping.keySet().toArray(new Thread[0]);
+        }
     }
 
     public PythonThreadState getThreadState(PythonLanguage lang) {
@@ -2753,7 +2759,10 @@ public final class PythonContext extends Python3Core {
     public void attachThread(Thread thread, ContextThreadLocal<PythonThreadState> threadState) {
         CompilerAsserts.neverPartOfCompilation();
         PythonThreadState pythonThreadState = threadState.get(thread);
-        PythonThreadState previousThreadState = threadStateMapping.put(thread, pythonThreadState);
+        PythonThreadState previousThreadState;
+        synchronized (this) {
+            previousThreadState = threadStateMapping.put(thread, pythonThreadState);
+        }
         ReentrantLock initLock = getcApiInitializationLock();
         /*
          * Synchronize with C API initialization so that we do not miss eager initialization of this
@@ -2772,10 +2781,12 @@ public final class PythonContext extends Python3Core {
                 initializeNativeThreadState(pythonThreadState);
             }
         } catch (PException e) {
-            if (previousThreadState == null) {
-                threadStateMapping.remove(thread);
-            } else {
-                threadStateMapping.put(thread, previousThreadState);
+            synchronized (this) {
+                if (previousThreadState == null) {
+                    threadStateMapping.remove(thread);
+                } else {
+                    threadStateMapping.put(thread, previousThreadState);
+                }
             }
             throw e;
         } finally {
@@ -2819,16 +2830,19 @@ public final class PythonContext extends Python3Core {
      */
     public void disposeThread(Thread thread, boolean canRunGuestCode, boolean markShuttingDown) {
         CompilerAsserts.neverPartOfCompilation();
-        // check if there is a live sentinel lock
-        PythonThreadState ts = threadStateMapping.get(thread);
-        if (ts == null) {
-            // ts already removed, that is valid during context shutdown for daemon threads
-            return;
+        PythonThreadState ts;
+        synchronized (this) {
+            // check if there is a live sentinel lock
+            ts = threadStateMapping.get(thread);
+            if (ts == null) {
+                // ts already removed, that is valid during context shutdown for daemon threads
+                return;
+            }
+            if (markShuttingDown) {
+                ts.shutdown();
+            }
+            threadStateMapping.remove(thread);
         }
-        if (markShuttingDown) {
-            ts.shutdown();
-        }
-        threadStateMapping.remove(thread);
         ts.dispose(thread == Thread.currentThread(), markShuttingDown);
         releaseSentinelLock(ts.sentinelLock);
         getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
