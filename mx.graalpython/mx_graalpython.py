@@ -2039,7 +2039,6 @@ def tox_example(args=None):
         "packaging==25.0",
         "platformdirs==4.3.8",
         "pluggy==1.5.0",
-        "py==1.11.0",
         "pyparsing==3.2.3",
         "six==1.17.0",
         "toml==0.10.2",

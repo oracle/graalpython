@@ -1,6 +1,5 @@
 import textwrap
 import difflib
-import py
 import pytest
 from hpy.tools.autogen.parse import HPyAPI
 from hpy.tools.autogen.ctx import autogen_ctx_h, autogen_ctx_def_h
@@ -26,11 +25,11 @@ def src_equal(exp, got):
 class BaseTestAutogen:
 
     @pytest.fixture
-    def initargs(self, tmpdir):
-        self.tmpdir = tmpdir
+    def initargs(self, tmp_path):
+        self.tmpdir = tmp_path
 
     def parse(self, src):
-        fname = self.tmpdir.join('test_api.h')
+        fname = self.tmpdir / 'test_api.h'
         # automatically add useful typedefs
         src = """
             #define STRINGIFY(X) #X
@@ -39,7 +38,7 @@ class BaseTestAutogen:
             typedef int HPy;
             typedef int HPyContext;
         """ + src
-        fname.write(src)
+        fname.write_text(src)
         return HPyAPI.parse(fname)
 
 

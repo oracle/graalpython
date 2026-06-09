@@ -11,6 +11,13 @@ C_DISCLAIMER = """
 */
 """
 
+
+def resolve_relative_path(root, relative_path):
+    if hasattr(root, 'join'):
+        return root.join(relative_path)
+    return root / relative_path
+
+
 class AutoGenFile:
     LANGUAGE = 'C'
     PATH = None
@@ -27,7 +34,8 @@ class AutoGenFile:
     def write(self, root):
         cls = self.__class__
         clsname = '%s.%s' % (cls.__module__, cls.__name__)
-        with root.join(self.PATH).open('w', encoding='utf-8') as f:
+        target = resolve_relative_path(root, self.PATH)
+        with target.open('w', encoding='utf-8') as f:
             if self.DISCLAIMER is not None:
                 f.write(self.DISCLAIMER.format(clsname=clsname))
                 f.write('\n')
