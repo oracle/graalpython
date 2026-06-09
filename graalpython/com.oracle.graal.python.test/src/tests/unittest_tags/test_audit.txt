@@ -1,0 +1,6 @@
+test.test_audit.AuditTest.test_basic @ linux-x86_64
+test.test_audit.AuditTest.test_block_add_hook @ linux-x86_64
+test.test_audit.AuditTest.test_block_add_hook_baseexception @ linux-x86_64
+test.test_audit.AuditTest.test_mmap @ linux-x86_64
+test.test_audit.AuditTest.test_socket @ linux-x86_64
+test.test_audit.AuditTest.test_sqlite3 @ linux-x86_64
