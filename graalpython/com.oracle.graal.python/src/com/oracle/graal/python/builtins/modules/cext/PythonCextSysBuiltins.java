@@ -136,7 +136,7 @@ public final class PythonCextSysBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {ConstCharPtr, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {ConstCharPtr, PyObject}, call = Ignored, acquireGil = false)
     @TruffleBoundary
     public static int GraalPyPrivate_Sys_Audit(long eventPtr, long argsPtr) {
         TruffleString event = FromCharPointerNode.executeUncached(eventPtr);

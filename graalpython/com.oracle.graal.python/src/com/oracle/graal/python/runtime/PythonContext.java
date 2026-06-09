@@ -2146,12 +2146,12 @@ public final class PythonContext extends Python3Core {
     }
 
     @TruffleBoundary
-    public synchronized Object[] getAuditHooks() {
+    public Object[] getAuditHooks() {
         return auditHooks.toArray(PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @TruffleBoundary
-    public synchronized void addAuditHook(Object hook) {
+    public void addAuditHook(Object hook) {
         auditHooks.add(hook);
     }
 
