@@ -1983,8 +1983,8 @@ def no_jump_without_trace_function():
         raise AssertionError("Trace-function-less jump failed to fail")
 
 
-# GraalPy Bytecode DSL: for the time being, arbitrary jumps are not supported by Truffle Bytecode DSL
-@support.bytecode_dsl_excluded
+# GraalPy: for the time being, arbitrary jumps are not supported by Truffle Bytecode DSL
+@unittest.skipIf(sys.implementation.name == 'graalpy', "Not supported by Truffle Bytecode DSL")
 class JumpTestCase(unittest.TestCase):
     unbound_locals = r"assigning None to [0-9]+ unbound local"
 

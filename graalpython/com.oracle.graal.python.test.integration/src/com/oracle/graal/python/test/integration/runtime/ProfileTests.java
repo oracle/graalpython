@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,11 @@
  */
 package com.oracle.graal.python.test.integration.runtime;
 
-import static com.oracle.graal.python.test.integration.PythonTests.eval;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import org.graalvm.polyglot.Value;
 import org.junit.Assert;
-import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.integration.PythonTests;
@@ -70,10 +67,8 @@ public class ProfileTests {
     }
 
     @Test
+    @Ignore("GR-71916: TODO wrong stacktrace")
     public void profileException() {
-        Value isBytecodeDLS = eval("__graalpython__.is_bytecode_dsl_interpreter");
-        // GR-71916
-        Assume.assumeFalse("TODO: wrong stacktrace", isBytecodeDLS.asBoolean());
         String source = "import sys\n" +
                         "def f(frame, event, arg): print(frame, event, arg)\n" +
                         "sys.setprofile(f)\n" +

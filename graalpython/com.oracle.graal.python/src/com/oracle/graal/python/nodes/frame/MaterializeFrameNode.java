@@ -107,7 +107,6 @@ public abstract class MaterializeFrameNode extends Node {
      * is passed as argument to avoid its lookup. Can be used if this node is uncached.
      */
     public final PFrame executeOnStack(Frame frameToMaterialize, BytecodeNode location, boolean markAsEscaped, boolean forceSync) {
-        assert true;
         return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 

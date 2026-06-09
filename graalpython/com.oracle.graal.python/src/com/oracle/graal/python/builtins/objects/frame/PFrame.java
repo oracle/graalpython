@@ -234,12 +234,10 @@ public final class PFrame extends PythonBuiltinObject {
      * you should use {@link GetFrameLocalsNode} instead of this method.
      */
     public BytecodeFrame getBytecodeFrame() {
-        assert true;
         return bytecodeFrame;
     }
 
     public void setBytecodeFrame(BytecodeFrame bytecodeFrame) {
-        assert true;
         this.bytecodeFrame = bytecodeFrame;
     }
 

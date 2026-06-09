@@ -526,7 +526,6 @@ def run_benchmark(args):
         print("### no extra module search paths specified")
 
     if GRAALPYTHON:
-        print(f"### using bytecode DSL interpreter: {__graalpython__.is_bytecode_dsl_interpreter}")
         print(f"### using forced uncached interpreter: {getattr(__graalpython__, 'is_forced_uncached_interpreter', False)}")
 
     BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup, live_results=live_results, self_measurement=self_measurement).run()

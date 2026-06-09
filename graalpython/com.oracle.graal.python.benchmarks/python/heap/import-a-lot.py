@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -59,13 +59,6 @@ import configparser
 import tomllib
 import argparse
 import subprocess
-import sys
-
-# We log the bytecode DSL flag only in this benchamark, because we do not want to influence
-# the other benchmarks by importing the sys module. Other benchmarks will print a warning
-# that bytecode DSL flag could not be verified
-if getattr(getattr(sys, "implementation", None), "name", None) == "graalpy":
-    print(f"### using bytecode DSL interpreter: {__graalpython__.is_bytecode_dsl_interpreter}")
 
 # Sleep a bit to shake out weakref callbacks and get more measurement samples
 for i in range(30):

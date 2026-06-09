@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.test.debug;
 
-import static com.oracle.graal.python.test.integration.PythonTests.eval;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -96,7 +95,6 @@ public class PythonDebugTest {
     public void testSteppingAsExpected() throws Throwable {
         // test that various elements step as expected, including generators, statement level atomic
         // expressions, and roots
-        boolean isBytecodeDLS = isBytecodeDSL();
         final Source source = Source.newBuilder("python", "" +
                         "import sys\n" +
                         "from sys import version\n" +
@@ -167,24 +165,12 @@ public class PythonDebugTest {
                 assertEquals(8, frame.getSourceSection().getStartLine());
                 event.prepareStepInto(1);
             });
-            // Unlike the manual interpreter, which reports yield as onReturn, the Bytecode DSL
-            // correctly reports yield as onYield on the probe node, but the step over strategy
-            // is different for yield vs return - see SteppingStrategy$StepOver#step
-            if (!isBytecodeDLS) {
-                // steppping into genfunc()
-                expectSuspended((SuspendedEvent event) -> {
-                    DebugStackFrame frame = event.getTopStackFrame();
-                    assertEquals(12, frame.getSourceSection().getStartLine());
-                    event.prepareStepOver(1);
-                });
-            } else {
-                // steppping into genfunc()
-                expectSuspended((SuspendedEvent event) -> {
-                    DebugStackFrame frame = event.getTopStackFrame();
-                    assertEquals(12, frame.getSourceSection().getStartLine());
-                    event.prepareStepOut(1);
-                });
-            }
+            // steppping into genfunc()
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(12, frame.getSourceSection().getStartLine());
+                event.prepareStepOut(1);
+            });
             expectSuspended((SuspendedEvent event) -> {
                 DebugStackFrame frame = event.getTopStackFrame();
                 assertEquals(8, frame.getSourceSection().getStartLine());
@@ -698,7 +684,4 @@ public class PythonDebugTest {
         });
     }
 
-    private static boolean isBytecodeDSL() {
-        return eval("__graalpython__.is_bytecode_dsl_interpreter").asBoolean();
-    }
 }

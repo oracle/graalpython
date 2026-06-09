@@ -235,7 +235,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         addBuiltinConstant("is_native", TruffleOptions.AOT);
-        addBuiltinConstant("is_bytecode_dsl_interpreter", true);
         PythonContext ctx = core.getContext();
         PythonLanguage language = ctx.getLanguage();
         // Engine options: if they differ from the values baked into the pre-initialized context,
