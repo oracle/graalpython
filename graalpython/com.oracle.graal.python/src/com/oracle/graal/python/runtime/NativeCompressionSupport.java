@@ -44,14 +44,13 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 import com.oracle.graal.python.runtime.nativeaccess.NativeLibraryLoadException;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 
 abstract class NativeCompressionSupport {
     protected final PythonContext pythonContext;
 
-    @CompilationFinal protected boolean available;
+    protected boolean available;
 
     NativeCompressionSupport(PythonContext context) {
         if (context.useNativeCompressionModules()) {
