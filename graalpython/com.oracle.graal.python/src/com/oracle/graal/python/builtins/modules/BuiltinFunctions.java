@@ -167,8 +167,8 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
+import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyAIterCheckNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
@@ -1040,7 +1040,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
                     PythonLanguage.LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
                 }
-                Parser parser = Compiler.createParser(code.toJavaStringUncached(), parserCb, type, compilerFlags, featureVersion);
+                Parser parser = BytecodeDSLCompiler.createParser(code.toJavaStringUncached(), parserCb, type, compilerFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
                 parserCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);

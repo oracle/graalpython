@@ -91,8 +91,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.compiler.CompilationScope;
-import com.oracle.graal.python.compiler.Compiler;
-import com.oracle.graal.python.compiler.Compiler.ConstantCollection;
 import com.oracle.graal.python.compiler.OpCodes.CollectionBits;
 import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
 import com.oracle.graal.python.compiler.SSTUtils;
@@ -184,6 +182,16 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@link StatementCompiler}, which does all the heavy lifting.
  */
 public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDSLCompilerResult> {
+    private static final class ConstantCollection {
+        final Object collection;
+        final int elementType;
+
+        ConstantCollection(Object collection, int elementType) {
+            this.collection = collection;
+            this.elementType = elementType;
+        }
+    }
+
     /**
      * Because a {@link RootNodeCompiler} instance gets reused on reparse, it should be idempotent.
      * Consequently, most of its fields are final and immutable/not mutated after construction. For
@@ -378,6 +386,94 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             constants.put(c, v);
         }
         return c;
+    }
+
+    private static ConstantCollection tryCollectConstantCollection(ExprTy[] elements) {
+        if (elements == null || elements.length == 0) {
+            return null;
+        }
+
+        int constantType = -1;
+        List<Object> constants = new ArrayList<>();
+
+        for (ExprTy e : elements) {
+            if (e instanceof ExprTy.Constant c) {
+                if (c.value.kind == ConstantValue.Kind.BOOLEAN) {
+                    constantType = determineConstantType(constantType, CollectionBits.ELEMENT_BOOLEAN);
+                    constants.add(c.value.getBoolean());
+                } else if (c.value.kind == ConstantValue.Kind.LONG) {
+                    long val = c.value.getLong();
+                    if (val == (int) val) {
+                        constantType = determineConstantType(constantType, CollectionBits.ELEMENT_INT);
+                    } else {
+                        constantType = determineConstantType(constantType, CollectionBits.ELEMENT_LONG);
+                    }
+                    constants.add(val);
+                } else if (c.value.kind == ConstantValue.Kind.DOUBLE) {
+                    constantType = determineConstantType(constantType, CollectionBits.ELEMENT_DOUBLE);
+                    constants.add(c.value.getDouble());
+                } else if (c.value.kind == ConstantValue.Kind.CODEPOINTS) {
+                    constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
+                    constants.add(codePointsToInternedTruffleString(c.value.getCodePoints()));
+                } else if (c.value.kind == ConstantValue.Kind.NONE) {
+                    constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
+                    constants.add(PNone.NONE);
+                } else {
+                    return null;
+                }
+            } else {
+                return null;
+            }
+        }
+        Object newConstant = null;
+        switch (constantType) {
+            case CollectionBits.ELEMENT_OBJECT:
+                newConstant = constants.toArray(new Object[0]);
+                break;
+            case CollectionBits.ELEMENT_INT: {
+                int[] a = new int[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (int) (long) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+            case CollectionBits.ELEMENT_LONG: {
+                long[] a = new long[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (long) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+            case CollectionBits.ELEMENT_BOOLEAN: {
+                boolean[] a = new boolean[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (boolean) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+            case CollectionBits.ELEMENT_DOUBLE: {
+                double[] a = new double[constants.size()];
+                for (int i = 0; i < a.length; i++) {
+                    a[i] = (double) constants.get(i);
+                }
+                newConstant = a;
+                break;
+            }
+        }
+        return new ConstantCollection(newConstant, constantType);
+    }
+
+    private static int determineConstantType(int existing, int type) {
+        if (existing == -1 || existing == type) {
+            return type;
+        }
+        if (existing == CollectionBits.ELEMENT_LONG && type == CollectionBits.ELEMENT_INT || existing == CollectionBits.ELEMENT_INT && type == CollectionBits.ELEMENT_LONG) {
+            return CollectionBits.ELEMENT_LONG;
+        }
+        return CollectionBits.ELEMENT_OBJECT;
     }
 
     private static TruffleString[] orderedTruffleStringArray(HashMap<String, Integer> map) {
@@ -2682,7 +2778,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
-            ConstantCollection constantCollection = Compiler.tryCollectConstantCollection(node.elements);
+            ConstantCollection constantCollection = tryCollectConstantCollection(node.elements);
             if (constantCollection != null) {
                 emitConstantList(constantCollection);
             } else {
@@ -2985,7 +3081,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
-            ConstantCollection constantCollection = Compiler.tryCollectConstantCollection(node.elements);
+            ConstantCollection constantCollection = tryCollectConstantCollection(node.elements);
             if (constantCollection != null) {
                 emitConstantTuple(constantCollection);
             } else {

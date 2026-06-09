@@ -44,8 +44,8 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.Unparser;
+import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.ParserCallbacks;
@@ -93,7 +93,7 @@ public class UnparserTests extends PythonTests {
 
     private static void checkRoundTrip(String source) {
         ParserCallbacks parserCallbacks = new TestParserCallbacksImpl();
-        Parser parser = Compiler.createParser(source, parserCallbacks, InputType.EVAL, false, false);
+        Parser parser = BytecodeDSLCompiler.createParser(source, parserCallbacks, InputType.EVAL, false, false);
         ModTy.Expression result = (ModTy.Expression) parser.parse();
         assertEquals(source, unparse(result.body));
     }

@@ -78,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
@@ -205,7 +204,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String GRAALPY_MULTIARCH;
 
     /* Magic number used to mark pyc files */
-    public static final int MAGIC_NUMBER = 21000 + Compiler.BYTECODE_VERSION * 10;
+    public static final int MAGIC_NUMBER = 21000 + BytecodeDSLCompiler.BYTECODE_VERSION * 10;
     public static final byte[] MAGIC_NUMBER_BYTES = new byte[4];
 
     static {
@@ -585,7 +584,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
                 LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
             }
-            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal, allowIncompleteInput);
+            Parser parser = BytecodeDSLCompiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal, allowIncompleteInput);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
             return compileModule(context, mod, source, topLevel, optimize, argumentNames, errorCb, futureFeatures);
