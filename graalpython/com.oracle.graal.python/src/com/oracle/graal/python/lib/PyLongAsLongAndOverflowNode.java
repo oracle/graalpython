@@ -64,6 +64,9 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline
 @GenerateCached(false)
 public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
+    public static long executeUncached(Object object) throws OverflowException {
+        return PyLongAsLongAndOverflowNodeGen.getUncached().execute(null, null, object);
+    }
 
     public abstract long execute(Frame frame, Node inliningTarget, Object object) throws OverflowException;
 

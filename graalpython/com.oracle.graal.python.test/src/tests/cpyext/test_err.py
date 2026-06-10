@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,7 @@ import unittest
 import warnings
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionVoid, unhandled_error_compare, \
-    CPyExtType, is_native_object
+    CPyExtHeapType, CPyExtType, is_native_object
 
 
 def _reference_setstring(args):
@@ -736,6 +736,37 @@ class TestNativeExceptionSubclass(unittest.TestCase):
         assert is_native_object(e)
         assert type(e) == ExceptionSubclass
         assert isinstance(e, Exception)
+
+    def test_syntax_error_subclass(self):
+        NativeSyntaxErrorSubclass = CPyExtHeapType(
+            "NativeSyntaxErrorSubclass",
+            bases=(SyntaxError,),
+            struct_base="PySyntaxErrorObject base;",
+        )
+        assert SyntaxError.__basicsize__ > BaseException.__basicsize__
+        assert NativeSyntaxErrorSubclass.__basicsize__ >= SyntaxError.__basicsize__
+        e = NativeSyntaxErrorSubclass("bad", ("pkg/module.py", 12, 4, "x = 1", 12, 9))
+        assert is_native_object(e)
+        assert type(e) is NativeSyntaxErrorSubclass
+        assert isinstance(e, SyntaxError)
+        assert e.args == ("bad", ("pkg/module.py", 12, 4, "x = 1", 12, 9))
+        assert e.msg == "bad"
+        assert e.filename == "pkg/module.py"
+        assert e.lineno == 12
+        assert e.offset == 4
+        assert e.text == "x = 1"
+        assert e.end_lineno == 12
+        assert e.end_offset == 9
+        assert e.print_file_and_line is None
+        assert str(e) == "bad (module.py, line 12)"
+
+        e.filename = "other.py"
+        assert e.filename == "other.py"
+        assert str(e) == "bad (other.py, line 12)"
+
+        del e.lineno
+        assert e.lineno is None
+        assert str(e) == "bad (other.py)"
 
     def test_managed_subtype(self):
         class ManagedSubclass(ExceptionSubclass):
