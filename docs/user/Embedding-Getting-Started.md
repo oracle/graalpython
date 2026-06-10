@@ -118,45 +118,90 @@ If you prefer Gradle, here is how to set up a new project with GraalPy embedding
 
     > **Note**: GraalPy's performance depends on the JDK you are using. For optimal performance, see the [Runtime Optimization Support](https://www.graalvm.org/latest/reference-manual/embed-languages/#runtime-optimization-support) guide.
 
-### Adding Python Dependencies
+## Adding Python Dependencies
 
 To use third-party Python packages like NumPy or Requests in your embedded application:
 
-1. Add the GraalPy Gradle plugin and configure dependencies in _app/build.gradle_:
+Configure the GraalPy Maven or Gradle plugin with the packages your application needs.
+The plugin installs packages into a managed virtual environment, and `GraalPyResources` configures the Python context to import from it.
 
-   ```gradle
-   plugins {
-       id "java"
-       id "application"
-       id "org.graalvm.python" version "25.0.3"
-   }
+### Maven
 
-   graalPy {
-      packages = ["termcolor==2.2"]
-   }
-   ```
+Add the Python embedding dependency and GraalPy Maven plugin configuration to your _pom.xml_ file:
 
-2. Update your Java code to use the Python package:
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.graalvm.python</groupId>
+        <artifactId>python-embedding</artifactId>
+        <version>25.0.3</version>
+    </dependency>
+</dependencies>
 
-   ```java
-   package interop;
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.graalvm.python</groupId>
+            <artifactId>graalpy-maven-plugin</artifactId>
+            <version>25.0.3</version>
+            <executions>
+                <execution>
+                    <configuration>
+                        <packages>
+                            <package>termcolor==2.2</package>
+                        </packages>
+                    </configuration>
+                    <goals>
+                        <goal>process-graalpy-resources</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+```
 
-   import org.graalvm.polyglot.*;
-   import org.graalvm.python.embedding.GraalPyResources;
+### Gradle
 
-   class App {
-       public static void main(String[] args) {
-           try (Context context = GraalPyResources.contextBuilder().build()) {
-               String src = """
-               from termcolor import colored
-               colored_text = colored("hello java", "red", attrs=["reverse", "blink"])
-               print(colored_text)
-               """;
-               context.eval("python", src);
-           }
-       }
-   }
-   ```
+Add the GraalPy Gradle plugin and configure dependencies in _app/build.gradle_:
+
+```gradle
+plugins {
+    id "java"
+    id "application"
+    id "org.graalvm.python" version "25.0.3"
+}
+
+dependencies {
+    implementation("org.graalvm.python:python-embedding:25.0.3")
+}
+
+graalPy {
+    packages = ["termcolor==2.2"]
+}
+```
+
+Then use the Python package from Java:
+
+```java
+package interop;
+
+import org.graalvm.polyglot.*;
+import org.graalvm.python.embedding.GraalPyResources;
+
+class App {
+    public static void main(String[] args) {
+        try (Context context = GraalPyResources.contextBuilder().build()) {
+            String src = """
+            from termcolor import colored
+            colored_text = colored("hello java", "red", attrs=["reverse", "blink"])
+            print(colored_text)
+            """;
+            context.eval("python", src);
+        }
+    }
+}
+```
 
 For complete plugin configuration options, deployment strategies, and dependency management, see [Embedding Build Tools](Embedding-Build-Tools.md).
 
