@@ -11,7 +11,7 @@ This guide shows you how to migrate from Jython to GraalPy.
 For a lightweight command-line JVM launcher similar to the Jython launcher, use the JBang recipe from the GraalPy catalog:
 
 ```bash
-jbang graalpy@jbang-catalog.json -c "print('hello from GraalPy')"
+jbang graalpy@oracle/graalpython -c "print('hello from GraalPy')"
 ```
 
 ### Prerequisites
