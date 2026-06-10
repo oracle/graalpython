@@ -1764,3 +1764,70 @@ class TestPickleNative(unittest.TestCase):
             pass
         else:
             assert False, "Expected TypeError"
+
+    def test_pickle_native_getnewargs(self):
+        import pickle
+
+        TestPicklableWithNewArgs = CPyExtType(
+            "TestPicklableWithNewArgs",
+            """
+            static PyObject* test_pickle_new(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
+                return PyType_GenericNew(cls, NULL, NULL);
+            }
+
+            static PyObject* test_getnewargs(PyObject* self) {
+                PyObject* value = PyLong_FromLong(42);
+                if (value == NULL)
+                    return NULL;
+                PyObject* result = PyTuple_Pack(1, value);
+                Py_DECREF(value);
+                return result;
+            }
+            """,
+            tp_new="test_pickle_new",
+            tp_methods='{"__getnewargs__", (PyCFunction)test_getnewargs, METH_NOARGS, ""}',
+        )
+
+        obj = TestPicklableWithNewArgs()
+        data = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+        assert type(pickle.loads(data)) == TestPicklableWithNewArgs
+
+    def test_pickle_native_getnewargs_ex(self):
+        import pickle
+
+        TestPicklableWithNewArgsEx = CPyExtType(
+            "TestPicklableWithNewArgsEx",
+            """
+            static PyObject* test_pickle_new(PyTypeObject* cls, PyObject* args, PyObject* kwargs) {
+                return PyType_GenericNew(cls, NULL, NULL);
+            }
+
+            static PyObject* test_getnewargs_ex(PyObject* self) {
+                PyObject* value = PyLong_FromLong(42);
+                if (value == NULL)
+                    return NULL;
+                PyObject* args = PyTuple_Pack(1, value);
+                if (args == NULL) {
+                    Py_DECREF(value);
+                    return NULL;
+                }
+                PyObject* kwargs = PyDict_New();
+                if (kwargs == NULL) {
+                    Py_DECREF(value);
+                    Py_DECREF(args);
+                    return NULL;
+                }
+                PyObject* result = PyTuple_Pack(2, args, kwargs);
+                Py_DECREF(value);
+                Py_DECREF(args);
+                Py_DECREF(kwargs);
+                return result;
+            }
+            """,
+            tp_new="test_pickle_new",
+            tp_methods='{"__getnewargs_ex__", (PyCFunction)test_getnewargs_ex, METH_NOARGS, ""}',
+        )
+
+        obj = TestPicklableWithNewArgsEx()
+        data = pickle.dumps(obj, protocol=pickle.HIGHEST_PROTOCOL)
+        assert type(pickle.loads(data)) == TestPicklableWithNewArgsEx
