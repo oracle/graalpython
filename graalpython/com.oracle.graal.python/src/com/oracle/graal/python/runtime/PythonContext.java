@@ -86,14 +86,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -133,7 +127,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -149,7 +142,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
@@ -170,7 +162,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.graal.python.util.SuppressFBWarnings;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -179,8 +170,6 @@ import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
-import com.oracle.truffle.api.TruffleContext;
-import com.oracle.truffle.api.TruffleContext.Builder;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -200,7 +189,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
@@ -837,11 +825,6 @@ public final class PythonContext extends Python3Core {
 
     @CompilationFinal private long perfCounterStart = System.nanoTime();
 
-    public static final String CHILD_CONTEXT_DATA = "childContextData";
-    @CompilationFinal private ArrayList<Integer> childContextFDs;
-    private final ChildContextData childContextData;
-    private final SharedMultiprocessingData sharedMultiprocessingData;
-
     private boolean codecsInitialized;
     private final List<Object> codecSearchPath = new ArrayList<>();
     private final Map<TruffleString, PTuple> codecSearchCache = new HashMap<>();
@@ -947,303 +930,9 @@ public final class PythonContext extends Python3Core {
         inAsyncHandler.set(false);
     }
 
-    public static final class ChildContextData {
-        private int exitCode = 0;
-        private boolean signaled;
-        private final PythonContext parentCtx;
-        private TruffleWeakReference<TruffleContext> ctx;
-
-        private final AtomicBoolean exiting = new AtomicBoolean(false);
-        private final CountDownLatch running = new CountDownLatch(1);
-
-        public ChildContextData(PythonContext parentCtx) {
-            this.parentCtx = parentCtx;
-        }
-
-        public void setExitCode(int exitCode) {
-            this.exitCode = exitCode;
-        }
-
-        public int getExitCode() {
-            return this.exitCode;
-        }
-
-        public void setSignaled(int signaledCode) {
-            this.signaled = true;
-            this.exitCode = signaledCode;
-        }
-
-        public boolean wasSignaled() {
-            return this.signaled;
-        }
-
-        private void setTruffleContext(TruffleContext ctx) {
-            assert this.ctx == null;
-            assert ctx != null;
-            this.ctx = new TruffleWeakReference<>(ctx);
-        }
-
-        public TruffleContext getTruffleContext() {
-            return ctx.get();
-        }
-
-        public void awaitRunning() throws InterruptedException {
-            running.await();
-        }
-
-        public boolean compareAndSetExiting(boolean expect, boolean update) {
-            return exiting.compareAndSet(expect, update);
-        }
-    }
-
-    public static final class SharedMultiprocessingData {
-
-        /**
-         * A sentinel object that remains in the {@link LinkedBlockingQueue} in the
-         * {@link #pipeData}. It is pushed there in #close so that any blocking #take calls can wake
-         * up and react to the end of the stream.
-         */
-        private static final Object SENTINEL = new Object();
-
-        private final AtomicInteger fdCounter = new AtomicInteger(0);
-
-        /**
-         * Maps the two fake file descriptors created in {@link #pipe()} to one
-         * {@link LinkedBlockingQueue}
-         */
-        private final ConcurrentSkipListMap<Integer, LinkedBlockingQueue<Object>> pipeData = new ConcurrentSkipListMap<>();
-
-        /**
-         * Holds ref count of file descriptors which were passed over to a spawned child context.
-         * This can be either:<br>
-         * <ul>
-         * <li>fake file descriptors created via {@link #pipe()}</li>
-         * <li>real file descriptors coming from the posix implementation</li>
-         * </ul>
-         */
-        private final ConcurrentHashMap<Integer, Integer> fdRefCount = new ConcurrentHashMap<>();
-
-        public SharedMultiprocessingData(ConcurrentHashMap<TruffleString, Semaphore> namedSemaphores) {
-            this.namedSemaphores = namedSemaphores;
-        }
-
-        /**
-         * Increases reference count for the given file descriptor.
-         */
-        @TruffleBoundary
-        private void incrementFDRefCount(int fd) {
-            fdRefCount.compute(fd, (f, count) -> (count == null) ? 1 : count + 1);
-        }
-
-        /**
-         * Decreases reference count for the given file descriptor.
-         *
-         * @return {@code true} if ref count was decreased, {@code false} if ref count isn't tracked
-         *         anymore.
-         */
-        @TruffleBoundary
-        public boolean decrementFDRefCount(int fd) {
-            Integer cnt = fdRefCount.computeIfPresent(fd, (f, count) -> {
-                if (count == 0 || count == Integer.MIN_VALUE) {
-                    return Integer.MIN_VALUE;
-                } else {
-                    assert count > 0;
-                    return count - 1;
-                }
-            });
-            return cnt != null && !fdRefCount.remove(fd, Integer.MIN_VALUE);
-        }
-
-        /**
-         * @return fake (negative) fd values to avoid clash with real file descriptors and to detect
-         *         potential usage by other python builtins
-         */
-        @TruffleBoundary
-        public int[] pipe() {
-            LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
-            int writeFD = fdCounter.addAndGet(-2);
-            assert isWriteFD(writeFD);
-            int readFD = getPairFd(writeFD);
-            pipeData.put(readFD, q);
-            pipeData.put(writeFD, q);
-            return new int[]{readFD, writeFD};
-        }
-
-        /**
-         * Adding pipe data needs no special synchronization, since we guarantee there is only ever
-         * one or no queue registered for a given fd.
-         */
-        @TruffleBoundary
-        public void addPipeData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
-            assert isWriteFD(fd);
-            LinkedBlockingQueue<Object> q = pipeData.get(fd);
-            if (q == null) {
-                // the write end is already closed
-                noFDHandler.run();
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            int fd2 = getPairFd(fd);
-            if (isClosed(fd2)) {
-                // the read end is already closed
-                brokenPipeHandler.run();
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            q.add(bytes);
-        }
-
-        /**
-         * Closing the read end of a pipe just removes the mapping from that fd to the queue.
-         * Closing the write end adds the {@link #SENTINEL} value as the last value. There is a
-         * potential race here for incorrect code that concurrently writes to the write end via
-         * {@link #addPipeData}, in that the sentinel may prevent writes from being visible.
-         */
-        @TruffleBoundary
-        public void closePipe(int fd) {
-            LinkedBlockingQueue<Object> q = pipeData.remove(fd);
-            if (q != null && isWriteFD(fd)) {
-                q.offer(SENTINEL);
-            }
-        }
-
-        /**
-         * This needs no additional synchronization, since if the write-end of the pipe is already
-         * closed, the {@link #take} call will return appropriately.
-         */
-        @TruffleBoundary
-        public Object takePipeData(Node node, int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = pipeData.get(fd);
-            if (q == null) {
-                noFDHandler.run();
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            Object[] o = new Object[]{PNone.NONE};
-            TruffleSafepoint.setBlockedThreadInterruptible(node, (lbq) -> {
-                o[0] = take(lbq);
-            }, q);
-            return o[0];
-        }
-
-        /**
-         * This uses {@link ConcurrentSkipListMap#compute} to determine the blocking state. The
-         * runnable may be run multiple times, so we need to check and write all possible results to
-         * the result array. This ensures that if there is concurrent modification of the
-         * {@link #pipeData}, we will get a valid result.
-         */
-        @TruffleBoundary
-        public boolean isBlocking(int fd) {
-            boolean[] result = new boolean[]{false};
-            pipeData.compute(fd, (f, q) -> {
-                if (q == null) {
-                    result[0] = false;
-                } else {
-                    int fd2 = getPairFd(fd);
-                    if (isClosed(fd2)) {
-                        result[0] = false;
-                    } else {
-                        // this uses q.isEmpty() instead of our isEmpty(q), because we are not
-                        // interested in the race between closing fd2 and this runnable. If the
-                        // SENTINEL is pushed in the meantime, we should return false, just as if
-                        // we had observed fd2 to be closed already.
-                        result[0] = q.isEmpty();
-                    }
-                }
-                return q;
-            });
-            return result[0];
-        }
-
-        private static int getPairFd(int fd) {
-            return isWriteFD(fd) ? fd + 1 : fd - 1;
-        }
-
-        private static boolean isWriteFD(int fd) {
-            return fd % 2 == 0;
-        }
-
-        private static Object take(LinkedBlockingQueue<Object> q) throws InterruptedException {
-            Object v = q.take();
-            if (v == SENTINEL) {
-                q.offer(SENTINEL);
-                return PythonUtils.EMPTY_BYTE_ARRAY;
-            } else {
-                return v;
-            }
-        }
-
-        private boolean isClosed(int fd) {
-            // since there is no way that any thread can be trying to read/write to this pipe FD
-            // legally before it was added to pipeData in #pipe above, we don't need to
-            // synchronize. If the FD is taken, and it's not in pipe data, this is a race in the
-            // program, because some thread is just arbitrarily probing FDs.
-            return fd >= fdCounter.get() && pipeData.get(fd) == null;
-        }
-
-        /**
-         * @see PythonLanguage#namedSemaphores
-         */
-        private final ConcurrentHashMap<TruffleString, Semaphore> namedSemaphores;
-
-        @TruffleBoundary
-        public void putNamedSemaphore(TruffleString name, Semaphore sem) {
-            namedSemaphores.put(name, sem);
-        }
-
-        @TruffleBoundary
-        public Semaphore getNamedSemaphore(TruffleString name) {
-            return namedSemaphores.get(name);
-        }
-
-        @TruffleBoundary
-        public Semaphore removeNamedSemaphore(TruffleString name) {
-            return namedSemaphores.remove(name);
-        }
-
-        private final ConcurrentHashMap<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
-
-        /**
-         * {@code ChildContextData} outlives its own context, because the parent needs to be able to
-         * access the exit code even after the child context was closed and thread disposed. We
-         * dispose the mapping to {@code ChildContextData} when the Python code (our internal Python
-         * code) asks for the exit code for the first time after the child exited.
-         */
-        private final ConcurrentHashMap<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
-
-        @TruffleBoundary
-        public Thread getChildContextThread(long tid) {
-            return childContextThreads.get(tid);
-        }
-
-        @TruffleBoundary
-        public void putChildContextThread(long id, Thread thread) {
-            childContextThreads.put(id, thread);
-        }
-
-        @TruffleBoundary
-        public void removeChildContextThread(long id) {
-            childContextThreads.remove(id);
-        }
-
-        @TruffleBoundary
-        public ChildContextData getChildContextData(long tid) {
-            return childContextData.get(tid);
-        }
-
-        @TruffleBoundary
-        public void removeChildContextData(long tid) {
-            childContextData.remove(tid);
-        }
-
-        @TruffleBoundary
-        public void putChildContextData(long id, ChildContextData data) {
-            childContextData.put(id, data);
-        }
-    }
-
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env) {
         super(language, env);
         this.env = env;
-        this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
-        this.sharedMultiprocessingData = this.childContextData == null ? new SharedMultiprocessingData(language.namedSemaphores) : childContextData.parentCtx.sharedMultiprocessingData;
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
@@ -1257,101 +946,6 @@ public final class PythonContext extends Python3Core {
 
     public static PythonContext get(Node node) {
         return REFERENCE.get(node);
-    }
-
-    public boolean isChildContext() {
-        return childContextData != null;
-    }
-
-    public ChildContextData getChildContextData() {
-        return childContextData;
-    }
-
-    public SharedMultiprocessingData getSharedMultiprocessingData() {
-        return sharedMultiprocessingData;
-    }
-
-    public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
-        ChildContextData data = new ChildContextData(isChildContext() ? childContextData.parentCtx : this);
-        Builder childContextBuilder = data.parentCtx.env.newInnerContextBuilder().//
-                        forceSharing(getOption(PythonOptions.ForceSharingForInnerContexts)).//
-                        inheritAllAccess(true).//
-                        initializeCreatorContext(true).//
-                        option("python.IsolateNativeModules", "true").//
-                        // TODO always force java posix in spawned: test_multiprocessing_spawn fails
-                        // with that. Gives "OSError: [Errno 9] Bad file number"
-                        // option("python.PosixModuleBackend", "java").//
-                        config(PythonContext.CHILD_CONTEXT_DATA, data);
-
-        TruffleContext childContext = childContextBuilder.build();
-        data.setTruffleContext(childContext);
-        ChildContextThread childContextRunnable = new ChildContextThread(fd, sentinel, data);
-        Thread thread = data.parentCtx.env.newTruffleThreadBuilder(childContextRunnable).context(childContext).threadGroup(threadGroup).build();
-        long tid = PThread.getThreadId(thread);
-        getSharedMultiprocessingData().putChildContextThread(tid, thread);
-        getSharedMultiprocessingData().putChildContextData(tid, data);
-        for (int fdToKeep : fdsToKeep) {
-            // prevent file descriptors from being closed when passed to another "process",
-            // equivalent to fds_to_keep arg in posix fork_exec
-            getSharedMultiprocessingData().incrementFDRefCount(fdToKeep);
-        }
-        start(thread);
-        return tid;
-    }
-
-    @TruffleBoundary
-    private static void start(Thread thread) {
-        thread.start();
-    }
-
-    public synchronized ArrayList<Integer> getChildContextFDs() {
-        if (childContextFDs == null) {
-            childContextFDs = new ArrayList<>();
-        }
-        return childContextFDs;
-    }
-
-    private static final class ChildContextThread implements Runnable {
-        private static final TruffleLogger MULTIPROCESSING_LOGGER = PythonLanguage.getLogger(ChildContextThread.class);
-        private static final Source MULTIPROCESSING_SOURCE = Source.newBuilder(PythonLanguage.ID,
-                        "from multiprocessing.popen_truffleprocess import spawn_truffleprocess; spawn_truffleprocess(fd, sentinel)",
-                        "<spawned-child-context>").internal(true).build();
-
-        private final int fd;
-        private final ChildContextData data;
-        private final int sentinel;
-
-        public ChildContextThread(int fd, int sentinel, ChildContextData data) {
-            this.fd = fd;
-            this.data = data;
-            this.sentinel = sentinel;
-        }
-
-        @Override
-        public void run() {
-            try {
-                MULTIPROCESSING_LOGGER.fine("starting spawned child context");
-                CallTarget ct = PythonContext.get(null).getEnv().parsePublic(MULTIPROCESSING_SOURCE, "fd", "sentinel");
-                try {
-                    data.running.countDown();
-                    Object res = ct.call(fd, sentinel);
-                    int exitCode = CastToJavaIntLossyNode.executeUncached(res);
-                    data.setExitCode(exitCode);
-                } finally {
-                    if (data.compareAndSetExiting(false, true)) {
-                        try {
-                            MULTIPROCESSING_LOGGER.log(Level.FINE, "closed spawned child context");
-                        } catch (Throwable t) {
-                            MULTIPROCESSING_LOGGER.log(Level.FINE, "exception while closing spawned child context", t);
-                        }
-                    }
-                    data.parentCtx.sharedMultiprocessingData.closePipe(sentinel);
-                }
-            } catch (ThreadDeath td) {
-                // as a result of of TruffleContext.closeCancelled()
-                throw td;
-            }
-        }
     }
 
     public ThreadGroup getThreadGroup() {
@@ -2178,11 +1772,6 @@ public final class PythonContext extends Python3Core {
         }
         // interrupt and join or kill system threads
         joinSystemThreads();
-        for (int fd : getChildContextFDs()) {
-            if (!getSharedMultiprocessingData().decrementFDRefCount(fd)) {
-                getSharedMultiprocessingData().closePipe(fd);
-            }
-        }
         mainThread = null;
         if (stdioFlushFailed) {
             throw new PythonExitException(null, 120);
@@ -2842,7 +2431,6 @@ public final class PythonContext extends Python3Core {
         }
         ts.dispose(thread == Thread.currentThread(), markShuttingDown);
         releaseSentinelLock(ts.sentinelLock);
-        getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }
 
     private static void releaseSentinelLock(WeakReference<PLock> sentinelLockWeakref) {

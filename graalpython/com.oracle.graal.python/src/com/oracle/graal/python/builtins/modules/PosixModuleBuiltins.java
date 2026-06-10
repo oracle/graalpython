@@ -887,9 +887,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                if (context.getSharedMultiprocessingData().decrementFDRefCount(fd)) {
-                    return PNone.NONE;
-                }
                 gil.release(true);
                 try {
                     posixLib.close(context.getPosixSupport(), fd);
