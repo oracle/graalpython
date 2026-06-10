@@ -257,20 +257,20 @@ public final class ComplexBuiltins extends PythonBuiltins {
 
             @Fallback
             static Object doNative(Node inliningTarget, Object cls, double real, double imaginary,
-                            @Cached(inline = false) CApiTransitions.PythonToNativeNode toNativeNode,
-                            @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPythonNode,
+                            @Cached CApiTransitions.PythonToNativeInternalNode toNativeNode,
+                            @Cached CApiTransitions.NativeToPythonInternalNode toPythonNode,
                             @Cached(inline = false) PyObjectCheckFunctionResultNode checkFunctionResultNode) {
                 NativeCAPISymbol symbol = NativeCAPISymbol.FUN_COMPLEX_SUBTYPE_FROM_DOUBLES;
                 // classes are always Python objects
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
-                long clsPointer = toNativeNode.executeLong(cls);
+                long clsPointer = toNativeNode.execute(inliningTarget, cls, false);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
                     long nativeResult = ExternalFunctionInvoker.invokeCOMPLEX_SUBTYPE_FROM_DOUBLES(null, C_API_TIMING,
                                     context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable,
                                     clsPointer, real, imaginary);
-                    return checkFunctionResultNode.execute(context, symbol.getTsName(), toPythonNode.execute(nativeResult));
+                    return checkFunctionResultNode.execute(context, symbol.getTsName(), toPythonNode.execute(inliningTarget, nativeResult, true));
                 } finally {
                     Reference.reachabilityFence(cls);
                 }

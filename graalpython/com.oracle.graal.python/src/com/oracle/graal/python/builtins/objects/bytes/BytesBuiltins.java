@@ -68,7 +68,6 @@ import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -86,6 +85,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -187,27 +187,28 @@ public class BytesBuiltins extends PythonBuiltins {
                 return PFactory.createBytes(language, bytes);
             }
 
-            @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)")
+            @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
             static PBytes doManaged(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
-                            @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                            @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                             @Cached TypeNodes.GetInstanceShape getInstanceShape) {
                 return PFactory.createBytes(cls, getInstanceShape.execute(cls), bytes);
             }
 
-            @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)")
-            static Object doNative(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
-                            @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+            @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
+            static Object doNative(Node inliningTarget, Object cls, byte[] bytes,
+                            @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                             @Cached AsCharPointerNode asCharPointerNode,
-                            @Cached(inline = false) CApiTransitions.PythonToNativeNode toNative,
-                            @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPython) {
+                            @Cached CApiTransitions.PythonToNativeInternalNode toNative,
+                            @Cached CApiTransitions.NativeToPythonInternalNode toPython) {
                 long dataPointer = asCharPointerNode.execute(bytes);
-                long clsPointer = toNative.executeLong(cls);
+                long clsPointer = toNative.execute(inliningTarget, cls, false);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_BYTES_SUBTYPE_NEW);
-                    return toPython.execute(ExternalFunctionInvoker.invokeBYTES_SUBTYPE_NEW(null, C_API_TIMING,
+                    long result = ExternalFunctionInvoker.invokeBYTES_SUBTYPE_NEW(null, C_API_TIMING,
                                     context.ensureNativeContext(), BoundaryCallData.getUncached(),
-                                    context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer, dataPointer, bytes.length));
+                                    context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer, dataPointer, bytes.length);
+                    return toPython.execute(inliningTarget, result, true);
                 } finally {
                     Reference.reachabilityFence(cls);
                     NativeMemory.free(dataPointer);

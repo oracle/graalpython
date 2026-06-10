@@ -356,18 +356,18 @@ public final class ObjectBuiltins extends PythonBuiltins {
             abstract Object execute(Node inliningTarget, Object cls);
 
             @Specialization
-            static Object call(Object cls,
-                            @Bind Node inliningTarget,
-                            @Cached(inline = false) CApiTransitions.PythonToNativeNode toNativeNode,
-                            @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPythonNode) {
+            static Object call(Node inliningTarget, Object cls,
+                            @Cached CApiTransitions.PythonToNativeInternalNode toNativeNode,
+                            @Cached CApiTransitions.NativeToPythonInternalNode toPythonNode) {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
-                long clsPointer = toNativeNode.executeLong(cls);
+                long clsPointer = toNativeNode.execute(inliningTarget, cls, false);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_NEW);
-                    return toPythonNode.execute(ExternalFunctionInvoker.invokePY_OBJECT_NEW(null, C_API_TIMING,
+                    long nativeResult = ExternalFunctionInvoker.invokePY_OBJECT_NEW(null, C_API_TIMING,
                                     context.ensureNativeContext(), BoundaryCallData.getUncached(),
-                                    context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer));
+                                    context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer);
+                    return toPythonNode.execute(inliningTarget, nativeResult, true);
                 } finally {
                     Reference.reachabilityFence(cls);
                 }
