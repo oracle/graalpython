@@ -307,6 +307,60 @@ def _normalize_branch_name(branch):
     return branch
 
 
+def _graalpython_commit_is_ancestor_of_branch(commit, branch):
+    """Return True if the GraalPy commit is already reachable from the branch."""
+    # Check the remote-tracking branch, not the local branch or HEAD. Regular branch-run
+    # workspaces may put a synthetic merge commit on a local branch, while origin/<branch>
+    # still represents the target branch state used to decide whether the GraalPy commit has
+    # really landed.
+    return _graalpython_merge_base_with_branch(commit, branch) == commit
+
+
+def _graalpython_merge_base_with_branch(commit, branch):
+    if not commit or not branch or not SUITE.vc:
+        return None
+    merge_base = SUITE.vc.git_command(
+        SUITE.dir,
+        ["merge-base", commit, f"origin/{branch}"],
+        abortOnError=False,
+    )
+    return merge_base.strip() if merge_base else None
+
+
+def _graalpython_target_branch_profile_candidates(commit, branch, max_age_days):
+    """Return target-branch ancestor commits that may have CI-generated PGO profiles."""
+    merge_base = _graalpython_merge_base_with_branch(commit, branch)
+    if not merge_base:
+        return []
+
+    commit_ts = SUITE.vc.git_command(
+        SUITE.dir,
+        ["show", "-s", "--format=%ct", merge_base],
+        abortOnError=False,
+    )
+    if not commit_ts:
+        return []
+    try:
+        since_ts = int(commit_ts.strip()) - max_age_days * 24 * 60 * 60
+    except ValueError:
+        mx.warn(f"Cannot parse commit timestamp for GraalPy PGO profile search: {commit_ts!r}")
+        return []
+
+    candidates = SUITE.vc.git_command(
+        SUITE.dir,
+        ["rev-list", "--first-parent", f"--since=@{since_ts}", merge_base],
+        abortOnError=False,
+    )
+    return candidates.splitlines() if candidates else []
+
+
+def _graalpython_pgo_profile_exists(path):
+    try:
+        return os.path.isfile(path or "") and os.path.getsize(path) > 0
+    except OSError:
+        return False
+
+
 def _graalpython_target_import_commit(target_branch):
     """Return the GraalPy commit imported by the target branch's VM suite.
 
@@ -459,55 +513,70 @@ def libpythonvm_build_args():
         profile_source_commit = source_commit
         profile_source_branch = source_branch
         profile_source_reason = "current GraalPy commit"
+        profile_source_candidates = [(profile_source_commit, profile_source_branch, profile_source_reason)]
         override = os.environ.get("GRAALPY_PGO_PROFILE_SOURCE_COMMIT")
         if override:
             profile_source_commit = override.strip()
             if not re.match(r"^[0-9a-f]{40}$", profile_source_commit):
                 mx.abort(f"GRAALPY_PGO_PROFILE_SOURCE_COMMIT must be a 40-character lowercase git commit, got: {override}")
             profile_source_reason = "GRAALPY_PGO_PROFILE_SOURCE_COMMIT"
+            profile_source_candidates = [(profile_source_commit, profile_source_branch, profile_source_reason)]
         elif (
                 target_branch
                 and source_branch
                 and source_branch != target_branch
                 and not (source_branch == MAIN_BRANCH or source_branch.startswith(("release/", "cpu/")))
+                and not _graalpython_commit_is_ancestor_of_branch(source_commit, target_branch)
         ):
-            # Feature branch merge commits can import a fresh GraalPy revision that
-            # has no released-product profile yet. Use the target branch's imported
-            # GraalPy commit so product-ee consumes the profile that already belongs
-            # to the baseline product launcher.
+            # Feature branch commits usually have no released-product profile yet,
+            # but use one if it was explicitly generated. Otherwise prefer the
+            # nearest available target-branch ancestor profile, then fall back to
+            # the VM suite's target import for compatibility with older CI workspaces.
+            profile_search_days = 14
+            target_candidates = _graalpython_target_branch_profile_candidates(
+                source_commit, target_branch, profile_search_days
+            )
             target_import_commit = _graalpython_target_import_commit(target_branch)
-            if target_import_commit:
-                profile_source_commit = target_import_commit
-                profile_source_branch = target_branch
-                profile_source_reason = f"target branch import from {target_branch}"
-            elif require_profile:
-                mx.abort("\n".join([
-                    "Could not resolve the GraalPy PGO profile source commit from the target branch import.",
-                    f"GraalPy source commit: {source_commit}",
-                    f"Source branch: {source_branch or '<unknown>'}",
-                    f"Target branch: {target_branch or '<unknown>'}",
-                    "Expected to read vm/mx.vm/suite.py from the target branch and find the graalpython import version.",
-                    "Set GRAALPY_PGO_PROFILE_SOURCE_COMMIT=<40-character-commit> to override this lookup for debugging.",
-                ]))
-            else:
-                mx.warn("Falling back to the current GraalPy commit for PGO profile lookup because the target branch import could not be resolved")
+            profile_source_candidates = [
+                (source_commit, source_branch, "current GraalPy branch commit"),
+            ] + [
+                (commit, target_branch, f"target branch ancestor from {target_branch}")
+                for commit in target_candidates
+            ]
+            if (
+                    target_import_commit
+                    and target_import_commit not in {commit for commit, _, _ in profile_source_candidates}
+            ):
+                profile_source_candidates.append(
+                    (target_import_commit, target_branch, f"target branch import from {target_branch}")
+                )
         artifact_name = f"{GRAALPY_PGO_PROFILE_ARTIFACT_GROUP}/{GRAALPY_PGO_PROFILE_ARTIFACT_PREFIX}{profile_source_commit}"
         mx.log(f"GraalPy source commit for PGO profile lookup: {source_commit}")
-        mx.log(f"GraalPy PGO profile source commit: {profile_source_commit} ({profile_source_reason})")
 
         if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
             # This is always available in the GraalPy CI
             profile = f"cached_profile.iprof.gz"
-            run(
-                [
-                    sys.executable,
-                    script,
-                    artifact_name,
-                    profile,
-                ],
-                nonZeroIsFatal=False,
-            )
+            for candidate_commit, candidate_branch, candidate_reason in profile_source_candidates:
+                profile_source_commit = candidate_commit
+                profile_source_branch = candidate_branch
+                profile_source_reason = candidate_reason
+                artifact_name = f"{GRAALPY_PGO_PROFILE_ARTIFACT_GROUP}/{GRAALPY_PGO_PROFILE_ARTIFACT_PREFIX}{profile_source_commit}"
+                mx.log(f"GraalPy PGO profile source commit: {profile_source_commit} ({profile_source_reason})")
+                if os.path.exists(profile):
+                    os.remove(profile)
+                run(
+                    [
+                        sys.executable,
+                        script,
+                        artifact_name,
+                        profile,
+                    ],
+                    nonZeroIsFatal=False,
+                )
+                if _graalpython_pgo_profile_exists(profile):
+                    break
         elif not require_profile:
+            mx.log(f"GraalPy PGO profile source commit: {profile_source_commit} ({profile_source_reason})")
             # Locally, we try to get a reasonable profile
             get_profile = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
             if get_profile:
@@ -523,7 +592,7 @@ def libpythonvm_build_args():
                         except BaseException:
                             pass
 
-        profile_missing = not profile or not os.path.isfile(profile)
+        profile_missing = not _graalpython_pgo_profile_exists(profile)
         if require_profile and profile_missing:
             mx.abort("\n".join([
                 "GRAALPY_REQUIRE_PGO_PROFILE is set, but no CI generated GraalPy PGO profile was found.",
@@ -551,7 +620,7 @@ def libpythonvm_build_args():
                 mx.warn("PGO profile must exist for benchmarking and release, creating one now...")
                 profile = graalpy_native_pgo_build_and_test()
 
-    if os.path.isfile(profile or ""):
+    if _graalpython_pgo_profile_exists(profile):
         print(invert(f"Automatically chose PGO profile {profile}. To disable this, set GRAALPY_PGO_PROFILE to an empty string'", blinking=True), file=sys.stderr)
         build_args += [
             f"--pgo={profile}",
