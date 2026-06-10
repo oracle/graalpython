@@ -867,12 +867,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
-def node_footprint_analyzer(args, **kwargs):
-    main_class = 'com.oracle.graal.python.test.advanced.NodeFootprintAnalyzer'
-    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON'])
-    return mx.run_java(vm_args + [main_class] + args, **kwargs)
-
-
 def _dev_pythonhome_context():
     home = os.environ.get("GRAAL_PYTHONHOME", _dev_pythonhome())
     return set_env(GRAAL_PYTHONHOME=home)
@@ -3555,7 +3549,6 @@ mx.update_commands(SUITE, {
     'clean': [python_clean, '[--just-pyc]'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
-    'python-nodes-footprint': [node_footprint_analyzer, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
     'tox-example': [tox_example, ''],
