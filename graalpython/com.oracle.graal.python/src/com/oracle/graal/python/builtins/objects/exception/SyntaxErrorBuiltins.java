@@ -440,6 +440,7 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
 
         String getLastPathElement(String path) {
             int sepIdx = path.lastIndexOf(getContext().getEnv().getFileNameSeparator());
+            sepIdx = Math.max(sepIdx, path.lastIndexOf('/'));
             if (sepIdx < 0) {
                 return path;
             }
