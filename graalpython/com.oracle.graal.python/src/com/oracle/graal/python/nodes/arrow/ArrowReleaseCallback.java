@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,7 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.util;
+package com.oracle.graal.python.nodes.arrow;
 
-public final record FunctionWithSignature(Object signature, Object function) {
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+
+import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
+import com.oracle.truffle.api.CompilerDirectives;
+
+public final class ArrowReleaseCallback {
+    private static final MethodHandle HANDLE = NativeAccessSupport.createDowncallHandle(
+                    MethodType.methodType(void.class, long.class, long.class), false);
+
+    private ArrowReleaseCallback() {
+    }
+
+    public static void execute(long releaseCallback, long baseStructure) {
+        try {
+            HANDLE.invokeExact(releaseCallback, baseStructure);
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere("Unable to call release callback. Error:", e);
+        }
+    }
 }

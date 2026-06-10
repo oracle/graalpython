@@ -1537,11 +1537,11 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PythonCextCapsuleBuiltins.PyCapsuleNewNode pyCapsuleNewNode) {
             PythonContext ctx = getContext(inliningTarget);
-            long arrayDestructor = ctx.arrowSupport.getArrowArrayDestructor(inliningTarget);
+            long arrayDestructor = ctx.arrowSupport.getArrowArrayDestructor();
             long arrayCapsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowArray.CAPSULE_NAME, true);
             PyCapsule arrowArrayCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowArrayAddr, arrayCapsuleNamePointer, arrayDestructor);
 
-            long schemaDestructor = ctx.arrowSupport.getArrowSchemaDestructor(inliningTarget);
+            long schemaDestructor = ctx.arrowSupport.getArrowSchemaDestructor();
             long schemaCapsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowSchema.CAPSULE_NAME, true);
             PyCapsule arrowSchemaCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowSchemaAddr, schemaCapsuleNamePointer, schemaDestructor);
             return PFactory.createTuple(ctx.getLanguage(inliningTarget), new Object[]{arrowSchemaCapsule, arrowArrayCapsule});

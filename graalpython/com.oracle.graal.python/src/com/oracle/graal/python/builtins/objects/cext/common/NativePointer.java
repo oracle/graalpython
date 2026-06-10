@@ -47,10 +47,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
-/**
- * Currently only used for wrapping pointers to call TruffleString, see GR-71311 and in
- * InvokeArrowReleaseCallbackNode which still uses original NFI.
- */
+/** Currently only used for wrapping pointers to call TruffleString, see GR-71311. */
 @ExportLibrary(InteropLibrary.class)
 public final class NativePointer implements TruffleObject {
     private final long ptr;
