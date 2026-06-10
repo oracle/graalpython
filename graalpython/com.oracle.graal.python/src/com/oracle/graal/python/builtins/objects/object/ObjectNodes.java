@@ -92,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -117,6 +116,7 @@ import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -144,7 +144,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -455,8 +454,7 @@ public abstract class ObjectNodes {
                             @Exclusive @Cached CallNode callNode,
                             @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                             @Cached PyDictCheckNode isDictSubClassNode,
-                            @Cached SequenceStorageNodes.GetItemNode getItemNode,
-                            @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                            @Cached PyObjectGetItem getItemNode,
                             @Cached PyObjectSizeNode sizeNode,
                             @Exclusive @Cached PRaiseNode raiseNode) {
                 Object newargs = callNode.execute(frame, getNewArgsExAttr);
@@ -468,9 +466,8 @@ public abstract class ObjectNodes {
                     throw raiseNode.raise(inliningTarget, ValueError, SHOULD_RETURN_A_NOT_B, T___GETNEWARGS_EX__, "tuple of length 2", length);
                 }
 
-                SequenceStorage sequenceStorage = getSequenceStorageNode.execute(inliningTarget, newargs);
-                Object args = getItemNode.execute(sequenceStorage, 0);
-                Object kwargs = getItemNode.execute(sequenceStorage, 1);
+                Object args = getItemNode.execute(frame, inliningTarget, newargs, 0);
+                Object kwargs = getItemNode.execute(frame, inliningTarget, newargs, 1);
 
                 if (!tupleCheckNode.execute(inliningTarget, args)) {
                     throw raiseNode.raise(inliningTarget, TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "first item of the tuple returned by __getnewargs_ex__", "tuple", args);
@@ -676,9 +673,8 @@ public abstract class ObjectNodes {
                         @Cached(inline = false) GetNewArgsNode getNewArgsNode,
                         @Cached ObjectGetStateNode getStateNode,
                         @Cached(inline = false) PyObjectIsSubclassNode isSubClassNode,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter,
                         @Bind PythonLanguage language,
@@ -702,11 +698,12 @@ public abstract class ObjectNodes {
                 newobj = lookupAttr.execute(frame, inliningTarget, copyReg, T___NEWOBJ__);
                 Object[] newargsVals;
                 if (hasArgsProfile.profile(inliningTarget, hasargs)) {
-                    SequenceStorage sequenceStorage = getSequenceStorageNode.execute(inliningTarget, args);
-                    Object[] vals = toArrayNode.execute(inliningTarget, sequenceStorage);
-                    newargsVals = new Object[vals.length + 1];
+                    int argsLen = sizeNode.execute(frame, inliningTarget, args);
+                    newargsVals = new Object[argsLen + 1];
                     newargsVals[0] = cls;
-                    System.arraycopy(vals, 0, newargsVals, 1, vals.length);
+                    for (int i = 0; i < argsLen; i++) {
+                        newargsVals[i + 1] = getItemNode.execute(frame, inliningTarget, args, i);
+                    }
                 } else {
                     newargsVals = new Object[]{cls};
                 }
