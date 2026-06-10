@@ -152,8 +152,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -424,7 +422,7 @@ public abstract class CApiTransitions {
             }
         }
 
-        public Object getPtr() {
+        public long getPtr() {
             return ptr;
         }
 
@@ -443,13 +441,7 @@ public abstract class CApiTransitions {
         @Override
         @TruffleBoundary
         public String toString() {
-            Object ptrStr;
-            try {
-                ptrStr = Long.toHexString(InteropLibrary.getUncached().asPointer(ptr));
-            } catch (UnsupportedMessageException e) {
-                ptrStr = ptr;
-            }
-            return String.format("NativeStorageReference<0x%s, %d>", ptrStr, size);
+            return String.format("NativeStorageReference<0x%x, %d>", ptr, size);
         }
     }
 
@@ -716,7 +708,7 @@ public abstract class CApiTransitions {
                 throw CompilerDirectives.shouldNotReachHere(t);
             }
         }
-        assert !InteropLibrary.getUncached().isNull(reference.ptr);
+        assert reference.ptr != NULLPTR;
         freeNativeStorage(reference);
     }
 
@@ -2295,18 +2287,6 @@ public abstract class CApiTransitions {
             return nativeToPythonInternalNode.execute(inliningTarget, pointer, true, true);
         }
 
-        @Specialization(limit = "1")
-        static Object doNativePointer(Object pointer,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary("pointer") InteropLibrary lib,
-                        @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
-            try {
-                return doLong(lib.asPointer(pointer), inliningTarget, nativeToPythonInternalNode);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
         @NeverDefault
         public static NativeToPythonReturnNode create() {
             return NativeToPythonReturnNodeGen.create();
@@ -2536,18 +2516,6 @@ public abstract class CApiTransitions {
                         @Bind Node inliningTarget,
                         @Shared @Cached NativeToPythonClassInternalNode nativeToPythonInternalNode) {
             return nativeToPythonInternalNode.execute(inliningTarget, value);
-        }
-
-        @Specialization(limit = "1")
-        static Object doInteropPointer(Object nativePointer,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached NativeToPythonClassInternalNode nativeToPythonInternalNode,
-                        @CachedLibrary("nativePointer") InteropLibrary lib) {
-            try {
-                return nativeToPythonInternalNode.execute(inliningTarget, lib.asPointer(nativePointer));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
         }
 
         @NeverDefault

@@ -149,9 +149,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -515,17 +513,6 @@ public final class CApiContext extends CExtContext {
             return symbols;
         }
         return PythonContext.get(caller).getCApiContext().nativeCAPISymbols;
-    }
-
-    public static boolean isIdenticalToSymbol(Object obj, NativeCAPISymbol symbol) {
-        CompilerAsserts.neverPartOfCompilation();
-        InteropLibrary objLib = InteropLibrary.getUncached(obj);
-        objLib.toNative(obj);
-        try {
-            return isIdenticalToSymbol(objLib.asPointer(obj), symbol);
-        } catch (UnsupportedMessageException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static boolean isIdenticalToSymbol(long ptr, NativeCAPISymbol symbol) {

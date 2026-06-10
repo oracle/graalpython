@@ -152,7 +152,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -239,18 +238,6 @@ public abstract class PythonCextObjectBuiltins {
             return PNone.NO_VALUE;
         }
 
-        @Specialization(limit = "1")
-        static Object doInteropPointer(Object pointer, int len,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached UpdateHandleTableReferenceNode updateRefNode,
-                        @Shared @Cached NativeToPythonInternalNode nativeToPythonNode,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            try {
-                return doLong(lib.asPointer(pointer), len, inliningTarget, updateRefNode, nativeToPythonNode);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Ignored)

@@ -64,15 +64,13 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.interop.InteropLibrary;
 
 /**
  * Emulates CPython's {@code PyThreadState} struct.
  * <p>
- * This wrapper does intentionally not implement {@link InteropLibrary#isPointer(Object)},
- * {@link InteropLibrary#asPointer(Object)}, and {@link InteropLibrary#toNative(Object)} because the
- * factory method {@link #getOrCreateNativeThreadState(PythonLanguage, PythonContext)} will already
- * return the appropriate pointer object that implements that.
+ * This wrapper intentionally does not expose pointer conversion because the factory method
+ * {@link #getOrCreateNativeThreadState(PythonLanguage, PythonContext)} returns the appropriate
+ * native pointer.
  * </p>
  */
 public abstract class PThreadState {

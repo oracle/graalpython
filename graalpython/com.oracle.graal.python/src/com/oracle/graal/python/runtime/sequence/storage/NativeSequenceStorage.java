@@ -49,13 +49,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeStorageReference;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
-@ExportLibrary(InteropLibrary.class)
-public abstract class NativeSequenceStorage extends SequenceStorage implements TruffleObject {
+public abstract class NativeSequenceStorage extends SequenceStorage {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeSequenceStorage.class);
 
@@ -136,13 +131,4 @@ public abstract class NativeSequenceStorage extends SequenceStorage implements T
         return replicatedNativeReferences;
     }
 
-    @ExportMessage
-    boolean isPointer() {
-        return true;
-    }
-
-    @ExportMessage
-    long asPointer() {
-        return ptr;
-    }
 }
