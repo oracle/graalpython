@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -251,9 +251,9 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @TruffleBoundary
     private static String getSimpleName(String fqname) {
-        int firstDot = fqname.indexOf('.');
-        if (firstDot != -1) {
-            return fqname.substring(firstDot + 1);
+        int lastDot = fqname.lastIndexOf('.');
+        if (lastDot != -1) {
+            return fqname.substring(lastDot + 1);
         }
         return fqname;
     }
