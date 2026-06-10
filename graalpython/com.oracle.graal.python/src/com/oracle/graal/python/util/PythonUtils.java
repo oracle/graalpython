@@ -1019,21 +1019,6 @@ public final class PythonUtils {
         return String.format("0x%016x", pointer);
     }
 
-    public static long coerceToLong(Object allocated, InteropLibrary lib) {
-        if (allocated instanceof Long) {
-            return (long) allocated;
-        } else {
-            if (!lib.isPointer(allocated)) {
-                lib.toNative(allocated);
-            }
-            try {
-                return lib.asPointer(allocated);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-    }
-
     /**
      * Use this helper in PE code or behind Truffle boundary if the PE caller does not push
      * encapsulating node (either directly or, e.g., via
@@ -1048,12 +1033,6 @@ public final class PythonUtils {
      */
     public static Object callCallTarget(CallTarget target, Node location, Object... args) {
         return location != null && location.isAdoptable() ? target.call(location, args) : target.call(args);
-    }
-
-    public static InteropLibrary getUncachedInterop(InteropLibrary existing, Object obj) {
-        // TODO: have a simple LRU cache of "uncached" pointer InteropLibrary in context?
-        // "accepts" should be fast and saves us the concurrent hash map lookup in getUncached
-        return existing != null && existing.accepts(obj) ? existing : InteropLibrary.getUncached(obj);
     }
 
     /**

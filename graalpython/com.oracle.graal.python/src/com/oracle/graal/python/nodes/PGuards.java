@@ -107,7 +107,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -520,14 +519,6 @@ public abstract class PGuards {
     @InliningCutoff
     public static boolean isIndexOrSlice(Node inliningTarget, PyIndexCheckNode indexCheckNode, Object key) {
         return indexCheckNode.execute(inliningTarget, key) || isPSlice(key);
-    }
-
-    public static boolean isNullOrZero(Object value, InteropLibrary lib) {
-        if (value instanceof Long) {
-            return ((long) value) == 0;
-        } else {
-            return lib.isNull(value);
-        }
     }
 
     /* CPython tests that tp_iter is dict_iter */

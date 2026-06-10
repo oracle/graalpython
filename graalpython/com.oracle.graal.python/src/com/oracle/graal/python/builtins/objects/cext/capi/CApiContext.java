@@ -361,21 +361,6 @@ public final class CApiContext extends CExtContext {
         return pstringInterningCache;
     }
 
-    /**
-     * Tries to convert the object to a pointer (type: {@code long}) to avoid materialization of
-     * pointer objects. If that is not possible, the object will be returned as given.
-     */
-    public static Object asPointer(Object ptr, InteropLibrary lib) {
-        if (lib.isPointer(ptr)) {
-            try {
-                return lib.asPointer(ptr);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-        return ptr;
-    }
-
     public long nextTssKey() {
         return nextTssKey.incrementAndGet();
     }
