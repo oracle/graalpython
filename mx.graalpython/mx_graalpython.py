@@ -107,7 +107,7 @@ LATEST_JAVA_HOME = {"JAVA_HOME": os.environ.get("LATEST_JAVA_HOME", mx.get_jdk()
 RUNNING_ON_LATEST_JAVA = os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA_HOME")) == mx.get_jdk().home
 
 
-# this environment variable is used by some of our maven projects and jbang integration to build against the unreleased master version during development
+# this environment variable is used by some of our maven projects to build against the unreleased master version during development
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
 
 MAIN_BRANCH = 'master'

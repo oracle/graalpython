@@ -161,6 +161,16 @@ class EnvBuilder:
                              'Python interpreter. Provide an explicit path or '
                              'check that your PATH environment variable is '
                              'correctly set.')
+        if not os.path.exists(executable):
+            raise ValueError(
+                "GraalPy cannot create or populate a virtual environment, because the currently "
+                "running executable is not a single binary file. Create and populate the venv "
+                f"using a native GraalPy standalone {__graalpython__.get_graalvm_version()} "
+                "instead. You can then use the venv with the currently running executable by "
+                "setting the option `python.Executable` either as a Context option (if this is "
+                "an embedding) or as the commandline flag "
+                "`--python.Executable=<venv>/bin/python`."
+            )
         dirname, exename = os.path.split(os.path.abspath(executable))
         context.executable = executable
         context.python_dir = dirname

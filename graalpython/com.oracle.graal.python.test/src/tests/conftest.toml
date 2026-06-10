@@ -3,7 +3,6 @@ run_top_level_functions = true
 
 [[test_rules]]
 selector = [
-  "standalone/test_jbang_integration.py",
   "standalone/test_standalone.py"]
 per_test_timeout = 2400
 partial_splits_individual_tests = true
