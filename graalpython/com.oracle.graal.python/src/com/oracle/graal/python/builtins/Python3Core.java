@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MsvcrtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.NtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.OverlappedModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
@@ -122,6 +123,7 @@ import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WinapiModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WinregLegacyModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
@@ -444,6 +446,10 @@ public abstract class Python3Core {
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             coreFiles = new ArrayList<>(coreFiles);
             coreFiles.add(toTruffleStringUncached("_nt"));
+            coreFiles.add(toTruffleStringUncached("_winapi"));
+            coreFiles.add(toTruffleStringUncached("_overlapped"));
+            coreFiles.add(toTruffleStringUncached("winreg"));
+            coreFiles.add(toTruffleStringUncached("_winreg"));
         }
 
         return coreFiles.toArray(new TruffleString[0]);
@@ -561,6 +567,8 @@ public abstract class Python3Core {
                         new WinregModuleBuiltins(),
                         new MsvcrtModuleBuiltins(),
                         new WinapiModuleBuiltins(),
+                        new OverlappedModuleBuiltins(),
+                        new WinregLegacyModuleBuiltins(),
                         new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),

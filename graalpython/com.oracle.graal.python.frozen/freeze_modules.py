@@ -125,6 +125,10 @@ def add_graalpython_core():
         "java",
         "pip_hook",
         "_nt",
+        "_winapi",
+        "_overlapped",
+        "winreg",
+        "_winreg",
     ]:
         modname = f"graalpy.{os.path.basename(name)}"
         modpath = os.path.join(lib_graalpython, f"{name}.py")
