@@ -312,6 +312,8 @@ def current_frames_includes_other_thread(test_case):
         assert worker_ident in frames
 
         frame = frames[worker_ident]
+        if frame is None:
+            return # we hit the timeout
         while frame is not None and frame.f_code.co_name != "target_inner":
             frame = frame.f_back
 
