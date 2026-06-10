@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -598,8 +597,7 @@ public final class CApiContext extends CExtContext {
         if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
             return;
         }
-        NativePointer testCAPIPointer = context.allocateContextMemory(CStructs.GraalPy_Test_CAPI.size());
-        long testCAPI = testCAPIPointer.asPointer();
+        long testCAPI = context.allocateContextMemory(CStructs.GraalPy_Test_CAPI.size());
         long[] testCAPIFunctions = {
                         PythonCextBuiltinRegistry.GraalPyPrivate_ToNative.getNativePointer(),
                         PythonCextBuiltinRegistry.GraalPyPrivate_DisableReferenceQueuePolling.getNativePointer(),

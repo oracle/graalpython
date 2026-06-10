@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
@@ -526,8 +525,6 @@ public abstract class PGuards {
     public static boolean isNullOrZero(Object value, InteropLibrary lib) {
         if (value instanceof Long) {
             return ((long) value) == 0;
-        } else if (value instanceof NativePointer nativePointer) {
-            return nativePointer.isNull();
         } else {
             return lib.isNull(value);
         }
