@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -86,6 +86,18 @@ public abstract class PyOSFSPathNode extends PNodeWithContext {
 
     @Specialization
     static Object doBytes(PBytes object) {
+        return object;
+    }
+
+    @Specialization(guards = "unicodeCheckNode.execute(inliningTarget, object)", limit = "1")
+    static Object doStringSubtype(Node inliningTarget, Object object,
+                    @Cached PyUnicodeCheckNode unicodeCheckNode) {
+        return object;
+    }
+
+    @Specialization(guards = "bytesCheckNode.execute(inliningTarget, object)", limit = "1")
+    static Object doBytesSubtype(Node inliningTarget, Object object,
+                    @Cached PyBytesCheckNode bytesCheckNode) {
         return object;
     }
 

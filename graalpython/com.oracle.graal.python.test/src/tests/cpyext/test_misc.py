@@ -47,6 +47,27 @@ from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtTyp
 
 __global_builtins_dict = builtins.__dict__
 
+FSPathUnicodeSubclass = CPyExtType(
+    "FSPathUnicodeSubclass",
+    '',
+    struct_base='PyUnicodeObject base;',
+    tp_base='&PyUnicode_Type',
+    tp_new='0',
+    tp_alloc='0',
+    tp_free='0',
+)
+
+FSPathBytesSubclass = CPyExtType(
+    "FSPathBytesSubclass",
+    '',
+    struct_base='PyBytesObject base;',
+    tp_itemsize='sizeof(char)',
+    tp_base='&PyBytes_Type',
+    tp_new='0',
+    tp_alloc='0',
+    tp_free='0',
+)
+
 
 def _reference_importmodule(args):
     return __import__(args[0], fromlist=["*"])
@@ -380,6 +401,33 @@ class TestMisc(CPyExtTestCase):
         arguments=["PyObject* value"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyOS_FSPath_native_subclass = CPyExtFunction(
+        lambda args: 1,
+        lambda: (
+            (FSPathUnicodeSubclass("stringpath"),),
+            (FSPathBytesSubclass(b"bytespath"),),
+        ),
+        callfunction="call_PyOS_FSPath_native_subclass",
+        code="""
+        static int call_PyOS_FSPath_native_subclass(PyObject* value) {
+            PyObject* result = PyOS_FSPath(value);
+            if (result == NULL) {
+                return -1;
+            }
+            int same = result == value;
+            Py_DECREF(result);
+            return same;
+        }
+        """,
+        resultspec="i",
+        argspec="O",
+        arguments=["PyObject* value"],
+    )
+
+    def test_os_fspath_native_subclass(self):
+        for value in (FSPathUnicodeSubclass("stringpath"), FSPathBytesSubclass(b"bytespath")):
+            assert os.fspath(value) is value
 
 
 @unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-only")
