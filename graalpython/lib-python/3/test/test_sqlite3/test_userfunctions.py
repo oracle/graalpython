@@ -27,7 +27,6 @@ import io
 import re
 import sys
 import unittest
-import sys
 import sqlite3 as sqlite
 
 from unittest.mock import Mock, patch
@@ -348,11 +347,19 @@ class FunctionTests(unittest.TestCase):
             cur = self.con.execute("select return_noncont_blob()")
             cur.fetchone()
 
-    @unittest.skipIf(sys.implementation.name == 'graalpy', "disabled until proper unicode error is thrown")
     def test_param_surrogates(self):
-        self.assertRaisesRegex(UnicodeEncodeError, "surrogates not allowed",
-                               self.con.execute, "select spam(?)",
-                               ("\ud803\ude6d",))
+        for value, start, end in [
+            ("\ud803\ude6d", 0, 2),
+            ("\U0001f600\ud800", 1, 2),
+            ("\ud800\ud801x", 0, 2),
+            ("\ud800\udc00\ud801", 0, 3),
+        ]:
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(UnicodeEncodeError,
+                                            "surrogates not allowed") as cm:
+                    self.con.execute("select spam(?)", (value,))
+                self.assertEqual(cm.exception.start, start)
+                self.assertEqual(cm.exception.end, end)
 
     def test_func_params(self):
         results = []

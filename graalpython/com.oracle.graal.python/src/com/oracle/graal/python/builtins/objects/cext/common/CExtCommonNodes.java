@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.builtins.objects.str.StringUtils.byteIndexToCodepointIndex;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readIntArrayElement;
@@ -86,6 +87,7 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -146,6 +148,9 @@ public abstract class CExtCommonNodes {
     @GenerateInline(false) // footprint reduction 40 -> 22
     @GenerateUncached
     public abstract static class EncodeNativeStringNode extends PNodeWithContext {
+        private static final TruffleString.CodePointSet SURROGATES = TruffleString.CodePointSet.fromRanges(new int[]{
+                        Character.MIN_SURROGATE, Character.MAX_SURROGATE,
+        }, TS_ENCODING);
 
         public abstract TruffleString execute(TruffleString.Encoding encoding, Object unicodeObject, TruffleString errors);
 
@@ -157,9 +162,13 @@ public abstract class CExtCommonNodes {
                         @Cached TruffleString.IsValidNode isValidNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.ByteIndexOfCodePointSetNode byteIndexOfCodePointSetNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached InlinedConditionProfile strictProfile,
                         @Cached InlinedConditionProfile ignoreProfile,
                         @Cached InlinedConditionProfile replaceProfile,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             assert encoding == TruffleString.Encoding.US_ASCII ||
                             encoding == TruffleString.Encoding.ISO_8859_1 ||
@@ -183,7 +192,7 @@ public abstract class CExtCommonNodes {
                     if (!isValidNode.execute(str, TS_ENCODING)) {
                         // any invalid string will trigger an exception when strict mode is used, so
                         // we don't even need to try
-                        throw raiseNode.raise(inliningTarget, UnicodeEncodeError, ErrorMessages.M);
+                        throw raiseSurrogatesEncodeError(constructAndRaiseNode, str, byteIndexOfCodePointSetNode, codePointLengthNode, codePointAtIndexNode);
                     }
                     if (encoding == TruffleString.Encoding.ISO_8859_1 || encoding == TruffleString.Encoding.US_ASCII) {
                         // if the target encoding is ASCII or LATIN-1, transcoding will still fail
@@ -199,6 +208,38 @@ public abstract class CExtCommonNodes {
                 }
                 return switchEncodingNode.execute(str, encoding);
             }
+        }
+
+        private static PException raiseSurrogatesEncodeError(PConstructAndRaiseNode constructAndRaiseNode, TruffleString str,
+                        TruffleString.ByteIndexOfCodePointSetNode byteIndexOfCodePointSetNode,
+                        TruffleString.CodePointLengthNode codePointLengthNode,
+                        TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
+            int start = findFirstSurrogateIndex(str, byteIndexOfCodePointSetNode);
+            int end = findSurrogateRangeEnd(str, start, codePointLengthNode, codePointAtIndexNode);
+            return constructAndRaiseNode.raiseUnicodeEncodeError(null, "utf-8", str, start, end,
+                            "surrogates not allowed");
+        }
+
+        private static int findFirstSurrogateIndex(TruffleString str, TruffleString.ByteIndexOfCodePointSetNode byteIndexOfCodePointSetNode) {
+            int byteIndex = byteIndexOfCodePointSetNode.execute(str, 0, str.byteLength(TS_ENCODING), SURROGATES);
+            return byteIndex < 0 ? 0 : byteIndexToCodepointIndex(byteIndex);
+        }
+
+        private static int findSurrogateRangeEnd(TruffleString str, int start, TruffleString.CodePointLengthNode codePointLengthNode,
+                        TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
+            int length = codePointLengthNode.execute(str, TS_ENCODING);
+            int end = start + 1;
+            while (end < length) {
+                if (!isSurrogate(codePointAtIndexNode.execute(str, end))) {
+                    break;
+                }
+                end++;
+            }
+            return end;
+        }
+
+        private static boolean isSurrogate(int codePoint) {
+            return Character.MIN_SURROGATE <= codePoint && codePoint <= Character.MAX_SURROGATE;
         }
     }
 

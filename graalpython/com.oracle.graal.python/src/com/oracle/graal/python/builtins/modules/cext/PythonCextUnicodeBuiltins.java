@@ -127,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Read
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
+import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins.MakeDecodeExceptionNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -184,6 +185,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.FromNativePointerNode;
 import com.oracle.truffle.api.strings.TruffleString.FromNativePointerWithCompactionUTF32Node;
+import com.oracle.truffle.api.strings.TruffleString.IsValidNode;
 import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
@@ -910,6 +912,15 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_FromUTF extends CApiTernaryBuiltinNode {
 
+        private static TruffleString encodingFromKind(int kind) {
+            return switch (kind) {
+                case 1 -> T_UTF8;
+                case 2 -> T_UTF_16_LE;
+                case 4 -> T_UTF_32_LE;
+                default -> throw CompilerDirectives.shouldNotReachHere();
+            };
+        }
+
         private static Encoding encodingFromKind(Node inliningTarget, int kind, PRaiseNode raiseNode) throws PException {
             return switch (kind) {
                 case 1 -> UTF_8;
@@ -923,13 +934,20 @@ public final class PythonCextUnicodeBuiltins {
         static Object doNative(long ptr, long byteLength, int kind,
                         @Bind Node inliningTarget,
                         @Cached FromNativePointerNode fromNativePointerNode,
+                        @Cached IsValidNode isValidNode,
+                        @Cached MakeDecodeExceptionNode makeDecodingExceptionNode,
                         @Cached SwitchEncodingNode switchEncodingNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 int iByteLength = PInt.intValueExact(byteLength);
                 Encoding srcEncoding = encodingFromKind(inliningTarget, kind, raiseNode);
                 TruffleString ts = fromNativePointerNode.execute(ptr, 0, iByteLength, srcEncoding, true);
-                return PFactory.createString(PythonLanguage.get(inliningTarget), switchEncodingNode.execute(ts, TS_ENCODING));
+                if (isValidNode.execute(ts, srcEncoding)) {
+                    return PFactory.createString(PythonLanguage.get(inliningTarget), switchEncodingNode.execute(ts, TS_ENCODING));
+                } else {
+                    throw raiseNode.raiseExceptionObject(inliningTarget, makeDecodingExceptionNode.execute(null, inliningTarget, null, encodingFromKind(kind), ts, 0, iByteLength,
+                                    ErrorMessages.ILLEGAL_MULTIBYTE_SEQUENCE));
+                }
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
