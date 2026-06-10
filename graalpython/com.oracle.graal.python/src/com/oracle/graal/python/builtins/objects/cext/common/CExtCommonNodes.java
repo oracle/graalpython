@@ -1168,7 +1168,7 @@ public abstract class CExtCommonNodes {
     public static NativeFunctionPointer bindFunctionPointer(long pointer, NativeCExtSymbol descriptor) {
         PythonContext pythonContext = PythonContext.get(null);
         if (!pythonContext.isNativeAccessAllowed()) {
-            LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", pointer));
+            LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to a native callable but native access is not allowed", pointer));
         }
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(PythonUtils.formatJString("Binding %s to native callable %s", pointer, descriptor.getName()));

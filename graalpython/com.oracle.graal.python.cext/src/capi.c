@@ -41,7 +41,6 @@
 #include "capi.h"
 #include <stdio.h>
 #include <time.h>
-#include <trufflenfi.h>
 
 #include "pycore_gc.h" // _PyGC_InitState
 

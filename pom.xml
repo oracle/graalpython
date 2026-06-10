@@ -112,11 +112,6 @@ SOFTWARE.
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.graalvm.truffle</groupId>
-        <artifactId>truffle-nfi</artifactId>
-        <version>${graalvm.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.graalvm.tools</groupId>
         <artifactId>profiler-tool</artifactId>
         <version>${graalvm.version}</version>

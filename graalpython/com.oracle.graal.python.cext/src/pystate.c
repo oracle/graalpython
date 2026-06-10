@@ -29,7 +29,6 @@
 #endif // GraalPy change
 
 #include "capi.h"
-#include <trufflenfi.h>
 
 static THREAD_LOCAL int graalpy_attached_thread = 0;
 static THREAD_LOCAL int graalpy_gilstate_counter = 0;

@@ -597,7 +597,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static long resize(PMMap self, Object n,
                         @Bind Node inliningTarget) {
-            // TODO: implement resize in NFI
+            // TODO: implement resize
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.RESIZING_NOT_AVAILABLE);
         }
     }

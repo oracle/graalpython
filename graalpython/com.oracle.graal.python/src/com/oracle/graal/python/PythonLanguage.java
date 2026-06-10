@@ -157,7 +157,6 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
                 version = PythonLanguage.VERSION, //
                 characterMimeTypes = {PythonLanguage.MIME_TYPE}, //
                 defaultMimeType = PythonLanguage.MIME_TYPE, //
-                dependentLanguages = "nfi", //
                 interactive = true, internal = false, //
                 contextPolicy = TruffleLanguage.ContextPolicy.SHARED, //
                 fileTypeDetectors = PythonFileDetector.class, //
@@ -371,7 +370,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     /**
      * A generic source cache for all kinds of {@link Source} objects. For example, this should be
-     * used to cache the sources created from NFI signature strings to ensure code sharing.
+     * used to cache synthetic sources to ensure code sharing.
      */
     private final ConcurrentHashMap<Object, Source> sourceCache = new ConcurrentHashMap<>();
 

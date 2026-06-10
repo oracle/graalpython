@@ -309,8 +309,9 @@ public final class CApiContext extends CExtContext {
 
     /**
      * This list holds a strong reference to all loaded extension libraries to keep the library
-     * objects alive. This is necessary because NFI will {@code dlclose} the library (and thus
-     * {@code munmap} all code) if the library object is no longer reachable. However, it can happen
+     * objects alive. This is necessary because native library handles may {@code dlclose} the
+     * library (and thus {@code munmap} all code) if the library object is no longer reachable.
+     * However, it can happen
      * that we still store raw function pointers (as Java {@code long} values) in a native object
      * that is referenced by a
      * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference}.
@@ -1002,7 +1003,6 @@ public final class CApiContext extends CExtContext {
                                                 "cannot use native module.", actualReason)));
             }
             loc = new NativeLibraryLocator(context, capiFile, isolateNative);
-            context.ensureNFILanguage(node, "allowNativeAccess", "true");
             int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
             NativeContext nativeContext = context.ensureNativeContext();
@@ -1194,8 +1194,8 @@ public final class CApiContext extends CExtContext {
      * finalization didn't run.
      *
      * The memory of the shared library may have been re-used if the GraalPy context was shut down
-     * (cleanly or not), the sources were collected, and NFI's mechanism for unloading libraries
-     * triggered a dlclose that dropped the refcount of the python-native library to 0. We leak 1
+     * (cleanly or not), the sources were collected, and native library unloading triggered a
+     * dlclose that dropped the refcount of the python-native library to 0. We leak 1
      * byte of memory and this shutdown hook for each context that ever initialized the C API.
      */
     private void addNativeFinalizer(PythonContext context, long finalizingPointer) {

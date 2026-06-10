@@ -124,7 +124,6 @@ MX_TO_MAVEN = {
     "com.oracle.graal.python.bouncycastle": (LOCAL_GROUP_ID, "com.oracle.graal.python.bouncycastle"),
     "truffle:TRUFFLE_API": ("org.graalvm.truffle", "truffle-api", GRAALVM_VERSION),
     "truffle:TRUFFLE_DSL_PROCESSOR": ("org.graalvm.truffle", "truffle-dsl-processor", GRAALVM_VERSION),
-    "truffle:TRUFFLE_NFI": ("org.graalvm.truffle", "truffle-nfi", GRAALVM_VERSION),
     "truffle:TRUFFLE_ICU4J": ("org.graalvm.shadowed", "icu4j", GRAALVM_VERSION),
     "truffle:TRUFFLE_XZ": ("org.graalvm.shadowed", "xz", GRAALVM_VERSION),
     "tools:TRUFFLE_PROFILER": ("org.graalvm.tools", "profiler-tool", GRAALVM_VERSION),

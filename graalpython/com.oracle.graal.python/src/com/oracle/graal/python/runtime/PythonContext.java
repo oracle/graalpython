@@ -55,7 +55,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DLL;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LIB_PREFIX;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -2931,12 +2930,6 @@ public final class PythonContext extends Python3Core {
 
     public boolean isFinalizing() {
         return finalizing;
-    }
-
-    public void ensureNFILanguage(Node nodeForRaise, String optionName, String optionValue) {
-        if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
-            throw PRaiseNode.raiseStatic(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, optionName, optionValue);
-        }
     }
 
     @TruffleBoundary

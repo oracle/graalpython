@@ -50,7 +50,6 @@ endif()
 require_var(GRAALPY_PARENT_DIR)
 require_var(CAPI_INC_DIR)
 require_var(PYCONFIG_INCLUDE_DIR)
-require_var(TRUFFLE_NFI_H_INC)
 require_var(GRAALPY_EXT)
 
 if(NOT DEFINED SRC_DIR)
@@ -200,7 +199,6 @@ include_directories(
     "${SRC_DIR}/include"
     "${CAPI_INC_DIR}"
     "${PYCONFIG_INCLUDE_DIR}"
-    "${TRUFFLE_NFI_H_INC}"
 )
 
 function(native_module name core src_files)
