@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A_SEQUENCE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.CachedGetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.SetSequenceStorageNodeGen;
@@ -51,9 +52,11 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ForeignSequenceStorage;
@@ -135,6 +138,13 @@ public abstract class SequenceNodes {
         static SequenceStorage doSequence(Node inliningTarget, PSequence seq,
                         @Cached GetPSequenceStorageNode getPSequenceStorageNode) {
             return getPSequenceStorageNode.execute(inliningTarget, seq);
+        }
+
+        @Specialization(guards = "tupleCheck.execute(inliningTarget, seq)", limit = "1")
+        static SequenceStorage doNativeTuple(Node inliningTarget, PythonAbstractNativeObject seq,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
+                        @Cached TupleNodes.GetNativeTupleStorage getNativeTupleStorage) {
+            return getNativeTupleStorage.execute(seq);
         }
 
         // Note: this does not seem currently used but is good to accept foreign lists in more

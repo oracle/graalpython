@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -147,7 +147,7 @@ class TestPyTuple(CPyExtTestCase):
         arguments=["PyObject* tuple", "Py_ssize_t index"],
         resulttype="PyObject*",
     )
-    
+
     test_PyTuple_SetItem = CPyExtFunction(
         _reference_setitem,
         lambda: (
@@ -292,6 +292,36 @@ class TestPyTuple(CPyExtTestCase):
         callfunction="wrap_PyTuple_Resize",
         cmpfunc=unhandled_error_compare,
     )
+
+
+class TestNativeTupleStorage(unittest.TestCase):
+    def test_marshal_native_tuple(self):
+        import marshal
+
+        TestNativeTupleFactory = CPyExtType(
+            "TestNativeTupleFactory",
+            """
+            static PyObject* get_tuple(PyObject* cls) {
+                PyObject* value = PyLong_FromLong(42);
+                if (value == NULL)
+                    return NULL;
+                PyObject* text = PyUnicode_FromString("native");
+                if (text == NULL) {
+                    Py_DECREF(value);
+                    return NULL;
+                }
+                PyObject* result = PyTuple_Pack(2, value, text);
+                Py_DECREF(value);
+                Py_DECREF(text);
+                return result;
+            }
+            """,
+            tp_methods='{"get_tuple", (PyCFunction)get_tuple, METH_NOARGS | METH_CLASS, ""}',
+        )
+
+        native_tuple = TestNativeTupleFactory.get_tuple()
+        assert is_native_object(native_tuple)
+        assert marshal.loads(marshal.dumps(native_tuple)) == (42, "native")
 
 
 class TestNativeSubclass(unittest.TestCase):
