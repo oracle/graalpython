@@ -1114,13 +1114,14 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
-                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep, boolean allowVFork,
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("forkExec", "%s, %s, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d, %b, %b, %b, %s, %b", executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd,
-                        stderrWriteFd, errPipeReadFd, errPipeWriteFd, closeFds, restoreSignals, callSetsid, fdsToKeep, allowVFork);
+        logEnter("forkExec", "%s, %s, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d, %b, %b, %b, %d, %s, %b", executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd,
+                        stderrReadFd,
+                        stderrWriteFd, errPipeReadFd, errPipeWriteFd, closeFds, restoreSignals, callSetsid, pgidToSet, fdsToKeep, allowVFork);
         try {
             return logExit("forkExec", "%d", lib.forkExec(delegate, executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd, stderrWriteFd, errPipeReadFd,
-                            errPipeWriteFd, closeFds, restoreSignals, callSetsid, fdsToKeep, allowVFork));
+                            errPipeWriteFd, closeFds, restoreSignals, callSetsid, pgidToSet, fdsToKeep, allowVFork));
         } catch (PosixException e) {
             throw logException("forkExec", e);
         }

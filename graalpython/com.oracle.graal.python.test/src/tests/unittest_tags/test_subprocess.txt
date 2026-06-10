@@ -38,6 +38,7 @@ test.test_subprocess.POSIXProcessTestCase.test_group_error @ darwin-arm64,linux-
 test.test_subprocess.POSIXProcessTestCase.test_invalid_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_kill @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_kill_dead @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_subprocess.POSIXProcessTestCase.test_process_group_0 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_remapping_std_fds @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_select_unbuffered @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_send_signal @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

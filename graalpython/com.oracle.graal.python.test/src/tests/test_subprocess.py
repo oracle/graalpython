@@ -120,6 +120,14 @@ class TestSubprocess(unittest.TestCase):
             p.kill()
             p.wait()
 
+    @unittest.skipIf(sys.platform == 'win32' or POSIX_BACKEND_IS_JAVA or not hasattr(os, 'getpgid'), "Posix-specific")
+    def test_process_group_0(self):
+        p = subprocess.Popen([sys.executable, "-c", "import os; print(os.getpgid(0))"],
+                             stdout=subprocess.PIPE, process_group=0)
+        stdout, _ = p.communicate(timeout=10)
+        self.assertEqual(p.returncode, 0)
+        self.assertEqual(int(stdout), p.pid)
+
     def _run_in_new_group(self, code):
         def safe_decode(x):
             return '' if not x else x.decode().strip()
