@@ -233,7 +233,6 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode.AllPythonFramesSelector;
@@ -900,6 +899,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CurrentFrames extends PythonBuiltinNode {
         private static final long CURRENT_FRAMES_TIMEOUT_MILLIS = 20;
+        private static final TruffleString T_SYS_CURRENT_FRAMES = tsLiteral("sys._current_frames");
 
         @Specialization
         Object currentFrames(VirtualFrame frame,
@@ -911,7 +911,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached ObjectHashMap.PutNode putNode,
                         @Bind PythonContext context,
                         @Bind PythonLanguage language) {
-            auditNode.audit(inliningTarget, "sys._current_frames");
+            auditNode.audit(frame, T_SYS_CURRENT_FRAMES);
             PFrame currentFrame = readFrameNode.getCurrentPythonFrame(frame);
             EconomicMapStorage framesMap = collectCurrentFrames(inliningTarget, context, currentFrame);
             return PFactory.createDict(language, framesMap);
@@ -1129,42 +1129,30 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class AuditNode extends Node {
-        protected abstract void executeInternal(Node inliningTarget, Object event, Object[] arguments);
+        protected abstract void executeInternal(VirtualFrame frame, TruffleString event, Object[] arguments);
 
-        public void audit(Node inliningTarget, String event, Object... arguments) {
-            executeInternal(inliningTarget, event, arguments);
+        public static void auditUncached(TruffleString event, Object... arguments) {
+            SysModuleBuiltinsFactory.AuditNodeGen.getUncached().audit(null, event, arguments);
         }
 
-        public static void auditUncached(String event, Object... arguments) {
-            SysModuleBuiltinsFactory.AuditNodeGen.getUncached().executeInternal(null, event, arguments);
-        }
-
-        public void audit(Node inliningTarget, TruffleString event, Object... arguments) {
-            executeInternal(inliningTarget, event, arguments);
+        public void audit(VirtualFrame frame, TruffleString event, Object... arguments) {
+            executeInternal(frame, event, arguments);
         }
 
         @Specialization
-        static void doAudit(String event, Object[] arguments,
+        static void doAudit(VirtualFrame frame, TruffleString event, Object[] arguments,
                         @Bind PythonContext context,
                         @Bind PythonLanguage language,
-                        @Shared("auditCall") @Cached CallNode callNode) {
-            dispatchAudit(toTruffleStringUncached(event), arguments, context, language, callNode);
+                        @Cached CallNode callNode) {
+            dispatchAudit(frame, event, arguments, context, language, callNode);
         }
 
-        @Specialization
-        static void doAudit(TruffleString event, Object[] arguments,
-                        @Bind PythonContext context,
-                        @Bind PythonLanguage language,
-                        @Shared("auditCall") @Cached CallNode callNode) {
-            dispatchAudit(event, arguments, context, language, callNode);
-        }
-
-        private static void dispatchAudit(Object event, Object[] arguments, PythonContext context, PythonLanguage language, CallNode callNode) {
+        private static void dispatchAudit(VirtualFrame frame, TruffleString event, Object[] arguments, PythonContext context, PythonLanguage language, CallNode callNode) {
             Object[] hooks = context.getAuditHooks();
             if (hooks.length > 0) {
                 PTuple argsTuple = PFactory.createTuple(language, arguments);
                 for (Object hook : hooks) {
-                    callNode.executeWithoutFrame(hook, event, argsTuple);
+                    callNode.execute(frame, hook, event, argsTuple);
                 }
             }
         }
@@ -1176,7 +1164,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SysAuditNode extends PythonBuiltinNode {
         @Specialization
-        static Object doAudit(Object event, Object[] args,
+        static Object doAudit(VirtualFrame frame, Object event, Object[] args,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castEventNode,
                         @Cached AuditNode auditNode,
@@ -1187,7 +1175,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ARG_1_MUST_BE_STR_NOT_P, "audit", event);
             }
-            auditNode.audit(inliningTarget, eventString, args);
+            auditNode.audit(frame, eventString, args);
             return PNone.NONE;
         }
     }
@@ -1198,19 +1186,18 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     "Adds a new audit hook callback.")
     @GenerateNodeFactory
     abstract static class SysAuditHookNode extends PythonBuiltinNode {
+        private static final TruffleString T_SYS_ADDAUDITHOOK = tsLiteral("sys.addaudithook");
+
         @Specialization
-        static Object doAudit(Object hook,
+        static Object doAudit(VirtualFrame frame, Object hook,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached AuditNode auditNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
+                        @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
-                auditNode.audit(inliningTarget, "sys.addaudithook");
+                auditNode.audit(frame, T_SYS_ADDAUDITHOOK);
             } catch (PException pe) {
-                if (!isSubtypeNode.execute(getClassNode.execute(inliningTarget, pe.getUnreifiedException()), PythonBuiltinClassType.Exception)) {
-                    throw pe;
-                }
+                pe.expect(inliningTarget, PythonBuiltinClassType.Exception, exceptionProfile);
                 return PNone.NONE;
             }
             context.addAuditHook(hook);
