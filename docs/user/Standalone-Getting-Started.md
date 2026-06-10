@@ -119,13 +119,6 @@ pyenv shell graalpy-25.0.3
 
 #### Known Windows Limitations
 
-- JLine treats Windows as a dumb terminal (no autocomplete, limited REPL editing)
-- Interactive `help()` in REPL doesn't work
-- Virtual environment issues:
-  - `graalpy.cmd` and `graalpy.exe` are broken inside `venv`
-  - `pip.exe` cannot be used directly
-  - Use `myvenv/Scripts/python.exe -m pip --no-cache-dir install <pkg>`
-  - Only pure Python binary wheels supported
 - PowerShell works better than CMD
 
 ## Using Virtual Environments
