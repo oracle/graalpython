@@ -294,8 +294,8 @@ public final class PythonCextModuleBuiltins {
             int flags = readIntField(def, CFields.PyMethodDef__ml_flags);
             long docRaw = readPtrField(def, CFields.PyMethodDef__ml_doc);
 
-            TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(nameRaw);
-            Object doc = CharPtrToPythonNode.getUncached().execute(docRaw);
+            TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(nameRaw);
+            Object doc = CharPtrToPythonNode.executeUncached(docRaw);
             assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
 
             PythonBuiltinObject func = PythonCextMethodBuiltins.cFunctionNewExMethodNode(language, def, name, cfunc, flags, module, modName, PNone.NO_VALUE, doc);

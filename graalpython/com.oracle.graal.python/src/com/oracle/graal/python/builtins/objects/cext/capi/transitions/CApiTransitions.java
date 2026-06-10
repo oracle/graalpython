@@ -1714,7 +1714,12 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     public abstract static class CharPtrToPythonNode extends CExtToJavaNode {
 
-        public abstract Object execute(long pointer);
+        public abstract Object executePointer(long pointer);
+
+        @TruffleBoundary
+        public static Object executeUncached(long pointer) {
+            return CApiTransitionsFactory.CharPtrToPythonNodeGen.getUncached().executePointer(pointer);
+        }
 
         @Specialization
         static Object doGeneric(long pointer,
@@ -2220,8 +2225,8 @@ public abstract class CApiTransitions {
         }
 
         @TruffleBoundary
-        public static Object executeUncached(Object obj) {
-            return NativeToPythonNodeGen.getUncached().execute(obj);
+        public static Object executeUncached(long pointer) {
+            return executeRawUncached(pointer);
         }
 
         @Specialization
@@ -2277,7 +2282,7 @@ public abstract class CApiTransitions {
 
         @TruffleBoundary
         public static Object executeUncached(long pointer) {
-            return NativeToPythonReturnNodeGen.getUncached().execute(pointer);
+            return NativeToPythonReturnNodeGen.getUncached().executeRaw(pointer);
         }
 
         @Specialization

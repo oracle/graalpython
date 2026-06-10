@@ -98,11 +98,11 @@ public final class PythonCextMethodBuiltins {
         // errors are expected to be thrown already in native code
         assert verifyFlags(flags, clsRaw);
 
-        TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(nameRaw);
+        TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(nameRaw);
         Object self = NativeToPythonInternalNode.executeUncached(selfRaw, false);
         Object module = NativeToPythonInternalNode.executeUncached(moduleRaw, false);
         Object cls = NativeToPythonInternalNode.executeUncached(clsRaw, false);
-        Object doc = CharPtrToPythonNode.getUncached().execute(docRaw);
+        Object doc = CharPtrToPythonNode.executeUncached(docRaw);
         assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
 
         PythonBuiltinObject result = cFunctionNewExMethodNode(PythonLanguage.get(null), methodDefPtr, name, methPtr, flags, self, module, cls, doc);

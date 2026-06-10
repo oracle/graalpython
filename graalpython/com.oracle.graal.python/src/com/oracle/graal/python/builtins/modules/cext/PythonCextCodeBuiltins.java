@@ -95,8 +95,8 @@ public final class PythonCextCodeBuiltins {
 
     @CApiBuiltin(ret = PyCodeObjectRawPointer, args = {ConstCharPtr, ConstCharPtr, Int}, call = Direct)
     static long PyCode_NewEmpty(long filenamePtr, long funcnamePtr, int lineno) {
-        TruffleString filename = (TruffleString) CharPtrToPythonNode.getUncached().execute(filenamePtr);
-        TruffleString funcname = (TruffleString) CharPtrToPythonNode.getUncached().execute(funcnamePtr);
+        TruffleString filename = (TruffleString) CharPtrToPythonNode.executeUncached(filenamePtr);
+        TruffleString funcname = (TruffleString) CharPtrToPythonNode.executeUncached(funcnamePtr);
         return PythonToNativeNewRefNode.executeLongUncached(createCodeNewEmpty(filename, funcname, lineno));
     }
 

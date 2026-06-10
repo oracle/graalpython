@@ -317,8 +317,8 @@ public final class PythonCextTypeBuiltins {
         try {
             Object type = NativeToPythonClassInternalNode.executeUncached(typeRaw);
             Object dict = NativeToPythonInternalNode.executeUncached(dictRaw, false);
-            TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(nameRaw);
-            Object doc = CharPtrToPythonNode.getUncached().execute(docRaw);
+            TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(nameRaw);
+            Object doc = CharPtrToPythonNode.executeUncached(docRaw);
             assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
             Object func = typeAddMethod(PythonLanguage.get(null), methodDefPtr, name, cfunc, flags, type, doc);
             PyDictSetDefault.executeUncached(dict, name, func);
@@ -349,8 +349,8 @@ public final class PythonCextTypeBuiltins {
     public static int GraalPyPrivate_Type_AddMember(long clazzPtr, long tpDictPtr, long memberNamePtr, int memberType, long offset, int canSet, long memberDocPtr) {
         Object clazz = NativeToPythonClassInternalNode.executeUncached(clazzPtr);
         PDict tpDict = (PDict) NativeToPythonNode.executeRawUncached(tpDictPtr);
-        TruffleString memberName = (TruffleString) CharPtrToPythonNode.getUncached().execute(memberNamePtr);
-        Object memberDoc = memberDocPtr == NULLPTR ? PNone.NO_VALUE : CharPtrToPythonNode.getUncached().execute(memberDocPtr);
+        TruffleString memberName = (TruffleString) CharPtrToPythonNode.executeUncached(memberNamePtr);
+        Object memberDoc = memberDocPtr == NULLPTR ? PNone.NO_VALUE : CharPtrToPythonNode.executeUncached(memberDocPtr);
         return addMember(clazz, tpDict, memberName, memberType, offset, canSet, memberDoc);
     }
 
@@ -378,8 +378,8 @@ public final class PythonCextTypeBuiltins {
     static int GraalPyPrivate_Type_AddGetSet(long clsPtr, long dictPtr, long namePtr, long getter, long setter, long docPtr, long closure) {
         Object cls = NativeToPythonClassInternalNode.executeUncached(clsPtr);
         PDict dict = (PDict) NativeToPythonNode.executeRawUncached(dictPtr);
-        TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(namePtr);
-        Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : CharPtrToPythonNode.getUncached().execute(docPtr);
+        TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(namePtr);
+        Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : CharPtrToPythonNode.executeUncached(docPtr);
         return addGetSet(cls, dict, name, getter, setter, doc, closure);
     }
 

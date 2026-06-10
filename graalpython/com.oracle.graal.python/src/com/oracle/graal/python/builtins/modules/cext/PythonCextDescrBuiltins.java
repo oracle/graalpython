@@ -97,8 +97,8 @@ public final class PythonCextDescrBuiltins {
     public static long GraalPyPrivate_Descr_NewClassMethod(long methodDefPtr, long nameRaw, long docRaw, int flags, long methPtr, long typeRaw) {
         CompilerAsserts.neverPartOfCompilation();
         PythonLanguage language = PythonLanguage.get(null);
-        TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(nameRaw);
-        Object doc = CharPtrToPythonNode.getUncached().execute(docRaw);
+        TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(nameRaw);
+        Object doc = CharPtrToPythonNode.executeUncached(docRaw);
         assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
         Object type = NativeToPythonClassInternalNode.executeUncached(typeRaw);
         PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, type, flags);

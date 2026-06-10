@@ -82,7 +82,7 @@ public final class PythonCextContextBuiltins {
         if (namePtr == NULLPTR) {
             return NULLPTR;
         }
-        TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(namePtr);
+        TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(namePtr);
         Object def = defPtr == NULLPTR ? PNone.NO_VALUE : NativeToPythonNode.executeRawUncached(defPtr);
         return PythonToNativeNewRefNode.executeLongUncached(CallNode.executeUncached(PythonBuiltinClassType.ContextVar, name, def));
     }

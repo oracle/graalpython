@@ -638,7 +638,7 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(name = "GraalPyPrivate_Object_GetItemString", ret = PyObjectRawPointer, args = {PyObjectRawPointer, ConstCharPtr}, call = Ignored)
     static long GraalPyPrivate_Object_GetItemString(long objPtr, long keyPtr) {
         Object obj = NativeToPythonNode.executeRawUncached(objPtr);
-        Object key = CharPtrToPythonNode.getUncached().execute(keyPtr);
+        Object key = CharPtrToPythonNode.executeUncached(keyPtr);
         Object result = PyObjectGetItem.executeUncached(obj, key);
         return PythonToNativeNewRefNode.executeLongUncached(result);
     }
@@ -791,7 +791,7 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
     static int PyObject_SetDoc(long objPtr, long valuePtr) {
         Object obj = NativeToPythonNode.executeRawUncached(objPtr);
-        Object value = CharPtrToPythonNode.getUncached().execute(valuePtr);
+        Object value = CharPtrToPythonNode.executeUncached(valuePtr);
         if (obj instanceof PBuiltinFunction builtinFunction) {
             CFunctionDocUtils.writeDocAndTextSignature(builtinFunction, builtinFunction.getName(), value);
             return 1;

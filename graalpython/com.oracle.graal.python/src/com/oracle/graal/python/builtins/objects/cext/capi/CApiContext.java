@@ -1303,7 +1303,7 @@ public final class CApiContext extends CExtContext {
         long nativeResult = ExternalFunctionInvoker.invokeMODINIT(null, TIMING_INVOKE_MODULE_INIT, nativeContext, BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage()),
                         ExternalFunctionSignature.MODINIT.bind(nativeContext, pyinitFunc));
 
-        Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonNode.executeUncached(nativeResult));
+        Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonNode.executeRawUncached(nativeResult));
         if (!(result instanceof PythonModule)) {
             // Multi-phase extension module initialization
 

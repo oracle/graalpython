@@ -488,7 +488,7 @@ public abstract class CExtCommonNodes {
             long nativeThreadState = threadState.getNativePointer();
             if (nativeThreadState != PythonAbstractObject.UNINITIALIZED) {
                 assert nativeThreadState != PythonAbstractObject.NATIVE_POINTER_FREED;
-                Object exception = nativeToPythonNode.execute(readPtrField(nativeThreadState, CFields.PyThreadState__current_exception));
+                Object exception = nativeToPythonNode.executeRaw(readPtrField(nativeThreadState, CFields.PyThreadState__current_exception));
                 writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
                 return exception;
             }

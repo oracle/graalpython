@@ -56,14 +56,14 @@ public final class PythonCextCodecBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct)
     static long PyCodec_Encoder(long encodingPtr) {
-        TruffleString encoding = (TruffleString) CharPtrToPythonNode.getUncached().execute(encodingPtr);
+        TruffleString encoding = (TruffleString) CharPtrToPythonNode.executeUncached(encodingPtr);
         PTuple codecInfo = CodecsModuleBuiltins.PyCodecLookupNode.executeUncached(encoding);
         return PythonToNativeNewRefNode.executeLongUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(codecInfo.getSequenceStorage(), 0));
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct)
     static long PyCodec_Decoder(long encodingPtr) {
-        TruffleString encoding = (TruffleString) CharPtrToPythonNode.getUncached().execute(encodingPtr);
+        TruffleString encoding = (TruffleString) CharPtrToPythonNode.executeUncached(encodingPtr);
         PTuple codecInfo = CodecsModuleBuiltins.PyCodecLookupNode.executeUncached(encoding);
         return PythonToNativeNewRefNode.executeLongUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(codecInfo.getSequenceStorage(), 1));
     }

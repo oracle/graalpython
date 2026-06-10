@@ -852,7 +852,7 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = PyTypeObjectRawPointer, args = {ConstCharPtr}, call = Ignored)
     static long GraalPyPrivate_Type(long typeNamePtr) {
-        TruffleString typeName = (TruffleString) CharPtrToPythonNode.getUncached().execute(typeNamePtr);
+        TruffleString typeName = (TruffleString) CharPtrToPythonNode.executeUncached(typeNamePtr);
         Python3Core core = PythonContext.get(null).getCore();
         for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
             if (type.getName().equalsUncached(typeName, TS_ENCODING)) {
@@ -1007,7 +1007,7 @@ public final class PythonCextBuiltins {
         int len = CastToJavaIntExactNode.executeUncached(lenArg);
         boolean readonly = readonlyArg != 0;
         Object owner = ownerPtr == NULLPTR ? null : NativeToPythonNode.executeRawUncached(ownerPtr);
-        TruffleString format = (TruffleString) CharPtrToPythonNode.getUncached().execute(formatPtr);
+        TruffleString format = (TruffleString) CharPtrToPythonNode.executeUncached(formatPtr);
         int[] shape = null;
         int[] strides = null;
         int[] suboffsets = null;
@@ -1451,7 +1451,7 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = Void, args = {Int, ConstCharPtr}, call = Ignored)
     @TruffleBoundary
     static void GraalPyPrivate_LogString(int level, long messagePtr) {
-        TruffleString message = (TruffleString) CharPtrToPythonNode.getUncached().execute(messagePtr);
+        TruffleString message = (TruffleString) CharPtrToPythonNode.executeUncached(messagePtr);
         String msg = message.toJavaStringUncached();
         switch (level) {
             case GRAALPY_LOG_INFO:
