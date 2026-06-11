@@ -44,7 +44,7 @@ if sys.platform != "win32":
     raise ImportError("win32 only")
 
 
-_POINTER_BITS = 64 if sys.maxsize > 2**32 else 32
+_POINTER_BITS = 64
 
 
 def _unsigned_pointer(value):
@@ -96,6 +96,8 @@ FILE_TYPE_PIPE = 0x0003
 
 GENERIC_READ = 0x80000000
 GENERIC_WRITE = 0x40000000
+FILE_GENERIC_READ = 0x00120089
+FILE_GENERIC_WRITE = 0x00120116
 FILE_SHARE_READ = 0x00000001
 FILE_SHARE_WRITE = 0x00000002
 FILE_SHARE_DELETE = 0x00000004
@@ -152,7 +154,7 @@ def _native():
     import ctypes
     from ctypes import wintypes
 
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 
     kernel32.GetLastError.argtypes = []
     kernel32.GetLastError.restype = wintypes.DWORD

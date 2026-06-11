@@ -42,23 +42,29 @@ import nt
 
 def _add_dll_directory(path):
     import ctypes, os
-    AddDllDirectory = ctypes.windll.kernel32['AddDllDirectory']
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.GetLastError.argtypes = []
+    kernel32.GetLastError.restype = ctypes.c_ulong
+    AddDllDirectory = kernel32.AddDllDirectory
     AddDllDirectory.argtypes = [ctypes.c_wchar_p]
     AddDllDirectory.restype = ctypes.c_void_p
     result = AddDllDirectory(os.fspath(path))
     if result == 0:
-        raise OSError(f"add_dll_directory: {ctypes.windll.kernel32.GetLastError()}")
+        raise OSError(f"add_dll_directory: {kernel32.GetLastError()}")
     return result
 
 
 def _remove_dll_directory(cookie):
     import ctypes
-    RemoveDllDirectory = ctypes.windll.kernel32['RemoveDllDirectory']
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.GetLastError.argtypes = []
+    kernel32.GetLastError.restype = ctypes.c_ulong
+    RemoveDllDirectory = kernel32.RemoveDllDirectory
     RemoveDllDirectory.argtypes = [ctypes.c_void_p]
     RemoveDllDirectory.restype = ctypes.c_int
     result = RemoveDllDirectory(cookie)
     if result == 0:
-        raise OSError(f"remove_dll_directory: {ctypes.windll.kernel32.GetLastError()}")
+        raise OSError(f"remove_dll_directory: {kernel32.GetLastError()}")
 
 
 nt._add_dll_directory = _add_dll_directory

@@ -85,7 +85,7 @@ REG_RESOURCE_REQUIREMENTS_LIST = 10
 REG_QWORD = 11
 REG_QWORD_LITTLE_ENDIAN = 11
 
-_POINTER_BITS = 64 if sys.maxsize > 2**32 else 32
+_POINTER_BITS = 64
 
 
 def _predefined_hkey(value):
@@ -115,7 +115,7 @@ def _native():
     import ctypes
     from ctypes import wintypes
 
-    advapi32 = ctypes.windll.advapi32
+    advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
     advapi32.RegCloseKey.argtypes = [wintypes.HANDLE]
     advapi32.RegCloseKey.restype = wintypes.LONG
     advapi32.RegOpenKeyExW.argtypes = [

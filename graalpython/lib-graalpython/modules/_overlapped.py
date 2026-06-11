@@ -74,7 +74,9 @@ def _native():
     import ctypes
     from ctypes import wintypes
 
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.GetLastError.argtypes = []
+    kernel32.GetLastError.restype = wintypes.DWORD
     kernel32.CreateIoCompletionPort.argtypes = [wintypes.HANDLE, wintypes.HANDLE, ctypes.c_size_t, wintypes.DWORD]
     kernel32.CreateIoCompletionPort.restype = wintypes.HANDLE
     kernel32.GetQueuedCompletionStatus.argtypes = [
