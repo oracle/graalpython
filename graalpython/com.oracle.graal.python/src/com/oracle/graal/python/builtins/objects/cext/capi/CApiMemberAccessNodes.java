@@ -40,14 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.BadMemberDescrNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.NativePtrToPythonWrapperNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.NativeCharToTruffleStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.ReadMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.ReadOnlyMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.StringAsPythonStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteByteNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteDoubleNodeGen;
@@ -60,26 +63,21 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteShortNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteUIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteULongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonBooleanNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonCharNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativeUnsignedByteNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativeUnsignedPrimitiveAsPythonObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativeUnsignedShortNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.StringAsPythonStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -88,17 +86,23 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils.PrototypeNodeFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleString.FromNativePointerNode;
+import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
 
 public class CApiMemberAccessNodes {
 
@@ -132,47 +136,48 @@ public class CApiMemberAccessNodes {
         return type == T_STRING || type == T_STRING_INPLACE;
     }
 
-    private static CExtToJavaNode getReadConverterNode(int type) {
-        switch (type) {
-            case T_SHORT:
-            case T_INT:
-            case T_LONG:
-            case T_LONGLONG:
-            case T_FLOAT:
-            case T_DOUBLE:
-            case T_BYTE:
-            case T_PYSSIZET:
-            case T_NONE:
-                // no conversion needed
-                return null;
-            case T_STRING:
-            case T_STRING_INPLACE:
-                return StringAsPythonStringNodeGen.create();
-            case T_BOOL:
-                return NativePrimitiveAsPythonBooleanNodeGen.create();
-            case T_CHAR:
-                return NativePrimitiveAsPythonCharNodeGen.create();
-            case T_UBYTE:
-                return NativeUnsignedByteNodeGen.create();
-            case T_USHORT:
-                return NativeUnsignedShortNodeGen.create();
-            case T_UINT:
-            case T_ULONG:
-            case T_ULONGLONG:
-                return NativeUnsignedPrimitiveAsPythonObjectNodeGen.create();
-            case T_OBJECT:
-            case T_OBJECT_EX:
-                return NativePtrToPythonWrapperNodeGen.create();
+    /** Implements case {@code T_STRING} of function {@code PyMember_GetOne}. Just wraps {@link FromCharPointerNode} to fulfill the interface. */
+    @GenerateInline(false)
+    public abstract static class StringAsPythonStringNode extends CExtToJavaNode {
+
+        @Specialization
+        static TruffleString doNative(long value,
+                        @Bind Node inliningTarget,
+                        @Cached FromCharPointerNode fromPtr) {
+            assert value != NativeMemory.NULLPTR;
+            return fromPtr.execute(inliningTarget, value);
         }
-        throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
 
+    /**
+     * Implements case {@code T_CHAR} of function {@code PyMember_GetOne}. Expects a pointer that points to a single native {@code char} which represents an UTF-8 code point.
+     */
     @GenerateInline(false)
-    abstract static class NativePtrToPythonWrapperNode extends CExtToJavaNode {
+    abstract static class NativeCharToTruffleStringNode extends CExtToJavaNode {
         @Specialization
-        Object doGeneric(long pointer,
-                        @Cached NativePtrToPythonNode nativePtrToPythonNode) {
-            return nativePtrToPythonNode.execute(pointer, false);
+        static TruffleString doLong(long ptr,
+                        @Cached FromNativePointerNode fromNativePointerNode,
+                        @Cached SwitchEncodingNode switchEncodingNode) {
+            TruffleString ts = fromNativePointerNode.execute(ptr, 0, 1, Encoding.UTF_8, true);
+            return switchEncodingNode.execute(ts, TS_ENCODING);
+        }
+    }
+
+    static final class NoConversionRequiredNode extends CExtToJavaNode {
+
+        static final NoConversionRequiredNode INSTANCE = new NoConversionRequiredNode();
+
+        private NoConversionRequiredNode() {
+        }
+
+        @Override
+        public Object execute(@SuppressWarnings("unused") long pointer) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
         }
     }
 
@@ -180,18 +185,15 @@ public class CApiMemberAccessNodes {
     public abstract static class ReadMemberNode extends PythonUnaryBuiltinNode {
         private static final Builtin BUILTIN = ReadMemberNode.class.getAnnotation(Builtin.class);
 
-        @Child private CExtToJavaNode asPythonObjectNode;
-
         /** The specified member type. */
         private final int type;
 
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected ReadMemberNode(int type, int offset, CExtToJavaNode asPythonObjectNode) {
+        protected ReadMemberNode(int type, int offset) {
             this.type = type;
             this.offset = offset;
-            this.asPythonObjectNode = asPythonObjectNode;
         }
 
         protected static boolean isCharSigned() {
@@ -202,57 +204,99 @@ public class CApiMemberAccessNodes {
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self,
                         @Bind Node inliningTarget,
                         @Cached PythonToNativeInternalNode toNativeNode,
+                        @Cached("createAsPythonObjectNode()") CExtToJavaNode asPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
+            CompilerAsserts.partialEvaluationConstant(type);
+            CompilerAsserts.partialEvaluationConstant(offset);
+
+            // in case of T_LONGLONG or T_ULONGLONG, we assume that 'sizeof(long long)' is 'Long.BYTES'
+            assert type != T_LONGLONG && type != T_ULONGLONG || CStructs.long__long.size() == Long.BYTES;
+
+            // in case of T_PYSSIZET, we assume that 'sizeof(Py_ssize_t)' is 'Long.BYTES'
+            assert type != T_PYSSIZET || CStructs.Py_ssize_t.size() == Long.BYTES;
+
             long selfPtr = toNativeNode.execute(inliningTarget, self, false);
             long memberPtr = NativeMemory.getFieldPtr(selfPtr, offset);
-            Object nativeResult = switch (type) {
-                case T_CHAR, T_BYTE, T_UBYTE, T_BOOL -> {
-                    byte n = NativeMemory.readByte(memberPtr);
-                    if (isCharSigned()) {   // TODO(native-access) profile
-                        yield (int) n;
+            long addr;
+            switch (type) {
+                case T_BOOL -> {
+                    return NativeMemory.readByte(memberPtr) != 0;
+                }
+                case T_CHAR, T_STRING_INPLACE -> addr = memberPtr;
+                case T_BYTE -> {
+                    byte b = NativeMemory.readByte(memberPtr);
+                    if (isCharSigned()) {
+                        return (int) b;
                     }
-                    yield Byte.toUnsignedInt(n);
+                    return Byte.toUnsignedInt(b);
                 }
-                case T_SHORT, T_USHORT -> (int) NativeMemory.readShort(memberPtr);
-                case T_INT, T_UINT -> NativeMemory.readInt(memberPtr);
-                case T_LONG, T_ULONG -> NativeMemory.readLong(memberPtr);
-                case T_FLOAT -> (double) NativeMemory.readFloat(memberPtr);
-                case T_DOUBLE -> NativeMemory.readDouble(memberPtr);
-                case T_OBJECT, T_OBJECT_EX -> NativeMemory.readPtr(memberPtr);
-                case T_STRING -> NativeMemory.readPtr(memberPtr);
-                case T_STRING_INPLACE -> memberPtr;
-                case T_LONGLONG, T_ULONGLONG -> {
-                    assert CStructs.long__long.size() == Long.BYTES;
-                    yield NativeMemory.readLong(memberPtr);
+                case T_UBYTE -> {
+                    return Byte.toUnsignedInt(NativeMemory.readByte(memberPtr));
                 }
-                case T_PYSSIZET -> {
-                    assert CStructs.Py_ssize_t.size() == Long.BYTES;
-                    yield NativeMemory.readLong(memberPtr);
+                case T_SHORT -> {
+                    return (int) NativeMemory.readShort(memberPtr);
                 }
-                case T_NONE -> PNone.NONE;
+                case T_USHORT -> {
+                    return ((int) NativeMemory.readShort(memberPtr)) & 0xffff;
+                }
+                case T_INT -> {
+                    return NativeMemory.readInt(memberPtr);
+                }
+                case T_UINT -> {
+                    return NativeMemory.readInt(memberPtr) & 0xffffffffL;
+                }
+                case T_LONG, T_LONGLONG, T_PYSSIZET -> {
+                    return NativeMemory.readLong(memberPtr);
+                }
+                case T_ULONG, T_ULONGLONG -> {
+                    long l = NativeMemory.readLong(memberPtr);
+                    if (l >= 0) {
+                        return l;
+                    }
+                    return PFactory.createInt(PythonLanguage.get(this), PInt.longToUnsignedBigInteger(l));
+                }
+                case T_FLOAT -> {
+                    return (double) NativeMemory.readFloat(memberPtr);
+                }
+                case T_DOUBLE -> {
+                    return NativeMemory.readDouble(memberPtr);
+                }
+                case T_OBJECT, T_STRING -> {
+                    addr = NativeMemory.readPtr(memberPtr);
+                    if (addr == NativeMemory.NULLPTR) {
+                        return PNone.NONE;
+                    }
+                }
+                case T_OBJECT_EX -> {
+                    addr = NativeMemory.readPtr(memberPtr);
+                    if (addr == NativeMemory.NULLPTR) {
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError);
+                    }
+                }
+                case T_NONE -> {
+                    return PNone.NONE;
+                }
                 default -> throw CompilerDirectives.shouldNotReachHere("invalid member type");
-            };
+            }
 
-            assert !(nativeResult instanceof Byte || nativeResult instanceof Short || nativeResult instanceof Float || nativeResult instanceof Character || nativeResult instanceof PException ||
-                            nativeResult instanceof String) : nativeResult + " " + nativeResult.getClass();
-            if (asPythonObjectNode != null) {
-                // TODO(native-access) some of these could be inlined into the switch above
-                nativeResult = asPythonObjectNode.execute(nativeResult);
-            }
-            if (type == T_OBJECT_EX && nativeResult == PNone.NO_VALUE) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError);
-            }
-            if (type == T_OBJECT && nativeResult == PNone.NO_VALUE) {
-                nativeResult = PNone.NONE;
-            }
-            return nativeResult;
+            assert addr != NativeMemory.NULLPTR;
+            return asPythonObjectNode.execute(addr);
+        }
+
+        @NeverDefault
+        final CExtToJavaNode createAsPythonObjectNode() {
+            return switch (type) {
+                case T_CHAR -> NativeCharToTruffleStringNodeGen.create();
+                case T_STRING, T_STRING_INPLACE -> StringAsPythonStringNodeGen.create();
+                case T_OBJECT, T_OBJECT_EX -> NativeToPythonNode.create();
+                default -> NoConversionRequiredNode.INSTANCE;
+            };
         }
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, TruffleString propertyName, int type, int offset) {
-            CExtToJavaNode asPythonObjectNode = getReadConverterNode(type);
             BuiltinFunctionRootNode rootNode = language.createCachedPropAccessRootNode(
-                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadMemberNodeGen.create(type, offset, asPythonObjectNode)), true),
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadMemberNodeGen.create(type, offset)), true),
                             ReadMemberNode.class, BUILTIN.name(), type, offset);
             int flags = PBuiltinFunction.getFlags(BUILTIN, rootNode.getSignature());
             return PFactory.createBuiltinFunction(language, propertyName, owner, 0, flags, rootNode);

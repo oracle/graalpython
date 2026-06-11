@@ -136,7 +136,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ToNativeTypeNode;
@@ -730,7 +729,7 @@ public final class PythonCextBuiltins {
         private void castArguments(Object[] arguments, Object[] argCast) {
             for (int i = 0; i < argNodes.length; i++) {
                 Object arg = arguments[i];
-                argCast[i] = argNodes[i] == null ? arg : argNodes[i].execute(arg);
+                argCast[i] = argNodes[i] == null ? arg : argNodes[i].execute((Long) arg);
             }
         }
     }

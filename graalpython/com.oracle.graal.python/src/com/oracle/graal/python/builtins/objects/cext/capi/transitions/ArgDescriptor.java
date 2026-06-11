@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import com.oracle.graal.python.annotations.NativeSimpleType;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FromLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
@@ -83,7 +82,7 @@ enum ArgBehavior {
     UInt32(NativeSimpleType.SINT32),
     Int64(NativeSimpleType.SINT64),
     UInt64(NativeSimpleType.SINT64),
-    Long(NativeSimpleType.SINT64, null, FromLongNode::create, FromLongNode.getUncached()),
+    Long(NativeSimpleType.SINT64),
     Float32(NativeSimpleType.FLOAT),
     Float64(NativeSimpleType.DOUBLE),
     Void(NativeSimpleType.VOID),

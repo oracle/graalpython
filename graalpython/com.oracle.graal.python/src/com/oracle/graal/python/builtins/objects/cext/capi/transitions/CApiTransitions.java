@@ -2299,11 +2299,6 @@ public abstract class CApiTransitions {
 
         public abstract Object execute(long object, boolean stealing);
 
-        @TruffleBoundary
-        public static Object executeUncached(long object, boolean stealing) {
-            return NativePtrToPythonNodeGen.getUncached().execute(object, stealing);
-        }
-
         @Specialization
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         static Object doNonWrapper(long pointer, boolean stealing,
@@ -2503,7 +2498,7 @@ public abstract class CApiTransitions {
     public abstract static class NativeToPythonClassNode extends CExtToJavaNode {
 
         @TruffleBoundary
-        public static Object executeUncached(Object obj) {
+        public static Object executeUncached(long obj) {
             return NativeToPythonClassNodeGen.getUncached().execute(obj);
         }
 

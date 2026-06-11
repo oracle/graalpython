@@ -107,8 +107,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNa
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateNativeArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateNativeKwNamesTupleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromUInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToPythonStringNodeGen;
@@ -174,7 +172,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -209,64 +206,6 @@ public abstract class ExternalFunctionNodes {
 
     public static PKeyword[] createKwDefaults(NativeFunctionPointer callable, long closure) {
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
-    }
-
-    /**
-     * On Windows, "long" is 32 bits, so that we might need to convert int to long for consistency.
-     */
-    @GenerateInline(false)
-    @GenerateUncached
-    public abstract static class FromLongNode extends CExtToJavaNode {
-
-        @Specialization
-        static long doInt(int value) {
-            return value & 0xFFFFFFFFL;
-        }
-
-        @Specialization
-        static long doLong(long value) {
-            return value;
-        }
-
-        @Fallback
-        static Object doOther(Object value) {
-            assert CApiTransitions.isBackendPointerObject(value);
-            return value;
-        }
-
-        @NeverDefault
-        public static FromLongNode create() {
-            return FromLongNodeGen.create();
-        }
-
-        public static FromLongNode getUncached() {
-            return FromLongNodeGen.getUncached();
-        }
-    }
-
-    @GenerateInline(false)
-    @GenerateUncached
-    public abstract static class FromUInt32Node extends CExtToJavaNode {
-
-        @Specialization
-        static int doInt(int value) {
-            return value;
-        }
-
-        @Specialization
-        static int doLong(long value) {
-            assert value < (1L << 32);
-            return (int) value;
-        }
-
-        @NeverDefault
-        public static FromUInt32Node create() {
-            return FromUInt32NodeGen.create();
-        }
-
-        public static FromUInt32Node getUncached() {
-            return FromUInt32NodeGen.getUncached();
-        }
     }
 
     @GenerateInline(false)
