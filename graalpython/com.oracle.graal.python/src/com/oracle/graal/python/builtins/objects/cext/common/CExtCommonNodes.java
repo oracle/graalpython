@@ -1084,7 +1084,7 @@ public abstract class CExtCommonNodes {
      */
     @GenerateInline(false) // footprint reduction 28 -> 9, inherits non-inlineable execute()
     @GenerateUncached
-    public abstract static class AsNativeCharNode extends CExtToNativeNode {
+    public abstract static class AsNativeCharNode extends Node {
 
         public abstract byte executeByte(Object value);
 
@@ -1107,7 +1107,7 @@ public abstract class CExtCommonNodes {
      *
      * @see AsNativePrimitiveNode
      */
-    public abstract static class AsFixedNativePrimitiveNode extends CExtToNativeNode {
+    public abstract static class AsFixedNativePrimitiveNode extends Node {
 
         private final int targetTypeSize;
         private final int signed;
@@ -1116,6 +1116,8 @@ public abstract class CExtCommonNodes {
             this.targetTypeSize = targetTypeSize;
             this.signed = PInt.intValue(signed);
         }
+
+        public abstract Object execute(Object object);
 
         // Adding specializations for primitives does not make a lot of sense just to avoid
         // un-/boxing in the interpreter since interop will force un-/boxing anyway.

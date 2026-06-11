@@ -2007,13 +2007,6 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
 
-        public abstract long executeLong(Object object);
-
-        @TruffleBoundary
-        public static long executeLongUncached(Object obj) {
-            return getUncached().executeLong(obj);
-        }
-
         @Specialization
         static long doGeneric(Object obj,
                         @Bind Node inliningTarget,
@@ -2061,13 +2054,6 @@ public abstract class CApiTransitions {
     @GenerateUncached
     @GenerateInline(false)
     public abstract static class PythonToNativeNewRefNode extends CExtToNativeNode {
-
-        public abstract long executeLong(Object object);
-
-        @TruffleBoundary
-        public static long executeLongUncached(Object obj) {
-            return getUncached().executeLong(obj);
-        }
 
         @Specialization
         static long doGeneric(Object obj,

@@ -554,7 +554,7 @@ public class CApiMemberAccessNodes {
         Object doGeneric(Object self, Object value,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            long selfPtr = toNativeNode.executeLong(self) + offset;
+            long selfPtr = toNativeNode.execute(self) + offset;
 
             /*
              * Deleting values is only allowed for members with object type (see structmember.c:

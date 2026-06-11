@@ -111,8 +111,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromUInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeArgsTupleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToPythonStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -272,52 +270,13 @@ public abstract class ExternalFunctionNodes {
     }
 
     @GenerateInline(false)
-    public abstract static class ToInt64Node extends CExtToNativeNode {
-
-        @Specialization
-        static long doInt(int value) {
-            return value;
-        }
-
-        @Specialization
-        static long doLong(long value) {
-            return value;
-        }
-
-        @Fallback
-        static Object doOther(Object value) {
-            assert CApiTransitions.isBackendPointerObject(value);
-            return value;
-        }
-
-        @NeverDefault
-        public static ToInt64Node create() {
-            return ToInt64NodeGen.create();
-        }
-    }
-
-    @GenerateInline(false)
-    public abstract static class ToInt32Node extends CExtToNativeNode {
-
-        @Specialization
-        static int doInt(int value) {
-            return value;
-        }
-
-        @NeverDefault
-        public static ToInt32Node create() {
-            return ToInt32NodeGen.create();
-        }
-    }
-
-    @GenerateInline(false)
     public static final class ToNativeBorrowedNode extends CExtToNativeNode {
 
         @Child private EnsurePythonObjectNode ensurePythonObjectNode = EnsurePythonObjectNode.create();
         @Child private PythonToNativeNode toNative = PythonToNativeNode.create();
 
         @Override
-        public Object execute(Object object) {
+        public long execute(Object object) {
             assert canBorrowDirectly(object);
             /*
              * In this case, it is not necessary to explicitly keep the promoted object alive
@@ -329,7 +288,7 @@ public abstract class ExternalFunctionNodes {
             PythonContext ctx = PythonContext.get(this);
             Object promoted = ensurePythonObjectNode.execute(ctx, object, false);
             assert promoted == object || PythonToNativeInternalNode.isImmortal(ctx, promoted);
-            return toNative.executeLong(promoted);
+            return toNative.execute(promoted);
         }
 
         private static boolean canBorrowDirectly(Object object) {
@@ -796,7 +755,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.execute(managedArgsTuple);
             }
 
             try {
@@ -872,7 +831,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsToNativeNode.execute(managedArgsTuple);
             }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
@@ -881,7 +840,7 @@ public abstract class ExternalFunctionNodes {
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION_WITH_KEYWORDS(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
-                                boundFunction, selfToNativeNode.executeLong(self), argsTuplePtr, kwargsToNativeNode.executeLong(kwargsDict));
+                                boundFunction, selfToNativeNode.execute(self), argsTuplePtr, kwargsToNativeNode.execute(kwargsDict));
                 return nativeToPython(context, l);
             } finally {
                 Reference.reachabilityFence(self);
@@ -990,7 +949,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.execute(managedArgsTuple);
             }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
@@ -1035,7 +994,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.execute(managedArgsTuple);
             }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
@@ -1093,7 +1052,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.execute(managedArgsTuple);
             }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
@@ -1187,7 +1146,7 @@ public abstract class ExternalFunctionNodes {
             PythonContext context = PythonContext.get(this);
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context), boundFunction,
-                                selfToNativeNode.executeLong(self), arg);
+                                selfToNativeNode.execute(self), arg);
                 return nativeToPython(context, l);
             } finally {
                 Reference.reachabilityFence(self);
@@ -1218,7 +1177,7 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             Object arg = ensurePythonObject(readArgNode.execute(frame));
             try {
-                return invokeExternalFunction(frame, boundFunction, self, argToNativeNode.executeLong(arg));
+                return invokeExternalFunction(frame, boundFunction, self, argToNativeNode.execute(arg));
             } finally {
                 Reference.reachabilityFence(arg);
             }
@@ -1288,7 +1247,7 @@ public abstract class ExternalFunctionNodes {
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST_WITH_KEYWORDS(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
-                                boundFunction, argToNativeNode.executeLong(self), nativeFastcallArgs, args.length, kwnamesTuplePtr);
+                                boundFunction, argToNativeNode.execute(self), nativeFastcallArgs, args.length, kwnamesTuplePtr);
                 return nativeToPython(context, l);
             } finally {
                 MethFastcallRoot.freeFastcallArgsArray(nativeFastcallArgs);
@@ -1370,7 +1329,7 @@ public abstract class ExternalFunctionNodes {
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCMETHOD(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
-                                boundFunction, argToNativeNode.executeLong(self), argToNativeNode.executeLong(cls), nativeFastcallArgs, args.length, kwNamesToNativeNode.executeLong(kwnamesTuple));
+                                boundFunction, argToNativeNode.execute(self), argToNativeNode.execute(cls), nativeFastcallArgs, args.length, kwNamesToNativeNode.execute(kwnamesTuple));
                 return nativeToPython(context, l);
             } finally {
                 MethFastcallRoot.freeFastcallArgsArray(nativeFastcallArgs);
@@ -1434,7 +1393,7 @@ public abstract class ExternalFunctionNodes {
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
-                                boundFunction, argToNativeNode.executeLong(self), argsArray, promotedArgs.length);
+                                boundFunction, argToNativeNode.execute(self), argsArray, promotedArgs.length);
                 return nativeToPython(context, l);
             } finally {
                 freeFastcallArgsArray(argsArray);
@@ -1456,7 +1415,7 @@ public abstract class ExternalFunctionNodes {
             long ptr = NativeMemory.malloc((long) data.length * NativeMemory.POINTER_SIZE);
             for (int i = 0; i < data.length; i++) {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(data[i]);
-                NativeMemory.writePtrArrayElement(ptr, i, argToNativeNode.executeLong(data[i]));
+                NativeMemory.writePtrArrayElement(ptr, i, argToNativeNode.execute(data[i]));
             }
             return ptr;
         }
