@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,7 +39,12 @@
 
 import sys
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare
+from . import (
+    CPyExtFunction,
+    CPyExtTestCase,
+    compile_module_from_string,
+    unhandled_error_compare,
+)
 
 
 def _reference_get_object(args):
@@ -49,7 +54,76 @@ def _reference_get_object(args):
         raise SystemError # raised by PyBuildValue(..., NULL)
         
 class TestPySys(CPyExtTestCase):
-    
+    def test_PySys_Audit(self):
+        module = compile_module_from_string("""
+            #define PY_SSIZE_T_CLEAN
+            #include <Python.h>
+
+            static PyObject* audit(PyObject* self, PyObject* Py_UNUSED(args)) {
+                PyObject *value = PyUnicode_FromString("value");
+                if (value == NULL) {
+                    return NULL;
+                }
+                int res = PySys_Audit("graalpy.test_capi_audit", "Oi", value, 23);
+                Py_DECREF(value);
+                if (res < 0) {
+                    return NULL;
+                }
+                return PyLong_FromLong(res);
+            }
+
+            static PyObject* audit_error(PyObject* self, PyObject* Py_UNUSED(args)) {
+                PyObject *value = PyUnicode_FromString("value");
+                if (value == NULL) {
+                    return NULL;
+                }
+                int res = PySys_Audit("graalpy.test_capi_audit_error", "O", value);
+                Py_DECREF(value);
+                if (res < 0) {
+                    return NULL;
+                }
+                return PyLong_FromLong(res);
+            }
+
+            static PyMethodDef methods[] = {
+                {"audit", audit, METH_NOARGS, NULL},
+                {"audit_error", audit_error, METH_NOARGS, NULL},
+                {NULL, NULL, 0, NULL}
+            };
+
+            static struct PyModuleDef module = {
+                PyModuleDef_HEAD_INIT, "test_sys_audit", NULL, -1, methods
+            };
+
+            PyMODINIT_FUNC PyInit_test_sys_audit(void) {
+                return PyModule_Create(&module);
+            }
+        """, "test_sys_audit")
+
+        seen = []
+
+        def hook(event, args):
+            if event == "graalpy.test_capi_audit":
+                seen.append(args)
+
+        sys.addaudithook(hook)
+
+        self.assertEqual(module.audit(), 0)
+        self.assertEqual(seen, [("value", 23)])
+
+        class AuditError(Exception):
+            pass
+
+        def error_hook(event, args):
+            if event == "graalpy.test_capi_audit_error":
+                raise AuditError(args)
+
+        sys.addaudithook(error_hook)
+
+        with self.assertRaises(AuditError) as cm:
+            module.audit_error()
+        self.assertEqual(cm.exception.args[0], ("value",))
+
     test_PySys_GetObject = CPyExtFunction(
         _reference_get_object,
         lambda: (

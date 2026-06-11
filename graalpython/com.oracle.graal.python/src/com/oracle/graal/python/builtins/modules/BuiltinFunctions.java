@@ -2427,6 +2427,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = "input", minNumOfPositionalArgs = 0, parameterNames = {"prompt"})
     @GenerateNodeFactory
     abstract static class InputNode extends PythonUnaryBuiltinNode {
+        private static final TruffleString T_BUILTINS_INPUT = tsLiteral("builtins.input");
 
         @Specialization
         static Object input(VirtualFrame frame, Object prompt,
@@ -2459,7 +2460,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw PRaiseNode.raiseStatic(node, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDERR);
             }
 
-            SysModuleBuiltins.AuditNode.auditUncached("builtins.input", prompt != NO_VALUE ? prompt : NONE);
+            SysModuleBuiltins.AuditNode.auditUncached(T_BUILTINS_INPUT, prompt != NO_VALUE ? prompt : NONE);
 
             try {
                 PyObjectCallMethodObjArgs.executeUncached(stderr, T_FLUSH);

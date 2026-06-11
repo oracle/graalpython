@@ -55,6 +55,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_ERROR;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -126,6 +127,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class SocketBuiltins extends PythonBuiltins {
 
     public static final TpSlots SLOTS = SocketBuiltinsSlotsGen.SLOTS;
+    private static final TruffleString T_SOCKET_NEW = tsLiteral("socket.__new__");
+    private static final TruffleString T_SOCKET_BIND = tsLiteral("socket.bind");
+    private static final TruffleString T_SOCKET_CONNECT = tsLiteral("socket.connect");
+    private static final TruffleString T_SOCKET_SENDTO = tsLiteral("socket.sendto");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -173,7 +178,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             // sic! CPython really has __new__ there, even though it's in __init__
-            auditNode.audit(inliningTarget, "socket.__new__", self, familyIn, typeIn, protoIn);
+            auditNode.audit(frame, inliningTarget, T_SOCKET_NEW, self, familyIn, typeIn, protoIn);
             int family = familyIn;
             if (family == -1) {
                 family = PosixConstants.AF_INET.value;
@@ -225,7 +230,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
             // sic! CPython really has __new__ there, even though it's in __init__
-            auditNode.audit(inliningTarget, "socket.__new__", self, familyIn, typeIn, protoIn);
+            auditNode.audit(frame, inliningTarget, T_SOCKET_NEW, self, familyIn, typeIn, protoIn);
 
             int fd = asIntNode.execute(frame, inliningTarget, fileno);
             if (fd < 0) {
@@ -353,7 +358,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             UniversalSockAddr addr = getSockAddrArgNode.execute(frame, self, address, "bind");
-            auditNode.audit(inliningTarget, "socket.bind", self, address);
+            auditNode.audit(frame, inliningTarget, T_SOCKET_BIND, self, address);
 
             try {
                 gil.release(true);
@@ -416,7 +421,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, self, address, "connect");
 
-            auditNode.audit(inliningTarget, "socket.connect", self, address);
+            auditNode.audit(frame, inliningTarget, T_SOCKET_CONNECT, self, address);
 
             try {
                 doConnect(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, self, connectAddr);
@@ -477,7 +482,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, self, address, "connect_ex");
 
-            auditNode.audit(inliningTarget, "socket.connect", self, address); // sic! connect
+            auditNode.audit(frame, inliningTarget, T_SOCKET_CONNECT, self, address); // sic! connect
 
             try {
                 ConnectNode.doConnect(frame, inliningTarget, constructAndRaiseNode, posixLib, context.getPosixSupport(), gil, self, connectAddr);
@@ -976,7 +981,7 @@ public final class SocketBuiltins extends PythonBuiltins {
                 checkSelectable(inliningTarget, raiseNode, socket);
 
                 UniversalSockAddr addr = getSockAddrArgNode.execute(frame, socket, address, "sendto");
-                auditNode.audit(inliningTarget, "socket.sendto", socket, address);
+                auditNode.audit(frame, inliningTarget, T_SOCKET_SENDTO, socket, address);
 
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);

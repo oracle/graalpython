@@ -73,6 +73,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImple
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.Arrays;
 import java.util.List;
@@ -189,6 +190,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public final class TypeBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = TypeBuiltinsSlotsGen.SLOTS;
+    private static final TruffleString T_OBJECT_SETATTR = tsLiteral("object.__setattr__");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -868,10 +870,10 @@ public final class TypeBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class CheckSetSpecialTypeAttrNode extends Node {
-        abstract void execute(Node inliningTarget, Object type, Object value, TruffleString name);
+        abstract void execute(VirtualFrame frame, Node inliningTarget, Object type, Object value, TruffleString name);
 
         @Specialization
-        static void check(Node inliningTarget, Object type, Object value, TruffleString name,
+        static void check(VirtualFrame frame, Node inliningTarget, Object type, Object value, TruffleString name,
                         @Cached PRaiseNode raiseNode,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
@@ -882,7 +884,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 // Sic, it's not immutable, but CPython has this message
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_DELETE_ATTRIBUTE_S_OF_IMMUTABLE_TYPE_N, name, type);
             }
-            auditNode.audit(inliningTarget, "object.__setattr__", type, name, value);
+            auditNode.audit(frame, inliningTarget, T_OBJECT_SETATTR, type, name, value);
         }
     }
 
@@ -935,7 +937,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached SetNameInnerNode innerNode,
                         @Cached PRaiseNode raiseNode) {
-            check.execute(inliningTarget, cls, value, T___NAME__);
+            check.execute(frame, inliningTarget, cls, value, T___NAME__);
             TruffleString string;
             try {
                 string = castToTruffleStringNode.execute(inliningTarget, value);
@@ -1088,13 +1090,13 @@ public final class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        static Object setName(Object cls, Object value,
+        static Object setName(VirtualFrame frame, Object cls, Object value,
                         @Bind Node inliningTarget,
                         @Cached CheckSetSpecialTypeAttrNode check,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached SetQualNameInnerNode innerNode,
                         @Cached PRaiseNode raiseNode) {
-            check.execute(inliningTarget, cls, value, T___QUALNAME__);
+            check.execute(frame, inliningTarget, cls, value, T___QUALNAME__);
             TruffleString stringValue;
             try {
                 stringValue = castToStringNode.execute(inliningTarget, value);

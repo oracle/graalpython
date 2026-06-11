@@ -44,8 +44,32 @@
 #include "pycore_pystate.h"       // _PyThreadState_GET()
 
 int PySys_Audit(const char *event, const char *argFormat, ...) {
-	// ignore for now
-    return 0;
+    PyObject *args;
+    if (argFormat == NULL) {
+        args = PyTuple_New(0);
+        if (args == NULL) {
+            return -1;
+        }
+    } else {
+        va_list va;
+        va_start(va, argFormat);
+        args = Py_VaBuildValue(argFormat, va);
+        va_end(va);
+        if (args == NULL) {
+            return -1;
+        }
+        if (!PyTuple_Check(args)) {
+            PyObject *tmp = PyTuple_Pack(1, args);
+            Py_DECREF(args);
+            if (tmp == NULL) {
+                return -1;
+            }
+            args = tmp;
+        }
+    }
+    int result = GraalPyPrivate_Sys_Audit(event, args);
+    Py_DECREF(args);
+    return result;
 }
 
 static void

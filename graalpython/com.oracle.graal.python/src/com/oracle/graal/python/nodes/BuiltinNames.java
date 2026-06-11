@@ -207,6 +207,7 @@ public abstract class BuiltinNames {
     public static final TruffleString T_INT = tsLiteral(J_INT);
 
     public static final String J_OPEN = "open";
+    public static final TruffleString T_OPEN = tsLiteral(J_OPEN);
 
     public static final String J_STR = "str";
     public static final TruffleString T_STR = tsLiteral(J_STR);

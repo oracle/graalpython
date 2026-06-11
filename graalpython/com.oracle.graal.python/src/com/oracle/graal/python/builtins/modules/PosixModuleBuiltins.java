@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ENVIRON;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_OPEN;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
@@ -156,6 +157,23 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @CoreFunctions(defineModule = "posix", extendsModule = "nt", isEager = true)
 public final class PosixModuleBuiltins extends PythonBuiltins {
+
+    private static final TruffleString T_OS_PUTENV = tsLiteral("os.putenv");
+    private static final TruffleString T_OS_UNSETENV = tsLiteral("os.unsetenv");
+    private static final TruffleString T_OS_EXEC = tsLiteral("os.exec");
+    private static final TruffleString T_OS_TRUNCATE = tsLiteral("os.truncate");
+    private static final TruffleString T_OS_REMOVE = tsLiteral("os.remove");
+    private static final TruffleString T_OS_MKDIR = tsLiteral("os.mkdir");
+    private static final TruffleString T_OS_RMDIR = tsLiteral("os.rmdir");
+    private static final TruffleString T_OS_SCANDIR = tsLiteral("os.scandir");
+    private static final TruffleString T_OS_LISTDIR = tsLiteral("os.listdir");
+    private static final TruffleString T_OS_UTIME = tsLiteral("os.utime");
+    private static final TruffleString T_OS_RENAME = tsLiteral("os.rename");
+    private static final TruffleString T_OS_CHMOD = tsLiteral("os.chmod");
+    private static final TruffleString T_OS_CHOWN = tsLiteral("os.chown");
+    private static final TruffleString T_OS_SYSTEM = tsLiteral("os.system");
+    private static final TruffleString T_KILL = tsLiteral("kill");
+    private static final TruffleString T_KILLPG = tsLiteral("killpg");
 
     static final StructSequence.BuiltinTypeDescriptor STAT_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStatResult,
@@ -412,7 +430,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             Object nameOpaque = checkNull(inliningTarget, posixLib.createPathFromBytes(posixSupport, name), raiseNode);
             Object valueOpaque = checkNull(inliningTarget, posixLib.createPathFromBytes(posixSupport, value), raiseNode);
             checkEqualSign(inliningTarget, name, raiseNode);
-            auditNode.audit(inliningTarget, "os.putenv", nameBytes, valueBytes);
+            auditNode.audit(frame, inliningTarget, T_OS_PUTENV, nameBytes, valueBytes);
             try {
                 posixLib.setenv(posixSupport, nameOpaque, valueOpaque, true);
             } catch (PosixException e) {
@@ -458,7 +476,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             byte[] name = toBytesNode.execute(nameBytes);
             Object nameOpaque = checkNull(inliningTarget, posixLib.createPathFromBytes(context.getPosixSupport(), name), raiseNode);
-            auditNode.audit(inliningTarget, "os.unsetenv", nameBytes);
+            auditNode.audit(frame, inliningTarget, T_OS_UNSETENV, nameBytes);
             try {
                 posixLib.unsetenv(context.getPosixSupport(), nameOpaque);
             } catch (PosixException e) {
@@ -542,7 +560,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             // TODO ValueError "execv() arg 2 first element cannot be empty"
 
-            auditNode.audit(inliningTarget, "os.exec", path.originalObject, argv, PNone.NONE);
+            auditNode.audit(frame, inliningTarget, T_OS_EXEC, path.originalObject, argv, PNone.NONE);
 
             gil.release(true);
             try {
@@ -851,7 +869,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             if (O_CLOEXEC.defined) {
                 fixedFlags |= O_CLOEXEC.getValueIfDefined();
             }
-            auditNode.audit(inliningTarget, "open", path.originalObject, PNone.NONE, fixedFlags);
+            auditNode.audit(frame, inliningTarget, T_OPEN, path.originalObject, PNone.NONE, fixedFlags);
             gil.release(true);
             try {
                 while (true) {
@@ -1216,7 +1234,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.truncate", fd, length);
+            auditNode.audit(frame, inliningTarget, T_OS_TRUNCATE, fd, length);
             while (true) {
                 try {
                     gil.release(true);
@@ -1257,7 +1275,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Exclusive @Cached GilNode gil,
                         @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.truncate", path.originalObject, length);
+            auditNode.audit(frame, inliningTarget, T_OS_TRUNCATE, path.originalObject, length);
             try {
                 gil.release(true);
                 try {
@@ -1620,7 +1638,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.remove", path.originalObject, dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_REMOVE, path.originalObject, dirFdForAudit(dirFd));
             try {
                 posixLib.unlinkat(context.getPosixSupport(), dirFd, path.value, false);
             } catch (PosixException e) {
@@ -1721,7 +1739,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.mkdir", path.originalObject, mode, dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_MKDIR, path.originalObject, mode, dirFdForAudit(dirFd));
             try {
                 posixLib.mkdirat(context.getPosixSupport(), dirFd, path.value, mode);
             } catch (PosixException e) {
@@ -1749,7 +1767,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.rmdir", path.originalObject, dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_RMDIR, path.originalObject, dirFdForAudit(dirFd));
             try {
                 posixLib.unlinkat(context.getPosixSupport(), dirFd, path.value, true);
             } catch (PosixException e) {
@@ -1907,7 +1925,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.scandir", path.originalObject == null ? PNone.NONE : path.originalObject);
+            auditNode.audit(frame, inliningTarget, T_OS_SCANDIR, path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
                 return PFactory.createScandirIterator(context.getLanguage(inliningTarget), context, posixLib.opendir(context.getPosixSupport(), path.value), path, false);
             } catch (PosixException e) {
@@ -1922,7 +1940,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.scandir", fd.originalObject);
+            auditNode.audit(frame, inliningTarget, T_OS_SCANDIR, fd.originalObject);
             Object dirStream = dupAndFdopendir(frame, inliningTarget, posixLib, context.getPosixSupport(), fd, constructAndRaiseNode);
             return PFactory.createScandirIterator(context.getLanguage(inliningTarget), context, dirStream, fd, true);
         }
@@ -1945,7 +1963,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.listdir", path.originalObject == null ? PNone.NONE : path.originalObject);
+            auditNode.audit(frame, inliningTarget, T_OS_LISTDIR, path.originalObject == null ? PNone.NONE : path.originalObject);
             try {
                 return listdir(frame, inliningTarget, posixLib.opendir(context.getPosixSupport(), path.value), path.wasBufferLike, false, posixLib, constructAndRaiseNode,
                                 context.getLanguage(inliningTarget), context.getPosixSupport());
@@ -1961,7 +1979,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.listdir", fd.originalObject);
+            auditNode.audit(frame, inliningTarget, T_OS_LISTDIR, fd.originalObject);
             Object dirStream = dupAndFdopendir(frame, inliningTarget, posixLib, context.getPosixSupport(), fd, constructAndRaiseNode);
             return listdir(frame, inliningTarget, dirStream, false, true, posixLib, constructAndRaiseNode, context.getLanguage(inliningTarget), context.getPosixSupport());
         }
@@ -2127,7 +2145,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long[] timespec = timespecNode.execute(frame, times, ns);
-            auditNode.audit(inliningTarget, "os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_UTIME, path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
                 posixLib.utimensat(context.getPosixSupport(), dirFd, path.value, timespec, followSymlinks);
             } catch (PosixException e) {
@@ -2146,7 +2164,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
-            auditNode.audit(inliningTarget, "os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_UTIME, path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
                 posixLib.utimes(context.getPosixSupport(), path.value, timeval);
             } catch (PosixException e) {
@@ -2165,7 +2183,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
-            auditNode.audit(inliningTarget, "os.utime", path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_UTIME, path.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
                 posixLib.lutimes(context.getPosixSupport(), path.value, timeval);
             } catch (PosixException e) {
@@ -2198,7 +2216,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             long[] timespec = timespecNode.execute(frame, times, ns);
-            auditNode.audit(inliningTarget, "os.utime", fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_UTIME, fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
                 posixLib.futimens(context.getPosixSupport(), fd.fd, timespec);
             } catch (PosixException e) {
@@ -2217,7 +2235,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Timeval[] timeval = timespecNode.toTimeval(frame, times, ns);
-            auditNode.audit(inliningTarget, "os.utime", fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_UTIME, fd.originalObject, checkNone(times), checkNone(ns), dirFdForAudit(dirFd));
             try {
                 posixLib.futimes(context.getPosixSupport(), fd.fd, timeval);
             } catch (PosixException e) {
@@ -2266,7 +2284,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.rename", src.originalObject, dst.originalObject, dirFdForAudit(srcDirFd), dirFdForAudit(dstDirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_RENAME, src.originalObject, dst.originalObject, dirFdForAudit(srcDirFd), dirFdForAudit(dstDirFd));
             try {
                 posixLib.renameat(context.getPosixSupport(), srcDirFd, src.value, dstDirFd, dst.value);
             } catch (PosixException e) {
@@ -2338,7 +2356,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.chmod", fd, mode, -1);
+            auditNode.audit(frame, inliningTarget, T_OS_CHMOD, fd, mode, -1);
             try {
                 posixLib.fchmod(context.getPosixSupport(), fd, mode);
             } catch (PosixException e) {
@@ -2369,7 +2387,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Shared @Cached PRaiseNode raiseNode) {
-            auditNode.audit(inliningTarget, "os.chmod", path.originalObject, mode, dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_CHMOD, path.originalObject, mode, dirFdForAudit(dirFd));
             try {
                 posixLib.fchmodat(context.getPosixSupport(), dirFd, path.value, mode, followSymlinks);
             } catch (PosixException e) {
@@ -2395,7 +2413,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         // unused node to avoid mixing shared and non-shared inlined nodes
                         @SuppressWarnings("unused") @Shared @Cached PRaiseNode raiseNode) {
-            auditNode.audit(inliningTarget, "os.chmod", fd.originalObject, mode, dirFdForAudit(dirFd));
+            auditNode.audit(frame, inliningTarget, T_OS_CHMOD, fd.originalObject, mode, dirFdForAudit(dirFd));
             // Unlike stat and utime which raise CANT_SPECIFY_DIRFD_WITHOUT_PATH or
             // CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER when an inappropriate combination of
             // arguments is used, CPython's implementation of chmod simply ignores dir_fd and
@@ -2423,7 +2441,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.chown", fd, uid, gid, -1);
+            auditNode.audit(frame, inliningTarget, T_OS_CHOWN, fd, uid, gid, -1);
             try {
                 gil.release(true);
                 try {
@@ -2457,7 +2475,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "os.chown", path.originalObject, uid, gid, -1);
+            auditNode.audit(frame, inliningTarget, T_OS_CHOWN, path.originalObject, uid, gid, -1);
             try {
                 gil.release(true);
                 try {
@@ -2495,7 +2513,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         // unused node to avoid mixing shared and non-shared inlined nodes
                         @Shared @Cached PRaiseNode raiseNode) {
-            auditNode.audit(inliningTarget, "os.chown", path.originalObject, uid, gid, dirFd != AT_FDCWD.value ? dirFd : -1);
+            auditNode.audit(frame, inliningTarget, T_OS_CHOWN, path.originalObject, uid, gid, dirFd != AT_FDCWD.value ? dirFd : -1);
             try {
                 gil.release(true);
                 try {
@@ -2524,7 +2542,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             if (followSymlinks) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER, "chown");
             }
-            auditNode.audit(inliningTarget, "os.chown", fd.originalObject, uid, gid, -1);
+            auditNode.audit(frame, inliningTarget, T_OS_CHOWN, fd.originalObject, uid, gid, -1);
             try {
                 gil.release(true);
                 try {
@@ -2854,7 +2872,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int system(PBytes command,
+        static int system(VirtualFrame frame, PBytes command,
                         @Bind Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -2864,7 +2882,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
             // conversions for emulated backend because the bytes version after fsencode conversion
             // is subject to sys.audit.
-            auditNode.audit(inliningTarget, "os.system", command);
+            auditNode.audit(frame, inliningTarget, T_OS_SYSTEM, command);
             byte[] bytes = toBytesNode.execute(command);
             gil.release(true);
             try {
@@ -3014,7 +3032,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "kill", pid, signal);
+            auditNode.audit(frame, inliningTarget, T_KILL, pid, signal);
             try {
                 posixLib.kill(context.getPosixSupport(), pid, signal);
                 return PNone.NONE;
@@ -3041,7 +3059,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "killpg", pid, signal);
+            auditNode.audit(frame, inliningTarget, T_KILLPG, pid, signal);
             try {
                 posixLib.killpg(context.getPosixSupport(), pid, signal);
                 return PNone.NONE;

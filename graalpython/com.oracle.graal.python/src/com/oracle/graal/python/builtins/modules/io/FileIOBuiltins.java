@@ -74,7 +74,7 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_OPEN;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_OPEN;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_MODE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_USE_CLOSEFD;
 import static com.oracle.graal.python.nodes.ErrorMessages.EMBEDDED_NULL_BYTE;
@@ -176,7 +176,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFileIO)
 public final class FileIOBuiltins extends PythonBuiltins {
-
     /*
      * We are limited to max primitive array size, Integer.MAX_VALUE, the jdk can offer. CPython
      * defines the max value as system's SSIZE_T_MAX on linux and INT_MAX for MacOS and Windows.
@@ -362,7 +361,7 @@ public final class FileIOBuiltins extends PythonBuiltins {
             }
 
             int flags = processMode(self, mode);
-            auditNode.audit(inliningTarget, J_OPEN, nameobj, mode.mode, flags);
+            auditNode.audit(frame, inliningTarget, T_OPEN, nameobj, mode.mode, flags);
 
             try {
                 boolean fdIsOwn = false;

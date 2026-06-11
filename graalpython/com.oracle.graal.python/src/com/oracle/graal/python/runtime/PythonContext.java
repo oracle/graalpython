@@ -759,6 +759,7 @@ public final class PythonContext extends Python3Core {
     private PythonModule mainModule;
     private final List<ShutdownHook> shutdownHooks = new ArrayList<>();
     private final List<AtExitHook> atExitHooks = new ArrayList<>();
+    private final List<Object> auditHooks = new ArrayList<>();
     private final List<Runnable> capiHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
@@ -2141,6 +2142,16 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     public void clearAtexitHooks() {
         atExitHooks.clear();
+    }
+
+    @TruffleBoundary
+    public Object[] getAuditHooks() {
+        return auditHooks.toArray(PythonUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    @TruffleBoundary
+    public void addAuditHook(Object hook) {
+        auditHooks.add(hook);
     }
 
     public void registerCApiHook(Runnable hook) {

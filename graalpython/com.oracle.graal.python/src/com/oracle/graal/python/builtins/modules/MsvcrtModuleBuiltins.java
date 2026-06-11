@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -62,6 +64,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "msvcrt", os = PythonOS.PLATFORM_WIN32)
 public final class MsvcrtModuleBuiltins extends PythonBuiltins {
@@ -69,6 +72,7 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
     public static final int LK_LOCK = 1;
     public static final int LK_NBLCK = 2;
     public static final int LK_UNLOCK = 3;
+    private static final TruffleString T_MSVCRT_LOCKING = tsLiteral("msvcrt.locking");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -95,7 +99,7 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "msvcrt.locking", fd, mode, nbytes);
+            auditNode.audit(frame, inliningTarget, T_MSVCRT_LOCKING, fd, mode, nbytes);
             try {
                 posixLib.fcntlLock(getPosixSupport(), fd, mode == LK_NBLCK, mode == LK_LOCK ? 1 : 0, 0, 0, nbytes);
             } catch (PosixSupportLibrary.PosixException e) {
