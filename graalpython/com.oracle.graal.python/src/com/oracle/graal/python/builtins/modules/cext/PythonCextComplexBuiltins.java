@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBina
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
@@ -129,6 +129,6 @@ public final class PythonCextComplexBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {ArgDescriptor.Double, ArgDescriptor.Double}, call = Direct)
     static long PyComplex_FromDoubles(double r, double i) {
-        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createComplex(PythonLanguage.get(null), r, i));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createComplex(PythonLanguage.get(null), r, i));
     }
 }

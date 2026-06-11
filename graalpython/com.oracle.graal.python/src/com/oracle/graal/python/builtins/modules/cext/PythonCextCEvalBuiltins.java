@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -167,7 +167,7 @@ public final class PythonCextCEvalBuiltins {
 
         RootCallTarget rootCallTarget = CodeNodes.GetCodeCallTargetNode.executeUncached(code);
         Object result = CallDispatchers.SimpleIndirectInvokeNode.executeUncached(rootCallTarget, pArguments);
-        return PythonToNativeNewRefNode.executeLongUncached(result);
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)

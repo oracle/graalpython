@@ -146,13 +146,13 @@ public class DateNodes {
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached ExternalFunctionNodes.PyObjectCheckFunctionResultNode checkFunctionResultNode,
-                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
+                        @Cached CApiTransitions.PythonToNativeInternalNode toNativeNode,
                         @Cached CApiTransitions.NativeToPythonInternalNode fromNativeNode) {
             if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
                 Shape shape = getInstanceShape.execute(cls);
                 return new PDate(cls, shape, year, month, day);
             } else {
-                long clsPointer = toNativeNode.executeLong(cls);
+                long clsPointer = toNativeNode.execute(inliningTarget, cls, false);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW);

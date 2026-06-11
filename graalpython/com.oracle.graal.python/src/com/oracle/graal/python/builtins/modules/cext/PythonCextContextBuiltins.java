@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVar;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
 import com.oracle.graal.python.lib.PyContextCopyCurrent;
@@ -84,7 +84,7 @@ public final class PythonCextContextBuiltins {
         }
         TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(namePtr);
         Object def = defPtr == NULLPTR ? PNone.NO_VALUE : NativeToPythonNode.executeRawUncached(defPtr);
-        return PythonToNativeNewRefNode.executeLongUncached(CallNode.executeUncached(PythonBuiltinClassType.ContextVar, name, def));
+        return PythonToNativeInternalNode.executeNewRefUncached(CallNode.executeUncached(PythonBuiltinClassType.ContextVar, name, def));
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer, Pointer}, call = Ignored)
@@ -103,7 +103,7 @@ public final class PythonCextContextBuiltins {
                 result = NativeToPythonNode.executeRawUncached(defPtr);
             }
         }
-        return PythonToNativeNewRefNode.executeLongUncached(result);
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
@@ -118,23 +118,23 @@ public final class PythonCextContextBuiltins {
         PythonContext.PythonThreadState threadState = pythonContext.getThreadState(language);
         Object oldValue = pvar.getValue(null, threadState);
         pvar.setValue(null, threadState, val);
-        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createContextVarsToken(language, pvar, oldValue));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createContextVarsToken(language, pvar, oldValue));
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, call = Direct)
     static long PyContext_CopyCurrent() {
-        return PythonToNativeNewRefNode.executeLongUncached(PyContextCopyCurrent.executeUncached());
+        return PythonToNativeInternalNode.executeNewRefUncached(PyContextCopyCurrent.executeUncached());
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
     static long PyContext_Copy(long contextPtr) {
         PContextVarsContext context = (PContextVarsContext) NativeToPythonNode.executeRawUncached(contextPtr);
-        return PythonToNativeNewRefNode.executeLongUncached(PFactory.copyContextVarsContext(PythonLanguage.get(null), context));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.copyContextVarsContext(PythonLanguage.get(null), context));
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, call = Direct)
     static long PyContext_New() {
-        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createContextVarsContext(PythonLanguage.get(null)));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createContextVarsContext(PythonLanguage.get(null)));
     }
 
     @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Direct)

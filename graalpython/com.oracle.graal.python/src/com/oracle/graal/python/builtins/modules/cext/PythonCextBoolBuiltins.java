@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.runtime.PythonContext;
 
@@ -53,11 +54,15 @@ public final class PythonCextBoolBuiltins {
     // matters, but keeping their codesize small still makes sense.
     @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, acquireGil = false, canRaise = false)
     public static long GraalPyPrivate_True() {
-        return PythonToNativeInternalNode.executeUncached(PythonContext.get(null).getTrue(), true);
+        Object trueValue = PythonContext.get(null).getTrue();
+        assert EnsurePythonObjectNode.doesNotNeedPromotion(trueValue);
+        return PythonToNativeInternalNode.executeUncached(trueValue, true);
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored, acquireGil = false, canRaise = false)
     public static long GraalPyPrivate_False() {
-        return PythonToNativeInternalNode.executeUncached(PythonContext.get(null).getFalse(), true);
+        Object falseValue = PythonContext.get(null).getFalse();
+        assert EnsurePythonObjectNode.doesNotNeedPromotion(falseValue);
+        return PythonToNativeInternalNode.executeUncached(falseValue, true);
     }
 }

@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
@@ -177,7 +177,7 @@ public abstract class TpSlotLen {
         static int callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached CheckPrimitiveFunctionResultNode checkResultNode) {
@@ -186,7 +186,7 @@ public abstract class TpSlotLen {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeLENFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.executeLong(promotedSelf));
+                                toNativeNode.execute(inliningTarget, promotedSelf, false));
                 long l = checkResultNode.executeLong(inliningTarget, state, T___LEN__, lresult);
                 if (!PInt.isIntRange(l)) {
                     raiseOverflow(inliningTarget, raiseNode, l);

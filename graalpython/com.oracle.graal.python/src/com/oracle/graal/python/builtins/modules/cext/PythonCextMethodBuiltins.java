@@ -56,6 +56,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
@@ -106,6 +107,7 @@ public final class PythonCextMethodBuiltins {
         assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
 
         PythonBuiltinObject result = cFunctionNewExMethodNode(PythonLanguage.get(null), methodDefPtr, name, methPtr, flags, self, module, cls, doc);
+        assert EnsurePythonObjectNode.doesNotNeedPromotion(result);
         return PythonToNativeInternalNode.executeUncached(result, true);
     }
 

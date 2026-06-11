@@ -66,8 +66,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -159,8 +158,6 @@ public abstract class ToNativeTypeNode {
         TpSlots slots = GetTpSlotsNode.executeUncached(clazz);
         boolean isType = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
 
-        PythonToNativeNode toNative = PythonToNativeNode.getUncached();
-        PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNode.getUncached();
         GetTypeFlagsNode getTypeFlagsNode = GetTypeFlagsNodeGen.getUncached();
 
         PythonContext ctx = PythonContext.get(null);
@@ -173,7 +170,7 @@ public abstract class ToNativeTypeNode {
             writePtrField(mem, PyObject__ob_type, mem);
         } else {
             PythonAbstractObject promotedType = EnsurePythonObjectNode.executeUncached(ctx, GetClassNode.executeUncached(clazz));
-            writePtrField(mem, PyObject__ob_type, toNative.executeLong(promotedType));
+            writePtrField(mem, PyObject__ob_type, PythonToNativeInternalNode.executeUncached(promotedType, false));
         }
 
         long flags = getTypeFlagsNode.execute(clazz);
@@ -253,7 +250,7 @@ public abstract class ToNativeTypeNode {
         if (!isType) {
             // "object" base needs to be initialized explicitly in capi.c
             PythonAbstractObject promotedBase = EnsurePythonObjectNode.executeUncached(ctx, base);
-            writePtrField(mem, CFields.PyTypeObject__tp_base, toNative.executeLong(promotedBase));
+            writePtrField(mem, CFields.PyTypeObject__tp_base, PythonToNativeInternalNode.executeUncached(promotedBase, false));
         }
 
         // TODO(fa): we could cache the dict instance on the class' native wrapper
@@ -265,7 +262,7 @@ public abstract class ToNativeTypeNode {
             dict.setDictStorage(HashingStorageAddAllToOther.executeUncached(dictStorage, storage));
         }
         assert EnsurePythonObjectNode.doesNotNeedPromotion(dict);
-        writePtrField(mem, CFields.PyTypeObject__tp_dict, toNative.executeLong(dict));
+        writePtrField(mem, CFields.PyTypeObject__tp_dict, PythonToNativeInternalNode.executeUncached(dict, false));
 
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
             if (!def.hasGroup() && def.hasNativeWrapperFactory()) {
@@ -282,15 +279,15 @@ public abstract class ToNativeTypeNode {
             clazz.basesTuple = PFactory.createTuple(language, GetBaseClassesNode.executeUncached(clazz));
         }
         assert EnsurePythonObjectNode.doesNotNeedPromotion(clazz.basesTuple);
-        writePtrField(mem, CFields.PyTypeObject__tp_bases, toNative.executeLong(clazz.basesTuple));
+        writePtrField(mem, CFields.PyTypeObject__tp_bases, PythonToNativeInternalNode.executeUncached(clazz.basesTuple, false));
         if (clazz.mroStore == null) {
             clazz.mroStore = PFactory.createTuple(language, GetMroStorageNode.executeUncached(clazz));
         }
         assert EnsurePythonObjectNode.doesNotNeedPromotion(clazz.mroStore);
-        writePtrField(mem, CFields.PyTypeObject__tp_mro, toNative.executeLong(clazz.mroStore));
+        writePtrField(mem, CFields.PyTypeObject__tp_mro, PythonToNativeInternalNode.executeUncached(clazz.mroStore, false));
         writePtrField(mem, CFields.PyTypeObject__tp_cache, NULLPTR);
         PDict subclasses = GetSubclassesNode.executeUncached(clazz);
-        writePtrField(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.executeLong(subclasses));
+        writePtrField(mem, CFields.PyTypeObject__tp_subclasses, PythonToNativeInternalNode.executeNewRefUncached(subclasses));
         writePtrField(mem, CFields.PyTypeObject__tp_weaklist, NULLPTR);
         writePtrField(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, HiddenAttr.DEL));
 
@@ -310,11 +307,11 @@ public abstract class ToNativeTypeNode {
             writePtrField(mem, CFields.PyHeapTypeObject__as_mapping, asMapping);
             writePtrField(mem, CFields.PyHeapTypeObject__as_sequence, asSequence);
             writePtrField(mem, CFields.PyHeapTypeObject__as_buffer, asBuffer);
-            writePtrField(mem, CFields.PyHeapTypeObject__ht_name, toNativeNewRef.executeLong(clazz.getName()));
-            writePtrField(mem, CFields.PyHeapTypeObject__ht_qualname, toNativeNewRef.executeLong(clazz.getQualName()));
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_name, PythonToNativeInternalNode.executeNewRefUncached(clazz.getName()));
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_qualname, PythonToNativeInternalNode.executeNewRefUncached(clazz.getQualName()));
             writePtrField(mem, CFields.PyHeapTypeObject__ht_module, NULLPTR);
             Object dunderSlots = clazz.getAttribute(SpecialAttributeNames.T___SLOTS__);
-            writePtrField(mem, CFields.PyHeapTypeObject__ht_slots, dunderSlots != PNone.NO_VALUE ? toNativeNewRef.executeLong(dunderSlots) : NULLPTR);
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_slots, dunderSlots != PNone.NO_VALUE ? PythonToNativeInternalNode.executeNewRefUncached(dunderSlots) : NULLPTR);
         }
     }
 

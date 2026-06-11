@@ -54,7 +54,7 @@ import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -211,7 +211,7 @@ public abstract class PyCFunctionWrapper {
                     Object[] pArgs = CreateArgumentsNode.executeUncached(callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
                                     defaults, PKeyword.EMPTY_KEYWORDS, false);
                     Object result = SimpleIndirectInvokeNode.executeUncached(callTarget, pArgs);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
@@ -246,7 +246,7 @@ public abstract class PyCFunctionWrapper {
                     Object[] pArgs = CreateArgumentsNode.executeUncached(callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
                                     defaults, PKeyword.EMPTY_KEYWORDS, false);
                     Object result = SimpleIndirectInvokeNode.executeUncached(callTarget, pArgs);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
@@ -282,7 +282,7 @@ public abstract class PyCFunctionWrapper {
                     Object[] pArgs = CreateArgumentsNode.executeUncached(callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null,
                                     defaults, PKeyword.EMPTY_KEYWORDS, false);
                     Object result = SimpleIndirectInvokeNode.executeUncached(callTarget, pArgs);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
@@ -320,7 +320,7 @@ public abstract class PyCFunctionWrapper {
                     Object[] pArgs = CreateArgumentsNode.executeUncached(callTargetName, starArgsArray, kwArgsArray, signature, receiver, null,
                                     defaults, PKeyword.EMPTY_KEYWORDS, false);
                     Object result = SimpleIndirectInvokeNode.executeUncached(callTarget, pArgs);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }

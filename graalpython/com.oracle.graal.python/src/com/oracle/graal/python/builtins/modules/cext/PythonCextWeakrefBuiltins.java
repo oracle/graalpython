@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins.ReferenceTypeNode;
@@ -94,7 +94,7 @@ public final class PythonCextWeakrefBuiltins {
         }
         Object object = NativeToPythonNode.executeRawUncached(objectPtr);
         Object proxy = PyObjectCallMethodObjArgs.executeUncached(weakrefModule, T_PROXY_TYPE, object, callback);
-        return PythonToNativeNewRefNode.executeLongUncached(proxy);
+        return PythonToNativeInternalNode.executeNewRefUncached(proxy);
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)

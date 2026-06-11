@@ -343,7 +343,7 @@ public abstract class ExternalFunctionNodes {
         @TruffleBoundary(allowInlining = true)
         public static long executeUncached(Object object) {
             Object promoted = EnsurePythonObjectNode.executeUncached(PythonContext.get(null), object, false);
-            return PythonToNativeNode.executeLongUncached(promoted);
+            return PythonToNativeInternalNode.executeUncached(promoted, false);
         }
     }
 
@@ -2438,6 +2438,7 @@ public abstract class ExternalFunctionNodes {
             for (int i = 0; i < n; i++) {
                 assert args[i] instanceof TruffleString;
                 PString promoted = internStringArg(context, (TruffleString) args[i]);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(promoted);
                 args[i] = promoted;
                 long nativeString = pythonToNativeNode.execute(inliningTarget, promoted, true);
                 CApiTransitions.setGraalPyUnicodeObjectInterned(HandlePointerConverter.pointerToStub(nativeString), CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_INTERNED);

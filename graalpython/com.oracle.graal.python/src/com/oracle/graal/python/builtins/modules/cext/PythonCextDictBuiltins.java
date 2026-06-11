@@ -152,6 +152,7 @@ public final class PythonCextDictBuiltins {
         CApiTiming.enter();
         try {
             PDict dict = PFactory.createDict(PythonLanguage.get(null));
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(dict);
             return PythonToNativeInternalNode.executeUncached(dict, true);
         } finally {
             CApiTiming.exit(TIMING_PYDICT_NEW);
@@ -165,7 +166,7 @@ public final class PythonCextDictBuiltins {
         static int next(PDict dict, long posPtr, long keyPtr, long valuePtr, long hashPtr,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
+                        @Cached CApiTransitions.PythonToNativeInternalNode toNativeNode,
                         @Cached InlinedBranchProfile needsRewriteProfile,
                         @Cached InlinedBranchProfile economicMapProfile,
                         @Cached HashingStorageLen lenNode,
@@ -253,13 +254,13 @@ public final class PythonCextDictBuiltins {
                 Object key = itKey.execute(inliningTarget, storage, it);
                 assert ensureKeyNode.execute(context, key, false) == key;
                 // Borrowed reference
-                NativeMemory.writePtr(keyPtr, toNativeNode.executeLong(key));
+                NativeMemory.writePtr(keyPtr, toNativeNode.execute(inliningTarget, key, false));
             }
             if (valuePtr != NULLPTR) {
                 Object value = itValue.execute(inliningTarget, storage, it);
                 assert ensureValueNode.execute(context, value, false) == value;
                 // Borrowed reference
-                NativeMemory.writePtr(valuePtr, toNativeNode.executeLong(value));
+                NativeMemory.writePtr(valuePtr, toNativeNode.execute(inliningTarget, value, false));
             }
             if (hashPtr != NULLPTR) {
                 long hash = itKeyHash.execute(null, inliningTarget, storage, it);

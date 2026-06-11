@@ -52,7 +52,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -153,27 +153,26 @@ public abstract class PyDateTimeCAPIWrapper {
 
     private static long allocatePyDatetimeCAPI(Object datetimeModule) {
         PyObjectGetAttr getAttr = PyObjectGetAttr.getUncached();
-        PythonToNativeNewRefNode toNativeNode = PythonToNativeNewRefNode.getUncached();
 
         PythonManagedClass date = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATE);
         SetBasicSizeNode.executeUncached(date, CStructs.PyDateTime_Date.size());
-        long dateType = toNativeNode.executeLong(date);
+        long dateType = PythonToNativeInternalNode.executeNewRefUncached(date);
 
         PythonManagedClass dt = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATETIME);
         SetBasicSizeNode.executeUncached(dt, CStructs.PyDateTime_DateTime.size());
-        long datetimeType = toNativeNode.executeLong(dt);
+        long datetimeType = PythonToNativeInternalNode.executeNewRefUncached(dt);
 
         PythonManagedClass time = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_TIME);
         SetBasicSizeNode.executeUncached(time, CStructs.PyDateTime_Time.size());
-        long timeType = toNativeNode.executeLong(time);
+        long timeType = PythonToNativeInternalNode.executeNewRefUncached(time);
 
         PythonManagedClass delta = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_TIMEDELTA);
         SetBasicSizeNode.executeUncached(delta, CStructs.PyDateTime_Delta.size());
-        long deltaType = toNativeNode.executeLong(delta);
+        long deltaType = PythonToNativeInternalNode.executeNewRefUncached(delta);
 
-        long tzInfoType = toNativeNode.executeLong(getAttr.execute(null, datetimeModule, T_TZINFO));
+        long tzInfoType = PythonToNativeInternalNode.executeNewRefUncached(getAttr.execute(null, datetimeModule, T_TZINFO));
         Object timezoneType = getAttr.execute(null, datetimeModule, T_TIMEZONE);
-        long timezoneUTC = toNativeNode.executeLong(getAttr.execute(null, timezoneType, T_UTC));
+        long timezoneUTC = PythonToNativeInternalNode.executeNewRefUncached(getAttr.execute(null, timezoneType, T_UTC));
 
         long mem = allocate(CStructs.PyDateTime_CAPI);
         writePtrField(mem, CFields.PyDateTime_CAPI__DateType, dateType);

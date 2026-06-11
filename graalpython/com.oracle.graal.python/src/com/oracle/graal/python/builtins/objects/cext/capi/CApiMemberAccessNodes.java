@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteUIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteULongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
@@ -200,9 +201,9 @@ public class CApiMemberAccessNodes {
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self,
                         @Bind Node inliningTarget,
-                        @Cached PythonToNativeNode toNativeNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached PRaiseNode raiseNode) {
-            long selfPtr = toNativeNode.executeLong(self);
+            long selfPtr = toNativeNode.execute(inliningTarget, self, false);
             long memberPtr = NativeMemory.getFieldPtr(selfPtr, offset);
             Object nativeResult = switch (type) {
                 case T_CHAR, T_BYTE, T_UBYTE, T_BOOL -> {

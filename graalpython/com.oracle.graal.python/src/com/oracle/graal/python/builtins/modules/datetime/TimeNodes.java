@@ -167,10 +167,9 @@ public class TimeNodes {
                 Shape shape = GetInstanceShape.executeUncached(cls);
                 return new PTime(cls, shape, hour, minute, second, microsecond, tzInfo, fold);
             } else {
-                CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
-                long clsPointer = toNative.executeLong(cls);
+                long clsPointer = CApiTransitions.PythonToNativeInternalNode.executeUncached(cls, false);
                 Object effectiveTzInfo = tzInfo != null ? tzInfo : PNone.NO_VALUE;
-                long tzInfoPointer = toNative.executeLong(effectiveTzInfo);
+                long tzInfoPointer = CApiTransitions.PythonToNativeInternalNode.executeUncached(effectiveTzInfo, false);
                 try {
                     PythonContext context = PythonContext.get(null);
                     var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW);

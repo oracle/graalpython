@@ -717,7 +717,7 @@ public abstract class CApiTransitions {
             // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
             PyCapsule capsule = PFactory.createCapsule(PythonLanguage.get(null), reference.data);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(capsule);
-            long capsulePointer = PythonToNativeNode.executeLongUncached(capsule);
+            long capsulePointer = PythonToNativeInternalNode.executeUncached(capsule, false);
             try {
                 ExternalFunctionInvoker.invokeGRAALPY_CAPSULE_CALL_DESTRUCTOR(
                                 CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR).getAddress(),
@@ -1753,6 +1753,12 @@ public abstract class CApiTransitions {
         @TruffleBoundary
         public static long executeUncached(Object obj, boolean needsTransfer) {
             return PythonToNativeInternalNodeGen.getUncached().execute(null, obj, needsTransfer);
+        }
+
+        @TruffleBoundary
+        public static long executeNewRefUncached(Object obj) {
+            Object promoted = EnsurePythonObjectNode.executeUncached(PythonContext.get(null), obj, false);
+            return executeUncached(promoted, true);
         }
 
         public abstract long execute(Node inliningTarget, Object object, boolean needsTransfer);

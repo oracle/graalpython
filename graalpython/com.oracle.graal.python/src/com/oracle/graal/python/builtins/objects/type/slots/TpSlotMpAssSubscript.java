@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
@@ -216,9 +216,9 @@ public final class TpSlotMpAssSubscript {
                         @Bind PythonContext ctx,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached PythonToNativeNode selfToNativeNode,
-                        @Cached PythonToNativeNode keyToNativeNode,
-                        @Cached PythonToNativeNode valueToNativeNode,
+                        @Cached PythonToNativeInternalNode selfToNativeNode,
+                        @Cached PythonToNativeInternalNode keyToNativeNode,
+                        @Cached PythonToNativeInternalNode valueToNativeNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CheckInquiryResultNode checkResultNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
@@ -227,7 +227,8 @@ public final class TpSlotMpAssSubscript {
             Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
             try {
                 int iresult = ExternalFunctionInvoker.invokeOBJOBJARGPROC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                selfToNativeNode.executeLong(promotedSelf), keyToNativeNode.executeLong(promotedKey), valueToNativeNode.executeLong(promotedValue));
+                                selfToNativeNode.execute(inliningTarget, promotedSelf, false), keyToNativeNode.execute(inliningTarget, promotedKey, false), valueToNativeNode.execute(inliningTarget,
+                                                promotedValue, false));
                 checkResultNode.executeBool(inliningTarget, threadState, T___SETITEM__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);

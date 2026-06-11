@@ -69,10 +69,11 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformPExceptionToNativeCachedNodeGen;
@@ -414,12 +415,14 @@ public abstract class CExtCommonNodes {
         static void setCurrentException(Node inliningTarget, Object pythonException,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached CExtNodes.XDecRefPointerNode decRefPointerNode,
-                        @Cached(inline = false) PythonToNativeNewRefNode pythonToNativeNode) {
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeInternalNode pythonToNativeNode) {
             /*
              * Run the ToNative conversion early so that the reference poll won't interrupt between
              * the read and write.
              */
-            long currentException = pythonToNativeNode.executeLong(pythonException);
+            Object promotedException = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), pythonException, false);
+            long currentException = pythonToNativeNode.execute(inliningTarget, promotedException, true);
             long nativeThreadState = PThreadState.getOrCreateNativeThreadState(getThreadStateNode.execute(inliningTarget));
             long oldException = readPtrField(nativeThreadState, CFields.PyThreadState__current_exception);
             writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, currentException);

@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -90,14 +90,14 @@ public final class PythonCextCodeBuiltins {
                         firstlineno, lnotab, exceptionTable,
                         freevars, cellvars
         };
-        return PythonToNativeNewRefNode.executeLongUncached(CallNode.executeUncached(PythonBuiltinClassType.PCode, args));
+        return PythonToNativeInternalNode.executeNewRefUncached(CallNode.executeUncached(PythonBuiltinClassType.PCode, args));
     }
 
     @CApiBuiltin(ret = PyCodeObjectRawPointer, args = {ConstCharPtr, ConstCharPtr, Int}, call = Direct)
     static long PyCode_NewEmpty(long filenamePtr, long funcnamePtr, int lineno) {
         TruffleString filename = (TruffleString) CharPtrToPythonNode.executeUncached(filenamePtr);
         TruffleString funcname = (TruffleString) CharPtrToPythonNode.executeUncached(funcnamePtr);
-        return PythonToNativeNewRefNode.executeLongUncached(createCodeNewEmpty(filename, funcname, lineno));
+        return PythonToNativeInternalNode.executeNewRefUncached(createCodeNewEmpty(filename, funcname, lineno));
     }
 
     @CApiBuiltin(ret = Int, args = {PyCodeObjectRawPointer, Int}, call = Direct)
@@ -112,13 +112,13 @@ public final class PythonCextCodeBuiltins {
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyCodeObjectRawPointer}, call = Direct)
     static long GraalPyCode_GetName(long codePtr) {
         PCode code = (PCode) NativeToPythonNode.executeRawUncached(codePtr);
-        return PythonToNativeNewRefNode.executeLongUncached(code.getName());
+        return PythonToNativeInternalNode.executeNewRefUncached(code.getName());
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyCodeObjectRawPointer}, call = Direct)
     static long GraalPyCode_GetFileName(long codePtr) {
         PCode code = (PCode) NativeToPythonNode.executeRawUncached(codePtr);
-        return PythonToNativeNewRefNode.executeLongUncached(code.getFilename());
+        return PythonToNativeInternalNode.executeNewRefUncached(code.getFilename());
     }
 
     static PCode createCodeNewEmpty(TruffleString filename, TruffleString funcname, int lineno) {

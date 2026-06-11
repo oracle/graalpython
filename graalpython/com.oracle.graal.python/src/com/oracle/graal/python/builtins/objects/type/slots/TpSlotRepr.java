@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
@@ -112,7 +112,7 @@ public final class TpSlotRepr {
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
@@ -121,7 +121,7 @@ public final class TpSlotRepr {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeREPRFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.executeLong(promotedSelf));
+                                toNativeNode.execute(inliningTarget, promotedSelf, false));
                 return checkResultNode.execute(state, T___REPR__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
                 Reference.reachabilityFence(promotedSelf);

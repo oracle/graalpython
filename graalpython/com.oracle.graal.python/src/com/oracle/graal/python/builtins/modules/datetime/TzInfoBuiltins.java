@@ -118,8 +118,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
                 return new PTzInfo(cls, getInstanceShape.execute(cls));
             } else {
-                CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
-                long clsPointer = toNative.executeLong(cls);
+                long clsPointer = CApiTransitions.PythonToNativeInternalNode.executeUncached(cls, false);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW);

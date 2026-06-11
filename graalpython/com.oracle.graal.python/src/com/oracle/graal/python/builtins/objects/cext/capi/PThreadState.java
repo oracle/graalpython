@@ -50,7 +50,7 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtr
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -112,14 +112,14 @@ public abstract class PThreadState {
 
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict != null) {
-            assert PythonToNativeNode.executeLongUncached(threadStateDict) == CStructAccess.readPtrField(nativeThreadState, CFields.PyThreadState__dict);
+            assert PythonToNativeInternalNode.executeUncached(threadStateDict, false) == CStructAccess.readPtrField(nativeThreadState, CFields.PyThreadState__dict);
             return threadStateDict;
         }
 
         threadStateDict = PFactory.createDict(context.getLanguage());
         threadState.setDict(threadStateDict);
         assert CStructAccess.readPtrField(nativeThreadState, CFields.PyThreadState__dict) == NULLPTR;
-        CStructAccess.writePtrField(nativeThreadState, CFields.PyThreadState__dict, PythonToNativeNode.executeLongUncached(threadStateDict));
+        CStructAccess.writePtrField(nativeThreadState, CFields.PyThreadState__dict, PythonToNativeInternalNode.executeUncached(threadStateDict, false));
 
         return threadStateDict;
     }

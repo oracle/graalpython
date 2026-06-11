@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -1386,10 +1386,12 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static void doNativeObject(NativeObjectSequenceStorage storage, int idx, Object value,
                         @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNative,
+                        @Cached CExtNodes.EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeInternalNode toNative,
                         @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             long old = readPtrArrayElement(storage.getPtr(), idx);
-            writePtrArrayElement(storage.getPtr(), idx, toNative.executeLong(value));
+            Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), value, false);
+            writePtrArrayElement(storage.getPtr(), idx, toNative.execute(inliningTarget, promoted, true));
             decRefPointerNode.execute(inliningTarget, old);
         }
     }
@@ -1408,8 +1410,11 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static void doNativeObject(NativeObjectSequenceStorage storage, int idx, Object value,
-                        @Cached PythonToNativeNewRefNode toNative) {
-            writePtrArrayElement(storage.getPtr(), idx, toNative.executeLong(value));
+                        @Bind Node inliningTarget,
+                        @Cached CExtNodes.EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeInternalNode toNative) {
+            Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), value, false);
+            writePtrArrayElement(storage.getPtr(), idx, toNative.execute(inliningTarget, promoted, true));
         }
     }
 
@@ -4068,13 +4073,15 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static SequenceStorage doNativeObjectStorage(Node inliningTarget, NativeObjectSequenceStorage storage, int index, Object value,
                         @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Cached PythonToNativeNewRefNode toNative) {
+                        @Cached CExtNodes.EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeInternalNode toNative) {
             int newLength = storage.length() + 1;
             ensureCapacityNode.execute(inliningTarget, storage, newLength);
             for (int i = storage.length(); i > index; i--) {
                 writePtrArrayElement(storage.getPtr(), i, readPtrArrayElement(storage.getPtr(), i - 1));
             }
-            writePtrArrayElement(storage.getPtr(), index, toNative.executeLong(value));
+            Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), value, false);
+            writePtrArrayElement(storage.getPtr(), index, toNative.execute(inliningTarget, promoted, true));
             storage.setNewLength(newLength);
             return storage;
         }

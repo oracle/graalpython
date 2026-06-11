@@ -48,7 +48,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 
 public final class PythonCextClassBuiltins {
@@ -59,7 +59,7 @@ public final class PythonCextClassBuiltins {
         checkNonNullArgUncached(func);
         PDecoratedMethod res = PFactory.createInstancemethod(PythonLanguage.get(null));
         res.setCallable(func);
-        return PythonToNativeNewRefNode.executeLongUncached(res);
+        return PythonToNativeInternalNode.executeNewRefUncached(res);
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
@@ -70,6 +70,6 @@ public final class PythonCextClassBuiltins {
         checkNonNullArgUncached(self);
         // Note: CPython also constructs the object directly, without running the constructor or
         // checking the inputs.
-        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createMethod(PythonLanguage.get(null), self, func));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createMethod(PythonLanguage.get(null), self, func));
     }
 }

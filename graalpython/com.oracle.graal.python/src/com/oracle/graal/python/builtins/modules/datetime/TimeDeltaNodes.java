@@ -179,7 +179,7 @@ public class TimeDeltaNodes {
                                 secondsNormalized,
                                 microsecondsNormalized);
             } else {
-                long clsPointer = CApiTransitions.PythonToNativeNode.executeLongUncached(cls);
+                long clsPointer = CApiTransitions.PythonToNativeInternalNode.executeUncached(cls, false);
                 try {
                     PythonContext context = PythonContext.get(null);
                     var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW);

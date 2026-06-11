@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.WrapperNodeFactory;
@@ -249,8 +249,8 @@ public abstract class TpSlotRichCompare {
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object a, Object b, RichCmpOp op,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNodeA,
-                        @Cached(inline = false) PythonToNativeNode toNativeNodeB,
+                        @Cached PythonToNativeInternalNode toNativeNodeA,
+                        @Cached PythonToNativeInternalNode toNativeNodeB,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Exclusive @Cached NativeToPythonInternalNode toPythonNode,
@@ -261,7 +261,7 @@ public abstract class TpSlotRichCompare {
             Object promotedB = ensurePythonObjectNode.execute(ctx, b, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeRICHCMPFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNodeA.executeLong(promotedA), toNativeNodeB.executeLong(promotedB), op.asNative());
+                                toNativeNodeA.execute(inliningTarget, promotedA, false), toNativeNodeB.execute(inliningTarget, promotedB, false), op.asNative());
                 return checkResultNode.execute(state, T_TP_RICHCOMPARE, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
                 Reference.reachabilityFence(promotedA);

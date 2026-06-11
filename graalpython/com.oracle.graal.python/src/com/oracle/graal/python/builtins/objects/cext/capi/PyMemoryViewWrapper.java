@@ -55,7 +55,7 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeLon
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -93,7 +93,7 @@ public abstract class PyMemoryViewWrapper {
         long memWithHead = calloc(CStructs.PyMemoryViewObject.size() + presize);
         long mem = memWithHead + presize;
 
-        writePtrField(mem, PyObject__ob_type, PythonToNativeNewRefNode.executeLongUncached(type));
+        writePtrField(mem, PyObject__ob_type, PythonToNativeInternalNode.executeNewRefUncached(type));
         writeLongField(mem, PyObject__ob_refcnt, PythonObject.IMMORTAL_REFCNT);
         writeIntField(mem, PyMemoryViewObject__flags, object.getFlags());
         writeLongField(mem, PyMemoryViewObject__exports, object.getExports().get());
@@ -117,7 +117,7 @@ public abstract class PyMemoryViewWrapper {
         }
 
         if (object.getOwner() != null) {
-            writePtrField(view, CFields.Py_buffer__obj, PythonToNativeNewRefNode.executeLongUncached(object.getOwner()));
+            writePtrField(view, CFields.Py_buffer__obj, PythonToNativeInternalNode.executeNewRefUncached(object.getOwner()));
         }
         writeLongField(view, CFields.Py_buffer__len, object.getLength());
         writeLongField(view, CFields.Py_buffer__itemsize, object.getItemSize());

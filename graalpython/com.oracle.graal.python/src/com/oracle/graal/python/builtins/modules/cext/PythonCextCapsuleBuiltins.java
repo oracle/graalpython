@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltinsFa
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -85,7 +85,7 @@ public final class PythonCextCapsuleBuiltins {
     @CApiBuiltin(ret = PyObjectRawPointer, args = {Pointer, ConstCharPtr, PY_CAPSULE_DESTRUCTOR}, call = Direct)
     static long PyCapsule_New(long pointer, long namePtr, long destructor) {
         PyCapsule capsule = PyCapsuleNewNode.executeUncached(pointer, namePtr, destructor);
-        return PythonToNativeNewRefNode.executeLongUncached(capsule);
+        return PythonToNativeInternalNode.executeNewRefUncached(capsule);
     }
 
     @GenerateCached(false)

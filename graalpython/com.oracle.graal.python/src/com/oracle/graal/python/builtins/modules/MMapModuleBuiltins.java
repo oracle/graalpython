@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PosixConstants;
@@ -112,7 +112,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
             ExternalFunctionInvoker.invokeMMAP_INIT_BUFFERPROTOCOL(
                             TIMING_MMAP_INIT_BUFFERPROTOCOL,
                             CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL),
-                            PythonToNativeNode.executeLongUncached(promoted));
+                            PythonToNativeInternalNode.executeUncached(promoted, false));
         });
     }
 }

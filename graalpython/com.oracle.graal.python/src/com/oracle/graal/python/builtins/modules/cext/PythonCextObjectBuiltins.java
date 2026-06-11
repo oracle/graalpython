@@ -90,7 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -675,7 +675,7 @@ public abstract class PythonCextObjectBuiltins {
     static long GraalPyPrivate_Object_GetIter(long objectPtr) {
         Object object = NativeToPythonNode.executeRawUncached(objectPtr);
         Object result = PyObjectGetIter.executeUncached(object);
-        return PythonToNativeNewRefNode.executeLongUncached(result);
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
     /*

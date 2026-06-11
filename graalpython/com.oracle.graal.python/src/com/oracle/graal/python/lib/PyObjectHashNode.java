@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -223,7 +223,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
         var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_TYPE_READY);
         int res = ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNativeContext(),
                         BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
-                        PythonToNativeNode.executeLongUncached(klass));
+                        PythonToNativeInternalNode.executeUncached(klass, false));
         if (res < 0) {
             throw raiseSystemError(inliningTarget, klass);
         }

@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBina
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
@@ -109,6 +110,7 @@ public final class PythonCextSetBuiltins {
                 Object iterable = NativeToPythonInternalNode.executeUncached(iterablePtr, false);
                 set = ConstructSetNode.getUncached().execute(null, iterable);
             }
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(set);
             return PythonToNativeInternalNode.executeUncached(set, true);
         } finally {
             CApiTiming.exit(TIMING_PYSET_NEW);

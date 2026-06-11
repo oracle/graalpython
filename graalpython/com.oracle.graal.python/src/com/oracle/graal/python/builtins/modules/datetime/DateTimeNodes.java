@@ -230,7 +230,7 @@ public class DateTimeNodes {
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached ExternalFunctionNodes.PyObjectCheckFunctionResultNode checkFunctionResultNode,
-                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
+                        @Cached CApiTransitions.PythonToNativeInternalNode toNativeNode,
                         @Cached CApiTransitions.NativeToPythonInternalNode fromNativeNode) {
             // create DateTime without thorough validation
 
@@ -250,9 +250,9 @@ public class DateTimeNodes {
                 Shape shape = getInstanceShape.execute(cls);
                 return new PDateTime(cls, shape, year, month, day, hour, minute, second, microsecond, tzInfo, fold);
             } else {
-                long clsPointer = toNativeNode.executeLong(cls);
+                long clsPointer = toNativeNode.execute(inliningTarget, cls, false);
                 Object effectiveTzInfo = tzInfo != null ? tzInfo : PNone.NO_VALUE;
-                long tzInfoPointer = toNativeNode.executeLong(effectiveTzInfo);
+                long tzInfoPointer = toNativeNode.execute(inliningTarget, effectiveTzInfo, false);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW);

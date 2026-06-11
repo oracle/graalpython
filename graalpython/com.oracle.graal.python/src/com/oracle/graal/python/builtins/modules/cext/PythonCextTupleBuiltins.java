@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.EnsureCapacityNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
@@ -90,7 +90,7 @@ public final class PythonCextTupleBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored)
     static long GraalPyPrivate_Tuple_Empty() {
-        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createEmptyTuple(PythonLanguage.get(null)));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createEmptyTuple(PythonLanguage.get(null)));
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = Ignored)

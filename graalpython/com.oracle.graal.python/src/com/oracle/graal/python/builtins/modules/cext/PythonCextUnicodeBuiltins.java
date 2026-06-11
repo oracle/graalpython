@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
@@ -341,7 +342,9 @@ public final class PythonCextUnicodeBuiltins {
                  * str.intern'ed string may still yield failse
                  */
                 ConcurrentWeakSet<PString> interningCache = PythonContext.get(null).getCApiContext().getPstringInterningCache();
-                return PythonToNativeInternalNode.executeUncached(interningCache.intern(str, s -> s), true);
+                PString interned = interningCache.intern(str, s -> s);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(interned);
+                return PythonToNativeInternalNode.executeUncached(interned, true);
             } else {
                 /*
                  * If it's a subclass, we don't really know what putting it in the interned dict might

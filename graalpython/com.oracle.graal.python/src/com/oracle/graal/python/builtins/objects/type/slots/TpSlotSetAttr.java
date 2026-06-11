@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -272,9 +272,9 @@ public class TpSlotSetAttr {
                         @Cached InlinedConditionProfile isSetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached PythonToNativeNode nameToNativeNode,
-                        @Cached PythonToNativeNode selfToNativeNode,
-                        @Cached PythonToNativeNode valueToNativeNode,
+                        @Cached PythonToNativeInternalNode nameToNativeNode,
+                        @Cached PythonToNativeInternalNode selfToNativeNode,
+                        @Cached PythonToNativeInternalNode valueToNativeNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CheckInquiryResultNode checkResultNode) {
             assert PyUnicodeCheckNode.executeUncached(name);
@@ -286,14 +286,14 @@ public class TpSlotSetAttr {
                 nameArg = asCharPointerNode.execute(name);
             } else {
                 promotedName = ensurePythonObjectNode.execute(context, name, false);
-                nameArg = nameToNativeNode.executeLong(promotedName);
+                nameArg = nameToNativeNode.execute(inliningTarget, promotedName, false);
             }
             Object promotedValue = ensurePythonObjectNode.execute(context, value, false);
             int iresult;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
             try {
                 iresult = ExternalFunctionInvoker.invokeSETATTRFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                selfToNativeNode.executeLong(promotedSelf), nameArg, valueToNativeNode.executeLong(promotedValue));
+                                selfToNativeNode.execute(inliningTarget, promotedSelf, false), nameArg, valueToNativeNode.execute(inliningTarget, promotedValue, false));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 if (isSetAttr) {
