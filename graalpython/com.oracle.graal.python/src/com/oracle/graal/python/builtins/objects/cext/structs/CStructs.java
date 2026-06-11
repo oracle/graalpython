@@ -86,6 +86,7 @@ public enum CStructs {
     PyASCIIObject,
     PyCompactUnicodeObject,
     PyBaseExceptionObject,
+    PySyntaxErrorObject,
     PyUnicodeObject,
     Py_UNICODE,
     PyGetSetDef,

@@ -307,6 +307,7 @@ PY_TRUFFLE_TYPE(_PyBytesIOBuffer_Type,           "_BytesIOBuffer",             &
 PY_TRUFFLE_TYPE(_PyExc_BaseException,            "BaseException",              &PyType_Type, sizeof(PyBaseExceptionObject)) \
 PY_TRUFFLE_TYPE(_PyExc_Exception,                "Exception",                  &PyType_Type, sizeof(PyBaseExceptionObject)) \
 PY_TRUFFLE_TYPE(_PyExc_StopIteration,            "StopIteration",              &PyType_Type, sizeof(PyStopIterationObject)) \
+PY_TRUFFLE_TYPE(_PyExc_SyntaxError,              "SyntaxError",                &PyType_Type, sizeof(PySyntaxErrorObject)) \
 PY_TRUFFLE_TYPE(_PyNamespace_Type,                "SimpleNamespace",           &PyType_Type, sizeof(_PyNamespaceObject)) \
 PY_TRUFFLE_TYPE(_PyNone_Type,                    "NoneType",                   &PyType_Type, 0) \
 PY_TRUFFLE_TYPE(_PyNotImplemented_Type,          "NotImplementedType",         &PyType_Type, 0) \

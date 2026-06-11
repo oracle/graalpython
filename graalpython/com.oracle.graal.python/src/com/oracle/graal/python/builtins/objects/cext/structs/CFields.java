@@ -394,7 +394,16 @@ public enum CFields {
     PyBaseExceptionObject__traceback(PyObject),
     PyBaseExceptionObject__context(PyObject),
     PyBaseExceptionObject__cause(PyObject),
-    PyBaseExceptionObject__suppress_context(CHAR);
+    PyBaseExceptionObject__suppress_context(CHAR),
+
+    PySyntaxErrorObject__msg(PyObject),
+    PySyntaxErrorObject__filename(PyObject),
+    PySyntaxErrorObject__lineno(PyObject),
+    PySyntaxErrorObject__offset(PyObject),
+    PySyntaxErrorObject__end_lineno(PyObject),
+    PySyntaxErrorObject__end_offset(PyObject),
+    PySyntaxErrorObject__text(PyObject),
+    PySyntaxErrorObject__print_file_and_line(PyObject);
 
     public static final int PyASCIIObject__state_interned_shift = 0;
     public static final int PyASCIIObject__state_kind_shift = 2;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.exception;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_PARENTHESES_IN_CALL_TO_EXEC;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_PARENTHESES_IN_CALL_TO_PRINT;
 import static com.oracle.graal.python.nodes.ErrorMessages.TUPLE_OUT_OF_BOUNDS;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.List;
 
@@ -55,6 +55,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
@@ -70,12 +73,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -98,6 +101,16 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
 
     public static final BaseExceptionAttrNode.StorageFactory SYNTAX_ERROR_ATTR_FACTORY = (args) -> new Object[SYNTAX_ERR_NUM_ATTRS];
 
+    private static final CFields[] NATIVE_ATTR_FIELDS = {
+                    CFields.PySyntaxErrorObject__msg,
+                    CFields.PySyntaxErrorObject__filename,
+                    CFields.PySyntaxErrorObject__lineno,
+                    CFields.PySyntaxErrorObject__offset,
+                    CFields.PySyntaxErrorObject__text,
+                    CFields.PySyntaxErrorObject__end_lineno,
+                    CFields.PySyntaxErrorObject__end_offset,
+                    CFields.PySyntaxErrorObject__print_file_and_line};
+
     public static final TpSlots SLOTS = SyntaxErrorBuiltinsSlotsGen.SLOTS;
 
     @Override
@@ -105,9 +118,15 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
         return SyntaxErrorBuiltinsFactory.getFactories();
     }
 
+    private static Object getNativeAttr(PythonAbstractNativeObject self, int index, CStructAccess.ReadObjectNode readObjectNode) {
+        Object result = readObjectNode.readFromObj(self, NATIVE_ATTR_FIELDS[index]);
+        return result == PNone.NO_VALUE ? PNone.NONE : result;
+    }
+
     @Slot(value = SlotKind.tp_init, isComplex = true)
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
+    @SuppressWarnings({"truffle-sharing", "truffle-unused"})
     public abstract static class SyntaxErrorInitNode extends PythonBuiltinNode {
         private static final String PREFIX_PRINT = "print ";
         private static final String PREFIX_EXEC = "exec ";
@@ -187,6 +206,43 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             return str.substring(st);
         }
 
+        private static Object[] initAttrs(VirtualFrame frame, Object[] args, Node inliningTarget,
+                        CastToJavaStringNode castToJavaStringNode,
+                        TupleNodes.ConstructTupleNode constructTupleNode,
+                        SequenceStorageNodes.GetItemNode getItemNode,
+                        PRaiseNode raiseNode) {
+            Object[] attrs = SYNTAX_ERROR_ATTR_FACTORY.create();
+            if (args.length >= 1) {
+                attrs[IDX_MSG] = args[0];
+            }
+            if (args.length == 2) {
+                PTuple info = constructTupleNode.execute(frame, args[1]);
+                final SequenceStorage storage = info.getSequenceStorage();
+                int infoLength = storage.length();
+                if (infoLength != 4 && infoLength != 6) {
+                    // not a very good error message, but it's what Python 2.4 gives
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
+                }
+
+                attrs[IDX_FILENAME] = getItemNode.execute(storage, 0);
+                attrs[IDX_LINENO] = getItemNode.execute(storage, 1);
+                attrs[IDX_OFFSET] = getItemNode.execute(storage, 2);
+                attrs[IDX_TEXT] = getItemNode.execute(storage, 3);
+                if (infoLength == 6) {
+                    attrs[IDX_END_LINENO] = getItemNode.execute(storage, 4);
+                    attrs[IDX_END_OFFSET] = getItemNode.execute(storage, 5);
+                }
+
+                // Issue #21669: Custom error for 'print' & 'exec' as statements
+                // Only applies to SyntaxError instances, not to subclasses such
+                // as TabError or IndentationError (see issue #31161)
+                if (PGuards.isString(attrs[IDX_TEXT])) {
+                    attrs[IDX_MSG] = reportMissingParentheses(attrs[IDX_MSG], castToJavaStringNode.execute(attrs[IDX_TEXT]));
+                }
+            }
+            return attrs;
+        }
+
         @Specialization
         static Object init(VirtualFrame frame, PBaseException self, Object[] args, PKeyword[] keywords,
                         @Bind Node inliningTarget,
@@ -196,147 +252,163 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
                         @Cached PRaiseNode raiseNode) {
             baseExceptionInitNode.execute(frame, self, args, keywords);
-            Object[] attrs = SYNTAX_ERROR_ATTR_FACTORY.create();
-            if (args.length >= 1) {
-                attrs[IDX_MSG] = args[0];
-            }
-            if (args.length == 2) {
-                PTuple info = constructTupleNode.execute(frame, args[1]);
-                final SequenceStorage storage = info.getSequenceStorage();
-                if (storage.length() != 4) {
-                    // not a very good error message, but it's what Python 2.4 gives
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, TUPLE_OUT_OF_BOUNDS);
-                }
+            self.setExceptionAttributes(initAttrs(frame, args, inliningTarget, castToJavaStringNode, constructTupleNode, getItemNode, raiseNode));
+            return PNone.NONE;
+        }
 
-                attrs[IDX_FILENAME] = getItemNode.execute(storage, 0);
-                attrs[IDX_LINENO] = getItemNode.execute(storage, 1);
-                attrs[IDX_OFFSET] = getItemNode.execute(storage, 2);
-                attrs[IDX_TEXT] = getItemNode.execute(storage, 3);
-
-                // Issue #21669: Custom error for 'print' & 'exec' as statements
-                // Only applies to SyntaxError instances, not to subclasses such
-                // as TabError or IndentationError (see issue #31161)
-                if (PGuards.isString(attrs[IDX_TEXT])) {
-                    attrs[IDX_MSG] = reportMissingParentheses(attrs[IDX_MSG], castToJavaStringNode.execute(attrs[IDX_TEXT]));
-                }
+        @Specialization
+        static Object initNative(VirtualFrame frame, PythonAbstractNativeObject self, Object[] args, PKeyword[] keywords,
+                        @Bind Node inliningTarget,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached TupleNodes.ConstructTupleNode constructTupleNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached BaseExceptionBuiltins.BaseExceptionInitNode baseExceptionInitNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode) {
+            baseExceptionInitNode.execute(frame, self, args, keywords);
+            Object[] attrs = initAttrs(frame, args, inliningTarget, castToJavaStringNode, constructTupleNode, getItemNode, raiseNode);
+            for (int i = 0; i < SYNTAX_ERR_NUM_ATTRS; i++) {
+                Object attr = attrs[i];
+                writeObjectNode.writeToObject(self, NATIVE_ATTR_FIELDS[i], attr == null ? PNone.NO_VALUE : attr);
             }
-            self.setExceptionAttributes(attrs);
+            return PNone.NONE;
+        }
+    }
+
+    @GenerateCached(false) // this avoids truffle generating a concrete subclass with a missing getIndex()
+    @SuppressWarnings({"truffle-static-method", "truffle-unused"})
+    public abstract static class SyntaxErrorAttributeNode extends PythonBuiltinNode {
+        abstract int getIndex();
+
+        @Specialization
+        Object generic(PBaseException self, Object value,
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return attrNode.execute(self, value, getIndex(), SYNTAX_ERROR_ATTR_FACTORY);
+        }
+
+        @Specialization(guards = "isNoValue(value)")
+        Object getNative(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone value,
+                        @Bind Node inliningTarget,
+                        @Cached(inline = false) CStructAccess.ReadObjectNode readObjectNode) {
+            return getNativeAttr(self, getIndex(), readObjectNode);
+        }
+
+        @Specialization(guards = "!isNoValue(valueIn)")
+        Object setNative(PythonAbstractNativeObject self, Object valueIn,
+                        @Bind Node inliningTarget,
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode) {
+            Object value = PGuards.isDeleteMarker(valueIn) ? PNone.NO_VALUE : valueIn;
+            writeObjectNode.writeToObject(self, NATIVE_ATTR_FIELDS[getIndex()], value);
             return PNone.NONE;
         }
     }
 
     @Builtin(name = "msg", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception msg")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorMsgNode extends PythonBuiltinNode {
-        @Specialization
-        Object generic(PBaseException self, Object value,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_MSG, SYNTAX_ERROR_ATTR_FACTORY);
+    public abstract static class SyntaxErrorMsgNode extends SyntaxErrorAttributeNode {
+        @Override
+        int getIndex() {
+            return IDX_MSG;
         }
     }
 
     @Builtin(name = "filename", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception filename")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorFilenameNode extends PythonBuiltinNode {
-        @Specialization
-        Object generic(PBaseException self, Object value,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_FILENAME, SYNTAX_ERROR_ATTR_FACTORY);
+    public abstract static class SyntaxErrorFilenameNode extends SyntaxErrorAttributeNode {
+        @Override
+        int getIndex() {
+            return IDX_FILENAME;
         }
     }
 
     @Builtin(name = "lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception lineno")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorLinenoNode extends PythonBuiltinNode {
-        @Specialization
-        Object generic(PBaseException self, Object value,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_LINENO, SYNTAX_ERROR_ATTR_FACTORY);
+    public abstract static class SyntaxErrorLinenoNode extends SyntaxErrorAttributeNode {
+        @Override
+        int getIndex() {
+            return IDX_LINENO;
         }
     }
 
     @Builtin(name = "offset", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception offset")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorOffsetNode extends PythonBuiltinNode {
-        @Specialization
-        Object generic(PBaseException self, Object value,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_OFFSET, SYNTAX_ERROR_ATTR_FACTORY);
+    public abstract static class SyntaxErrorOffsetNode extends SyntaxErrorAttributeNode {
+        @Override
+        int getIndex() {
+            return IDX_OFFSET;
         }
     }
 
     @Builtin(name = "text", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception text")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorTextNode extends PythonBuiltinNode {
-        @Specialization
-        Object generic(PBaseException self, Object value,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_TEXT, SYNTAX_ERROR_ATTR_FACTORY);
+    public abstract static class SyntaxErrorTextNode extends SyntaxErrorAttributeNode {
+        @Override
+        int getIndex() {
+            return IDX_TEXT;
         }
     }
 
     @Builtin(name = "end_lineno", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception end lineno")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorEndLineNode extends PythonBuiltinNode {
-        @Specialization
-        Object generic(PBaseException self, Object value,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_END_LINENO, SYNTAX_ERROR_ATTR_FACTORY);
+    public abstract static class SyntaxErrorEndLineNode extends SyntaxErrorAttributeNode {
+        @Override
+        int getIndex() {
+            return IDX_END_LINENO;
         }
     }
 
     @Builtin(name = "end_offset", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception end offset")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorEndColumnNode extends PythonBuiltinNode {
-        @Specialization
-        Object generic(PBaseException self, Object value,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_END_OFFSET, SYNTAX_ERROR_ATTR_FACTORY);
+    public abstract static class SyntaxErrorEndColumnNode extends SyntaxErrorAttributeNode {
+        @Override
+        int getIndex() {
+            return IDX_END_OFFSET;
         }
     }
 
     @Builtin(name = "print_file_and_line", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true, doc = "exception print_file_and_line")
     @GenerateNodeFactory
-    public abstract static class SyntaxErrorPrintFileAndLineNode extends PythonBuiltinNode {
-        @Specialization
-        Object generic(PBaseException self, Object value,
-                        @Cached BaseExceptionAttrNode attrNode) {
-            return attrNode.execute(self, value, IDX_PRINT_FILE_AND_LINE, SYNTAX_ERROR_ATTR_FACTORY);
+    public abstract static class SyntaxErrorPrintFileAndLineNode extends SyntaxErrorAttributeNode {
+        @Override
+        int getIndex() {
+            return IDX_PRINT_FILE_AND_LINE;
         }
     }
 
     @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
+    @SuppressWarnings({"truffle-sharing", "truffle-static-method", "truffle-unused"})
     public abstract static class SyntaxErrorStrNode extends PythonUnaryBuiltinNode {
         @Specialization
         TruffleString str(VirtualFrame frame, PBaseException self,
                         @Bind Node inliningTarget,
-                        @Cached BaseExceptionAttrNode attrNode,
-                        @Cached PyObjectStrAsTruffleStringNode strNode,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflowNode,
-                        @Cached PyLongCheckExactNode pyLongCheckExactNode,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.LastIndexOfStringNode lastIndexOfStringNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+                        @Cached BaseExceptionAttrNode attrNode) {
+            return formatStr(attrNode.get(self, IDX_FILENAME, SYNTAX_ERROR_ATTR_FACTORY), attrNode.get(self, IDX_LINENO, SYNTAX_ERROR_ATTR_FACTORY), attrNode.get(self, IDX_MSG,
+                            SYNTAX_ERROR_ATTR_FACTORY));
+        }
+
+        @Specialization
+        TruffleString strNative(VirtualFrame frame, PythonAbstractNativeObject self,
+                        @Bind Node inliningTarget,
+                        @Cached CStructAccess.ReadObjectNode readObjectNode) {
+            return formatStr(getNativeAttr(self, IDX_FILENAME, readObjectNode), getNativeAttr(self, IDX_LINENO, readObjectNode), getNativeAttr(self, IDX_MSG, readObjectNode));
+        }
+
+        @TruffleBoundary
+        private TruffleString formatStr(Object filenameAttrValue, Object lineno, Object msg) {
             // Below, we always ignore overflow errors, just printing -1.
             // Still, we cannot allow an OverflowError to be raised, so
             // we need to call PyLong_AsLongAndOverflow.
-            TruffleString filename;
-            final Object filenameAttrValue = attrNode.get(self, IDX_FILENAME, SYNTAX_ERROR_ATTR_FACTORY);
+            String filename;
             if (filenameAttrValue != PNone.NONE && PGuards.isString(filenameAttrValue)) {
-                filename = castToStringNode.execute(inliningTarget, self.getExceptionAttribute(IDX_FILENAME));
-                filename = getLastPathElement(filename, fromJavaStringNode, codePointLengthNode, lastIndexOfStringNode, substringNode);
+                filename = CastToJavaStringNode.getUncached().execute(filenameAttrValue);
+                filename = getLastPathElement(filename);
             } else {
                 filename = null;
             }
 
-            final Object lineno = attrNode.get(self, IDX_LINENO, SYNTAX_ERROR_ATTR_FACTORY);
-            final Object msg = attrNode.get(self, IDX_MSG, SYNTAX_ERROR_ATTR_FACTORY);
-            boolean heaveLineNo = lineno != PNone.NONE && pyLongCheckExactNode.execute(inliningTarget, lineno);
-            final TruffleString msgStr = strNode.execute(frame, inliningTarget, msg);
+            boolean heaveLineNo = lineno != PNone.NONE && PyLongCheckExactNode.executeUncached(lineno);
+            final TruffleString msgStr = PyObjectStrAsTruffleStringNode.executeUncached(msg);
 
             if (filename == null && !heaveLineNo) {
                 return msgStr;
@@ -346,35 +418,33 @@ public final class SyntaxErrorBuiltins extends PythonBuiltins {
             if (filename != null && heaveLineNo) {
                 long ln;
                 try {
-                    ln = pyLongAsLongAndOverflowNode.execute(frame, inliningTarget, lineno);
+                    ln = PyLongAsLongAndOverflowNode.executeUncached(lineno);
                 } catch (OverflowException e) {
                     ln = -1;
                 }
-                result = simpleTruffleStringFormatNode.format("%s (%s, line %d)", msgStr, filename, ln);
+                result = SimpleTruffleStringFormatNode.getUncached().format("%s (%s, line %d)", msgStr, toTruffleStringUncached(filename), ln);
             } else if (filename != null) {
-                result = simpleTruffleStringFormatNode.format("%s (%s)", msgStr, filename);
+                result = SimpleTruffleStringFormatNode.getUncached().format("%s (%s)", msgStr, toTruffleStringUncached(filename));
             } else {
                 // only have_lineno
                 long ln;
                 try {
-                    ln = pyLongAsLongAndOverflowNode.execute(frame, inliningTarget, lineno);
+                    ln = PyLongAsLongAndOverflowNode.executeUncached(lineno);
                 } catch (OverflowException e) {
                     ln = -1;
                 }
-                result = simpleTruffleStringFormatNode.format("%s (line %d)", msgStr, ln);
+                result = SimpleTruffleStringFormatNode.getUncached().format("%s (line %d)", msgStr, ln);
             }
             return result;
         }
 
-        TruffleString getLastPathElement(TruffleString path, TruffleString.FromJavaStringNode fromJavaStringNode, TruffleString.CodePointLengthNode codePointLengthNode,
-                        TruffleString.LastIndexOfStringNode lastIndexOfStringNode, TruffleString.SubstringNode substringNode) {
-            int len = codePointLengthNode.execute(path, TS_ENCODING);
-            TruffleString sep = fromJavaStringNode.execute(getContext().getEnv().getFileNameSeparator(), TS_ENCODING);
-            int sepIdx = lastIndexOfStringNode.execute(path, sep, len, 0, TS_ENCODING);
+        String getLastPathElement(String path) {
+            int sepIdx = path.lastIndexOf(getContext().getEnv().getFileNameSeparator());
+            sepIdx = Math.max(sepIdx, path.lastIndexOf('/'));
             if (sepIdx < 0) {
                 return path;
             }
-            return substringNode.execute(path, sepIdx + 1, len - sepIdx - 1, TS_ENCODING, true);
+            return path.substring(sepIdx + 1);
         }
 
     }
