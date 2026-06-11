@@ -138,6 +138,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__SOCKET)
 public final class SocketModuleBuiltins extends PythonBuiltins {
+    private static final TruffleString T_SOCKET_GETHOSTNAME = tsLiteral("socket.gethostname");
+    private static final TruffleString T_SOCKET_GETHOSTBYADDR = tsLiteral("socket.gethostbyaddr");
+    private static final TruffleString T_SOCKET_GETHOSTBYNAME = tsLiteral("socket.gethostbyname");
+    private static final TruffleString T_SOCKET_GETSERVBYNAME = tsLiteral("socket.getservbyname");
+    private static final TruffleString T_SOCKET_GETSERVBYPORT = tsLiteral("socket.getservbyport");
+    private static final TruffleString T_SOCKET_GETNAMEINFO = tsLiteral("socket.getnameinfo");
+    private static final TruffleString T_SOCKET_GETADDRINFO = tsLiteral("socket.getaddrinfo");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -239,7 +246,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "socket.gethostname");
+            auditNode.audit(frame, inliningTarget, T_SOCKET_GETHOSTNAME);
             try {
                 gil.release(true);
                 try {
@@ -274,7 +281,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
              * TODO this uses getnameinfo and getaddrinfo to emulate the legacy gethostbyaddr. We
              * might want to use the legacy API in the future
              */
-            auditNode.audit(inliningTarget, "socket.gethostbyaddr", ip);
+            auditNode.audit(frame, inliningTarget, T_SOCKET_GETHOSTBYADDR, ip);
             UniversalSockAddr addr = setIpAddrNode.execute(frame, idnaConverter.execute(frame, ip), AF_UNSPEC.value);
             int family = sockAddrLibrary.getFamily(addr);
             try {
@@ -333,7 +340,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             byte[] name = idnaConverter.execute(frame, nameObj);
-            auditNode.audit(inliningTarget, "socket.gethostbyname", PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{nameObj}));
+            auditNode.audit(frame, inliningTarget, T_SOCKET_GETHOSTBYNAME, PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{nameObj}));
             UniversalSockAddr addr = setIpAddrNode.execute(frame, name, AF_INET.value);
             Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
             try {
@@ -364,7 +371,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             byte[] name = idnaConverter.execute(frame, nameObj);
             // The event name is really without the _ex, it's not a copy-paste error
-            auditNode.audit(inliningTarget, "socket.gethostbyname", PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{nameObj}));
+            auditNode.audit(frame, inliningTarget, T_SOCKET_GETHOSTBYNAME, PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{nameObj}));
             /*
              * TODO this uses getaddrinfo to emulate the legacy gethostbyname. It doesn't support
              * aliases and multiple addresses. We might want to use the legacy gethostbyname_r API
@@ -405,7 +412,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetServByNameNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        static Object getServByName(TruffleString serviceName, Object protocolNameObj,
+        static Object getServByName(VirtualFrame frame, TruffleString serviceName, Object protocolNameObj,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile noneProtocol,
                         @Bind PythonContext context,
@@ -429,7 +436,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
              * TODO this uses getaddrinfo to emulate the legacy getservbyname. We might want to use
              * the legacy API in the future
              */
-            auditNode.audit(inliningTarget, "socket.getservbyname", serviceName, protocolName != null ? protocolName : "");
+            auditNode.audit(frame, inliningTarget, T_SOCKET_GETSERVBYNAME, serviceName, protocolName != null ? protocolName : T_EMPTY_STRING);
 
             int protocol = 0;
             if (protocolName != null) {
@@ -454,7 +461,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             } catch (GetAddrInfoException e) {
                 throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
@@ -473,7 +480,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         public static final TruffleString T_UDP = tsLiteral("udp");
 
         @Specialization
-        Object getServByPort(int port, Object protocolNameObj,
+        Object getServByPort(VirtualFrame frame, int port, Object protocolNameObj,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile nonProtocol,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
@@ -497,7 +504,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             if (port < 0 || port > 0xffff) {
                 throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.S_PORT_RANGE, "getservbyport");
             }
-            auditNode.audit(inliningTarget, "socket.getservbyport", port, protocolName != null ? protocolName : "");
+            auditNode.audit(frame, inliningTarget, T_SOCKET_GETSERVBYPORT, port, protocolName != null ? protocolName : T_EMPTY_STRING);
 
             try {
                 gil.release(true);
@@ -517,7 +524,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
             } catch (GetAddrInfoException e) {
                 throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(null, e);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
 
@@ -577,7 +584,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 scopeid = asIntNode.execute(frame, inliningTarget, getItem.execute(inliningTarget, addr, 3));
             }
 
-            auditNode.audit(inliningTarget, "socket.getnameinfo", sockaddr);
+            auditNode.audit(frame, inliningTarget, T_SOCKET_GETNAMEINFO, sockaddr);
 
             try {
                 UniversalSockAddr resolvedAddr;
@@ -683,7 +690,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, OSError, ErrorMessages.INT_OR_STRING_EXPECTED);
             }
 
-            auditNode.audit(inliningTarget, "socket.getaddrinfo", hostObject, portObjectProfiled, family, type, proto, flags);
+            auditNode.audit(frame, inliningTarget, T_SOCKET_GETADDRINFO, hostObject, portObjectProfiled, family, type, proto, flags);
 
             AddrInfoCursor cursor;
             try {

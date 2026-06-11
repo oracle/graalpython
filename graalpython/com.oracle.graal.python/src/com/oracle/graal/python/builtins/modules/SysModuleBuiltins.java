@@ -1129,7 +1129,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class AuditNode extends Node {
-        protected abstract void executeInternal(VirtualFrame frame, Node inliningTarget, Object event, Object[] arguments);
+        protected abstract void executeInternal(VirtualFrame frame, Node inliningTarget, TruffleString event, Object[] arguments);
 
         public static void auditUncached(TruffleString event, Object... arguments) {
             SysModuleBuiltinsFactory.AuditNodeGen.getUncached().executeInternal(null, null, event, arguments);

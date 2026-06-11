@@ -48,6 +48,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.LOCK_EX;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_NB;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_SH;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_UN;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -94,6 +95,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "fcntl")
 public final class FcntlModuleBuiltins extends PythonBuiltins {
+    private static final TruffleString T_FCNTL_FLOCK = tsLiteral("fcntl.flock");
+    private static final TruffleString T_FCNTL_LOCKF = tsLiteral("fcntl.lockf");
+    private static final TruffleString T_FCNT_IOCTL = tsLiteral("fcnt.ioctl");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -131,7 +135,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posix,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "fcntl.flock", fd, operation);
+            auditNode.audit(frame, inliningTarget, T_FCNTL_FLOCK, fd, operation);
             try {
                 posix.flock(getPosixSupport(), fd, operation);
             } catch (PosixException e) {
@@ -155,7 +159,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            auditNode.audit(inliningTarget, "fcntl.lockf", fd, code, lenObj != PNone.NO_VALUE ? lenObj : PNone.NONE, startObj != PNone.NO_VALUE ? startObj : PNone.NONE, whence);
+            auditNode.audit(frame, inliningTarget, T_FCNTL_LOCKF, fd, code, lenObj != PNone.NO_VALUE ? lenObj : PNone.NONE, startObj != PNone.NO_VALUE ? startObj : PNone.NONE, whence);
             int lockType;
             if (code == LOCK_UN.value) {
                 lockType = F_UNLCK.getValueIfDefined();
@@ -212,7 +216,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
-            auditNode.audit(inliningTarget, "fcnt.ioctl", fd, request, arg);
+            auditNode.audit(frame, inliningTarget, T_FCNT_IOCTL, fd, request, arg);
 
             int intArg = 0;
             if (arg != PNone.NO_VALUE) {

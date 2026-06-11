@@ -156,6 +156,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMMap)
 public final class MMapBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = MMapBuiltinsSlotsGen.SLOTS;
+    private static final TruffleString T_MMAP_NEW = tsLiteral("mmap.__new__");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -243,7 +244,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.MEM_MAPPED_OFFSET_INVALID_ACCESS);
             }
 
-            auditNode.audit(inliningTarget, "mmap.__new__", fd, lengthIn, access, offset);
+            auditNode.audit(frame, inliningTarget, T_MMAP_NEW, fd, lengthIn, access, offset);
 
             // For file mappings we use fstat to validate the length or to initialize the length if
             // it is 0 meaning that we should find it out for the user
