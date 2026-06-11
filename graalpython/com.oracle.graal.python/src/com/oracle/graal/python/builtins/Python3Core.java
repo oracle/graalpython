@@ -1052,7 +1052,8 @@ public abstract class Python3Core {
     }
 
     private void initializeWindowsCoreFiles(TruffleString coreHome) {
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && !ImageInfo.inImageBuildtimeCode()) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            assert !ImageInfo.inImageBuildtimeCode();
             loadFile(toTruffleStringUncached("_nt"), coreHome);
             loadFile(toTruffleStringUncached("_winapi"), toTruffleStringUncached("modules/_winapi"), coreHome);
             loadFile(toTruffleStringUncached("_overlapped"), toTruffleStringUncached("modules/_overlapped"), coreHome);
