@@ -69,7 +69,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -188,7 +188,7 @@ public final class PythonCextLongBuiltins {
 
     @CApiBuiltin(ret = SIZE_T, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
     static long GraalPyPrivate_Long_NumBits(long objPtr) {
-        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         if (obj instanceof Integer value) {
             return Integer.SIZE - Integer.numberOfLeadingZeros(Math.abs(value));
         } else if (obj instanceof Long value) {

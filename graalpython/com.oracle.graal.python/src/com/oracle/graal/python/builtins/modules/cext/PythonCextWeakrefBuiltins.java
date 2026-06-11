@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.modules.weakref.PProxyType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
@@ -90,16 +90,16 @@ public final class PythonCextWeakrefBuiltins {
         if (callbackPtr == NULLPTR) {
             callback = PNone.NO_VALUE;
         } else {
-            callback = NativeToPythonNode.executeRawUncached(callbackPtr);
+            callback = NativeToPythonInternalNode.executeUncached(callbackPtr, false);
         }
-        Object object = NativeToPythonNode.executeRawUncached(objectPtr);
+        Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
         Object proxy = PyObjectCallMethodObjArgs.executeUncached(weakrefModule, T_PROXY_TYPE, object, callback);
         return PythonToNativeInternalNode.executeNewRefUncached(proxy);
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
     public static long PyWeakref_GetObject(long referencePtr) {
-        Object reference = NativeToPythonNode.executeRawUncached(referencePtr);
+        Object reference = NativeToPythonInternalNode.executeUncached(referencePtr, false);
         if (reference instanceof PReferenceType ref) {
             return ToNativeBorrowedNode.executeUncached(ref.getPyObject());
         } else if (reference instanceof PProxyType proxy) {
@@ -118,7 +118,7 @@ public final class PythonCextWeakrefBuiltins {
 
     @CApiBuiltin(name = "_PyWeakref_ClearRef", ret = Void, args = {PYWEAKREFERENCE_PTR}, call = Direct, acquireGil = false, canRaise = false)
     public static void PyWeakref_ClearRef(long referencePtr) {
-        Object reference = NativeToPythonNode.executeRawUncached(referencePtr);
+        Object reference = NativeToPythonInternalNode.executeUncached(referencePtr, false);
         if (reference instanceof PReferenceType ref) {
             ref.clearRef();
         }

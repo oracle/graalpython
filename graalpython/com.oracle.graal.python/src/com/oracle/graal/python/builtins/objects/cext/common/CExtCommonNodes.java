@@ -486,12 +486,12 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization
-        static Object getException(PythonThreadState threadState,
-                        @Cached CApiTransitions.NativeToPythonTransferNode nativeToPythonNode) {
+        static Object getException(Node inliningTarget, PythonThreadState threadState,
+                        @Cached CApiTransitions.NativeToPythonInternalNode nativeToPythonNode) {
             long nativeThreadState = threadState.getNativePointer();
             if (nativeThreadState != PythonAbstractObject.UNINITIALIZED) {
                 assert nativeThreadState != PythonAbstractObject.NATIVE_POINTER_FREED;
-                Object exception = nativeToPythonNode.executeRaw(readPtrField(nativeThreadState, CFields.PyThreadState__current_exception));
+                Object exception = nativeToPythonNode.execute(inliningTarget, readPtrField(nativeThreadState, CFields.PyThreadState__current_exception), true);
                 writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
                 return exception;
             }

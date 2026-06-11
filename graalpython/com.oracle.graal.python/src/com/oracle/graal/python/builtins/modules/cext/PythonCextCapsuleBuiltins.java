@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltinsFactory.PyCapsuleNewNodeGen;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -117,7 +117,7 @@ public final class PythonCextCapsuleBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
     static int PyCapsule_IsValid(long oPtr, long namePtr) {
-        Object obj = NativeToPythonNode.executeRawUncached(oPtr);
+        Object obj = NativeToPythonInternalNode.executeUncached(oPtr, false);
         if (!(obj instanceof PyCapsule capsule)) {
             return 0;
         }
@@ -132,7 +132,7 @@ public final class PythonCextCapsuleBuiltins {
 
     @CApiBuiltin(ret = Pointer, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
     static long PyCapsule_GetPointer(long oPtr, long namePtr) {
-        Object capsule = NativeToPythonNode.executeRawUncached(oPtr);
+        Object capsule = NativeToPythonInternalNode.executeUncached(oPtr, false);
         return PyCapsuleGetPointerNode.executeUncached(capsule, namePtr);
     }
 
@@ -285,7 +285,7 @@ public final class PythonCextCapsuleBuiltins {
     }
 
     private static PyCapsule expectCapsule(long oPtr, String builtinName) {
-        Object obj = NativeToPythonNode.executeRawUncached(oPtr);
+        Object obj = NativeToPythonInternalNode.executeUncached(oPtr, false);
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !(obj instanceof PyCapsule capsule) || capsule.getPointer() == NULLPTR)) {
             throw PRaiseNode.raiseStatic(null, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, builtinName);
         }

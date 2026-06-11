@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -62,7 +62,7 @@ public final class PythonCextByteArrayBuiltins {
 
     @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Direct)
     static long PyByteArray_AsString(long bytesPtr) {
-        Object obj = NativeToPythonNode.executeRawUncached(bytesPtr);
+        Object obj = NativeToPythonInternalNode.executeUncached(bytesPtr, false);
         if (obj instanceof PByteArray bytes) {
             return PySequenceArrayWrapper.ensureNativeSequence(bytes);
         }

@@ -116,7 +116,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -313,8 +313,8 @@ public abstract class ExternalFunctionNodes {
         static Object doIt(long pointer,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached NativeToPythonNode nativeToPythonNode) {
-            Object result = nativeToPythonNode.executeRaw(pointer);
+                        @Cached NativeToPythonInternalNode nativeToPythonNode) {
+            Object result = nativeToPythonNode.execute(inliningTarget, pointer, false);
             if (result == PNone.NO_VALUE) {
                 return result;
             }

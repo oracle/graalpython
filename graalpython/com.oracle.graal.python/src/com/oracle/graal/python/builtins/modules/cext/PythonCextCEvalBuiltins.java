@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
@@ -130,11 +130,11 @@ public final class PythonCextCEvalBuiltins {
     static long GraalPyPrivate_Eval_EvalCodeEx(long codePtr, long globalsPtr, long localsPtr,
                     long argumentArrayPtr, int argumentCount, long kwsPtr, int kwsCount, long defaultValueArrayPtr, int defaultValueCount,
                     long kwdefaultsWrapperPtr, long closureObjPtr) {
-        PCode code = (PCode) NativeToPythonNode.executeRawUncached(codePtr);
-        PythonObject globals = (PythonObject) NativeToPythonNode.executeRawUncached(globalsPtr);
-        Object locals = NativeToPythonNode.executeRawUncached(localsPtr);
-        Object kwdefaultsWrapper = NativeToPythonNode.executeRawUncached(kwdefaultsWrapperPtr);
-        Object closureObj = NativeToPythonNode.executeRawUncached(closureObjPtr);
+        PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
+        PythonObject globals = (PythonObject) NativeToPythonInternalNode.executeUncached(globalsPtr, false);
+        Object locals = NativeToPythonInternalNode.executeUncached(localsPtr, false);
+        Object kwdefaultsWrapper = NativeToPythonInternalNode.executeUncached(kwdefaultsWrapperPtr, false);
+        Object closureObj = NativeToPythonInternalNode.executeUncached(closureObjPtr, false);
         Object[] defaults = CStructAccess.ReadObjectNode.getUncached().readPyObjectArray(defaultValueArrayPtr, defaultValueCount);
         if (!PGuards.isPNone(kwdefaultsWrapper) && !PGuards.isDict(kwdefaultsWrapper)) {
             throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);

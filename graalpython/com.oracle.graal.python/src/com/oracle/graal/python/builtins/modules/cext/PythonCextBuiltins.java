@@ -136,7 +136,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ToNativeTypeNode;
@@ -992,9 +992,9 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = PyFrameObjectRawPointer, args = {PyThreadState, PyCodeObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
     static long PyFrame_New(long threadState, long codePtr, long globalsPtr, long localsPtr) {
-        PCode code = (PCode) NativeToPythonNode.executeRawUncached(codePtr);
-        PythonObject globals = (PythonObject) NativeToPythonNode.executeRawUncached(globalsPtr);
-        Object locals = localsPtr == NULLPTR ? null : NativeToPythonNode.executeRawUncached(localsPtr);
+        PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
+        PythonObject globals = (PythonObject) NativeToPythonInternalNode.executeUncached(globalsPtr, false);
+        Object locals = localsPtr == NULLPTR ? null : NativeToPythonInternalNode.executeUncached(localsPtr, false);
         PythonLanguage language = PythonLanguage.get(null);
         Object frameLocals = locals == null || PGuards.isPNone(locals) ? PFactory.createDict(language) : locals;
         return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createPFrame(language, threadState, code, globals, frameLocals));
@@ -1006,7 +1006,7 @@ public final class PythonCextBuiltins {
         int itemsize = CastToJavaIntExactNode.executeUncached(itemsizeArg);
         int len = CastToJavaIntExactNode.executeUncached(lenArg);
         boolean readonly = readonlyArg != 0;
-        Object owner = ownerPtr == NULLPTR ? null : NativeToPythonNode.executeRawUncached(ownerPtr);
+        Object owner = ownerPtr == NULLPTR ? null : NativeToPythonInternalNode.executeUncached(ownerPtr, false);
         TruffleString format = (TruffleString) CharPtrToPythonNode.executeUncached(formatPtr);
         int[] shape = null;
         int[] strides = null;
@@ -1652,7 +1652,7 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Ignored)
     static long GraalPyPrivate_GetMMapData(long objectPtr) {
-        PMMap object = (PMMap) NativeToPythonNode.executeRawUncached(objectPtr);
+        PMMap object = (PMMap) NativeToPythonInternalNode.executeUncached(objectPtr, false);
         PythonContext context = PythonContext.get(null);
         try {
             return PosixSupportLibrary.getUncached().mmapGetPointer(context.getPosixSupport(), object.getPosixSupportHandle());

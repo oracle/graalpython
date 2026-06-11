@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
@@ -657,8 +657,9 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static Object doNativeObject(NativeObjectSequenceStorage storage, int idx,
-                        @Cached NativeToPythonNode toJavaNode) {
-            return toJavaNode.executeRaw(readPtrArrayElement(storage.getPtr(), idx));
+                        @Bind Node inliningTarget,
+                        @Cached NativeToPythonInternalNode toJavaNode) {
+            return toJavaNode.execute(inliningTarget, readPtrArrayElement(storage.getPtr(), idx), false);
         }
 
         @Specialization
@@ -818,10 +819,11 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static SequenceStorage doNativeObject(NativeObjectSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached NativeToPythonNode toJavaNode) {
+                        @Bind Node inliningTarget,
+                        @Cached NativeToPythonInternalNode toJavaNode) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = toJavaNode.executeRaw(readPtrArrayElement(storage.getPtr(), i));
+                newArray[j] = toJavaNode.execute(inliningTarget, readPtrArrayElement(storage.getPtr(), i), false);
             }
             return new ObjectSequenceStorage(newArray);
         }

@@ -102,7 +102,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
@@ -203,7 +202,7 @@ public abstract class CExtNodes {
         @Specialization
         static Object doGeneric(Node inliningTarget, Object object, double arg,
                         @Cached PythonToNativeInternalNode toNativeNode,
-                        @Cached NativeToPythonTransferNode toJavaNode,
+                        @Cached NativeToPythonInternalNode toJavaNode,
                         @Cached PyObjectCheckFunctionResultNode checkFunctionResultNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW);
@@ -214,7 +213,7 @@ public abstract class CExtNodes {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
             return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW.getTsName(),
-                            toJavaNode.execute(result));
+                            toJavaNode.execute(inliningTarget, result, true));
         }
     }
 
@@ -1046,7 +1045,7 @@ public abstract class CExtNodes {
                             PythonToNativeInternalNode.executeUncached(moduleSpec.originalModuleSpec, false), moduleDefPtr);
             TransformExceptionFromNativeNode.getUncached().execute(null, threadState, mName, result == NULLPTR, true,
                             ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
-            module = NativeToPythonTransferNode.executeRawUncached(result);
+            module = NativeToPythonInternalNode.executeUncached(result, true);
 
             /*
              * We are more strict than CPython and require this to be a PythonModule object. This
@@ -1219,7 +1218,7 @@ public abstract class CExtNodes {
         @Specialization
         static PMemoryView fromNative(Node inliningTarget, PythonNativeObject buf, int flags,
                         @Cached PythonToNativeInternalNode toNativeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode asPythonObjectNode,
+                        @Cached NativeToPythonInternalNode asPythonObjectNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkFunctionResultNode) {
             long bufPointer = toNativeNode.execute(inliningTarget, buf, false);
             try {
@@ -1227,7 +1226,7 @@ public abstract class CExtNodes {
                 var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT);
                 long result = ExternalFunctionInvoker.invokeGRAALPY_MEMORYVIEW_FROM_OBJECT(null, C_API_TIMING, context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                 context.getThreadState(PythonLanguage.get(inliningTarget)), callable, bufPointer, flags);
-                return (PMemoryView) checkFunctionResultNode.execute(context, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), asPythonObjectNode.executeRaw(result));
+                return (PMemoryView) checkFunctionResultNode.execute(context, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), asPythonObjectNode.execute(inliningTarget, result, true));
             } finally {
                 Reference.reachabilityFence(buf);
             }

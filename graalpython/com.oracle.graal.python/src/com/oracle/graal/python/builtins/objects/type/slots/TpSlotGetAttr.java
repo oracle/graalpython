@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -258,7 +258,7 @@ public class TpSlotGetAttr {
                         @Cached PythonToNativeInternalNode nameToNativeNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeInternalNode selfToNativeNode,
-                        @Cached NativeToPythonTransferNode toPythonNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PyObjectCheckFunctionResultNode checkResultNode) {
             boolean isGetAttr = isGetAttrProfile.profile(inliningTarget, slots.tp_getattr() == slot);
@@ -287,7 +287,7 @@ public class TpSlotGetAttr {
                     Reference.reachabilityFence(promotedName);
                 }
             }
-            return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.executeRaw(lresult));
+            return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.execute(inliningTarget, lresult, true));
         }
     }
 
