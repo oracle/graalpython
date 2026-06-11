@@ -306,7 +306,7 @@ public class CStructAccess {
                 toPython.execute(old, true);
             }
             Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), value, false);
-            NativeMemory.writePtr(pointer + offset, toNative.execute(inliningTarget, promoted, true));
+            NativeMemory.writePtr(pointer + offset, toNative.executeNewRef(inliningTarget, promoted));
         }
     }
 }

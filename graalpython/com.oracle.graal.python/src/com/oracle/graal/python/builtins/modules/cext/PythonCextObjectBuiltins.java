@@ -213,7 +213,7 @@ public abstract class PythonCextObjectBuiltins {
             for (int i = 0; i < resolved.length; i++) {
                 long elem = readPtrArrayElement(arrayPointer, i);
                 pointers[i] = elem;
-                resolved[i] = nativeToPythonNode.execute(inliningTarget, elem, false);
+                resolved[i] = nativeToPythonNode.execute(inliningTarget, elem);
             }
             HandleContext handleContext = PythonContext.get(inliningTarget).handleContext;
             for (int i = 0; i < resolved.length; i++) {

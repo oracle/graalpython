@@ -659,7 +659,7 @@ public abstract class SequenceStorageNodes {
         protected static Object doNativeObject(NativeObjectSequenceStorage storage, int idx,
                         @Bind Node inliningTarget,
                         @Cached NativeToPythonInternalNode toJavaNode) {
-            return toJavaNode.execute(inliningTarget, readPtrArrayElement(storage.getPtr(), idx), false);
+            return toJavaNode.execute(inliningTarget, readPtrArrayElement(storage.getPtr(), idx));
         }
 
         @Specialization
@@ -823,7 +823,7 @@ public abstract class SequenceStorageNodes {
                         @Cached NativeToPythonInternalNode toJavaNode) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = toJavaNode.execute(inliningTarget, readPtrArrayElement(storage.getPtr(), i), false);
+                newArray[j] = toJavaNode.execute(inliningTarget, readPtrArrayElement(storage.getPtr(), i));
             }
             return new ObjectSequenceStorage(newArray);
         }
@@ -1393,7 +1393,7 @@ public abstract class SequenceStorageNodes {
                         @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             long old = readPtrArrayElement(storage.getPtr(), idx);
             Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), value, false);
-            writePtrArrayElement(storage.getPtr(), idx, toNative.execute(inliningTarget, promoted, true));
+            writePtrArrayElement(storage.getPtr(), idx, toNative.executeNewRef(inliningTarget, promoted));
             decRefPointerNode.execute(inliningTarget, old);
         }
     }
@@ -1416,7 +1416,7 @@ public abstract class SequenceStorageNodes {
                         @Cached CExtNodes.EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeInternalNode toNative) {
             Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), value, false);
-            writePtrArrayElement(storage.getPtr(), idx, toNative.execute(inliningTarget, promoted, true));
+            writePtrArrayElement(storage.getPtr(), idx, toNative.executeNewRef(inliningTarget, promoted));
         }
     }
 
@@ -4083,7 +4083,7 @@ public abstract class SequenceStorageNodes {
                 writePtrArrayElement(storage.getPtr(), i, readPtrArrayElement(storage.getPtr(), i - 1));
             }
             Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), value, false);
-            writePtrArrayElement(storage.getPtr(), index, toNative.execute(inliningTarget, promoted, true));
+            writePtrArrayElement(storage.getPtr(), index, toNative.executeNewRef(inliningTarget, promoted));
             storage.setNewLength(newLength);
             return storage;
         }

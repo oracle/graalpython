@@ -253,7 +253,7 @@ public abstract class ExternalFunctionNodes {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached NativeToPythonInternalNode nativeToPythonNode) {
-            Object result = nativeToPythonNode.execute(inliningTarget, pointer, false);
+            Object result = nativeToPythonNode.execute(inliningTarget, pointer);
             if (result == PNone.NO_VALUE) {
                 return result;
             }
@@ -2283,14 +2283,14 @@ public abstract class ExternalFunctionNodes {
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_TYPE_GENERIC_ALLOC);
             long op = ExternalFunctionInvoker.invokeTYPE_GENERIC_ALLOC(null, TIMING_invokeTypeGenericAlloc, context.ensureNativeContext(),
                             BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
-                            pythonToNativeNode.execute(inliningTarget, argsTupleClass, false), n);
+                            pythonToNativeNode.execute(inliningTarget, argsTupleClass), n);
 
             long obItem = CStructAccess.getFieldPtr(op, CFields.PyTupleObject__ob_item);
 
             for (int i = 0; i < n; i++) {
                 Object promoted = materializePrimitiveNode.execute(context, args[i], false);
                 args[i] = promoted;
-                writePtrArrayElement(obItem, i, pythonToNativeNode.execute(inliningTarget, promoted, true));
+                writePtrArrayElement(obItem, i, pythonToNativeNode.executeNewRef(inliningTarget, promoted));
             }
 
             if (LOGGER.isLoggable(Level.FINE)) {
@@ -2329,7 +2329,7 @@ public abstract class ExternalFunctionNodes {
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_TYPE_GENERIC_ALLOC);
             long op = ExternalFunctionInvoker.invokeTYPE_GENERIC_ALLOC(null, CreateNativeArgsTupleNode.TIMING_invokeTypeGenericAlloc, context.ensureNativeContext(),
                             BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
-                            pythonToNativeNode.execute(inliningTarget, argsTupleClass, false), n);
+                            pythonToNativeNode.execute(inliningTarget, argsTupleClass), n);
 
             long obItem = CStructAccess.getFieldPtr(op, CFields.PyTupleObject__ob_item);
 
@@ -2338,7 +2338,7 @@ public abstract class ExternalFunctionNodes {
                 PString promoted = internStringArg(context, (TruffleString) args[i]);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(promoted);
                 args[i] = promoted;
-                long nativeString = pythonToNativeNode.execute(inliningTarget, promoted, true);
+                long nativeString = pythonToNativeNode.executeNewRef(inliningTarget, promoted);
                 CApiTransitions.setGraalPyUnicodeObjectInterned(HandlePointerConverter.pointerToStub(nativeString), CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_INTERNED);
                 writePtrArrayElement(obItem, i, nativeString);
             }

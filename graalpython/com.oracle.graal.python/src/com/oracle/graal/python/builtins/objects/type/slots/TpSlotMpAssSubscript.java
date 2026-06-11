@@ -227,8 +227,8 @@ public final class TpSlotMpAssSubscript {
             Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
             try {
                 int iresult = ExternalFunctionInvoker.invokeOBJOBJARGPROC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                selfToNativeNode.execute(inliningTarget, promotedSelf, false), keyToNativeNode.execute(inliningTarget, promotedKey, false), valueToNativeNode.execute(inliningTarget,
-                                                promotedValue, false));
+                                selfToNativeNode.execute(inliningTarget, promotedSelf), keyToNativeNode.execute(inliningTarget, promotedKey), valueToNativeNode.execute(inliningTarget,
+                                                promotedValue));
                 checkResultNode.executeBool(inliningTarget, threadState, T___SETITEM__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);

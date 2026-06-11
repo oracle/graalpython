@@ -215,7 +215,7 @@ public class CApiMemberAccessNodes {
             // in case of T_PYSSIZET, we assume that 'sizeof(Py_ssize_t)' is 'Long.BYTES'
             assert type != T_PYSSIZET || CStructs.Py_ssize_t.size() == Long.BYTES;
 
-            long selfPtr = toNativeNode.execute(inliningTarget, self, false);
+            long selfPtr = toNativeNode.execute(inliningTarget, self);
             long memberPtr = NativeMemory.getFieldPtr(selfPtr, offset);
             long addr;
             switch (type) {

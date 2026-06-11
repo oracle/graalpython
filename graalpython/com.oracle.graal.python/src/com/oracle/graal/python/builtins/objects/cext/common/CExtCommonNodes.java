@@ -420,7 +420,7 @@ public abstract class CExtCommonNodes {
              * the read and write.
              */
             Object promotedException = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), pythonException, false);
-            long currentException = pythonToNativeNode.execute(inliningTarget, promotedException, true);
+            long currentException = pythonToNativeNode.executeNewRef(inliningTarget, promotedException);
             long nativeThreadState = PThreadState.getOrCreateNativeThreadState(getThreadStateNode.execute(inliningTarget));
             long oldException = readPtrField(nativeThreadState, CFields.PyThreadState__current_exception);
             writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
@@ -489,7 +489,7 @@ public abstract class CExtCommonNodes {
             long nativeThreadState = threadState.getNativePointer();
             if (nativeThreadState != PythonAbstractObject.UNINITIALIZED) {
                 assert nativeThreadState != PythonAbstractObject.NATIVE_POINTER_FREED;
-                Object exception = nativeToPythonNode.execute(inliningTarget, readPtrField(nativeThreadState, CFields.PyThreadState__current_exception), true);
+                Object exception = nativeToPythonNode.executeTransfer(inliningTarget, readPtrField(nativeThreadState, CFields.PyThreadState__current_exception));
                 writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
                 return exception;
             }

@@ -250,16 +250,16 @@ public class DateTimeNodes {
                 Shape shape = getInstanceShape.execute(cls);
                 return new PDateTime(cls, shape, year, month, day, hour, minute, second, microsecond, tzInfo, fold);
             } else {
-                long clsPointer = toNativeNode.execute(inliningTarget, cls, false);
+                long clsPointer = toNativeNode.execute(inliningTarget, cls);
                 Object effectiveTzInfo = tzInfo != null ? tzInfo : PNone.NO_VALUE;
-                long tzInfoPointer = toNativeNode.execute(inliningTarget, effectiveTzInfo, false);
+                long tzInfoPointer = toNativeNode.execute(inliningTarget, effectiveTzInfo);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW);
                     long nativeResult = ExternalFunctionInvoker.invokeDATETIME_SUBTYPE_NEW(null, C_API_TIMING,
                                     context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer,
                                     year, month, day, hour, minute, second, microsecond, tzInfoPointer, fold);
-                    return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW.getTsName(), fromNativeNode.execute(inliningTarget, nativeResult, true));
+                    return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW.getTsName(), fromNativeNode.executeTransfer(inliningTarget, nativeResult));
                 } finally {
                     Reference.reachabilityFence(cls);
                     Reference.reachabilityFence(effectiveTzInfo);

@@ -193,8 +193,8 @@ public final class TpSlotNbPower {
             Object promotedZ = ensurePythonObjectNode.execute(ctx, z, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                vToNative.execute(inliningTarget, promotedV, false), wToNative.execute(inliningTarget, promotedW, false), zToNative.execute(inliningTarget, promotedZ, false));
-                return checkResultNode.execute(state, T___POW__, toPythonNode.execute(inliningTarget, lresult, true));
+                                vToNative.execute(inliningTarget, promotedV), wToNative.execute(inliningTarget, promotedW), zToNative.execute(inliningTarget, promotedZ));
+                return checkResultNode.execute(state, T___POW__, toPythonNode.executeTransfer(inliningTarget, lresult));
             } finally {
                 Reference.reachabilityFence(promotedV);
                 Reference.reachabilityFence(promotedW);
@@ -289,8 +289,8 @@ public final class TpSlotNbPower {
             Object promotedZ = ensurePythonObjectNode.execute(ctx, z, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                vToNative.execute(inliningTarget, promotedV, false), wToNative.execute(inliningTarget, promotedW, false), zToNative.execute(inliningTarget, promotedZ, false));
-                return checkResultNode.execute(state, T___IPOW__, toPythonNode.execute(inliningTarget, lresult, true));
+                                vToNative.execute(inliningTarget, promotedV), wToNative.execute(inliningTarget, promotedW), zToNative.execute(inliningTarget, promotedZ));
+                return checkResultNode.execute(state, T___IPOW__, toPythonNode.executeTransfer(inliningTarget, lresult));
             } finally {
                 Reference.reachabilityFence(promotedV);
                 Reference.reachabilityFence(promotedW);

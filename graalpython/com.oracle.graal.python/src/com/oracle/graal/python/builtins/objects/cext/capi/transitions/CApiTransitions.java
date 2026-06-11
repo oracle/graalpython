@@ -1747,6 +1747,14 @@ public abstract class CApiTransitions {
     @ImportStatic(CApiContext.class)
     public abstract static class PythonToNativeInternalNode extends Node {
 
+        public final long execute(Node inliningTarget, Object object) {
+            return execute(inliningTarget, object, false);
+        }
+
+        public final long executeNewRef(Node inliningTarget, Object object) {
+            return execute(inliningTarget, object, true);
+        }
+
         @TruffleBoundary
         public static long executeUncached(Object obj, boolean needsTransfer) {
             return PythonToNativeInternalNodeGen.getUncached().execute(null, obj, needsTransfer);
@@ -1758,7 +1766,7 @@ public abstract class CApiTransitions {
             return executeUncached(promoted, true);
         }
 
-        public abstract long execute(Node inliningTarget, Object object, boolean needsTransfer);
+        abstract long execute(Node inliningTarget, Object object, boolean needsTransfer);
 
         @Specialization
         static long doInteger(int i, @SuppressWarnings("unused") boolean needsTransfer) {
@@ -2008,7 +2016,7 @@ public abstract class CApiTransitions {
         static long doGeneric(Object obj,
                         @Bind Node inliningTarget,
                         @Cached PythonToNativeInternalNode internalNode) {
-            return internalNode.execute(inliningTarget, obj, false);
+            return internalNode.execute(inliningTarget, obj);
         }
 
         @NeverDefault
@@ -2062,7 +2070,7 @@ public abstract class CApiTransitions {
              * will be kept alive with a strong reference from the handle table.
              */
             Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), obj, false);
-            return internalNode.execute(inliningTarget, promoted, true);
+            return internalNode.executeNewRef(inliningTarget, promoted);
         }
 
         @NeverDefault
@@ -2080,15 +2088,23 @@ public abstract class CApiTransitions {
     @GenerateCached(false)
     public abstract static class NativeToPythonInternalNode extends Node {
 
-        public final Object execute(Node inliningTarget, long value, boolean needsTransfer) {
-            return execute(inliningTarget, value, needsTransfer, false);
+        public final Object execute(Node inliningTarget, long value) {
+            return execute(inliningTarget, value, false, false);
         }
 
-        public abstract Object execute(Node inliningTarget, long value, boolean needsTransfer, boolean release);
+        public final Object executeTransfer(Node inliningTarget, long object) {
+            return execute(inliningTarget, object, true, false);
+        }
+
+        public final Object executeTransferAndRelease(Node inliningTarget, long object) {
+            return execute(inliningTarget, object, true, true);
+        }
+
+        abstract Object execute(Node inliningTarget, long value, boolean needsTransfer, boolean release);
 
         @TruffleBoundary
         public static Object executeUncached(long value, boolean needsTransfer) {
-            return NativeToPythonInternalNodeGen.getUncached().execute(null, value, needsTransfer);
+            return NativeToPythonInternalNodeGen.getUncached().execute(null, value, needsTransfer, false);
         }
 
         @Specialization
@@ -2219,7 +2235,7 @@ public abstract class CApiTransitions {
         static Object doLong(long value,
                         @Bind Node inliningTarget,
                         @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
-            return nativeToPythonInternalNode.execute(inliningTarget, value, false);
+            return nativeToPythonInternalNode.execute(inliningTarget, value);
         }
 
         @NeverDefault
@@ -2240,7 +2256,7 @@ public abstract class CApiTransitions {
         static Object doLong(long pointer,
                         @Bind Node inliningTarget,
                         @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
-            return nativeToPythonInternalNode.execute(inliningTarget, pointer, true);
+            return nativeToPythonInternalNode.executeTransfer(inliningTarget, pointer);
         }
 
         @NeverDefault
@@ -2266,7 +2282,7 @@ public abstract class CApiTransitions {
         static Object doLong(long pointer,
                         @Bind Node inliningTarget,
                         @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
-            return nativeToPythonInternalNode.execute(inliningTarget, pointer, true, true);
+            return nativeToPythonInternalNode.executeTransferAndRelease(inliningTarget, pointer);
         }
 
         @NeverDefault

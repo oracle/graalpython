@@ -152,14 +152,14 @@ public class DateNodes {
                 Shape shape = getInstanceShape.execute(cls);
                 return new PDate(cls, shape, year, month, day);
             } else {
-                long clsPointer = toNativeNode.execute(inliningTarget, cls, false);
+                long clsPointer = toNativeNode.execute(inliningTarget, cls);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW);
                     long nativeResult = ExternalFunctionInvoker.invokeDATE_SUBTYPE_NEW(null, C_API_TIMING,
                                     context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, clsPointer,
                                     year, month, day);
-                    return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), fromNativeNode.execute(inliningTarget, nativeResult, true));
+                    return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), fromNativeNode.executeTransfer(inliningTarget, nativeResult));
                 } finally {
                     Reference.reachabilityFence(cls);
                 }

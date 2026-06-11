@@ -269,13 +269,13 @@ public class TpSlotGetAttr {
                 nameArg = asCharPointerNode.execute(name);
             } else {
                 promotedName = ensurePythonObjectNode.execute(context, name, false);
-                nameArg = nameToNativeNode.execute(inliningTarget, promotedName, false);
+                nameArg = nameToNativeNode.execute(inliningTarget, promotedName);
             }
             long lresult;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
             try {
                 lresult = ExternalFunctionInvoker.invokeGETATTRFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                selfToNativeNode.execute(inliningTarget, promotedSelf, false), nameArg);
+                                selfToNativeNode.execute(inliningTarget, promotedSelf), nameArg);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 if (isGetAttr) {
@@ -287,7 +287,7 @@ public class TpSlotGetAttr {
                     Reference.reachabilityFence(promotedName);
                 }
             }
-            return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.execute(inliningTarget, lresult, true));
+            return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.executeTransfer(inliningTarget, lresult));
         }
     }
 

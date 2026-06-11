@@ -141,8 +141,8 @@ public final class TpSlotUnaryFunc {
             Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeUNARYFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.execute(inliningTarget, promotedSelf, false));
-                return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.execute(inliningTarget, lresult, true, true));
+                                toNativeNode.execute(inliningTarget, promotedSelf));
+                return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.executeTransferAndRelease(inliningTarget, lresult));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
             }

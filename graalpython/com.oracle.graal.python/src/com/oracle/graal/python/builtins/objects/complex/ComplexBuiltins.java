@@ -263,14 +263,14 @@ public final class ComplexBuiltins extends PythonBuiltins {
                 NativeCAPISymbol symbol = NativeCAPISymbol.FUN_COMPLEX_SUBTYPE_FROM_DOUBLES;
                 // classes are always Python objects
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
-                long clsPointer = toNativeNode.execute(inliningTarget, cls, false);
+                long clsPointer = toNativeNode.execute(inliningTarget, cls);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
                     long nativeResult = ExternalFunctionInvoker.invokeCOMPLEX_SUBTYPE_FROM_DOUBLES(null, C_API_TIMING,
                                     context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable,
                                     clsPointer, real, imaginary);
-                    return checkFunctionResultNode.execute(context, symbol.getTsName(), toPythonNode.execute(inliningTarget, nativeResult, true));
+                    return checkFunctionResultNode.execute(context, symbol.getTsName(), toPythonNode.executeTransfer(inliningTarget, nativeResult));
                 } finally {
                     Reference.reachabilityFence(cls);
                 }

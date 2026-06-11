@@ -208,12 +208,12 @@ public abstract class CExtNodes {
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW);
             long result;
             try {
-                result = ExternalFunctionInvoker.invokeFLOAT_SUBTYPE_NEW(callable.getAddress(), toNativeNode.execute(inliningTarget, object, false), arg);
+                result = ExternalFunctionInvoker.invokeFLOAT_SUBTYPE_NEW(callable.getAddress(), toNativeNode.execute(inliningTarget, object), arg);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
             return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_FLOAT_SUBTYPE_NEW.getTsName(),
-                            toJavaNode.execute(inliningTarget, result, true));
+                            toJavaNode.executeTransfer(inliningTarget, result));
         }
     }
 
@@ -232,9 +232,9 @@ public abstract class CExtNodes {
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_TUPLE_SUBTYPE_NEW);
             try {
                 long result = ExternalFunctionInvoker.invokeTUPLE_SUBTYPE_NEW(callable.getAddress(),
-                                toNativeNode.execute(inliningTarget, object, false),
-                                toNativeNode.execute(inliningTarget, arg, false));
-                return toJavaNode.execute(inliningTarget, result, true);
+                                toNativeNode.execute(inliningTarget, object),
+                                toNativeNode.execute(inliningTarget, arg));
+                return toJavaNode.executeTransfer(inliningTarget, result);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -257,10 +257,10 @@ public abstract class CExtNodes {
             try {
                 Object promotedArg = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), arg, false);
                 long result = ExternalFunctionInvoker.invokeUNICODE_SUBTYPE_NEW(callable.getAddress(),
-                                toNativeNode.execute(inliningTarget, object, false),
-                                toNativeNode.execute(inliningTarget, promotedArg, false));
+                                toNativeNode.execute(inliningTarget, object),
+                                toNativeNode.execute(inliningTarget, promotedArg));
                 Reference.reachabilityFence(promotedArg);
-                return toJavaNode.execute(inliningTarget, result, true);
+                return toJavaNode.executeTransfer(inliningTarget, result);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -848,7 +848,7 @@ public abstract class CExtNodes {
             if (HandlePointerConverter.pointsToPyFloatHandle(pointer) || HandlePointerConverter.pointsToPyIntHandle(pointer)) {
                 return;
             }
-            Object object = toPythonNode.execute(inliningTarget, pointer, false);
+            Object object = toPythonNode.execute(inliningTarget, pointer);
             if (object instanceof PythonAbstractNativeObject) {
                 // Native objects use their native reference count and deallocator.
                 if (CApiTransitions.subNativeRefCount(pointer, 1) == 0) {
@@ -1220,13 +1220,13 @@ public abstract class CExtNodes {
                         @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached NativeToPythonInternalNode asPythonObjectNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkFunctionResultNode) {
-            long bufPointer = toNativeNode.execute(inliningTarget, buf, false);
+            long bufPointer = toNativeNode.execute(inliningTarget, buf);
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
                 var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT);
                 long result = ExternalFunctionInvoker.invokeGRAALPY_MEMORYVIEW_FROM_OBJECT(null, C_API_TIMING, context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                 context.getThreadState(PythonLanguage.get(inliningTarget)), callable, bufPointer, flags);
-                return (PMemoryView) checkFunctionResultNode.execute(context, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), asPythonObjectNode.execute(inliningTarget, result, true));
+                return (PMemoryView) checkFunctionResultNode.execute(context, FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), asPythonObjectNode.executeTransfer(inliningTarget, result));
             } finally {
                 Reference.reachabilityFence(buf);
             }

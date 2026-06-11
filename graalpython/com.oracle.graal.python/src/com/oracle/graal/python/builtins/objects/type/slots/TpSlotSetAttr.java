@@ -286,14 +286,14 @@ public class TpSlotSetAttr {
                 nameArg = asCharPointerNode.execute(name);
             } else {
                 promotedName = ensurePythonObjectNode.execute(context, name, false);
-                nameArg = nameToNativeNode.execute(inliningTarget, promotedName, false);
+                nameArg = nameToNativeNode.execute(inliningTarget, promotedName);
             }
             Object promotedValue = ensurePythonObjectNode.execute(context, value, false);
             int iresult;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
             try {
                 iresult = ExternalFunctionInvoker.invokeSETATTRFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                selfToNativeNode.execute(inliningTarget, promotedSelf, false), nameArg, valueToNativeNode.execute(inliningTarget, promotedValue, false));
+                                selfToNativeNode.execute(inliningTarget, promotedSelf), nameArg, valueToNativeNode.execute(inliningTarget, promotedValue));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 if (isSetAttr) {

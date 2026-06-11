@@ -254,13 +254,13 @@ public final class PythonCextDictBuiltins {
                 Object key = itKey.execute(inliningTarget, storage, it);
                 assert ensureKeyNode.execute(context, key, false) == key;
                 // Borrowed reference
-                NativeMemory.writePtr(keyPtr, toNativeNode.execute(inliningTarget, key, false));
+                NativeMemory.writePtr(keyPtr, toNativeNode.execute(inliningTarget, key));
             }
             if (valuePtr != NULLPTR) {
                 Object value = itValue.execute(inliningTarget, storage, it);
                 assert ensureValueNode.execute(context, value, false) == value;
                 // Borrowed reference
-                NativeMemory.writePtr(valuePtr, toNativeNode.execute(inliningTarget, value, false));
+                NativeMemory.writePtr(valuePtr, toNativeNode.execute(inliningTarget, value));
             }
             if (hashPtr != NULLPTR) {
                 long hash = itKeyHash.execute(null, inliningTarget, storage, it);

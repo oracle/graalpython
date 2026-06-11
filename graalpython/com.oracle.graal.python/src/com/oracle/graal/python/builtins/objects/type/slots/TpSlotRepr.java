@@ -121,8 +121,8 @@ public final class TpSlotRepr {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeREPRFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.execute(inliningTarget, promotedSelf, false));
-                return checkResultNode.execute(state, T___REPR__, toPythonNode.execute(inliningTarget, lresult, true));
+                                toNativeNode.execute(inliningTarget, promotedSelf));
+                return checkResultNode.execute(state, T___REPR__, toPythonNode.executeTransfer(inliningTarget, lresult));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
             }

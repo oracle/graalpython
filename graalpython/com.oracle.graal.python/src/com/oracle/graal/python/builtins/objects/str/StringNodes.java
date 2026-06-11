@@ -209,7 +209,7 @@ public abstract class StringNodes {
                 long lresult = ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNativeContext(),
                                 BoundaryCallData.getUncached(),
                                 context.getThreadState(context.getLanguage(inliningTarget)), callable,
-                                toNativeNode.execute(inliningTarget, x, false));
+                                toNativeNode.execute(inliningTarget, x));
                 try {
                     return PInt.intValueExact(lresult);
                 } catch (OverflowException e) {

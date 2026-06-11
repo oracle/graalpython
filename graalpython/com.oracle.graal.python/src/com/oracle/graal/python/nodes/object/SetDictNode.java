@@ -98,8 +98,8 @@ public abstract class SetDictNode extends Node {
                     @Cached PythonToNativeInternalNode dictToNative,
                     @Cached CheckPrimitiveFunctionResultNode checkResult) {
         assert !IsTypeNode.executeUncached(object);
-        long objectPointer = objectToNative.execute(inliningTarget, object, false);
-        long dictPointer = dictToNative.execute(inliningTarget, dict, false);
+        long objectPointer = objectToNative.execute(inliningTarget, object);
+        long dictPointer = dictToNative.execute(inliningTarget, dict);
         PythonContext context = PythonContext.get(inliningTarget);
         var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_GENERIC_SET_DICT);
         int result = ExternalFunctionInvoker.invokePY_OBJECT_GENERIC_SET_DICT(null, C_API_TIMING, context.ensureNativeContext(),

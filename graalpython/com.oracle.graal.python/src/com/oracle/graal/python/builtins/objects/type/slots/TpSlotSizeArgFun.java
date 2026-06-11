@@ -271,8 +271,8 @@ public class TpSlotSizeArgFun {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeSSIZEARGFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                toNativeNode.execute(inliningTarget, promotedSelf, false), index);
-                return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(inliningTarget, lresult, true));
+                                toNativeNode.execute(inliningTarget, promotedSelf), index);
+                return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.executeTransfer(inliningTarget, lresult));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
             }

@@ -303,7 +303,7 @@ public final class TpSlotSqAssItem {
             Object promotedValue = ensurePythonObjectNode.execute(context, value, false);
             try {
                 int iresult = ExternalFunctionInvoker.invokeSSIZEOBJARGPROC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                selfToNativeNode.execute(inliningTarget, promotedSelf, false), key, valueToNativeNode.execute(inliningTarget, promotedValue, false));
+                                selfToNativeNode.execute(inliningTarget, promotedSelf), key, valueToNativeNode.execute(inliningTarget, promotedValue));
                 checkResultNode.executeBool(inliningTarget, threadState, T___SETITEM__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);

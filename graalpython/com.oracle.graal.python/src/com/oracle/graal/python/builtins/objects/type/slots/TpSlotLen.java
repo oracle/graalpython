@@ -186,7 +186,7 @@ public abstract class TpSlotLen {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeLENFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.execute(inliningTarget, promotedSelf, false));
+                                toNativeNode.execute(inliningTarget, promotedSelf));
                 long l = checkResultNode.executeLong(inliningTarget, state, T___LEN__, lresult);
                 if (!PInt.isIntRange(l)) {
                     raiseOverflow(inliningTarget, raiseNode, l);

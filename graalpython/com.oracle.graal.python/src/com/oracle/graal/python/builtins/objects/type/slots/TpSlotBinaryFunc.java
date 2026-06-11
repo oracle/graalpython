@@ -165,8 +165,8 @@ public class TpSlotBinaryFunc {
             Object promotedArg = ensurePythonObjectNode.execute(ctx, arg, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeBINARYFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                selfToNativeNode.execute(inliningTarget, promotedSelf, false), argToNativeNode.execute(inliningTarget, promotedArg, false));
-                return checkResultNode.execute(state, T_BINARY_SLOT, toPythonNode.execute(inliningTarget, lresult, true));
+                                selfToNativeNode.execute(inliningTarget, promotedSelf), argToNativeNode.execute(inliningTarget, promotedArg));
+                return checkResultNode.execute(state, T_BINARY_SLOT, toPythonNode.executeTransfer(inliningTarget, lresult));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedArg);

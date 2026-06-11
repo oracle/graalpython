@@ -186,7 +186,7 @@ public abstract class TpSlotHashFun {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeHASHFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.execute(inliningTarget, promotedSelf, false));
+                                toNativeNode.execute(inliningTarget, promotedSelf));
                 return checkResultNode.executeLong(inliningTarget, state, T___HASH__, lresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);

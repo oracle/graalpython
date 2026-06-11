@@ -346,16 +346,16 @@ public final class TpSlotVarargs {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(inliningTarget), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = toNativeNode.execute(inliningTarget, managedArgsTuple, false);
+                argsTuplePtr = toNativeNode.execute(inliningTarget, managedArgsTuple);
             }
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
             try {
                 long nativeResult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.execute(inliningTarget, promotedSelf, false),
+                                toNativeNode.execute(inliningTarget, promotedSelf),
                                 argsTuplePtr,
-                                toNativeNode.execute(inliningTarget, kwargsDict, false));
-                return checkResultNode.execute(state, name, toPythonNode.execute(inliningTarget, nativeResult, true, true));
+                                toNativeNode.execute(inliningTarget, kwargsDict));
+                return checkResultNode.execute(state, name, toPythonNode.executeTransferAndRelease(inliningTarget, nativeResult));
             } finally {
                 if (managedArgsTuple != null) {
                     eagerTupleState.report(inliningTarget, managedArgsTuple);
@@ -414,15 +414,15 @@ public final class TpSlotVarargs {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(inliningTarget), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = toNativeNode.execute(inliningTarget, managedArgsTuple, false);
+                argsTuplePtr = toNativeNode.execute(inliningTarget, managedArgsTuple);
             }
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
             try {
                 int nativeResult = ExternalFunctionInvoker.invokeINITPROC(frame, C_API_TIMING, context.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.execute(inliningTarget, promotedSelf, false),
+                                toNativeNode.execute(inliningTarget, promotedSelf),
                                 argsTuplePtr,
-                                toNativeNode.execute(inliningTarget, kwargsDict, false));
+                                toNativeNode.execute(inliningTarget, kwargsDict));
                 checkResultNode.executeInt(inliningTarget, state, T___INIT__, nativeResult);
             } finally {
                 if (managedArgsTuple != null) {

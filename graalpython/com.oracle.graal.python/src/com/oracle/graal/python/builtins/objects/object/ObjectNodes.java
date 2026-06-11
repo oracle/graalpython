@@ -627,7 +627,7 @@ public abstract class ObjectNodes {
         static boolean doNative(Node inliningTarget, @SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
                         @Cached PythonToNativeInternalNode toNativeNode) {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(type);
-            long typePointer = toNativeNode.execute(inliningTarget, type, false);
+            long typePointer = toNativeNode.execute(inliningTarget, type);
             try {
                 return ExternalFunctionInvoker.invokeCHECK_BASICSIZE_FOR_GETSTATE(
                                 CApiContext.getNativeSymbol(inliningTarget, FUN_CHECK_BASICSIZE_FOR_GETSTATE).getAddress(), typePointer,

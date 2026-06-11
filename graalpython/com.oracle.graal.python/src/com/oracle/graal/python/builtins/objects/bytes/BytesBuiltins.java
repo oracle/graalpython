@@ -201,14 +201,14 @@ public class BytesBuiltins extends PythonBuiltins {
                             @Cached CApiTransitions.PythonToNativeInternalNode toNative,
                             @Cached CApiTransitions.NativeToPythonInternalNode toPython) {
                 long dataPointer = asCharPointerNode.execute(bytes);
-                long clsPointer = toNative.execute(inliningTarget, cls, false);
+                long clsPointer = toNative.execute(inliningTarget, cls);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, FUN_BYTES_SUBTYPE_NEW);
                     long result = ExternalFunctionInvoker.invokeBYTES_SUBTYPE_NEW(null, C_API_TIMING,
                                     context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                     context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer, dataPointer, bytes.length);
-                    return toPython.execute(inliningTarget, result, true);
+                    return toPython.executeTransfer(inliningTarget, result);
                 } finally {
                     Reference.reachabilityFence(cls);
                     NativeMemory.free(dataPointer);
