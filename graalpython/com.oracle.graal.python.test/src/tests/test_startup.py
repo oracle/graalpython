@@ -44,6 +44,19 @@ import subprocess
 import platform
 
 # Both lists should remain as small as possible to avoid adding overhead to startup
+IS_WINDOWS = platform.system() == 'Windows'
+WINDOWS_CORE_MODULES = ['_nt', '_winapi', '_overlapped', 'winreg', '_winreg'] if IS_WINDOWS else []
+WINDOWS_FULL_STARTUP_MODULES = [
+    '_datetime',
+    'datetime',
+    '_ctypes',
+    '_struct',
+    'struct',
+    'ctypes._endian',
+    'ctypes',
+    'ctypes.wintypes',
+] if IS_WINDOWS else []
+
 expected_nosite_startup_modules = [
     '_frozen_importlib',
     '_frozen_importlib_external',
@@ -52,7 +65,7 @@ expected_nosite_startup_modules = [
     '_sysconfig',
     'java',
     'pip_hook',
-] + (['_nt'] if platform.system() == 'Windows' else [])
+] + WINDOWS_CORE_MODULES
 
 expected_full_startup_modules = expected_nosite_startup_modules + [
     '_abc',
@@ -63,11 +76,12 @@ expected_full_startup_modules = expected_nosite_startup_modules + [
     'stat',
     '_collections_abc',
     'genericpath',
-    *(['_winapi', 'ntpath'] if platform.system() == 'Windows' else ['posixpath']),
+    *(['ntpath'] if IS_WINDOWS else ['posixpath']),
     'os',
     '_sitebuiltins',
     '_io',
     'io',
+    *WINDOWS_FULL_STARTUP_MODULES,
     'site',
 ]
 
@@ -76,12 +90,12 @@ class StartupTests(unittest.TestCase):
     def test_startup_nosite(self):
         result = subprocess.check_output([sys.executable, '--log.level=FINE', '-S', '-v', '-c', 'print("Hello")'], stderr=subprocess.STDOUT, text=True)
         assert 'Hello' in result
-        imports = re.findall("import '(\S+)'", result)
+        imports = re.findall(r"import '(\S+)'", result)
         self.assertEqual(expected_nosite_startup_modules, imports)
 
     @unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-specific test")
     def test_startup_full(self):
         result = subprocess.check_output([sys.executable, '--log.level=FINE', '-s', '-v', '-c', 'print("Hello")'], stderr=subprocess.STDOUT, text=True)
         assert 'Hello' in result
-        imports = re.findall("import '(\S+)'", result)
+        imports = re.findall(r"import '(\S+)'", result)
         self.assertEqual(expected_full_startup_modules, imports)
