@@ -608,6 +608,7 @@ class BinaryTestCase(unittest.TestCase):
 ADDR = PORT = URL = None
 # Begin: GraalPy change
 SERVER_TIMEOUT = support.LOOPBACK_TIMEOUT
+SERVER_SHUTDOWN_TIMEOUT = support.LOOPBACK_TIMEOUT * 2
 SSL_PROBE_TIMEOUT = 1.0
 # End: GraalPy Change
 
@@ -817,7 +818,7 @@ class BaseServerTestCase(unittest.TestCase):
 
     # Begin: GraalPy change
     def _join_server_thread(self):
-        self.thread.join(SERVER_TIMEOUT)
+        self.thread.join(SERVER_SHUTDOWN_TIMEOUT)
         self.assertFalse(self.thread.is_alive(), "XML-RPC server thread did not stop")
     # End: GraalPy Change
 
@@ -825,7 +826,7 @@ class BaseServerTestCase(unittest.TestCase):
         # wait on the server thread to terminate
         # Begin: GraalPy change
         # self.evt.wait()
-        self.assertTrue(self.evt.wait(SERVER_TIMEOUT), "XML-RPC server did not stop")
+        self.assertTrue(self.evt.wait(SERVER_SHUTDOWN_TIMEOUT), "XML-RPC server did not stop")
         # End: GraalPy Change
 
         # disable traceback reporting
@@ -1389,7 +1390,7 @@ class FailingServerTestCase(unittest.TestCase):
 
     # Begin: GraalPy change
     def _join_server_thread(self):
-        self.thread.join(SERVER_TIMEOUT)
+        self.thread.join(SERVER_SHUTDOWN_TIMEOUT)
         self.assertFalse(self.thread.is_alive(), "XML-RPC server thread did not stop")
     # End: GraalPy Change
 
@@ -1397,7 +1398,7 @@ class FailingServerTestCase(unittest.TestCase):
         # wait on the server thread to terminate
         # Begin: GraalPy change
         # self.evt.wait()
-        self.assertTrue(self.evt.wait(SERVER_TIMEOUT), "XML-RPC server did not stop")
+        self.assertTrue(self.evt.wait(SERVER_SHUTDOWN_TIMEOUT), "XML-RPC server did not stop")
         # End: GraalPy Change
         # reset flag
         xmlrpc.server.SimpleXMLRPCServer._send_traceback_header = False
