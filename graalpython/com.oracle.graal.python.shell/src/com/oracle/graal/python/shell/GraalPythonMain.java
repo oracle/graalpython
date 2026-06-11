@@ -1021,10 +1021,10 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static void applyRaisedJitThresholds(Map<String, String> polyglotOptions) {
-        polyglotOptions.put("engine.FirstTierCompilationThreshold", "10000");
-        polyglotOptions.put("engine.LastTierCompilationThreshold", "100000");
+        polyglotOptions.put("engine.FirstTierCompilationThreshold", "2000");
+        polyglotOptions.put("engine.LastTierCompilationThreshold", "50000");
         polyglotOptions.put("engine.OSRCompilationThreshold", "200704");
-        polyglotOptions.put("engine.SingleTierCompilationThreshold", "100000");
+        polyglotOptions.put("engine.SingleTierCompilationThreshold", "10000");
     }
 
     private static String toAbsolutePath(String executable) {
