@@ -420,6 +420,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import org.graalvm.nativeimage.ImageInfo;
 
 /**
  * The core is a historical artifact and PythonContext and Python3Core should be merged.
@@ -437,18 +438,13 @@ public abstract class Python3Core {
 
     private static TruffleString[] getCoreFiles() {
         // Order matters!
-        List<TruffleString> coreFiles = List.of(
+        return new TruffleString[]{
                         T___GRAALPYTHON__,
                         T__SRE,
                         T__SYSCONFIG,
                         T_JAVA,
-                        toTruffleStringUncached("pip_hook"));
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            coreFiles = new ArrayList<>(coreFiles);
-            coreFiles.add(toTruffleStringUncached("_nt"));
-        }
-
-        return coreFiles.toArray(new TruffleString[0]);
+                        toTruffleStringUncached("pip_hook")
+        };
     }
 
     private PythonBuiltins[] builtins;
@@ -1052,13 +1048,17 @@ public abstract class Python3Core {
         for (TruffleString s : getCoreFiles()) {
             loadFile(s, coreHome);
         }
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        initialized = true;
+    }
+
+    private void initializeWindowsCoreFiles(TruffleString coreHome) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && !ImageInfo.inImageBuildtimeCode()) {
+            loadFile(toTruffleStringUncached("_nt"), coreHome);
             loadFile(toTruffleStringUncached("_winapi"), toTruffleStringUncached("modules/_winapi"), coreHome);
             loadFile(toTruffleStringUncached("_overlapped"), toTruffleStringUncached("modules/_overlapped"), coreHome);
             loadFile(toTruffleStringUncached("winreg"), toTruffleStringUncached("modules/winreg"), coreHome);
             loadFile(toTruffleStringUncached("_winreg"), toTruffleStringUncached("modules/_winreg"), coreHome);
         }
-        initialized = true;
     }
 
     /**
@@ -1069,6 +1069,7 @@ public abstract class Python3Core {
     public final void postInitialize(Env env) {
         if (!env.isPreInitialization()) {
             initialized = false;
+            initializeWindowsCoreFiles(getContext().getCoreHomeOrFail());
 
             for (PythonBuiltins builtin : builtins) {
                 if (builtin.needsPostInitialize()) {
