@@ -446,10 +446,6 @@ public abstract class Python3Core {
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             coreFiles = new ArrayList<>(coreFiles);
             coreFiles.add(toTruffleStringUncached("_nt"));
-            coreFiles.add(toTruffleStringUncached("_winapi"));
-            coreFiles.add(toTruffleStringUncached("_overlapped"));
-            coreFiles.add(toTruffleStringUncached("winreg"));
-            coreFiles.add(toTruffleStringUncached("_winreg"));
         }
 
         return coreFiles.toArray(new TruffleString[0]);
@@ -1056,6 +1052,12 @@ public abstract class Python3Core {
         for (TruffleString s : getCoreFiles()) {
             loadFile(s, coreHome);
         }
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            loadFile(toTruffleStringUncached("_winapi"), toTruffleStringUncached("modules/_winapi"), coreHome);
+            loadFile(toTruffleStringUncached("_overlapped"), toTruffleStringUncached("modules/_overlapped"), coreHome);
+            loadFile(toTruffleStringUncached("winreg"), toTruffleStringUncached("modules/winreg"), coreHome);
+            loadFile(toTruffleStringUncached("_winreg"), toTruffleStringUncached("modules/_winreg"), coreHome);
+        }
         initialized = true;
     }
 
@@ -1327,15 +1329,23 @@ public abstract class Python3Core {
     }
 
     private void loadFile(TruffleString s, TruffleString prefix) {
+        loadFile(s, s, prefix);
+    }
+
+    private void loadFile(TruffleString s, TruffleString sourceName, TruffleString prefix) {
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
             mod = PFactory.createPythonModule(T___ANONYMOUS__);
         }
-        loadFile(s, prefix, mod);
+        loadFile(s, sourceName, prefix, mod);
     }
 
     private void loadFile(TruffleString s, TruffleString prefix, PythonModule mod) {
+        loadFile(s, s, prefix, mod);
+    }
+
+    private void loadFile(TruffleString s, TruffleString sourceName, TruffleString prefix, PythonModule mod) {
         if (ImpModuleBuiltins.importFrozenModuleObjectNoRaise(this, cat(T_GRAALPYTHON, T_DOT, s), mod) != null) {
             LOGGER.log(Level.FINE, () -> "import '" + s + "' # <frozen>");
             return;
@@ -1343,10 +1353,10 @@ public abstract class Python3Core {
 
         LOGGER.log(Level.FINE, () -> "import '" + s + "'");
         Supplier<CallTarget> getCode = () -> {
-            Source source = getInternalSource(s, prefix);
+            Source source = getInternalSource(sourceName, prefix);
             return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
         };
-        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
+        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(sourceName, getCode);
         PCode code = PFactory.createCode(language, callTarget);
         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(code, mod));
     }
