@@ -598,7 +598,7 @@ public abstract class ExternalFunctionNodes {
                 nativeToPythonReturnNode = insert(NativeToPythonReturnNode.create());
                 checkResultNode = insert(PyObjectCheckFunctionResultNodeGen.create());
             }
-            return checkResultNode.execute(context, name, nativeToPythonReturnNode.executeRaw(lresult));
+            return checkResultNode.execute(context, name, nativeToPythonReturnNode.execute(lresult));
         }
     }
 
@@ -655,7 +655,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         final Object returnNativeObjectToPython(long lresult) {
-            Object result = ensureNativeToPythonReturnNode().executeRaw(lresult);
+            Object result = ensureNativeToPythonReturnNode().execute(lresult);
             if (result == PNone.NO_VALUE) {
                 transformExceptionFromNative();
             }
@@ -1914,7 +1914,7 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             long lresult = invokeExternalFunction(frame, boundFunction, self);
             PythonContext context = PythonContext.get(this);
-            return checkIterNextResultNode.execute(context.getThreadState(context.getLanguage()), ensureNativeToPythonReturnNode().executeRaw(lresult));
+            return checkIterNextResultNode.execute(context.getThreadState(context.getLanguage()), ensureNativeToPythonReturnNode().execute(lresult));
         }
 
         @Override

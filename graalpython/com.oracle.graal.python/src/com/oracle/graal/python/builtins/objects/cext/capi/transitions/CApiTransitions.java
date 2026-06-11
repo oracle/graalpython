@@ -91,7 +91,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.AllocateNativeObjectStubNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonClassInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonClassNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonInternalNodeGen;
@@ -1713,11 +1712,9 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     public abstract static class CharPtrToPythonNode extends CExtToJavaNode {
 
-        public abstract Object executePointer(long pointer);
-
         @TruffleBoundary
         public static Object executeUncached(long pointer) {
-            return CApiTransitionsFactory.CharPtrToPythonNodeGen.getUncached().executePointer(pointer);
+            return CApiTransitionsFactory.CharPtrToPythonNodeGen.getUncached().execute(pointer);
         }
 
         @Specialization
@@ -2208,11 +2205,9 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     public abstract static class NativeToPythonNode extends CExtToJavaNode {
 
-        public abstract Object executeRaw(long pointer);
-
         @TruffleBoundary
         public static Object executeRawUncached(long pointer) {
-            return NativeToPythonNodeGen.getUncached().executeRaw(pointer);
+            return NativeToPythonNodeGen.getUncached().execute(pointer);
         }
 
         @TruffleBoundary
@@ -2241,13 +2236,6 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     public abstract static class NativeToPythonTransferNode extends CExtToJavaNode {
 
-        public abstract Object executeRaw(long pointer);
-
-        @TruffleBoundary
-        public static Object executeRawUncached(long pointer) {
-            return NativeToPythonTransferNodeGen.getUncached().executeRaw(pointer);
-        }
-
         @Specialization
         static Object doLong(long pointer,
                         @Bind Node inliningTarget,
@@ -2269,11 +2257,9 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     public abstract static class NativeToPythonReturnNode extends CExtToJavaNode {
 
-        public abstract Object executeRaw(long pointer);
-
         @TruffleBoundary
         public static Object executeUncached(long pointer) {
-            return NativeToPythonReturnNodeGen.getUncached().executeRaw(pointer);
+            return NativeToPythonReturnNodeGen.getUncached().execute(pointer);
         }
 
         @Specialization
