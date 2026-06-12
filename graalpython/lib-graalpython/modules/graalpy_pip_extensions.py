@@ -345,7 +345,7 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
                 logger.info(f"Patching package {name} using {patch}")
                 exe = '.exe' if os.name == 'nt' else ''
                 try:
-                    subprocess.run([f"patch{exe}", "-f", "-d", location, "-p1", "-i", str(patch_path)], check=True)
+                    subprocess.run([f"patch{exe}", "-f", "-d", str(location), "-p1", "-i", str(patch_path)], check=True)
                 except FileNotFoundError:
                     logger.warning(
                         "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
