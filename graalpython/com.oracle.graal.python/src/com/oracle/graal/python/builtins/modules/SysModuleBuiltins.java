@@ -935,8 +935,16 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 Future<Void> future = context.getEnv().submitThreadLocal(threadArray, new ThreadLocalAction(true, false) {
                     @Override
                     protected void perform(Access access) {
+                        /*
+                         * Force-escape the frame while we are still running in the target thread.
+                         * Otherwise, the TLA can capture a frame after that frame has already
+                         * checked info.isEscaped() in CalleeContext.exitImpl. Merely marking the
+                         * returned PFrame as escaped would then be too late: the frame can unwind
+                         * without exitEscaped filling in callerInfo, and f_back would be unable to
+                         * recover the caller by stack-walking from the already-unwound frame.
+                         */
                         PFrame pyFrame = ReadFrameNode.readFrameInThreadLocal(access, null, FrameAccess.READ_ONLY, AllPythonFramesSelector.INSTANCE, 0, CallerFlags.NEEDS_PFRAME,
-                                        MaterializeFrameNode.getUncached());
+                                        MaterializeFrameNode.getUncached(), true);
                         frames.put(access.getThread(), escapedFrameOrPlaceholder(pyFrame));
                     }
                 });

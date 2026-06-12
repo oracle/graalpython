@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
+import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -290,12 +291,20 @@ public abstract class ReadFrameNode extends Node {
 
     public static PFrame readFrameInThreadLocal(Access access, Reference startFrameInfo, FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
                     MaterializeFrameNode materializeFrameNode) {
+        return readFrameInThreadLocal(access, startFrameInfo, frameAccess, selector, level, callerFlags, materializeFrameNode, false);
+    }
+
+    public static PFrame readFrameInThreadLocal(Access access, Reference startFrameInfo, FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
+                    MaterializeFrameNode materializeFrameNode, boolean forceEscape) {
         Node location = access.getLocation();
         if (location instanceof PBytecodeDSLRootNode) {
             // See AsyncPythonAction#execute for explanation
             location = PythonLanguage.get(null).unavailableSafepointLocation;
         }
         StackWalkResult result = ReadFrameNode.getFrame(location, startFrameInfo, frameAccess, selector, level, callerFlags);
+        if (forceEscape && result != null) {
+            CalleeContext.forceEscapeFrame(result.frame, getMaterializationLocation(result), PArguments.getCurrentFrameInfo(result.frame), materializeFrameNode);
+        }
         return processStackWalkResult(materializeFrameNode, callerFlags, result);
     }
 
@@ -308,17 +317,22 @@ public abstract class ReadFrameNode extends Node {
 
     private static PFrame processStackWalkResult(MaterializeFrameNode materializeFrameNode, int callerFlags, StackWalkResult callerFrameResult) {
         if (callerFrameResult != null) {
-            Node location = callerFrameResult.callNode;
-            if (!(callerFrameResult.rootNode instanceof PBytecodeDSLRootNode) && location == null) {
-                /*
-                 * We can fixup the location like this only for other root nodes, for Bytecode DSL
-                 * we need the BytecodeNode
-                 */
-                location = callerFrameResult.rootNode;
-            }
+            Node location = getMaterializationLocation(callerFrameResult);
             return materializeFrameNode.execute(location, false, CallerFlags.needsLocals(callerFlags), callerFrameResult.frame);
         }
         return null;
+    }
+
+    private static Node getMaterializationLocation(StackWalkResult callerFrameResult) {
+        Node location = callerFrameResult.callNode;
+        if (!(callerFrameResult.rootNode instanceof PBytecodeDSLRootNode) && location == null) {
+            /*
+             * We can fixup the location like this only for other root nodes, for Bytecode DSL we
+             * need the BytecodeNode
+             */
+            location = callerFrameResult.rootNode;
+        }
+        return location;
     }
 
     /**

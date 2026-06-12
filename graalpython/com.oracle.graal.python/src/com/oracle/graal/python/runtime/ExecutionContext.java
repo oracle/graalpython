@@ -436,7 +436,10 @@ public abstract class ExecutionContext {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 everEscaped = true;
             }
-            // This assumption acts as our branch profile here
+            forceEscapeFrame(frame, location, info, ensureMaterializeNode());
+        }
+
+        public static void forceEscapeFrame(Frame frame, Node location, Reference info, MaterializeFrameNode materializeNode) {
             Reference callerInfo = info.getCallerInfo();
             if (callerInfo == null) {
                 // we didn't request the caller frame reference. now we need it.
@@ -460,11 +463,7 @@ public abstract class ExecutionContext {
             // initializations (importing a module) from invalidating the assumption
 
             // force the frame so that it can be accessed later
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && node instanceof PBytecodeDSLRootNode) {
-                ensureMaterializeNode().executeOnStack(frame, (BytecodeNode) location, false, true);
-            } else {
-                ensureMaterializeNode().executeOnStack(frame, node, false, true);
-            }
+            materializeNode.execute(location, false, true, frame);
             // if this frame escaped we must ensure that also f_back does
             callerInfo.markAsEscaped();
             info.setCallerInfo(callerInfo);
