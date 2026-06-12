@@ -1,4 +1,4 @@
-# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,35 +37,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import nt
-
-
-def _add_dll_directory(path):
-    import ctypes, os
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel32.GetLastError.argtypes = []
-    kernel32.GetLastError.restype = ctypes.c_ulong
-    AddDllDirectory = kernel32.AddDllDirectory
-    AddDllDirectory.argtypes = [ctypes.c_wchar_p]
-    AddDllDirectory.restype = ctypes.c_void_p
-    result = AddDllDirectory(os.fspath(path))
-    if result == 0:
-        raise OSError(f"add_dll_directory: {kernel32.GetLastError()}")
-    return result
-
-
-def _remove_dll_directory(cookie):
-    import ctypes
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel32.GetLastError.argtypes = []
-    kernel32.GetLastError.restype = ctypes.c_ulong
-    RemoveDllDirectory = kernel32.RemoveDllDirectory
-    RemoveDllDirectory.argtypes = [ctypes.c_void_p]
-    RemoveDllDirectory.restype = ctypes.c_int
-    result = RemoveDllDirectory(cookie)
-    if result == 0:
-        raise OSError(f"remove_dll_directory: {kernel32.GetLastError()}")
-
-
-nt._add_dll_directory = _add_dll_directory
-nt._remove_dll_directory = _remove_dll_directory
+from winreg import *

@@ -898,4 +898,9 @@ class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
     _loop_factory = ProactorEventLoop
 
 
-DefaultEventLoopPolicy = WindowsProactorEventLoopPolicy
+if sys.implementation.name == "graalpy":
+    # GraalPy does not implement the full _overlapped IOCP surface yet. Use
+    # the selector loop as the default so basic asyncio loop creation works.
+    DefaultEventLoopPolicy = WindowsSelectorEventLoopPolicy
+else:
+    DefaultEventLoopPolicy = WindowsProactorEventLoopPolicy

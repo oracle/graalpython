@@ -1551,7 +1551,6 @@ class TestObject(unittest.TestCase):
         obj.clear_value()
         assert value == (1, 2, 3, "hello", "world", dummy)
 
-    @skipIf(is_windows, reason="GR-52900")
     def test_async_slots(self):
         import asyncio, types, functools
         TestTpAsync = CPyExtType("TestTpAsync",

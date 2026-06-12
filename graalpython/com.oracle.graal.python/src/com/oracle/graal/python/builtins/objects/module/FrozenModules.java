@@ -103,7 +103,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", null, false);
         private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", null, false);
         private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", null, false);
-        private static final PythonFrozenModule GRAALPY__NT = new PythonFrozenModule("GRAALPY__NT", null, false);
     }
 
     public static final PythonFrozenModule lookup(String name) {
@@ -236,8 +235,6 @@ public final class FrozenModules {
                 return Map.GRAALPY_JAVA;
             case "graalpy.pip_hook":
                 return Map.GRAALPY_PIP_HOOK;
-            case "graalpy._nt":
-                return Map.GRAALPY__NT;
             default:
                 return null;
         }

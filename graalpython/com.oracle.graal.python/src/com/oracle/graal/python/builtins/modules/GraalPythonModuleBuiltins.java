@@ -563,8 +563,11 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     cacheKey = ARRAY_ACCESSOR_LE.getLong(bytes, 8);
                 }
                 if (context.getOption(PythonOptions.VerboseFlag)) {
-                    Object message = PyObjectCallMethodObjArgs.executeUncached(MESSAGE, T_FORMAT, bytecodePath, sourcePath);
-                    CallNode.executeUncached(context.lookupBuiltinModule(T__BOOTSTRAP).getAttribute(T__VERBOSE_MESSAGE), message);
+                    PythonModule bootstrap = context.lookupBuiltinModule(T__BOOTSTRAP);
+                    if (bootstrap != null) {
+                        Object message = PyObjectCallMethodObjArgs.executeUncached(MESSAGE, T_FORMAT, bytecodePath, sourcePath);
+                        CallNode.executeUncached(bootstrap.getAttribute(T__VERBOSE_MESSAGE), message);
+                    }
                 }
                 TruffleFile sourceFile = null;
                 if (sourcePath != PNone.NONE) {

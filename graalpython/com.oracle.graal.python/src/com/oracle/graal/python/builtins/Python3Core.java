@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MsvcrtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.NtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.OperatorModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.OverlappedModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
@@ -122,6 +123,7 @@ import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WinapiModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.WinregLegacyModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WinregModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstBuiltins;
 import com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins;
@@ -418,6 +420,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import org.graalvm.nativeimage.ImageInfo;
 
 /**
  * The core is a historical artifact and PythonContext and Python3Core should be merged.
@@ -435,18 +438,13 @@ public abstract class Python3Core {
 
     private static TruffleString[] getCoreFiles() {
         // Order matters!
-        List<TruffleString> coreFiles = List.of(
+        return new TruffleString[]{
                         T___GRAALPYTHON__,
                         T__SRE,
                         T__SYSCONFIG,
                         T_JAVA,
-                        toTruffleStringUncached("pip_hook"));
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            coreFiles = new ArrayList<>(coreFiles);
-            coreFiles.add(toTruffleStringUncached("_nt"));
-        }
-
-        return coreFiles.toArray(new TruffleString[0]);
+                        toTruffleStringUncached("pip_hook")
+        };
     }
 
     private PythonBuiltins[] builtins;
@@ -561,6 +559,8 @@ public abstract class Python3Core {
                         new WinregModuleBuiltins(),
                         new MsvcrtModuleBuiltins(),
                         new WinapiModuleBuiltins(),
+                        new OverlappedModuleBuiltins(),
+                        new WinregLegacyModuleBuiltins(),
                         new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
@@ -1051,6 +1051,17 @@ public abstract class Python3Core {
         initialized = true;
     }
 
+    private void initializeWindowsCoreFiles(TruffleString coreHome) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            assert !ImageInfo.inImageBuildtimeCode();
+            loadFile(toTruffleStringUncached("_nt"), coreHome);
+            loadFile(toTruffleStringUncached("_winapi"), toTruffleStringUncached("modules/_winapi"), coreHome);
+            loadFile(toTruffleStringUncached("_overlapped"), toTruffleStringUncached("modules/_overlapped"), coreHome);
+            loadFile(toTruffleStringUncached("winreg"), toTruffleStringUncached("modules/winreg"), coreHome);
+            loadFile(toTruffleStringUncached("_winreg"), toTruffleStringUncached("modules/_winreg"), coreHome);
+        }
+    }
+
     /**
      * Run post-initialization code that needs a fully working Python environment. This will be run
      * eagerly when the context is initialized on the JVM or a new context is created on SVM, but is
@@ -1059,6 +1070,7 @@ public abstract class Python3Core {
     public final void postInitialize(Env env) {
         if (!env.isPreInitialization()) {
             initialized = false;
+            initializeWindowsCoreFiles(getContext().getCoreHomeOrFail());
 
             for (PythonBuiltins builtin : builtins) {
                 if (builtin.needsPostInitialize()) {
@@ -1319,15 +1331,23 @@ public abstract class Python3Core {
     }
 
     private void loadFile(TruffleString s, TruffleString prefix) {
+        loadFile(s, s, prefix);
+    }
+
+    private void loadFile(TruffleString s, TruffleString sourceName, TruffleString prefix) {
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
             mod = PFactory.createPythonModule(T___ANONYMOUS__);
         }
-        loadFile(s, prefix, mod);
+        loadFile(s, sourceName, prefix, mod);
     }
 
     private void loadFile(TruffleString s, TruffleString prefix, PythonModule mod) {
+        loadFile(s, s, prefix, mod);
+    }
+
+    private void loadFile(TruffleString s, TruffleString sourceName, TruffleString prefix, PythonModule mod) {
         if (ImpModuleBuiltins.importFrozenModuleObjectNoRaise(this, cat(T_GRAALPYTHON, T_DOT, s), mod) != null) {
             LOGGER.log(Level.FINE, () -> "import '" + s + "' # <frozen>");
             return;
@@ -1335,10 +1355,10 @@ public abstract class Python3Core {
 
         LOGGER.log(Level.FINE, () -> "import '" + s + "'");
         Supplier<CallTarget> getCode = () -> {
-            Source source = getInternalSource(s, prefix);
+            Source source = getInternalSource(sourceName, prefix);
             return getLanguage().parse(getContext(), source, InputType.FILE, false, 0, false, null, EnumSet.noneOf(FutureFeature.class));
         };
-        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(s, getCode);
+        RootCallTarget callTarget = (RootCallTarget) getLanguage().cacheCode(sourceName, getCode);
         PCode code = PFactory.createCode(language, callTarget);
         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(code, mod));
     }

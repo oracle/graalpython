@@ -124,7 +124,6 @@ def add_graalpython_core():
         "_sysconfig",
         "java",
         "pip_hook",
-        "_nt",
     ]:
         modname = f"graalpy.{os.path.basename(name)}"
         modpath = os.path.join(lib_graalpython, f"{name}.py")
