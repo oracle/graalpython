@@ -1554,6 +1554,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "load_file", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LoadFile extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
         @Specialization
         static PNone doit(TruffleString name,
                         @Bind PythonContext context) {
