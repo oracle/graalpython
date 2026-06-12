@@ -25,7 +25,7 @@
 #
 # This license is subject to the following condition:
 #
-# The above copyright notice and either this complete permission notice or a
+# The above copyright notice and either this complete permission notice or at a
 # minimum a reference to the UPL must be included in all copies or substantial
 # portions of the Software.
 #
