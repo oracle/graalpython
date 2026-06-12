@@ -174,7 +174,7 @@ public final class TpSlotSqAssItem {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     fixNegativeIndex = insert(FixNegativeIndex.create());
                 }
-                size = fixNegativeIndex.execute(frame, size, index);
+                size = fixNegativeIndex.execute(frame, size, self);
             }
             slotNode.executeIntKey(frame, self, size, value);
             return PNone.NONE;
@@ -209,7 +209,7 @@ public final class TpSlotSqAssItem {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     fixNegativeIndex = insert(FixNegativeIndex.create());
                 }
-                size = fixNegativeIndex.execute(frame, size, index);
+                size = fixNegativeIndex.execute(frame, size, self);
             }
             slotNode.executeIntKey(frame, self, size, PNone.NO_VALUE);
             return PNone.NONE;

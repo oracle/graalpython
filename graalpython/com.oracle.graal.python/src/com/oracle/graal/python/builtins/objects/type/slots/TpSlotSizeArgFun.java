@@ -174,7 +174,7 @@ public class TpSlotSizeArgFun {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     fixNegativeIndex = insert(FixNegativeIndex.create());
                 }
-                size = fixNegativeIndex.execute(frame, size, index);
+                size = fixNegativeIndex.execute(frame, size, self);
             }
             return slotNode.execute(frame, self, size);
         }
@@ -210,17 +210,17 @@ public class TpSlotSizeArgFun {
 
     @GenerateInline(false) // lazy
     public abstract static class FixNegativeIndex extends Node {
-        public abstract int execute(VirtualFrame frame, int indexAsSize, Object indexObj);
+        public abstract int execute(VirtualFrame frame, int indexAsSize, Object self);
 
         @Specialization
-        static int doIt(VirtualFrame frame, int indexAsSize, Object indexObj,
+        static int doIt(VirtualFrame frame, int indexAsSize, Object self,
                         @Bind Node inliningTarget,
-                        @Cached GetObjectSlotsNode getIndexSlots,
+                        @Cached GetObjectSlotsNode getSelfSlots,
                         @Cached CallSlotLenNode callSlotLen) {
             assert indexAsSize < 0;
-            TpSlots indexSlots = getIndexSlots.execute(inliningTarget, indexObj);
-            if (indexSlots.sq_length() != null) {
-                int len = callSlotLen.execute(frame, inliningTarget, indexSlots.sq_length(), indexObj);
+            TpSlots selfSlots = getSelfSlots.execute(inliningTarget, self);
+            if (selfSlots.sq_length() != null) {
+                int len = callSlotLen.execute(frame, inliningTarget, selfSlots.sq_length(), self);
                 return indexAsSize + len;
             }
             return indexAsSize;
