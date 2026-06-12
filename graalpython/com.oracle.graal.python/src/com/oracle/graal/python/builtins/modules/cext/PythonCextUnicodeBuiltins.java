@@ -74,6 +74,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.getByteArray;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.lib.PyUnicodeFSDecoderNode.SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.PRECISION_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND;
@@ -909,6 +910,25 @@ public final class PythonCextUnicodeBuiltins {
         static Object fsDecoder(Object arg,
                         @Cached PyUnicodeFSDecoderNode fsDecoderNode) {
             return fsDecoderNode.execute(null, arg);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_Unicode_DecodeFSDefaultAndSize(long s, long lsize) {
+        // TODO: this implementation does not honor Py_FileSystemDefaultEncoding and Py_FileSystemDefaultEncodeErrors
+        try {
+            int size = PInt.intValueExact(lsize);
+            TruffleString candidate = TruffleString.fromNativePointerUncached(s, 0, size, UTF_8, true);
+            TruffleString str;
+            if (candidate.isValidUncached(UTF_8)) {
+                str = candidate.switchEncodingUncached(TS_ENCODING);
+            } else {
+                str = candidate.switchEncodingUncached(TS_ENCODING, SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER);
+            }
+            // implicitly promotes TruffleString to PString
+            return PythonToNativeInternalNode.executeNewRefUncached(str);
+        } catch (OverflowException e) {
+            throw PRaiseNode.raiseStatic(null, MemoryError);
         }
     }
 

@@ -3709,8 +3709,7 @@ PyObject*
 PyUnicode_DecodeFSDefaultAndSize(const char *s, Py_ssize_t size)
 {
     // GraalPy change: different implementation
-    // TODO: this implementation does not honor Py_FileSystemDefaultEncoding and Py_FileSystemDefaultEncodeErrors
-    return GraalPyPrivate_Unicode_FromUTF((void*) s, size, 1);
+    return GraalPyPrivate_Unicode_DecodeFSDefaultAndSize((void*) s, size);
 }
 
 

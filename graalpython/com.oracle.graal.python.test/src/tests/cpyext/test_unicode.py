@@ -1069,9 +1069,10 @@ class TestPyUnicode(CPyExtTestCase):
     )
 
     test_PyUnicode_FSDecoder = CPyExtFunction(
-        lambda args: str(args[0]),
+        lambda args: os.fsdecode(args[0]),
         lambda: (
             (os.path.realpath(os_helper.TESTFN),),
+            (b"name-\xff",),
         ),
         code='''PyObject* wrap_PyUnicode_FSDecoder(PyObject* path) {
             PyObject* res;
@@ -1086,6 +1087,51 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* path"],
         callfunction="wrap_PyUnicode_FSDecoder",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_DecodeFSDefault = CPyExtFunction(
+        lambda args: os.fsdecode(args[0]),
+        lambda: (
+            (b"name",),
+            (b"name-\xff",),
+        ),
+        code='''PyObject* wrap_PyUnicode_DecodeFSDefault(PyObject* path) {
+            char* data;
+            Py_ssize_t size;
+            if (PyBytes_AsStringAndSize(path, &data, &size) < 0) {
+                return NULL;
+            }
+            return PyUnicode_DecodeFSDefault(data);
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* path"],
+        callfunction="wrap_PyUnicode_DecodeFSDefault",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_DecodeFSDefaultAndSize = CPyExtFunction(
+        lambda args: os.fsdecode(args[0][:args[1]]),
+        lambda: (
+            (b"name", 4),
+            (b"name-\xff", 6),
+            (b"name-\xff-suffix", 6),
+        ),
+        code='''PyObject* wrap_PyUnicode_DecodeFSDefaultAndSize(PyObject* path, Py_ssize_t size) {
+            char* data;
+            Py_ssize_t path_size;
+            if (PyBytes_AsStringAndSize(path, &data, &path_size) < 0) {
+                return NULL;
+            }
+            return PyUnicode_DecodeFSDefaultAndSize(data, size);
+        }
+        ''',
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* path", "Py_ssize_t size"],
+        callfunction="wrap_PyUnicode_DecodeFSDefaultAndSize",
         cmpfunc=unhandled_error_compare
     )
 
