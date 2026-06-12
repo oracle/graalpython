@@ -47,6 +47,7 @@ from warnings import warn
 import graalpy_pip_extensions as graalpy
 
 
+# These events are emitted by the GraalOS pip patch; they are not upstream pip audit events.
 PIP_CLI_PARSE_ARGS = "pip.cli.parse_args"
 PIP_FIND_ALL_CANDIDATES = "pip.package_finder.find_all_candidates"
 PIP_REQUIREMENT_SOURCE_READY = "pip.requirement.source_ready"
