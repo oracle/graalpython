@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -262,7 +262,7 @@ public class TpSlotSizeArgFun {
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, int index,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
@@ -271,8 +271,8 @@ public class TpSlotSizeArgFun {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeSSIZEARGFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                toNativeNode.executeLong(promotedSelf), index);
-                return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(inliningTarget, lresult, true));
+                                toNativeNode.execute(inliningTarget, promotedSelf), index);
+                return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.executeTransfer(inliningTarget, lresult));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
             }

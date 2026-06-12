@@ -160,23 +160,23 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
         static Object doNativeSubtype(Object cls, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached.Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Bind PythonLanguage language,
-                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                        @Cached CApiTransitions.NativeToPythonTransferNode toPythonNode,
+                        @Cached CApiTransitions.PythonToNativeInternalNode toNativeNode,
+                        @Cached CApiTransitions.NativeToPythonInternalNode toPythonNode,
                         @Cached PyObjectCheckFunctionResultNode checkFunctionResultNode) {
             Object argsTuple = args.length > 0 ? PFactory.createTuple(language, args) : PFactory.createEmptyTuple(language);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
-            long clsPointer = toNativeNode.executeLong(cls);
-            long argsTuplePointer = toNativeNode.executeLong(argsTuple);
+            long clsPointer = toNativeNode.execute(inliningTarget, cls);
+            long argsTuplePointer = toNativeNode.execute(inliningTarget, argsTuple);
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
                 var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW);
                 long nativeResult = ExternalFunctionInvoker.invokeEXCEPTION_SUBTYPE_NEW(null, C_API_TIMING, context.ensureNativeContext(),
                                 BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, clsPointer, argsTuplePointer);
-                return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), toPythonNode.execute(nativeResult));
+                return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), toPythonNode.executeTransfer(inliningTarget, nativeResult));
             } finally {
                 Reference.reachabilityFence(cls);
                 Reference.reachabilityFence(argsTuple);

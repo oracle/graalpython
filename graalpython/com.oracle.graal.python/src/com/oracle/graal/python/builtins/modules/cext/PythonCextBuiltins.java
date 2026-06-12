@@ -136,8 +136,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ToNativeTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
@@ -730,7 +729,7 @@ public final class PythonCextBuiltins {
         private void castArguments(Object[] arguments, Object[] argCast) {
             for (int i = 0; i < argNodes.length; i++) {
                 Object arg = arguments[i];
-                argCast[i] = argNodes[i] == null ? arg : argNodes[i].execute(arg);
+                argCast[i] = argNodes[i] == null ? arg : argNodes[i].execute((Long) arg);
             }
         }
     }
@@ -842,7 +841,7 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored)
     static long GraalPyPrivate_FileSystemDefaultEncoding() {
-        return PythonToNativeNewRefNode.executeLongUncached(GetFileSystemEncodingNode.getFileSystemEncoding());
+        return PythonToNativeInternalNode.executeNewRefUncached(GetFileSystemEncodingNode.getFileSystemEncoding());
     }
 
     private static final TruffleString[] TYPE_LOOKUP_MODULES = new TruffleString[]{
@@ -852,17 +851,17 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = PyTypeObjectRawPointer, args = {ConstCharPtr}, call = Ignored)
     static long GraalPyPrivate_Type(long typeNamePtr) {
-        TruffleString typeName = (TruffleString) CharPtrToPythonNode.getUncached().execute(typeNamePtr);
+        TruffleString typeName = (TruffleString) CharPtrToPythonNode.executeUncached(typeNamePtr);
         Python3Core core = PythonContext.get(null).getCore();
         for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
             if (type.getName().equalsUncached(typeName, TS_ENCODING)) {
-                return PythonToNativeNewRefNode.executeLongUncached(core.lookupType(type));
+                return PythonToNativeInternalNode.executeNewRefUncached(core.lookupType(type));
             }
         }
         for (TruffleString module : TYPE_LOOKUP_MODULES) {
             Object attribute = core.lookupBuiltinModule(module).getAttribute(typeName);
             if (attribute != PNone.NO_VALUE) {
-                return PythonToNativeNewRefNode.executeLongUncached(attribute);
+                return PythonToNativeInternalNode.executeNewRefUncached(attribute);
             }
         }
         throw PRaiseNode.raiseStatic(null, PythonErrorType.KeyError, ErrorMessages.APOSTROPHE_S, typeName);
@@ -992,12 +991,12 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = PyFrameObjectRawPointer, args = {PyThreadState, PyCodeObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
     static long PyFrame_New(long threadState, long codePtr, long globalsPtr, long localsPtr) {
-        PCode code = (PCode) NativeToPythonNode.executeRawUncached(codePtr);
-        PythonObject globals = (PythonObject) NativeToPythonNode.executeRawUncached(globalsPtr);
-        Object locals = localsPtr == NULLPTR ? null : NativeToPythonNode.executeRawUncached(localsPtr);
+        PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
+        PythonObject globals = (PythonObject) NativeToPythonInternalNode.executeUncached(globalsPtr, false);
+        Object locals = localsPtr == NULLPTR ? null : NativeToPythonInternalNode.executeUncached(localsPtr, false);
         PythonLanguage language = PythonLanguage.get(null);
         Object frameLocals = locals == null || PGuards.isPNone(locals) ? PFactory.createDict(language) : locals;
-        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createPFrame(language, threadState, code, globals, frameLocals));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createPFrame(language, threadState, code, globals, frameLocals));
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {Pointer, PyObjectRawPointer, Py_ssize_t, Int, Py_ssize_t, ConstCharPtr, Int, Pointer, Pointer, Pointer, Pointer}, call = Ignored)
@@ -1006,8 +1005,8 @@ public final class PythonCextBuiltins {
         int itemsize = CastToJavaIntExactNode.executeUncached(itemsizeArg);
         int len = CastToJavaIntExactNode.executeUncached(lenArg);
         boolean readonly = readonlyArg != 0;
-        Object owner = ownerPtr == NULLPTR ? null : NativeToPythonNode.executeRawUncached(ownerPtr);
-        TruffleString format = (TruffleString) CharPtrToPythonNode.getUncached().execute(formatPtr);
+        Object owner = ownerPtr == NULLPTR ? null : NativeToPythonInternalNode.executeUncached(ownerPtr, false);
+        TruffleString format = (TruffleString) CharPtrToPythonNode.executeUncached(formatPtr);
         int[] shape = null;
         int[] strides = null;
         int[] suboffsets = null;
@@ -1036,7 +1035,7 @@ public final class PythonCextBuiltins {
         Object memoryView = PFactory.createMemoryView(PythonLanguage.get(null), PythonContext.get(null), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
                         BufferFormat.forMemoryView(format, TruffleString.CodePointLengthNode.getUncached(), TruffleString.CodePointAtIndexUTF32Node.getUncached()), format, ndim, bufPointer, 0,
                         shape, strides, suboffsets, flags);
-        return PythonToNativeNewRefNode.executeLongUncached(memoryView);
+        return PythonToNativeInternalNode.executeNewRefUncached(memoryView);
     }
 
     private static int[] readLongArrayElementsAsInts(long pointer, int elements) {
@@ -1451,7 +1450,7 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = Void, args = {Int, ConstCharPtr}, call = Ignored)
     @TruffleBoundary
     static void GraalPyPrivate_LogString(int level, long messagePtr) {
-        TruffleString message = (TruffleString) CharPtrToPythonNode.getUncached().execute(messagePtr);
+        TruffleString message = (TruffleString) CharPtrToPythonNode.executeUncached(messagePtr);
         String msg = message.toJavaStringUncached();
         switch (level) {
             case GRAALPY_LOG_INFO:
@@ -1652,7 +1651,7 @@ public final class PythonCextBuiltins {
 
     @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Ignored)
     static long GraalPyPrivate_GetMMapData(long objectPtr) {
-        PMMap object = (PMMap) NativeToPythonNode.executeRawUncached(objectPtr);
+        PMMap object = (PMMap) NativeToPythonInternalNode.executeUncached(objectPtr, false);
         PythonContext context = PythonContext.get(null);
         try {
             return PosixSupportLibrary.getUncached().mmapGetPointer(context.getPosixSupport(), object.getPosixSupportHandle());

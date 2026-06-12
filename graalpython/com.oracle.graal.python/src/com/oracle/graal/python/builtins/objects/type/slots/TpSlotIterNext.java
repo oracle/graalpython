@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -197,7 +197,7 @@ public final class TpSlotIterNext {
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
@@ -207,8 +207,8 @@ public final class TpSlotIterNext {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long nativeResult = ExternalFunctionInvoker.invokeITERNEXTFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.executeLong(promotedSelf));
-                Object pythonResult = toPythonNode.execute(inliningTarget, nativeResult, true);
+                                toNativeNode.execute(inliningTarget, promotedSelf));
+                Object pythonResult = toPythonNode.executeTransfer(inliningTarget, nativeResult);
                 if (pythonResult == PNone.NO_VALUE) {
                     Object currentException = readAndClearNativeException.execute(inliningTarget, state);
                     if (currentException != PNone.NO_VALUE) {

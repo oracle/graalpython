@@ -45,7 +45,6 @@ import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
 import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
 import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
 import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
@@ -138,7 +137,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
@@ -150,8 +148,6 @@ import sun.misc.Unsafe;
 @ExportLibrary(PosixSupportLibrary.class)
 public final class NativePosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "posix";
-    private static final Source NFI_WARMUP_SIGNATURE = Source.newBuilder(J_NFI_LANGUAGE, "with native ():void", "python-nfi-warmup").internal(true).build();
-
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
     private static final int PWD_OUTPUT_LEN = 5;
@@ -663,15 +659,6 @@ public final class NativePosixSupport extends PosixSupport {
     public void setEnv(Env env) {
         if (env.isPreInitialization()) {
             return;
-        }
-        // Load NFI on the Python thread before any blocking native read can pin it.
-        // Workaround for GR-75767
-        if (env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
-            try {
-                env.parseInternal(NFI_WARMUP_SIGNATURE).call();
-            } catch (RuntimeException e1) {
-                LOGGER.log(Level.FINE, "Failed to eagerly initialize NFI warmup signature.", e1);
-            }
         }
         // Java NIO (and TruffleFile) do not expect/support changing native working directory since
         // it is inherently thread-unsafe operation. It is not defined how NIO behaves when native

@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -224,9 +224,9 @@ public abstract class TpSlotDescrGet {
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self, Object obj, Object value,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached(inline = false) PythonToNativeNode selfToNativeNode,
-                        @Cached(inline = false) PythonToNativeNode objToNativeNode,
-                        @Cached(inline = false) PythonToNativeNode valueToNativeNode,
+                        @Cached PythonToNativeInternalNode selfToNativeNode,
+                        @Cached PythonToNativeInternalNode objToNativeNode,
+                        @Cached PythonToNativeInternalNode valueToNativeNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
@@ -237,10 +237,10 @@ public abstract class TpSlotDescrGet {
             Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeDESCRGETFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                selfToNativeNode.executeLong(promotedSelf), //
-                                objToNativeNode.executeLong(promotedObj), //
-                                valueToNativeNode.executeLong(promotedValue));
-                return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(inliningTarget, lresult, true));
+                                selfToNativeNode.execute(inliningTarget, promotedSelf), //
+                                objToNativeNode.execute(inliningTarget, promotedObj), //
+                                valueToNativeNode.execute(inliningTarget, promotedValue));
+                return checkResultNode.execute(threadState, T___GET__, toPythonNode.executeTransfer(inliningTarget, lresult));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedObj);

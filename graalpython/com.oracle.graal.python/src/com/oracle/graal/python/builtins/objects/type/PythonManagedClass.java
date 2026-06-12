@@ -35,7 +35,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -289,7 +289,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                     try {
                         ExternalFunctionInvoker.invokeTRUFFLE_CHECK_TYPE_READY(
                                         CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY).getAddress(),
-                                        PythonToNativeNode.executeLongUncached(base));
+                                        PythonToNativeInternalNode.executeUncached(base, false));
                     } catch (Throwable t) {
                         throw CompilerDirectives.shouldNotReachHere(t);
                     }

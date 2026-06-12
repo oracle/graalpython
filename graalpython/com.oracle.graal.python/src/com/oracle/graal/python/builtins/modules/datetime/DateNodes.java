@@ -60,13 +60,13 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -146,20 +146,20 @@ public class DateNodes {
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached ExternalFunctionNodes.PyObjectCheckFunctionResultNode checkFunctionResultNode,
-                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
-                        @Cached CApiTransitions.NativeToPythonTransferNode fromNativeNode) {
+                        @Cached CApiTransitions.PythonToNativeInternalNode toNativeNode,
+                        @Cached CApiTransitions.NativeToPythonInternalNode fromNativeNode) {
             if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
                 Shape shape = getInstanceShape.execute(cls);
                 return new PDate(cls, shape, year, month, day);
             } else {
-                long clsPointer = toNativeNode.executeLong(cls);
+                long clsPointer = toNativeNode.execute(inliningTarget, cls);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW);
                     long nativeResult = ExternalFunctionInvoker.invokeDATE_SUBTYPE_NEW(null, C_API_TIMING,
                                     context.ensureNativeContext(), BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, clsPointer,
                                     year, month, day);
-                    return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), fromNativeNode.execute(nativeResult));
+                    return checkFunctionResultNode.execute(context, NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), fromNativeNode.executeTransfer(inliningTarget, nativeResult));
                 } finally {
                     Reference.reachabilityFence(cls);
                 }

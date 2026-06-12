@@ -514,14 +514,6 @@ class InteropTests(unittest.TestCase):
         else:
             assert False, "requesting a non-existing host symbol should raise KeyError"
 
-    def test_internal_languages_dont_eval(self):
-        try:
-            polyglot.eval(language="nfi", string="default")
-        except ValueError as e:
-            assert str(e) == "polyglot language 'nfi' not found"
-
-        assert polyglot.eval(language="python", string="21 * 2") == 42
-
     def test_module_eval_returns_last_expr(self):
         assert polyglot.eval(language="python", string="x = 2; x") == 2
 

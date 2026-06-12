@@ -50,7 +50,7 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtr
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -64,15 +64,13 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.interop.InteropLibrary;
 
 /**
  * Emulates CPython's {@code PyThreadState} struct.
  * <p>
- * This wrapper does intentionally not implement {@link InteropLibrary#isPointer(Object)},
- * {@link InteropLibrary#asPointer(Object)}, and {@link InteropLibrary#toNative(Object)} because the
- * factory method {@link #getOrCreateNativeThreadState(PythonLanguage, PythonContext)} will already
- * return the appropriate pointer object that implements that.
+ * This wrapper intentionally does not expose pointer conversion because the factory method
+ * {@link #getOrCreateNativeThreadState(PythonLanguage, PythonContext)} returns the appropriate
+ * native pointer.
  * </p>
  */
 public abstract class PThreadState {
@@ -114,14 +112,14 @@ public abstract class PThreadState {
 
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict != null) {
-            assert PythonToNativeNode.executeLongUncached(threadStateDict) == CStructAccess.readPtrField(nativeThreadState, CFields.PyThreadState__dict);
+            assert PythonToNativeInternalNode.executeUncached(threadStateDict, false) == CStructAccess.readPtrField(nativeThreadState, CFields.PyThreadState__dict);
             return threadStateDict;
         }
 
         threadStateDict = PFactory.createDict(context.getLanguage());
         threadState.setDict(threadStateDict);
         assert CStructAccess.readPtrField(nativeThreadState, CFields.PyThreadState__dict) == NULLPTR;
-        CStructAccess.writePtrField(nativeThreadState, CFields.PyThreadState__dict, PythonToNativeNode.executeLongUncached(threadStateDict));
+        CStructAccess.writePtrField(nativeThreadState, CFields.PyThreadState__dict, PythonToNativeInternalNode.executeUncached(threadStateDict, false));
 
         return threadStateDict;
     }

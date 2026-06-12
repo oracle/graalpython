@@ -55,12 +55,12 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.HiddenAttr.AS_BUFFER;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -107,7 +106,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyDictSetItem;
-import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -119,6 +117,7 @@ import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.Function;
@@ -317,8 +316,8 @@ public final class PythonCextTypeBuiltins {
         try {
             Object type = NativeToPythonClassInternalNode.executeUncached(typeRaw);
             Object dict = NativeToPythonInternalNode.executeUncached(dictRaw, false);
-            TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(nameRaw);
-            Object doc = CharPtrToPythonNode.getUncached().execute(docRaw);
+            TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(nameRaw);
+            Object doc = CharPtrToPythonNode.executeUncached(docRaw);
             assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
             Object func = typeAddMethod(PythonLanguage.get(null), methodDefPtr, name, cfunc, flags, type, doc);
             PyDictSetDefault.executeUncached(dict, name, func);
@@ -348,9 +347,9 @@ public final class PythonCextTypeBuiltins {
     @TruffleBoundary
     public static int GraalPyPrivate_Type_AddMember(long clazzPtr, long tpDictPtr, long memberNamePtr, int memberType, long offset, int canSet, long memberDocPtr) {
         Object clazz = NativeToPythonClassInternalNode.executeUncached(clazzPtr);
-        PDict tpDict = (PDict) NativeToPythonNode.executeRawUncached(tpDictPtr);
-        TruffleString memberName = (TruffleString) CharPtrToPythonNode.getUncached().execute(memberNamePtr);
-        Object memberDoc = memberDocPtr == NULLPTR ? PNone.NO_VALUE : CharPtrToPythonNode.getUncached().execute(memberDocPtr);
+        PDict tpDict = (PDict) NativeToPythonInternalNode.executeUncached(tpDictPtr, false);
+        TruffleString memberName = (TruffleString) CharPtrToPythonNode.executeUncached(memberNamePtr);
+        Object memberDoc = memberDocPtr == NULLPTR ? PNone.NO_VALUE : CharPtrToPythonNode.executeUncached(memberDocPtr);
         return addMember(clazz, tpDict, memberName, memberType, offset, canSet, memberDoc);
     }
 
@@ -377,9 +376,9 @@ public final class PythonCextTypeBuiltins {
     @CApiBuiltin(ret = Int, args = {PyTypeObjectRawPointer, PyObjectRawPointer, ConstCharPtr, Pointer, Pointer, ConstCharPtr, Pointer}, call = Ignored)
     static int GraalPyPrivate_Type_AddGetSet(long clsPtr, long dictPtr, long namePtr, long getter, long setter, long docPtr, long closure) {
         Object cls = NativeToPythonClassInternalNode.executeUncached(clsPtr);
-        PDict dict = (PDict) NativeToPythonNode.executeRawUncached(dictPtr);
-        TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(namePtr);
-        Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : CharPtrToPythonNode.getUncached().execute(docPtr);
+        PDict dict = (PDict) NativeToPythonInternalNode.executeUncached(dictPtr, false);
+        TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(namePtr);
+        Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : CharPtrToPythonNode.executeUncached(docPtr);
         return addGetSet(cls, dict, name, getter, setter, doc, closure);
     }
 

@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -56,15 +56,15 @@ public final class PythonCextCodecBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct)
     static long PyCodec_Encoder(long encodingPtr) {
-        TruffleString encoding = (TruffleString) CharPtrToPythonNode.getUncached().execute(encodingPtr);
+        TruffleString encoding = (TruffleString) CharPtrToPythonNode.executeUncached(encodingPtr);
         PTuple codecInfo = CodecsModuleBuiltins.PyCodecLookupNode.executeUncached(encoding);
-        return PythonToNativeNewRefNode.executeLongUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(codecInfo.getSequenceStorage(), 0));
+        return PythonToNativeInternalNode.executeNewRefUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(codecInfo.getSequenceStorage(), 0));
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {ConstCharPtr}, call = Direct)
     static long PyCodec_Decoder(long encodingPtr) {
-        TruffleString encoding = (TruffleString) CharPtrToPythonNode.getUncached().execute(encodingPtr);
+        TruffleString encoding = (TruffleString) CharPtrToPythonNode.executeUncached(encodingPtr);
         PTuple codecInfo = CodecsModuleBuiltins.PyCodecLookupNode.executeUncached(encoding);
-        return PythonToNativeNewRefNode.executeLongUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(codecInfo.getSequenceStorage(), 1));
+        return PythonToNativeInternalNode.executeNewRefUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(codecInfo.getSequenceStorage(), 1));
     }
 }

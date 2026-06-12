@@ -93,12 +93,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -150,9 +149,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -310,8 +307,9 @@ public final class CApiContext extends CExtContext {
 
     /**
      * This list holds a strong reference to all loaded extension libraries to keep the library
-     * objects alive. This is necessary because NFI will {@code dlclose} the library (and thus
-     * {@code munmap} all code) if the library object is no longer reachable. However, it can happen
+     * objects alive. This is necessary because native library handles may {@code dlclose} the
+     * library (and thus {@code munmap} all code) if the library object is no longer reachable.
+     * However, it can happen
      * that we still store raw function pointers (as Java {@code long} values) in a native object
      * that is referenced by a
      * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeObjectReference}.
@@ -359,21 +357,6 @@ public final class CApiContext extends CExtContext {
 
     public ConcurrentWeakSet<PString> getPstringInterningCache() {
         return pstringInterningCache;
-    }
-
-    /**
-     * Tries to convert the object to a pointer (type: {@code long}) to avoid materialization of
-     * pointer objects. If that is not possible, the object will be returned as given.
-     */
-    public static Object asPointer(Object ptr, InteropLibrary lib) {
-        if (lib.isPointer(ptr)) {
-            try {
-                return lib.asPointer(ptr);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-        return ptr;
     }
 
     public long nextTssKey() {
@@ -532,17 +515,6 @@ public final class CApiContext extends CExtContext {
         return PythonContext.get(caller).getCApiContext().nativeCAPISymbols;
     }
 
-    public static boolean isIdenticalToSymbol(Object obj, NativeCAPISymbol symbol) {
-        CompilerAsserts.neverPartOfCompilation();
-        InteropLibrary objLib = InteropLibrary.getUncached(obj);
-        objLib.toNative(obj);
-        try {
-            return isIdenticalToSymbol(objLib.asPointer(obj), symbol);
-        } catch (UnsupportedMessageException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static boolean isIdenticalToSymbol(long ptr, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
         NativeFunctionPointer nativeSymbol = getNativeSymbol(null, symbol);
@@ -598,8 +570,7 @@ public final class CApiContext extends CExtContext {
         if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
             return;
         }
-        NativePointer testCAPIPointer = context.allocateContextMemory(CStructs.GraalPy_Test_CAPI.size());
-        long testCAPI = testCAPIPointer.asPointer();
+        long testCAPI = context.allocateContextMemory(CStructs.GraalPy_Test_CAPI.size());
         long[] testCAPIFunctions = {
                         PythonCextBuiltinRegistry.GraalPyPrivate_ToNative.getNativePointer(),
                         PythonCextBuiltinRegistry.GraalPyPrivate_DisableReferenceQueuePolling.getNativePointer(),
@@ -1004,7 +975,6 @@ public final class CApiContext extends CExtContext {
                                                 "cannot use native module.", actualReason)));
             }
             loc = new NativeLibraryLocator(context, capiFile, isolateNative);
-            context.ensureNFILanguage(node, "allowNativeAccess", "true");
             int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
             NativeContext nativeContext = context.ensureNativeContext();
@@ -1196,8 +1166,8 @@ public final class CApiContext extends CExtContext {
      * finalization didn't run.
      *
      * The memory of the shared library may have been re-used if the GraalPy context was shut down
-     * (cleanly or not), the sources were collected, and NFI's mechanism for unloading libraries
-     * triggered a dlclose that dropped the refcount of the python-native library to 0. We leak 1
+     * (cleanly or not), the sources were collected, and native library unloading triggered a
+     * dlclose that dropped the refcount of the python-native library to 0. We leak 1
      * byte of memory and this shutdown hook for each context that ever initialized the C API.
      */
     private void addNativeFinalizer(PythonContext context, long finalizingPointer) {
@@ -1333,7 +1303,7 @@ public final class CApiContext extends CExtContext {
         long nativeResult = ExternalFunctionInvoker.invokeMODINIT(null, TIMING_INVOKE_MODULE_INIT, nativeContext, BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage()),
                         ExternalFunctionSignature.MODINIT.bind(nativeContext, pyinitFunc));
 
-        Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonNode.executeUncached(nativeResult));
+        Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonInternalNode.executeUncached(nativeResult, false));
         if (!(result instanceof PythonModule)) {
             // Multi-phase extension module initialization
 

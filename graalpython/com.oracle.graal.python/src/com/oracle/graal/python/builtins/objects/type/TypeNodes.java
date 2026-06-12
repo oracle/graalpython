@@ -122,7 +122,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -635,7 +635,7 @@ public abstract class TypeNodes {
             PythonContext context = PythonContext.get(null);
             var callable = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_TYPE_READY);
             int res = ExternalFunctionInvoker.invokePY_TYPE_READY(null, C_API_TIMING, context.ensureNativeContext(),
-                            BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, PythonToNativeNode.executeLongUncached(obj));
+                            BoundaryCallData.getUncached(), context.getThreadState(PythonLanguage.get(inliningTarget)), callable, PythonToNativeInternalNode.executeUncached(obj, false));
             if (res < 0) {
                 throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.LAZY_INITIALIZATION_FAILED, obj);
             }

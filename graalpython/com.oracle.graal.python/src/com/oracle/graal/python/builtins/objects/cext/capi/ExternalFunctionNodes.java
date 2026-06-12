@@ -107,18 +107,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNa
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateNativeArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateNativeKwNamesTupleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromLongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromUInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeArgsTupleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToPythonStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -176,7 +172,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -213,103 +208,6 @@ public abstract class ExternalFunctionNodes {
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
     }
 
-    /**
-     * On Windows, "long" is 32 bits, so that we might need to convert int to long for consistency.
-     */
-    @GenerateInline(false)
-    @GenerateUncached
-    public abstract static class FromLongNode extends CExtToJavaNode {
-
-        @Specialization
-        static long doInt(int value) {
-            return value & 0xFFFFFFFFL;
-        }
-
-        @Specialization
-        static long doLong(long value) {
-            return value;
-        }
-
-        @Fallback
-        static Object doOther(Object value) {
-            assert CApiTransitions.isBackendPointerObject(value);
-            return value;
-        }
-
-        @NeverDefault
-        public static FromLongNode create() {
-            return FromLongNodeGen.create();
-        }
-
-        public static FromLongNode getUncached() {
-            return FromLongNodeGen.getUncached();
-        }
-    }
-
-    @GenerateInline(false)
-    @GenerateUncached
-    public abstract static class FromUInt32Node extends CExtToJavaNode {
-
-        @Specialization
-        static int doInt(int value) {
-            return value;
-        }
-
-        @Specialization
-        static int doLong(long value) {
-            assert value < (1L << 32);
-            return (int) value;
-        }
-
-        @NeverDefault
-        public static FromUInt32Node create() {
-            return FromUInt32NodeGen.create();
-        }
-
-        public static FromUInt32Node getUncached() {
-            return FromUInt32NodeGen.getUncached();
-        }
-    }
-
-    @GenerateInline(false)
-    public abstract static class ToInt64Node extends CExtToNativeNode {
-
-        @Specialization
-        static long doInt(int value) {
-            return value;
-        }
-
-        @Specialization
-        static long doLong(long value) {
-            return value;
-        }
-
-        @Fallback
-        static Object doOther(Object value) {
-            assert CApiTransitions.isBackendPointerObject(value);
-            return value;
-        }
-
-        @NeverDefault
-        public static ToInt64Node create() {
-            return ToInt64NodeGen.create();
-        }
-    }
-
-    @GenerateInline(false)
-    public abstract static class ToInt32Node extends CExtToNativeNode {
-
-        @Specialization
-        static int doInt(int value) {
-            return value;
-        }
-
-        @NeverDefault
-        public static ToInt32Node create() {
-            return ToInt32NodeGen.create();
-        }
-    }
-
     @GenerateInline(false)
     public static final class ToNativeBorrowedNode extends CExtToNativeNode {
 
@@ -317,7 +215,7 @@ public abstract class ExternalFunctionNodes {
         @Child private PythonToNativeNode toNative = PythonToNativeNode.create();
 
         @Override
-        public Object execute(Object object) {
+        public long execute(Object object) {
             assert canBorrowDirectly(object);
             /*
              * In this case, it is not necessary to explicitly keep the promoted object alive
@@ -329,7 +227,7 @@ public abstract class ExternalFunctionNodes {
             PythonContext ctx = PythonContext.get(this);
             Object promoted = ensurePythonObjectNode.execute(ctx, object, false);
             assert promoted == object || PythonToNativeInternalNode.isImmortal(ctx, promoted);
-            return toNative.executeLong(promoted);
+            return toNative.execute(promoted);
         }
 
         private static boolean canBorrowDirectly(Object object) {
@@ -343,7 +241,7 @@ public abstract class ExternalFunctionNodes {
         @TruffleBoundary(allowInlining = true)
         public static long executeUncached(Object object) {
             Object promoted = EnsurePythonObjectNode.executeUncached(PythonContext.get(null), object, false);
-            return PythonToNativeNode.executeLongUncached(promoted);
+            return PythonToNativeInternalNode.executeUncached(promoted, false);
         }
     }
 
@@ -354,8 +252,8 @@ public abstract class ExternalFunctionNodes {
         static Object doIt(long pointer,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached NativeToPythonNode nativeToPythonNode) {
-            Object result = nativeToPythonNode.executeRaw(pointer);
+                        @Cached NativeToPythonInternalNode nativeToPythonNode) {
+            Object result = nativeToPythonNode.execute(inliningTarget, pointer);
             if (result == PNone.NO_VALUE) {
                 return result;
             }
@@ -700,7 +598,7 @@ public abstract class ExternalFunctionNodes {
                 nativeToPythonReturnNode = insert(NativeToPythonReturnNode.create());
                 checkResultNode = insert(PyObjectCheckFunctionResultNodeGen.create());
             }
-            return checkResultNode.execute(context, name, nativeToPythonReturnNode.executeRaw(lresult));
+            return checkResultNode.execute(context, name, nativeToPythonReturnNode.execute(lresult));
         }
     }
 
@@ -757,7 +655,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         final Object returnNativeObjectToPython(long lresult) {
-            Object result = ensureNativeToPythonReturnNode().executeRaw(lresult);
+            Object result = ensureNativeToPythonReturnNode().execute(lresult);
             if (result == PNone.NO_VALUE) {
                 transformExceptionFromNative();
             }
@@ -796,7 +694,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.execute(managedArgsTuple);
             }
 
             try {
@@ -872,7 +770,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsToNativeNode.execute(managedArgsTuple);
             }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
@@ -881,7 +779,7 @@ public abstract class ExternalFunctionNodes {
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION_WITH_KEYWORDS(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
-                                boundFunction, selfToNativeNode.executeLong(self), argsTuplePtr, kwargsToNativeNode.executeLong(kwargsDict));
+                                boundFunction, selfToNativeNode.execute(self), argsTuplePtr, kwargsToNativeNode.execute(kwargsDict));
                 return nativeToPython(context, l);
             } finally {
                 Reference.reachabilityFence(self);
@@ -990,7 +888,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.execute(managedArgsTuple);
             }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
@@ -1035,7 +933,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.execute(managedArgsTuple);
             }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
@@ -1093,7 +991,7 @@ public abstract class ExternalFunctionNodes {
             } else {
                 managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
-                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.execute(managedArgsTuple);
             }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
@@ -1187,7 +1085,7 @@ public abstract class ExternalFunctionNodes {
             PythonContext context = PythonContext.get(this);
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context), boundFunction,
-                                selfToNativeNode.executeLong(self), arg);
+                                selfToNativeNode.execute(self), arg);
                 return nativeToPython(context, l);
             } finally {
                 Reference.reachabilityFence(self);
@@ -1218,7 +1116,7 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             Object arg = ensurePythonObject(readArgNode.execute(frame));
             try {
-                return invokeExternalFunction(frame, boundFunction, self, argToNativeNode.executeLong(arg));
+                return invokeExternalFunction(frame, boundFunction, self, argToNativeNode.execute(arg));
             } finally {
                 Reference.reachabilityFence(arg);
             }
@@ -1288,7 +1186,7 @@ public abstract class ExternalFunctionNodes {
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST_WITH_KEYWORDS(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
-                                boundFunction, argToNativeNode.executeLong(self), nativeFastcallArgs, args.length, kwnamesTuplePtr);
+                                boundFunction, argToNativeNode.execute(self), nativeFastcallArgs, args.length, kwnamesTuplePtr);
                 return nativeToPython(context, l);
             } finally {
                 MethFastcallRoot.freeFastcallArgsArray(nativeFastcallArgs);
@@ -1370,7 +1268,7 @@ public abstract class ExternalFunctionNodes {
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCMETHOD(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
-                                boundFunction, argToNativeNode.executeLong(self), argToNativeNode.executeLong(cls), nativeFastcallArgs, args.length, kwNamesToNativeNode.executeLong(kwnamesTuple));
+                                boundFunction, argToNativeNode.execute(self), argToNativeNode.execute(cls), nativeFastcallArgs, args.length, kwNamesToNativeNode.execute(kwnamesTuple));
                 return nativeToPython(context, l);
             } finally {
                 MethFastcallRoot.freeFastcallArgsArray(nativeFastcallArgs);
@@ -1434,7 +1332,7 @@ public abstract class ExternalFunctionNodes {
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION_FAST(frame, timing, context.ensureNativeContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
-                                boundFunction, argToNativeNode.executeLong(self), argsArray, promotedArgs.length);
+                                boundFunction, argToNativeNode.execute(self), argsArray, promotedArgs.length);
                 return nativeToPython(context, l);
             } finally {
                 freeFastcallArgsArray(argsArray);
@@ -1456,7 +1354,7 @@ public abstract class ExternalFunctionNodes {
             long ptr = NativeMemory.malloc((long) data.length * NativeMemory.POINTER_SIZE);
             for (int i = 0; i < data.length; i++) {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(data[i]);
-                NativeMemory.writePtrArrayElement(ptr, i, argToNativeNode.executeLong(data[i]));
+                NativeMemory.writePtrArrayElement(ptr, i, argToNativeNode.execute(data[i]));
             }
             return ptr;
         }
@@ -2016,7 +1914,7 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             long lresult = invokeExternalFunction(frame, boundFunction, self);
             PythonContext context = PythonContext.get(this);
-            return checkIterNextResultNode.execute(context.getThreadState(context.getLanguage()), ensureNativeToPythonReturnNode().executeRaw(lresult));
+            return checkIterNextResultNode.execute(context.getThreadState(context.getLanguage()), ensureNativeToPythonReturnNode().execute(lresult));
         }
 
         @Override
@@ -2385,14 +2283,14 @@ public abstract class ExternalFunctionNodes {
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_TYPE_GENERIC_ALLOC);
             long op = ExternalFunctionInvoker.invokeTYPE_GENERIC_ALLOC(null, TIMING_invokeTypeGenericAlloc, context.ensureNativeContext(),
                             BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
-                            pythonToNativeNode.execute(inliningTarget, argsTupleClass, false), n);
+                            pythonToNativeNode.execute(inliningTarget, argsTupleClass), n);
 
             long obItem = CStructAccess.getFieldPtr(op, CFields.PyTupleObject__ob_item);
 
             for (int i = 0; i < n; i++) {
                 Object promoted = materializePrimitiveNode.execute(context, args[i], false);
                 args[i] = promoted;
-                writePtrArrayElement(obItem, i, pythonToNativeNode.execute(inliningTarget, promoted, true));
+                writePtrArrayElement(obItem, i, pythonToNativeNode.executeNewRef(inliningTarget, promoted));
             }
 
             if (LOGGER.isLoggable(Level.FINE)) {
@@ -2431,15 +2329,16 @@ public abstract class ExternalFunctionNodes {
             NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_TYPE_GENERIC_ALLOC);
             long op = ExternalFunctionInvoker.invokeTYPE_GENERIC_ALLOC(null, CreateNativeArgsTupleNode.TIMING_invokeTypeGenericAlloc, context.ensureNativeContext(),
                             BoundaryCallData.getUncached(), context.getThreadState(context.getLanguage(inliningTarget)), callable,
-                            pythonToNativeNode.execute(inliningTarget, argsTupleClass, false), n);
+                            pythonToNativeNode.execute(inliningTarget, argsTupleClass), n);
 
             long obItem = CStructAccess.getFieldPtr(op, CFields.PyTupleObject__ob_item);
 
             for (int i = 0; i < n; i++) {
                 assert args[i] instanceof TruffleString;
                 PString promoted = internStringArg(context, (TruffleString) args[i]);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(promoted);
                 args[i] = promoted;
-                long nativeString = pythonToNativeNode.execute(inliningTarget, promoted, true);
+                long nativeString = pythonToNativeNode.executeNewRef(inliningTarget, promoted);
                 CApiTransitions.setGraalPyUnicodeObjectInterned(HandlePointerConverter.pointerToStub(nativeString), CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_INTERNED);
                 writePtrArrayElement(obItem, i, nativeString);
             }

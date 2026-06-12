@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
@@ -177,7 +177,7 @@ public abstract class TpSlotHashFun {
         @Specialization
         static long callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Exclusive @Cached CheckPrimitiveFunctionResultNode checkResultNode) {
@@ -186,7 +186,7 @@ public abstract class TpSlotHashFun {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeHASHFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.executeLong(promotedSelf));
+                                toNativeNode.execute(inliningTarget, promotedSelf));
                 return checkResultNode.executeLong(inliningTarget, state, T___HASH__, lresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);

@@ -58,10 +58,10 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.PrintWriter;
@@ -88,9 +88,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -152,8 +151,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -216,7 +213,7 @@ public abstract class PythonCextObjectBuiltins {
             for (int i = 0; i < resolved.length; i++) {
                 long elem = readPtrArrayElement(arrayPointer, i);
                 pointers[i] = elem;
-                resolved[i] = nativeToPythonNode.execute(inliningTarget, elem, false);
+                resolved[i] = nativeToPythonNode.execute(inliningTarget, elem);
             }
             HandleContext handleContext = PythonContext.get(inliningTarget).handleContext;
             for (int i = 0; i < resolved.length; i++) {
@@ -239,18 +236,6 @@ public abstract class PythonCextObjectBuiltins {
             return PNone.NO_VALUE;
         }
 
-        @Specialization(limit = "1")
-        static Object doInteropPointer(Object pointer, int len,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached UpdateHandleTableReferenceNode updateRefNode,
-                        @Shared @Cached NativeToPythonInternalNode nativeToPythonNode,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            try {
-                return doLong(lib.asPointer(pointer), len, inliningTarget, updateRefNode, nativeToPythonNode);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, Int}, call = Ignored)
@@ -497,7 +482,7 @@ public abstract class PythonCextObjectBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored)
     static int GraalPyPrivate_Object_IsTrue(long objPtr) {
-        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         return PyObjectIsTrueNode.executeUncached(obj) ? 1 : 0;
     }
 
@@ -687,9 +672,9 @@ public abstract class PythonCextObjectBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored)
     static long GraalPyPrivate_Object_GetIter(long objectPtr) {
-        Object object = NativeToPythonNode.executeRawUncached(objectPtr);
+        Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
         Object result = PyObjectGetIter.executeUncached(object);
-        return PythonToNativeNewRefNode.executeLongUncached(result);
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
     /*

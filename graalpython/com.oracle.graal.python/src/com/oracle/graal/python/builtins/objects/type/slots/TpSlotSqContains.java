@@ -152,8 +152,8 @@ public final class TpSlotSqContains {
             Object promotedArg = ensurePythonObjectNode.execute(ctx, arg, false);
             try {
                 int iresult = ExternalFunctionInvoker.invokeOBJOBJPROC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                selfToNativeNode.execute(inliningTarget, promotedSelf, false),
-                                argToNativeNode.execute(inliningTarget, promotedArg, false));
+                                selfToNativeNode.execute(inliningTarget, promotedSelf),
+                                argToNativeNode.execute(inliningTarget, promotedArg));
                 return checkResultNode.executeBool(inliningTarget, state, T___CONTAINS__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);

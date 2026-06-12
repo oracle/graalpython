@@ -54,8 +54,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -67,17 +67,17 @@ public final class PythonCextCodeBuiltins {
                     long namesPtr, long varnamesPtr, long freevarsPtr, long cellvarsPtr,
                     long filenamePtr, long namePtr, long qualnamePtr,
                     int firstlineno, long lnotabPtr, long exceptionTablePtr) {
-        Object code = NativeToPythonNode.executeRawUncached(codePtr);
-        Object consts = NativeToPythonNode.executeRawUncached(constsPtr);
-        Object names = NativeToPythonNode.executeRawUncached(namesPtr);
-        Object varnames = NativeToPythonNode.executeRawUncached(varnamesPtr);
-        Object freevars = NativeToPythonNode.executeRawUncached(freevarsPtr);
-        Object cellvars = NativeToPythonNode.executeRawUncached(cellvarsPtr);
-        Object filename = NativeToPythonNode.executeRawUncached(filenamePtr);
-        Object name = NativeToPythonNode.executeRawUncached(namePtr);
-        Object qualname = NativeToPythonNode.executeRawUncached(qualnamePtr);
-        Object lnotab = NativeToPythonNode.executeRawUncached(lnotabPtr);
-        Object exceptionTable = NativeToPythonNode.executeRawUncached(exceptionTablePtr);
+        Object code = NativeToPythonInternalNode.executeUncached(codePtr, false);
+        Object consts = NativeToPythonInternalNode.executeUncached(constsPtr, false);
+        Object names = NativeToPythonInternalNode.executeUncached(namesPtr, false);
+        Object varnames = NativeToPythonInternalNode.executeUncached(varnamesPtr, false);
+        Object freevars = NativeToPythonInternalNode.executeUncached(freevarsPtr, false);
+        Object cellvars = NativeToPythonInternalNode.executeUncached(cellvarsPtr, false);
+        Object filename = NativeToPythonInternalNode.executeUncached(filenamePtr, false);
+        Object name = NativeToPythonInternalNode.executeUncached(namePtr, false);
+        Object qualname = NativeToPythonInternalNode.executeUncached(qualnamePtr, false);
+        Object lnotab = NativeToPythonInternalNode.executeUncached(lnotabPtr, false);
+        Object exceptionTable = NativeToPythonInternalNode.executeUncached(exceptionTablePtr, false);
         /*
          * This rearranges the arguments (freevars, cellvars).
          */
@@ -90,19 +90,19 @@ public final class PythonCextCodeBuiltins {
                         firstlineno, lnotab, exceptionTable,
                         freevars, cellvars
         };
-        return PythonToNativeNewRefNode.executeLongUncached(CallNode.executeUncached(PythonBuiltinClassType.PCode, args));
+        return PythonToNativeInternalNode.executeNewRefUncached(CallNode.executeUncached(PythonBuiltinClassType.PCode, args));
     }
 
     @CApiBuiltin(ret = PyCodeObjectRawPointer, args = {ConstCharPtr, ConstCharPtr, Int}, call = Direct)
     static long PyCode_NewEmpty(long filenamePtr, long funcnamePtr, int lineno) {
-        TruffleString filename = (TruffleString) CharPtrToPythonNode.getUncached().execute(filenamePtr);
-        TruffleString funcname = (TruffleString) CharPtrToPythonNode.getUncached().execute(funcnamePtr);
-        return PythonToNativeNewRefNode.executeLongUncached(createCodeNewEmpty(filename, funcname, lineno));
+        TruffleString filename = (TruffleString) CharPtrToPythonNode.executeUncached(filenamePtr);
+        TruffleString funcname = (TruffleString) CharPtrToPythonNode.executeUncached(funcnamePtr);
+        return PythonToNativeInternalNode.executeNewRefUncached(createCodeNewEmpty(filename, funcname, lineno));
     }
 
     @CApiBuiltin(ret = Int, args = {PyCodeObjectRawPointer, Int}, call = Direct)
     static int PyCode_Addr2Line(long codePtr, int lasti) {
-        PCode code = (PCode) NativeToPythonNode.executeRawUncached(codePtr);
+        PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
         if (lasti < 0) {
             return code.co_firstlineno();
         }
@@ -111,14 +111,14 @@ public final class PythonCextCodeBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyCodeObjectRawPointer}, call = Direct)
     static long GraalPyCode_GetName(long codePtr) {
-        PCode code = (PCode) NativeToPythonNode.executeRawUncached(codePtr);
-        return PythonToNativeNewRefNode.executeLongUncached(code.getName());
+        PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
+        return PythonToNativeInternalNode.executeNewRefUncached(code.getName());
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyCodeObjectRawPointer}, call = Direct)
     static long GraalPyCode_GetFileName(long codePtr) {
-        PCode code = (PCode) NativeToPythonNode.executeRawUncached(codePtr);
-        return PythonToNativeNewRefNode.executeLongUncached(code.getFilename());
+        PCode code = (PCode) NativeToPythonInternalNode.executeUncached(codePtr, false);
+        return PythonToNativeInternalNode.executeNewRefUncached(code.getFilename());
     }
 
     static PCode createCodeNewEmpty(TruffleString filename, TruffleString funcname, int lineno) {

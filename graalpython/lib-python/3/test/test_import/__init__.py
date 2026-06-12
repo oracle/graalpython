@@ -1593,7 +1593,7 @@ class ImportTracebackTests(unittest.TestCase):
             else:
                 importlib.SourceLoader.exec_module = old_exec_module
 
-    @impl_detail("[GR-27024] [GR-23324] posix NFI support", graalpy=False)
+    @impl_detail("[GR-27024] [GR-23324] posix native support", graalpy=False)
     @unittest.skipUnless(TESTFN_UNENCODABLE, 'need TESTFN_UNENCODABLE')
     def test_unencodable_filename(self):
         # Issue #11619: The Python parser and the import machinery must not

@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -246,7 +246,7 @@ public abstract class TpSlotWrapper {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object result = CallManagedSlotGetAttrNode.executeUncached(getSlot(), jArg0, jArg1);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "GetAttrWrapper", getSlot());
                 }
@@ -279,7 +279,7 @@ public abstract class TpSlotWrapper {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object result = CallSlotBinaryFuncNode.executeUncached(getSlot(), jArg0, jArg1);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "BinarySlotFuncWrapper", getSlot());
                 }
@@ -370,7 +370,7 @@ public abstract class TpSlotWrapper {
                     TpSlot otherSlot = binaryOp.getSlotValue(GetTpSlotsNode.executeUncached(otherType));
                     boolean sameTypes = IsSameTypeNode.executeUncached(receiverType, otherType);
                     Object result = CallSlotBinaryOpNode.executeUncached(getSlot(), receiver, receiverType, other, otherSlot, otherType, sameTypes, binaryOp);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "BinaryOpSlotFuncWrapper", getSlot());
                 }
@@ -402,7 +402,7 @@ public abstract class TpSlotWrapper {
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object result = CallSlotUnaryNode.executeUncached(getSlot(), jArg0);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", getSlot());
                 }
@@ -439,7 +439,7 @@ public abstract class TpSlotWrapper {
                     } catch (IteratorExhausted e) {
                         return NULLPTR;
                     }
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "IterNextWrapper", getSlot());
                 }
@@ -681,7 +681,7 @@ public abstract class TpSlotWrapper {
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
 
                     Object result = CallSlotTpNewNode.executeUncached(getSlot(), receiver, pArgs, kwArgsArray);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "NewWrapper", getSlot());
                 }
@@ -717,7 +717,7 @@ public abstract class TpSlotWrapper {
                     Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
                     Object result = CallSlotTpCallNode.executeUncached(getSlot(), receiver, starArgsArray, kwArgsArray);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "CallWrapper", getSlot());
                 }
@@ -756,7 +756,7 @@ public abstract class TpSlotWrapper {
                     TpSlots wSlots = GetTpSlotsNode.executeUncached(wType);
                     boolean sameTypes = IsSameTypeNode.executeUncached(vType, wType);
                     Object result = CallSlotNbPowerNode.executeUncached(getSlot(), v, vType, w, wSlots.nb_power(), wType, z, sameTypes);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "NbPowerWrapper", getSlot());
                 }
@@ -791,7 +791,7 @@ public abstract class TpSlotWrapper {
                     Object w = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object z = NativeToPythonInternalNode.executeUncached(arg2, false);
                     Object result = CallSlotNbInPlacePowerNode.executeUncached(getSlot(), v, w, z);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "NbInPlacePowerWrapper", getSlot());
                 }
@@ -826,7 +826,7 @@ public abstract class TpSlotWrapper {
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     RichCmpOp op = RichCmpOp.fromNative(arg2);
                     Object result = CallSlotRichCmpNode.executeUncached(getSlot(), jArg0, jArg1, op);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "RichcmpFunctionWrapper", getSlot());
                 }
@@ -859,7 +859,7 @@ public abstract class TpSlotWrapper {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     int index = ssizeAsIntUncached(arg1);
                     Object result = CallSlotSizeArgFun.executeUncached(getSlot(), jArg0, index);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", getSlot());
                 }
@@ -1001,7 +1001,7 @@ public abstract class TpSlotWrapper {
                     Object obj = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object cls = NativeToPythonInternalNode.executeUncached(arg2, false);
                     Object result = CallSlotDescrGet.executeUncached(getSlot(), receiver, obj, cls);
-                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                    return PythonToNativeInternalNode.executeNewRefUncached(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", getSlot());
                 }

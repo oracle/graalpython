@@ -44,10 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.byteIndexToCodepointIndex;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readIntArrayElement;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readShortArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
@@ -56,6 +52,10 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readIntArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readShortArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -69,10 +69,10 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformPExceptionToNativeCachedNodeGen;
@@ -84,8 +84,6 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -99,6 +97,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -414,12 +413,14 @@ public abstract class CExtCommonNodes {
         static void setCurrentException(Node inliningTarget, Object pythonException,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached CExtNodes.XDecRefPointerNode decRefPointerNode,
-                        @Cached(inline = false) PythonToNativeNewRefNode pythonToNativeNode) {
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeInternalNode pythonToNativeNode) {
             /*
              * Run the ToNative conversion early so that the reference poll won't interrupt between
              * the read and write.
              */
-            long currentException = pythonToNativeNode.executeLong(pythonException);
+            Object promotedException = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), pythonException, false);
+            long currentException = pythonToNativeNode.executeNewRef(inliningTarget, promotedException);
             long nativeThreadState = PThreadState.getOrCreateNativeThreadState(getThreadStateNode.execute(inliningTarget));
             long oldException = readPtrField(nativeThreadState, CFields.PyThreadState__current_exception);
             writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
@@ -483,12 +484,12 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization
-        static Object getException(PythonThreadState threadState,
-                        @Cached CApiTransitions.NativeToPythonTransferNode nativeToPythonNode) {
+        static Object getException(Node inliningTarget, PythonThreadState threadState,
+                        @Cached CApiTransitions.NativeToPythonInternalNode nativeToPythonNode) {
             long nativeThreadState = threadState.getNativePointer();
             if (nativeThreadState != PythonAbstractObject.UNINITIALIZED) {
                 assert nativeThreadState != PythonAbstractObject.NATIVE_POINTER_FREED;
-                Object exception = nativeToPythonNode.execute(readPtrField(nativeThreadState, CFields.PyThreadState__current_exception));
+                Object exception = nativeToPythonNode.executeTransfer(inliningTarget, readPtrField(nativeThreadState, CFields.PyThreadState__current_exception));
                 writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
                 return exception;
             }
@@ -889,48 +890,13 @@ public abstract class CExtCommonNodes {
     }
 
     /**
-     * This node converts a {@link String} object to a {@link TruffleString} or it converts a
-     * {@code NULL} pointer to {@link PNone#NONE}. This is a very special use case and certainly
-     * only good for reading a member of type
-     * {@link com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes#T_STRING}.
-     */
-    @GenerateInline(false) // footprint reduction 32 -> 13, inherits non-inlineable execute()
-    @GenerateUncached
-    @ImportStatic(NativeMemory.class)
-    public abstract static class StringAsPythonStringNode extends CExtToJavaNode {
-
-        @Specialization
-        static TruffleString doJavaString(String value,
-                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            // TODO review with GR-37896
-            return fromJavaStringNode.execute(value, TS_ENCODING);
-        }
-
-        @Specialization
-        static TruffleString doTruffleString(TruffleString value) {
-            return value;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "value == NULLPTR")
-        static Object doGeneric(long value) {
-            return PNone.NONE;
-        }
-
-        @Specialization
-        static TruffleString doNative(long value,
-                        @Bind Node inliningTarget,
-                        @Cached FromCharPointerNode fromPtr) {
-            return fromPtr.execute(inliningTarget, value);
-        }
-    }
-
-    /**
      * This node converts a C Boolean value to Python Boolean.
      */
     @GenerateInline(false) // footprint reduction 24 -> 5, inherits non-inlineable execute()
     @GenerateUncached
-    public abstract static class NativePrimitiveAsPythonBooleanNode extends CExtToJavaNode {
+    public abstract static class NativePrimitiveAsPythonBooleanNode extends Node {
+
+        public abstract Object execute(Object value);
 
         @Specialization
         static Boolean doBoolean(Boolean b) {
@@ -969,119 +935,13 @@ public abstract class CExtCommonNodes {
     }
 
     /**
-     * This node converts a native primitive value to an appropriate Python char value (a
-     * single-char Python string).
-     */
-    @GenerateInline(false) // footprint reduction 36 -> 17
-    @GenerateUncached
-    public abstract static class NativePrimitiveAsPythonCharNode extends CExtToJavaNode {
-
-        @Specialization
-        static TruffleString doByte(byte b,
-                        @Shared("fromInt") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
-                        @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
-            // but might change in the future
-            return switchEncodingNode.execute(fromIntArrayNode.execute(new int[]{b}), TS_ENCODING);
-        }
-
-        @Specialization
-        static TruffleString doShort(short i,
-                        @Shared("fromInt") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
-                        @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            // fromIntArrayNode return utf32, thich is at this point the same as TS_ENCODING,
-            // but might change in the future
-            return switchEncodingNode.execute(fromIntArrayNode.execute(new int[]{i}, 0, 1), TS_ENCODING);
-        }
-
-        @Specialization
-        static TruffleString doLong(long l,
-                        @Cached TruffleString.FromLongNode fromLongNode) {
-            return fromLongNode.execute(l, TS_ENCODING, true);
-        }
-
-        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(Object n,
-                        @CachedLibrary("n") InteropLibrary lib,
-                        @Shared("fromInt") @Cached TruffleString.FromIntArrayUTF32Node fromIntArrayNode,
-                        @Shared("switchEnc") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            if (lib.fitsInShort(n)) {
-                try {
-                    // fromIntArrayNode return utf32, thich is at this point the same as
-                    // TS_ENCODING,
-                    // but might change in the future
-                    return switchEncodingNode.execute(fromIntArrayNode.execute(new int[]{lib.asShort(n)}, 0, 1), TS_ENCODING);
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    @GenerateInline(false) // footprint reduction 20 -> 1, inherits non-inlineable execute()
-    @GenerateUncached
-    public abstract static class NativeUnsignedByteNode extends CExtToJavaNode {
-
-        @Specialization
-        static int doUnsignedIntPositive(int n) {
-            return n & 0xff;
-        }
-    }
-
-    @GenerateInline(false) // footprint reduction 20 -> 1, inherits non-inlineable execute()
-    @GenerateUncached
-    public abstract static class NativeUnsignedShortNode extends CExtToJavaNode {
-
-        @Specialization
-        static int doUnsignedIntPositive(int n) {
-            return n & 0xffff;
-        }
-    }
-
-    /**
-     * This node converts a native primitive value to an appropriate Python value considering the
-     * native value as unsigned. For example, a negative {@code int} value will be converted to a
-     * positive {@code long} value.
-     */
-    @GenerateInline(false) // footprint reduction 24 -> 5, inherits non-inlineable execute()
-
-    @GenerateUncached
-    public abstract static class NativeUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
-
-        @Specialization(guards = "n >= 0")
-        static int doUnsignedIntPositive(int n) {
-            return n;
-        }
-
-        @Specialization(replaces = "doUnsignedIntPositive")
-        static long doUnsignedInt(int n) {
-            if (n < 0) {
-                return n & 0xffffffffL;
-            }
-            return n;
-        }
-
-        @Specialization(guards = "n >= 0")
-        static long doUnsignedLongPositive(long n) {
-            return n;
-        }
-
-        @Specialization(guards = "n < 0")
-        static Object doUnsignedLongNegative(long n,
-                        @Bind PythonLanguage language) {
-            return PFactory.createInt(language, PInt.longToUnsignedBigInteger(n));
-        }
-    }
-
-    /**
      * Converts a Python character (1-element Python string) into a UTF-8 encoded C {@code char}.
      * According to CPython, we need to encode the whole Python string before we access the first
      * byte (see also: {@code structmember.c:PyMember_SetOne} case {@code T_CHAR}).
      */
     @GenerateInline(false) // footprint reduction 28 -> 9, inherits non-inlineable execute()
     @GenerateUncached
-    public abstract static class AsNativeCharNode extends CExtToNativeNode {
+    public abstract static class AsNativeCharNode extends Node {
 
         public abstract byte executeByte(Object value);
 
@@ -1104,7 +964,7 @@ public abstract class CExtCommonNodes {
      *
      * @see AsNativePrimitiveNode
      */
-    public abstract static class AsFixedNativePrimitiveNode extends CExtToNativeNode {
+    public abstract static class AsFixedNativePrimitiveNode extends Node {
 
         private final int targetTypeSize;
         private final int signed;
@@ -1113,6 +973,8 @@ public abstract class CExtCommonNodes {
             this.targetTypeSize = targetTypeSize;
             this.signed = PInt.intValue(signed);
         }
+
+        public abstract Object execute(Object object);
 
         // Adding specializations for primitives does not make a lot of sense just to avoid
         // un-/boxing in the interpreter since interop will force un-/boxing anyway.
@@ -1168,7 +1030,7 @@ public abstract class CExtCommonNodes {
     public static NativeFunctionPointer bindFunctionPointer(long pointer, NativeCExtSymbol descriptor) {
         PythonContext pythonContext = PythonContext.get(null);
         if (!pythonContext.isNativeAccessAllowed()) {
-            LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", pointer));
+            LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to a native callable but native access is not allowed", pointer));
         }
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.finer(PythonUtils.formatJString("Binding %s to native callable %s", pointer, descriptor.getName()));

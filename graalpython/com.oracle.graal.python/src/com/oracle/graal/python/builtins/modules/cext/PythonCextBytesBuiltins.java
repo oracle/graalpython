@@ -72,8 +72,8 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -109,7 +109,7 @@ public final class PythonCextBytesBuiltins {
      */
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Direct)
     static long PyBytes_Size(long objPtr) {
-        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         if (obj instanceof PBytes bytes) {
             return PyObjectSizeNode.executeUncached(bytes);
         }
@@ -121,10 +121,10 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored)
     static long GraalPyPrivate_Bytes_Concat(long originalPtr, long newPartPtr) {
-        Object original = NativeToPythonNode.executeRawUncached(originalPtr);
-        Object newPart = NativeToPythonNode.executeRawUncached(newPartPtr);
+        Object original = NativeToPythonInternalNode.executeUncached(originalPtr, false);
+        Object newPart = NativeToPythonInternalNode.executeUncached(newPartPtr, false);
         Object result = BytesCommonBuiltins.ConcatNode.executeUncached(original, newPart);
-        return PythonToNativeNewRefNode.executeLongUncached(result);
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
     // TODO(CAPI STATIC): uses nodes without @GenerateUncached
@@ -171,7 +171,7 @@ public final class PythonCextBytesBuiltins {
         try {
             byte[] bytes = getByteArray(nativePointer, size);
             Object result = PFactory.createBytes(PythonLanguage.get(null), bytes);
-            return PythonToNativeNewRefNode.executeLongUncached(result);
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
         } catch (OverflowException e) {
             throw PRaiseNode.raiseStatic(null, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
         }
@@ -182,7 +182,7 @@ public final class PythonCextBytesBuiltins {
         try {
             byte[] bytes = getByteArray(nativePointer, size);
             Object result = PFactory.createByteArray(PythonLanguage.get(null), bytes);
-            return PythonToNativeNewRefNode.executeLongUncached(result);
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
         } catch (OverflowException e) {
             throw PRaiseNode.raiseStatic(null, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
         }
@@ -191,7 +191,7 @@ public final class PythonCextBytesBuiltins {
     @CApiBuiltin(name = "PyByteArray_Resize", ret = Int, args = {PyObjectRawPointer, Py_ssize_t}, call = Direct)
     @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t}, call = Ignored)
     static int GraalPyPrivate_Bytes_Resize(long selfPtr, long newSizeL) {
-        Object self = NativeToPythonNode.executeRawUncached(selfPtr);
+        Object self = NativeToPythonInternalNode.executeUncached(selfPtr, false);
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !(self instanceof PBytesLike))) {
             throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.EXPECTED_S_NOT_P, "a bytes object", self);
         }
@@ -212,7 +212,7 @@ public final class PythonCextBytesBuiltins {
     static long GraalPyPrivate_Bytes_EmptyWithCapacity(long size) {
         try {
             Object result = PFactory.createBytes(PythonLanguage.get(null), new byte[PInt.intValueExact(size)]);
-            return PythonToNativeNewRefNode.executeLongUncached(result);
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
         } catch (OverflowException e) {
             throw PRaiseNode.raiseStatic(null, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
         }
@@ -220,14 +220,14 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, call = Ignored)
     static long GraalPyPrivate_Bytes_Empty() {
-        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createEmptyBytes(PythonLanguage.get(null)));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createEmptyBytes(PythonLanguage.get(null)));
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {Py_ssize_t}, call = Ignored)
     static long GraalPyPrivate_ByteArray_EmptyWithCapacity(long size) {
         try {
             Object result = PFactory.createByteArray(PythonLanguage.get(null), new byte[PInt.intValueExact(size)]);
-            return PythonToNativeNewRefNode.executeLongUncached(result);
+            return PythonToNativeInternalNode.executeNewRefUncached(result);
         } catch (OverflowException e) {
             throw PRaiseNode.raiseStatic(null, IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, size);
         }
@@ -235,7 +235,7 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = CApiCallPath.Ignored)
     static int GraalPyPrivate_Bytes_CheckEmbeddedNull(long bytesPtr) {
-        Object bytes = NativeToPythonNode.executeRawUncached(bytesPtr);
+        Object bytes = NativeToPythonInternalNode.executeUncached(bytesPtr, false);
         SequenceStorage sequenceStorage = GetBytesStorage.executeUncached(bytes);
         int len = sequenceStorage.length();
         try {
@@ -252,7 +252,7 @@ public final class PythonCextBytesBuiltins {
 
     @CApiBuiltin(ret = CHAR_PTR, args = {PyObjectRawPointer}, call = Direct)
     static long PyBytes_AsString(long bytesPtr) {
-        Object obj = NativeToPythonNode.executeRawUncached(bytesPtr);
+        Object obj = NativeToPythonInternalNode.executeUncached(bytesPtr, false);
         if (obj instanceof PBytes bytes) {
             return PySequenceArrayWrapper.ensureNativeSequence(bytes);
         }

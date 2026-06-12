@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -101,6 +101,22 @@ class TestMethod(unittest.TestCase):
                 return Py_None;
             }
 
+            PyObject* set_string_inplace(PyObject *self, PyObject *arg) {
+                TestMemberObject *tmo = (TestMemberObject *)self;
+                Py_ssize_t len;
+                const char *utf8 = PyUnicode_AsUTF8AndSize(arg, &len);
+                if (utf8 == NULL)
+                    return NULL;
+                if (len >= (Py_ssize_t)sizeof(tmo->member_string_inplace)) {
+                    PyErr_SetString(PyExc_ValueError, "string too long");
+                    return NULL;
+                }
+                memcpy(tmo->member_string_inplace, utf8, len);
+                tmo->member_string_inplace[len] = 0;
+                Py_INCREF(Py_None);
+                return Py_None;
+            }
+
             PyObject* get_min_values(PyObject *self) {
                 PyObject *result = PyTuple_New(9);
                 PyTuple_SetItem(result, 0, PyLong_FromSsize_t(CHAR_MIN));
@@ -138,6 +154,7 @@ class TestMethod(unittest.TestCase):
             float member_float;
             double member_double;
             char *member_string;
+            char member_string_inplace[8];
             char member_char;
             char member_byte;
             unsigned char member_ubyte;
@@ -159,6 +176,7 @@ class TestMethod(unittest.TestCase):
             {"member_float", T_FLOAT, offsetof(TestMemberObject, member_float), 0, "float member"},
             {"member_double", T_DOUBLE, offsetof(TestMemberObject, member_double), 0, "double member"},
             {"member_string", T_STRING, offsetof(TestMemberObject, member_string), 0, "string member"},
+            {"member_string_inplace", T_STRING_INPLACE, offsetof(TestMemberObject, member_string_inplace), 0, "string inplace member"},
             {"member_char", T_CHAR, offsetof(TestMemberObject, member_char), 0, "char member"},
             {"member_byte", T_BYTE, offsetof(TestMemberObject, member_byte), 0, "byte member"},
             {"member_ubyte", T_UBYTE, offsetof(TestMemberObject, member_ubyte), 0, "ubyte member"},
@@ -172,6 +190,7 @@ class TestMethod(unittest.TestCase):
             """,
             tp_methods='''
             {"set_string", (PyCFunction)set_string, METH_O, ""},
+            {"set_string_inplace", (PyCFunction)set_string_inplace, METH_O, ""},
             {"get_min_values", (PyCFunction)get_min_values, METH_NOARGS, ""},
             {"get_max_values", (PyCFunction)get_max_values, METH_NOARGS, ""}
             ''',
@@ -276,6 +295,19 @@ class TestMethod(unittest.TestCase):
         obj.set_string("hello")
         assert type(obj.member_string) is str
         assert obj.member_string == "hello"
+
+        # T_STRING_INPLACE
+        assert type(obj.member_string_inplace) is str
+        assert obj.member_string_inplace == ""
+        assert_raises(TypeError, delattr, obj, "member_string_inplace")
+        assert_raises(TypeError, setattr, obj, "member_string_inplace", "hello")
+        obj.set_string_inplace("hello")
+        assert type(obj.member_string_inplace) is str
+        assert obj.member_string_inplace == "hello"
+        obj.set_string_inplace("hi")
+        assert obj.member_string_inplace == "hi"
+        assert_raises(ValueError, obj.set_string_inplace, "too long")
+        assert obj.member_string_inplace == "hi"
 
         # T_CHAR
         assert type(obj.member_char) is str

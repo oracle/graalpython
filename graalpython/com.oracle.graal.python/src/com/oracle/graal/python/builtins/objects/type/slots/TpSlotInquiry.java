@@ -180,7 +180,7 @@ public abstract class TpSlotInquiry {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 int iresult = ExternalFunctionInvoker.invokeINQUIRY(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, threadState, slot.callable,
-                                toNativeNode.execute(inliningTarget, promotedSelf, false));
+                                toNativeNode.execute(inliningTarget, promotedSelf));
                 return checkResultNode.executeBool(inliningTarget, threadState, T___BOOL__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);

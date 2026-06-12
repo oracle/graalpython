@@ -47,29 +47,29 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 
 public final class PythonCextClassBuiltins {
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
     static long PyInstanceMethod_New(long funcPtr) {
-        Object func = NativeToPythonNode.executeRawUncached(funcPtr);
+        Object func = NativeToPythonInternalNode.executeUncached(funcPtr, false);
         checkNonNullArgUncached(func);
         PDecoratedMethod res = PFactory.createInstancemethod(PythonLanguage.get(null));
         res.setCallable(func);
-        return PythonToNativeNewRefNode.executeLongUncached(res);
+        return PythonToNativeInternalNode.executeNewRefUncached(res);
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
     static long PyMethod_New(long funcPtr, long selfPtr) {
-        Object func = NativeToPythonNode.executeRawUncached(funcPtr);
-        Object self = NativeToPythonNode.executeRawUncached(selfPtr);
+        Object func = NativeToPythonInternalNode.executeUncached(funcPtr, false);
+        Object self = NativeToPythonInternalNode.executeUncached(selfPtr, false);
         checkNonNullArgUncached(func);
         checkNonNullArgUncached(self);
         // Note: CPython also constructs the object directly, without running the constructor or
         // checking the inputs.
-        return PythonToNativeNewRefNode.executeLongUncached(PFactory.createMethod(PythonLanguage.get(null), self, func));
+        return PythonToNativeInternalNode.executeNewRefUncached(PFactory.createMethod(PythonLanguage.get(null), self, func));
     }
 }

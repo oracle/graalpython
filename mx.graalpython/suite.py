@@ -384,7 +384,6 @@ suite = {
                 "com.oracle.graal.python.annotations",
                 "com.oracle.graal.python.pegparser",
                 "truffle:TRUFFLE_API",
-                "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_PROFILER",
                 "sdk:POLYGLOT",
                 "truffle:TRUFFLE_XZ",
@@ -707,7 +706,6 @@ suite = {
                             "CMAKE_BUILD_TYPE": "<graalpy_cmake_build_type>",
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>",
-                            "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext>",
                             "LIBFFI_DIST": "<output_root:truffle:LIBFFI_DIST>/<os>-<arch>/<multitarget_libc_selection>/"
@@ -743,7 +741,6 @@ suite = {
                             "CMAKE_BUILD_TYPE": "<graalpy_cmake_build_type>",
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>/",
-                            "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext>",
                             "LIBFFI_DIST": "<output_root:truffle:LIBFFI_DIST>/<os>-<arch>/<multitarget_libc_selection>/"
@@ -885,7 +882,6 @@ suite = {
             "relative_module_path": "../modules",
             "relative_extracted_lib_paths": {
                 "truffle.attach.library": "../jvmlibs/<lib:truffleattach>",
-                "truffle.nfi.library": "../jvmlibs/<lib:trufflenfi>",
             },
             "liblang_relpath": "../lib/<lib:pythonvm>",
             "default_vm_args": [
@@ -1079,9 +1075,6 @@ suite = {
                 "sdk:POLYGLOT",
                 "sdk:NATIVEIMAGE",
                 "sdk:COLLECTIONS",
-                "truffle:TRUFFLE_NFI",
-                "truffle:TRUFFLE_NFI_LIBFFI",
-                "truffle:TRUFFLE_NFI_PANAMA",
                 "truffle:TRUFFLE_ICU4J",
                 "truffle:TRUFFLE_XZ",
             ],
@@ -1123,9 +1116,6 @@ suite = {
                 "sdk:POLYGLOT",
                 "sdk:NATIVEIMAGE",
                 "sdk:COLLECTIONS",
-                "truffle:TRUFFLE_NFI",
-                "truffle:TRUFFLE_NFI_LIBFFI", # runtime dependency
-                "truffle:TRUFFLE_NFI_PANAMA", # runtime dependency
                 "truffle:TRUFFLE_ICU4J",
                 "truffle:TRUFFLE_XZ",
             ],
@@ -1560,7 +1550,6 @@ suite = {
                 },
                 "jvmlibs/": [
                     "extracted-dependency:truffle:TRUFFLE_ATTACH_GRAALVM_SUPPORT",
-                    "extracted-dependency:truffle:TRUFFLE_NFI_NATIVE_GRAALVM_SUPPORT",
                 ],
                 "modules/": [
                     "classpath-dependencies:GRAALPY_STANDALONE_DEPENDENCIES",

@@ -93,8 +93,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
@@ -1001,37 +999,9 @@ public final class PythonUtils {
                     0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0,
     };
 
-    public static String formatPointer(Object pointer) {
-        CompilerAsserts.neverPartOfCompilation();
-        InteropLibrary lib = InteropLibrary.getUncached(pointer);
-        if (lib.isPointer(pointer)) {
-            try {
-                return String.format("%s#0x%016x", pointer.getClass().getSimpleName(), lib.asPointer(pointer));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-        return String.valueOf(pointer);
-    }
-
     public static String formatPointer(long pointer) {
         CompilerAsserts.neverPartOfCompilation();
         return String.format("0x%016x", pointer);
-    }
-
-    public static long coerceToLong(Object allocated, InteropLibrary lib) {
-        if (allocated instanceof Long) {
-            return (long) allocated;
-        } else {
-            if (!lib.isPointer(allocated)) {
-                lib.toNative(allocated);
-            }
-            try {
-                return lib.asPointer(allocated);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
     }
 
     /**
@@ -1048,12 +1018,6 @@ public final class PythonUtils {
      */
     public static Object callCallTarget(CallTarget target, Node location, Object... args) {
         return location != null && location.isAdoptable() ? target.call(location, args) : target.call(args);
-    }
-
-    public static InteropLibrary getUncachedInterop(InteropLibrary existing, Object obj) {
-        // TODO: have a simple LRU cache of "uncached" pointer InteropLibrary in context?
-        // "accepts" should be fast and saves us the concurrent hash map lookup in getUncached
-        return existing != null && existing.accepts(obj) ? existing : InteropLibrary.getUncached(obj);
     }
 
     /**

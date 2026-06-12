@@ -46,7 +46,7 @@ import java.lang.invoke.MethodType;
 
 import com.oracle.graal.python.annotations.CApiUpcallTarget;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsuleGetPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.nodes.arrow.ArrowReleaseCallback;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -77,7 +77,7 @@ public final class ArrowArrayCapsuleDestructor {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext ctx = PythonContext.get(null);
         ctx.ensureNativeAccess();
-        Object capsule = NativeToPythonNode.executeRawUncached(capsulePointer);
+        Object capsule = NativeToPythonInternalNode.executeUncached(capsulePointer, false);
         long capsuleNamePointer = ctx.stringToNativeUtf8Bytes(ArrowArray.CAPSULE_NAME, false);
         try {
             var arrowArray = ArrowArray.wrap(PyCapsuleGetPointerNode.executeUncached(capsule, capsuleNamePointer));

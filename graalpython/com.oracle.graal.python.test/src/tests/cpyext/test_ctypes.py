@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -128,7 +128,6 @@ class TestCDataBuffer(CPyExtTestCase):
             assert struct.Struct(buffer.format).size == int_format.size
             assert buffer.shape == (2, 2)
 
-# TODO: GR-60735, we cannot support this without NFI struct by value support
 def ignore_test_custom_libs():
     # 16B: returned in registers on System V AMD64 ABI
     class MySmallStruct1(ctypes.Structure):

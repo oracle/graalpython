@@ -87,7 +87,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
@@ -624,11 +624,10 @@ public abstract class ObjectNodes {
         public abstract boolean execute(Node inliningTarget, Object obj, Object type, int slotNum);
 
         @Specialization
-        static boolean doNative(@SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
-                        @Bind Node inliningTarget,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode) {
+        static boolean doNative(Node inliningTarget, @SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
+                        @Cached PythonToNativeInternalNode toNativeNode) {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(type);
-            long typePointer = toNativeNode.executeLong(type);
+            long typePointer = toNativeNode.execute(inliningTarget, type);
             try {
                 return ExternalFunctionInvoker.invokeCHECK_BASICSIZE_FOR_GETSTATE(
                                 CApiContext.getNativeSymbol(inliningTarget, FUN_CHECK_BASICSIZE_FOR_GETSTATE).getAddress(), typePointer,

@@ -55,7 +55,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DLL;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LIB_PREFIX;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -112,7 +111,6 @@ import org.graalvm.options.OptionKey;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -124,7 +122,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -242,7 +239,7 @@ public final class PythonContext extends Python3Core {
     /**
      * List of native memory that should be free'd if this context is finalized.
      */
-    private List<NativePointer> nativeResources;
+    private List<Long> nativeResources;
 
     private volatile boolean finalizing;
 
@@ -287,16 +284,16 @@ public final class PythonContext extends Python3Core {
             throw CompilerDirectives.shouldNotReachHere();
         }
         TruffleString utf8String = string.switchEncodingUncached(Encoding.UTF_8);
-        NativePointer mem;
+        long mem;
         int byteLength = utf8String.byteLength(Encoding.UTF_8);
         if (contextMemory) {
             mem = allocateContextMemory(byteLength + 1);
-            NativeMemory.writeByte(mem.asPointer() + byteLength, (byte) 0);
+            NativeMemory.writeByte(mem + byteLength, (byte) 0);
         } else {
-            mem = NativePointer.wrap(NativeMemory.callocByteArray(byteLength + 1));
+            mem = NativeMemory.callocByteArray(byteLength + 1);
         }
         utf8String.copyToNativeMemoryUncached(0, mem, 0, byteLength, Encoding.UTF_8);
-        return mem.asPointer();
+        return mem;
     }
 
     public void ensureNativeAccess() {
@@ -2934,12 +2931,6 @@ public final class PythonContext extends Python3Core {
         return finalizing;
     }
 
-    public void ensureNFILanguage(Node nodeForRaise, String optionName, String optionValue) {
-        if (!env.getInternalLanguages().containsKey(J_NFI_LANGUAGE)) {
-            throw PRaiseNode.raiseStatic(nodeForRaise, PythonBuiltinClassType.SystemError, ErrorMessages.NFI_NOT_AVAILABLE, optionName, optionValue);
-        }
-    }
-
     @TruffleBoundary
     public TruffleString getSoAbi() {
         if (soABI == null) {
@@ -3023,17 +3014,17 @@ public final class PythonContext extends Python3Core {
      * Allocates native memory that will be free'd if the context is disposed.
      *
      * @param byteSize Number of bytes to allocate.
-     * @return An interop pointer.
+     * @return A native pointer.
      */
     @TruffleBoundary
-    public NativePointer allocateContextMemory(int byteSize) {
+    public long allocateContextMemory(int byteSize) {
         ensureNativeAccess();
         if (nativeResources == null) {
             nativeResources = new LinkedList<>();
         }
-        NativePointer nativePointer = NativePointer.wrap(NativeMemory.malloc(byteSize));
+        long nativePointer = NativeMemory.malloc(byteSize);
         if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine(String.format("Allocated %d bytes of context memory: %s", byteSize, nativePointer));
+            LOGGER.fine(String.format("Allocated %d bytes of context memory: 0x%x", byteSize, nativePointer));
         }
         nativeResources.add(nativePointer);
         return nativePointer;
@@ -3042,11 +3033,11 @@ public final class PythonContext extends Python3Core {
     private void freeContextMemory() {
         if (nativeResources != null) {
             ensureNativeAccess();
-            for (NativePointer nativePointer : nativeResources) {
+            for (long nativePointer : nativeResources) {
                 if (LOGGER.isLoggable(Level.FINE)) {
-                    LOGGER.fine(String.format("Freeing context memory: %s", nativePointer));
+                    LOGGER.fine(String.format("Freeing context memory: 0x%x", nativePointer));
                 }
-                NativeMemory.free(nativePointer.asPointer());
+                NativeMemory.free(nativePointer);
             }
         }
     }

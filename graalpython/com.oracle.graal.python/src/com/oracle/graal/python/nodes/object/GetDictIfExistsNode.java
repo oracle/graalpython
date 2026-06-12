@@ -161,7 +161,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         assert EnsurePythonObjectNode.doesNotNeedPromotion(object);
         NativeFunctionPointer callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_OBJECT_GET_DICT_PTR);
         try {
-            long dictPtr = ExternalFunctionInvoker.invokeGETDICTPTRFUN(callable.getAddress(), pythonToNativeNode.execute(inliningTarget, object, false));
+            long dictPtr = ExternalFunctionInvoker.invokeGETDICTPTRFUN(callable.getAddress(), pythonToNativeNode.execute(inliningTarget, object));
             Reference.reachabilityFence(object);
             if (dictPtr == NULLPTR) {
                 return null;

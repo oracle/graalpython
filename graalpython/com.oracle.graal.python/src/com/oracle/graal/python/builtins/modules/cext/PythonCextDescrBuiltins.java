@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6Bui
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
@@ -97,8 +98,8 @@ public final class PythonCextDescrBuiltins {
     public static long GraalPyPrivate_Descr_NewClassMethod(long methodDefPtr, long nameRaw, long docRaw, int flags, long methPtr, long typeRaw) {
         CompilerAsserts.neverPartOfCompilation();
         PythonLanguage language = PythonLanguage.get(null);
-        TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(nameRaw);
-        Object doc = CharPtrToPythonNode.getUncached().execute(docRaw);
+        TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(nameRaw);
+        Object doc = CharPtrToPythonNode.executeUncached(docRaw);
         assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
         Object type = NativeToPythonClassInternalNode.executeUncached(typeRaw);
         PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, type, flags);
@@ -108,6 +109,7 @@ public final class PythonCextDescrBuiltins {
         PDecoratedMethod classMethod = PFactory.createBuiltinClassmethodFromCallableObj(language, func);
         WriteAttributeToPythonObjectNode.executeUncached(classMethod, T___NAME__, name);
         HiddenAttr.WriteLongNode.executeUncached(classMethod, METHOD_DEF_PTR, methodDefPtr);
+        assert EnsurePythonObjectNode.doesNotNeedPromotion(classMethod);
         return PythonToNativeInternalNode.executeUncached(classMethod, true);
     }
 }

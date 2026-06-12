@@ -84,7 +84,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -294,8 +294,8 @@ public final class PythonCextModuleBuiltins {
             int flags = readIntField(def, CFields.PyMethodDef__ml_flags);
             long docRaw = readPtrField(def, CFields.PyMethodDef__ml_doc);
 
-            TruffleString name = (TruffleString) CharPtrToPythonNode.getUncached().execute(nameRaw);
-            Object doc = CharPtrToPythonNode.getUncached().execute(docRaw);
+            TruffleString name = (TruffleString) CharPtrToPythonNode.executeUncached(nameRaw);
+            Object doc = CharPtrToPythonNode.executeUncached(docRaw);
             assert doc == PNone.NO_VALUE || doc instanceof TruffleString;
 
             PythonBuiltinObject func = PythonCextMethodBuiltins.cFunctionNewExMethodNode(language, def, name, cfunc, flags, module, modName, PNone.NO_VALUE, doc);
@@ -311,7 +311,7 @@ public final class PythonCextModuleBuiltins {
         static int doGeneric(PythonModule self, long visitFun, long arg,
                         @Bind Node inliningTarget,
                         @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
-                        @Cached PythonToNativeNode toNativeNode) {
+                        @Cached PythonToNativeInternalNode toNativeNode) {
 
             /*
              * As in 'moduleobject.c: module_traverse': 'if (m->md_def && m->md_def->m_traverse &&
@@ -327,7 +327,7 @@ public final class PythonCextModuleBuiltins {
                         PythonContext ctx = PythonContext.get(inliningTarget);
                         NativeFunctionPointer traverseExecutable = bindFunctionPointer(mTraverse, ExternalFunctionSignature.TRAVERSEPROC);
                         int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING_INVOKE_TRAVERSE_PROC, ctx.ensureNativeContext(), BoundaryCallData.getUncached(),
-                                        ctx.getThreadState(PythonLanguage.get(inliningTarget)), traverseExecutable, toNativeNode.executeLong(self), visitFun, arg);
+                                        ctx.getThreadState(PythonLanguage.get(inliningTarget)), traverseExecutable, toNativeNode.execute(inliningTarget, self), visitFun, arg);
                         checkPrimitiveFunctionResultNode.executeLong(inliningTarget, ctx.getThreadState(PythonLanguage.get(inliningTarget)), StringLiterals.T_VISIT, ires);
                         return ires;
                     }

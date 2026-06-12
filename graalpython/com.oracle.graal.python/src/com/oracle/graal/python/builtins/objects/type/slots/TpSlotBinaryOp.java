@@ -81,7 +81,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -375,8 +375,8 @@ public class TpSlotBinaryOp {
                         Object selfType, Object arg, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached(inline = false) PythonToNativeNode selfToNativeNode,
-                        @Cached(inline = false) PythonToNativeNode argToNativeNode,
+                        @Cached PythonToNativeInternalNode selfToNativeNode,
+                        @Cached PythonToNativeInternalNode argToNativeNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
@@ -386,8 +386,8 @@ public class TpSlotBinaryOp {
             Object promotedArg = ensurePythonObjectNode.execute(ctx, arg, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeBINARYFUNC(frame, C_API_TIMING, ctx.ensureNativeContext(), boundaryCallData, state, slot.callable,
-                                selfToNativeNode.executeLong(promotedSelf), argToNativeNode.executeLong(promotedArg));
-                return checkResultNode.execute(state, op.name, toPythonNode.execute(inliningTarget, lresult, true));
+                                selfToNativeNode.execute(inliningTarget, promotedSelf), argToNativeNode.execute(inliningTarget, promotedArg));
+                return checkResultNode.execute(state, op.name, toPythonNode.executeTransfer(inliningTarget, lresult));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedArg);

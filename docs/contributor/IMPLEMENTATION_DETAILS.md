@@ -276,7 +276,7 @@ When a managed object is passed to a native extension code:
       accessed any primitive elements are (like the previous step) boxed into a
       `PythonAbstractObject`.
 
-* When NFI calls `toNative`/`asPointer`, we:
+* When a C API transition needs a native pointer for a managed object, we:
     * Allocate a native stub that will represent the object on the native side.
       We allocate room for the `refcount` and type pointer to avoid upcalls for
       reading those. For some types such as floats, we also store the

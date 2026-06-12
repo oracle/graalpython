@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -200,7 +199,7 @@ public abstract class StringNodes {
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached PythonToNativeNode toNativeNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
                         @Cached PRaiseNode raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, x), PythonBuiltinClassType.PString)) {
                 // read the native data
@@ -210,7 +209,7 @@ public abstract class StringNodes {
                 long lresult = ExternalFunctionInvoker.invokePY_UNICODE_GET_LENGTH(null, C_API_TIMING, context.ensureNativeContext(),
                                 BoundaryCallData.getUncached(),
                                 context.getThreadState(context.getLanguage(inliningTarget)), callable,
-                                toNativeNode.executeLong(x));
+                                toNativeNode.execute(inliningTarget, x));
                 try {
                     return PInt.intValueExact(lresult);
                 } catch (OverflowException e) {

@@ -46,16 +46,18 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteTruffleStringNodeGen;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -294,14 +296,17 @@ public class CStructAccess {
 
         @Specialization
         static void writeLong(long pointer, long offset, Object value,
+                        @Bind Node inliningTarget,
                         @Cached NativePtrToPythonNode toPython,
-                        @Cached PythonToNativeNewRefNode toNative) {
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeInternalNode toNative) {
             assert offset >= 0;
             long old = NativeMemory.readPtr(pointer + offset);
             if (old != NULLPTR) {
                 toPython.execute(old, true);
             }
-            NativeMemory.writePtr(pointer + offset, toNative.executeLong(value));
+            Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), value, false);
+            NativeMemory.writePtr(pointer + offset, toNative.executeNewRef(inliningTarget, promoted));
         }
     }
 }

@@ -66,7 +66,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -118,15 +118,14 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
                 return new PTzInfo(cls, getInstanceShape.execute(cls));
             } else {
-                CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
-                long clsPointer = toNative.executeLong(cls);
+                long clsPointer = CApiTransitions.PythonToNativeInternalNode.executeUncached(cls, false);
                 try {
                     PythonContext context = PythonContext.get(inliningTarget);
                     var callable = CApiContext.getNativeSymbol(inliningTarget, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW);
                     long nativeResult = ExternalFunctionInvoker.invokePY_TYPE_GENERIC_NEW(null, C_API_TIMING,
                                     context.ensureNativeContext(), BoundaryCallData.getUncached(),
                                     context.getThreadState(context.getLanguage(inliningTarget)), callable, clsPointer, NULLPTR, NULLPTR);
-                    return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
+                    return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), NativeToPythonInternalNode.executeUncached(nativeResult, true));
                 } finally {
                     Reference.reachabilityFence(cls);
                 }

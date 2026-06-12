@@ -60,8 +60,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.objects.array.ArrayNodes;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WriteTruffleStringNode;
@@ -96,7 +96,7 @@ public final class PythonCextArrayBuiltins {
         PArray array = expectArray(arrayPtr, "GraalPyPrivate_Array_getbuffer");
         long bufPtr = ArrayNodes.EnsureNativeStorageNode.executeUncached(array).getPtr();
         writePtrField(pyBufferPtr, CFields.Py_buffer__buf, bufPtr);
-        writePtrField(pyBufferPtr, CFields.Py_buffer__obj, PythonToNativeNewRefNode.executeLongUncached(array));
+        writePtrField(pyBufferPtr, CFields.Py_buffer__obj, PythonToNativeInternalNode.executeNewRefUncached(array));
         writeLongField(pyBufferPtr, CFields.Py_buffer__len, array.getBytesLength());
         writeIntField(pyBufferPtr, CFields.Py_buffer__readonly, 0);
         writeIntField(pyBufferPtr, CFields.Py_buffer__ndim, 1);
@@ -141,7 +141,7 @@ public final class PythonCextArrayBuiltins {
     }
 
     private static PArray expectArray(long arrayPtr, String where) {
-        Object obj = NativeToPythonNode.executeRawUncached(arrayPtr);
+        Object obj = NativeToPythonInternalNode.executeUncached(arrayPtr, false);
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, !(obj instanceof PArray))) {
             throw PythonCextBuiltins.badInternalCall(where, "arrayPtr");
         }
