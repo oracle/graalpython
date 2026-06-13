@@ -45,6 +45,7 @@ import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
 import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
 import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
 import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
+import static com.oracle.graal.python.lib.PyUnicodeFSDecoderNode.SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
@@ -94,6 +95,7 @@ import com.oracle.graal.python.annotations.DowncallSignature;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
@@ -131,6 +133,7 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -2540,9 +2543,9 @@ public final class NativePosixSupport extends PosixSupport {
     @ExportMessage
     public TruffleString crypt(TruffleString word, TruffleString salt,
                     @Bind Node raisingNode,
-                    @Shared("toUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
-                    @Shared("tsCopyBytes") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws PosixException {
+                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
+                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                    @Exclusive @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws PosixException {
         /*
          * From the manpage: Upon successful completion, crypt returns a pointer to a string which
          * encodes both the hashed passphrase, and the settings that were used to encode it. See
@@ -3242,9 +3245,10 @@ public final class NativePosixSupport extends PosixSupport {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object createPathFromString(TruffleString path,
-                    @Shared("toUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Shared("tsCopyBytes") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        return checkPath(getStringBytes(path, switchEncodingNode, copyToByteArrayNode));
+                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        TruffleString utf8 = switchEncodingNode.execute(path, UTF_8, SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER);
+        return checkPath(copyToByteArrayNode.execute(utf8, UTF_8));
     }
 
     @ExportMessage
@@ -3256,15 +3260,21 @@ public final class NativePosixSupport extends PosixSupport {
     @ExportMessage
     @SuppressWarnings("static-method")
     public TruffleString getPathAsString(Object path,
-                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                    @Exclusive @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Exclusive @Cached TruffleString.IsValidNode isValidNode,
+                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
         Buffer result = (Buffer) path;
         if (result.length > Integer.MAX_VALUE) {
             // sanity check that it is safe to cast result.length to int, to be removed once
             // we support large arrays
             throw CompilerDirectives.shouldNotReachHere("Posix path cannot fit into a Java array");
         }
-        return createString(result.data, 0, (int) result.length, true, fromByteArrayNode, switchEncodingNode);
+        int length = (int) result.length;
+        TruffleString utf8 = fromByteArrayNode.execute(result.data, 0, length, UTF_8, true);
+        if (isValidNode.execute(utf8, UTF_8)) {
+            return switchEncodingNode.execute(utf8, TS_ENCODING);
+        }
+        return switchEncodingNode.execute(utf8, TS_ENCODING, PyUnicodeFSDecoderNode.SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER);
     }
 
     @ExportMessage
@@ -3275,13 +3285,11 @@ public final class NativePosixSupport extends PosixSupport {
 
     private static TruffleString createString(byte[] src, int offset, int length, boolean copy, TruffleString.FromByteArrayNode fromByteArrayNode,
                     TruffleString.SwitchEncodingNode switchEncodingNode) {
-        // TODO PyUnicode_DecodeFSDefault
         TruffleString utf8 = fromByteArrayNode.execute(src, offset, length, UTF_8, copy);
         return switchEncodingNode.execute(utf8, TS_ENCODING);
     }
 
     private static byte[] getStringBytes(TruffleString str, TruffleString.SwitchEncodingNode switchEncodingNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-        // TODO replace getBytes with PyUnicode_FSConverter equivalent
         TruffleString utf8 = switchEncodingNode.execute(str, UTF_8);
         byte[] bytes = new byte[utf8.byteLength(UTF_8)];
         copyToByteArrayNode.execute(utf8, 0, bytes, 0, bytes.length, UTF_8);

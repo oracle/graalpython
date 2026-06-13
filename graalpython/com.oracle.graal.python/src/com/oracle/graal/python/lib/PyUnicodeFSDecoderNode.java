@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_8;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -61,6 +62,8 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.AbstractTruffleString;
+import com.oracle.truffle.api.strings.TranscodingErrorHandler;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -71,6 +74,9 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 @GenerateUncached
 @GenerateInline(false)
 public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
+    public static final TranscodingErrorHandler SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER = PyUnicodeFSDecoderNode::surrogateEscapeTranscodingError;
+    public static final TranscodingErrorHandler SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER = PyUnicodeFSDecoderNode::surrogateEscapeToUTF8Handler;
+
     public abstract TruffleString execute(Frame frame, Object object);
 
     @Specialization
@@ -91,11 +97,17 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
     TruffleString doBytes(PBytes object,
                     @CachedLibrary("object") PythonBufferAccessLibrary bufferLib,
                     @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Cached TruffleString.IsValidNode isValidNode,
                     @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                     @Shared("byteIndexOfCP") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode) {
-        // TODO PyUnicode_DecodeFSDefault
-        TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getCopiedByteArray(object), Encoding.UTF_8, false);
-        return checkString(this, switchEncodingNode.execute(utf8, TS_ENCODING), byteIndexOfCodePointNode);
+        TruffleString utf8 = fromByteArrayNode.execute(bufferLib.getCopiedByteArray(object), UTF_8, false);
+        TruffleString str;
+        if (isValidNode.execute(utf8, UTF_8)) {
+            str = switchEncodingNode.execute(utf8, TS_ENCODING);
+        } else {
+            str = switchEncodingNode.execute(utf8, TS_ENCODING, SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER);
+        }
+        return checkString(this, str, byteIndexOfCodePointNode);
     }
 
     @Fallback
@@ -113,5 +125,20 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
             throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
         }
         return str;
+    }
+
+    private static TranscodingErrorHandler.ReplacementString surrogateEscapeTranscodingError(AbstractTruffleString sourceString, int byteIndex, int estimatedByteLength,
+                    Encoding sourceEncoding, Encoding targetEncoding) {
+        assert sourceEncoding == UTF_8 && targetEncoding == TS_ENCODING;
+        int b = sourceString.readByteUncached(byteIndex, UTF_8);
+        assert b >= 0x80;
+        return new TranscodingErrorHandler.ReplacementString(TruffleString.fromCodePointUncached(0xdc00 | b, TS_ENCODING, true), 1);
+    }
+
+    private static TranscodingErrorHandler.ReplacementString surrogateEscapeToUTF8Handler(AbstractTruffleString sourceString, int byteIndex,
+                    @SuppressWarnings("unused") int estimatedByteLength, Encoding sourceEncoding, Encoding targetEncoding) {
+        assert sourceEncoding == TS_ENCODING && targetEncoding == UTF_8;
+        int codepoint = sourceString.codePointAtByteIndexUncached(byteIndex, TS_ENCODING);
+        return new TranscodingErrorHandler.ReplacementString(TruffleString.fromByteArrayUncached(new byte[]{(byte) codepoint}, TruffleString.Encoding.UTF_8), 4);
     }
 }
