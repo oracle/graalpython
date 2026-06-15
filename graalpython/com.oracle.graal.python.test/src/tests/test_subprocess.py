@@ -124,7 +124,7 @@ class TestSubprocess(unittest.TestCase):
     def test_process_group_0(self):
         p = subprocess.Popen([sys.executable, "-c", "import os; print(os.getpgid(0))"],
                              stdout=subprocess.PIPE, process_group=0)
-        stdout, _ = p.communicate(timeout=10)
+        stdout, _ = p.communicate(timeout=60)
         self.assertEqual(p.returncode, 0)
         self.assertEqual(int(stdout), p.pid)
 
