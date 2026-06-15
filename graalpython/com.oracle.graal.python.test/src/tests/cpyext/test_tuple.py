@@ -36,6 +36,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import os
+import tempfile
 import unittest
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType, \
@@ -379,3 +381,20 @@ class TestNativeSubclass(unittest.TestCase):
         assert is_native_object(shape)
         view = memoryview(b"abcd").cast("B", shape)
         assert view.shape == (2, 2)
+
+    def test_utime_ns_divmod_native_tuple(self):
+        class NativeDivmod:
+            def __divmod__(self, other):
+                assert other == 1000000000
+                result = TupleSubclass(1, 234567890)
+                assert is_native_object(result)
+                return result
+
+        with tempfile.NamedTemporaryFile() as f:
+            os.utime(f.name, ns=(NativeDivmod(), NativeDivmod()))
+            stat = os.stat(f.name)
+            expected = 1234567890
+            # We don't care about the exact value. It's about if native tuples are accepted.
+            tolerance = 1_000_000_000
+            assert abs(stat.st_atime_ns - expected) <= tolerance
+            assert abs(stat.st_mtime_ns - expected) <= tolerance

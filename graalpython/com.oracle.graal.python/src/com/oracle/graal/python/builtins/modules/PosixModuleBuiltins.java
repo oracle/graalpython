@@ -3265,12 +3265,14 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isInteger(value)"})
         static void doGeneric(VirtualFrame frame, Node inliningTarget, Object value, long[] timespec, int offset,
                         @Cached PyNumberDivmodNode divmodNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached(value = "createNotNormalized()", inline = false) GetItemNode getItemNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode) {
             Object divmod = divmodNode.execute(frame, inliningTarget, value, BILLION);
-            if (divmod instanceof PTuple tuple) {
-                SequenceStorage storage = tuple.getSequenceStorage();
+            if (tupleCheckNode.execute(inliningTarget, divmod)) {
+                SequenceStorage storage = getTupleStorage.execute(inliningTarget, divmod);
                 if (storage.length() == 2) {
                     timespec[offset] = asLongNode.execute(frame, inliningTarget, getItemNode.execute(storage, 0));
                     timespec[offset + 1] = asLongNode.execute(frame, inliningTarget, getItemNode.execute(storage, 1));
