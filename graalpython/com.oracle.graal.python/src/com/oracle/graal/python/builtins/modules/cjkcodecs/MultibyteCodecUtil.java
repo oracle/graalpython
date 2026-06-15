@@ -141,17 +141,15 @@ public class MultibyteCodecUtil {
     @GenerateCached(alwaysInlineCached = true)
     abstract static class CallErrorCallbackNode extends Node {
 
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, Object errors, Object exc);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, TruffleString errors, Object exc);
 
         // call_error_callback
         @Specialization
-        static Object callErrorCallback(VirtualFrame frame, Node inliningTarget, Object errors, Object exc,
-                        @Cached CastToTruffleStringNode castToStringNode,
+        static Object callErrorCallback(VirtualFrame frame, Node inliningTarget, TruffleString errors, Object exc,
                         @Cached PyCodecLookupErrorNode lookupErrorNode,
                         @Cached(inline = false) CallNode callNode) {
             assert (PyUnicodeCheckNode.executeUncached(errors));
-            TruffleString str = castToStringNode.execute(inliningTarget, errors);
-            Object cb = lookupErrorNode.execute(frame, inliningTarget, str);
+            Object cb = lookupErrorNode.execute(frame, inliningTarget, errors);
             return callNode.execute(frame, cb, exc);
         }
     }
@@ -164,13 +162,13 @@ public class MultibyteCodecUtil {
         abstract int execute(VirtualFrame frame, MultibyteCodec codec,
                         MultibyteCodecState state,
                         MultibyteEncodeBuffer buf,
-                        Object errors, int e);
+                        TruffleString errors, int e);
 
         // multibytecodec_encerror
         @Specialization
         static int encerror(VirtualFrame frame, MultibyteCodec codec,
                         MultibyteCodecState state,
-                        MultibyteEncodeBuffer buf, Object errors, int e,
+                        MultibyteEncodeBuffer buf, TruffleString errors, int e,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BaseExceptionAttrNode attrNode,
@@ -438,11 +436,11 @@ public class MultibyteCodecUtil {
     @GenerateCached(false)
     abstract static class EncodeNode extends Node {
 
-        abstract PBytes execute(VirtualFrame frame, Node inliningTarget, MultibyteCodec codec, MultibyteCodecState state, MultibyteEncodeBuffer buf, Object errors, int flags);
+        abstract PBytes execute(VirtualFrame frame, Node inliningTarget, MultibyteCodec codec, MultibyteCodecState state, MultibyteEncodeBuffer buf, TruffleString errors, int flags);
 
         // multibytecodec_encode
         @Specialization
-        static PBytes encode(VirtualFrame frame, Node inliningTarget, MultibyteCodec codec, MultibyteCodecState state, MultibyteEncodeBuffer buf, Object errors, int flags,
+        static PBytes encode(VirtualFrame frame, Node inliningTarget, MultibyteCodec codec, MultibyteCodecState state, MultibyteEncodeBuffer buf, TruffleString errors, int flags,
                         @Cached(inline = false) EncodeErrorNode encodeErrorNode,
                         @Cached PRaiseNode raiseNode) {
 
