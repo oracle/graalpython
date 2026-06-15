@@ -19,4 +19,5 @@ test.test_mimetypes.MimetypesCliTestCase.test_guess_type @ darwin-arm64,linux-aa
 test.test_mimetypes.MimetypesCliTestCase.test_help_option @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mimetypes.MimetypesCliTestCase.test_invalid_option @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_mimetypes.MiscTestCase.test__all__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_mimetypes.Win32MimeTypesTestCase.test_registry_accelerator @ win32-AMD64
 test.test_mimetypes.Win32MimeTypesTestCase.test_registry_parsing @ win32-AMD64,win32-AMD64-github

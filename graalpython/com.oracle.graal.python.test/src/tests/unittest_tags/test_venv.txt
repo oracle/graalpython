@@ -21,7 +21,7 @@ test.test_venv.BasicTest.test_sysconfig_symlinks @ darwin-arm64,linux-aarch64,li
 test.test_venv.BasicTest.test_unoverwritable_fails @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_venv.BasicTest.test_upgrade @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_venv.BasicTest.test_upgrade_dependencies @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_venv.BasicTest.test_venv_same_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_venv.BasicTest.test_venv_same_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_venv.EnsurePipTest.test_devnull @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_venv.EnsurePipTest.test_explicit_no_pip @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_venv.EnsurePipTest.test_no_pip_by_default @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

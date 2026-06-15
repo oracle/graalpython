@@ -18,6 +18,6 @@ test.test_sysconfig.TestSysConfig.test_paths_depend_on_site_initialization @ dar
 test.test_sysconfig.TestSysConfig.test_platform_in_subprocess @ darwin-arm64
 test.test_sysconfig.TestSysConfig.test_posix_venv_scheme @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sysconfig.TestSysConfig.test_srcdir_independent_of_cwd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_sysconfig.TestSysConfig.test_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_sysconfig.TestSysConfig.test_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_sysconfig.TestSysConfig.test_user_similar @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sysconfig.TestSysConfig.test_venv_scheme @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

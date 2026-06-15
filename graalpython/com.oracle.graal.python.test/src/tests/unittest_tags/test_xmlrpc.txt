@@ -13,7 +13,7 @@ test.test_xmlrpc.DateTimeTestCase.test_time_struct @ darwin-arm64,linux-aarch64,
 test.test_xmlrpc.DateTimeTestCase.test_time_tuple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_xmlrpc.FailingServerTestCase.test_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_xmlrpc.FailingServerTestCase.test_fail_no_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_xmlrpc.FailingServerTestCase.test_fail_with_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_xmlrpc.FailingServerTestCase.test_fail_with_info @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_xmlrpc.FaultTestCase.test_dotted_attribute @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_xmlrpc.FaultTestCase.test_dump_fault @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_xmlrpc.FaultTestCase.test_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

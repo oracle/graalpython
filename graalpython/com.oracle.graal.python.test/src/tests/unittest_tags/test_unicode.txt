@@ -2,6 +2,7 @@ test.test_unicode.StringModuleTest.test_formatter_field_name_split @ darwin-arm6
 test.test_unicode.StringModuleTest.test_formatter_parser @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unicode.StringModuleTest.test_str_subclass_attr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unicode.UnicodeTest.test___contains__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_unicode.UnicodeTest.test_adaptive_find @ darwin-arm64
 test.test_unicode.UnicodeTest.test_additional_rsplit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unicode.UnicodeTest.test_additional_split @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unicode.UnicodeTest.test_ascii @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

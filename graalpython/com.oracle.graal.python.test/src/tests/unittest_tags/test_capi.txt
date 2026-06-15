@@ -61,7 +61,7 @@ test.test_capi.test_dict.CAPITest.test_dict_getitemwitherror @ darwin-arm64,linu
 test.test_capi.test_dict.CAPITest.test_dict_keys_valuesitems_bad_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_dict.CAPITest.test_dict_new @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_dict.CAPITest.test_dict_next @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_capi.test_dict.CAPITest.test_dict_setdefault @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_capi.test_dict.CAPITest.test_dict_setdefault @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_dict.CAPITest.test_dict_setitem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_dict.CAPITest.test_dict_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_dict.CAPITest.test_dictproxy_new @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -193,7 +193,7 @@ test.test_capi.test_misc.CAPITest.test_buildvalue @ darwin-arm64,linux-aarch64,l
 test.test_capi.test_misc.CAPITest.test_buildvalue_ints @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.CAPITest.test_c_type_with_ipow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.CAPITest.test_c_type_with_matrix_multiplication @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_capi.test_misc.CAPITest.test_docstring_signature_parsing @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_capi.test_misc.CAPITest.test_docstring_signature_parsing @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.CAPITest.test_export_symbols @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.CAPITest.test_getitem_with_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_capi.test_misc.CAPITest.test_heaptype_with_buffer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -318,8 +318,8 @@ test.test_capi.test_tuple.CAPITest.test_tuple_get_item @ darwin-arm64,linux-aarc
 test.test_capi.test_tuple.CAPITest.test_tuple_get_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_tuple.CAPITest.test_tuple_getitem @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_tuple.CAPITest.test_tuple_getslice @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_capi.test_tuple.CAPITest.test_tuple_new @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
-test.test_capi.test_tuple.CAPITest.test_tuple_pack @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_capi.test_tuple.CAPITest.test_tuple_new @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_tuple.CAPITest.test_tuple_pack @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_tuple.CAPITest.test_tuple_set_item @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_tuple.CAPITest.test_tuple_size @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_unicode.CAPITest.test_from_format @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

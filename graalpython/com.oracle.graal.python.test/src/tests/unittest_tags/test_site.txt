@@ -24,3 +24,5 @@ test.test_site.ImportSideEffectTests.test_sitecustomize_executed @ darwin-arm64,
 test.test_site.StartupImportTests.test_startup_interactivehook @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.StartupImportTests.test_startup_interactivehook_isolated @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_site.StartupImportTests.test_startup_interactivehook_isolated_explicit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_site._pthFileTests.test_underpth_dll_file @ win32-AMD64
+test.test_site._pthFileTests.test_underpth_file @ win32-AMD64

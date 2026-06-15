@@ -1,7 +1,7 @@
 test.test_coroutines.AsyncBadSyntaxTest.test_badsyntax_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_coroutines.AsyncBadSyntaxTest.test_badsyntax_3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_coroutines.AsyncBadSyntaxTest.test_badsyntax_4 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_coroutines.CoroAsyncIOCompatTest.test_asyncio_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_coroutines.CoroAsyncIOCompatTest.test_asyncio_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_coroutines.CoroutineTest.test_await_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_coroutines.CoroutineTest.test_await_10 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_coroutines.CoroutineTest.test_await_11 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -73,4 +73,4 @@ test.test_coroutines.CoroutineTest.test_with_4 @ darwin-arm64,linux-aarch64,linu
 test.test_coroutines.CoroutineTest.test_with_5 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_coroutines.CoroutineTest.test_with_9 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_coroutines.TokenizerRegrTest.test_oneline_defs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_coroutines.UnawaitedWarningDuringShutdownTest.test_unawaited_warning_during_shutdown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_coroutines.UnawaitedWarningDuringShutdownTest.test_unawaited_warning_during_shutdown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
