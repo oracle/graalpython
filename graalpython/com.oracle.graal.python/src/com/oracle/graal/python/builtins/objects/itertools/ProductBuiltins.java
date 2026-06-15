@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -102,7 +103,7 @@ public final class ProductBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ProductNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "isTypeNode.execute(inliningTarget, cls)")
+        @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "isNoValue(repeat)"})
         static Object constructNoneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") PNone repeat,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Cached.Shared @Cached IteratorNodes.ToArrayNode toArrayNode,
@@ -113,55 +114,45 @@ public final class ProductBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat == 1"}, limit = "1")
-        static Object constructOneRepeat(VirtualFrame frame, Object cls, Object[] iterables, @SuppressWarnings("unused") int repeat,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @Cached.Shared @Cached IteratorNodes.ToArrayNode toArrayNode,
-                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            PProduct self = PFactory.createProduct(cls, getInstanceShape.execute(cls));
-            constructOneRepeat(frame, self, iterables, toArrayNode);
-            return self;
-        }
-
-        @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat > 1"}, limit = "1")
-        static Object construct(VirtualFrame frame, Object cls, Object[] iterables, int repeat,
+        @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "!isNoValue(repeat)"}, limit = "1")
+        static Object constructRepeat(VirtualFrame frame, Object cls, Object[] iterables, Object repeat,
                         @Bind Node inliningTarget,
+                        @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached.Shared @Cached IteratorNodes.ToArrayNode toArrayNode,
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached InlinedBranchProfile zeroProfile,
+                        @Cached InlinedBranchProfile oneProfile,
+                        @Cached InlinedBranchProfile genericProfile,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            Object[][] lists = unpackIterables(frame, iterables, toArrayNode);
-            Object[][] gears = new Object[lists.length * repeat][];
-            loopProfile.profileCounted(inliningTarget, repeat);
-            LoopNode.reportLoopCount(inliningTarget, repeat);
-            for (int i = 0; loopProfile.inject(inliningTarget, i < repeat); i++) {
-                PythonUtils.arraycopy(lists, 0, gears, i * lists.length, lists.length);
+            int repeatInt = asSizeNode.executeExact(frame, inliningTarget, repeat);
+            if (repeatInt < 0) {
+                errorProfile.enter(inliningTarget);
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_CANNOT_BE_NEGATIVE, "repeat");
             }
             PProduct self = PFactory.createProduct(cls, getInstanceShape.execute(cls));
-            construct(self, gears);
+            if (repeatInt == 0) {
+                zeroProfile.enter(inliningTarget);
+                self.setGears(new Object[0][]);
+                self.setIndices(new int[0]);
+                self.setLst(null);
+                self.setStopped(false);
+            } else if (repeatInt == 1) {
+                oneProfile.enter(inliningTarget);
+                constructOneRepeat(frame, self, iterables, toArrayNode);
+            } else {
+                genericProfile.enter(inliningTarget);
+                Object[][] lists = unpackIterables(frame, iterables, toArrayNode);
+                Object[][] gears = new Object[lists.length * repeatInt][];
+                loopProfile.profileCounted(inliningTarget, repeatInt);
+                LoopNode.reportLoopCount(inliningTarget, repeatInt);
+                for (int i = 0; loopProfile.inject(inliningTarget, i < repeatInt); i++) {
+                    PythonUtils.arraycopy(lists, 0, gears, i * lists.length, lists.length);
+                }
+                construct(self, gears);
+            }
             return self;
-        }
-
-        @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat == 0"}, limit = "1")
-        static Object constructNoRepeat(Object cls, @SuppressWarnings("unused") Object[] iterables, @SuppressWarnings("unused") int repeat,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            PProduct self = PFactory.createProduct(cls, getInstanceShape.execute(cls));
-            self.setGears(new Object[0][]);
-            self.setIndices(new int[0]);
-            self.setLst(null);
-            self.setStopped(false);
-            return self;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"isTypeNode.execute(inliningTarget, cls)", "repeat < 0"}, limit = "1")
-        static Object constructNeg(Object cls, Object[] iterables, int repeat,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_CANNOT_BE_NEGATIVE, "repeat");
         }
 
         private static void constructOneRepeat(VirtualFrame frame, PProduct self, Object[] iterables, IteratorNodes.ToArrayNode toArrayNode) {
