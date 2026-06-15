@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltinsClinicProviders.WarnBuiltinNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltinsFactory.WarnBuiltinNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -100,10 +101,12 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool.CachedPyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -225,6 +228,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         @Child TruffleString.RegionEqualNode regionEqualNode;
         @Child TruffleString.EqualNode equalNode;
         @Child TruffleString.SubstringNode substringNode;
+        @Child GetSequenceStorageNode tupleStorageNode;
 
         @NeverDefault
         static WarningsModuleNode create() {
@@ -309,6 +313,14 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 sequenceGetItemNode = insert(SequenceStorageNodes.GetItemScalarNode.create());
             }
             return sequenceGetItemNode;
+        }
+
+        private GetSequenceStorageNode getTupleStorageNode() {
+            if (tupleStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                tupleStorageNode = insert(GetSequenceStorageNode.create());
+            }
+            return tupleStorageNode;
         }
 
         private Object getPythonClass(Object object) {
@@ -571,10 +583,10 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             SequenceStorageNodes.GetItemScalarNode sequenceGetItem = getSequenceGetItemNode();
             for (int i = 0; i < filtersStorage.length(); i++) {
                 Object tmpItem = sequenceGetItem.executeCached(filtersStorage, i);
-                if (!(tmpItem instanceof PTuple)) {
+                if (!PyTupleCheckNode.executeUncached(tmpItem)) {
                     throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
-                SequenceStorage tmpStorage = ((PTuple) tmpItem).getSequenceStorage();
+                SequenceStorage tmpStorage = getTupleStorageNode().execute(this, tmpItem);
                 if (tmpStorage.length() != 5) {
                     throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.ValueError, ErrorMessages.WARN_FILTERS_IETM_ISNT_5TUPLE, i);
                 }
@@ -989,12 +1001,14 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached StringNodes.CastToTruffleStringChecked1Node castToStringChecked,
+                        @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached PRaiseNode raiseNode,
                         @Cached WarningsModuleNode moduleFunctionsNode) {
             // warnings_warn_impl
             TruffleString[] skipFilePrefixes = null;
-            if (skipFilePrefixesObj instanceof PTuple tuple) {
-                SequenceStorage storage = tuple.getSequenceStorage();
+            if (tupleCheckNode.execute(inliningTarget, skipFilePrefixesObj)) {
+                SequenceStorage storage = getTupleStorage.execute(inliningTarget, skipFilePrefixesObj);
                 if (storage.length() > 0) {
                     skipFilePrefixes = new TruffleString[storage.length()];
                     for (int i = 0; i < storage.length(); i++) {
