@@ -103,9 +103,8 @@ public abstract class TupleNodes {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
-                        @Cached GetNativeTupleStorage getNativeTupleStorage,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
-            return PFactory.createTuple(language, toArrayNode.execute(inliningTarget, getNativeTupleStorage.execute(iterable)));
+            return PFactory.createTuple(language, toArrayNode.execute(inliningTarget, GetTupleStorage.doNative(iterable)));
         }
 
         @Fallback
@@ -138,28 +137,12 @@ public abstract class TupleNodes {
         public abstract SequenceStorage execute(Node inliningTarget, Object tuple);
 
         @Specialization
-        SequenceStorage getManaged(PTuple tuple) {
+        static SequenceStorage doManaged(PTuple tuple) {
             return tuple.getSequenceStorage();
         }
 
         @Specialization
-        SequenceStorage getNative(PythonAbstractNativeObject tuple,
-                        @Cached(inline = false) GetNativeTupleStorage getNativeTupleStorage) {
-            return getNativeTupleStorage.execute(tuple);
-        }
-    }
-
-    @GenerateInline(false)
-    @GenerateUncached
-    public abstract static class GetNativeTupleStorage extends Node {
-        public abstract NativeObjectSequenceStorage execute(PythonAbstractNativeObject tuple);
-
-        public static GetNativeTupleStorage getUncached() {
-            return TupleNodesFactory.GetNativeTupleStorageNodeGen.getUncached();
-        }
-
-        @Specialization
-        NativeObjectSequenceStorage getNative(PythonAbstractNativeObject tuple) {
+        public static SequenceStorage doNative(PythonAbstractNativeObject tuple) {
             assert PyTupleCheckNode.executeUncached(tuple);
             long tupleRawPtr = tuple.getPtr();
             long array = CStructAccess.getFieldPtr(tupleRawPtr, CFields.PyTupleObject__ob_item);

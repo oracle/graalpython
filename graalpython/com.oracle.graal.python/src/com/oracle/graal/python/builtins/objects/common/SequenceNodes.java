@@ -56,7 +56,7 @@ import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.builtins.TupleNodes;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ForeignSequenceStorage;
@@ -141,17 +141,16 @@ public abstract class SequenceNodes {
         }
 
         @Specialization(guards = "tupleCheck.execute(inliningTarget, seq)", limit = "1")
-        static SequenceStorage doNativeTuple(Node inliningTarget, PythonAbstractNativeObject seq,
-                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck,
-                        @Cached TupleNodes.GetNativeTupleStorage getNativeTupleStorage) {
-            return getNativeTupleStorage.execute(seq);
+        static SequenceStorage doNativeTuple(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject seq,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck) {
+            return GetTupleStorage.doNative(seq);
         }
 
         // Note: this does not seem currently used but is good to accept foreign lists in more
         // places
         @Specialization(guards = {"isForeignObjectNode.execute(inliningTarget, seq)", "interop.hasArrayElements(seq)"}, limit = "1")
         static SequenceStorage doForeign(Node inliningTarget, Object seq,
-                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
                         @Cached InlinedBranchProfile errorProfile) {
             try {
