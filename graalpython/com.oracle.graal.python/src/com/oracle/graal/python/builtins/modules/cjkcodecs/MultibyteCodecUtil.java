@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,12 +77,13 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionAttrNode;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -173,7 +174,9 @@ public class MultibyteCodecUtil {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
+                        @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached CastToTruffleStringNode toTString,
@@ -252,18 +255,16 @@ public class MultibyteCodecUtil {
 
             Object retobj = callErrorCallbackNode.execute(frame, inliningTarget, errors, buf.excobj);
 
-            boolean isError = !(retobj instanceof PTuple);
+            boolean isError = !tupleCheckNode.execute(inliningTarget, retobj);
             Object tobj = null;
             Object newposobj = null;
             boolean isUnicode = false;
             if (!isError) {
-                PTuple tuple = (PTuple) retobj;
-                SequenceStorage storage = tuple.getSequenceStorage();
-                Object[] array = getArray.execute(inliningTarget, storage);
+                SequenceStorage storage = getTupleStorage.execute(inliningTarget, retobj);
                 isError = storage.length() != 2;
                 if (!isError) {
-                    tobj = array[0];
-                    newposobj = array[1];
+                    tobj = getItemNode.execute(inliningTarget, storage, 0);
+                    newposobj = getItemNode.execute(inliningTarget, storage, 1);
                     isUnicode = unicodeCheckNode.execute(inliningTarget, tobj);
                     isError = !isUnicode && !bytesCheckNode.execute(inliningTarget, tobj);
                     isError = isError || !longCheckNode.execute(inliningTarget, newposobj);
@@ -328,7 +329,9 @@ public class MultibyteCodecUtil {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
+                        @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached PyLongAsIntNode asSizeNode,
@@ -387,17 +390,15 @@ public class MultibyteCodecUtil {
 
             Object retobj = callErrorCallbackNode.execute(frame, inliningTarget, errors, buf.excobj);
 
-            boolean isError = !(retobj instanceof PTuple);
+            boolean isError = !tupleCheckNode.execute(inliningTarget, retobj);
             Object retuni = null;
             Object newposobj = null;
             if (!isError) {
-                PTuple tuple = (PTuple) retobj;
-                SequenceStorage storage = tuple.getSequenceStorage();
-                Object[] array = getArray.execute(inliningTarget, storage);
+                SequenceStorage storage = getTupleStorage.execute(inliningTarget, retobj);
                 isError = storage.length() != 2;
                 if (!isError) {
-                    retuni = array[0];
-                    newposobj = array[1];
+                    retuni = getItemNode.execute(inliningTarget, storage, 0);
+                    newposobj = getItemNode.execute(inliningTarget, storage, 1);
                     isError = !unicodeCheckNode.execute(inliningTarget, retuni);
                     isError = isError || !longCheckNode.execute(inliningTarget, newposobj);
                 }
