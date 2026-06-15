@@ -138,7 +138,7 @@ public class MultibyteCodecUtil {
     }
 
     @GenerateInline
-    @GenerateCached(alwaysInlineCached = true)
+    @GenerateCached(false)
     abstract static class CallErrorCallbackNode extends Node {
 
         abstract Object execute(VirtualFrame frame, Node inliningTarget, TruffleString errors, Object exc);
@@ -148,7 +148,6 @@ public class MultibyteCodecUtil {
         static Object callErrorCallback(VirtualFrame frame, Node inliningTarget, TruffleString errors, Object exc,
                         @Cached PyCodecLookupErrorNode lookupErrorNode,
                         @Cached(inline = false) CallNode callNode) {
-            assert (PyUnicodeCheckNode.executeUncached(errors));
             Object cb = lookupErrorNode.execute(frame, inliningTarget, errors);
             return callNode.execute(frame, cb, exc);
         }
@@ -181,7 +180,7 @@ public class MultibyteCodecUtil {
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached PyBytesCheckNode bytesCheckNode,
                         @Cached PyLongAsIntNode asSizeNode,
-                        @Cached(inline = true) CallErrorCallbackNode callErrorCallbackNode,
+                        @Cached CallErrorCallbackNode callErrorCallbackNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached EncodeNode encodeNode,
                         @Cached PRaiseNode raiseNode) {
@@ -334,7 +333,7 @@ public class MultibyteCodecUtil {
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached PyLongAsIntNode asSizeNode,
                         @Cached CastToJavaStringNode toString,
-                        @Cached(inline = true) CallErrorCallbackNode callErrorCallbackNode,
+                        @Cached CallErrorCallbackNode callErrorCallbackNode,
                         @Cached PRaiseNode raiseNode) {
 
             TruffleString reason = ILLEGAL_MULTIBYTE_SEQUENCE;
