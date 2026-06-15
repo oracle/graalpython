@@ -7,6 +7,7 @@ test.test_codecs.BasicUnicodeTest.test_encoding_map_type_initialized @ darwin-ar
 test.test_codecs.CharmapTest.test_decode_with_int2int_map @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecs.CharmapTest.test_decode_with_int2str_map @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecs.CharmapTest.test_decode_with_string_map @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_codecs.CodePageTest.test_mbcs_alias @ win32-AMD64
 test.test_codecs.CodecNameNormalizationTest.test_codecs_lookup @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecs.CodecNameNormalizationTest.test_encodings_normalize_encoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_codecs.CodecsModuleTest.test_all @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

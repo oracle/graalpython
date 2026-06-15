@@ -277,6 +277,7 @@ test.test_sqlite3.test_regression.RegressionTests.test_convert_timestamp_microse
 test.test_sqlite3.test_regression.RegressionTests.test_cursor_constructor_call_check @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_regression.RegressionTests.test_del_isolation_level_segfault @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_regression.RegressionTests.test_empty_statement @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_sqlite3.test_regression.RegressionTests.test_error_msg_decode_error @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sqlite3.test_regression.RegressionTests.test_executescript_step_through_select @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_regression.RegressionTests.test_invalid_isolation_level_type @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_regression.RegressionTests.test_large_sql @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -438,12 +439,14 @@ test.test_sqlite3.test_userfunctions.FunctionTests.test_func_return_nan @ darwin
 test.test_sqlite3.test_userfunctions.FunctionTests.test_func_return_null @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_userfunctions.FunctionTests.test_func_return_text @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_userfunctions.FunctionTests.test_func_return_text_with_null_char @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_sqlite3.test_userfunctions.FunctionTests.test_func_return_text_with_surrogates @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sqlite3.test_userfunctions.FunctionTests.test_func_return_too_large_int @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_userfunctions.FunctionTests.test_func_return_unicode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_userfunctions.FunctionTests.test_func_too_many_args @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_userfunctions.FunctionTests.test_function_destructor_via_gc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_userfunctions.FunctionTests.test_nan_float @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_userfunctions.FunctionTests.test_non_contiguous_blob @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_sqlite3.test_userfunctions.FunctionTests.test_param_surrogates @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sqlite3.test_userfunctions.FunctionTests.test_return_non_contiguous_blob @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_userfunctions.FunctionTests.test_too_large_int @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_userfunctions.WindowFunctionTests.test_win_clear_function @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
