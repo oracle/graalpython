@@ -41,9 +41,11 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_CANNOT_BE_NEGATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 
 import java.util.List;
 
@@ -59,22 +61,25 @@ import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.Deprecat
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -129,7 +134,7 @@ public final class ProductBuiltins extends PythonBuiltins {
             int repeatInt = asSizeNode.executeExact(frame, inliningTarget, repeat);
             if (repeatInt < 0) {
                 errorProfile.enter(inliningTarget);
-                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_CANNOT_BE_NEGATIVE, "repeat");
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ARG_CANNOT_BE_NEGATIVE, "repeat");
             }
             PProduct self = PFactory.createProduct(cls, getInstanceShape.execute(cls));
             if (repeatInt == 0) {
@@ -314,11 +319,11 @@ public final class ProductBuiltins extends PythonBuiltins {
         }
 
         private static PTuple createGearTuple(PProduct self, PythonLanguage language) {
-            PList[] lists = new PList[self.getGears().length];
-            for (int i = 0; i < lists.length; i++) {
-                lists[i] = PFactory.createList(language, self.getGears()[i]);
+            PTuple[] tuples = new PTuple[self.getGears().length];
+            for (int i = 0; i < tuples.length; i++) {
+                tuples[i] = PFactory.createTuple(language, self.getGears()[i]);
             }
-            return PFactory.createTuple(language, lists);
+            return PFactory.createTuple(language, tuples);
         }
     }
 
@@ -326,25 +331,34 @@ public final class ProductBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
-        static Object setState(PProduct self, Object state) {
+        @TruffleBoundary
+        static Object setState(PProduct self, Object state,
+                        @Bind Node inliningTarget) {
             Object[][] gears = self.getGears();
+            if (!PyTupleCheckNode.executeUncached(state) || PyTupleSizeNode.executeUncached(state) != gears.length) {
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_ARGS, T___SETSTATE__);
+            }
             Object[] lst = new Object[gears.length];
             int[] indices = self.getIndices();
-            for (int i = 0; i < gears.length; i++) {
-                Object o = PyTupleGetItem.executeUncached(state, i);
-                int index = PyLongAsIntNode.executeUncached(o);
-                int gearSize = gears[i].length;
-                if (indices == null || gearSize == 0) {
-                    self.setStopped(true);
-                    return PNone.NONE;
+            try {
+                for (int i = 0; i < gears.length; i++) {
+                    Object o = PyTupleGetItem.executeUncached(state, i);
+                    int index = CastToJavaIntExactNode.executeUncached(o);
+                    int gearSize = gears[i].length;
+                    if (indices == null || gearSize == 0) {
+                        self.setStopped(true);
+                        return PNone.NONE;
+                    }
+                    if (index < 0) {
+                        index = 0;
+                    } else if (index > gearSize - 1) {
+                        index = gearSize - 1;
+                    }
+                    indices[i] = index;
+                    lst[i] = gears[i][index];
                 }
-                if (index < 0) {
-                    index = 0;
-                } else if (index > gearSize - 1) {
-                    index = gearSize - 1;
-                }
-                indices[i] = index;
-                lst[i] = gears[i][index];
+            } catch (CannotCastException e) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
             self.setLst(lst);
             return PNone.NONE;

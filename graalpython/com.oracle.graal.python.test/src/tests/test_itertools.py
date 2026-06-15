@@ -140,7 +140,8 @@ class CombinationsTests(unittest.TestCase):
 
         self.assertEqual(list(product([1, 2], repeat=Index(2))), [(1, 1), (1, 2), (2, 1), (2, 2)])
         self.assertEqual(list(product([1, 2], repeat=Index(0))), [()])
-        self.assertRaises(TypeError, product, [1, 2], repeat=Index(-1))
+        self.assertRaises(ValueError, product, [1, 2], repeat=Index(-1))
+        self.assertRaises(ValueError, product, [1, 2], repeat=-1)
         self.assertRaises(TypeError, product, [1, 2], repeat=None)
         self.assertRaises(TypeError, product, [1, 2], repeat=object())
 
