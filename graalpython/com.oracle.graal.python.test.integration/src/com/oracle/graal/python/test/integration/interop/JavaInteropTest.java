@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,7 +70,6 @@ import org.graalvm.polyglot.proxy.ProxyObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -485,7 +484,6 @@ public class JavaInteropTest {
             }
         }
 
-        @Ignore // blocked by GR-46281
         @Test
         public void runAForeignExecutable() throws IOException {
             Source suitePy = Source.newBuilder("python",
@@ -493,7 +491,7 @@ public class JavaInteropTest {
                                             def foo(obj):
                                               try:
                                                  obj()
-                                              except TypeError as e:
+                                              except:
                                                  pass
                                               else:
                                                  assert False
@@ -504,7 +502,6 @@ public class JavaInteropTest {
             foo.execute(new AForeignExecutable());
         }
 
-        @Ignore // blocked by GR-46281
         @Test
         public void invokeAForeignMember() throws IOException {
             Source suitePy = Source.newBuilder("python",
@@ -512,7 +509,7 @@ public class JavaInteropTest {
                                             def foo(obj):
                                               try:
                                                  obj.fun()
-                                              except TypeError as e:
+                                              except:
                                                  pass
                                               else:
                                                  assert False

@@ -303,7 +303,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             gil.release(true);
             try {
                 return posixLib.forkExec(context.getPosixSupport(), executables, processArgs, cwd, env == null ? null : (Object[]) env, stdinRead, stdinWrite, stdoutRead, stdoutWrite, stderrRead,
-                                stderrWrite, errPipeRead, errPipeWrite, closeFds, restoreSignals, callSetsid, fdsToKeep, allowVFork);
+                                stderrWrite, errPipeRead, errPipeWrite, closeFds, restoreSignals, callSetsid, pgidToSet, fdsToKeep, allowVFork);
             } catch (PosixException e) {
                 gil.acquire();
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);

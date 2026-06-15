@@ -807,11 +807,11 @@ public class PreInitPosixSupport extends PosixSupport {
 
     @ExportMessage
     final int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
-                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep, boolean allowVFork,
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();
         return nativeLib.forkExec(nativePosixSupport, executables, args, cwd, env, stdinReadFd, stdinWriteFd, stdoutReadFd, stdoutWriteFd, stderrReadFd, stderrWriteFd, errPipeReadFd, errPipeWriteFd,
-                        closeFds, restoreSignals, callSetsid, fdsToKeep, allowVFork);
+                        closeFds, restoreSignals, callSetsid, pgidToSet, fdsToKeep, allowVFork);
     }
 
     @ExportMessage

@@ -79,7 +79,7 @@ NATIVE_EXEC_LAUNCHER = "Py2BinLauncher"
 NATIVE_EXEC_LAUNCHER_FILE = f"{NATIVE_EXEC_LAUNCHER}.java"
 NATIVE_EXEC_LAUNCHER_TEMPLATE_PATH = f"resources/{NATIVE_EXEC_LAUNCHER_FILE}"
 
-NATIVE_IMAGE_RESOURCES_FILE = "native-image-resources.json"
+NATIVE_IMAGE_RESOURCES_FILE = "resource-config.json"
 NATIVE_IMAGE_RESOURCES_PATH = f"resources/{NATIVE_IMAGE_RESOURCES_FILE}"
 
 GRAALVM_URL_BASE = "https://download.oracle.com/graalvm/"
@@ -436,9 +436,8 @@ def build_binary(target_dir, ni, jc, modules_path, legacy_embedding_path, launch
             ]
         cmd += [
             "--no-fallback",
-            "-H:+UnlockExperimentalVMOptions",
             "-H:-CopyLanguageResources",
-            f"-H:ResourceConfigurationFiles={target_dir}/{NATIVE_IMAGE_RESOURCES_FILE}",
+            f"-H:ConfigurationFileDirectories={target_dir}",
             "-o",
             output,
             f"{NATIVE_EXEC_LAUNCHER}",

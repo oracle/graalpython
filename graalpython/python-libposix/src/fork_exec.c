@@ -357,6 +357,7 @@ child_exec(char *const exec_array[],
            int errpipe_read, int errpipe_write,
            int close_fds, int restore_signals,
            int call_setsid,
+           int pgid_to_set,
            const void *child_sigmask,
            int *fds_to_keep,
            ssize_t fds_to_keep_len)
@@ -446,6 +447,9 @@ child_exec(char *const exec_array[],
         POSIX_CALL(setsid());
 #endif
 
+    if (pgid_to_set >= 0)
+        POSIX_CALL(setpgid(0, pgid_to_set));
+
     err_msg = "";
 
     /* close FDs after executing preexec_fn, which might open FDs */
@@ -508,6 +512,7 @@ do_fork_exec(char *const exec_list[],
              int errPipeRdFd, int errPipeWrFd,
              int closeFds, int restoreSignals,
              int callSetsid,
+             int pgidToSet,
              const void *childSigmask,
              int *fdsToKeep, int64_t fdsToKeepLen)
 {
@@ -534,6 +539,7 @@ do_fork_exec(char *const exec_list[],
         closeFds,
         restoreSignals,
         callSetsid,
+        pgidToSet,
         childSigmask,
         fdsToKeep, fdsToKeepLen
     );
@@ -558,6 +564,7 @@ do_fork_exec(char *const exec_list[],
  *            (if nonzero, then errPipeWrFd must be in fdsToKeep)
  * restoreSignals - currently not used
  * callSetsid - if nonzero, the child calls setsid before exec()
+ * pgidToSet - if non-negative, the child calls setpgid(0, pgidToSet) before exec()
  * allowVFork - if nonzero, use vfork() instead of fork() where it is safe and supported
  * fdsToKeep, fdsToKeepLen - a sorted list of fds to keep open (the child clears their O_CLOEXEC)
  */
@@ -570,6 +577,7 @@ int32_t fork_exec(
             int32_t closeFds,
             int32_t restoreSignals,
             int32_t callSetsid,
+            int32_t pgidToSet,
             int32_t allowVFork,
             int32_t *fdsToKeep, int64_t fdsToKeepLen
             ) {
@@ -588,7 +596,8 @@ int32_t fork_exec(
 #ifdef VFORK_USABLE
     const void *oldSigmask = NULL;
     sigset_t oldSigs;
-    if (allowVFork) {
+    /* Keep process-group setup on the normal fork path. */
+    if (allowVFork && pgidToSet < 0) {
         sigset_t allSigs;
         sigfillset(&allSigs);
         int err = pthread_sigmask(SIG_BLOCK, &allSigs, &oldSigs);
@@ -611,6 +620,7 @@ int32_t fork_exec(
         closeFds,
         restoreSignals,
         callSetsid,
+        pgidToSet,
         oldSigmask,
         fdsToKeep, fdsToKeepLen
     );

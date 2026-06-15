@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -48,7 +47,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYP
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_A_S_TUPLE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACKET;
@@ -125,7 +123,6 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListInteropNode;
 import com.oracle.graal.python.nodes.interop.GetInteropBehaviorNode;
 import com.oracle.graal.python.nodes.interop.GetInteropBehaviorValueNode;
@@ -606,29 +603,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public Object invokeMember(String member, Object[] arguments,
                     @Bind Node inliningTarget,
                     @Exclusive @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                    @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
-                    @Exclusive @Cached CallBinaryMethodNode callGetattributeNode,
+                    @Exclusive @Cached PyObjectLookupAttr lookup,
                     @Exclusive @Cached PExecuteNode executeNode,
-                    @Exclusive @Cached InlinedConditionProfile profileGetattribute,
                     @Exclusive @Cached InlinedConditionProfile profileMember,
-                    // GR-44020: make shared:
-                    @Exclusive @Cached IsBuiltinObjectProfile attributeErrorProfile,
                     @Exclusive @Cached GilNode gil)
                     throws UnknownIdentifierException, UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            Object memberObj;
-            try {
-                Object attrGetattribute = lookupGetattributeNode.execute(inliningTarget, this, T___GETATTRIBUTE__);
-                if (profileGetattribute.profile(inliningTarget, attrGetattribute == PNone.NO_VALUE)) {
-                    throw UnknownIdentifierException.create(member);
-                }
-                memberObj = callGetattributeNode.executeObject(attrGetattribute, this, fromJavaStringNode.execute(member, TS_ENCODING));
-                if (profileMember.profile(inliningTarget, memberObj == PNone.NO_VALUE)) {
-                    throw UnknownIdentifierException.create(member);
-                }
-            } catch (PException e) {
-                e.expect(inliningTarget, AttributeError, attributeErrorProfile);
+            Object memberObj = lookup.execute(null, inliningTarget, this, fromJavaStringNode.execute(member, TS_ENCODING));
+            if (profileMember.profile(inliningTarget, memberObj == PNone.NO_VALUE)) {
                 throw UnknownIdentifierException.create(member);
             }
             return executeNode.execute(memberObj, arguments);
@@ -1166,6 +1149,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                         @Cached GetClassNode getClassNode,
                         @Cached IsImmutable isImmutable,
                         @Cached GetMroNode getMroNode,
+                        @Cached PyObjectLookupAttr lookupAttr,
                         @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
@@ -1185,10 +1169,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 if (attr == PNone.NO_VALUE) {
                     attr = readObjectAttrNode.execute(owner, attrKeyName);
                 }
+                Object dynamicAttr = PNone.NO_VALUE;
+                if (attr == PNone.NO_VALUE && (type == READABLE || type == INVOCABLE)) {
+                    dynamicAttr = lookupAttr.execute(null, inliningTarget, object, attrKeyName);
+                }
 
                 switch (type) {
                     case READABLE:
-                        return attr != PNone.NO_VALUE;
+                        return attr != PNone.NO_VALUE || dynamicAttr != PNone.NO_VALUE;
                     case INSERTABLE:
                         return attr == PNone.NO_VALUE && !isImmutable.execute(inliningTarget, object);
                     case REMOVABLE:
@@ -1221,6 +1209,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                                 }
                             }
                             return callableCheck.execute(inliningTarget, attr);
+                        }
+                        if (dynamicAttr != PNone.NO_VALUE) {
+                            return callableCheck.execute(inliningTarget, dynamicAttr);
                         }
                         return false;
                     case READ_SIDE_EFFECTS:

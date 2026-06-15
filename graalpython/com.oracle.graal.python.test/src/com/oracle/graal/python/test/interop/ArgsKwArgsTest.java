@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.test.interop;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -75,6 +76,35 @@ public class ArgsKwArgsTest extends PythonTests {
 
     private Value run(String evalString) {
         return context.eval("python", evalString);
+    }
+
+    @Test
+    public void testLazyModuleMemberInvoke() {
+        Value module = run("""
+                        import types
+
+                        class LazyModule(types.ModuleType):
+                            def __getattr__(self, name):
+                                if name == "set_seed":
+                                    def set_seed(seed):
+                                        self.seed = seed
+                                        return seed + 1
+                                    self.__dict__[name] = set_seed
+                                    return set_seed
+                                raise AttributeError(name)
+
+                        direct = LazyModule("direct")
+                        probe = LazyModule("probe")
+                        """);
+
+        Value direct = module.getMember("direct");
+        assertEquals(44, direct.invokeMember("set_seed", 43).asInt());
+        assertEquals(43, direct.getMember("seed").asInt());
+
+        Value probe = module.getMember("probe");
+        assertTrue(probe.hasMember("set_seed"));
+        assertFalse(probe.hasMember("missing"));
+        assertEquals(12, probe.invokeMember("set_seed", 11).asInt());
     }
 
     @Test

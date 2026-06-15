@@ -89,7 +89,7 @@ This approach involves the following steps:
 - Smaller JAR/executable size since Python resources aren't embedded
 
 To use an external directory, create your GraalPy context with:
-- `GraalPyResources.createContextBuilder(Path)` - Creates a context builder pointing to your external directory path
+- `GraalPyResources.contextBuilder(Path)` - Creates a context builder pointing to your external directory path
 
 ## Directory Structure
 
@@ -229,10 +229,9 @@ To customize the lock file path, configure _graalPyLockFile_ :
 </configuration>
 ```
 
-> **Note:** This only changes the path (defaults to _${basedir}/graalpy.lock_).To generate the lock file, run the `lock-packages` goal.
+> **Note:** This only changes the path (defaults to _${basedir}/graalpy.lock_). To generate the lock file, run the `lock-packages` goal.
 
-For more information of this feature, please see the
-[Python Dependency Management for Reproducible Builds](#python-dependency-management-for-reproducible-builds) section.
+For more information about dependency locking, see the [Dependency Management](#dependency-management) section.
 
 ## GraalPy Gradle Plugin
 
@@ -295,8 +294,7 @@ To customize the lock file path, configure _graalPyLockFile_:
 
 > **Note:** This only changes the path (defaults to _$rootDir/graalpy.lock_). To generate the lock file, run the `graalPyLockPackages` task.
 
-For more information of this feature, please see the
-[Python Dependency Management for Reproducible Builds](#python-dependency-management-for-reproducible-builds) section.
+For more information about dependency locking, see the [Dependency Management](#dependency-management) section.
 
 ### Related Documentation
 

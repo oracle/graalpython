@@ -4,7 +4,7 @@ GraalPy supports GraalVM Native Image to generate native binaries of Java applic
 
 ## Building Executables with Python
 
-If you started with the [Maven archetype](Embedding-Getting-Started.md#maven), the generated _pom.xml_ file already includes the necessary configuration for creating a native executable using the [Maven plugin for Native Image building](https://graalvm.github.io/native-build-tools/latest/maven-plugin.html).
+If you started with the [Maven archetype](Embedding-Getting-Started.md#maven-quick-start), the generated _pom.xml_ file already includes the necessary configuration for creating a native executable using the [Maven plugin for Native Image building](https://graalvm.github.io/native-build-tools/latest/maven-plugin.html).
 
 To build the application, run:
 

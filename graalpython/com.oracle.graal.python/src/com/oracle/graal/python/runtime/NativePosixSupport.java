@@ -441,10 +441,10 @@ public final class NativePosixSupport extends PosixSupport {
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {
                         POINTER, POINTER, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32,
-                        SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, POINTER, SINT64
+                        SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, POINTER, SINT64
         })
         abstract int fork_exec(long data, long offsets, int offsetsLen, int argsPos, int envPos, int cwdPos, int stdinRdFd, int stdinWrFd, int stdoutRdFd, int stdoutWrFd, int stderrRdFd,
-                        int stderrWrFd, int errPipeRdFd, int errPipeWrFd, int closeFds, int restoreSignals, int callSetsid, int allowVFork, long fdsToKeep, long fdsToKeepLen);
+                        int stderrWrFd, int errPipeRdFd, int errPipeWrFd, int closeFds, int restoreSignals, int callSetsid, int pgidToSet, int allowVFork, long fdsToKeep, long fdsToKeepLen);
 
         @DowncallSignature(returnType = VOID, argumentTypes = {POINTER, POINTER, SINT32})
         abstract void call_execv(long data, long offsets, int offsetsLen);
@@ -1835,7 +1835,7 @@ public final class NativePosixSupport extends PosixSupport {
 
     @ExportMessage
     public int forkExec(Object[] executables, Object[] args, Object cwd, Object[] env, int stdinReadFd, int stdinWriteFd, int stdoutReadFd, int stdoutWriteFd, int stderrReadFd, int stderrWriteFd,
-                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int[] fdsToKeep, boolean allowVFork) throws PosixException {
+                    int errPipeReadFd, int errPipeWriteFd, boolean closeFds, boolean restoreSignals, boolean callSetsid, int pgidToSet, int[] fdsToKeep, boolean allowVFork) throws PosixException {
 
         // The following strings and string arrays need to be present in the native function:
         // - char** of executable names ('\0'-terminated strings with an extra NULL at the end)
@@ -1933,6 +1933,7 @@ public final class NativePosixSupport extends PosixSupport {
                             closeFds ? 1 : 0,
                             restoreSignals ? 1 : 0,
                             callSetsid ? 1 : 0,
+                            pgidToSet,
                             allowVFork ? 1 : 0,
                             nativeFdsToKeep, fdsToKeep.length);
             if (res == -1) {
