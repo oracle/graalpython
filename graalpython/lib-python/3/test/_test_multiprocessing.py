@@ -3233,7 +3233,8 @@ class _TestMyManager(BaseTestCase):
         manager.start()
         with manager:
             self.common(manager)
-        self.assertEqual(manager._process.exitcode, 0)
+        # GraalPy change: JVM exits with 143 on SIGTERM
+        self.assertIn(manager._process.exitcode, (0, -signal.SIGTERM, 128 + signal.SIGTERM))
 
     def common(self, manager):
         foo = manager.Foo()
