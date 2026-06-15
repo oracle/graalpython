@@ -34,7 +34,7 @@ index 5ae2a4e..951aacc 100644
 -watermark = str(version)
 +watermark = f'{version}-graalpy'
 diff --git a/Cython/Includes/cpython/array.pxd b/Cython/Includes/cpython/array.pxd
-index 4bc0438..55082a8 100644
+index 4bc0438..72c0360 100644
 --- a/Cython/Includes/cpython/array.pxd
 +++ b/Cython/Includes/cpython/array.pxd
 @@ -133,7 +133,7 @@ cdef extern from *:  # Hard-coded utility code hack.
@@ -42,7 +42,7 @@ index 4bc0438..55082a8 100644
  
      array newarrayobject(PyTypeObject* type, Py_ssize_t size, arraydescr *descr)
 -
-+    array clonearray(object template, Py_ssize_t size)
++    array clonearray(object template_array, Py_ssize_t size)
      __data_union __Pyx_PyArray_Data(array self) noexcept nogil
      # fast resize/realloc
      # not suitable for small increments; reallocation 'to the point'
@@ -96,18 +96,18 @@ index ee4a811..e8d403b 100644
              return iterable;
  #endif
 diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
-index 2f7f0a5..f5fa1b1 100644
+index 2f7f0a5..b131885 100644
 --- a/Cython/Utility/arrayarray.h
 +++ b/Cython/Utility/arrayarray.h
 @@ -106,6 +106,36 @@ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,
      struct arraydescr *descr);
  #endif /* ifndef NO_NEWARRAY_INLINE */
  
-+static CYTHON_INLINE PyObject* clonearray(PyObject *template, Py_ssize_t size) {
++static CYTHON_INLINE PyObject* clonearray(PyObject *template_array, Py_ssize_t size) {
 +#if CYTHON_COMPILING_IN_GRAAL
 +    PyObject* op = NULL;
 +    PyObject* module = NULL;
-+    PyObject* typecode = PyObject_GetAttrString(template, "typecode");
++    PyObject* typecode = PyObject_GetAttrString(template_array, "typecode");
 +    if (typecode == NULL) {
 +        goto cleanup;
 +    }
@@ -128,8 +128,8 @@ index 2f7f0a5..f5fa1b1 100644
 +    Py_XDECREF(module);
 +    return op;
 +#else
-+    arrayobject *array = (arrayobject *) template;
-+    return newarrayobject(Py_TYPE(template), size, array->ob_descr);
++    arrayobject *array = (arrayobject *) template_array;
++    return newarrayobject(Py_TYPE(template_array), size, array->ob_descr);
 +#endif
 +}
 +

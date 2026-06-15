@@ -36,7 +36,7 @@ index 5ae2a4e..1d6e63d 100644
 +# GraalPy change: watermark our patched version
 +watermark = f'{version}-graalpy'
 diff --git a/Cython/Includes/cpython/array.pxd b/Cython/Includes/cpython/array.pxd
-index b5e8880..84753e7 100644
+index b5e8880..7647f70 100644
 --- a/Cython/Includes/cpython/array.pxd
 +++ b/Cython/Includes/cpython/array.pxd
 @@ -99,7 +99,10 @@ cdef extern from *:  # Hard-coded utility code hack.
@@ -56,7 +56,7 @@ index b5e8880..84753e7 100644
  
      array newarrayobject(PyTypeObject* type, Py_ssize_t size, arraydescr *descr)
 +    # GraalPy change
-+    array clonearray(object template, Py_ssize_t size)
++    array clonearray(object template_array, Py_ssize_t size)
  
 +    __data_union __Pyx_PyArray_Data(array self) nogil
      # fast resize/realloc
@@ -190,7 +190,7 @@ index d9c9e39..c2d3c4b 100644
  #elif CYTHON_COMPILING_IN_LIMITED_API && __PYX_LIMITED_VERSION_HEX >= 0x03090000
      PY_INT64_T current_id = PyInterpreterState_GetID(PyInterpreterState_Get());
 diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
-index d410e66..0110513 100644
+index d410e66..462d862 100644
 --- a/Cython/Utility/arrayarray.h
 +++ b/Cython/Utility/arrayarray.h
 @@ -30,33 +30,34 @@ typedef struct arraydescr {
@@ -257,10 +257,10 @@ index d410e66..0110513 100644
  
 +// GraalPy change: we should replace this hack with a proper API once we are
 +// allowed to change the ABI again
-+static CYTHON_INLINE PyObject* clonearray(PyObject *template, Py_ssize_t size) {
++static CYTHON_INLINE PyObject* clonearray(PyObject *template_array, Py_ssize_t size) {
 +    PyObject* op = NULL;
 +    PyObject* module = NULL;
-+    PyObject* typecode = PyObject_GetAttrString(template, "typecode");
++    PyObject* typecode = PyObject_GetAttrString(template_array, "typecode");
 +    if (typecode == NULL) {
 +        goto cleanup;
 +    }
