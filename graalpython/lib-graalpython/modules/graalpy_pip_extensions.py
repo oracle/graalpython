@@ -300,8 +300,18 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
 
     # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
     archive_name = os.path.basename(filename)
-    name_ver_match = re.match(r"^(?P<name>.*?)-(?P<version>[^-]+).*?\.(?P<suffix>tar\.gz|tar|whl|zip)$",
-                              archive_name, re.I)
+    if archive_name.endswith('.whl'):
+        name_ver_match = re.match(
+            r"^(?P<name>[^-]+)-(?P<version>[^-]+)(?:-(?P<build_tag>[^-]+))?-(?P<python_tag>[^-]+)-(?P<abi_tag>[^-]+)-(?P<platform_tag>[^-]+)\.(?P<suffix>whl)$",
+            archive_name,
+            re.I,
+        )
+    else:
+        name_ver_match = re.match(
+            r"^(?P<name>.*)-(?P<version>[^-]+)\.(?P<suffix>tar\.gz|tar|zip)$",
+            archive_name,
+            re.I,
+        )
     if not name_ver_match:
         logger.warning(f"GraalPy warning: could not parse package name, version, or format from {archive_name!r}.\n"
                        "Could not determine if any GraalPy specific patches need to be applied.")
