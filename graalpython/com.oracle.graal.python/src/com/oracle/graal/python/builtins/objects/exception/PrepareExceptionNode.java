@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -97,12 +96,11 @@ public abstract class PrepareExceptionNode extends Node {
         throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
-    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!tupleCheck.execute(inliningTarget, value)"}, limit = "1")
+    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!isTuple(value)"}, limit = "1")
     static Object doExceptionOrCreate(VirtualFrame frame, Object type, Object value,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
-                    @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheck,
                     @Cached PyObjectIsInstanceNode isInstanceNode,
                     @Cached InlinedConditionProfile isInstanceProfile,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,
@@ -138,12 +136,11 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "tupleCheck.execute(inliningTarget, value)"}, limit = "1")
+    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "isTuple(value)"}, limit = "1")
     static Object doCreateTuple(VirtualFrame frame, Object type, Object value,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
-                    @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheck,
                     @Exclusive @Cached GetTupleStorage getTupleStorage,
                     @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                     @Shared @Cached IsSubtypeNode isSubtypeNode,

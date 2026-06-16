@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -221,7 +222,7 @@ public final class ChainBuiltins extends PythonBuiltins {
         @Specialization
         static Object setState(PChain self, Object state,
                         @Bind Node node) {
-            if (!(state instanceof PTuple)) {
+            if (!PyTupleCheckNode.executeUncached(state)) {
                 throw PRaiseNode.raiseStatic(node, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
             int len = PyTupleSizeNode.executeUncached(state);

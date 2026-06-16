@@ -36,7 +36,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import _io
+import functools
+import io
+import itertools
+import json
 import os
+import pickle
 import tempfile
 import unittest
 
@@ -398,3 +404,71 @@ class TestNativeSubclass(unittest.TestCase):
             tolerance = 1_000_000_000
             assert abs(stat.st_atime_ns - expected) <= tolerance
             assert abs(stat.st_mtime_ns - expected) <= tolerance
+
+    def test_percent_format_native_tuple(self):
+        args = TupleSubclass("native", 7)
+        assert is_native_object(args)
+        assert "%s:%d" % args == "native:7"
+
+        bytes_args = TupleSubclass(b"native", 7)
+        assert is_native_object(bytes_args)
+        assert b"%s:%d" % bytes_args == b"native:7"
+
+    def test_incremental_newline_decoder_getstate_native_tuple(self):
+        class Decoder:
+            def getstate(self):
+                state = TupleSubclass(b"", 0)
+                assert is_native_object(state)
+                return state
+
+        decoder = _io.IncrementalNewlineDecoder(Decoder(), translate=False)
+        assert decoder.getstate() == (b"", 0)
+
+    def test_incremental_newline_decoder_setstate_native_tuple(self):
+        state = TupleSubclass(b"buffer", 1)
+        assert is_native_object(state)
+
+        decoder = _io.IncrementalNewlineDecoder(None, translate=False)
+        decoder.setstate(state)
+        assert decoder.getstate() == (b"", 1)
+
+        class Decoder:
+            def setstate(self, state):
+                self.state = state
+
+            def getstate(self):
+                return self.state
+
+        state = TupleSubclass(b"buffer", 3)
+        assert is_native_object(state)
+
+        wrapped_decoder = Decoder()
+        decoder = _io.IncrementalNewlineDecoder(wrapped_decoder, translate=False)
+        decoder.setstate(state)
+        assert wrapped_decoder.state == (b"buffer", 1)
+        assert decoder.getstate() == (b"buffer", 3)
+
+    def test_functools_partial_setstate_native_tuple_args(self):
+        args = TupleSubclass(2, 5)
+        assert is_native_object(args)
+        partial = functools.partial(int)
+        partial.__setstate__((pow, args, None, None))
+        assert partial() == 32
+
+    def test_pickle_memo_accepts_native_tuple_value(self):
+        value = TupleSubclass(11, "memo")
+        assert is_native_object(value)
+        pickler = pickle.Pickler(io.BytesIO())
+        pickler.memo = {0: value}
+
+    def test_json_encodes_native_tuple(self):
+        array = TupleSubclass("native", 7)
+        assert is_native_object(array)
+        assert json.dumps(array, separators=(",", ":")) == '["native",7]'
+
+    def test_itertools_cycle_setstate_native_tuple(self):
+        state = TupleSubclass([], 0)
+        assert is_native_object(state)
+        cycle = itertools.cycle([1])
+        cycle.__setstate__(state)
+        assert next(cycle) == 1

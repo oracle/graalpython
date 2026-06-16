@@ -77,7 +77,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
@@ -267,11 +266,10 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                         parent = value;
                         final Object stackIterator;
                         final Object stackStorage;
-                        if (value instanceof PList || value instanceof PTuple) {
-                            PSequence list = (PSequence) value;
+                        if (value instanceof PList list) {
                             appendCodePointNode.execute(builder, '[');
                             first = true;
-                            if (pyTupleCheckExactNode.execute(inliningTarget, list) || pyListCheckExactNode.execute(inliningTarget, list)) {
+                            if (pyListCheckExactNode.execute(inliningTarget, list)) {
                                 state = STATE_BUILTIN_LIST;
                                 builtinListStorage = list.getSequenceStorage();
                                 stackStorage = builtinListStorage;
@@ -280,6 +278,21 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                                 genericListProfile.enter(inliningTarget);
                                 state = STATE_GENERIC_LIST;
                                 genericIterator = callGetListIter.executeCached(frame, list);
+                                stackStorage = null;
+                                stackIterator = genericIterator;
+                            }
+                        } else if (tupleCheckNode.execute(inliningTarget, value)) {
+                            appendCodePointNode.execute(builder, '[');
+                            first = true;
+                            if (pyTupleCheckExactNode.execute(inliningTarget, value)) {
+                                state = STATE_BUILTIN_LIST;
+                                builtinListStorage = getTupleStorage.execute(inliningTarget, value);
+                                stackStorage = builtinListStorage;
+                                stackIterator = null;
+                            } else {
+                                genericListProfile.enter(inliningTarget);
+                                state = STATE_GENERIC_LIST;
+                                genericIterator = callGetListIter.executeCached(frame, value);
                                 stackStorage = null;
                                 stackIterator = genericIterator;
                             }

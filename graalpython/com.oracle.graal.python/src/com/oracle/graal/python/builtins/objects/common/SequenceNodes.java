@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -140,9 +139,8 @@ public abstract class SequenceNodes {
             return getPSequenceStorageNode.execute(inliningTarget, seq);
         }
 
-        @Specialization(guards = "tupleCheck.execute(inliningTarget, seq)", limit = "1")
-        static SequenceStorage doNativeTuple(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject seq,
-                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheck) {
+        @Specialization(guards = "isTuple(seq)")
+        static SequenceStorage doNativeTuple(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject seq) {
             return GetTupleStorage.doNative(seq);
         }
 

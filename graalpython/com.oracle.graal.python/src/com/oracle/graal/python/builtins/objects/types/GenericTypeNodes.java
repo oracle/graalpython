@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -71,6 +70,9 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -166,10 +168,10 @@ public abstract class GenericTypeNodes {
                 listAdd(parameters, t);
             } else {
                 Object subparams = lookup.execute(null, null, t, T___PARAMETERS__);
-                if (subparams instanceof PTuple subparamsTuple) {
-                    SequenceStorage subparamsStorage = subparamsTuple.getSequenceStorage();
-                    for (int j = 0; j < subparamsStorage.length(); j++) {
-                        listAdd(parameters, getItemUncached(subparamsStorage, j));
+                if (PyTupleCheckNode.executeUncached(subparams)) {
+                    int subparamsLen = PyTupleSizeNode.executeUncached(subparams);
+                    for (int j = 0; j < subparamsLen; j++) {
+                        listAdd(parameters, PyTupleGetItem.executeUncached(subparams, j));
                     }
                 }
             }
@@ -209,10 +211,10 @@ public abstract class GenericTypeNodes {
 
     // Equivalent of tuple_extend, but we use list
     @TruffleBoundary
-    private static void listExtend(List<Object> list, PTuple tuple) {
-        SequenceStorage storage = tuple.getSequenceStorage();
-        for (int i = 0; i < storage.length(); i++) {
-            list.add(SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i));
+    private static void listExtend(List<Object> list, Object tuple) {
+        int len = PyTupleSizeNode.executeUncached(tuple);
+        for (int i = 0; i < len; i++) {
+            list.add(PyTupleGetItem.executeUncached(tuple, i));
         }
     }
 
@@ -242,10 +244,10 @@ public abstract class GenericTypeNodes {
     @TruffleBoundary
     private static PTuple unpackArgs(Object item) {
         List<Object> newargs = new ArrayList<>();
-        if (item instanceof PTuple tuple) {
-            SequenceStorage storage = tuple.getSequenceStorage();
-            for (int i = 0; i < storage.length(); i++) {
-                unpackArgsInner(newargs, getItemUncached(storage, i));
+        if (PyTupleCheckNode.executeUncached(item)) {
+            int len = PyTupleSizeNode.executeUncached(item);
+            for (int i = 0; i < len; i++) {
+                unpackArgsInner(newargs, PyTupleGetItem.executeUncached(item, i));
             }
         } else {
             unpackArgsInner(newargs, item);
@@ -256,11 +258,11 @@ public abstract class GenericTypeNodes {
     private static void unpackArgsInner(List<Object> newargs, Object item) {
         if (!TypeNodes.IsTypeNode.executeUncached(item)) {
             Object subargs = unpackedTupleArgs(item);
-            if (subargs instanceof PTuple tuple) {
-                SequenceStorage storage = tuple.getSequenceStorage();
-                if (!(storage.length() > 0 && getItemUncached(storage, storage.length() - 1) == PEllipsis.INSTANCE)) {
-                    for (int i = 0; i < storage.length(); i++) {
-                        newargs.add(getItemUncached(storage, i));
+            if (PyTupleCheckNode.executeUncached(subargs)) {
+                int len = PyTupleSizeNode.executeUncached(subargs);
+                if (!(len > 0 && PyTupleGetItem.executeUncached(subargs, len - 1) == PEllipsis.INSTANCE)) {
+                    for (int i = 0; i < len; i++) {
+                        newargs.add(PyTupleGetItem.executeUncached(subargs, i));
                     }
                     return;
                 }
@@ -283,16 +285,19 @@ public abstract class GenericTypeNodes {
             Object param = getItemUncached(paramsStorage, i);
             Object prepare = PyObjectLookupAttr.executeUncached(param, T___TYPING_PREPARE_SUBST__);
             if (!(prepare instanceof PNone)) {
-                Object itemarg = item instanceof PTuple ? item : PFactory.createTuple(language, new Object[]{item});
+                Object itemarg = PyTupleCheckNode.executeUncached(item) ? item : PFactory.createTuple(language, new Object[]{item});
                 item = CallNode.executeUncached(prepare, self, itemarg);
             }
         }
 
         int nitems;
         Object[] argitems;
-        if (item instanceof PTuple t) {
-            argitems = GetInternalObjectArrayNode.executeUncached(t.getSequenceStorage());
-            nitems = t.getSequenceStorage().length();
+        if (PyTupleCheckNode.executeUncached(item)) {
+            nitems = PyTupleSizeNode.executeUncached(item);
+            argitems = new Object[nitems];
+            for (int i = 0; i < nitems; i++) {
+                argitems[i] = PyTupleGetItem.executeUncached(item, i);
+            }
         } else {
             argitems = new Object[]{item};
             nitems = 1;
@@ -318,8 +323,8 @@ public abstract class GenericTypeNodes {
             } else {
                 arg = subsTvars(arg, parameters, argitems);
             }
-            if (unpack && arg instanceof PTuple tuple /* CPython doesn't check the cast?! */) {
-                listExtend(newargs, tuple);
+            if (unpack && PyTupleCheckNode.executeUncached(arg) /* CPython doesn't check the cast?! */) {
+                listExtend(newargs, arg);
             } else {
                 newargs.add(arg);
             }
@@ -330,19 +335,19 @@ public abstract class GenericTypeNodes {
     @TruffleBoundary
     private static Object subsTvars(Object obj, PTuple parameters, Object[] argitems) {
         Object subparams = PyObjectLookupAttr.executeUncached(obj, T___PARAMETERS__);
-        if (subparams instanceof PTuple tuple && tuple.getSequenceStorage().length() > 0) {
-            SequenceStorage subparamsStorage = tuple.getSequenceStorage();
-            List<Object> subargs = new ArrayList<>(subparamsStorage.length());
-            for (int i = 0; i < subparamsStorage.length(); i++) {
-                Object arg = getItemUncached(subparamsStorage, i);
+        if (PyTupleCheckNode.executeUncached(subparams) && PyTupleSizeNode.executeUncached(subparams) > 0) {
+            int subparamsLen = PyTupleSizeNode.executeUncached(subparams);
+            List<Object> subargs = new ArrayList<>(subparamsLen);
+            for (int i = 0; i < subparamsLen; i++) {
+                Object arg = PyTupleGetItem.executeUncached(subparams, i);
                 int foundIndex = tupleIndex(parameters, arg);
                 if (foundIndex >= 0) {
                     Object param = getItemUncached(parameters.getSequenceStorage(), foundIndex);
                     arg = argitems[foundIndex];
                     // TypeVarTuple
-                    if (arg instanceof PTuple tuple1) {
+                    if (PyTupleCheckNode.executeUncached(arg)) {
                         if (GetObjectSlotsNode.executeUncached(param).tp_iter() != null) {
-                            listExtend(subargs, tuple1);
+                            listExtend(subargs, arg);
                             continue;
                         }
                     }

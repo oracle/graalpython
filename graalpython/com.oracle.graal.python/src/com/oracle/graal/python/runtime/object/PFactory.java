@@ -231,6 +231,7 @@ import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
@@ -1485,22 +1486,19 @@ public final class PFactory {
         return new PContextVarsToken(var, oldValue, PythonBuiltinClassType.ContextVarsToken, PythonBuiltinClassType.ContextVarsToken.getInstanceShape(language));
     }
 
-    public static PGenericAlias createGenericAlias(PythonLanguage language, Object cls, Shape shape, Object origin, Object arguments, boolean starred) {
-        PTuple argumentsTuple;
-        if (arguments instanceof PTuple) {
-            argumentsTuple = (PTuple) arguments;
-        } else {
-            argumentsTuple = createTuple(language, new Object[]{arguments});
-        }
-        return new PGenericAlias(cls, shape, origin, argumentsTuple, starred);
+    public static PGenericAlias createGenericAlias(PythonLanguage language, Object cls, Shape shape, Object origin, PTuple arguments, boolean starred) {
+        return new PGenericAlias(cls, shape, origin, arguments, starred);
     }
 
-    public static PGenericAlias createGenericAlias(PythonLanguage language, Object origin, Object arguments, boolean starred) {
-        return createGenericAlias(language, PythonBuiltinClassType.PGenericAlias, PythonBuiltinClassType.PGenericAlias.getInstanceShape(language), origin, arguments, starred);
+    public static PGenericAlias createGenericAlias(PythonLanguage language, Object origin, PTuple argumentsTuple, boolean starred) {
+        return createGenericAlias(language, PythonBuiltinClassType.PGenericAlias, PythonBuiltinClassType.PGenericAlias.getInstanceShape(language), origin, argumentsTuple, starred);
     }
 
     public static PGenericAlias createGenericAlias(PythonLanguage language, Object origin, Object arguments) {
-        return createGenericAlias(language, origin, arguments, false);
+        // native tuples need to be converted by the caller
+        assert arguments instanceof PTuple || !PyTupleCheckNode.executeUncached(arguments);
+        PTuple argumentsTuple = arguments instanceof PTuple ? (PTuple) arguments : createTuple(language, new Object[]{arguments});
+        return createGenericAlias(language, origin, argumentsTuple, false);
     }
 
     public static PGenericAliasIterator createGenericAliasIterator(PythonLanguage language, PGenericAlias object) {

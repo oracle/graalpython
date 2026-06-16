@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,9 +47,17 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextGenericAliasBuiltins {
 
@@ -57,8 +65,23 @@ public final class PythonCextGenericAliasBuiltins {
     abstract static class Py_GenericAlias extends CApiBinaryBuiltinNode {
         @Specialization
         static Object genericAlias(Object origin, Object args,
-                        @Bind PythonLanguage language) {
-            return PFactory.createGenericAlias(language, origin, args);
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached SequenceStorageNodes.CopyNode copyNode) {
+            PTuple argsTuple;
+            if (args instanceof PTuple) {
+                argsTuple = (PTuple) args;
+            } else if (tupleCheck.execute(inliningTarget, args)) {
+                /* 'GetTupleStorageNode.doNative' will just "wrap" the 'ob_item' pointer. The memory is then still owned by the native tuple object. Therefore, we need to copy the storage to a managed
+                 * storage.
+                 */
+                NativeObjectSequenceStorage nativeObjectSequenceStorage = GetTupleStorage.doNative((PythonAbstractNativeObject) args);
+                argsTuple = PFactory.createTuple(language, copyNode.execute(inliningTarget, nativeObjectSequenceStorage));
+            } else {
+                argsTuple = PFactory.createTuple(language, new Object[]{args});
+            }
+            return PFactory.createGenericAlias(language, origin, argsTuple);
         }
     }
 }

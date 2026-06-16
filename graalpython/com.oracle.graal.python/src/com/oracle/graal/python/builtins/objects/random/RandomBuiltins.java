@@ -60,14 +60,16 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -78,6 +80,7 @@ import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -190,15 +193,21 @@ public final class RandomBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends PythonBuiltinNode {
 
         @Specialization
-        static PNone setstate(PRandom random, PTuple tuple,
+        static PNone setstate(PRandom random, Object tuple,
                         @Bind Node inliningTarget,
-                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached GetTupleStorage getTupleStorage,
+                        @Cached GetInternalObjectArrayNode getArray,
                         @Cached CastToJavaUnsignedLongNode castNode,
                         @Cached PRaiseNode raiseNode) {
-            Object[] arr = getObjectArrayNode.execute(inliningTarget, tuple);
-            if (arr.length != PRandom.N + 1) {
+            if (!tupleCheck.execute(inliningTarget, tuple)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.STATE_VECTOR_MUST_BE_A_TUPLE);
+            }
+            SequenceStorage storage = getTupleStorage.execute(inliningTarget, tuple);
+            if (storage.length() != PRandom.N + 1) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.STATE_VECTOR_INVALID);
             }
+            Object[] arr = getArray.execute(inliningTarget, storage);
             int[] state = new int[PRandom.N];
             for (int i = 0; i < PRandom.N; ++i) {
                 long l = castNode.execute(inliningTarget, arr[i]);

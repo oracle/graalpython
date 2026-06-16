@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
@@ -61,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -106,10 +106,11 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         static Object doMapping(@SuppressWarnings("unused") Object cls, Object obj,
                         @Bind Node inliningTarget,
                         @Cached PyMappingCheckNode mappingCheckNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             // descrobject.c mappingproxy_check_mapping()
-            if (!(obj instanceof PList || obj instanceof PTuple) && mappingCheckNode.execute(inliningTarget, obj)) {
+            if (!(obj instanceof PList || tupleCheckNode.execute(inliningTarget, obj)) && mappingCheckNode.execute(inliningTarget, obj)) {
                 return PFactory.createMappingproxy(language, obj);
             }
             throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);

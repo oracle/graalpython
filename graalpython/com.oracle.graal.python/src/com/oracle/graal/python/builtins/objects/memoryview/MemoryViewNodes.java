@@ -61,6 +61,7 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
@@ -391,15 +392,15 @@ public class MemoryViewNodes {
             return ptr;
         }
 
-        @Specialization(replaces = "resolveTupleCached")
-        MemoryPointer resolveTupleGeneric(VirtualFrame frame, PMemoryView self, PTuple indices,
+        @Specialization(guards = "isTuple(indices)", replaces = "resolveTupleCached")
+        MemoryPointer resolveTupleGeneric(VirtualFrame frame, PMemoryView self, Object indices,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
-                        @Shared @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared @Cached GetTupleStorage getTupleStorage,
                         @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Shared @Cached PRaiseNode raiseNode) {
-            SequenceStorage indicesStorage = getSequenceStorageNode.execute(inliningTarget, indices);
+            SequenceStorage indicesStorage = getTupleStorage.execute(inliningTarget, indices);
             int ndim = self.getDimensions();
             checkTupleLength(inliningTarget, indicesStorage, ndim, raiseNode);
             MemoryPointer ptr = new MemoryPointer(self.getBufferPointer(), self.getOffset());
@@ -411,7 +412,7 @@ public class MemoryViewNodes {
             return ptr;
         }
 
-        @Specialization(guards = "!isPTuple(indexObj)")
+        @Specialization(guards = "!isTuple(indexObj)")
         MemoryPointer resolveIntObj(VirtualFrame frame, PMemoryView self, Object indexObj,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,

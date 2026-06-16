@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,13 +72,16 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -88,6 +91,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -320,9 +324,10 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached PyTupleCheckNode tupleCheck,
                         @Cached PRaiseNode raiseNode) {
             Object state = callMethod.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
-            if (!(state instanceof PTuple)) {
+            if (!tupleCheck.execute(inliningTarget, state)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
@@ -343,14 +348,23 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!self.hasDecoder()")
-        static Object noDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
+        static Object noDecoder(VirtualFrame frame, PNLDecoder self, Object state,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheck,
+                        @Exclusive @Cached GetTupleStorage getTupleStorage,
+                        @Exclusive @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
-            if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
+            if (!tupleCheck.execute(inliningTarget, state)) {
+                return err(self, state, inliningTarget);
+            }
+            SequenceStorage storage = getTupleStorage.execute(inliningTarget, state);
+            if (storage.length() != 2) {
+                throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
+            }
+            Object[] objects = getArray.execute(inliningTarget, storage);
+            if (!indexCheckNode.execute(inliningTarget, objects[1])) {
                 throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);
@@ -359,16 +373,25 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.hasDecoder()")
-        static Object withDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
+        static Object withDecoder(VirtualFrame frame, PNLDecoder self, Object state,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Exclusive @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheck,
+                        @Exclusive @Cached GetTupleStorage getTupleStorage,
+                        @Exclusive @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
-            if (objects.length != 2 || !indexCheckNode.execute(inliningTarget, objects[1])) {
+            if (!tupleCheck.execute(inliningTarget, state)) {
+                return err(self, state, inliningTarget);
+            }
+            SequenceStorage storage = getTupleStorage.execute(inliningTarget, state);
+            if (storage.length() != 2) {
+                throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
+            }
+            Object[] objects = getArray.execute(inliningTarget, storage);
+            if (!indexCheckNode.execute(inliningTarget, objects[1])) {
                 throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, inliningTarget, objects[1]);

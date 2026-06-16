@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,13 +61,15 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.itertools.CombinationsBuiltinsClinicProviders.CombinationsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -78,7 +80,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
@@ -275,11 +276,10 @@ public final class CombinationsBuiltins extends PythonBuiltins {
         static Object setState(PAbstractCombinations self, Object stateObj,
                         @Bind Node inliningTarget) {
             int n = self.getPool().length;
-            if (stateObj instanceof PTuple state && state.getSequenceStorage().length() == self.getR()) {
-                SequenceStorage storage = state.getSequenceStorage();
+            if (PyTupleCheckNode.executeUncached(stateObj) && PyTupleSizeNode.executeUncached(stateObj) == self.getR()) {
                 try {
                     for (int i = 0; i < self.getR(); i++) {
-                        int index = CastToJavaIntExactNode.executeUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i));
+                        int index = CastToJavaIntExactNode.executeUncached(PyTupleGetItem.executeUncached(stateObj, i));
                         int max = i + n - self.getR();
                         if (index > max) {
                             index = max;

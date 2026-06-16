@@ -55,8 +55,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -106,11 +108,16 @@ public final class RLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AcquireRestoreRLockNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object acquireRestore(PRLock self, PTuple state,
+        Object acquireRestore(PRLock self, Object state,
                         @Bind Node inliningTarget,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached GilNode gil,
                         @Cached CastToJavaUnsignedLongNode castLong,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode) {
+            if (!tupleCheck.execute(inliningTarget, state)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.STATE_ARGUMENT_MUST_BE_A_TUPLE);
+            }
             if (!self.acquireNonBlocking()) {
                 gil.release(true);
                 try {
@@ -120,7 +127,7 @@ public final class RLockBuiltins extends PythonBuiltins {
                 }
             }
             // ignore owner, we use the Java lock and cannot set it
-            long count = castLong.execute(inliningTarget, getItemNode.execute(inliningTarget, state.getSequenceStorage(), 0));
+            long count = castLong.execute(inliningTarget, getItemNode.execute(inliningTarget, getTupleStorage.execute(inliningTarget, state), 0));
             long actualCount = self.getCount();
             while (count > actualCount) {
                 self.acquireBlocking(this); // we already own it at this point

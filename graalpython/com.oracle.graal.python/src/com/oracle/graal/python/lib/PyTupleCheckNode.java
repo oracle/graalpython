@@ -50,10 +50,12 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -89,5 +91,22 @@ public abstract class PyTupleCheckNode extends Node {
         boolean isTupleSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.TUPLE_SUBCLASS) != 0L;
         assert IsBuiltinObjectProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PTuple) == isTupleSubclass;
         return isTupleSubclass;
+    }
+
+    @GenerateInline(false)
+    public abstract static class CachedNode extends Node {
+        public abstract boolean execute(Object object);
+
+        @Specialization
+        static boolean doGeneric(Object object,
+                        @Bind Node inliningTarget,
+                        @Cached PyTupleCheckNode tupleCheck) {
+            return tupleCheck.execute(inliningTarget, object);
+        }
+
+        @NeverDefault
+        public static CachedNode create() {
+            return PyTupleCheckNodeGen.CachedNodeGen.create();
+        }
     }
 }

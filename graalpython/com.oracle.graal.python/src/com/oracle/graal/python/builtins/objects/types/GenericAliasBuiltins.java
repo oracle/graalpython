@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,11 +100,13 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -164,10 +166,21 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GenericAliasNode extends PythonTernaryBuiltinNode {
         @Specialization
-        static PGenericAlias doit(Object cls, Object origin, Object arguments,
+        static PGenericAlias doit(VirtualFrame frame, Object cls, Object origin, Object arguments,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createGenericAlias(language, cls, getInstanceShape.execute(cls), origin, arguments, false);
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached ConstructTupleNode constructTupleNode) {
+            PTuple argumentsTuple;
+            if (arguments instanceof PTuple) {
+                argumentsTuple = (PTuple) arguments;
+            } else if (tupleCheck.execute(inliningTarget, arguments)) {
+                argumentsTuple = constructTupleNode.execute(frame, arguments);
+            } else {
+                argumentsTuple = PFactory.createTuple(language, new Object[]{arguments});
+            }
+            return PFactory.createGenericAlias(language, cls, getInstanceShape.execute(cls), origin, argumentsTuple, false);
         }
     }
 

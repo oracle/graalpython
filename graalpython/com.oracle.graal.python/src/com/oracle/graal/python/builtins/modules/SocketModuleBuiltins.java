@@ -92,6 +92,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -125,6 +126,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -544,11 +546,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getnameinfo", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"sockaddr", "flags"})
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class GetNameInfoNode extends PythonBinaryClinicBuiltinNode {
-        @Specialization
-        static Object getNameInfo(VirtualFrame frame, PTuple sockaddr, int flags,
+        @Specialization(guards = "isTuple(sockaddr)")
+        static Object getNameInfo(VirtualFrame frame, Object sockaddr, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
+                        @Cached GetTupleStorage getTupleStorage,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
@@ -560,7 +564,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TruffleString.FromLongNode fromLongNode,
                         @Cached PRaiseNode raiseNode) {
-            SequenceStorage addr = sockaddr.getSequenceStorage();
+            SequenceStorage addr = getTupleStorage.execute(inliningTarget, sockaddr);
             int addrLen = addr.length();
             if (addrLen < 2 || addrLen > 4) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");

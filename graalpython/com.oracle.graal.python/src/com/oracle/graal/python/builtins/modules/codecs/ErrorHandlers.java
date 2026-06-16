@@ -87,7 +87,9 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
@@ -104,6 +106,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -845,16 +848,18 @@ public final class ErrorHandlers {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
+    @ImportStatic(PGuards.class)
     abstract static class ParseDecodingErrorHandlerResultNode extends Node {
         abstract DecodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, Object result);
 
-        @Specialization
-        static DecodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, PTuple result,
+        @Specialization(guards = "isTuple(result)")
+        static DecodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, Object result,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CastToTruffleStringChecked0Node castToTruffleStringCheckedNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
-            SequenceStorage storage = result.getSequenceStorage();
+            SequenceStorage storage = getTupleStorage.execute(inliningTarget, result);
             if (storage.length() != 2) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
             }
@@ -918,17 +923,19 @@ public final class ErrorHandlers {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
+    @ImportStatic(PGuards.class)
     abstract static class ParseEncodingErrorHandlerResultNode extends Node {
         abstract EncodingErrorHandlerResult execute(Frame frame, Node inliningTarget, Object result);
 
-        @Specialization
-        static EncodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, PTuple result,
+        @Specialization(guards = "isTuple(result)")
+        static EncodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, Object result,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
                         @Cached PyBytesCheckNode pyBytesCheckNode,
                         @Cached PRaiseNode raiseNode) {
-            SequenceStorage storage = result.getSequenceStorage();
+            SequenceStorage storage = getTupleStorage.execute(inliningTarget, result);
             if (storage.length() != 2) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }

@@ -205,6 +205,9 @@ import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.RichCmpOp;
@@ -2137,6 +2140,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached PyObjectLookupAttr getMroEntries,
                         @Cached CallUnaryMethodNode callMroEntries,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached PyTupleSizeNode tupleSize,
+                        @Cached PyTupleGetItem tupleGetItem,
                         @Cached PRaiseNode raiseNode) {
             CompilerAsserts.neverPartOfCompilation();
             PTuple originalBases = null;
@@ -2163,10 +2169,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     originalBases = PFactory.createTuple(language, bases);
                 }
                 Object newBase = callMroEntries.executeObject(null, meth, originalBases);
-                if (!PGuards.isPTuple(newBase)) {
+                if (!tupleCheck.execute(inliningTarget, newBase)) {
                     throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.MRO_ENTRIES_MUST_RETURN_TUPLE);
                 }
-                PTuple newBaseTuple = (PTuple) newBase;
                 if (newBases == null) {
                     // If this is a first successful replacement, create new_bases list and copy
                     // previously encountered bases.
@@ -2175,9 +2180,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         newBases.add(bases[j]);
                     }
                 }
-                SequenceStorage storage = newBaseTuple.getSequenceStorage();
-                for (int j = 0; j < storage.length(); j++) {
-                    newBases.add(SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, j));
+                int newBaseLen = tupleSize.execute(inliningTarget, newBase);
+                for (int j = 0; j < newBaseLen; j++) {
+                    newBases.add(tupleGetItem.execute(inliningTarget, newBase, j));
                 }
             }
             if (newBases == null) {
