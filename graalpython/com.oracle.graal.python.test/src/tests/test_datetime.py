@@ -603,6 +603,13 @@ class DateTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Inconsistent use of : in \\+00:0000"):
             datetime.datetime.strptime("+00:0000", "%z")
 
+        with self.assertRaises(ValueError):
+            datetime.datetime.strptime("APRIL 31", "%B %d")
+
+        actual = datetime.datetime.strptime("APRIL 30", "%B %d")
+        expected = datetime.datetime(1900, 4, 30, 0, 0, 0)
+        self.assertEqual(actual, expected)
+
 
         # ambiguity handling
 
