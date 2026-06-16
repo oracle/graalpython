@@ -181,8 +181,12 @@ if wants_debug_build():
     ))
 
 
+def _libc():
+    return mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")
+
+
 def _is_graalos_build():
-    return "musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")
+    return "musl" in _libc()
 
 
 def _with_bouncycastle():
@@ -2348,6 +2352,12 @@ def _graalpy_sysconfig_platform(os):
         return 'darwin'
     if os == 'windows':
         return 'win32'
+    if _is_graalos_build():
+        libc = _libc()
+        if 'swcfi' in libc:
+            return 'graalos'
+        elif 'hwcfi' in libc:
+            return 'graalos_hwcfi'
     return 'linux'
 
 
