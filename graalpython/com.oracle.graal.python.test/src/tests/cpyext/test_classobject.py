@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -91,3 +91,14 @@ class TestClassobject(CPyExtTestCase):
         assert HeapTypeWithName.__name__ == 'HeapTypeWithNameRenamed'
         HeapTypeWithName.__qualname__ = 'foo.HeapTypeWithNameRenamed'
         assert HeapTypeWithName.__qualname__ == 'foo.HeapTypeWithNameRenamed'
+
+        DottedModuleType = CPyExtHeapType(
+            'DottedModuleType',
+            ready_code='spec.name = "pkg.mod.DottedModuleType";',
+            slots=[
+                '{Py_tp_doc, (void *)"DottedModuleType($self, /)\\n--\\n\\nReturn dotted module type metadata."}',
+            ],
+        )
+        assert DottedModuleType.__name__ == 'DottedModuleType'
+        assert DottedModuleType.__module__ == 'pkg.mod'
+        assert DottedModuleType.__doc__ == 'Return dotted module type metadata.'

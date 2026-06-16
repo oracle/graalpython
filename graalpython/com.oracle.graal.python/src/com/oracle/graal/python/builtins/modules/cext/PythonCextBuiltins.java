@@ -1659,4 +1659,10 @@ public final class PythonCextBuiltins {
             throw PConstructAndRaiseNode.getUncached().raiseOSErrorUnsupported(null, e);
         }
     }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored)
+    static int GraalPyPrivate_MMap_IsReadonly(long objectPtr) {
+        PMMap object = (PMMap) NativeToPythonInternalNode.executeUncached(objectPtr, false);
+        return object.isWriteable() ? 0 : 1;
+    }
 }

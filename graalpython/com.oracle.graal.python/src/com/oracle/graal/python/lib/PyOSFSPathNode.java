@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FSPATH__;
-import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -54,6 +53,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -89,11 +89,25 @@ public abstract class PyOSFSPathNode extends PNodeWithContext {
         return object;
     }
 
+    @Specialization(guards = "unicodeCheckNode.execute(inliningTarget, object)", limit = "1")
+    static Object doStringSubtype(Node inliningTarget, Object object,
+                    @Exclusive @Cached PyUnicodeCheckNode unicodeCheckNode) {
+        return object;
+    }
+
+    @Specialization(guards = "bytesCheckNode.execute(inliningTarget, object)", limit = "1")
+    static Object doBytesSubtype(Node inliningTarget, Object object,
+                    @Exclusive @Cached PyBytesCheckNode bytesCheckNode) {
+        return object;
+    }
+
     @Fallback
     static Object callFspath(VirtualFrame frame, Node inliningTarget, Object object,
                     @Cached GetClassNode getClassNode,
                     @Cached LookupSpecialMethodNode.Dynamic lookupFSPath,
                     @Cached(inline = false) CallUnaryMethodNode callFSPath,
+                    @Exclusive @Cached PyUnicodeCheckNode unicodeCheckNode,
+                    @Exclusive @Cached PyBytesCheckNode bytesCheckNode,
                     @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(inliningTarget, object);
         Object fspathMethod = lookupFSPath.execute(frame, inliningTarget, type, T___FSPATH__, object);
@@ -101,8 +115,7 @@ public abstract class PyOSFSPathNode extends PNodeWithContext {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXPECTED_STR_BYTE_OSPATHLIKE_OBJ, object);
         }
         Object result = callFSPath.executeObject(frame, fspathMethod, object);
-        assert !isJavaString(result);
-        if (result instanceof TruffleString || result instanceof PString || result instanceof PBytes) {
+        if (unicodeCheckNode.execute(inliningTarget, result) || bytesCheckNode.execute(inliningTarget, result)) {
             return result;
         }
         throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES, object, result);

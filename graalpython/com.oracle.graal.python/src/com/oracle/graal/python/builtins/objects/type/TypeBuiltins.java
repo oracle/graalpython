@@ -995,7 +995,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Shared @Cached GetTypeFlagsNode getFlags,
                         @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.LastIndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             // see function 'typeobject.c: type_module'
@@ -1010,11 +1010,11 @@ public final class TypeBuiltins extends PythonBuiltins {
                 // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
                 TruffleString tpName = getTpNameNode.readFromObj(cls, PyTypeObject__tp_name);
                 int len = codePointLengthNode.execute(tpName, TS_ENCODING);
-                int firstDot = indexOfCodePointNode.execute(tpName, '.', 0, len, TS_ENCODING);
-                if (firstDot < 0) {
+                int lastDot = indexOfCodePointNode.execute(tpName, '.', len, 0, TS_ENCODING);
+                if (lastDot < 0) {
                     return T_BUILTINS;
                 }
-                return substringNode.execute(tpName, 0, firstDot, TS_ENCODING, true);
+                return substringNode.execute(tpName, 0, lastDot, TS_ENCODING, true);
             }
         }
 
@@ -1439,7 +1439,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         static int findSignature(String n, String doc) {
             String name = n;
             /* for dotted names like classes, only use the last component */
-            int dot = n.indexOf('.');
+            int dot = n.lastIndexOf('.');
             if (dot != -1) {
                 name = name.substring(dot + 1);
             }

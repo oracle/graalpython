@@ -298,12 +298,11 @@ static void initialize_builtin_types_and_structs() {
  }
 
 static int mmap_getbuffer(PyObject *self, Py_buffer *view, int flags) {
-	// TODO(fa) readonly flag
     char* data = GraalPyPrivate_GetMMapData(self);
     if (!data) {
         return -1;
     }
-    return PyBuffer_FillInfo(view, (PyObject*)self, data, PyObject_Size((PyObject *)self), 0, flags);
+    return PyBuffer_FillInfo(view, (PyObject*)self, data, PyObject_Size((PyObject *)self), GraalPyPrivate_MMap_IsReadonly(self), flags);
 }
 
 GraalPy_CAPI_HELPER_SYMBOL void GraalPyPrivate_MMap_InitBufferProtocol(PyObject* mmap_type) {
