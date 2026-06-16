@@ -137,6 +137,12 @@
     local with_compiler = task_spec({
         dynamic_imports +:: ["/compiler"],
     }),
+    local unittest_args_gate(args) = task_spec({
+        tags:: "python-unittest",
+        environment +: {
+            GRAALPY_UNITTEST_ARGS: std.join(" ", args),
+        },
+    }),
 
     // -----------------------------------------------------------------------------------------------------------------
     //
@@ -165,6 +171,12 @@
         }),
         "python-unittest-native-debug-build": gpgate + platform_spec(no_jobs) + native_debug_build_gate("python-unittest") + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
+        }),
+        "python-unittest-cached-interpreter": gpgate + unittest_args_gate(["--python.UncachedInterpreterThreshold=0"]) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE),
+        }),
+        "python-unittest-uncached-interpreter": gpgate + unittest_args_gate(["--python.ForceUncachedInterpreter=true"]) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE),
         }),
         "python-unittest-multi-context": gpgate + require(GPY_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,

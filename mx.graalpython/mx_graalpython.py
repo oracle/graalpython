@@ -1590,11 +1590,15 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     parallelism = str(min(os.cpu_count() or 1, parallel))
 
     args = args or []
+    extra_args = shlex.split(os.environ.get("GRAALPY_UNITTEST_ARGS", ""))
+    if extra_args:
+        mx.log("Adding GraalPy unittest args from GRAALPY_UNITTEST_ARGS: " + shlex.join(extra_args))
     args = [
         "--vm.ea",
         "--experimental-options=true",
         "--python.EnableDebuggingBuiltins",
         *args,
+        *extra_args,
     ]
 
     if env is None:
