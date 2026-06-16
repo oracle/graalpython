@@ -314,13 +314,21 @@ def current_frames_includes_other_thread(test_case):
         frame = frames[worker_ident]
         if frame is None:
             return # we hit the timeout
+
+        def format_frame(frame):
+            code = frame.f_code
+            return f"{code.co_name}@{os.path.basename(code.co_filename)}"
+
+        seen_frames = []
         while frame is not None and frame.f_code.co_name != "target_inner":
+            seen_frames.append(format_frame(frame))
             frame = frame.f_back
 
-        assert frame is not None
-        assert frame.f_code.co_name == "target_inner", frame.f_code.co_name
-        assert "target_inner" in repr(frame)
-        assert "my_local_var" in frame.f_locals
+        message = f"test case: {test_case}; traversed frames: {', '.join(seen_frames) or '<none>'}"
+        assert frame is not None, message
+        assert frame.f_code.co_name == "target_inner", f"{frame.f_code.co_name=}; {message}"
+        assert "target_inner" in repr(frame), f"{repr(frame)=}; {message}"
+        assert "my_local_var" in frame.f_locals, f"{frame.f_locals.keys()=}; {message}"
 
         frame = frame.f_back
         assert frame is not None
