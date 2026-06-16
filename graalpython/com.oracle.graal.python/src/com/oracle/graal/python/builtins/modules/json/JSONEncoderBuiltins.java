@@ -218,12 +218,15 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
             PJSONEncoder.FastEncode fastEncode = self.fastEncode;
             outer: while (true) {
                 boolean skip = false;
-                if (state != STATE_INITIAL && state != STATE_DEFAULT_FN && !first) {
+                if ((state == STATE_BUILTIN_LIST || state == STATE_GENERIC_LIST) && !first) {
                     appendStringNode.execute(builder, self.itemSeparator);
                 }
                 if (state == STATE_BUILTIN_DICT || state == STATE_GENERIC_DICT) {
                     boolean isString = isString(key);
                     if (isString || isSimpleObj(key, inliningTarget, getClassNode, isSubtypeNode)) {
+                        if (!first) {
+                            appendStringNode.execute(builder, self.itemSeparator);
+                        }
                         if (!isString) {
                             appendCodePointNode.execute(builder, '"');
                         }

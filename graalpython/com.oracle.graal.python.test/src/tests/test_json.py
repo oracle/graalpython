@@ -39,6 +39,7 @@
 
 import json
 import os
+import sys
 import unittest
 
 BIGINT_JSON_DATA = '''
@@ -109,6 +110,43 @@ class JsonTest(unittest.TestCase):
         s = json.dumps({'foo': "\uda6a"}, ensure_ascii=False)
         assert s == '{"foo": "\uda6a"}'
 
+    def test_dump_skipkeys_invalid_middle_key(self):
+        assert json.dumps({"first": 1, b"bad": 2, "last": 3}, skipkeys=True) == '{"first": 1, "last": 3}'
+
+    def test_dump_skipkeys_invalid_trailing_key(self):
+        assert json.dumps({"first": 1, b"bad": 2}, skipkeys=True) == '{"first": 1}'
+
+    def test_dump_skipkeys_default_returned_dict(self):
+        class InvalidKey:
+            pass
+
+        class Unsupported:
+            pass
+
+        def default(obj):
+            if isinstance(obj, Unsupported):
+                return {"first": 1, InvalidKey(): 2, "last": 3}
+            raise TypeError
+
+        assert json.dumps(Unsupported(), default=default, skipkeys=True) == '{"first": 1, "last": 3}'
+
+    @unittest.skipUnless(sys.implementation.name == "graalpy", "fixed only in later CPython versions, bug gh-110941")
+    def test_dump_empty_storage_dict_subclass_with_items(self):
+        class StaticDict(dict):
+            def keys(self):
+                return ["a", "b"]
+
+            def values(self):
+                return [1, 2]
+
+            def items(self):
+                return zip(self.keys(), self.values())
+
+            def __len__(self):
+                return 2
+
+        assert json.dumps(StaticDict()) == '{"a": 1, "b": 2}'
+
     def test_object_hook_nested(self):
         def hook(obj):
             return "hooked"
@@ -116,3 +154,30 @@ class JsonTest(unittest.TestCase):
         assert json.loads('{"outer": {"inner": {"leaf": 1}}}', object_hook=hook) == "hooked"
         assert json.loads('{"outer": {"inner": {"leaf": 1}}}', object_pairs_hook=hook) == "hooked"
 
+    def test_object_hook_nested_list_and_object(self):
+        def hook(obj):
+            return obj
+
+        payload = (
+            '{"seq": 2, "type": "request", "command": "attach", '
+            '"arguments": {"justMyCode": true, "name": "Test", "type": "python", '
+            '"program": "/tmp/code.py", "args": [], '
+            '"connect": {"host": "127.0.0.1", "port": 5681}, '
+            '"debugOptions": ["ShowReturnValue"]}}'
+        )
+        expected = {
+            "seq": 2,
+            "type": "request",
+            "command": "attach",
+            "arguments": {
+                "justMyCode": True,
+                "name": "Test",
+                "type": "python",
+                "program": "/tmp/code.py",
+                "args": [],
+                "connect": {"host": "127.0.0.1", "port": 5681},
+                "debugOptions": ["ShowReturnValue"],
+            },
+        }
+        assert json.loads(payload, object_hook=hook) == expected
+        assert json.loads(payload, object_pairs_hook=dict) == expected
