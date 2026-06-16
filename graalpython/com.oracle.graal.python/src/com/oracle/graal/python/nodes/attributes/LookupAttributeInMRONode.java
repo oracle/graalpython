@@ -44,12 +44,14 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -64,6 +66,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
@@ -75,6 +78,7 @@ import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -156,6 +160,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return LookupAttributeInMRONodeGen.create(key, true);
     }
 
+    @NeverDefault
     static Object findAttr(Python3Core core, PythonBuiltinClassType klass, TruffleString key) {
         return findAttr(core, klass, key, ReadAttributeFromPythonObjectNode.getUncached());
     }
@@ -202,7 +207,22 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
     }
 
+    @SuppressWarnings("serial")
+    public static class MROGenericDictException extends StacktracelessCheckedException {
+        private static final MROGenericDictException INSTANCE = new MROGenericDictException();
+    }
+
     MroSequenceStorage.FinalAttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) throws MROChangedException {
+        try {
+            return findAttrAndAssumptionInMRO(this, klass, key, skipNonStaticBases, false);
+        } catch (MROGenericDictException ignore) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @NeverDefault
+    static MroSequenceStorage.FinalAttributeAssumptionPair findAttrAndAssumptionInMRO(Node n, Object klass, TruffleString key, boolean skipNonStaticBases,
+                    boolean mustNotSideEffect) throws MROChangedException, MROGenericDictException {
         CompilerAsserts.neverPartOfCompilation();
         // Regarding potential side effects to MRO caused by __eq__ of the keys in the dicts that we
         // search through: CPython seems to read the MRO once and then compute the result also
@@ -214,11 +234,13 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         if (assumptionNode != null) {
             return assumptionNode;
         }
-        // Put a new assumption in place in case the MRO changes during the lookup
         MroSequenceStorage.FinalAttributeAssumptionPair assumptionPair = new MroSequenceStorage.FinalAttributeAssumptionPair();
-        mro.putFinalAttributeAssumption(key, assumptionPair);
+        if (!mustNotSideEffect) {
+            // Put a new assumption in place in case the MRO changes during the lookup
+            mro.putFinalAttributeAssumption(key, assumptionPair);
+        }
         EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
-        Node prev = nodeRef.set(this);
+        Node prev = nodeRef.set(n);
         Object result = PNone.NO_VALUE;
         try {
             for (int i = 0; i < mro.length(); i++) {
@@ -226,7 +248,16 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                 if (skipNonStaticBase(clsObj, skipNonStaticBases)) {
                     continue;
                 }
-                Object value = ReadAttributeFromObjectNode.getUncached().execute(clsObj, key);
+                Object value;
+                if (mustNotSideEffect) {
+                    if (clsObj instanceof PythonObject pyClsObj && !PGuards.hasMaterializedDict(pyClsObj.getShape())) {
+                        value = DynamicObject.GetNode.getUncached().execute(pyClsObj, key, PNone.NO_VALUE);
+                    } else {
+                        throw MROGenericDictException.INSTANCE;
+                    }
+                } else {
+                    value = ReadAttributeFromObjectNode.getUncached().execute(clsObj, key);
+                }
                 if (value != PNone.NO_VALUE) {
                     result = value;
                     break;
@@ -239,6 +270,10 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
             // MRO changed during lookup. To avoid reexecuting the side-effects, return via
             // exception. This should abort the specialization
             throw new MROChangedException(result);
+        }
+        if (mustNotSideEffect) {
+            // must connect the assumption with the MRO here, otherwise we may end up with half initialized FinalAttributeAssumptionPair if we had to bail out because we found a generic dict
+            mro.putFinalAttributeAssumption(key, assumptionPair);
         }
         assumptionPair.setValue(result);
         return assumptionPair;
@@ -262,6 +297,45 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     Object lookupSlowPath(Object klass,
                     @Cached SlowPath slowPathNode) {
         return slowPathNode.execute(klass, key, skipNonStaticBases);
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(LookupAttributeInMRONode.class)
+    public abstract static class CachedKeyFastPath extends PNodeWithContext {
+
+        public final Object execute(Node inliningTarget, Object klass, TruffleString key) {
+            CompilerAsserts.partialEvaluationConstant(klass);
+            CompilerAsserts.partialEvaluationConstant(key);
+            try {
+                return executeImpl(inliningTarget, klass, key);
+            } catch (MROChangedException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            } catch (MROGenericDictException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                return null;
+            }
+        }
+
+        public abstract Object executeImpl(Node inliningTarget, Object klass, TruffleString key) throws MROChangedException, MROGenericDictException;
+
+        @Specialization
+        static Object lookupPBCTCached(Node inliningTarget, PythonBuiltinClassType klass, TruffleString key,
+                        @Bind PythonContext context,
+                        @Cached("findAttr(context, klass, key)") Object cachedValue) {
+            return cachedValue;
+        }
+
+        @Specialization(assumptions = "cachedAttrInMROInfo.getAssumption()", guards = "isSingleContext()")
+        static Object lookupConstantMROCached(Node inliningTarget, Object klass, TruffleString key,
+                        @Cached("findAttrAndAssumptionInMRO(inliningTarget, klass, key, false, true)") MroSequenceStorage.FinalAttributeAssumptionPair cachedAttrInMROInfo) {
+            return cachedAttrInMROInfo.getValue();
+        }
+
+        @Specialization(replaces = {"lookupPBCTCached", "lookupConstantMROCached"})
+        static Object noFastPath(Object klass, TruffleString key) {
+            return null;
+        }
     }
 
     public abstract static class SlowPath extends PNodeWithContext {

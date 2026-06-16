@@ -182,12 +182,20 @@ def test_mro_change_on_attr_access():
             eq_called.append(1)
             X.__bases__ = (Base2,)
 
+    class Descr:
+        def __init__(self, value):
+            self.value = value
+        def __get__(self, obj, owner=None):
+            return self.value
+        def __set__(self, obj, value):
+            pass
+
     class Base(object):
-        mykey = 'base 42'
+        mykey = Descr('base 42')
         def __str__(self): return 'Base'
 
     class Base2(object):
-        mykey = 'base2 42'
+        mykey = Descr('base2 42')
         def __str__(self): return 'Base2'
 
     X = type('X', (Base,), {MyKey(): 5})
@@ -202,6 +210,8 @@ def test_mro_change_on_attr_access():
     eq_called = []
     X = type('X', (Base,), {MyKey(): 5})
     xobj = X()
+    xobj_dict = object.__getattribute__(xobj, "__dict__")
+    xobj_dict['mykey'] = 'false lead'
     assert str(xobj) == 'Base'
     assert xobj.mykey == 'base 42'
     assert eq_called == [1]

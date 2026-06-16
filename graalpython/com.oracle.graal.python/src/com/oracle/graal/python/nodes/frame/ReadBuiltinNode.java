@@ -64,7 +64,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject.GetNode;
 import com.oracle.truffle.api.object.PropertyGetter;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -75,11 +74,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({GetDictIfExistsNode.class, DynamicObjectStorage.class, PGuards.class, PythonUtils.class})
 public abstract class ReadBuiltinNode extends PNodeWithContext {
     public abstract Object execute(TruffleString attributeId);
-
-    @NeverDefault
-    static Object readAttribute(DynamicObjectStorage domStorage, TruffleString name) {
-        return GetNode.getUncached().execute(domStorage.getStore(), name, PNone.NO_VALUE);
-    }
 
     @NonIdempotent
     static boolean getterAccepts(PropertyGetter getter, PythonModule mod) {

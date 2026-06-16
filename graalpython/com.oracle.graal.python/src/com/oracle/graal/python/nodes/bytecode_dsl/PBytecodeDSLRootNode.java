@@ -2012,10 +2012,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         // The convention is that if klass is null, then the object is assumed to be of a builtin type that has the object's or module's tp_getattro - we do not need to recheck that dynamically
         public static Object loadInstanceValue(Node inliningTarget, PythonObject object, PythonManagedClass klass,
-                        LookupAttributeInMRONode getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter,
+                        TruffleString key, LookupAttributeInMRONode.CachedKeyFastPath getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter,
                         InlineWeakValueProfile slotsValueProfile) {
             if (klass == null || hasObjectOrModuleGetattro(inliningTarget, klass, slotsValueProfile)) {
-                Object descr = getDesc.execute(cachedShape.getDynamicType());
+                Object descr = getDesc.execute(inliningTarget, cachedShape.getDynamicType(), key);
                 if (descr == PNone.NO_VALUE) {
                     assert object.checkDictFlags();
                     Object value = cachedPropertyGetter.get(object);
@@ -2054,9 +2054,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached("receiver.getShape()") Shape cachedShape,
                         @Cached("getManagedClassOrNull(cachedShape)") PythonManagedClass managedClass,
                         @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
-                        @Cached("create(key)") LookupAttributeInMRONode getDesc,
+                        @Cached LookupAttributeInMRONode.CachedKeyFastPath getDesc,
                         @Cached InlineWeakValueProfile slotsValueProfile,
-                        @Bind("loadInstanceValue(inliningTarget, receiver, managedClass, getDesc, cachedShape, getter, slotsValueProfile)") Object value) {
+                        @Bind("loadInstanceValue(inliningTarget, receiver, managedClass, key, getDesc, cachedShape, getter, slotsValueProfile)") Object value) {
             return value;
         }
 
@@ -2084,11 +2084,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ImportStatic(PGuards.class)
     public static final class SetAttribute {
         @NonIdempotent
-        public static boolean canStoreInstanceValue(Node inliningTarget, PythonManagedClass managedClass, Shape cachedShape, LookupAttributeInMRONode getDesc,
+        public static boolean canStoreInstanceValue(Node inliningTarget, TruffleString key, PythonManagedClass managedClass, Shape cachedShape, LookupAttributeInMRONode.CachedKeyFastPath getDesc,
                         GetObjectSlotsNode getDescSlotsNode, InlineWeakValueProfile slotsValueProfile) {
             if (managedClass == null || slotsValueProfile.execute(inliningTarget, managedClass.getTpSlots()).tp_setattro() == ObjectBuiltins.SLOTS.tp_setattro()) {
-                Object descr = getDesc.execute(cachedShape.getDynamicType());
-                return descr == PNone.NO_VALUE || getDescSlotsNode.execute(inliningTarget, descr).tp_descr_set() == null;
+                Object descr = getDesc.execute(inliningTarget, cachedShape.getDynamicType(), key);
+                return descr != null && (descr == PNone.NO_VALUE || getDescSlotsNode.execute(inliningTarget, descr).tp_descr_set() == null);
             }
             return false;
         }
@@ -2123,13 +2123,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(guards = {
                         "hasNoSlotsOrMaterializedDict(cachedShape)", "managedClass != null || isBuiltinWithObjectSetattro(cachedShape)", //
                         "cachedShape.check(receiver)",  //
-                        "skipDescriptorCheck || canStoreInstanceValue(inliningTarget, managedClass, cachedShape, getDesc, getDescSlotsNode, slotsValueProfile)"}, limit = "3")
+                        "skipDescriptorCheck || canStoreInstanceValue(inliningTarget, cachedKey, managedClass, cachedShape, getDesc, getDescSlotsNode, slotsValueProfile)"}, limit = "3")
         static void doInstanceValue(TruffleString key, Object value, PythonObject receiver,
                         @Bind Node inliningTarget,
+                        @Cached("key") TruffleString cachedKey,
                         @Cached("receiver.getShape()") Shape cachedShape,
                         @Cached("getManagedClassOrNull(cachedShape)") PythonManagedClass managedClass,
                         @Cached("canSkipDescriptorCheck(cachedShape, key)") boolean skipDescriptorCheck,
-                        @Cached("create(key)") LookupAttributeInMRONode getDesc,
+                        @Cached LookupAttributeInMRONode.CachedKeyFastPath getDesc,
                         @Cached GetObjectSlotsNode getDescSlotsNode,
                         @Cached InlineWeakValueProfile slotsValueProfile,
                         @Cached DynamicObject.PutNode putNode) {
