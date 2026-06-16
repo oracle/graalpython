@@ -68,6 +68,13 @@ FSPathBytesSubclass = CPyExtType(
     tp_free='0',
 )
 
+class FSPathWrapper:
+    def __init__(self, value):
+        self.value = value
+
+    def __fspath__(self):
+        return self.value
+
 
 def _reference_importmodule(args):
     return __import__(args[0], fromlist=["*"])
@@ -387,6 +394,8 @@ class TestMisc(CPyExtTestCase):
             (b"bytespath",),
             ("stringpath",),
             (pathlib.Path("pathpath"),),
+            (FSPathWrapper(FSPathUnicodeSubclass("native-stringpath")),),
+            (FSPathWrapper(FSPathBytesSubclass(b"native-bytespath")),),
             (123,),
             (object(),),
         ),
@@ -428,6 +437,10 @@ class TestMisc(CPyExtTestCase):
     def test_os_fspath_native_subclass(self):
         for value in (FSPathUnicodeSubclass("stringpath"), FSPathBytesSubclass(b"bytespath")):
             assert os.fspath(value) is value
+
+    def test_os_fspath_native_subclass_return(self):
+        for value in (FSPathUnicodeSubclass("stringpath"), FSPathBytesSubclass(b"bytespath")):
+            assert os.fspath(FSPathWrapper(value)) is value
 
 
 @unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-only")
