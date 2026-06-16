@@ -707,6 +707,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         sys.setAttribute(T___UNRAISABLEHOOK__, sys.getAttribute(T_UNRAISABLEHOOK));
         sys.setAttribute(T___DISPLAYHOOK__, sys.getAttribute(T_DISPLAYHOOK));
         sys.setAttribute(T___BREAKPOINTHOOK__, sys.getAttribute(T_BREAKPOINTHOOK));
+
+        if (!context.isNativeAccessAllowed()) {
+            sys.setAttribute(tsInternedLiteral("getrefcount"), PNone.NO_VALUE);
+        }
     }
 
     private static PFrozenSet createStdLibModulesSet(PythonLanguage language) {
@@ -1054,8 +1058,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static long doGeneric(Object object,
                         @Bind PythonContext context) {
             if (!context.isNativeAccessAllowed()) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
+                throw CompilerDirectives.shouldNotReachHere();
             }
             if (context.getCApiState() != CApiState.INITIALIZED) {
                 if (object instanceof PythonAbstractObject pythonAbstractObject) {

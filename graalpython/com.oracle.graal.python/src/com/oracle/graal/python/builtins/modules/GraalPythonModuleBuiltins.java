@@ -928,6 +928,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "native_access_is_available", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class NativeAccessNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        static boolean isAvailable(@Bind PythonContext context) {
+            return context.isNativeAccessAllowed();
+        }
+    }
+
     @Builtin(name = "posix_module_backend", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PosixModuleBackendNode extends PythonBuiltinNode {

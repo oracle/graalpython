@@ -44,6 +44,10 @@ if sys.platform != "win32":
     raise ImportError("win32 only")
 
 
+if not __graalpython__.native_access_is_available():
+    raise ImportError("needs native access")
+
+
 _POINTER_BITS = 64
 
 

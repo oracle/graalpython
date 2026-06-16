@@ -105,7 +105,7 @@ PYTHON_VERSION_MAJ_MIN = ".".join(PYTHON_VERSION.split('.')[:2])
 
 LATEST_JAVA_HOME = {"JAVA_HOME": os.environ.get("LATEST_JAVA_HOME", mx.get_jdk().home)}
 RUNNING_ON_LATEST_JAVA = os.environ.get("LATEST_JAVA_HOME", os.environ.get("JAVA_HOME")) == mx.get_jdk().home
-
+HAS_JEP_454 = mx.get_jdk().version >= mx.VersionSpec("22.0.0")
 
 # this environment variable is used by some of our maven projects to build against the unreleased master version during development
 os.environ["GRAALPY_VERSION"] = GRAAL_VERSION
@@ -892,7 +892,7 @@ def get_path_with_patchelf(graalpy=None):
             subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
             subprocess.check_call([str(venv / "bin" / "pip"), "install", "patchelf"])
             mx.log(f"{time.strftime('[%H:%M:%S] ')} Building patchelf-venv with {sys.executable}... [duration: {time.time() - t0}]")
-    if mx.is_windows() and not shutil.which("delvewheel"):
+    if mx.is_windows() and HAS_JEP_454 and not shutil.which("delvewheel"):
         venv = Path(SUITE.get_output_root()).absolute() / "delvewheel-venv"
         path += os.pathsep + str(venv / "Scripts")
         if not shutil.which("delvewheel", path=path):
@@ -976,14 +976,13 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     # test leaks with Python code only
     run_leak_launcher(["--code", "pass", ])
     run_leak_launcher(["--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
-    has_jep_454 = mx.get_jdk().version >= mx.VersionSpec("22.0.0")
     c_api_leak_test = (
         'import _testcapi; '
         't = _testcapi.tuple_pack(2, "a", "b"); '
         'assert _testcapi.tuple_get_item(t, 1) == "b"'
     )
     # test leaks when some C module code is involved
-    if has_jep_454:
+    if HAS_JEP_454:
         run_leak_launcher([
             "--forbid-capi-residue", "--code",
             c_api_leak_test,
@@ -992,7 +991,7 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     run_leak_launcher(["--shared-engine", "--code", "pass"])
     run_leak_launcher(["--shared-engine", "--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
     # test leaks with shared engine when some C module code is involved
-    if has_jep_454:
+    if HAS_JEP_454:
         run_leak_launcher([
             "--shared-engine", "--forbid-capi-residue", "--code",
             c_api_leak_test,
@@ -1178,7 +1177,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     # Build
     if standalone_type == 'jvm':
-        if dev or jdk_version < mx.VersionSpec("22.0.0"):
+        if dev or not HAS_JEP_454:
             env_file = 'jvm'
         else:
             env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
@@ -1683,8 +1682,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
 def run_sandboxed_tests(python_binary, report, args=None, **kwargs):
     args = SANDBOXED_OPTIONS + (args or [])
     exclude = list(kwargs.pop("exclude", []) or [])
-    if mx.get_jdk().version < mx.VersionSpec("22.0.0"):
-        # C API doesn't work on JDK 21
+    if not HAS_JEP_454:
         exclude += [
             "cpyext",
             "test_ctypes",
@@ -1835,7 +1833,7 @@ def graalpython_gate_runner(_, tasks):
             env['PATH'] = get_path_with_patchelf()
 
             default_runtime_arg = []
-            if mx.get_jdk().version < mx.VersionSpec("22.0.0"):
+            if not HAS_JEP_454:
                 # Bytecode DSL does not work on JDK21 with optimizing runtime (GR-72424)
                 default_runtime_arg = ['-Dtruffle.UseFallbackRuntime=true']
             graalvm_jdk_path = graalvm_jdk()
