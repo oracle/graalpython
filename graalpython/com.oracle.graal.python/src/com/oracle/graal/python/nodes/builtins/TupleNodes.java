@@ -154,4 +154,31 @@ public abstract class TupleNodes {
             return NativeObjectSequenceStorage.create(array, size, size, tuple);
         }
     }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class EnsureManagedTupleNode extends Node {
+
+        /**
+         * Ensures that the given tuple object is a managed tuple (i.e. {@link PTuple}). If the
+         * object is not a tuple at all, this node returns {@code null}.
+         */
+        public abstract PTuple execute(Node inliningTarget, Object object);
+
+        @Specialization
+        static PTuple doGeneric(Node inliningTarget, Object object,
+                        @Cached SequenceStorageNodes.CopyNode copyNode) {
+            if (object instanceof PTuple managedTuple) {
+                return managedTuple;
+            }
+            if (object instanceof PythonAbstractNativeObject nativeTuple && PyTupleCheckNode.checkNative(nativeTuple)) {
+                // 'GetTupleStorageNode.doNative' will just "wrap" the 'ob_item' pointer. The memory is then still
+                // owned by the native tuple object. Therefore, we need to copy the storage to a managed storage.
+                NativeObjectSequenceStorage nativeObjectSequenceStorage = GetTupleStorage.doNative(nativeTuple);
+                return PFactory.createTuple(PythonLanguage.get(inliningTarget), copyNode.execute(inliningTarget, nativeObjectSequenceStorage));
+            }
+            return null;
+        }
+    }
 }

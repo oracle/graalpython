@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
@@ -61,24 +62,19 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextGenericAliasBuiltins {
 
+    private PythonCextGenericAliasBuiltins() {
+    }
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class Py_GenericAlias extends CApiBinaryBuiltinNode {
         @Specialization
         static Object genericAlias(Object origin, Object args,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PyTupleCheckNode tupleCheck,
-                        @Cached SequenceStorageNodes.CopyNode copyNode) {
-            PTuple argsTuple;
-            if (args instanceof PTuple) {
-                argsTuple = (PTuple) args;
-            } else if (tupleCheck.execute(inliningTarget, args)) {
-                /* 'GetTupleStorageNode.doNative' will just "wrap" the 'ob_item' pointer. The memory is then still owned by the native tuple object. Therefore, we need to copy the storage to a managed
-                 * storage.
-                 */
-                NativeObjectSequenceStorage nativeObjectSequenceStorage = GetTupleStorage.doNative((PythonAbstractNativeObject) args);
-                argsTuple = PFactory.createTuple(language, copyNode.execute(inliningTarget, nativeObjectSequenceStorage));
-            } else {
+                        @Cached TupleNodes.EnsureManagedTupleNode ensureManagedTupleNode) {
+            PTuple argsTuple = ensureManagedTupleNode.execute(inliningTarget, args);
+            if (argsTuple == null) {
+                // in this case, 'args' is not a tuple object
                 argsTuple = PFactory.createTuple(language, new Object[]{args});
             }
             return PFactory.createGenericAlias(language, origin, argsTuple);
