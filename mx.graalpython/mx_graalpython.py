@@ -30,6 +30,7 @@ import datetime
 import glob
 import gzip
 import itertools
+import json
 import os
 import pathlib
 import re
@@ -62,6 +63,7 @@ import mx_sdk_vm_ng
 import mx_subst
 import mx_truffle
 import mx_graalpython_bisect
+import mx_graalpython_graalos
 import mx_graalpython_import
 import mx_pominit
 import mx_graalpython_python_benchmarks
@@ -1064,6 +1066,7 @@ class GraalPythonTags(object):
     unittest_standalone = 'python-unittest-standalone'
     tagged = 'python-tagged-unittest'
     svmbuild = 'python-svm-build'
+    svm_graalos_standalone_build = 'python-svm-graalos-standalone-build'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
     graalvm = 'python-graalvm'
@@ -2012,6 +2015,10 @@ def graalpython_gate_runner(_, tasks):
     with Task('GraalPython build on SVM', tasks, tags=[GraalPythonTags.svmbuild]) as task:
         if task:
             graalpy_standalone_native()
+
+    with Task('GraalPython GraalOS standalone build on SVM', tasks, tags=[GraalPythonTags.svm_graalos_standalone_build]) as task:
+        if task:
+            mx_graalpython_graalos.graalpy_graalos_standalone_build_and_test(report=report())
 
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
@@ -3499,7 +3506,6 @@ def run_downstream_test(args):
 
 def _get_github_unittest_tag_pr_commits():
     import urllib
-    import json
 
     params = {
         'q': "repo:oracle/graalpython is:pr in:title Weekly Retagger: Update tags",
