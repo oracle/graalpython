@@ -80,6 +80,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -204,6 +205,7 @@ public final class GroupByBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
+        @TruffleBoundary
         static Object setState(PGroupBy self, Object state,
                         @Bind Node inliningTarget) {
             if (!PyTupleCheckNode.executeUncached(state) || PyTupleSizeNode.executeUncached(state) != 3) {

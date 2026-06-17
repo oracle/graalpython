@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -187,6 +188,7 @@ public final class TeeBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
 
         @Specialization
+        @TruffleBoundary
         static Object setState(PTee self, Object state,
                         @Bind Node inliningTarget) {
 

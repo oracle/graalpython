@@ -242,6 +242,7 @@ public final class CycleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
+        @TruffleBoundary
         static Object setState(PCycle self, Object state,
                         @Bind Node inliningTarget) {
             if (!(PyTupleCheckNode.executeUncached(state) && PyTupleSizeNode.executeUncached(state) == 2)) {

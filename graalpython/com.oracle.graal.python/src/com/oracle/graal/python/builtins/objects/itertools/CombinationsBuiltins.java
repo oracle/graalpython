@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -273,6 +274,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
     public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
 
         @Specialization
+        @TruffleBoundary
         static Object setState(PAbstractCombinations self, Object stateObj,
                         @Bind Node inliningTarget) {
             int n = self.getPool().length;
