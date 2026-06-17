@@ -647,11 +647,18 @@ suite = {
         "graalpy-versions": {
             "subDir": "graalpython",
             "class": "CMakeNinjaProject",
+            "multitarget": [
+                {"libc": ["glibc", "default"]},
+                {"libc": ["musl"], "variant": ["swcfi"]},
+            ],
             "max_jobs": "1",
             "ninja_targets": ["all"],
             "cmakeConfig": {
                 "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><release_level:binary><abi_version>",
                 "GRAALPY_ABIFLAGS": "<graalpy_abiflags>",
+                "GRAALPY_EXT_SUFFIX": "<graalpy_ext>",
+                "GRAALPY_MULTIARCH": "<graalpy_multiarch>",
+                "GRAALPY_SOABI": "<graalpy_soabi>",
             },
             "results": [
                 "graalpy_versions"
@@ -950,13 +957,13 @@ suite = {
         "GRAALPYTHON_VERSIONS_RES": {
             "type": "dir",
             "layout": {
-                "./": "dependency:graalpy-versions/graalpy_versions",
+                "./": "dependency:graalpy-versions/<os>-<arch>/<multitarget_libc_selection>/graalpy_versions",
             },
         },
         "GRAALPYTHON_VERSIONS_MAIN": {
             "type": "dir",
             "layout": {
-                "./": "dependency:graalpy-versions/graalpy_versions",
+                "./": "dependency:graalpy-versions/<os>-<arch>/<multitarget_libc_selection>/graalpy_versions",
             },
         },
 

@@ -149,7 +149,7 @@ public final class NativeLibraryLocator {
                             "but we are preparing %d copies. The extra copies will only be used if a different value " +
                             "of the system property %s is set.", MAX_CEXT_COPIES, count, J_MAX_CAPI_COPIES));
         }
-        String suffix = context.getSoAbi().toJavaStringUncached();
+        String suffix = context.getExtensionSuffix().toJavaStringUncached();
         TruffleFile capiLibrary = context.getPublicTruffleFileRelaxed(context.getCAPIHome()).resolve(PythonContext.getSupportLibName("python-" + J_NATIVE));
         for (int i = 0; i < count; i++) {
             // Relocate the C API library

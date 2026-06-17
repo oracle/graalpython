@@ -27,17 +27,12 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.PythonLanguage.throwIfUnsupported;
-import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_ABIFLAGS;
-import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
-import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.NATIVE_POINTER_FREED;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
@@ -55,11 +50,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DLL;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_DYLIB;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.J_LIB_PREFIX;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
-import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
@@ -151,7 +143,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -807,7 +798,7 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal private boolean nativeAccessAllowed;
     @CompilationFinal private NativeContext nativeContext;
 
-    private TruffleString soABI;
+    private TruffleString extensionSuffix;
 
     private static final class GlobalInterpreterLock extends ReentrantLock {
         private static final long serialVersionUID = 1L;
@@ -2932,31 +2923,11 @@ public final class PythonContext extends Python3Core {
     }
 
     @TruffleBoundary
-    public TruffleString getSoAbi() {
-        if (soABI == null) {
-            PythonModule sysModule = this.lookupBuiltinModule(T_SYS);
-            Object implementationObj = ReadAttributeFromModuleNode.getUncached().execute(sysModule, T_IMPLEMENTATION);
-            // sys.implementation.cache_tag
-            TruffleString cacheTag = (TruffleString) PyObjectGetAttr.executeUncached(implementationObj, T_CACHE_TAG);
-            TruffleString abiFlags = (TruffleString) ReadAttributeFromModuleNode.getUncached().execute(sysModule, T_ABIFLAGS);
-            // sys.implementation._multiarch
-            TruffleString multiArch = (TruffleString) PyObjectGetAttr.executeUncached(implementationObj, T__MULTIARCH);
-
-            // only use '.pyd' if we are on 'Win32-native'
-            TruffleString soExt;
-            if (getPythonOS() == PLATFORM_DARWIN) {
-                // not ".dylib", similar to CPython:
-                // https://github.com/python/cpython/issues/37510
-                soExt = T_EXT_SO;
-            } else if (getPythonOS() == PLATFORM_WIN32) {
-                soExt = T_EXT_PYD;
-            } else {
-                soExt = T_EXT_SO;
-            }
-
-            soABI = cat(T_DOT, cacheTag, abiFlags, T_DASH, T_NATIVE, T_DASH, multiArch, soExt);
+    public TruffleString getExtensionSuffix() {
+        if (extensionSuffix == null) {
+            extensionSuffix = toTruffleStringUncached(PythonLanguage.GRAALPY_EXT_SUFFIX);
         }
-        return soABI;
+        return extensionSuffix;
     }
 
     public Thread getMainThread() {
