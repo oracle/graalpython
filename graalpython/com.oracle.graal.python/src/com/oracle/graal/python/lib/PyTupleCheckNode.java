@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,21 +40,25 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
-/**
- * Equivalent of CPython's {@code PyTuple_Check}.
- */
+/** Equivalent of CPython's {@code PyTuple_Check}. */
 @GenerateInline
 @GenerateUncached
 @GenerateCached(false)
@@ -66,18 +70,24 @@ public abstract class PyTupleCheckNode extends Node {
     }
 
     @Specialization
-    static boolean doManaged(@SuppressWarnings("unused") PTuple object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doNative(PythonAbstractNativeObject object,
-                    @Cached(inline = false) IsBuiltinObjectProfile check) {
-        return check.profileObjectCached(object, PythonBuiltinClassType.PTuple);
-    }
-
-    @Fallback
-    static boolean other(@SuppressWarnings("unused") Object object) {
+    public static boolean doGeneric(Node inliningTarget, Object object,
+                    @Cached InlinedBranchProfile isPTupleProfile,
+                    @Cached InlinedBranchProfile isNativeProfile) {
+        if (object instanceof PTuple) {
+            isPTupleProfile.enter(inliningTarget);
+            return true;
+        }
+        if (object instanceof PythonAbstractNativeObject nativeObject) {
+            isNativeProfile.enter(inliningTarget);
+            return checkNative(nativeObject);
+        }
         return false;
+    }
+
+    public static boolean checkNative(PythonAbstractNativeObject nativeObject) {
+        long obType = readPtrField(nativeObject.pointer, PyObject__ob_type);
+        boolean isTupleSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.TUPLE_SUBCLASS) != 0L;
+        assert IsBuiltinObjectProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PTuple) == isTupleSubclass;
+        return isTupleSubclass;
     }
 }
