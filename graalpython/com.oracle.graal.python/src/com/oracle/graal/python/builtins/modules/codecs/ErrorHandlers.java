@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuil
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins.PyUnicodeEncodeOrTranslateErrorGetObjectNode;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins.PyUnicodeEncodeOrTranslateErrorGetStartNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;

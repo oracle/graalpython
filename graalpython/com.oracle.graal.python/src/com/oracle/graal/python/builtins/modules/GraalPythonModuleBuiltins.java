@@ -1037,7 +1037,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static Object doGeneric(Object object,
-                                @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             if (object instanceof PArray array) {
                 array.setSequenceStorage(ToNativeStorageNode.executeUncached(array.getSequenceStorage(), true));
             } else if (object instanceof PSequence sequence) {
@@ -1056,7 +1056,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static Object doGeneric(Object object,
-                                @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget) {
             CApiContext.ensureCapiWasLoaded("internal API");
             if (object instanceof PArray array) {
                 array.setSequenceStorage(ToNativePrimitiveStorageNode.executeUncached(array.getSequenceStorage()));
