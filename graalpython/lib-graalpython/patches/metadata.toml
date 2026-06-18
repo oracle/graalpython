@@ -583,12 +583,6 @@ install-priority = 0
 license = 'MIT'
 
 [[pip.rules]]
-version = '== 23.2.1'
-patch = 'pip-23.2.1.patch'
-license = 'MIT'
-subdir = 'src'
-
-[[pip.rules]]
 version = '== 24.3.1'
 patch = 'pip-24.3.1.patch'
 license = 'MIT'
