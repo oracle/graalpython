@@ -67,7 +67,7 @@ index 46dea92..12c0616 100644
  
      ("set",       "PySet_Type",    [BuiltinMethod("clear",   "T",  "r", "PySet_Clear"),
 diff --git a/Cython/Compiler/ExprNodes.py b/Cython/Compiler/ExprNodes.py
-index 455d8b6..2d66296 100644
+index 455d8b6..aa34bbb 100644
 --- a/Cython/Compiler/ExprNodes.py
 +++ b/Cython/Compiler/ExprNodes.py
 @@ -7740,6 +7740,16 @@ class AttributeNode(ExprNode):
@@ -83,7 +83,7 @@ index 455d8b6..2d66296 100644
 +                getattr(self.type, 'name', None) == '__data_union' and
 +                getattr(self.obj.type, 'name') == 'array'
 +            ):
-+                return self.type.cast_code("GraalPyArray_Data((PyObject*)%s)" % obj_code)
++                return self.type.cast_code("__Pyx_ArrayData((arrayobject*)%s)" % obj_code)
              return "%s%s%s" % (obj_code, self.op, self.member)
  
      def generate_result_code(self, code):
@@ -182,7 +182,7 @@ index c95511d..a68a884 100644
          cval = ((PyComplexObject *)o)->cval;
      else
 diff --git a/Cython/Utility/Coroutine.c b/Cython/Utility/Coroutine.c
-index 35f2e88..30b2d75 100644
+index 688a62d..25fea0b 100644
 --- a/Cython/Utility/Coroutine.c
 +++ b/Cython/Utility/Coroutine.c
 @@ -539,8 +539,7 @@ static int __Pyx_PyGen__FetchStopIterationValue(PyThreadState *$local_tstate_cna
@@ -206,23 +206,234 @@ index 35f2e88..30b2d75 100644
  #else
      {
 diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
-index 3ea60f5..18d1842 100644
+index 2ca461f..d6a7d78 100644
 --- a/Cython/Utility/CythonFunction.c
 +++ b/Cython/Utility/CythonFunction.c
-@@ -1789,9 +1789,9 @@ static PyObject* __Pyx_Method_ClassMethod(PyObject *method) {
-         #if PY_VERSION_HEX < 0x03020000
+@@ -26,6 +26,20 @@
+ #define __Pyx_CyFunction_SetDefaultsGetter(f, g) \
+     ((__pyx_CyFunctionObject *) (f))->defaults_getter = (g)
+ 
++#if CYTHON_COMPILING_IN_GRAAL
++  #define __Pyx_CyFunction_GetMethodDef(func) GraalPyCFunction_GetMethodDef((PyObject*)(func))
++  #define __Pyx_CyFunction_SetMethodDef(func, ml) GraalPyCFunction_SetMethodDef((PyObject*)(func), ml)
++  #define __Pyx_CyFunction_GetModule(func) GraalPyCFunction_GetModule((PyObject*)(func))
++  #define __Pyx_CyFunction_SetModule(func, module) GraalPyCFunction_SetModule((PyObject*)(func), module)
++  #define __Pyx_CyFunction_GetDoc(func) GraalPyCFunction_GetDoc((PyObject*)(func))
++#else
++  #define __Pyx_CyFunction_GetMethodDef(func) (((PyCFunctionObject*)(func))->m_ml)
++  #define __Pyx_CyFunction_SetMethodDef(func, ml) (((PyCFunctionObject*)(func))->m_ml = (ml))
++  #define __Pyx_CyFunction_GetModule(func) (((PyCFunctionObject*)(func))->m_module)
++  #define __Pyx_CyFunction_SetModule(func, module) (((PyCFunctionObject*)(func))->m_module = (module))
++  #define __Pyx_CyFunction_GetDoc(func) (((PyCFunctionObject*)(func))->m_ml->ml_doc)
++#endif
++
+ 
+ typedef struct {
+ #if CYTHON_COMPILING_IN_LIMITED_API
+@@ -156,11 +170,12 @@ __Pyx_CyFunction_get_doc(__pyx_CyFunctionObject *op, void *closure)
+         op->func_doc = PyObject_GetAttrString(op->func, "__doc__");
+         if (unlikely(!op->func_doc)) return NULL;
+ #else
+-        if (((PyCFunctionObject*)op)->m_ml->ml_doc) {
++        const char *doc = __Pyx_CyFunction_GetDoc(op);
++        if (doc) {
+ #if PY_MAJOR_VERSION >= 3
+-            op->func_doc = PyUnicode_FromString(((PyCFunctionObject*)op)->m_ml->ml_doc);
++            op->func_doc = PyUnicode_FromString(doc);
+ #else
+-            op->func_doc = PyString_FromString(((PyCFunctionObject*)op)->m_ml->ml_doc);
++            op->func_doc = PyString_FromString(doc);
+ #endif
+             if (unlikely(op->func_doc == NULL))
+                 return NULL;
+@@ -195,9 +210,9 @@ __Pyx_CyFunction_get_name(__pyx_CyFunctionObject *op, void *context)
+ #if CYTHON_COMPILING_IN_LIMITED_API
+         op->func_name = PyObject_GetAttrString(op->func, "__name__");
+ #elif PY_MAJOR_VERSION >= 3
+-        op->func_name = PyUnicode_InternFromString(((PyCFunctionObject*)op)->m_ml->ml_name);
++        op->func_name = PyUnicode_InternFromString(__Pyx_CyFunction_GetMethodDef(op)->ml_name);
+ #else
+-        op->func_name = PyString_InternFromString(((PyCFunctionObject*)op)->m_ml->ml_name);
++        op->func_name = PyString_InternFromString(__Pyx_CyFunction_GetMethodDef(op)->ml_name);
+ #endif  /* CYTHON_COMPILING_IN_LIMITED_API */
+         if (unlikely(op->func_name == NULL))
+             return NULL;
+@@ -572,7 +587,7 @@ __Pyx_CyFunction_reduce(__pyx_CyFunctionObject *m, PyObject *args)
+     Py_INCREF(m->func_qualname);
+     return m->func_qualname;
+ #else
+-    return PyString_FromString(((PyCFunctionObject*)m)->m_ml->ml_name);
++    return PyString_FromString(__Pyx_CyFunction_GetMethodDef(m)->ml_name);
+ #endif
+ }
+ 
+@@ -604,14 +619,14 @@ static PyObject *__Pyx_CyFunction_Init(__pyx_CyFunctionObject *op, PyMethodDef *
+     op->flags = flags;
+     __Pyx_CyFunction_weakreflist(op) = NULL;
+ #if !CYTHON_COMPILING_IN_LIMITED_API
+-    cf->m_ml = ml;
++    __Pyx_CyFunction_SetMethodDef(cf, ml);
+     cf->m_self = (PyObject *) op;
+ #endif
+     Py_XINCREF(closure);
+     op->func_closure = closure;
+ #if !CYTHON_COMPILING_IN_LIMITED_API
+     Py_XINCREF(module);
+-    cf->m_module = module;
++    __Pyx_CyFunction_SetModule(cf, module);
+ #endif
+     op->func_dict = NULL;
+     op->func_name = NULL;
+@@ -670,6 +685,12 @@ __Pyx_CyFunction_clear(__pyx_CyFunctionObject *m)
+     Py_CLEAR(m->func_closure);
+ #if CYTHON_COMPILING_IN_LIMITED_API
+     Py_CLEAR(m->func);
++#elif CYTHON_COMPILING_IN_GRAAL
++    {
++        PyObject *module = __Pyx_CyFunction_GetModule(m);
++        __Pyx_CyFunction_SetModule(m, NULL);
++        Py_XDECREF(module);
++    }
+ #else
+     Py_CLEAR(((PyCFunctionObject*)m)->m_module);
+ #endif
+@@ -728,6 +749,8 @@ static int __Pyx_CyFunction_traverse(__pyx_CyFunctionObject *m, visitproc visit,
+     Py_VISIT(m->func_closure);
+ #if CYTHON_COMPILING_IN_LIMITED_API
+     Py_VISIT(m->func);
++#elif CYTHON_COMPILING_IN_GRAAL
++    Py_VISIT(__Pyx_CyFunction_GetModule(m));
+ #else
+     Py_VISIT(((PyCFunctionObject*)m)->m_module);
+ #endif
+@@ -780,8 +803,8 @@ static PyObject * __Pyx_CyFunction_CallMethod(PyObject *func, PyObject *self, Py
+     if (unlikely(flags < 0)) return NULL;
+ #else
+     PyCFunctionObject* f = (PyCFunctionObject*)func;
+-    PyCFunction meth = f->m_ml->ml_meth;
+-    int flags = f->m_ml->ml_flags;
++    PyCFunction meth = __Pyx_CyFunction_GetMethodDef(f)->ml_meth;
++    int flags = __Pyx_CyFunction_GetMethodDef(f)->ml_flags;
+ #endif
+ 
+     Py_ssize_t size;
+@@ -813,7 +836,7 @@ static PyObject * __Pyx_CyFunction_CallMethod(PyObject *func, PyObject *self, Py
+ #else
+             PyErr_Format(PyExc_TypeError,
+                 "%.200s() takes no arguments (%" CYTHON_FORMAT_SSIZE_T "d given)",
+-                f->m_ml->ml_name, size);
++                __Pyx_CyFunction_GetMethodDef(f)->ml_name, size);
+ #endif
+             return NULL;
+         }
+@@ -849,7 +872,7 @@ static PyObject * __Pyx_CyFunction_CallMethod(PyObject *func, PyObject *self, Py
+ #else
+             PyErr_Format(PyExc_TypeError,
+                 "%.200s() takes exactly one argument (%" CYTHON_FORMAT_SSIZE_T "d given)",
+-                f->m_ml->ml_name, size);
++                __Pyx_CyFunction_GetMethodDef(f)->ml_name, size);
+ #endif
+ 
+             return NULL;
+@@ -867,7 +890,7 @@ static PyObject * __Pyx_CyFunction_CallMethod(PyObject *func, PyObject *self, Py
+     Py_DECREF(py_name);
+ #else
+     PyErr_Format(PyExc_TypeError, "%.200s() takes no keyword arguments",
+-                 f->m_ml->ml_name);
++                 __Pyx_CyFunction_GetMethodDef(f)->ml_name);
+ #endif
+     return NULL;
+ }
+@@ -958,14 +981,14 @@ static CYTHON_INLINE int __Pyx_CyFunction_Vectorcall_CheckArgs(__pyx_CyFunctionO
+     if ((cyfunc->flags & __Pyx_CYFUNCTION_CCLASS) && !(cyfunc->flags & __Pyx_CYFUNCTION_STATICMETHOD)) {
+         if (unlikely(nargs < 1)) {
+             PyErr_Format(PyExc_TypeError, "%.200s() needs an argument",
+-                         ((PyCFunctionObject*)cyfunc)->m_ml->ml_name);
++                         __Pyx_CyFunction_GetMethodDef(cyfunc)->ml_name);
+             return -1;
+         }
+         ret = 1;
+     }
+     if (unlikely(kwnames) && unlikely(PyTuple_GET_SIZE(kwnames))) {
+         PyErr_Format(PyExc_TypeError,
+-                     "%.200s() takes no keyword arguments", ((PyCFunctionObject*)cyfunc)->m_ml->ml_name);
++                     "%.200s() takes no keyword arguments", __Pyx_CyFunction_GetMethodDef(cyfunc)->ml_name);
+         return -1;
+     }
+     return ret;
+@@ -974,7 +997,7 @@ static CYTHON_INLINE int __Pyx_CyFunction_Vectorcall_CheckArgs(__pyx_CyFunctionO
+ static PyObject * __Pyx_CyFunction_Vectorcall_NOARGS(PyObject *func, PyObject *const *args, size_t nargsf, PyObject *kwnames)
+ {
+     __pyx_CyFunctionObject *cyfunc = (__pyx_CyFunctionObject *)func;
+-    PyMethodDef* def = ((PyCFunctionObject*)cyfunc)->m_ml;
++    PyMethodDef* def = __Pyx_CyFunction_GetMethodDef(cyfunc);
+ #if CYTHON_BACKPORT_VECTORCALL
+     Py_ssize_t nargs = (Py_ssize_t)nargsf;
+ #else
+@@ -1006,7 +1029,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_NOARGS(PyObject *func, PyObject *c
+ static PyObject * __Pyx_CyFunction_Vectorcall_O(PyObject *func, PyObject *const *args, size_t nargsf, PyObject *kwnames)
+ {
+     __pyx_CyFunctionObject *cyfunc = (__pyx_CyFunctionObject *)func;
+-    PyMethodDef* def = ((PyCFunctionObject*)cyfunc)->m_ml;
++    PyMethodDef* def = __Pyx_CyFunction_GetMethodDef(cyfunc);
+ #if CYTHON_BACKPORT_VECTORCALL
+     Py_ssize_t nargs = (Py_ssize_t)nargsf;
+ #else
+@@ -1038,7 +1061,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_O(PyObject *func, PyObject *const
+ static PyObject * __Pyx_CyFunction_Vectorcall_FASTCALL_KEYWORDS(PyObject *func, PyObject *const *args, size_t nargsf, PyObject *kwnames)
+ {
+     __pyx_CyFunctionObject *cyfunc = (__pyx_CyFunctionObject *)func;
+-    PyMethodDef* def = ((PyCFunctionObject*)cyfunc)->m_ml;
++    PyMethodDef* def = __Pyx_CyFunction_GetMethodDef(cyfunc);
+ #if CYTHON_BACKPORT_VECTORCALL
+     Py_ssize_t nargs = (Py_ssize_t)nargsf;
+ #else
+@@ -1064,7 +1087,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_FASTCALL_KEYWORDS(PyObject *func,
+ static PyObject * __Pyx_CyFunction_Vectorcall_FASTCALL_KEYWORDS_METHOD(PyObject *func, PyObject *const *args, size_t nargsf, PyObject *kwnames)
+ {
+     __pyx_CyFunctionObject *cyfunc = (__pyx_CyFunctionObject *)func;
+-    PyMethodDef* def = ((PyCFunctionObject*)cyfunc)->m_ml;
++    PyMethodDef* def = __Pyx_CyFunction_GetMethodDef(cyfunc);
+     PyTypeObject *cls = (PyTypeObject *) __Pyx_CyFunction_GetClassObj(cyfunc);
+ #if CYTHON_BACKPORT_VECTORCALL
+     Py_ssize_t nargs = (Py_ssize_t)nargsf;
+@@ -1394,11 +1417,11 @@ __pyx_FusedFunction_descr_get(PyObject *self, PyObject *obj, PyObject *type)
+     }
+ 
+     meth = (__pyx_FusedFunctionObject *) __pyx_FusedFunction_New(
+-                    ((PyCFunctionObject *) func)->m_ml,
++                    __Pyx_CyFunction_GetMethodDef(func),
+                     ((__pyx_CyFunctionObject *) func)->flags,
+                     ((__pyx_CyFunctionObject *) func)->func_qualname,
+                     ((__pyx_CyFunctionObject *) func)->func_closure,
+-                    ((PyCFunctionObject *) func)->m_module,
++                    __Pyx_CyFunction_GetModule(func),
+                     ((__pyx_CyFunctionObject *) func)->func_globals,
+                     ((__pyx_CyFunctionObject *) func)->func_code);
+     if (unlikely(!meth))
+@@ -1786,12 +1809,18 @@ static PyObject* __Pyx_Method_ClassMethod(PyObject *method) {
+     {
+         // cdef classes
+         PyMethodDescrObject *descr = (PyMethodDescrObject *)method;
+-        #if PY_VERSION_HEX < 0x03020000
++        #if CYTHON_COMPILING_IN_GRAAL
++        PyTypeObject *d_type = GraalPyDescrObject_GetType(method);
++        PyMethodDef *d_method = GraalPyMethodDescrObject_GetMethod(method);
++        #elif PY_VERSION_HEX < 0x03020000
          PyTypeObject *d_type = descr->d_type;
          #else
--        PyTypeObject *d_type = descr->d_common.d_type;
-+        PyTypeObject *d_type = GraalPyDescrObject_GetType(method);
+         PyTypeObject *d_type = descr->d_common.d_type;
          #endif
 -        return PyDescr_NewClassMethod(d_type, descr->d_method);
-+        return PyDescr_NewClassMethod(d_type, GraalPyMethodDescrObject_GetMethod(method));
++        #if !CYTHON_COMPILING_IN_GRAAL
++        PyMethodDef *d_method = descr->d_method;
++        #endif
++        return PyDescr_NewClassMethod(d_type, d_method);
      }
  #endif
      else if (PyMethod_Check(method)) {
 diff --git a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
-index d8f60a4..cd61759 100644
+index e2256a0..a217725 100644
 --- a/Cython/Utility/ModuleSetupCode.c
 +++ b/Cython/Utility/ModuleSetupCode.c
 @@ -113,7 +113,7 @@
@@ -234,16 +445,17 @@ index d8f60a4..cd61759 100644
    #ifndef CYTHON_UPDATE_DESCRIPTOR_DOC
      #define CYTHON_UPDATE_DESCRIPTOR_DOC 0
    #endif
-@@ -995,7 +995,7 @@ static CYTHON_INLINE int __Pyx__IsSameCFunction(PyObject *func, void *cfunc) {
+@@ -993,6 +993,9 @@ static CYTHON_INLINE int __Pyx__IsSameCFunction(PyObject *func, void *cfunc) {
+ #if CYTHON_COMPILING_IN_LIMITED_API
+   #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
    #define __Pyx_PyFrame_SetLineNumber(frame, lineno)
++#elif CYTHON_COMPILING_IN_GRAAL
++  #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
++  #define __Pyx_PyFrame_SetLineNumber(frame, lineno) GraalPyFrame_SetLineNumber((frame), (lineno))
  #else
    #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
--  #define __Pyx_PyFrame_SetLineNumber(frame, lineno)  (frame)->f_lineno = (lineno)
-+  #define __Pyx_PyFrame_SetLineNumber(frame, lineno) GraalPyFrame_SetLineNumber((frame), (lineno))
- #endif
- 
- #if CYTHON_COMPILING_IN_LIMITED_API
-@@ -1413,11 +1413,7 @@ static CYTHON_INLINE PyObject * __Pyx_PyDict_GetItemStrWithError(PyObject *dict,
+   #define __Pyx_PyFrame_SetLineNumber(frame, lineno)  (frame)->f_lineno = (lineno)
+@@ -1413,11 +1416,7 @@ static CYTHON_INLINE PyObject * __Pyx_PyDict_GetItemStrWithError(PyObject *dict,
    #define __Pyx_PyType_AsAsync(obj) NULL
  #endif
  #ifndef __Pyx_PyAsyncMethodsStruct
@@ -256,30 +468,18 @@ index d8f60a4..cd61759 100644
  #endif
  
  
-@@ -1678,7 +1674,7 @@ PyEval_InitThreads();
+@@ -1678,7 +1677,11 @@ PyEval_InitThreads();
  static CYTHON_SMALL_CODE int __Pyx_check_single_interpreter(void) {
      #if PY_VERSION_HEX >= 0x030700A1
      static PY_INT64_T main_interpreter_id = -1;
--    PY_INT64_T current_id = PyInterpreterState_GetID(PyThreadState_Get()->interp);
++    #if CYTHON_COMPILING_IN_GRAAL
 +    PY_INT64_T current_id = GraalPyInterpreterState_GetIDFromThreadState(PyThreadState_Get());
++    #else
+     PY_INT64_T current_id = PyInterpreterState_GetID(PyThreadState_Get()->interp);
++    #endif
      if (main_interpreter_id == -1) {
          main_interpreter_id = current_id;
          return (unlikely(current_id == -1)) ? -1 : 0;
-diff --git a/Cython/Utility/ObjectHandling.c b/Cython/Utility/ObjectHandling.c
-index 1021edf..6139fd2 100644
---- a/Cython/Utility/ObjectHandling.c
-+++ b/Cython/Utility/ObjectHandling.c
-@@ -2034,8 +2034,8 @@ static int __Pyx_TryUnpackUnboundCMethod(__Pyx_CachedCFunction* target) {
-     #endif
-     {
-         PyMethodDescrObject *descr = (PyMethodDescrObject*) method;
--        target->func = descr->d_method->ml_meth;
--        target->flag = descr->d_method->ml_flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_STACKLESS);
-+        target->func = GraalPyMethodDescrObject_GetMethod(method)->ml_meth;
-+        target->flag = GraalPyMethodDescrObject_GetMethod(method)->ml_flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_STACKLESS);
-     } else
- #endif
-     // bound classmethods need special treatment
 diff --git a/Cython/Utility/StringTools.c b/Cython/Utility/StringTools.c
 index 0a50bc5..f93b3cc 100644
 --- a/Cython/Utility/StringTools.c
@@ -303,7 +503,7 @@ index 0a50bc5..f93b3cc 100644
  #else
      if (s1 == s2) {
 diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
-index a9e4923..be07e56 100644
+index a9e4923..0233f72 100644
 --- a/Cython/Utility/arrayarray.h
 +++ b/Cython/Utility/arrayarray.h
 @@ -32,30 +32,31 @@ typedef struct arraydescr {
@@ -358,17 +558,34 @@ index a9e4923..be07e56 100644
      Py_ssize_t allocated;
      struct arraydescr *ob_descr;
      PyObject *weakreflist; /* List of weak references */
-@@ -109,6 +110,9 @@ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,
+@@ -64,6 +65,16 @@ struct arrayobject {
+ #endif
+ };
+ 
++static CYTHON_INLINE __data_union __Pyx_ArrayData(arrayobject *self) {
++    __data_union data;
++#if CYTHON_COMPILING_IN_GRAAL
++    data.ob_item = GraalPyArray_Data((PyObject*)self);
++#else
++    data = self->data;
++#endif
++    return data;
++}
++
+ #ifndef NO_NEWARRAY_INLINE
+ //  fast creation of a new array
+ static CYTHON_INLINE PyObject * newarrayobject(PyTypeObject *type, Py_ssize_t size,
+@@ -109,6 +120,9 @@ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,
  // fast resize (reallocation to the point)
  // not designed for filing small increments (but for fast opaque array apps)
  static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
-+#ifdef CYTHON_COMPILING_IN_GRAAL
++#if CYTHON_COMPILING_IN_GRAAL
 +    return GraalPyArray_Resize((PyObject*)self, n);
 +#else
      void *items = (void*) self->data.ob_item;
      PyMem_Resize(items, char, (size_t)(n * self->ob_descr->itemsize));
      if (items == NULL) {
-@@ -119,10 +123,14 @@ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
+@@ -119,10 +133,14 @@ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
      __Pyx_SET_SIZE(self, n);
      self->allocated = n;
      return 0;
@@ -377,13 +594,13 @@ index a9e4923..be07e56 100644
  
  // suitable for small increments; over allocation 50% ;
  static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
-+#ifdef CYTHON_COMPILING_IN_GRAAL
++#if CYTHON_COMPILING_IN_GRAAL
 +    return GraalPyArray_Resize((PyObject*)self, n);
 +#else
      void *items = (void*) self->data.ob_item;
      Py_ssize_t newsize;
      if (n < self->allocated && n*4 > self->allocated) {
-@@ -143,6 +151,7 @@ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
+@@ -143,6 +161,7 @@ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
      __Pyx_SET_SIZE(self, n);
      self->allocated = newsize;
      return 0;

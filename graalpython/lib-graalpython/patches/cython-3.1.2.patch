@@ -36,7 +36,7 @@ index 5ae2a4e..1d6e63d 100644
 +# GraalPy change: watermark our patched version
 +watermark = f'{version}-graalpy'
 diff --git a/Cython/Includes/cpython/array.pxd b/Cython/Includes/cpython/array.pxd
-index b5e8880..7647f70 100644
+index b5e8880..37a9810 100644
 --- a/Cython/Includes/cpython/array.pxd
 +++ b/Cython/Includes/cpython/array.pxd
 @@ -99,7 +99,10 @@ cdef extern from *:  # Hard-coded utility code hack.
@@ -56,13 +56,13 @@ index b5e8880..7647f70 100644
  
      array newarrayobject(PyTypeObject* type, Py_ssize_t size, arraydescr *descr)
 +    # GraalPy change
-+    array clonearray(object template_array, Py_ssize_t size)
++    array clonearray(object template_array, Py_ssize_t size, bint zero)
  
 +    __data_union __Pyx_PyArray_Data(array self) nogil
      # fast resize/realloc
      # not suitable for small increments; reallocation 'to the point'
      int resize(array self, Py_ssize_t n) except -1
-@@ -142,10 +148,13 @@ cdef inline array clone(array template, Py_ssize_t length, bint zero):
+@@ -142,10 +148,12 @@ cdef inline array clone(array template, Py_ssize_t length, bint zero):
      """ fast creation of a new array, given a template array.
      type will be same as template.
      if zero is true, new array will be initialized with zeroes."""
@@ -70,13 +70,12 @@ index b5e8880..7647f70 100644
 -    if zero and op is not None:
 -        memset(op.data.as_chars, 0, length * op.ob_descr.itemsize)
 -    return op
-+    # GraalPy change: see clonearray impl in arrayarray.h. Note that the array
-+    # is always zero-initialized
++    # GraalPy change: see clonearray impl in arrayarray.h.
 +    # cdef array op = newarrayobject(Py_TYPE(template), length, template.ob_descr)
 +    # if zero and op is not None:
 +    #     memset(op.data.as_chars, 0, length * op.ob_descr.itemsize)
 +    # return op
-+    return clonearray(template, length)
++    return clonearray(template, length, zero)
  
  cdef inline array copy(array self):
      """ make a copy of an array. """
@@ -123,10 +122,180 @@ index 15ba067..fdef8e5 100644
  #define __Pyx_PySlice_Stop(o) __Pyx_NewRef(PySlice_Stop((PySliceObject*)o))
  #define __Pyx_PySlice_Step(o) __Pyx_NewRef(PySlice_Step((PySliceObject*)o))
 diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
-index 685d287..1b27dd5 100644
+index 685d287..525b900 100644
 --- a/Cython/Utility/CythonFunction.c
 +++ b/Cython/Utility/CythonFunction.c
-@@ -1755,8 +1755,12 @@ static PyObject* __Pyx_Method_ClassMethod(PyObject *method) {
+@@ -74,6 +74,23 @@ typedef struct {
+ #define __Pyx_CyFunction_Check(obj)  __Pyx_TypeCheck(obj, CGLOBAL(__pyx_CyFunctionType))
+ #define __Pyx_CyOrPyCFunction_Check(obj)  __Pyx_TypeCheck2(obj, CGLOBAL(__pyx_CyFunctionType), &PyCFunction_Type)
+ #define __Pyx_CyFunction_CheckExact(obj)  __Pyx_IS_TYPE(obj, CGLOBAL(__pyx_CyFunctionType))
++#if CYTHON_COMPILING_IN_GRAAL
++#define __Pyx_PyCFunction_GetDoc(func)  GraalPyCFunction_GetDoc((PyObject*)(func))
++#define __Pyx_PyCFunction_GetMethodDef(func)  GraalPyCFunction_GetMethodDef((PyObject*)(func))
++#define __Pyx_PyCFunction_GetModule(func)  GraalPyCFunction_GetModule((PyObject*)(func))
++#define __Pyx_PyCFunction_SetMethodDef(func, ml)  GraalPyCFunction_SetMethodDef((PyObject*)(func), ml)
++#define __Pyx_PyCFunction_SetModule(func, module)  GraalPyCFunction_SetModule((PyObject*)(func), module)
++#define __Pyx_PyCFunction_ClearModule(func)
++#define __Pyx_PyCFunction_VisitModule(func)
++#else
++#define __Pyx_PyCFunction_GetDoc(func)  (((PyCFunctionObject*)(func))->m_ml->ml_doc)
++#define __Pyx_PyCFunction_GetMethodDef(func)  (((PyCFunctionObject*)(func))->m_ml)
++#define __Pyx_PyCFunction_GetModule(func)  (((PyCFunctionObject*)(func))->m_module)
++#define __Pyx_PyCFunction_SetMethodDef(func, ml)  (((PyCFunctionObject*)(func))->m_ml = (ml))
++#define __Pyx_PyCFunction_SetModule(func, module)  (((PyCFunctionObject*)(func))->m_module = (module))
++#define __Pyx_PyCFunction_ClearModule(func)  Py_CLEAR(((PyCFunctionObject*)(func))->m_module)
++#define __Pyx_PyCFunction_VisitModule(func)  Py_VISIT(((PyCFunctionObject*)(func))->m_module)
++#endif
+ static CYTHON_INLINE int __Pyx__IsSameCyOrCFunction(PyObject *func, void (*cfunc)(void));/*proto*/
+ #undef __Pyx_IsSameCFunction
+ #define __Pyx_IsSameCFunction(func, cfunc)   __Pyx__IsSameCyOrCFunction(func, cfunc)
+@@ -175,8 +192,8 @@ __Pyx_CyFunction_get_doc_locked(__pyx_CyFunctionObject *op)
+         op->func_doc = PyObject_GetAttrString(op->func, "__doc__");
+         if (unlikely(!op->func_doc)) return NULL;
+ #else
+-        if (((PyCFunctionObject*)op)->m_ml->ml_doc) {
+-            op->func_doc = PyUnicode_FromString(((PyCFunctionObject*)op)->m_ml->ml_doc);
++        if (__Pyx_PyCFunction_GetDoc(op)) {
++            op->func_doc = PyUnicode_FromString(__Pyx_PyCFunction_GetDoc(op));
+             if (unlikely(op->func_doc == NULL))
+                 return NULL;
+         } else {
+@@ -221,7 +238,7 @@ __Pyx_CyFunction_get_name_locked(__pyx_CyFunctionObject *op)
+ #if CYTHON_COMPILING_IN_LIMITED_API
+         op->func_name = PyObject_GetAttrString(op->func, "__name__");
+ #else
+-        op->func_name = PyUnicode_InternFromString(((PyCFunctionObject*)op)->m_ml->ml_name);
++        op->func_name = PyUnicode_InternFromString(__Pyx_PyCFunction_GetMethodDef(op)->ml_name);
+ #endif  /* CYTHON_COMPILING_IN_LIMITED_API */
+         if (unlikely(op->func_name == NULL))
+             return NULL;
+@@ -600,7 +617,7 @@ static void __Pyx_CyFunction_raise_argument_count_error(__pyx_CyFunctionObject *
+         py_name, message, size);
+     Py_DECREF(py_name);
+ #else
+-    const char* name = ((PyCFunctionObject*)func)->m_ml->ml_name;
++    const char* name = __Pyx_PyCFunction_GetMethodDef(func)->ml_name;
+     PyErr_Format(PyExc_TypeError,
+         "%.200s() %s (%" CYTHON_FORMAT_SSIZE_T "d given)",
+         name, message, size);
+@@ -616,7 +633,7 @@ static void __Pyx_CyFunction_raise_type_error(__pyx_CyFunctionObject *func, cons
+         py_name, message);
+     Py_DECREF(py_name);
+ #else
+-    const char* name = ((PyCFunctionObject*)func)->m_ml->ml_name;
++    const char* name = __Pyx_PyCFunction_GetMethodDef(func)->ml_name;
+     PyErr_Format(PyExc_TypeError,
+         "%.200s() %s",
+         name, message);
+@@ -724,14 +741,14 @@ static PyObject *__Pyx_CyFunction_Init(__pyx_CyFunctionObject *op, PyMethodDef *
+     op->flags = flags;
+     __Pyx_CyFunction_weakreflist(op) = NULL;
+ #if !CYTHON_COMPILING_IN_LIMITED_API
+-    cf->m_ml = ml;
++    __Pyx_PyCFunction_SetMethodDef(cf, ml);
+     cf->m_self = (PyObject *) op;
+ #endif
+     Py_XINCREF(closure);
+     op->func_closure = closure;
+ #if !CYTHON_COMPILING_IN_LIMITED_API
+     Py_XINCREF(module);
+-    cf->m_module = module;
++    __Pyx_PyCFunction_SetModule(cf, module);
+ #endif
+     op->func_dict = NULL;
+     op->func_name = NULL;
+@@ -789,7 +806,7 @@ __Pyx_CyFunction_clear(__pyx_CyFunctionObject *m)
+ #if CYTHON_COMPILING_IN_LIMITED_API
+     Py_CLEAR(m->func);
+ #else
+-    Py_CLEAR(((PyCFunctionObject*)m)->m_module);
++    __Pyx_PyCFunction_ClearModule(m);
+ #endif
+     Py_CLEAR(m->func_dict);
+     Py_CLEAR(m->func_name);
+@@ -842,7 +859,7 @@ static int __Pyx_CyFunction_traverse(__pyx_CyFunctionObject *m, visitproc visit,
+ #if CYTHON_COMPILING_IN_LIMITED_API
+     Py_VISIT(m->func);
+ #else
+-    Py_VISIT(((PyCFunctionObject*)m)->m_module);
++    __Pyx_PyCFunction_VisitModule(m);
+ #endif
+     Py_VISIT(m->func_dict);
+     __Pyx_VISIT_CONST(m->func_name);
+@@ -885,8 +902,8 @@ static PyObject * __Pyx_CyFunction_CallMethod(PyObject *func, PyObject *self, Py
+     if (unlikely(flags < 0)) return NULL;
+ #else
+     PyCFunctionObject* f = (PyCFunctionObject*)func;
+-    PyCFunction meth = f->m_ml->ml_meth;
+-    int flags = f->m_ml->ml_flags;
++    PyCFunction meth = __Pyx_PyCFunction_GetMethodDef(f)->ml_meth;
++    int flags = __Pyx_PyCFunction_GetMethodDef(f)->ml_flags;
+ #endif
+     Py_ssize_t size;
+ 
+@@ -972,7 +989,7 @@ static PyObject *__Pyx_CyFunction_CallAsMethod(PyObject *func, PyObject *args, P
+      __pyx_vectorcallfunc vc = __Pyx_CyFunction_func_vectorcall(cyfunc);
+     if (vc) {
+ #if CYTHON_ASSUME_SAFE_MACROS && CYTHON_ASSUME_SAFE_SIZE
+-        return __Pyx_PyVectorcall_FastCallDict(func, vc, &PyTuple_GET_ITEM(args, 0), (size_t)PyTuple_GET_SIZE(args), kw);
++        return __Pyx_PyVectorcall_FastCallDict(func, vc, PySequence_Fast_ITEMS(args), (size_t)PyTuple_GET_SIZE(args), kw);
+ #else
+         // avoid unused function warning
+         (void) &__Pyx_PyVectorcall_FastCallDict;
+@@ -1053,7 +1070,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_NOARGS(PyObject *func, PyObject *c
+     PyCFunction meth = PyCFunction_GetFunction(cyfunc->func);
+     if (unlikely(!meth)) return NULL;
+ #else
+-    PyCFunction meth = ((PyCFunctionObject*)cyfunc)->m_ml->ml_meth;
++    PyCFunction meth = __Pyx_PyCFunction_GetMethodDef(cyfunc)->ml_meth;
+ #endif
+ 
+     switch (__Pyx_CyFunction_Vectorcall_CheckArgs(cyfunc, nargs, kwnames)) {
+@@ -1096,7 +1113,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_O(PyObject *func, PyObject *const
+     PyCFunction meth = PyCFunction_GetFunction(cyfunc->func);
+     if (unlikely(!meth)) return NULL;
+ #else
+-    PyCFunction meth = ((PyCFunctionObject*)cyfunc)->m_ml->ml_meth;
++    PyCFunction meth = __Pyx_PyCFunction_GetMethodDef(cyfunc)->ml_meth;
+ #endif
+ 
+     switch (__Pyx_CyFunction_Vectorcall_CheckArgs(cyfunc, nargs, kwnames)) {
+@@ -1139,7 +1156,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_FASTCALL_KEYWORDS(PyObject *func,
+     PyCFunction meth = PyCFunction_GetFunction(cyfunc->func);
+     if (unlikely(!meth)) return NULL;
+ #else
+-    PyCFunction meth = ((PyCFunctionObject*)cyfunc)->m_ml->ml_meth;
++    PyCFunction meth = __Pyx_PyCFunction_GetMethodDef(cyfunc)->ml_meth;
+ #endif
+ 
+     switch (__Pyx_CyFunction_Vectorcall_CheckArgs(cyfunc, nargs, NULL)) {
+@@ -1178,7 +1195,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_FASTCALL_KEYWORDS_METHOD(PyObject
+     PyCFunction meth = PyCFunction_GetFunction(cyfunc->func);
+     if (unlikely(!meth)) return NULL;
+ #else
+-    PyCFunction meth = ((PyCFunctionObject*)cyfunc)->m_ml->ml_meth;
++    PyCFunction meth = __Pyx_PyCFunction_GetMethodDef(cyfunc)->ml_meth;
+ #endif
+     switch (__Pyx_CyFunction_Vectorcall_CheckArgs(cyfunc, nargs, NULL)) {
+     case 1:
+@@ -1414,14 +1431,14 @@ __pyx_FusedFunction_descr_get_locked(__pyx_FusedFunctionObject *func, PyObject *
+     module = __Pyx_CyFunction_get_module((__pyx_CyFunctionObject *) func, NULL);
+     if ((unlikely(!module))) return NULL;
+     #else
+-    module = ((PyCFunctionObject *) func)->m_module;
++    module = __Pyx_PyCFunction_GetModule(func);
+     #endif
+ 
+     meth = (__pyx_FusedFunctionObject *) __pyx_FusedFunction_New(
+         #if CYTHON_COMPILING_IN_LIMITED_API
+                     func->ml,
+         #else
+-                    ((PyCFunctionObject *) func)->m_ml,
++                    __Pyx_PyCFunction_GetMethodDef(func),
+         #endif
+                     ((__pyx_CyFunctionObject *) func)->flags,
+                     ((__pyx_CyFunctionObject *) func)->func_qualname,
+@@ -1755,8 +1772,12 @@ static PyObject* __Pyx_Method_ClassMethod(PyObject *method) {
              "This is most likely a classmethod in a cdef class method with binding=False. "
              "Try setting 'binding' to True.",
              method);
@@ -203,7 +372,7 @@ index abc0614..0723227 100644
          if (unlikely(!next_item)) return -1;
          #elif CYTHON_ASSUME_SAFE_MACROS
 diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
-index d410e66..462d862 100644
+index d410e66..bed69d7 100644
 --- a/Cython/Utility/arrayarray.h
 +++ b/Cython/Utility/arrayarray.h
 @@ -30,33 +30,34 @@ typedef struct arraydescr {
@@ -264,13 +433,20 @@ index d410e66..462d862 100644
      Py_ssize_t allocated;
      struct arraydescr *ob_descr;
      PyObject *weakreflist; /* List of weak references */
-@@ -105,9 +106,47 @@ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,
+@@ -105,9 +106,55 @@ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,
      struct arraydescr *descr);
  #endif /* ifndef NO_NEWARRAY_INLINE */
  
 +// GraalPy change: we should replace this hack with a proper API once we are
 +// allowed to change the ABI again
-+static CYTHON_INLINE PyObject* clonearray(PyObject *template_array, Py_ssize_t size) {
++static CYTHON_INLINE PyObject* clonearray(PyObject *template_array, Py_ssize_t size, int zero) {
++#if !CYTHON_COMPILING_IN_GRAAL
++    arrayobject *op = (arrayobject*) newarrayobject(Py_TYPE(template_array), size, ((arrayobject*)template_array)->ob_descr);
++    if (zero && op != NULL) {
++        memset(op->data.as_chars, 0, size * op->ob_descr->itemsize);
++    }
++    return (PyObject*) op;
++#else
 +    PyObject* op = NULL;
 +    PyObject* module = NULL;
 +    PyObject* typecode = PyObject_GetAttrString(template_array, "typecode");
@@ -293,6 +469,7 @@ index d410e66..462d862 100644
 +    Py_XDECREF(typecode);
 +    Py_XDECREF(module);
 +    return op;
++#endif
 +}
 +
 +static CYTHON_INLINE __data_union __Pyx_PyArray_Data(arrayobject *self) {
@@ -312,7 +489,7 @@ index d410e66..462d862 100644
      void *items = (void*) self->data.ob_item;
      PyMem_Resize(items, char, (size_t)(n * self->ob_descr->itemsize));
      if (items == NULL) {
-@@ -118,10 +157,14 @@ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
+@@ -118,10 +165,14 @@ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
      __Pyx_SET_SIZE(self, n);
      self->allocated = n;
      return 0;
@@ -327,7 +504,7 @@ index d410e66..462d862 100644
      void *items = (void*) self->data.ob_item;
      Py_ssize_t newsize;
      if (n < self->allocated && n*4 > self->allocated) {
-@@ -142,6 +185,9 @@ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
+@@ -142,6 +193,9 @@ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
      __Pyx_SET_SIZE(self, n);
      self->allocated = newsize;
      return 0;

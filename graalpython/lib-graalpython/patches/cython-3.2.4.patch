@@ -58,8 +58,176 @@ index 4bc0438..72c0360 100644
  
  cdef inline array copy(array self):
      """ make a copy of an array. """
+diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
+index 8131c86..aa67eda 100644
+--- a/Cython/Utility/CythonFunction.c
++++ b/Cython/Utility/CythonFunction.c
+@@ -87,6 +87,22 @@ typedef struct {
+     PyObject *func_is_coroutine;
+ } __pyx_CyFunctionObject;
+ 
++#if !CYTHON_COMPILING_IN_LIMITED_API
++#if CYTHON_COMPILING_IN_GRAAL
++#define __Pyx_CyFunction_GetMethodDef(cyfunc) GraalPyCFunction_GetMethodDef((PyObject*)(cyfunc))
++#define __Pyx_CyFunction_SetMethodDef(cyfunc, ml) GraalPyCFunction_SetMethodDef((PyObject*)(cyfunc), ml)
++#define __Pyx_CyFunction_GetModule(cyfunc) GraalPyCFunction_GetModule((PyObject*)(cyfunc))
++#define __Pyx_CyFunction_SetModule(cyfunc, module) GraalPyCFunction_SetModule((PyObject*)(cyfunc), module)
++#define __Pyx_CyFunction_GetDoc(cyfunc) GraalPyCFunction_GetDoc((PyObject*)(cyfunc))
++#else
++#define __Pyx_CyFunction_GetMethodDef(cyfunc) (((PyCFunctionObject*)(cyfunc))->m_ml)
++#define __Pyx_CyFunction_SetMethodDef(cyfunc, ml) (((PyCFunctionObject*)(cyfunc))->m_ml = (ml))
++#define __Pyx_CyFunction_GetModule(cyfunc) (((PyCFunctionObject*)(cyfunc))->m_module)
++#define __Pyx_CyFunction_SetModule(cyfunc, module) (((PyCFunctionObject*)(cyfunc))->m_module = (module))
++#define __Pyx_CyFunction_GetDoc(cyfunc) (__Pyx_CyFunction_GetMethodDef(cyfunc)->ml_doc)
++#endif
++#endif
++
+ #undef __Pyx_CyOrPyCFunction_Check
+ #define __Pyx_CyFunction_Check(obj)  __Pyx_TypeCheck(obj, CGLOBAL(__pyx_CyFunctionType))
+ #define __Pyx_CyOrPyCFunction_Check(obj)  __Pyx_TypeCheck2(obj, CGLOBAL(__pyx_CyFunctionType), &PyCFunction_Type)
+@@ -192,8 +208,8 @@ __Pyx_CyFunction_get_doc_locked(__pyx_CyFunctionObject *op)
+         op->func_doc = PyObject_GetAttrString(op->func, "__doc__");
+         if (unlikely(!op->func_doc)) return NULL;
+ #else
+-        if (((PyCFunctionObject*)op)->m_ml->ml_doc) {
+-            op->func_doc = PyUnicode_FromString(((PyCFunctionObject*)op)->m_ml->ml_doc);
++        if (__Pyx_CyFunction_GetDoc(op)) {
++            op->func_doc = PyUnicode_FromString(__Pyx_CyFunction_GetDoc(op));
+             if (unlikely(op->func_doc == NULL))
+                 return NULL;
+         } else {
+@@ -238,7 +254,7 @@ __Pyx_CyFunction_get_name_locked(__pyx_CyFunctionObject *op)
+ #if CYTHON_COMPILING_IN_LIMITED_API
+         op->func_name = PyObject_GetAttrString(op->func, "__name__");
+ #else
+-        op->func_name = PyUnicode_InternFromString(((PyCFunctionObject*)op)->m_ml->ml_name);
++        op->func_name = PyUnicode_InternFromString(__Pyx_CyFunction_GetMethodDef(op)->ml_name);
+ #endif  /* CYTHON_COMPILING_IN_LIMITED_API */
+         if (unlikely(op->func_name == NULL))
+             return NULL;
+@@ -589,7 +605,7 @@ static void __Pyx_CyFunction_raise_argument_count_error(__pyx_CyFunctionObject *
+         py_name, message, size);
+     Py_DECREF(py_name);
+ #else
+-    const char* name = ((PyCFunctionObject*)func)->m_ml->ml_name;
++    const char* name = __Pyx_CyFunction_GetMethodDef(func)->ml_name;
+     PyErr_Format(PyExc_TypeError,
+         "%.200s() %s (%" CYTHON_FORMAT_SSIZE_T "d given)",
+         name, message, size);
+@@ -605,7 +621,7 @@ static void __Pyx_CyFunction_raise_type_error(__pyx_CyFunctionObject *func, cons
+         py_name, message);
+     Py_DECREF(py_name);
+ #else
+-    const char* name = ((PyCFunctionObject*)func)->m_ml->ml_name;
++    const char* name = __Pyx_CyFunction_GetMethodDef(func)->ml_name;
+     PyErr_Format(PyExc_TypeError,
+         "%.200s() %s",
+         name, message);
+@@ -720,14 +736,14 @@ static PyObject *__Pyx_CyFunction_Init(__pyx_CyFunctionObject *op, PyMethodDef *
+     op->flags = flags;
+     __Pyx_CyFunction_weakreflist(op) = NULL;
+ #if !CYTHON_COMPILING_IN_LIMITED_API
+-    cf->m_ml = ml;
++    __Pyx_CyFunction_SetMethodDef(cf, ml);
+     cf->m_self = (PyObject *) op;
+ #endif
+     Py_XINCREF(closure);
+     op->func_closure = closure;
+ #if !CYTHON_COMPILING_IN_LIMITED_API
+     Py_XINCREF(module);
+-    cf->m_module = module;
++    __Pyx_CyFunction_SetModule(cf, module);
+ #endif
+ #if PY_VERSION_HEX < 0x030C0000 || CYTHON_COMPILING_IN_LIMITED_API
+     op->func_dict = NULL;
+@@ -787,8 +803,10 @@ __Pyx_CyFunction_clear(__pyx_CyFunctionObject *m)
+ #if CYTHON_COMPILING_IN_LIMITED_API
+     Py_CLEAR(m->func);
+ #else
++#if !CYTHON_COMPILING_IN_GRAAL
+     Py_CLEAR(((PyCFunctionObject*)m)->m_module);
+ #endif
++#endif
+ #if PY_VERSION_HEX < 0x030C0000 || CYTHON_COMPILING_IN_LIMITED_API
+     Py_CLEAR(m->func_dict);
+ #elif PY_VERSION_HEX < 0x030d0000
+@@ -846,8 +864,10 @@ static int __Pyx_CyFunction_traverse(__pyx_CyFunctionObject *m, visitproc visit,
+ #if CYTHON_COMPILING_IN_LIMITED_API
+     Py_VISIT(m->func);
+ #else
++#if !CYTHON_COMPILING_IN_GRAAL
+     Py_VISIT(((PyCFunctionObject*)m)->m_module);
+ #endif
++#endif
+ #if PY_VERSION_HEX < 0x030C0000 || CYTHON_COMPILING_IN_LIMITED_API
+     Py_VISIT(m->func_dict);
+ #else
+@@ -902,8 +922,8 @@ static PyObject * __Pyx_CyFunction_CallMethod(PyObject *func, PyObject *self, Py
+     if (unlikely(flags < 0)) return NULL;
+ #else
+     PyCFunctionObject* f = (PyCFunctionObject*)func;
+-    PyCFunction meth = f->m_ml->ml_meth;
+-    int flags = f->m_ml->ml_flags;
++    PyCFunction meth = __Pyx_CyFunction_GetMethodDef(f)->ml_meth;
++    int flags = __Pyx_CyFunction_GetMethodDef(f)->ml_flags;
+ #endif
+     Py_ssize_t size;
+ 
+@@ -1066,7 +1086,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_NOARGS(PyObject *func, PyObject *c
+     PyCFunction meth = PyCFunction_GetFunction(cyfunc->func);
+     if (unlikely(!meth)) return NULL;
+ #else
+-    PyCFunction meth = ((PyCFunctionObject*)cyfunc)->m_ml->ml_meth;
++    PyCFunction meth = __Pyx_CyFunction_GetMethodDef(cyfunc)->ml_meth;
+ #endif
+ 
+     switch (__Pyx_CyFunction_Vectorcall_CheckArgs(cyfunc, nargs, kwnames)) {
+@@ -1105,7 +1125,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_O(PyObject *func, PyObject *const
+     PyCFunction meth = PyCFunction_GetFunction(cyfunc->func);
+     if (unlikely(!meth)) return NULL;
+ #else
+-    PyCFunction meth = ((PyCFunctionObject*)cyfunc)->m_ml->ml_meth;
++    PyCFunction meth = __Pyx_CyFunction_GetMethodDef(cyfunc)->ml_meth;
+ #endif
+ 
+     switch (__Pyx_CyFunction_Vectorcall_CheckArgs(cyfunc, nargs, kwnames)) {
+@@ -1144,7 +1164,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_FASTCALL_KEYWORDS(PyObject *func,
+     PyCFunction meth = PyCFunction_GetFunction(cyfunc->func);
+     if (unlikely(!meth)) return NULL;
+ #else
+-    PyCFunction meth = ((PyCFunctionObject*)cyfunc)->m_ml->ml_meth;
++    PyCFunction meth = __Pyx_CyFunction_GetMethodDef(cyfunc)->ml_meth;
+ #endif
+ 
+     switch (__Pyx_CyFunction_Vectorcall_CheckArgs(cyfunc, nargs, NULL)) {
+@@ -1179,7 +1199,7 @@ static PyObject * __Pyx_CyFunction_Vectorcall_FASTCALL_KEYWORDS_METHOD(PyObject
+     PyCFunction meth = PyCFunction_GetFunction(cyfunc->func);
+     if (unlikely(!meth)) return NULL;
+ #else
+-    PyCFunction meth = ((PyCFunctionObject*)cyfunc)->m_ml->ml_meth;
++    PyCFunction meth = __Pyx_CyFunction_GetMethodDef(cyfunc)->ml_meth;
+ #endif
+     switch (__Pyx_CyFunction_Vectorcall_CheckArgs(cyfunc, nargs, NULL)) {
+     case 1:
+@@ -1439,14 +1459,14 @@ __pyx_FusedFunction_descr_get_locked(__pyx_FusedFunctionObject *func, PyObject *
+     module = __Pyx_CyFunction_get_module((__pyx_CyFunctionObject *) func, NULL);
+     if ((unlikely(!module))) return NULL;
+     #else
+-    module = ((PyCFunctionObject *) func)->m_module;
++    module = __Pyx_CyFunction_GetModule(func);
+     #endif
+ 
+     meth = (__pyx_FusedFunctionObject *) __pyx_FusedFunction_New(
+         #if CYTHON_COMPILING_IN_LIMITED_API
+                     func->ml,
+         #else
+-                    ((PyCFunctionObject *) func)->m_ml,
++                    __Pyx_CyFunction_GetMethodDef(func),
+         #endif
+                     ((__pyx_CyFunctionObject *) func)->flags,
+                     ((__pyx_CyFunctionObject *) func)->func_qualname,
 diff --git a/Cython/Utility/Optimize.c b/Cython/Utility/Optimize.c
-index ee4a811..e8d403b 100644
+index b731f74..300758b 100644
 --- a/Cython/Utility/Optimize.c
 +++ b/Cython/Utility/Optimize.c
 @@ -314,7 +314,7 @@ static CYTHON_INLINE int __Pyx_dict_iter_next(PyObject* dict_or_iter, Py_ssize_t
