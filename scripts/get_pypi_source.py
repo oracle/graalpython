@@ -40,9 +40,9 @@
 #!/usr/bin/python
 
 import argparse
+import builtins
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -53,14 +53,27 @@ import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path
-try:
-    import tomllib
-except ModuleNotFoundError:
-    tomllib = None
+from types import SimpleNamespace
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+PATCHES_DIR = REPO_ROOT / "graalpython" / "lib-graalpython" / "patches"
+GRAALPY_MODULES_DIR = REPO_ROOT / "graalpython" / "lib-graalpython" / "modules"
+PIP_BUNDLED_DIR = REPO_ROOT / "graalpython" / "lib-python" / "3" / "ensurepip" / "_bundled"
+PIP_WHEEL = next(PIP_BUNDLED_DIR.glob("pip-*.whl"))
+
+sys.path[:0] = [str(GRAALPY_MODULES_DIR), str(PIP_WHEEL)]
+
+if not hasattr(builtins, "__graalpython__"):
+    builtins.__graalpython__ = SimpleNamespace(
+        core_home=str(REPO_ROOT / "graalpython" / "lib-graalpython"),
+        get_graalvm_version=lambda: "0-dev",
+    )
+
+from graalpy_pip_extensions import LocalPatchRepository, canonicalize_name
 
 PYPI_URL = "https://pypi.org/pypi"
-METADATA_TOML = Path(__file__).resolve().parents[1] / "graalpython" / "lib-graalpython" / "patches" / "metadata.toml"
+METADATA_TOML = PATCHES_DIR / "metadata.toml"
+PATCH_REPOSITORY = LocalPatchRepository.from_path(PATCHES_DIR)
 
 
 def eprint(*args, **kwargs):
@@ -74,7 +87,7 @@ def parse_pkg(pkg_arg):
         name, version = pkg_arg, None
     if not name:
         raise ValueError("missing package name")
-    return re.sub(r"[-_.]+", "-", name).lower(), version
+    return canonicalize_name(name), version
 
 
 def pypi_json(name, version=None):
@@ -104,11 +117,7 @@ def choose_artifact(files):
 def find_add_source(name, version):
     if not version or not METADATA_TOML.is_file():
         return None
-    if tomllib is None:
-        raise RuntimeError("Reading metadata.toml requires Python 3.11 or newer")
-    with open(METADATA_TOML, "rb") as metadata_file:
-        metadata = tomllib.load(metadata_file)
-    for add_source in metadata.get(name, {}).get("add-sources", []):
+    for add_source in PATCH_REPOSITORY.get_add_sources(name) or ():
         if add_source.get("version") == version:
             return add_source["url"]
     return None
@@ -120,6 +129,17 @@ def artifact_from_add_source(name, version):
         return None, None
     filename = urllib.parse.urlparse(url).path.rsplit("/", 1)[-1] or f"{name}-{version}.tar.gz"
     return {"filename": filename, "url": url}, "sdist"
+
+
+def get_matching_rule(name, version, dist_type):
+    return PATCH_REPOSITORY.get_matching_rule(name, version, dist_type)
+
+
+def should_autopatch(name, version, artifact_type):
+    rule = get_matching_rule(name, version, artifact_type)
+    if artifact_type == "sdist" and not rule:
+        rule = get_matching_rule(name, version, "wheel")
+    return not rule or rule.get("autopatch", True)
 
 
 def no_source_error(name, version):
@@ -249,7 +269,10 @@ def main(argv=None):
     except Exception:
         shutil.rmtree(target_dir, ignore_errors=True)
         raise
-    autopatch_capi(target_dir)
+    if should_autopatch(name, version, artifact_type):
+        autopatch_capi(target_dir)
+    else:
+        eprint(f"Skipping autopatch for {name}=={version}")
 
     print(f"Prepared source at: {target_dir}")
 

@@ -326,11 +326,6 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
         # We already processed it when building from source
         return
 
-    import autopatch_capi
-    import subprocess
-
-    autopatch_capi.auto_patch_tree(location)
-
     logger.info(f"Looking for GraalPy patches for {name}")
     repository = get_patch_repository()
 
@@ -347,6 +342,10 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
             # with a patch intended for a binary distribution, because in the source
             # distribution the actual deployed sources may be in a subdirectory (typically "src")
             location = os.path.join(location, subdir)
+    if not rule or rule.get('autopatch', True):
+        import autopatch_capi
+
+        autopatch_capi.auto_patch_tree(location)
     if rule:
         if patch := rule.get('patch'):
             with repository.resolve_patch(patch) as patch_path:
@@ -355,6 +354,8 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
                 logger.info(f"Patching package {name} using {patch}")
                 exe = '.exe' if os.name == 'nt' else ''
                 try:
+                    import subprocess
+
                     subprocess.run([f"patch{exe}", "-f", "-d", str(location), "-p1", "-i", str(patch_path)], check=True)
                 except FileNotFoundError:
                     logger.warning(
