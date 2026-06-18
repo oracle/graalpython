@@ -39,7 +39,6 @@
 import sys
 import os
 
-from tests.cpyext import CPyExtTestCase, CPyExtType
 from tests.util import has_capi, needs_capi
 
 # synchronize with Java implementation of __graalpython__.indirect_call_tester
@@ -72,6 +71,8 @@ def was_stack_walk(new_value):
 
 
 if has_capi():
+    from tests.cpyext import CPyExtType
+
     IndirectCApiCallTester = CPyExtType(
         'IndirectCApiCallTester',
         code='''

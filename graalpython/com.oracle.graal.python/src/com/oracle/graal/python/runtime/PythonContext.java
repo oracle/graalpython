@@ -1261,7 +1261,7 @@ public final class PythonContext extends Python3Core {
         this.in = env.in();
         this.out = env.out();
         this.err = env.err();
-        this.nativeAccessAllowed = env.isNativeAccessAllowed() && !PythonOS.isUnsupported();
+        this.nativeAccessAllowed = env.isNativeAccessAllowed() && !PythonOS.isUnsupported() && NativeAccessSupport.isAvailable();
     }
 
     private static final ContextReference<PythonContext> REFERENCE = ContextReference.create(PythonLanguage.class);
@@ -1439,7 +1439,7 @@ public final class PythonContext extends Python3Core {
         err = env.err();
         posixSupport.setEnv(env);
         optionValues = PythonOptions.createOptionValuesStorage(newEnv);
-        nativeAccessAllowed = newEnv.isNativeAccessAllowed() && !PythonOS.isUnsupported();
+        nativeAccessAllowed = newEnv.isNativeAccessAllowed() && !PythonOS.isUnsupported() && NativeAccessSupport.isAvailable();
     }
 
     /**

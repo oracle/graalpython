@@ -1051,12 +1051,14 @@ public abstract class Python3Core {
     }
 
     private void initializeWindowsCoreFiles(TruffleString coreHome) {
-        assert !ImageInfo.inImageBuildtimeCode();
-        loadFile(toTruffleStringUncached("_nt"), coreHome);
-        loadFile(toTruffleStringUncached("_winapi"), toTruffleStringUncached("modules/_winapi"), coreHome);
-        loadFile(toTruffleStringUncached("_overlapped"), toTruffleStringUncached("modules/_overlapped"), coreHome);
-        loadFile(toTruffleStringUncached("winreg"), toTruffleStringUncached("modules/winreg"), coreHome);
-        loadFile(toTruffleStringUncached("_winreg"), toTruffleStringUncached("modules/_winreg"), coreHome);
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && getContext().isNativeAccessAllowed()) {
+            assert !ImageInfo.inImageBuildtimeCode();
+            loadFile(toTruffleStringUncached("_nt"), coreHome);
+            loadFile(toTruffleStringUncached("_winapi"), toTruffleStringUncached("modules/_winapi"), coreHome);
+            loadFile(toTruffleStringUncached("_overlapped"), toTruffleStringUncached("modules/_overlapped"), coreHome);
+            loadFile(toTruffleStringUncached("winreg"), toTruffleStringUncached("modules/winreg"), coreHome);
+            loadFile(toTruffleStringUncached("_winreg"), toTruffleStringUncached("modules/_winreg"), coreHome);
+        }
     }
 
     /**

@@ -52,6 +52,10 @@ from tests.testlib_helper import build_testlib
 
 # cannot be moved to tagged as it uses testlib_helper
 @unittest.skipIf(os.environ.get("GITHUB_CI"), "Skip on Github CI")
+@unittest.skipIf(
+    sys.implementation.name == "graalpy" and not __graalpython__.native_access_is_available(),
+    "Skipped because importing the repaired wheel requires native access support",
+)
 class TestWheelBuildAndRun(unittest.TestCase):
     def test_build_install_and_run(self):
         # Build a C library and a wheel that depends on it. Then run it through repair_wheel to vendor the library in and verify that it can be imported

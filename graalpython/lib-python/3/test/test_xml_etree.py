@@ -2144,6 +2144,8 @@ class BugsTest(unittest.TestCase):
             'A new cultivar of Begonia plant named \u2018BCT9801BEG\u2019.')
 
     @unittest.skipIf(sys.gettrace(), "Skips under coverage.")
+    @unittest.skipUnless(hasattr(sys, 'getrefcount'),
+                         'test needs sys.getrefcount()')
     def test_bug_xmltoolkit63(self):
         # Check reference leak.
         def xmltoolkit63():

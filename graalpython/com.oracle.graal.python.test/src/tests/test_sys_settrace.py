@@ -43,7 +43,6 @@ import sys
 import signal
 from tests import util
 import builtins
-import asyncio
 
 
 GRAALPY_POSIX_BACKEND_IS_JAVA = (
@@ -520,6 +519,15 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
         self.assert_events(self.events, events)
 
 class AsyncTracingEventsUnitTest(TracingEventsUnitTest):
+    @staticmethod
+    def run_awaitable(awaitable):
+        iterator = awaitable.__await__()
+        try:
+            while True:
+                next(iterator)
+        except StopIteration as e:
+            return e.value
+
     def async_trace(self, frame, event, arg):
         code = frame.f_code
         name = code.co_name
@@ -539,7 +547,7 @@ class AsyncTracingEventsUnitTest(TracingEventsUnitTest):
     def trace_async_function(self, afunc, names):
         self.first_line = afunc.__code__.co_firstlineno
         self.events = []
-        asyncio.run(self.async_wrapper(afunc, names))
+        self.run_awaitable(self.async_wrapper(afunc, names))
 
     @unittest.skipIf(
         sys.implementation.name == "graalpy",

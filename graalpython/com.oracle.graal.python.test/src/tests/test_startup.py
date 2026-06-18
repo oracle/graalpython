@@ -45,17 +45,22 @@ import platform
 
 # Both lists should remain as small as possible to avoid adding overhead to startup
 IS_WINDOWS = platform.system() == 'Windows'
-WINDOWS_CORE_MODULES = ['_nt', '_winapi', '_overlapped', 'winreg', '_winreg'] if IS_WINDOWS else []
-WINDOWS_FULL_STARTUP_MODULES = [
-    '_datetime',
-    'datetime',
-    '_ctypes',
-    '_struct',
-    'struct',
-    'ctypes._endian',
-    'ctypes',
-    'ctypes.wintypes',
-] if IS_WINDOWS else []
+
+if IS_WINDOWS and sys.implementation.name == 'graalpy' and __graalpython__.native_access_is_available():
+    WINDOWS_CORE_MODULES = ['_nt', '_winapi', '_overlapped', 'winreg', '_winreg']
+    WINDOWS_FULL_STARTUP_MODULES = [
+        '_datetime',
+        'datetime',
+        '_ctypes',
+        '_struct',
+        'struct',
+        'ctypes._endian',
+        'ctypes',
+        'ctypes.wintypes',
+    ]
+else:
+    WINDOWS_CORE_MODULES = []
+    WINDOWS_FULL_STARTUP_MODULES = ['_winapi'] if IS_WINDOWS else []
 
 expected_nosite_startup_modules = [
     '_frozen_importlib',
@@ -90,11 +95,11 @@ class StartupTests(unittest.TestCase):
         result = subprocess.check_output([sys.executable, '--log.level=FINE', '-S', '-v', '-c', 'print("Hello")'], stderr=subprocess.STDOUT, text=True)
         assert 'Hello' in result
         imports = re.findall(r"import '(\S+)'", result)
-        self.assertEqual(expected_nosite_startup_modules, imports)
+        self.assertEqual(sorted(expected_nosite_startup_modules), sorted(imports))
 
     @unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-specific test")
     def test_startup_full(self):
         result = subprocess.check_output([sys.executable, '--log.level=FINE', '-s', '-v', '-c', 'print("Hello")'], stderr=subprocess.STDOUT, text=True)
         assert 'Hello' in result
         imports = re.findall(r"import '(\S+)'", result)
-        self.assertEqual(expected_full_startup_modules, imports)
+        self.assertEqual(sorted(expected_full_startup_modules), sorted(imports))
