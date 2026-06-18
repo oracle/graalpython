@@ -96,6 +96,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -415,11 +416,12 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         protected abstract boolean doIt(byte[] bytes, int len, byte[] prefix, int start, int end);
 
-        private boolean doIt(VirtualFrame frame, byte[] self, int len, PTuple substrs, int start, int stop,
+        private boolean doIt(VirtualFrame frame, byte[] self, int len, SequenceStorage substrsStorage, int start, int stop,
                         Node inliningTarget,
                         BytesNodes.ToBytesNode tobytes,
-                        SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
-            for (Object element : getObjectArrayNode.execute(inliningTarget, substrs)) {
+                        SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            for (int i = 0; i < substrsStorage.length(); i++) {
+                Object element = getItemNode.execute(inliningTarget, substrsStorage, i);
                 byte[] bytes = tobytes.execute(frame, element);
                 if (doIt(self, len, bytes, start, stop)) {
                     return true;
@@ -431,14 +433,17 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(PGuards.class)
     abstract static class PrefixSuffixDispatchNode extends Node {
         abstract boolean execute(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, int len, Object substrs, int begin, int last);
 
-        @Specialization
-        static boolean doTuple(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, int len, PTuple substrs, int begin, int last,
+        @Specialization(guards = "isTuple(substrs)")
+        static boolean doTuple(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, int len, Object substrs, int begin, int last,
                         @Cached(value = "createToBytesFromTuple()", inline = false) BytesNodes.ToBytesNode tobytes,
-                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode) {
-            return parent.doIt(frame, bytes, len, substrs, begin, last, inliningTarget, tobytes, getObjectArrayNode);
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            SequenceStorage substrsStorage = getSequenceStorageNode.execute(inliningTarget, substrs);
+            return parent.doIt(frame, bytes, len, substrsStorage, begin, last, inliningTarget, tobytes, getItemNode);
         }
 
         @Fallback

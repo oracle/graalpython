@@ -58,11 +58,13 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyListCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -195,6 +197,8 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                         @Cached CallUnaryMethodNode callDefaultFn,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarCustomNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached HashingStorageGetIterator hashingStorageGetIterator,
                         @Cached HashingStorageIteratorNext hashingStorageIteratorNext,
                         @Cached HashingStorageIteratorKey hashingStorageIteratorKey,
@@ -338,11 +342,15 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                                 Object item = pyIterNextNode.execute(frame, inliningTarget, genericIterator);
                                 if (state == STATE_GENERIC_DICT) {
                                     genericDictProfile.enter(inliningTarget);
-                                    if (!(item instanceof PTuple itemTuple) || itemTuple.getSequenceStorage().length() != 2) {
+                                    if (!tupleCheckNode.execute(inliningTarget, item)) {
                                         errorProfile.enter(inliningTarget);
                                         throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
                                     }
-                                    SequenceStorage sequenceStorage = itemTuple.getSequenceStorage();
+                                    SequenceStorage sequenceStorage = getTupleStorage.execute(inliningTarget, item);
+                                    if (sequenceStorage.length() != 2) {
+                                        errorProfile.enter(inliningTarget);
+                                        throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
+                                    }
                                     key = getItemScalarCustomNode.execute(inliningTarget, sequenceStorage, 0);
                                     value = getItemScalarCustomNode.execute(inliningTarget, sequenceStorage, 1);
                                 } else {

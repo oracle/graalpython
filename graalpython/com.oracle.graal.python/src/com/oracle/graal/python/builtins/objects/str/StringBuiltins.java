@@ -93,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -137,6 +136,7 @@ import com.oracle.graal.python.lib.PyObjectFormat;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -144,6 +144,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -169,6 +170,7 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.graal.python.runtime.formatting.StringFormatProcessor;
 import com.oracle.graal.python.runtime.formatting.TextFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -627,7 +629,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     @GenerateInline(false) // footprint reduction 56 -> 39
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, PyTupleCheckNode.class})
     public abstract static class PrefixSuffixNode extends Node {
 
         enum Op {
@@ -649,7 +651,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return execute(self, subStr, start, end, Op.SUFFIX);
         }
 
-        @Specialization(guards = "!isPTuple(subStrObj)")
+        @Specialization(guards = "!isTuple(subStrObj)")
         static boolean doString(Object selfObj, Object subStrObj, int start, int end, Op op,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringChecked2Node castSelfNode,
@@ -663,10 +665,11 @@ public final class StringBuiltins extends PythonBuiltins {
             return doIt(self, subStr, adjustStartIndex(start, selfLen), adjustEndIndex(end, selfLen), selfLen, subStrLen, regionEqualNode, op);
         }
 
-        @Specialization
-        static boolean doTuple(Object selfObj, PTuple subStrs, int start, int end, Op op,
+        @Specialization(guards = "isTuple(subStrs)")
+        static boolean doTuple(Object selfObj, Object subStrs, int start, int end, Op op,
                         @Bind Node inliningTarget,
-                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Exclusive @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Exclusive @Cached CastToTruffleStringChecked2Node castSelfNode,
                         @Exclusive @Cached CastToTruffleStringChecked2Node castPrefixNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -677,7 +680,9 @@ public final class StringBuiltins extends PythonBuiltins {
             int cpStart = adjustStartIndex(start, selfLen);
             int cpEnd = adjustEndIndex(end, selfLen);
 
-            for (Object element : getObjectArrayNode.execute(inliningTarget, subStrs)) {
+            SequenceStorage storage = getTupleStorage.execute(inliningTarget, subStrs);
+            for (int i = 0; i < storage.length(); i++) {
+                Object element = getItemNode.execute(inliningTarget, storage, i);
                 TruffleString subStr = castPrefixNode.cast(inliningTarget, element, ErrorMessages.INVALID_ELEMENT_TYPE, op.methodName(), element);
                 int subStrLen = codePointLengthNode.execute(subStr, TS_ENCODING);
                 if (doIt(self, subStr, cpStart, cpEnd, selfLen, subStrLen, regionEqualNode, op)) {

@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -95,11 +94,13 @@ import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -504,52 +505,29 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object execvArgsList(VirtualFrame frame, PosixPath path, PList argv,
+        static Object execvArgs(VirtualFrame frame, PosixPath path, Object argv,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared @Cached ToArrayNode toArrayNode,
-                        @Shared @Cached ObjectToOpaquePathNode toOpaquePathNode,
-                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared @Cached GilNode gil,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            execv(frame, path, argv, argv.getSequenceStorage(), inliningTarget, posixLib, context.getPosixSupport(), toArrayNode, toOpaquePathNode, auditNode, gil, constructAndRaiseNode, raiseNode);
-            throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
-        }
+                        @Cached InlinedConditionProfile isPListProfile,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                        @Cached ToArrayNode toArrayNode,
+                        @Cached ObjectToOpaquePathNode toOpaquePathNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode raiseNode) {
 
-        @Specialization
-        static Object execvArgsTuple(VirtualFrame frame, PosixPath path, PTuple argv,
-                        @Bind Node inliningTarget,
-                        @Bind PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared @Cached ToArrayNode toArrayNode,
-                        @Shared @Cached ObjectToOpaquePathNode toOpaquePathNode,
-                        @Shared @Cached AuditNode auditNode,
-                        @Shared @Cached GilNode gil,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            execv(frame, path, argv, argv.getSequenceStorage(), inliningTarget, posixLib, context.getPosixSupport(), toArrayNode, toOpaquePathNode, auditNode, gil, constructAndRaiseNode, raiseNode);
-            throw CompilerDirectives.shouldNotReachHere("execv should not return normally");
-        }
+            SequenceStorage argvStorage;
+            if (isPListProfile.profile(inliningTarget, argv instanceof PList)) {
+                argvStorage = ((PList) argv).getSequenceStorage();
+            } else if (tupleCheck.execute(inliningTarget, argv)) {
+                argvStorage = getTupleStorage.execute(inliningTarget, argv);
+            } else {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S, "execv()", 2, "tuple or list");
+            }
 
-        @Specialization(guards = {"!isList(argv)", "!isPTuple(argv)"})
-        @SuppressWarnings("unused")
-        static Object execvInvalidArgs(VirtualFrame frame, PosixPath path, Object argv,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S, "execv()", 2, "tuple or list");
-        }
-
-        private static void execv(VirtualFrame frame, PosixPath path, Object argv, SequenceStorage argvStorage,
-                        Node inliningTarget,
-                        PosixSupportLibrary posixLib,
-                        PosixSupport posixSupport,
-                        SequenceStorageNodes.ToArrayNode toArrayNode,
-                        ObjectToOpaquePathNode toOpaquePathNode,
-                        SysModuleBuiltins.AuditNode auditNode,
-                        GilNode gil,
-                        PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        PRaiseNode raiseNode) {
             Object[] args = toArrayNode.execute(inliningTarget, argvStorage);
             if (args.length < 1) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ARG_MUST_NOT_BE_EMPTY, "execv()", 2);
@@ -564,7 +542,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
 
             gil.release(true);
             try {
-                posixLib.execv(posixSupport, path.value, opaqueArgs);
+                posixLib.execv(context.getPosixSupport(), path.value, opaqueArgs);
             } catch (PosixException e) {
                 gil.acquire();
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
@@ -2059,22 +2037,24 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             return null;
         }
 
-        @Specialization(guards = {"isNoValue(ns)"})
-        static long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
+        @Specialization(guards = {"isTuple(times)", "isNoValue(ns)"})
+        static long[] times(VirtualFrame frame, Object times, @SuppressWarnings("unused") PNone ns,
                         @Bind Node inliningTarget,
+                        @Exclusive @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached ObjectToTimespecNode objectToTimespecNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            return convertToTimespec(frame, inliningTarget, times, getItemNode, objectToTimespecNode, raiseNode);
+            return convertToTimespec(frame, inliningTarget, getTupleStorage.execute(inliningTarget, times), getItemNode, objectToTimespecNode, raiseNode);
         }
 
-        @Specialization
-        static long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
+        @Specialization(guards = "isTuple(ns)")
+        static long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, Object ns,
                         @Bind Node inliningTarget,
+                        @Exclusive @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached SplitLongToSAndNsNode splitLongToSAndNsNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            return convertToTimespec(frame, inliningTarget, ns, getItemNode, splitLongToSAndNsNode, raiseNode);
+            return convertToTimespec(frame, inliningTarget, getTupleStorage.execute(inliningTarget, ns), getItemNode, splitLongToSAndNsNode, raiseNode);
         }
 
         @Specialization(guards = {"!isPNone(times)", "!isNoValue(ns)"})
@@ -2084,7 +2064,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
         }
 
-        @Specialization(guards = {"!isPNone(times)", "!isPTuple(times)", "isNoValue(ns)"})
+        @Specialization(guards = {"!isPNone(times)", "!isTuple(times)", "isNoValue(ns)"})
         @SuppressWarnings("unused")
         static long[] timesNotATuple(VirtualFrame frame, Object times, PNone ns,
                         @Bind Node inliningTarget,
@@ -2092,7 +2072,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             throw timesTupleError(inliningTarget, raiseNode);
         }
 
-        @Specialization(guards = {"!isNoValue(ns)", "!isPTuple(ns)"})
+        @Specialization(guards = {"!isNoValue(ns)", "!isTuple(ns)"})
         @SuppressWarnings("unused")
         static long[] nsNotATuple(VirtualFrame frame, PNone times, Object ns,
                         @Bind Node inliningTarget) {
@@ -2106,9 +2086,8 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", "times", "a tuple of two ints", "None");
         }
 
-        private static long[] convertToTimespec(VirtualFrame frame, Node inliningTarget, PTuple times, SequenceStorageNodes.GetItemScalarNode getItemNode,
+        private static long[] convertToTimespec(VirtualFrame frame, Node inliningTarget, SequenceStorage storage, SequenceStorageNodes.GetItemScalarNode getItemNode,
                         ConvertToTimespecBaseNode convertToTimespecBaseNode, PRaiseNode raiseNode) {
-            SequenceStorage storage = times.getSequenceStorage();
             if (storage.length() != 2) {
                 throw timesTupleError(inliningTarget, raiseNode);
             }

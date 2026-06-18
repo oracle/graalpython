@@ -68,11 +68,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -127,22 +128,24 @@ public abstract class SocketNodes {
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
-                        @Cached @Shared("getObjectArray") SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached @Shared("tupleCheck") PyTupleCheckNode tupleCheck,
+                        @Cached @Shared("tupleSize") PyTupleSizeNode tupleSize,
+                        @Cached @Shared("tupleGetItem") PyTupleGetItem tupleGetItem,
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
                         @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached @Shared("errorProfile") IsBuiltinObjectProfile errorProfile,
                         @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode,
                         @Cached @Shared PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            if (!(address instanceof PTuple)) {
+            if (!tupleCheck.execute(inliningTarget, address)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_P, caller, address);
             }
-            Object[] hostAndPort = getObjectArrayNode.execute(inliningTarget, address);
-            if (hostAndPort.length != 2) {
+            int length = tupleSize.execute(inliningTarget, address);
+            if (length != 2) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.AF_INET_VALUES_MUST_BE_PAIR);
             }
-            byte[] host = idnaConverter.execute(frame, hostAndPort[0]);
-            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1], raiseNode);
+            byte[] host = idnaConverter.execute(frame, tupleGetItem.execute(inliningTarget, address, 0));
+            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, tupleGetItem.execute(inliningTarget, address, 1), raiseNode);
             UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
             Object posixSupport = context.getPosixSupport();
             return posixLib.createUniversalSockAddrInet4(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
@@ -153,32 +156,34 @@ public abstract class SocketNodes {
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
-                        @Cached @Shared("getObjectArray") SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached @Shared("tupleCheck") PyTupleCheckNode tupleCheck,
+                        @Cached @Shared("tupleSize") PyTupleSizeNode tupleSize,
+                        @Cached @Shared("tupleGetItem") PyTupleGetItem tupleGetItem,
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
                         @Cached @Shared("idnaConverter") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached @Shared("errorProfile") IsBuiltinObjectProfile errorProfile,
                         @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode,
                         @Cached @Shared PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            if (!(address instanceof PTuple)) {
+            if (!tupleCheck.execute(inliningTarget, address)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_S, caller, address);
             }
-            Object[] hostAndPort = getObjectArrayNode.execute(inliningTarget, address);
-            if (hostAndPort.length < 2 || hostAndPort.length > 4) {
+            int length = tupleSize.execute(inliningTarget, address);
+            if (length < 2 || length > 4) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.AF_INET6_ADDR_MUST_BE_TUPLE);
             }
-            byte[] host = idnaConverter.execute(frame, hostAndPort[0]);
-            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, hostAndPort[1], raiseNode);
+            byte[] host = idnaConverter.execute(frame, tupleGetItem.execute(inliningTarget, address, 0));
+            int port = parsePort(frame, caller, asIntNode, inliningTarget, errorProfile, tupleGetItem.execute(inliningTarget, address, 1), raiseNode);
             int flowinfo = 0;
-            if (hostAndPort.length > 2) {
-                flowinfo = asIntNode.execute(frame, inliningTarget, hostAndPort[2]);
+            if (length > 2) {
+                flowinfo = asIntNode.execute(frame, inliningTarget, tupleGetItem.execute(inliningTarget, address, 2));
                 if (flowinfo < 0 || flowinfo > 0xfffff) {
                     throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.S_FLOWINFO_RANGE, caller);
                 }
             }
             int scopeid = 0;
-            if (hostAndPort.length > 3) {
-                scopeid = asIntNode.execute(frame, inliningTarget, hostAndPort[3]);
+            if (length > 3) {
+                scopeid = asIntNode.execute(frame, inliningTarget, tupleGetItem.execute(inliningTarget, address, 3));
             }
             UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET6.value);
             Object posixSupport = context.getPosixSupport();

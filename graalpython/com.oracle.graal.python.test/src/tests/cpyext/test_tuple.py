@@ -355,3 +355,27 @@ class TestNativeSubclass(unittest.TestCase):
         assert is_native_object(t)
         assert type(t) == ManagedSubclass
         self._verify(t)
+
+    def test_str_startswith_endswith_native_tuple(self):
+        prefixes = TupleSubclass("other", "native")
+        suffixes = TupleSubclass("other", ".py")
+        assert is_native_object(prefixes)
+        assert is_native_object(suffixes)
+        assert "native.py".startswith(prefixes)
+        assert "native.py".endswith(suffixes)
+
+    def test_bytes_startswith_endswith_native_tuple(self):
+        prefixes = TupleSubclass(b"other", b"native")
+        suffixes = TupleSubclass(b"other", b".py")
+        assert is_native_object(prefixes)
+        assert is_native_object(suffixes)
+        assert b"native.py".startswith(prefixes)
+        assert b"native.py".endswith(suffixes)
+        assert bytearray(b"native.py").startswith(prefixes)
+        assert bytearray(b"native.py").endswith(suffixes)
+
+    def test_memoryview_cast_shape_native_tuple(self):
+        shape = TupleSubclass(2, 2)
+        assert is_native_object(shape)
+        view = memoryview(b"abcd").cast("B", shape)
+        assert view.shape == (2, 2)

@@ -100,6 +100,7 @@ import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -207,6 +208,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.sq_contains, isComplex = true)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class ContainsNode extends SqContainsBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "len.execute(inliningTarget, self.getWrappedStorage()) == 0", limit = "1")
@@ -223,14 +225,15 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return getItem.hasKey(frame, inliningTarget, self.getWrappedStorage(), key);
         }
 
-        @Specialization
-        static boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
+        @Specialization(guards = "isTuple(key)")
+        static boolean contains(VirtualFrame frame, PDictItemsView self, Object key,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached HashingStorageGetItem getItem,
+                        @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached PyObjectRichCompareBool eqNode,
                         @Cached InlinedConditionProfile tupleLenProfile,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
-            SequenceStorage tupleStorage = key.getSequenceStorage();
+            SequenceStorage tupleStorage = getTupleStorage.execute(inliningTarget, key);
             if (tupleLenProfile.profile(inliningTarget, tupleStorage.length() != 2)) {
                 return false;
             }
@@ -243,13 +246,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
             }
         }
 
-        protected static boolean isFallback(Object self, Object key) {
-            return !(self instanceof PDictView) || self instanceof PDictItemsView && !(key instanceof PTuple);
+        protected static boolean isFallback(Node inliningTarget, Object self, Object key) {
+            return !(self instanceof PDictView) || self instanceof PDictItemsView && !PGuards.isTuple(key);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isFallback(self, key)")
-        static boolean contains(Object self, Object key) {
+        @Specialization(guards = "isFallback(inliningTarget, self, key)")
+        static boolean contains(Object self, Object key,
+                        @Bind Node inliningTarget) {
             return false;
         }
 
