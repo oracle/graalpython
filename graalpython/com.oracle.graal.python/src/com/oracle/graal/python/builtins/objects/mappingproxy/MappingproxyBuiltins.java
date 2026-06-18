@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
@@ -109,7 +108,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             // descrobject.c mappingproxy_check_mapping()
-            if (!(obj instanceof PList || PGuards.isTuple(obj)) && mappingCheckNode.execute(inliningTarget, obj)) {
+            if (!PGuards.isTupleOrList(obj) && mappingCheckNode.execute(inliningTarget, obj)) {
                 return PFactory.createMappingproxy(language, obj);
             }
             throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);

@@ -331,6 +331,10 @@ public abstract class PGuards {
         return PyTupleCheckNode.doGeneric(null, obj, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached());
     }
 
+    public static boolean isTupleOrList(Object obj) {
+        return obj instanceof PList || isTuple(obj);
+    }
+
     public static boolean isPSequence(Object obj) {
         return obj instanceof PSequence;
     }

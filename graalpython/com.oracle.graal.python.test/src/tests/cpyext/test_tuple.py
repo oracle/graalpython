@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import _io
+import codecs
 import functools
 import io
 import itertools
@@ -472,3 +473,36 @@ class TestNativeSubclass(unittest.TestCase):
         cycle = itertools.cycle([1])
         cycle.__setstate__(state)
         assert next(cycle) == 1
+
+    def test_reversed_native_tuple(self):
+        values = TupleSubclass(1, 2, 3)
+        assert is_native_object(values)
+        assert list(reversed(values)) == [3, 2, 1]
+
+    def test_base_exception_group_native_tuple(self):
+        exceptions = TupleSubclass(ValueError("native"), TypeError("tuple"))
+        assert is_native_object(exceptions)
+        group = BaseExceptionGroup("msg", exceptions)
+        assert group.message == "msg"
+        assert tuple(type(e) for e in group.exceptions) == (ValueError, TypeError)
+
+    def test_base_exception_group_copies_native_tuple_notes(self):
+        group = BaseExceptionGroup("msg", (ValueError("native"), TypeError("tuple")))
+        notes = TupleSubclass("note 1", "note 2")
+        assert is_native_object(notes)
+        group.__notes__ = notes
+
+        match, rest = group.split(ValueError)
+        assert match.__notes__ == ["note 1", "note 2"]
+        assert rest.__notes__ == ["note 1", "note 2"]
+        assert match.__notes__ is not notes
+        assert rest.__notes__ is not notes
+        assert match.__notes__ is not rest.__notes__
+
+    def test_multibyte_stream_writer_writelines_native_tuple(self):
+        lines = TupleSubclass("native", " tuple")
+        assert is_native_object(lines)
+        stream = io.BytesIO()
+        writer = codecs.getwriter("euc_jp")(stream)
+        writer.writelines(lines)
+        assert stream.getvalue() == b"native tuple"
