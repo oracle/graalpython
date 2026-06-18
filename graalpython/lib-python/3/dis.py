@@ -734,8 +734,6 @@ class Bytecode:
     Iterating over this yields the bytecode operations as Instruction instances.
     """
     def __init__(self, x, *, first_line=None, current_offset=None, show_caches=False, adaptive=False):
-        # GraalPy change
-        raise NotImplementedError("'dis' module is not supported on GraalPy")
         self.codeobj = co = _get_code_object(x)
         if first_line is None:
             self.first_line = co.co_firstlineno
@@ -746,14 +744,15 @@ class Bytecode:
         self._linestarts = dict(findlinestarts(co))
         self._original_object = x
         self.current_offset = current_offset
-        self.exception_entries = _parse_exception_table(co)
+        # GraalPy change:
+        self.exception_entries = []
         self.show_caches = show_caches
         self.adaptive = adaptive
 
     def __iter__(self):
         co = self.codeobj
         return _get_instructions_bytes(_get_code_array(co, self.adaptive),
-                                       co._varname_from_oparg,
+                                       None, # GraalPy change: replaced co._varname_from_oparg
                                        co.co_names, co.co_consts,
                                        self._linestarts,
                                        line_offset=self._line_offset,
@@ -780,6 +779,8 @@ class Bytecode:
 
     def dis(self):
         """Return a formatted view of the bytecode operations."""
+        # GraalPy change:
+        raise NotImplementedError("'dis' module is not supported on GraalPy")
         co = self.codeobj
         if self.current_offset is not None:
             offset = self.current_offset
