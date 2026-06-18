@@ -1051,14 +1051,12 @@ public abstract class Python3Core {
     }
 
     private void initializeWindowsCoreFiles(TruffleString coreHome) {
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            assert !ImageInfo.inImageBuildtimeCode();
-            loadFile(toTruffleStringUncached("_nt"), coreHome);
-            loadFile(toTruffleStringUncached("_winapi"), toTruffleStringUncached("modules/_winapi"), coreHome);
-            loadFile(toTruffleStringUncached("_overlapped"), toTruffleStringUncached("modules/_overlapped"), coreHome);
-            loadFile(toTruffleStringUncached("winreg"), toTruffleStringUncached("modules/winreg"), coreHome);
-            loadFile(toTruffleStringUncached("_winreg"), toTruffleStringUncached("modules/_winreg"), coreHome);
-        }
+        assert !ImageInfo.inImageBuildtimeCode();
+        loadFile(toTruffleStringUncached("_nt"), coreHome);
+        loadFile(toTruffleStringUncached("_winapi"), toTruffleStringUncached("modules/_winapi"), coreHome);
+        loadFile(toTruffleStringUncached("_overlapped"), toTruffleStringUncached("modules/_overlapped"), coreHome);
+        loadFile(toTruffleStringUncached("winreg"), toTruffleStringUncached("modules/winreg"), coreHome);
+        loadFile(toTruffleStringUncached("_winreg"), toTruffleStringUncached("modules/_winreg"), coreHome);
     }
 
     /**
@@ -1069,7 +1067,9 @@ public abstract class Python3Core {
     public final void postInitialize(Env env) {
         if (!env.isPreInitialization()) {
             initialized = false;
-            initializeWindowsCoreFiles(getContext().getCoreHomeOrFail());
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                initializeWindowsCoreFiles(getContext().getCoreHomeOrFail());
+            }
 
             for (PythonBuiltins builtin : builtins) {
                 if (builtin.needsPostInitialize()) {
