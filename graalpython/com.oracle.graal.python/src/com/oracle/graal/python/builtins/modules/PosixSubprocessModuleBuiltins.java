@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -253,7 +252,6 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached("createNotNormalized()") GetItemNode tupleGetItem,
-                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached PyObjectGetItem getItem,
                         @Cached CastToJavaIntExactNode castToIntNode,
@@ -269,7 +267,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             if (closeFds && errPipeWrite < 3) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.S_MUST_BE_S, "errpipe_write", ">= 3");
             }
-            if (!tupleCheckNode.execute(inliningTarget, fdsToKeepObj)) {
+            if (!PGuards.isTuple(fdsToKeepObj)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeepObj);
             }
             Object[] processArgs = args;

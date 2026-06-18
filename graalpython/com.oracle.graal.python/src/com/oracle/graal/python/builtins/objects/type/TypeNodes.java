@@ -183,7 +183,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -2157,7 +2156,6 @@ public abstract class TypeNodes {
                         @Cached GetInstanceShape getInstanceShape,
                         @Cached CastToListNode castToListNode,
                         @Cached PyUnicodeCheckNode stringCheck,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached TruffleString.IsValidNode isValidNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -2237,7 +2235,7 @@ public abstract class TypeNodes {
                 Object slotsObject = ctx.slotsObject;
                 if (stringCheck.execute(inliningTarget, ctx.slotsObject)) {
                     slotsStorage = new ObjectSequenceStorage(new Object[]{castToStringNode.execute(inliningTarget, ctx.slotsObject)});
-                } else if (tupleCheck.execute(inliningTarget, ctx.slotsObject)) {
+                } else if (PGuards.isTuple(ctx.slotsObject)) {
                     slotsStorage = getTupleStorage.execute(inliningTarget, ctx.slotsObject);
                 } else if (ctx.slotsObject instanceof PList slotsList) {
                     slotsStorage = slotsList.getSequenceStorage();

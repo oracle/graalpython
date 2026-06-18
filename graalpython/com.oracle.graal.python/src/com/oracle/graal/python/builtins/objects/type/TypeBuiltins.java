@@ -354,12 +354,11 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castStr,
                         @Cached TypeNodes.CreateTypeNode createType,
                         @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Exclusive @Cached PyTupleCheckNode tupleCheck,
                         @Exclusive @Cached ConstructTupleNode constructTupleNode) {
             PTuple basesTuple;
             if (bases instanceof PTuple) {
                 basesTuple = (PTuple) bases;
-            } else if (tupleCheck.execute(inliningTarget, bases)) {
+            } else if (PGuards.isTuple(bases)) {
                 basesTuple = constructTupleNode.execute(frame, bases);
             } else {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 2, "tuple", bases);
@@ -432,7 +431,6 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TypeNode nextTypeNode,
                         @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached PyTupleCheckNode tupleCheck,
                         @Exclusive @Cached ConstructTupleNode constructTupleNode,
                         @Exclusive @Cached IsTypeNode isTypeNode) {
             Object basesTuple;
@@ -440,7 +438,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 1", name);
             } else if (bases instanceof PTuple) {
                 basesTuple = bases;
-            } else if (tupleCheck.execute(inliningTarget, bases)) {
+            } else if (PGuards.isTuple(bases)) {
                 basesTuple = constructTupleNode.execute(frame, bases);
             } else {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 2", bases);

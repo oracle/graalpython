@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.LenBuiltinN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -106,11 +106,10 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         static Object doMapping(@SuppressWarnings("unused") Object cls, Object obj,
                         @Bind Node inliningTarget,
                         @Cached PyMappingCheckNode mappingCheckNode,
-                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             // descrobject.c mappingproxy_check_mapping()
-            if (!(obj instanceof PList || tupleCheckNode.execute(inliningTarget, obj)) && mappingCheckNode.execute(inliningTarget, obj)) {
+            if (!(obj instanceof PList || PGuards.isTuple(obj)) && mappingCheckNode.execute(inliningTarget, obj)) {
                 return PFactory.createMappingproxy(language, obj);
             }
             throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);

@@ -80,8 +80,8 @@ import com.oracle.graal.python.builtins.objects.exception.BaseExceptionAttrNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -171,7 +171,6 @@ public class MultibyteCodecUtil {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
@@ -252,7 +251,7 @@ public class MultibyteCodecUtil {
 
             Object retobj = callErrorCallbackNode.execute(frame, inliningTarget, errors, buf.excobj);
 
-            boolean isError = !tupleCheckNode.execute(inliningTarget, retobj);
+            boolean isError = !PGuards.isTuple(retobj);
             Object tobj = null;
             Object newposobj = null;
             boolean isUnicode = false;
@@ -326,7 +325,6 @@ public class MultibyteCodecUtil {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached BaseExceptionAttrNode attrNode,
-                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
@@ -387,7 +385,7 @@ public class MultibyteCodecUtil {
 
             Object retobj = callErrorCallbackNode.execute(frame, inliningTarget, errors, buf.excobj);
 
-            boolean isError = !tupleCheckNode.execute(inliningTarget, retobj);
+            boolean isError = !PGuards.isTuple(retobj);
             Object retuni = null;
             Object newposobj = null;
             if (!isError) {

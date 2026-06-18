@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -106,7 +106,6 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
@@ -665,7 +664,6 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         @Specialization
         static Object doit(VirtualFrame frame, PBytesIO self, Object state,
                         @Bind Node inliningTarget,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached GetInternalObjectArrayNode getArray,
                         @Cached WriteNode writeNode,
@@ -674,7 +672,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached GetOrCreateDictNode getDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PRaiseNode raiseNode) {
-            if (!tupleCheck.execute(inliningTarget, state)) {
+            if (!PGuards.isTuple(state)) {
                 return notTuple(self, state, inliningTarget);
             }
             self.checkExports(inliningTarget, raiseNode);

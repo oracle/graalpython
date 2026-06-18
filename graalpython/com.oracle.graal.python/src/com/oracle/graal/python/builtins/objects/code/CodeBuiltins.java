@@ -61,7 +61,6 @@ import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -134,21 +133,20 @@ public final class CodeBuiltins extends PythonBuiltins {
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                         @Cached PyBytesCheckNode bytesCheckNode,
-                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             byte[] codeBytes = getBytes(inliningTarget, codestring, bytesCheckNode, getBytesStorage, bufferLib);
             byte[] linetableBytes = getBytes(inliningTarget, linetable, bytesCheckNode, getBytesStorage, bufferLib);
             checkBytes(inliningTarget, exceptiontable, bytesCheckNode);
 
-            Object[] constantsArr = getTupleArray(inliningTarget, constants, tupleCheckNode, getTupleStorage, toArrayNode);
+            Object[] constantsArr = getTupleArray(inliningTarget, constants, getTupleStorage, toArrayNode);
             TruffleString[] namesArr = objectArrayToTruffleStringArray(inliningTarget,
-                            getTupleArray(inliningTarget, names, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+                            getTupleArray(inliningTarget, names, getTupleStorage, toArrayNode), castToTruffleStringNode);
             TruffleString[] varnamesArr = objectArrayToTruffleStringArray(inliningTarget,
-                            getTupleArray(inliningTarget, varnames, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+                            getTupleArray(inliningTarget, varnames, getTupleStorage, toArrayNode), castToTruffleStringNode);
             TruffleString[] freevarsArr = objectArrayToTruffleStringArray(inliningTarget,
-                            getTupleArray(inliningTarget, freevars, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+                            getTupleArray(inliningTarget, freevars, getTupleStorage, toArrayNode), castToTruffleStringNode);
             TruffleString[] cellcarsArr = objectArrayToTruffleStringArray(inliningTarget,
-                            getTupleArray(inliningTarget, cellvars, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+                            getTupleArray(inliningTarget, cellvars, getTupleStorage, toArrayNode), castToTruffleStringNode);
 
             return createCodeNode.execute(frame, argcount, posonlyargcount, kwonlyargcount,
                             nlocals, stacksize, flags,
@@ -170,9 +168,9 @@ public final class CodeBuiltins extends PythonBuiltins {
             }
         }
 
-        private static Object[] getTupleArray(Node inliningTarget, Object object, PyTupleCheckNode tupleCheckNode,
+        private static Object[] getTupleArray(Node inliningTarget, Object object,
                         GetTupleStorage getTupleStorage, SequenceStorageNodes.ToArrayNode toArrayNode) {
-            if (!tupleCheckNode.execute(inliningTarget, object)) {
+            if (!PGuards.isTuple(object)) {
                 throw invalidArgs(inliningTarget);
             }
             return toArrayNode.execute(inliningTarget, getTupleStorage.execute(inliningTarget, object));

@@ -66,6 +66,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ILLEGAL_NEWLINE_VALUE_
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_READABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
+import static com.oracle.graal.python.nodes.PGuards.isTuple;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_DECODE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_CRLF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -95,7 +96,6 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -509,7 +509,6 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
@@ -531,7 +530,7 @@ public abstract class TextIOWrapperNodes {
                  * Given this, we know there was a valid snapshot point len(decBuffer) bytes ago
                  * with decoder state (b'', decFlags).
                  */
-                if (!tupleCheck.execute(inliningTarget, state)) {
+                if (!isTuple(state)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_DECODER_STATE);
                 }
                 Object[] array = getArray.execute(inliningTarget, state);

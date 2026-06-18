@@ -91,9 +91,9 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqIt
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
@@ -656,7 +656,6 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @Exclusive @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
@@ -667,7 +666,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             } else if (shapeObj instanceof PList) {
                 isPListProfile.enter(inliningTarget);
                 shape = shapeFromStorage(frame, inliningTarget, ((PList) shapeObj).getSequenceStorage(), getItemScalarNode, asSizeNode, raiseNode);
-            } else if (tupleCheck.execute(inliningTarget, shapeObj)) {
+            } else if (PGuards.isTuple(shapeObj)) {
                 SequenceStorage storage = getTupleStorage.execute(inliningTarget, shapeObj);
                 shape = shapeFromStorage(frame, inliningTarget, storage, getItemScalarNode, asSizeNode, raiseNode);
             } else {

@@ -94,7 +94,6 @@ import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -510,7 +509,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile isPListProfile,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached ToArrayNode toArrayNode,
                         @Cached ObjectToOpaquePathNode toOpaquePathNode,
@@ -522,7 +520,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             SequenceStorage argvStorage;
             if (isPListProfile.profile(inliningTarget, argv instanceof PList)) {
                 argvStorage = ((PList) argv).getSequenceStorage();
-            } else if (tupleCheck.execute(inliningTarget, argv)) {
+            } else if (PGuards.isTuple(argv)) {
                 argvStorage = getTupleStorage.execute(inliningTarget, argv);
             } else {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S, "execv()", 2, "tuple or list");
@@ -3265,13 +3263,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isInteger(value)"})
         static void doGeneric(VirtualFrame frame, Node inliningTarget, Object value, long[] timespec, int offset,
                         @Cached PyNumberDivmodNode divmodNode,
-                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached(value = "createNotNormalized()", inline = false) GetItemNode getItemNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode) {
             Object divmod = divmodNode.execute(frame, inliningTarget, value, BILLION);
-            if (tupleCheckNode.execute(inliningTarget, divmod)) {
+            if (PGuards.isTuple(divmod)) {
                 SequenceStorage storage = getTupleStorage.execute(inliningTarget, divmod);
                 if (storage.length() == 2) {
                     timespec[offset] = asLongNode.execute(frame, inliningTarget, getItemNode.execute(storage, 0));

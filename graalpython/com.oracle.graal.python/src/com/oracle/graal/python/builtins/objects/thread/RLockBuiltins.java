@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -55,8 +55,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -110,12 +110,11 @@ public final class RLockBuiltins extends PythonBuiltins {
         @Specialization
         Object acquireRestore(PRLock self, Object state,
                         @Bind Node inliningTarget,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached GilNode gil,
                         @Cached CastToJavaUnsignedLongNode castLong,
                         @Cached SequenceStorageNodes.GetItemDynamicNode getItemNode) {
-            if (!tupleCheck.execute(inliningTarget, state)) {
+            if (!PGuards.isTuple(state)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.STATE_ARGUMENT_MUST_BE_A_TUPLE);
             }
             if (!self.acquireNonBlocking()) {

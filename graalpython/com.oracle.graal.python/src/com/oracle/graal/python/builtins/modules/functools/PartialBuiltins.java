@@ -363,7 +363,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Cached HashingStorageCopy copyStorageNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
-            if (!tupleCheckNode.execute(inliningTarget, state) || getTupleStorage.execute(inliningTarget, state).length() != 4) {
+            if (!PGuards.isTuple(state) || getTupleStorage.execute(inliningTarget, state).length() != 4) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
 
@@ -373,7 +373,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             final Object dict = getItemNode.execute(inliningTarget, state, 3);
 
             if (!callableCheckNode.execute(inliningTarget, function) ||
-                            !tupleCheckNode.execute(inliningTarget, fnArgs) ||
+                            !PGuards.isTuple(fnArgs) ||
                             (fnKwargs != PNone.NONE && !PGuards.isDict(fnKwargs))) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }

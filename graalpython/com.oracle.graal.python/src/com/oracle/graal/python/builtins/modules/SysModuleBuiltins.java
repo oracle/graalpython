@@ -220,7 +220,6 @@ import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyTraceBackPrint;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyUnicodeAsEncodedString;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
@@ -2252,11 +2251,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(status)")
         static Object exit(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object status,
                         @Bind Node inliningTarget,
-                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TupleBuiltins.LenNode tupleLenNode,
                         @Cached PyTupleGetItem getItemNode) {
             Object code = status;
-            if (tupleCheckNode.execute(inliningTarget, status)) {
+            if (PGuards.isTuple(status)) {
                 if (tupleLenNode.executeInt(frame, status) == 1) {
                     code = getItemNode.execute(inliningTarget, status, 0);
                 }

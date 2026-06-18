@@ -53,6 +53,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_RESET;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_SETSTATE;
 import static com.oracle.graal.python.nodes.ErrorMessages.ILLEGAL_STATE_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_MUST_BE_A_TUPLE;
+import static com.oracle.graal.python.nodes.PGuards.isTuple;
 import static com.oracle.graal.python.nodes.StringLiterals.T_CR;
 import static com.oracle.graal.python.nodes.StringLiterals.T_CRLF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
@@ -79,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -324,10 +324,9 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @Cached PRaiseNode raiseNode) {
             Object state = callMethod.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
-            if (!tupleCheck.execute(inliningTarget, state)) {
+            if (!isTuple(state)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             Object[] objects = getObjectArrayNode.execute(inliningTarget, state);
@@ -350,13 +349,12 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         @Specialization(guards = "!self.hasDecoder()")
         static Object noDecoder(VirtualFrame frame, PNLDecoder self, Object state,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached PyTupleCheckNode tupleCheck,
                         @Exclusive @Cached GetTupleStorage getTupleStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            if (!tupleCheck.execute(inliningTarget, state)) {
+            if (!isTuple(state)) {
                 return err(self, state, inliningTarget);
             }
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, state);
@@ -376,14 +374,13 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         static Object withDecoder(VirtualFrame frame, PNLDecoder self, Object state,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Exclusive @Cached PyTupleCheckNode tupleCheck,
                         @Exclusive @Cached GetTupleStorage getTupleStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Exclusive @Cached PyIndexCheckNode indexCheckNode,
                         @Exclusive @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            if (!tupleCheck.execute(inliningTarget, state)) {
+            if (!isTuple(state)) {
                 return err(self, state, inliningTarget);
             }
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, state);

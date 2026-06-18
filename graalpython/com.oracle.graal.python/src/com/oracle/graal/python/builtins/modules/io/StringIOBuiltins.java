@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -108,7 +108,6 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
@@ -665,7 +664,6 @@ public final class StringIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isClosed()"})
         static Object doit(VirtualFrame frame, PStringIO self, Object state,
                         @Bind Node inliningTarget,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached InitNode initNode,
@@ -677,7 +675,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PRaiseNode raiseNode) {
-            if (!tupleCheck.execute(inliningTarget, state)) {
+            if (!PGuards.isTuple(state)) {
                 return notTuple(self, state, inliningTarget);
             }
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, state);
