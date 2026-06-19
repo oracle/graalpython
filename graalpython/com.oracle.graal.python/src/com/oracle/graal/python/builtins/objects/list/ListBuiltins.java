@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
+import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBounds;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_APPEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LIST;
@@ -340,9 +341,11 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Exclusive @Cached GetListStorageNode getStorageNode,
                         @Cached ListNodes.UpdateListStorageNode updateStorageNode,
-                        @Cached("createForList()") SequenceStorageNodes.SetItemNode setItemNode) {
+                        @Cached SequenceStorageNodes.SetItemScalarGeneralizingNode setItemNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             var sequenceStorage = getStorageNode.execute(inliningTarget, self);
-            var newStorage = setItemNode.execute(sequenceStorage, index, value);
+            checkBounds(inliningTarget, raiseNode, ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE, index, sequenceStorage.length());
+            var newStorage = setItemNode.execute(inliningTarget, sequenceStorage, index, value, SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
             updateStorageNode.execute(inliningTarget, self, sequenceStorage, newStorage);
         }
 
@@ -351,10 +354,10 @@ public final class ListBuiltins extends PythonBuiltins {
         static void doGeneric(Object list, int index, @SuppressWarnings("unused") Object value,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached GetListStorageNode getStorageNode,
-                        @Cached NormalizeIndexNode normalizeIndexNode,
-                        @Cached SequenceStorageNodes.DeleteItemNode deleteItemNode) {
+                        @Cached SequenceStorageNodes.DeleteItemNode deleteItemNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             var sequenceStorage = getStorageNode.execute(inliningTarget, list);
-            index = normalizeIndexNode.execute(index, sequenceStorage.length());
+            checkBounds(inliningTarget, raiseNode, ErrorMessages.LIST_ASSIGMENT_INDEX_OUT_OF_RANGE, index, sequenceStorage.length());
             deleteItemNode.execute(inliningTarget, sequenceStorage, index);
         }
     }

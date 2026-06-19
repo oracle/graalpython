@@ -87,6 +87,76 @@ def test_getitem():
         m[i] = i
     assert m[slice(-10, 100)] == b'\x02\x03\x04\x05\x06\x07\x08\t\n\x0b'
 
+    assert m[-len(m)] == 0
+    assert m.__getitem__(-len(m)) == 0
+    for i in range(-len(m) - 1, -2 * len(m) - 1, -1):
+        try:
+            m[i]
+        except IndexError:
+            pass
+        else:
+            assert False, "expected IndexError"
+        try:
+            m.__getitem__(i)
+        except IndexError:
+            pass
+        else:
+            assert False, "expected IndexError"
+
+
+def test_setitem_negative_index_boundary():
+    m = mmap.mmap(-1, 5)
+    m[:] = b'abcde'
+    m[-len(m)] = ord('A')
+    m.__setitem__(-1, ord('E'))
+    assert m[:] == b'AbcdE'
+    for i in range(-len(m) - 1, -2 * len(m) - 1, -1):
+        try:
+            m[i] = ord('x')
+        except IndexError:
+            pass
+        else:
+            assert False, "expected IndexError"
+        try:
+            m.__setitem__(i, ord('x'))
+        except IndexError:
+            pass
+        else:
+            assert False, "expected IndexError"
+    assert m[:] == b'AbcdE'
+
+
+def test_delitem_negative_index_boundary():
+    m = mmap.mmap(-1, 5)
+    m[:] = b'abcde'
+    try:
+        del m[-len(m)]
+    except TypeError:
+        pass
+    else:
+        assert False, "expected TypeError"
+    try:
+        m.__delitem__(-1)
+    except TypeError:
+        pass
+    else:
+        assert False, "expected TypeError"
+
+    for i in range(-len(m) - 1, -2 * len(m) - 1, -1):
+        try:
+            del m[i]
+        except IndexError:
+            pass
+        else:
+            assert False, "expected IndexError"
+        try:
+            m.__delitem__(i)
+        except IndexError:
+            pass
+        else:
+            assert False, "expected IndexError"
+    assert m[:] == b'abcde'
+
 
 def test_readline():
     m = mmap.mmap(-1, 9)

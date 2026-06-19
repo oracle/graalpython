@@ -211,6 +211,15 @@ def _reference_setitem(args):
     return seq
 
 
+def _reference_delitem(args):
+    seq = args[0]
+    idx = args[1]
+    if not hasattr(seq, '__delitem__'):
+        raise TypeError
+    seq.__delitem__(idx)
+    return seq
+
+
 def _reference_fast(args):
     obj = args[0]
     if isinstance(obj, tuple) or isinstance(obj, list):
@@ -1467,6 +1476,49 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* sequence", "Py_ssize_t idx", "PyObject* value"],
         callfunction="wrap_PySequence_SetItem",
         cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_SetItem_list_negative_boundary = test_PySequence_SetItem.copy()
+    test_PySequence_SetItem_list_negative_boundary.pfunc = _reference_setitem
+    test_PySequence_SetItem_list_negative_boundary.parameters = lambda: (
+        (['a', 'b', 'c'], -4, 'z'),
+    )
+
+    test_PySequence_SetItem_mmap_negative_boundary = test_PySequence_SetItem.copy()
+    test_PySequence_SetItem_mmap_negative_boundary.pfunc = _reference_setitem
+    test_PySequence_SetItem_mmap_negative_boundary.parameters = lambda: (
+        (create_anon_mmap(b'hello world!'), -14, b'z'),
+    )
+
+    test_PySequence_DelItem = CPyExtFunction(
+        _reference_delitem,
+        lambda: (
+            ([1, 2, 3], 1),
+        ),
+        code=''' PyObject* wrap_PySequence_DelItem(PyObject* sequence, Py_ssize_t idx) {
+            if (PySequence_DelItem(sequence, idx) < 0) {
+                return NULL;
+            }
+            return sequence;
+        }
+        ''',
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* sequence", "Py_ssize_t idx"],
+        callfunction="wrap_PySequence_DelItem",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_DelItem_list_negative_boundary = test_PySequence_DelItem.copy()
+    test_PySequence_DelItem_list_negative_boundary.pfunc = _reference_delitem
+    test_PySequence_DelItem_list_negative_boundary.parameters = lambda: (
+        ([1, 2, 3], -4),
+    )
+
+    test_PySequence_DelItem_mmap_negative_boundary = test_PySequence_DelItem.copy()
+    test_PySequence_DelItem_mmap_negative_boundary.pfunc = _reference_delitem
+    test_PySequence_DelItem_mmap_negative_boundary.parameters = lambda: (
+        (create_anon_mmap(b'hello world!'), -14),
     )
 
     test_PySequence_Tuple = CPyExtFunction(

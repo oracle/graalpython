@@ -398,10 +398,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, MMAP_CLOSED_OR_INVALID);
             }
             long len = self.getLength();
-            long idx = index < 0 ? index + len : index;
-            if (idx < 0 || idx >= len) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.IndexError, MMAP_INDEX_OUT_OF_RANGE);
-            }
+            checkBounds(inliningTarget, raiseNode, MMAP_INDEX_OUT_OF_RANGE, index, len);
             if (val == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION);
             }
@@ -413,7 +410,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             }
             byte b = bufferLib.readByte(val, 0);
             try {
-                posixSupportLib.mmapWriteByte(context.getPosixSupport(), self.getPosixSupportHandle(), idx, b);
+                posixSupportLib.mmapWriteByte(context.getPosixSupport(), self.getPosixSupportHandle(), index, b);
             } catch (PosixException ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, ex);
             }
