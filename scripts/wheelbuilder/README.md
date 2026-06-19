@@ -41,7 +41,7 @@ For Linux/amd64, I use [act](https://github.com/nektos/act/releases) on a Linux 
 ```shell
 git clone https://github.com/oracle/graalpython
 cd graalpython
-VERSION=25.1.0
+VERSION=25.1.3
 PYTHON_VERSION=3.12
 BINDIR=. curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | bash
 echo "graalpy_url=https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy$PYTHON_VERSION-$VERSION-linux-amd64.tar.gz" > .input
@@ -54,7 +54,7 @@ For Linux/aarch64, I use act on a mac, those are usually beefy ARM machines that
 ```shell
 git clone https://github.com/oracle/graalpython
 cd graalpython
-VERSION=25.1.0
+VERSION=25.1.3
 PYTHON_VERSION=3.12
 brew install act
 echo "graalpy_url=https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy$PYTHON_VERSION-$VERSION-linux-aarch64.tar.gz" > .input
@@ -65,7 +65,7 @@ act --env http_proxy=$http_proxy --env https_proxy=$https_proxy -W .github/workf
 For macOS/aarch64, you get no isolation from act, so I just run it directly.
 ```shell
 git clone https://github.com/oracle/graalpython
-VERSION=25.1.0
+VERSION=25.1.3
 PYTHON_VERSION=3.12
 export GITHUB_RUN_ID=doesntMatterJustTriggerBrewInstallScripts
 python3 -m venv wheelbuilder-venv
@@ -76,7 +76,7 @@ python3 graalpython/scripts/wheelbuilder/build_wheels.py https://github.com/orac
 For Windows/amd64, you get no isolation from act, so I just run it directly in Visual Studio powershell.
 ```shell
 git clone https://github.com/oracle/graalpython
-$VERSION="25.1.0"
+$VERSION="25.1.3"
 $PYTHON_VERSION="3.12"
 $env:GITHUB_RUN_ID="doesntMatterJustTriggerBrewInstallScripts"
 python3 -m venv wheelbuilder-venv

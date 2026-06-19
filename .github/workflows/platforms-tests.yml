@@ -36,7 +36,7 @@ jobs:
           echo "Using $JAVA_HOME"
           $JAVA_HOME/bin/java -version
           mkdir $(pwd)/user_resource_cache
-          mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=25.1.0 -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
+          mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=25.1.3 -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
           rm -rf $(pwd)/user_resource_cache
 
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
@@ -56,6 +56,6 @@ jobs:
             echo 'Using \$JAVA_HOME'
             \$JAVA_HOME/bin/java -version
             mkdir \$(pwd)/user_resource_cache
-            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=25.1.0 -Dcom.oracle.graal.python.test.polyglot_repo=file:///\$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/\$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
+            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=25.1.3 -Dcom.oracle.graal.python.test.polyglot_repo=file:///\$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/\$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
             rm -rf \$(pwd)/user_resource_cache
           "
