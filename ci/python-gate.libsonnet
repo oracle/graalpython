@@ -303,6 +303,20 @@
     ),
     provide:: $.provide_graalpy_standalone_artifact,
 
+    provide_graalpy_graalos_standalone_artifact(name):: task_spec(evaluate_late(
+        // use 2 after _ to make sure we evaluate this right after _1 late eval keys like _1_os_arch_jdk
+        "_2_provide_graalos_artifact", {
+            local os = self.os,
+            local arch = if self.arch == "amd64" then "" else "_" + self.arch,
+            local artifact_name = name + os + arch,
+            publishArtifacts+: [{
+                "dir": "../",
+                "name": artifact_name,
+                "patterns": ["main/mxbuild/*/GRAALPY_NATIVE_GRAALOS_STANDALONE"]
+            }]
+        })
+    ),
+
     require_graalpy_standalone_artifact(name):: task_spec({
         local os = self.os,
         local arch = if self.arch == "amd64" then "" else "_" + self.arch,

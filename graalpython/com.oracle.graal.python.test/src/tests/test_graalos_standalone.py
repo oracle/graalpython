@@ -37,23 +37,53 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import subprocess
+import sys
 import sysconfig
 import unittest
 
 
-def test_graalos_sqlite3_native_extension_smoke():
+def skip_unless_graalos():
     soabi = sysconfig.get_config_var("SOABI") or ""
     if "graalos" not in soabi:
         raise unittest.SkipTest(f"requires GraalOS SOABI, got {soabi!r}")
 
-    import _sqlite3
-    import sqlite3
 
-    assert _sqlite3.sqlite_version
-    conn = sqlite3.connect(":memory:")
-    try:
-        conn.execute("create table values_for_sum(value integer)")
-        conn.executemany("insert into values_for_sum(value) values (?)", [(1,), (2,), (3,)])
-        assert conn.execute("select sum(value) from values_for_sum").fetchone()[0] == 6
-    finally:
-        conn.close()
+class GraalOSStandaloneTests(unittest.TestCase):
+
+    def setUp(self):
+        skip_unless_graalos()
+
+    def test_sqlite3_native_extension_smoke(self):
+        import _sqlite3
+        import sqlite3
+
+        self.assertTrue(_sqlite3.sqlite_version)
+        conn = sqlite3.connect(":memory:")
+        try:
+            conn.execute("create table values_for_sum(value integer)")
+            conn.executemany("insert into values_for_sum(value) values (?)", [(1,), (2,), (3,)])
+            self.assertEqual(conn.execute("select sum(value) from values_for_sum").fetchone()[0], 6)
+        finally:
+            conn.close()
+
+    def test_demo_packages(self):
+        import asteval
+        import rich
+
+        self.assertTrue(asteval.__version__)
+        self.assertTrue(rich.get_console())
+
+    def test_sandbox_chat_demo(self):
+        result = subprocess.run(
+            [sys.executable, "/graalos_sandbox_chat.py", "--demo"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("sum([i*i for i in range(1000)])", result.stdout)
+        self.assertIn("__import__('socket').create_connection", result.stdout)
+        self.assertIn("gaierror", result.stdout)
+        self.assertIn("FileNotFoundError", result.stdout)
+        self.assertIn("operation denied", result.stdout)

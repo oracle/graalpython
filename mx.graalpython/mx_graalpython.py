@@ -1572,7 +1572,7 @@ def graalpytest(args):
 
 def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env=None,
                          cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None,
-                         report: Union[Task, bool, None] = False, parallel=None, runner_args=None):
+                         report: Union[Task, bool, None] = False, parallel=None, runner_args=None, test_runner=None):
     if lock:
         lock.acquire()
 
@@ -1609,7 +1609,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         # index in in that case
         env["PIP_EXTRA_INDEX_URL"] = pip_index
 
-    args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
+    args += [test_runner or _python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
         args += runner_args

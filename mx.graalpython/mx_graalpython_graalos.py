@@ -41,7 +41,6 @@ from __future__ import annotations
 
 # pylint: disable=cyclic-import
 
-import base64
 import gzip
 import json
 import os
@@ -192,8 +191,74 @@ def _ensure_graalos_runtime_inputs(runtime_home: Path, on_fail=mx.abort):
         on_fail("Extracted GraalOS runtime artifact is missing required files:\n" + "\n".join([str(p) for p in missing]))
 
 
+def _prepare_graalos_demo(standalone_home: Path, env):
+    demo_wheels = standalone_home / "demo-wheels"
+    site_packages = standalone_home / "lib" / "python3.12" / "site-packages"
+    demo_wheels.mkdir(parents=True, exist_ok=True)
+    site_packages.mkdir(parents=True, exist_ok=True)
+
+    run([
+        sys.executable, "-m", "pip", "download",
+        "--only-binary=:all:",
+        "--implementation", "py",
+        "--python-version", "3.12",
+        "--abi", "none",
+        "--platform", "any",
+        "--dest", str(demo_wheels),
+        "rich",
+        "asteval",
+    ], env=env)
+    run([
+        sys.executable, "-m", "pip", "install",
+        "--target", str(site_packages),
+        "--no-index",
+        "--find-links", str(demo_wheels),
+        "--no-compile",
+        "--upgrade",
+        "rich",
+        "asteval",
+    ], env=env)
+
+    shutil.copy2(
+        Path(SUITE.dir) / "graalos_sandbox_chat.py",
+        standalone_home / "graalos_sandbox_chat.py",
+    )
+
+
+def _stage_graalos_test_harness(standalone_home: Path):
+    harness_dir = standalone_home / "test-harness"
+    tests_dir = harness_dir / "tests"
+    tests_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        Path(SUITE.dir) / "graalpython" / "com.oracle.graal.python.test" / "src" / "runner.py",
+        harness_dir / "runner.py",
+    )
+    shutil.copy2(
+        Path(SUITE.dir) / "graalpython" / "com.oracle.graal.python.test" / "src" / "tests" / "test_graalos_standalone.py",
+        tests_dir / "test_graalos_standalone.py",
+    )
+
+
+def _set_graalos_standalone_env(standalone_home: Path, key, value, on_fail=mx.abort):
+    config_path = standalone_home / "config.json"
+    original_config = config_path.read_text(encoding="utf-8")
+    _ = json.dumps({key: value})  # Validate that both values can be represented in JSON.
+    if re.search(rf'^\s*"{re.escape(key)}"\s*:', original_config, flags=re.MULTILINE):
+        return config_path, original_config
+    env_match = re.search(r'("env"\s*:\s*\{\n)(.*?)(\n\s*\})', original_config, flags=re.DOTALL)
+    if not env_match:
+        on_fail(f"Could not find env object in GraalOS standalone config: {config_path}")
+    env_body = env_match.group(2)
+    indent_match = re.search(r'^(\s*)"', env_body, flags=re.MULTILINE)
+    indent = indent_match.group(1) if indent_match else "    "
+    separator = "," if env_body.strip() else ""
+    entry = f'{separator}\n{indent}{json.dumps(key)}: {json.dumps(value)}'
+    config = original_config[:env_match.end(2)] + entry + original_config[env_match.end(2):]
+    config_path.write_text(config, encoding="utf-8")
+    return config_path, original_config
+
+
 def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
-    del report  # This gate executes an in-sandbox smoke test directly instead of using the source-tree test runner.
     artifact_base_url = os.environ.get("GRAALPY_GRAALOS_ARTIFACT_BASE_URL")
     if not artifact_base_url:
         mx.log("Skipping GRAALPY_NATIVE_GRAALOS_STANDALONE build: GRAALPY_GRAALOS_ARTIFACT_BASE_URL is not configured")
@@ -223,7 +288,7 @@ def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
     graalos_runtime_home = _find_graalos_runtime_home(runtime_root, on_fail=on_fail)
     _ensure_graalos_runtime_inputs(graalos_runtime_home, on_fail=on_fail)
 
-    from mx_graalpython import extend_os_env, run_mx, _graalpy_launcher
+    from mx_graalpython import extend_os_env, run_mx, run_python_unittests, _graalpy_launcher
     env = extend_os_env(
         JAVA_HOME=str(graalvm_home),
         MUSL_TOOLCHAIN=str(musl_toolchain),
@@ -244,17 +309,22 @@ def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
     if not launcher.exists():
         on_fail(f"GRAALPY_NATIVE_GRAALOS_STANDALONE launcher was not built: {launcher}")
 
-    test_path = Path(SUITE.dir) / "graalpython" / "com.oracle.graal.python.test" / "src" / "tests" / "test_graalos_standalone.py"
-    with open(test_path, "r", encoding="utf-8") as f:
-        smoke_test = f.read()
-    smoke_test += """
-try:
-    test_graalos_sqlite3_native_extension_smoke()
-except unittest.SkipTest as e:
-    print(f"skipped: {e}")
-"""
-    smoke_test_arg = base64.b64encode(smoke_test.encode("utf-8")).decode("ascii")
-    smoke_test_command = f"import base64; exec(base64.b64decode({smoke_test_arg!r}).decode('utf-8'))"
-    result = run([str(launcher), "-c", smoke_test_command], env=env, nonZeroIsFatal=(on_fail == mx.abort))  # pylint: disable=comparison-with-callable
-    if result != 0:
-        on_fail("Testing GraalOS standalone failed")
+    _prepare_graalos_demo(standalone_home, env)
+    _stage_graalos_test_harness(standalone_home)
+    config_path, original_config = _set_graalos_standalone_env(
+        standalone_home,
+        "GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS",
+        "true",
+        on_fail=on_fail,
+    )
+    try:
+        run_python_unittests(
+            str(launcher),
+            paths=["/test-harness/tests/test_graalos_standalone.py"],
+            env=env,
+            report=report,
+            parallel=0,
+            test_runner="/test-harness/runner.py",
+        )
+    finally:
+        config_path.write_text(original_config, encoding="utf-8")
