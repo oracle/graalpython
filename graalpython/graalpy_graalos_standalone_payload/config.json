@@ -6,6 +6,7 @@
   },
   "working_dir": "/",
   "allow_runtime_codegen": true,
+  "memlimit": 64.0,
   "fds": {
     "stdin": "stdin",
     "stdout": "stdout",
@@ -18,7 +19,7 @@
     "log_level": null,
     "log_to": null,
     "visorcalloutput": null,
-    "extra_args": []
+    "extra_args": ["--disable_core_scheduling"]
   },
   "fsmappings": []
 }
