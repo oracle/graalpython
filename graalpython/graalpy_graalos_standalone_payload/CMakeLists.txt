@@ -49,7 +49,8 @@ file(REMOVE_RECURSE
     "${PAYLOAD_DIR}/bin"
     "${PAYLOAD_DIR}/libexec"
     "${PAYLOAD_DIR}/lib"
-    "${PAYLOAD_DIR}/config.json")
+    "${PAYLOAD_DIR}/config.json"
+    "${PAYLOAD_DIR}/README_GRAALOS_STANDALONE.md")
 file(MAKE_DIRECTORY
     "${PAYLOAD_DIR}/bin"
     "${PAYLOAD_DIR}/libexec"
@@ -169,6 +170,7 @@ _write_launcher("${PAYLOAD_DIR}/bin/${GRAALPY_CONFIG_LAUNCHER}" "/bin/graalpy-co
 _write_launcher("${PAYLOAD_DIR}/libexec/${GRAALPY_POLYGLOT_GET_LAUNCHER}" "/libexec/graalpy-polyglot-get")
 
 _copy_file("${CMAKE_CURRENT_LIST_DIR}/config.json" "${PAYLOAD_DIR}/config.json")
+_copy_file("${CMAKE_CURRENT_LIST_DIR}/README_GRAALOS_STANDALONE.md" "${PAYLOAD_DIR}/README_GRAALOS_STANDALONE.md")
 _copy_executable("${CMAKE_CURRENT_LIST_DIR}/graalpy-sandbox-launcher.sh" "${GRAALOS_DIR}/graalpy-sandbox-launcher")
 _copy_executable(
     "${CMAKE_CURRENT_LIST_DIR}/graalpy-sandbox-expand-config.sh"

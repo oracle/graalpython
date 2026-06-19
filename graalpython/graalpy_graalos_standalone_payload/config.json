@@ -6,11 +6,18 @@
   },
   "working_dir": "/",
   "allow_runtime_codegen": true,
+  "fds": {
+    "stdin": "stdin",
+    "stdout": "stdout",
+    "stderr": "stderr"
+  },
   "testing_default_mappings": true,
   "allowed_ports": [],
   "graalhost": {
     "seccomp": null,
     "log_level": null,
+    "log_to": null,
+    "visorcalloutput": null,
     "extra_args": []
   },
   "fsmappings": []
