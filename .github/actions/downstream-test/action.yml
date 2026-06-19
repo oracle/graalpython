@@ -50,13 +50,50 @@ runs:
 
     - name: Install Rust toolchain
       if: ${{ inputs.needs_rust == 'true' }}
-      uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
-      with:
-        toolchain: stable
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        case "${{ inputs.platform }}-${{ inputs.arch }}" in
+          linux-amd64)
+            target="x86_64-unknown-linux-gnu"
+            ;;
+          macos-aarch64)
+            target="aarch64-apple-darwin"
+            ;;
+          *)
+            echo "Unsupported Rust toolchain platform/arch: ${{ inputs.platform }}/${{ inputs.arch }}" >&2
+            exit 1
+            ;;
+        esac
+
+        tmpdir="$(mktemp -d)"
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        curl -fsSLo "$tmpdir/rustup-init" \
+          "https://static.rust-lang.org/rustup/dist/${target}/rustup-init"
+        curl -fsSLo "$tmpdir/rustup-init.sha256" \
+          "https://static.rust-lang.org/rustup/dist/${target}/rustup-init.sha256"
+
+        if command -v sha256sum >/dev/null 2>&1; then
+          (cd "$tmpdir" && sha256sum -c rustup-init.sha256)
+        else
+          (cd "$tmpdir" && shasum -a 256 -c rustup-init.sha256)
+        fi
+
+        chmod +x "$tmpdir/rustup-init"
+        "$tmpdir/rustup-init" -y --profile minimal --default-toolchain stable
+        echo "${HOME}/.cargo/bin" >> "$GITHUB_PATH"
 
     - name: Install uv
       if: ${{ inputs.needs_uv == 'true' }}
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        python3 -m venv "$RUNNER_TEMP/uv-venv"
+        "$RUNNER_TEMP/uv-venv/bin/python" -m pip install "uv==0.11.21"
+        echo "$RUNNER_TEMP/uv-venv/bin" >> "$GITHUB_PATH"
 
     - name: Get GraalPy CE dev build
       if: ${{ inputs.platform == 'macos' }}
