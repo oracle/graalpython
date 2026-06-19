@@ -79,6 +79,8 @@ DETACHED_PROCESS = 0x00000008
 CREATE_DEFAULT_ERROR_MODE = 0x04000000
 CREATE_BREAKAWAY_FROM_JOB = 0x01000000
 CREATE_UNICODE_ENVIRONMENT = 0x00000400
+EXTENDED_STARTUPINFO_PRESENT = 0x00080000
+PROC_THREAD_ATTRIBUTE_HANDLE_LIST = 0x00020002
 
 SYNCHRONIZE = 0x00100000
 PROCESS_DUP_HANDLE = 0x00000040
@@ -221,6 +223,25 @@ def _native():
         wintypes.LPVOID,
     ]
     kernel32.CreateProcessW.restype = wintypes.BOOL
+    kernel32.InitializeProcThreadAttributeList.argtypes = [
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        ctypes.POINTER(ctypes.c_size_t),
+    ]
+    kernel32.InitializeProcThreadAttributeList.restype = wintypes.BOOL
+    kernel32.UpdateProcThreadAttribute.argtypes = [
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        ctypes.c_size_t,
+        wintypes.LPVOID,
+        ctypes.c_size_t,
+        wintypes.LPVOID,
+        wintypes.LPVOID,
+    ]
+    kernel32.UpdateProcThreadAttribute.restype = wintypes.BOOL
+    kernel32.DeleteProcThreadAttributeList.argtypes = [wintypes.LPVOID]
+    kernel32.DeleteProcThreadAttributeList.restype = None
     kernel32.CreateFileW.argtypes = [
         wintypes.LPCWSTR,
         wintypes.DWORD,
@@ -693,8 +714,22 @@ def CreateProcess(
     command_line = _optional_path(command_line, "command_line")
     current_directory = _optional_path(current_directory, "current_directory")
 
-    startup = STARTUPINFOW()
-    startup.cb = ctypes.sizeof(startup)
+    class STARTUPINFOEXW(ctypes.Structure):
+        _fields_ = [
+            ("StartupInfo", STARTUPINFOW),
+            ("lpAttributeList", wintypes.LPVOID),
+        ]
+
+    attribute_list = None
+    handle_list = []
+    if startup_info is not None:
+        attribute_list = getattr(startup_info, "lpAttributeList", None)
+        if attribute_list is not None:
+            handle_list = list(attribute_list.get("handle_list", []))
+
+    startup_ex = STARTUPINFOEXW() if handle_list else None
+    startup = startup_ex.StartupInfo if startup_ex is not None else STARTUPINFOW()
+    startup.cb = ctypes.sizeof(startup_ex) if startup_ex is not None else ctypes.sizeof(startup)
     if startup_info is not None:
         startup.dwFlags = getattr(startup_info, "dwFlags", 0)
         startup.wShowWindow = getattr(startup_info, "wShowWindow", 0)
@@ -709,20 +744,52 @@ def CreateProcess(
         creation_flags |= CREATE_UNICODE_ENVIRONMENT
 
     process_information = PROCESS_INFORMATION()
-    result = kernel32.CreateProcessW(
-        application_name,
-        command_line_buffer,
-        None,
-        None,
-        wintypes.BOOL(inherit_handles),
-        wintypes.DWORD(creation_flags),
-        environment_buffer,
-        current_directory,
-        ctypes.byref(startup),
-        ctypes.byref(process_information),
-    )
-    if not result:
-        _raise_last_error()
+    handle_array = None
+    attribute_buffer = None
+    if handle_list:
+        handle_array = (wintypes.HANDLE * len(handle_list))(*(_as_handle(handle) for handle in handle_list))
+        attribute_list_size = ctypes.c_size_t()
+        kernel32.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(attribute_list_size))
+        attribute_buffer = ctypes.create_string_buffer(attribute_list_size.value)
+        _raise_if_zero(
+            kernel32.InitializeProcThreadAttributeList(attribute_buffer, 1, 0, ctypes.byref(attribute_list_size))
+        )
+        try:
+            _raise_if_zero(
+                kernel32.UpdateProcThreadAttribute(
+                    attribute_buffer,
+                    0,
+                    PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                    handle_array,
+                    ctypes.sizeof(handle_array),
+                    None,
+                    None,
+                )
+            )
+        except BaseException:
+            kernel32.DeleteProcThreadAttributeList(attribute_buffer)
+            raise
+        startup_ex.lpAttributeList = ctypes.cast(attribute_buffer, wintypes.LPVOID)
+        creation_flags |= EXTENDED_STARTUPINFO_PRESENT
+
+    try:
+        result = kernel32.CreateProcessW(
+            application_name,
+            command_line_buffer,
+            None,
+            None,
+            wintypes.BOOL(inherit_handles),
+            wintypes.DWORD(creation_flags),
+            environment_buffer,
+            current_directory,
+            ctypes.byref(startup_ex) if startup_ex is not None else ctypes.byref(startup),
+            ctypes.byref(process_information),
+        )
+        if not result:
+            _raise_last_error()
+    finally:
+        if attribute_buffer is not None:
+            kernel32.DeleteProcThreadAttributeList(attribute_buffer)
     return (
         _as_handle(process_information.hProcess),
         _as_handle(process_information.hThread),
