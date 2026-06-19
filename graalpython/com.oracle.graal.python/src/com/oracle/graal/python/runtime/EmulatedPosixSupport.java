@@ -587,6 +587,18 @@ public final class EmulatedPosixSupport extends PosixResources {
         compatibilityIgnored("setting inheritable '%b' for file descriptor %d in POSIX emulation layer (not supported)", inheritable, fd);
     }
 
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getOsfHandle(int fd) throws PosixException {
+        throw posixException(OSErrorEnum.ENOSYS);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int openOsfHandle(long handle, int flags) throws PosixException {
+        throw posixException(OSErrorEnum.ENOSYS);
+    }
+
     @ExportMessage(name = "pipe")
     public int[] pipeMessage(@Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         // TODO: will merge with super.pipe once the super class is merged with this class
@@ -1870,6 +1882,25 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     public void renameat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
+                    @Bind Node inliningTarget,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
+        try {
+            TruffleFile newFile = resolvePath(inliningTarget, newDirFd, pathToTruffleString(newPath, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
+            if (newFile.isDirectory()) {
+                throw posixException(OSErrorEnum.EISDIR);
+            }
+            TruffleFile oldFile = resolvePath(inliningTarget, oldDirFd, pathToTruffleString(oldPath, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
+            oldFile.move(newFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e, eqNode));
+        }
+    }
+
+    @ExportMessage
+    public void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
                     @Bind Node inliningTarget,
                     @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,

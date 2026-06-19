@@ -975,11 +975,13 @@ def GetModuleFileName(module_handle):
 
 
 def LCMapStringEx(locale_name, flags, src):
-    ctypes, _, kernel32 = _native()
     if not isinstance(src, str):
         raise TypeError("src must be str")
     if locale_name is None:
         locale_name = LOCALE_NAME_INVARIANT
+    if locale_name == LOCALE_NAME_INVARIANT and flags == LCMAP_LOWERCASE:
+        return src.lower()
+    ctypes, _, kernel32 = _native()
     buffer = ctypes.create_unicode_buffer(len(src) + 1)
     result = kernel32.LCMapStringEx(locale_name, flags, src, len(src), buffer, len(buffer), None, None, 0)
     if result == 0:

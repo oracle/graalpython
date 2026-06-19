@@ -96,8 +96,9 @@ public final class WinapiModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CloseHandleNode extends PythonBuiltinNode {
         @Specialization
-        static Object closeHandle(@SuppressWarnings("unused") Object handle) {
+        static PNone closeHandle(@SuppressWarnings("unused") Object handle) {
             return PNone.NONE;
         }
     }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,9 +48,11 @@ import java.io.InputStreamReader;
 class DefaultConsoleHandler extends ConsoleHandler {
 
     private final BufferedReader in;
+    private final boolean eofOnIOException;
 
-    DefaultConsoleHandler(InputStream in) {
+    DefaultConsoleHandler(InputStream in, boolean eofOnIOException) {
         this.in = new BufferedReader(new InputStreamReader(in));
+        this.eofOnIOException = eofOnIOException;
     }
 
     @Override
@@ -58,6 +60,9 @@ class DefaultConsoleHandler extends ConsoleHandler {
         try {
             return in.readLine();
         } catch (IOException e) {
+            if (eofOnIOException) {
+                return null;
+            }
             throw new RuntimeException(e);
         }
     }

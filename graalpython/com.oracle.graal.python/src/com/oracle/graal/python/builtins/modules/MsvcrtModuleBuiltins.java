@@ -53,7 +53,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -73,6 +75,8 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
     public static final int LK_NBLCK = 2;
     public static final int LK_UNLOCK = 3;
     private static final TruffleString T_MSVCRT_LOCKING = tsLiteral("msvcrt.locking");
+    private static final TruffleString T_MSVCRT_GET_OSFHANDLE = tsLiteral("msvcrt.get_osfhandle");
+    private static final TruffleString T_MSVCRT_OPEN_OSFHANDLE = tsLiteral("msvcrt.open_osfhandle");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -111,6 +115,55 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return MsvcrtModuleBuiltinsClinicProviders.LockingNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "get_osfhandle", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @ArgumentClinic(name = "fd", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class GetOsfHandleNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization
+        long getOsfHandle(VirtualFrame frame, int fd,
+                        @Bind Node inliningTarget,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(frame, inliningTarget, T_MSVCRT_GET_OSFHANDLE, fd);
+            try {
+                return posixLib.getOsfHandle(getPosixSupport(), fd);
+            } catch (PosixSupportLibrary.PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MsvcrtModuleBuiltinsClinicProviders.GetOsfHandleNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "open_osfhandle", minNumOfPositionalArgs = 2, parameterNames = {"handle", "flags"})
+    @ArgumentClinic(name = "handle", conversion = ArgumentClinic.ClinicConversion.Long)
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class OpenOsfHandleNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        int openOsfHandle(VirtualFrame frame, long handle, int flags,
+                        @Bind Node inliningTarget,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(frame, inliningTarget, T_MSVCRT_OPEN_OSFHANDLE, handle, flags);
+            try {
+                return posixLib.openOsfHandle(getPosixSupport(), handle, flags);
+            } catch (PosixSupportLibrary.PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MsvcrtModuleBuiltinsClinicProviders.OpenOsfHandleNodeClinicProviderGen.INSTANCE;
         }
     }
 }

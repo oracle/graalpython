@@ -75,7 +75,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXSERV;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
-import static com.oracle.graal.python.runtime.PosixSupportLibrary.POSIX_FILENAME_SEPARATOR;
 import static com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
@@ -160,6 +159,7 @@ public final class NativePosixSupport extends PosixSupport {
     private static final int PWD_OUTPUT_LEN = 5;
     private static final int PWD_BUFFER_MAX_SIZE = Integer.MAX_VALUE >> 2;
     private static final int STRERROR_BUF_LENGTH = 1024;
+    private static final byte NATIVE_FILENAME_SEPARATOR = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? (byte) '\\' : (byte) '/';
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
@@ -170,6 +170,9 @@ public final class NativePosixSupport extends PosixSupport {
     private static final Object CRYPT_LOCK = new Object();
 
     abstract static class PosixNativeFunctionInvoker {
+        @DowncallSignature(returnType = VOID)
+        abstract void call_initialize();
+
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
         abstract int init_constants(long out, int len);
 
@@ -211,6 +214,12 @@ public final class NativePosixSupport extends PosixSupport {
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32, SINT32})
         abstract int call_dup2(int oldfd, int newfd, int inheritable);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER})
+        abstract int call_get_osfhandle(int fd, long out);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, SINT32})
+        abstract int call_open_osfhandle(long handle, int flags);
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
         abstract int call_pipe2(long pipefd);
@@ -310,6 +319,9 @@ public final class NativePosixSupport extends PosixSupport {
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER})
         abstract int call_renameat(int oldDirFd, long oldPath, int newDirFd, long newPath);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, POINTER})
+        abstract int call_replaceat(int oldDirFd, long oldPath, int newDirFd, long newPath);
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, POINTER, SINT32, SINT32, SINT32})
         abstract int call_faccessat(int dirFd, long path, int mode, int effectiveIds, int followSymlinks);
@@ -670,6 +682,9 @@ public final class NativePosixSupport extends PosixSupport {
         if (env.isPreInitialization()) {
             return;
         }
+        if (context.isNativeAccessAllowed()) {
+            posixNativeFunctionInvoker.call_initialize();
+        }
         // Java NIO (and TruffleFile) do not expect/support changing native working directory since
         // it is inherently thread-unsafe operation. It is not defined how NIO behaves when native
         // cwd changes, thus we need to prevent TruffleFile from resolving relative paths using
@@ -805,6 +820,28 @@ public final class NativePosixSupport extends PosixSupport {
         if (posixNativeFunctionInvoker.set_inheritable(fd, inheritable ? 1 : 0) < 0) {
             throw getErrnoAndThrowPosixException();
         }
+    }
+
+    @ExportMessage
+    public long getOsfHandle(int fd) throws PosixException {
+        long nativeOut = NativeMemory.mallocLongArray(1);
+        try {
+            if (posixNativeFunctionInvoker.call_get_osfhandle(fd, nativeOut) != 0) {
+                throw getErrnoAndThrowPosixException();
+            }
+            return NativeMemory.readLong(nativeOut);
+        } finally {
+            NativeMemory.free(nativeOut);
+        }
+    }
+
+    @ExportMessage
+    public int openOsfHandle(long handle, int flags) throws PosixException {
+        int fd = posixNativeFunctionInvoker.call_open_osfhandle(handle, flags);
+        if (fd < 0) {
+            throw getErrnoAndThrowPosixException();
+        }
+        return fd;
     }
 
     @ExportMessage
@@ -1309,14 +1346,15 @@ public final class NativePosixSupport extends PosixSupport {
             int nameLen = (int) dirEntry.name.length;
             byte[] buf = new byte[pathLen + 1 + nameLen];
             PythonUtils.arraycopy(scandirPathBuffer.data, 0, buf, 0, pathLen);
-            buf[pathLen] = POSIX_FILENAME_SEPARATOR;
+            buf[pathLen] = NATIVE_FILENAME_SEPARATOR;
             PythonUtils.arraycopy(dirEntry.name.data, 0, buf, pathLen + 1, nameLen);
             return Buffer.wrap(buf);
         }
 
         protected static boolean endsWithSlash(Object path) {
             Buffer b = (Buffer) path;
-            return b.data[b.data.length - 1] == POSIX_FILENAME_SEPARATOR;
+            byte last = b.data[b.data.length - 1];
+            return last == '/' || last == '\\';
         }
     }
 
@@ -1426,6 +1464,23 @@ public final class NativePosixSupport extends PosixSupport {
             oldPathPtr = pathToNativeCString(oldPath);
             newPathPtr = pathToNativeCString(newPath);
             int ret = posixNativeFunctionInvoker.call_renameat(oldDirFd, oldPathPtr, newDirFd, newPathPtr);
+            if (ret != 0) {
+                throw getErrnoAndThrowPosixException();
+            }
+        } finally {
+            NativeMemory.free(newPathPtr);
+            NativeMemory.free(oldPathPtr);
+        }
+    }
+
+    @ExportMessage
+    public void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException {
+        long oldPathPtr = NULLPTR;
+        long newPathPtr = NULLPTR;
+        try {
+            oldPathPtr = pathToNativeCString(oldPath);
+            newPathPtr = pathToNativeCString(newPath);
+            int ret = posixNativeFunctionInvoker.call_replaceat(oldDirFd, oldPathPtr, newDirFd, newPathPtr);
             if (ret != 0) {
                 throw getErrnoAndThrowPosixException();
             }
@@ -2461,6 +2516,9 @@ public final class NativePosixSupport extends PosixSupport {
     @ExportMessage
     public Object gethostname() throws PosixException {
         int maxLen = (HOST_NAME_MAX.defined ? HOST_NAME_MAX.getValueIfDefined() : _POSIX_HOST_NAME_MAX.value) + 1;
+        if (maxLen <= 1) {
+            maxLen = NI_MAXHOST.value;
+        }
         Buffer buf = Buffer.allocate(maxLen);
         long nativeBuf = NativeMemory.mallocByteArray(maxLen);
         try {

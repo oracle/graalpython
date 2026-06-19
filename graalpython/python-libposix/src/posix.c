@@ -42,6 +42,1595 @@
 // Helper functions that mostly delegate to POSIX functions
 // These functions are called from NativePosixSupport Java class using native-access downcalls
 
+#ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <afunix.h>
+#include <windows.h>
+#include <direct.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <io.h>
+#include <process.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#ifndef ENOTSUP
+#define ENOTSUP ENOSYS
+#endif
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK 11
+#endif
+#ifndef EALREADY
+#define EALREADY 114
+#endif
+#ifndef EINPROGRESS
+#define EINPROGRESS 115
+#endif
+#ifndef ENOTSOCK
+#define ENOTSOCK 88
+#endif
+#ifndef EDESTADDRREQ
+#define EDESTADDRREQ 89
+#endif
+#ifndef EMSGSIZE
+#define EMSGSIZE 90
+#endif
+#ifndef EPROTOTYPE
+#define EPROTOTYPE 91
+#endif
+#ifndef ENOPROTOOPT
+#define ENOPROTOOPT 92
+#endif
+#ifndef EPROTONOSUPPORT
+#define EPROTONOSUPPORT 93
+#endif
+#ifndef EAFNOSUPPORT
+#define EAFNOSUPPORT 97
+#endif
+#ifndef EADDRINUSE
+#define EADDRINUSE 98
+#endif
+#ifndef EADDRNOTAVAIL
+#define EADDRNOTAVAIL 99
+#endif
+#ifndef ENETDOWN
+#define ENETDOWN 100
+#endif
+#ifndef ENETUNREACH
+#define ENETUNREACH 101
+#endif
+#ifndef ENETRESET
+#define ENETRESET 102
+#endif
+#ifndef ECONNABORTED
+#define ECONNABORTED 103
+#endif
+#ifndef ECONNRESET
+#define ECONNRESET 104
+#endif
+#ifndef ENOBUFS
+#define ENOBUFS 105
+#endif
+#ifndef EISCONN
+#define EISCONN 106
+#endif
+#ifndef ENOTCONN
+#define ENOTCONN 107
+#endif
+#ifndef ETIMEDOUT
+#define ETIMEDOUT 110
+#endif
+#ifndef ECONNREFUSED
+#define ECONNREFUSED 111
+#endif
+#ifndef EHOSTUNREACH
+#define EHOSTUNREACH 113
+#endif
+
+#define GP_EWOULDBLOCK 11
+#define GP_EINPROGRESS 115
+#define GP_EALREADY 114
+#define GP_ENOTSOCK 88
+#define GP_EDESTADDRREQ 89
+#define GP_EMSGSIZE 90
+#define GP_EPROTOTYPE 91
+#define GP_ENOPROTOOPT 92
+#define GP_EPROTONOSUPPORT 93
+#define GP_EAFNOSUPPORT 97
+#define GP_EADDRINUSE 98
+#define GP_EADDRNOTAVAIL 99
+#define GP_ENETDOWN 100
+#define GP_ENETUNREACH 101
+#define GP_ENETRESET 102
+#define GP_ECONNABORTED 103
+#define GP_ECONNRESET 104
+#define GP_ENOBUFS 105
+#define GP_EISCONN 106
+#define GP_ENOTCONN 107
+#define GP_ETIMEDOUT 110
+#define GP_ECONNREFUSED 111
+#define GP_EHOSTUNREACH 113
+
+#define GP_EXPORT __declspec(dllexport)
+
+#define WIN_AT_FDCWD (-100)
+#define WIN_GRAALPY_DEFAULT_DIR_FD (-1)
+#define WIN_DT_UNKNOWN 0
+
+typedef struct {
+    HANDLE handle;
+    WIN32_FIND_DATAW data;
+    int first;
+    int exhausted;
+} win_dir_t;
+
+static void silent_invalid_parameter_handler(const wchar_t *expression, const wchar_t *function, const wchar_t *file, unsigned int line, uintptr_t reserved) {
+    (void) expression;
+    (void) function;
+    (void) file;
+    (void) line;
+    (void) reserved;
+}
+
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+#define BEGIN_SUPPRESS_IPH \
+    { _invalid_parameter_handler old_handler = _set_thread_local_invalid_parameter_handler(silent_invalid_parameter_handler);
+#define END_SUPPRESS_IPH \
+    _set_thread_local_invalid_parameter_handler(old_handler); }
+#else
+#define BEGIN_SUPPRESS_IPH
+#define END_SUPPRESS_IPH
+#endif
+
+static int is_default_dir_fd(int32_t dirFd) {
+    return dirFd == 0 || dirFd < 0 || dirFd == WIN_AT_FDCWD || dirFd == WIN_GRAALPY_DEFAULT_DIR_FD;
+}
+
+static int unsupported(void) {
+    errno = ENOSYS;
+    return -1;
+}
+
+static void set_win_errno(DWORD error) {
+    switch (error) {
+        case ERROR_FILE_NOT_FOUND:
+        case ERROR_PATH_NOT_FOUND:
+            errno = ENOENT;
+            break;
+        case ERROR_ACCESS_DENIED:
+            errno = EACCES;
+            break;
+        case ERROR_DIRECTORY:
+            errno = ENOTDIR;
+            break;
+        case ERROR_INVALID_PARAMETER:
+        case ERROR_INVALID_NAME:
+            errno = EINVAL;
+            break;
+        default:
+            errno = (int) error;
+            break;
+    }
+}
+
+static int ensure_winsock(void) {
+    static int initialized = 0;
+    if (!initialized) {
+        WSADATA wsa_data;
+        int err = WSAStartup(MAKEWORD(2, 2), &wsa_data);
+        if (err != 0) {
+            errno = err;
+            return -1;
+        }
+        initialized = 1;
+    }
+    return 0;
+}
+
+static int wsa_errno_to_posix(int error) {
+    switch (error) {
+        case WSAEINTR: return EINTR;
+        case WSAEBADF: return EBADF;
+        case WSAEACCES: return EACCES;
+        case WSAEFAULT: return EFAULT;
+        case WSAEINVAL: return EINVAL;
+        case WSAEMFILE: return EMFILE;
+        case WSAEWOULDBLOCK: return GP_EWOULDBLOCK;
+        case WSAEINPROGRESS: return GP_EINPROGRESS;
+        case WSAEALREADY: return GP_EALREADY;
+        case WSAENOTSOCK: return GP_ENOTSOCK;
+        case WSAEDESTADDRREQ: return GP_EDESTADDRREQ;
+        case WSAEMSGSIZE: return GP_EMSGSIZE;
+        case WSAEPROTOTYPE: return GP_EPROTOTYPE;
+        case WSAENOPROTOOPT: return GP_ENOPROTOOPT;
+        case WSAEPROTONOSUPPORT: return GP_EPROTONOSUPPORT;
+        case WSAEAFNOSUPPORT: return GP_EAFNOSUPPORT;
+        case WSAEADDRINUSE: return GP_EADDRINUSE;
+        case WSAEADDRNOTAVAIL: return GP_EADDRNOTAVAIL;
+        case WSAENETDOWN: return GP_ENETDOWN;
+        case WSAENETUNREACH: return GP_ENETUNREACH;
+        case WSAENETRESET: return GP_ENETRESET;
+        case WSAECONNABORTED: return GP_ECONNABORTED;
+        case WSAECONNRESET: return GP_ECONNRESET;
+        case WSAENOBUFS: return GP_ENOBUFS;
+        case WSAEISCONN: return GP_EISCONN;
+        case WSAENOTCONN: return GP_ENOTCONN;
+        case WSAETIMEDOUT: return GP_ETIMEDOUT;
+        case WSAECONNREFUSED: return GP_ECONNREFUSED;
+        case WSAEHOSTUNREACH: return GP_EHOSTUNREACH;
+        default: return error;
+    }
+}
+
+static int set_wsa_errno(void) {
+    errno = wsa_errno_to_posix(WSAGetLastError());
+    return -1;
+}
+
+static int close_noraise(int32_t fd) {
+    int result;
+    BEGIN_SUPPRESS_IPH
+    result = _close(fd);
+    END_SUPPRESS_IPH
+    return result;
+}
+
+static int64_t read_noraise(int32_t fd, void *buf, unsigned int count) {
+    int result;
+    BEGIN_SUPPRESS_IPH
+    result = _read(fd, buf, count);
+    END_SUPPRESS_IPH
+    return result;
+}
+
+static int64_t write_noraise(int32_t fd, void *buf, unsigned int count) {
+    int result;
+    BEGIN_SUPPRESS_IPH
+    result = _write(fd, buf, count);
+    END_SUPPRESS_IPH
+    return result;
+}
+
+static int64_t lseek_noraise(int32_t fd, int64_t offset, int32_t whence) {
+    int64_t result;
+    BEGIN_SUPPRESS_IPH
+    result = _lseeki64(fd, offset, whence);
+    END_SUPPRESS_IPH
+    return result;
+}
+
+static int chsize_noraise(int32_t fd, int64_t length) {
+    int result;
+    BEGIN_SUPPRESS_IPH
+    result = _chsize_s(fd, length);
+    END_SUPPRESS_IPH
+    return result;
+}
+
+static int commit_noraise(int32_t fd) {
+    int result;
+    BEGIN_SUPPRESS_IPH
+    result = _commit(fd);
+    END_SUPPRESS_IPH
+    return result;
+}
+
+static int dup_noraise(int32_t fd) {
+    int result;
+    BEGIN_SUPPRESS_IPH
+    result = _dup(fd);
+    END_SUPPRESS_IPH
+    return result;
+}
+
+static int dup2_noraise(int32_t oldfd, int32_t newfd) {
+    int result;
+    BEGIN_SUPPRESS_IPH
+    result = _dup2(oldfd, newfd);
+    END_SUPPRESS_IPH
+    return result;
+}
+
+typedef struct {
+    int fd;
+    SOCKET socket;
+    int blocking;
+} win_socket_entry_t;
+
+#define WIN_SOCKET_TABLE_SIZE 1024
+
+static win_socket_entry_t win_socket_table[WIN_SOCKET_TABLE_SIZE];
+static INIT_ONCE win_socket_table_init_once = INIT_ONCE_STATIC_INIT;
+static CRITICAL_SECTION win_socket_table_lock;
+
+static BOOL CALLBACK win_socket_table_init(PINIT_ONCE init_once, PVOID parameter, PVOID *context) {
+    (void) init_once;
+    (void) parameter;
+    (void) context;
+    InitializeCriticalSection(&win_socket_table_lock);
+    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+        win_socket_table[i].fd = -1;
+        win_socket_table[i].socket = INVALID_SOCKET;
+        win_socket_table[i].blocking = 1;
+    }
+    return TRUE;
+}
+
+static void ensure_socket_table(void) {
+    InitOnceExecuteOnce(&win_socket_table_init_once, win_socket_table_init, NULL, NULL);
+}
+
+static SOCKET win_socket_from_fd(int32_t fd) {
+    SOCKET result = INVALID_SOCKET;
+    ensure_socket_table();
+    EnterCriticalSection(&win_socket_table_lock);
+    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+        if (win_socket_table[i].fd == fd) {
+            result = win_socket_table[i].socket;
+            break;
+        }
+    }
+    LeaveCriticalSection(&win_socket_table_lock);
+    return result;
+}
+
+static int win_socket_entry_index(int32_t fd) {
+    int result = -1;
+    ensure_socket_table();
+    EnterCriticalSection(&win_socket_table_lock);
+    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+        if (win_socket_table[i].fd == fd) {
+            result = i;
+            break;
+        }
+    }
+    LeaveCriticalSection(&win_socket_table_lock);
+    return result;
+}
+
+static int win_alloc_socket_fd(SOCKET s) {
+    int fd = _open("NUL", _O_RDONLY | _O_BINARY | _O_NOINHERIT);
+    if (fd < 0) {
+        closesocket(s);
+        return -1;
+    }
+
+    ensure_socket_table();
+    EnterCriticalSection(&win_socket_table_lock);
+    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+        if (win_socket_table[i].fd < 0) {
+            win_socket_table[i].fd = fd;
+            win_socket_table[i].socket = s;
+            win_socket_table[i].blocking = 1;
+            LeaveCriticalSection(&win_socket_table_lock);
+            return fd;
+        }
+    }
+    LeaveCriticalSection(&win_socket_table_lock);
+
+    close_noraise(fd);
+    closesocket(s);
+    errno = EMFILE;
+    return -1;
+}
+
+static SOCKET win_remove_socket_fd(int32_t fd) {
+    SOCKET result = INVALID_SOCKET;
+    ensure_socket_table();
+    EnterCriticalSection(&win_socket_table_lock);
+    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+        if (win_socket_table[i].fd == fd) {
+            result = win_socket_table[i].socket;
+            win_socket_table[i].fd = -1;
+            win_socket_table[i].socket = INVALID_SOCKET;
+            win_socket_table[i].blocking = 1;
+            break;
+        }
+    }
+    LeaveCriticalSection(&win_socket_table_lock);
+    return result;
+}
+
+static int win_socket_dup(int32_t fd) {
+    SOCKET s = win_socket_from_fd(fd);
+    WSAPROTOCOL_INFOA protocol_info;
+    if (WSADuplicateSocketA(s, GetCurrentProcessId(), &protocol_info) == SOCKET_ERROR) {
+        return set_wsa_errno();
+    }
+    SOCKET dup = WSASocketA(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocol_info, 0, WSA_FLAG_NO_HANDLE_INHERIT);
+    if (dup == INVALID_SOCKET) {
+        return set_wsa_errno();
+    }
+    return win_alloc_socket_fd(dup);
+}
+
+static intptr_t get_osfhandle_noraise(int32_t fd) {
+    intptr_t handle;
+    BEGIN_SUPPRESS_IPH
+    handle = _get_osfhandle(fd);
+    END_SUPPRESS_IPH
+    return handle;
+}
+
+static int open_osfhandle_noraise(int64_t handle, int32_t flags) {
+    int fd;
+    BEGIN_SUPPRESS_IPH
+    fd = _open_osfhandle((intptr_t) handle, flags);
+    END_SUPPRESS_IPH
+    return fd;
+}
+
+static void set_utf8_path_errno(DWORD error) {
+    if (error == ERROR_NO_UNICODE_TRANSLATION) {
+        errno = ENOENT;
+    } else {
+        set_win_errno(error);
+    }
+}
+
+static wchar_t *utf8_to_wide_path(const char *path) {
+    int len = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
+    if (len <= 0) {
+        set_utf8_path_errno(GetLastError());
+        return NULL;
+    }
+    wchar_t *wide = (wchar_t *) malloc(len * sizeof(wchar_t));
+    if (wide == NULL) {
+        errno = ENOMEM;
+        return NULL;
+    }
+    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, wide, len) <= 0) {
+        set_utf8_path_errno(GetLastError());
+        free(wide);
+        return NULL;
+    }
+    return wide;
+}
+
+static int wide_to_utf8_name(const wchar_t *name, char *buf, uint64_t bufSize) {
+    int needed = WideCharToMultiByte(CP_UTF8, 0, name, -1, NULL, 0, NULL, NULL);
+    if (needed <= 0) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    if ((uint64_t) needed > bufSize) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+    if (WideCharToMultiByte(CP_UTF8, 0, name, -1, buf, (int) bufSize, NULL, NULL) <= 0) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+static void unix_time_to_filetime(int64_t seconds, int64_t nanoseconds, FILETIME *out) {
+    int64_t ticks = (seconds + 11644473600LL) * 10000000LL + nanoseconds / 100;
+    out->dwLowDateTime = (DWORD) ticks;
+    out->dwHighDateTime = (DWORD) (ticks >> 32);
+}
+
+static int set_file_times(HANDLE handle, int64_t *times, int32_t nanosecond_resolution) {
+    FILETIME atime;
+    FILETIME mtime;
+    if (times == NULL) {
+        GetSystemTimeAsFileTime(&mtime);
+        atime = mtime;
+    } else {
+        unix_time_to_filetime(times[0], nanosecond_resolution ? times[1] : times[1] * 1000, &atime);
+        unix_time_to_filetime(times[2], nanosecond_resolution ? times[3] : times[3] * 1000, &mtime);
+    }
+    if (!SetFileTime(handle, NULL, &atime, &mtime)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+static int set_path_times(const char *path, int64_t *times, int32_t nanosecond_resolution, int32_t followSymlinks) {
+    DWORD flags = FILE_FLAG_BACKUP_SEMANTICS;
+    if (!followSymlinks) {
+        flags |= FILE_FLAG_OPEN_REPARSE_POINT;
+    }
+    wchar_t *wide_path = utf8_to_wide_path(path);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    HANDLE handle = CreateFileW(wide_path, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    NULL, OPEN_EXISTING, flags, NULL);
+    free(wide_path);
+    if (handle == INVALID_HANDLE_VALUE) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    int result = set_file_times(handle, times, nanosecond_resolution);
+    CloseHandle(handle);
+    return result;
+}
+
+static int root_path_from_path(const char *path, char *root, DWORD root_size) {
+    char full_path[32768];
+    DWORD full_len = GetFullPathNameA(path, (DWORD) sizeof(full_path), full_path, NULL);
+    if (full_len == 0 || full_len >= sizeof(full_path)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    if (!GetVolumePathNameA(full_path, root, root_size)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+static int statvfs_from_root(const char *root, int64_t *out) {
+    ULARGE_INTEGER free_bytes_available;
+    ULARGE_INTEGER total_number_of_bytes;
+    ULARGE_INTEGER total_number_of_free_bytes;
+    DWORD sectors_per_cluster = 0;
+    DWORD bytes_per_sector = 0;
+    DWORD number_of_free_clusters = 0;
+    DWORD total_number_of_clusters = 0;
+    if (!GetDiskFreeSpaceExA(root, &free_bytes_available, &total_number_of_bytes, &total_number_of_free_bytes)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    if (!GetDiskFreeSpaceA(root, &sectors_per_cluster, &bytes_per_sector, &number_of_free_clusters, &total_number_of_clusters)) {
+        sectors_per_cluster = 1;
+        bytes_per_sector = 4096;
+    }
+    uint64_t block_size = (uint64_t) sectors_per_cluster * bytes_per_sector;
+    if (block_size == 0) {
+        block_size = 4096;
+    }
+    out[0] = (int64_t) block_size;
+    out[1] = (int64_t) block_size;
+    out[2] = (int64_t) (total_number_of_bytes.QuadPart / block_size);
+    out[3] = (int64_t) (total_number_of_free_bytes.QuadPart / block_size);
+    out[4] = (int64_t) (free_bytes_available.QuadPart / block_size);
+    out[5] = 0;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 0;
+    out[9] = 255;
+    out[10] = 0;
+    return 0;
+}
+
+static int statvfs_from_path(const char *path, int64_t *out) {
+    char root[MAX_PATH];
+    if (root_path_from_path(path, root, sizeof(root)) != 0) {
+        return -1;
+    }
+    return statvfs_from_root(root, out);
+}
+
+static int copy_string_to_buffer(char *buffer, int32_t bufferSize, size_t *offset, const char *value, uint64_t *out, int32_t outIndex) {
+    size_t len = strlen(value) + 1;
+    if (*offset + len > (size_t) bufferSize) {
+        return ERANGE;
+    }
+    out[outIndex] = *offset;
+    memcpy(buffer + *offset, value, len);
+    *offset += len;
+    return 0;
+}
+
+static int get_current_username(char *buffer, DWORD size) {
+    const char *env_name = getenv("USERNAME");
+    if (env_name != NULL && strlen(env_name) < size) {
+        strcpy(buffer, env_name);
+        return 0;
+    }
+    if (size > 4) {
+        strcpy(buffer, "user");
+        return 0;
+    }
+    return ERANGE;
+}
+
+static void get_current_home(char *buffer, size_t size) {
+    const char *profile = getenv("USERPROFILE");
+    if (profile != NULL && strlen(profile) < size) {
+        strcpy(buffer, profile);
+        return;
+    }
+    const char *drive = getenv("HOMEDRIVE");
+    const char *path = getenv("HOMEPATH");
+    if (drive != NULL && path != NULL && strlen(drive) + strlen(path) < size) {
+        strcpy(buffer, drive);
+        strcat(buffer, path);
+        return;
+    }
+    if (size > 0) {
+        buffer[0] = '\0';
+    }
+}
+
+static int fill_current_pwd(uint64_t uid, char *buffer, int32_t bufferSize, uint64_t *output) {
+    char name[256];
+    char dir[1024];
+    const char *shell = getenv("COMSPEC");
+    size_t offset = 0;
+    int result = get_current_username(name, sizeof(name));
+    if (result != 0) {
+        return result;
+    }
+    get_current_home(dir, sizeof(dir));
+    if (shell == NULL) {
+        shell = "";
+    }
+    if ((result = copy_string_to_buffer(buffer, bufferSize, &offset, name, output, 0)) != 0) {
+        return result;
+    }
+    output[1] = uid;
+    output[2] = 0;
+    if ((result = copy_string_to_buffer(buffer, bufferSize, &offset, dir, output, 3)) != 0) {
+        return result;
+    }
+    return copy_string_to_buffer(buffer, bufferSize, &offset, shell, output, 4);
+}
+
+static void stat_struct_to_longs(struct __stat64 *st, int64_t *out) {
+    out[0] = st->st_mode;
+    out[1] = st->st_ino;
+    out[2] = st->st_dev;
+    out[3] = st->st_nlink;
+    out[4] = st->st_uid;
+    out[5] = st->st_gid;
+    out[6] = st->st_size;
+    out[7] = st->st_atime;
+    out[8] = st->st_mtime;
+    out[9] = st->st_ctime;
+    out[10] = 0;
+    out[11] = 0;
+    out[12] = 0;
+}
+
+static void stat_handle_to_longs(HANDLE handle, int64_t *out) {
+    BY_HANDLE_FILE_INFORMATION info;
+    if (GetFileInformationByHandle(handle, &info)) {
+        out[1] = ((int64_t) info.nFileIndexHigh << 32) | info.nFileIndexLow;
+        out[2] = info.dwVolumeSerialNumber;
+        out[3] = info.nNumberOfLinks;
+    }
+}
+
+static void stat_path_handle_to_longs(const wchar_t *path, int32_t followSymlinks, int64_t *out) {
+    DWORD flags = FILE_FLAG_BACKUP_SEMANTICS;
+    if (!followSymlinks) {
+        flags |= FILE_FLAG_OPEN_REPARSE_POINT;
+    }
+    HANDLE handle = CreateFileW(path, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, flags, NULL);
+    if (handle != INVALID_HANDLE_VALUE) {
+        stat_handle_to_longs(handle, out);
+        CloseHandle(handle);
+    }
+}
+
+GP_EXPORT int64_t call_getpid(void) {
+    return _getpid();
+}
+
+GP_EXPORT int32_t call_umask(int32_t mask) {
+    return _umask(mask);
+}
+
+GP_EXPORT int32_t get_inheritable(int32_t fd) {
+    int socket_index = win_socket_entry_index(fd);
+    if (socket_index >= 0) {
+        DWORD flags;
+        SOCKET s = win_socket_from_fd(fd);
+        if (!GetHandleInformation((HANDLE) s, &flags)) {
+            errno = GetLastError();
+            return -1;
+        }
+        return (flags & HANDLE_FLAG_INHERIT) != 0;
+    }
+    intptr_t os_handle = get_osfhandle_noraise(fd);
+    if (os_handle == -1) {
+        return -1;
+    }
+    DWORD flags;
+    if (!GetHandleInformation((HANDLE) os_handle, &flags)) {
+        errno = GetLastError();
+        return -1;
+    }
+    return (flags & HANDLE_FLAG_INHERIT) != 0;
+}
+
+GP_EXPORT int32_t set_inheritable(int32_t fd, int32_t inheritable) {
+    int socket_index = win_socket_entry_index(fd);
+    if (socket_index >= 0) {
+        SOCKET s = win_socket_from_fd(fd);
+        if (!SetHandleInformation((HANDLE) s, HANDLE_FLAG_INHERIT, inheritable ? HANDLE_FLAG_INHERIT : 0)) {
+            errno = GetLastError();
+            return -1;
+        }
+        intptr_t reserve_handle = get_osfhandle_noraise(fd);
+        if (reserve_handle != -1) {
+            SetHandleInformation((HANDLE) reserve_handle, HANDLE_FLAG_INHERIT, inheritable ? HANDLE_FLAG_INHERIT : 0);
+        }
+        return 0;
+    }
+    intptr_t os_handle = get_osfhandle_noraise(fd);
+    if (os_handle == -1) {
+        return -1;
+    }
+    if (!SetHandleInformation((HANDLE) os_handle, HANDLE_FLAG_INHERIT, inheritable ? HANDLE_FLAG_INHERIT : 0)) {
+        errno = GetLastError();
+        return -1;
+    }
+    return 0;
+}
+
+GP_EXPORT int32_t call_openat(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    wchar_t *wide_path = utf8_to_wide_path(pathname);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    int open_flags = flags | _O_NOINHERIT;
+    if ((open_flags & _O_TEXT) == 0) {
+        open_flags |= _O_BINARY;
+    }
+    int result = _wopen(wide_path, open_flags, mode);
+    free(wide_path);
+    // The following _setmode is defensive enforcement; _wopen(..., _O_BINARY, ...) should already set this mode.
+    if (result >= 0 && (open_flags & _O_TEXT) == 0 && _setmode(result, _O_BINARY) < 0) {
+        int error = errno;
+        close_noraise(result);
+        errno = error;
+        return -1;
+    }
+    return result;
+}
+
+GP_EXPORT int32_t call_close(int32_t fd) {
+    SOCKET s = win_remove_socket_fd(fd);
+    if (s != INVALID_SOCKET) {
+        int socket_result = closesocket(s);
+        int fd_result = close_noraise(fd);
+        if (socket_result == SOCKET_ERROR) {
+            return set_wsa_errno();
+        }
+        return fd_result;
+    }
+    return close_noraise(fd);
+}
+
+GP_EXPORT int64_t call_read(int32_t fd, void *buf, uint64_t count) {
+    if (win_socket_entry_index(fd) >= 0) {
+        int result = recv(win_socket_from_fd(fd), buf, count > INT_MAX ? INT_MAX : (int) count, 0);
+        return result == SOCKET_ERROR ? set_wsa_errno() : result;
+    }
+    return read_noraise(fd, buf, count > INT_MAX ? INT_MAX : (unsigned int) count);
+}
+
+GP_EXPORT int64_t call_write(int32_t fd, void *buf, uint64_t count) {
+    if (win_socket_entry_index(fd) >= 0) {
+        int result = send(win_socket_from_fd(fd), buf, count > INT_MAX ? INT_MAX : (int) count, 0);
+        return result == SOCKET_ERROR ? set_wsa_errno() : result;
+    }
+    return write_noraise(fd, buf, count > INT_MAX ? INT_MAX : (unsigned int) count);
+}
+
+GP_EXPORT int32_t call_dup(int32_t fd) {
+    if (win_socket_entry_index(fd) >= 0) {
+        return win_socket_dup(fd);
+    }
+    int result = dup_noraise(fd);
+    if (result >= 0) {
+        set_inheritable(result, 0);
+    }
+    return result;
+}
+
+GP_EXPORT int32_t call_dup2(int32_t oldfd, int32_t newfd, int32_t inheritable) {
+    int result = dup2_noraise(oldfd, newfd);
+    if (result == 0 && !inheritable) {
+        result = set_inheritable(newfd, 0);
+    }
+    return result == 0 ? newfd : -1;
+}
+
+GP_EXPORT int32_t call_get_osfhandle(int32_t fd, int64_t *out) {
+    intptr_t handle = get_osfhandle_noraise(fd);
+    if (handle == -1) {
+        return -1;
+    }
+    out[0] = (int64_t) handle;
+    return 0;
+}
+
+GP_EXPORT int32_t call_open_osfhandle(int64_t handle, int32_t flags) {
+    if ((flags & _O_TEXT) == 0) {
+        flags |= _O_BINARY;
+    }
+    return open_osfhandle_noraise(handle, flags);
+}
+
+GP_EXPORT int32_t call_pipe2(int32_t *pipefd) {
+    return _pipe(pipefd, 8192, _O_BINARY | _O_NOINHERIT);
+}
+
+GP_EXPORT int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
+    int32_t* writefds, int32_t writefdsLen, int32_t* errfds, int32_t errfdsLen,
+    int64_t timeoutSec, int64_t timeoutUsec, int8_t* selected) {
+    fd_set read_set, write_set, err_set;
+    fd_set *read_ptr = readfdsLen ? &read_set : NULL;
+    fd_set *write_ptr = writefdsLen ? &write_set : NULL;
+    fd_set *err_ptr = errfdsLen ? &err_set : NULL;
+    int32_t selectedLen = readfdsLen + writefdsLen + errfdsLen;
+    if (ensure_winsock() < 0) {
+        return -1;
+    }
+    FD_ZERO(&read_set);
+    FD_ZERO(&write_set);
+    FD_ZERO(&err_set);
+    for (int32_t i = 0; i < readfdsLen; i++) {
+        FD_SET(win_socket_from_fd(readfds[i]), &read_set);
+    }
+    for (int32_t i = 0; i < writefdsLen; i++) {
+        FD_SET(win_socket_from_fd(writefds[i]), &write_set);
+    }
+    for (int32_t i = 0; i < errfdsLen; i++) {
+        FD_SET(win_socket_from_fd(errfds[i]), &err_set);
+    }
+    if (selectedLen > 0) {
+        memset(selected, 0, selectedLen * sizeof(*selected));
+    }
+    struct timeval timeout = {(long) timeoutSec, (long) timeoutUsec};
+    int result = select(nfds, read_ptr, write_ptr, err_ptr, timeoutSec >= 0 ? &timeout : NULL);
+    if (result == SOCKET_ERROR) {
+        return set_wsa_errno();
+    }
+    for (int32_t i = 0; i < readfdsLen; i++) {
+        selected[i] = FD_ISSET(win_socket_from_fd(readfds[i]), &read_set) != 0;
+    }
+    for (int32_t i = 0; i < writefdsLen; i++) {
+        selected[readfdsLen + i] = FD_ISSET(win_socket_from_fd(writefds[i]), &write_set) != 0;
+    }
+    for (int32_t i = 0; i < errfdsLen; i++) {
+        selected[readfdsLen + writefdsLen + i] = FD_ISSET(win_socket_from_fd(errfds[i]), &err_set) != 0;
+    }
+    return result;
+}
+
+GP_EXPORT int32_t call_poll(int32_t fd, int32_t writing, int64_t timeoutSec, int64_t timeoutUsec) {
+    int8_t selected = 0;
+    return call_select(1, writing ? NULL : &fd, writing ? 0 : 1, writing ? &fd : NULL, writing ? 1 : 0, NULL, 0, timeoutSec, timeoutUsec, &selected);
+}
+
+GP_EXPORT int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
+    return lseek_noraise(fd, offset, whence);
+}
+
+GP_EXPORT int32_t call_ftruncate(int32_t fd, int64_t length) {
+    return chsize_noraise(fd, length) == 0 ? 0 : -1;
+}
+
+GP_EXPORT int32_t call_truncate(const char* path, int64_t length) {
+    wchar_t *wide_path = utf8_to_wide_path(path);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    int fd = _wopen(wide_path, _O_RDWR | _O_BINARY | _O_NOINHERIT);
+    free(wide_path);
+    if (fd < 0) {
+        return -1;
+    }
+    int result = call_ftruncate(fd, length);
+    close_noraise(fd);
+    return result;
+}
+
+GP_EXPORT int32_t call_fsync(int32_t fd) {
+    return commit_noraise(fd);
+}
+
+GP_EXPORT int32_t call_flock(int32_t fd, int32_t operation) { return unsupported(); }
+GP_EXPORT int32_t call_fcntl_lock(int32_t fd, int32_t blocking, int32_t lockType, int32_t whence, int64_t start, int64_t length) { return unsupported(); }
+GP_EXPORT int32_t get_blocking(int32_t fd) {
+    int result = 1;
+    ensure_socket_table();
+    EnterCriticalSection(&win_socket_table_lock);
+    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+        if (win_socket_table[i].fd == fd) {
+            result = win_socket_table[i].blocking;
+            break;
+        }
+    }
+    LeaveCriticalSection(&win_socket_table_lock);
+    return result;
+}
+
+GP_EXPORT int32_t set_blocking(int32_t fd, int32_t blocking) {
+    int socket_index = win_socket_entry_index(fd);
+    if (socket_index >= 0) {
+        u_long nonblocking = blocking ? 0 : 1;
+        if (ioctlsocket(win_socket_from_fd(fd), FIONBIO, &nonblocking) == SOCKET_ERROR) {
+            return set_wsa_errno();
+        }
+        ensure_socket_table();
+        EnterCriticalSection(&win_socket_table_lock);
+        for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+            if (win_socket_table[i].fd == fd) {
+                win_socket_table[i].blocking = blocking != 0;
+                break;
+            }
+        }
+        LeaveCriticalSection(&win_socket_table_lock);
+        return 0;
+    }
+    if (get_osfhandle_noraise(fd) == -1) {
+        return -1;
+    }
+    return 0;
+}
+
+GP_EXPORT int32_t get_terminal_size(int32_t fd, int32_t *size) {
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    intptr_t os_handle = get_osfhandle_noraise(fd);
+    if (os_handle == -1 || !GetConsoleScreenBufferInfo((HANDLE) os_handle, &csbi)) {
+        errno = ENOTTY;
+        return -1;
+    }
+    size[0] = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    size[1] = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    return 0;
+}
+
+GP_EXPORT int32_t call_fstatat(int32_t dirFd, const char *path, int32_t followSymlinks, int64_t *out) {
+    (void) followSymlinks;
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    wchar_t *wide_path = utf8_to_wide_path(path);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    struct __stat64 st;
+    int result = _wstat64(wide_path, &st);
+    if (result == 0) {
+        stat_struct_to_longs(&st, out);
+        stat_path_handle_to_longs(wide_path, followSymlinks, out);
+    }
+    free(wide_path);
+    return result;
+}
+
+GP_EXPORT int32_t call_fstat(int32_t fd, int64_t *out) {
+    if (get_osfhandle_noraise(fd) == -1) {
+        return -1;
+    }
+    struct __stat64 st;
+    int result;
+    BEGIN_SUPPRESS_IPH
+    result = _fstat64(fd, &st);
+    END_SUPPRESS_IPH
+    if (result == 0) {
+        stat_struct_to_longs(&st, out);
+        stat_handle_to_longs((HANDLE) get_osfhandle_noraise(fd), out);
+    }
+    return result;
+}
+
+GP_EXPORT int32_t call_statvfs(const char *path, int64_t *out) {
+    return statvfs_from_path(path, out);
+}
+
+GP_EXPORT int32_t call_fstatvfs(int32_t fd, int64_t *out) {
+    intptr_t os_handle = get_osfhandle_noraise(fd);
+    if (os_handle == -1) {
+        return -1;
+    }
+    char path[32768];
+    DWORD len = GetFinalPathNameByHandleA((HANDLE) os_handle, path, (DWORD) sizeof(path), FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    if (len == 0 || len >= sizeof(path)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    const char *path_for_volume = path;
+    if (strncmp(path, "\\\\?\\", 4) == 0) {
+        path_for_volume = path + 4;
+    }
+    return statvfs_from_path(path_for_volume, out);
+}
+GP_EXPORT int32_t call_uname(char *sysname, char *nodename, char *release, char *version, char *machine, int32_t size) { return unsupported(); }
+
+GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const char *pathname, int32_t rmdir) {
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    wchar_t *wide_path = utf8_to_wide_path(pathname);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    if (rmdir) {
+        int result = _wrmdir(wide_path);
+        if (result != 0 && errno == EINVAL) {
+            DWORD attributes = GetFileAttributesW(wide_path);
+            if (attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                errno = ENOTDIR;
+            }
+        }
+        free(wide_path);
+        return result;
+    }
+    int result = _wunlink(wide_path);
+    free(wide_path);
+    return result;
+}
+
+GP_EXPORT int32_t call_linkat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath, int32_t flags) { return unsupported(); }
+GP_EXPORT int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) { return unsupported(); }
+
+GP_EXPORT int32_t call_mkdirat(int32_t dirFd, const char *pathname, int32_t mode) {
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    wchar_t *wide_path = utf8_to_wide_path(pathname);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    int result = _wmkdir(wide_path);
+    free(wide_path);
+    return result;
+}
+
+GP_EXPORT int32_t call_getcwd(char *buf, uint64_t size) {
+    DWORD len = GetCurrentDirectoryW(0, NULL);
+    if (len == 0) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    wchar_t *wide_path = (wchar_t *) malloc(len * sizeof(wchar_t));
+    if (wide_path == NULL) {
+        errno = ENOMEM;
+        return -1;
+    }
+    if (GetCurrentDirectoryW(len, wide_path) == 0) {
+        set_win_errno(GetLastError());
+        free(wide_path);
+        return -1;
+    }
+    int needed = WideCharToMultiByte(CP_UTF8, 0, wide_path, -1, NULL, 0, NULL, NULL);
+    if (needed <= 0) {
+        set_win_errno(GetLastError());
+        free(wide_path);
+        return -1;
+    }
+    if ((uint64_t) needed > size || size > INT_MAX) {
+        free(wide_path);
+        errno = ERANGE;
+        return -1;
+    }
+    if (WideCharToMultiByte(CP_UTF8, 0, wide_path, -1, buf, (int) size, NULL, NULL) <= 0) {
+        set_win_errno(GetLastError());
+        free(wide_path);
+        return -1;
+    }
+    free(wide_path);
+    return 0;
+}
+GP_EXPORT int32_t call_chdir(const char *path) {
+    wchar_t *wide_path = utf8_to_wide_path(path);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    int result = _wchdir(wide_path);
+    free(wide_path);
+    return result;
+}
+GP_EXPORT int32_t call_fchdir(int32_t fd) {
+    if (get_osfhandle_noraise(fd) == -1) {
+        return -1;
+    }
+    return unsupported();
+}
+GP_EXPORT int32_t call_fchown(int32_t fd, int64_t owner, int64_t group) { return unsupported(); }
+GP_EXPORT int32_t call_fchownat(int32_t dirfd, const char *pathname, int64_t owner, int64_t group, int32_t followSymlinks) { return unsupported(); }
+GP_EXPORT int32_t call_isatty(int32_t fd) { return _isatty(fd); }
+
+GP_EXPORT intptr_t call_opendir(const char *name) {
+    if (name[0] == '\0') {
+        errno = ENOENT;
+        return 0;
+    }
+    wchar_t *wide_name = utf8_to_wide_path(name);
+    if (wide_name == NULL) {
+        return 0;
+    }
+
+    size_t len = wcslen(wide_name);
+    int needs_separator = len > 0 && wide_name[len - 1] != L'\\' && wide_name[len - 1] != L'/' && wide_name[len - 1] != L':';
+    size_t pattern_len = len + (needs_separator ? 4 : 3) + 1;
+    wchar_t *pattern = (wchar_t *) malloc(pattern_len * sizeof(wchar_t));
+    if (!pattern) {
+        free(wide_name);
+        errno = ENOMEM;
+        return 0;
+    }
+    wcscpy(pattern, wide_name);
+    if (needs_separator) {
+        pattern[len++] = L'\\';
+    }
+    wcscpy(pattern + len, L"*.*");
+
+    win_dir_t *dir = (win_dir_t *) calloc(1, sizeof(win_dir_t));
+    if (!dir) {
+        free(pattern);
+        free(wide_name);
+        errno = ENOMEM;
+        return 0;
+    }
+    dir->handle = FindFirstFileW(pattern, &dir->data);
+    dir->first = 1;
+    free(pattern);
+    if (dir->handle == INVALID_HANDLE_VALUE) {
+        DWORD error = GetLastError();
+        if (error == ERROR_FILE_NOT_FOUND) {
+            DWORD attributes = GetFileAttributesW(wide_name);
+            if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                dir->exhausted = 1;
+                free(wide_name);
+                return (intptr_t) dir;
+            }
+            if (attributes == INVALID_FILE_ATTRIBUTES) {
+                error = GetLastError();
+            }
+        }
+        free(wide_name);
+        free(dir);
+        set_win_errno(error);
+        return 0;
+    }
+    free(wide_name);
+    return (intptr_t) dir;
+}
+
+GP_EXPORT intptr_t call_fdopendir(int32_t fd) {
+    (void) fd;
+    errno = ENOSYS;
+    return 0;
+}
+
+GP_EXPORT int32_t call_closedir(intptr_t dirp) {
+    win_dir_t *dir = (win_dir_t *) dirp;
+    if (!dir) {
+        errno = EBADF;
+        return -1;
+    }
+    BOOL ok = dir->handle == INVALID_HANDLE_VALUE ? TRUE : FindClose(dir->handle);
+    free(dir);
+    if (!ok) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+GP_EXPORT int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t *out) {
+    win_dir_t *dir = (win_dir_t *) dirp;
+    if (!dir || nameBufSize == 0) {
+        errno = EBADF;
+        return 0;
+    }
+    if (dir->exhausted) {
+        errno = 0;
+        return 0;
+    }
+    if (!dir->first) {
+        if (!FindNextFileW(dir->handle, &dir->data)) {
+            DWORD error = GetLastError();
+            if (error == ERROR_NO_MORE_FILES) {
+                errno = 0;
+            } else {
+                set_win_errno(error);
+            }
+            return 0;
+        }
+    }
+    dir->first = 0;
+
+    if (wide_to_utf8_name(dir->data.cFileName, nameBuf, nameBufSize) != 0) {
+        return 0;
+    }
+    out[0] = 0;
+    out[1] = WIN_DT_UNKNOWN;
+    return 1;
+}
+
+GP_EXPORT void call_rewinddir(intptr_t dirp) {}
+GP_EXPORT int32_t call_utimensat(int32_t dirFd, const char *path, int64_t *timespec, int32_t followSymlinks) {
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    return set_path_times(path, timespec, 1, followSymlinks);
+}
+
+GP_EXPORT int32_t call_futimens(int32_t fd, int64_t *timespec) {
+    intptr_t os_handle = get_osfhandle_noraise(fd);
+    if (os_handle == -1) {
+        return -1;
+    }
+    return set_file_times((HANDLE) os_handle, timespec, 1);
+}
+
+GP_EXPORT int32_t call_futimes(int32_t fd, int64_t *timeval) {
+    intptr_t os_handle = get_osfhandle_noraise(fd);
+    if (os_handle == -1) {
+        return -1;
+    }
+    return set_file_times((HANDLE) os_handle, timeval, 0);
+}
+
+GP_EXPORT int32_t call_lutimes(const char *filename, int64_t *timeval) {
+    return set_path_times(filename, timeval, 0, 0);
+}
+
+GP_EXPORT int32_t call_utimes(const char *filename, int64_t *timeval) {
+    return set_path_times(filename, timeval, 0, 1);
+}
+
+GP_EXPORT int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
+    if (!is_default_dir_fd(oldDirFd) || !is_default_dir_fd(newDirFd)) {
+        return unsupported();
+    }
+    wchar_t *wide_old_path = utf8_to_wide_path(oldPath);
+    if (wide_old_path == NULL) {
+        return -1;
+    }
+    wchar_t *wide_new_path = utf8_to_wide_path(newPath);
+    if (wide_new_path == NULL) {
+        free(wide_old_path);
+        return -1;
+    }
+    int result = _wrename(wide_old_path, wide_new_path);
+    free(wide_new_path);
+    free(wide_old_path);
+    return result;
+}
+
+GP_EXPORT int32_t call_replaceat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
+    if (!is_default_dir_fd(oldDirFd) || !is_default_dir_fd(newDirFd)) {
+        return unsupported();
+    }
+    wchar_t *wide_old_path = utf8_to_wide_path(oldPath);
+    if (wide_old_path == NULL) {
+        return -1;
+    }
+    wchar_t *wide_new_path = utf8_to_wide_path(newPath);
+    if (wide_new_path == NULL) {
+        free(wide_old_path);
+        return -1;
+    }
+    BOOL result = MoveFileExW(wide_old_path, wide_new_path, MOVEFILE_REPLACE_EXISTING);
+    free(wide_new_path);
+    free(wide_old_path);
+    if (!result) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+GP_EXPORT int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t effectiveIds, int32_t followSymlinks) {
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    wchar_t *wide_path = utf8_to_wide_path(path);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    int result = _waccess(wide_path, mode);
+    free(wide_path);
+    return result;
+}
+
+GP_EXPORT int32_t call_fchmodat(int32_t dirFd, const char *path, int32_t mode, int32_t followSymlinks) {
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    wchar_t *wide_path = utf8_to_wide_path(path);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    int result = _wchmod(wide_path, mode);
+    free(wide_path);
+    return result;
+}
+
+GP_EXPORT int32_t call_fchmod(int32_t fd, int32_t mode) {
+    (void) mode;
+    if (get_osfhandle_noraise(fd) == -1) {
+        return -1;
+    }
+    return unsupported();
+}
+GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
+    if (!is_default_dir_fd(dirFd)) {
+        return unsupported();
+    }
+    wchar_t *wide_path = utf8_to_wide_path(path);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    DWORD attributes = GetFileAttributesW(wide_path);
+    free(wide_path);
+    if (attributes == INVALID_FILE_ATTRIBUTES) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return unsupported();
+}
+GP_EXPORT int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) { return unsupported(); }
+GP_EXPORT int32_t call_wcoredump(int32_t status) { return 0; }
+GP_EXPORT int32_t call_wifcontinued(int32_t status) { return 0; }
+GP_EXPORT int32_t call_wifstopped(int32_t status) { return 0; }
+GP_EXPORT int32_t call_wifsignaled(int32_t status) { return 0; }
+GP_EXPORT int32_t call_wifexited(int32_t status) { return 0; }
+GP_EXPORT int32_t call_wexitstatus(int32_t status) { return status; }
+GP_EXPORT int32_t call_wtermsig(int32_t status) { return 0; }
+GP_EXPORT int32_t call_wstopsig(int32_t status) { return 0; }
+GP_EXPORT int32_t call_kill(int64_t pid, int32_t signal) { return unsupported(); }
+GP_EXPORT int32_t call_raise(int32_t signal) { return raise(signal); }
+GP_EXPORT int32_t call_alarm(int32_t seconds) { return 0; }
+GP_EXPORT int32_t call_getitimer(int32_t which, int64_t *current_value) { return unsupported(); }
+GP_EXPORT int32_t call_setitimer(int32_t which, int64_t *new_value, int64_t *old_value) { return unsupported(); }
+GP_EXPORT int32_t signal_self(int32_t signal) { return raise(signal); }
+GP_EXPORT int32_t call_killpg(int64_t pgid, int32_t signal) { return unsupported(); }
+GP_EXPORT int64_t call_getuid(void) { return 0; }
+GP_EXPORT int64_t call_geteuid(void) { return 1; }
+GP_EXPORT int64_t call_getgid(void) { return 0; }
+GP_EXPORT int64_t call_getegid(void) { return 0; }
+GP_EXPORT int64_t call_getppid(void) { return 0; }
+GP_EXPORT int64_t call_getpgid(int64_t pid) { errno = ENOSYS; return -1; }
+GP_EXPORT int32_t call_setpgid(int64_t pid, int64_t pgid) { return unsupported(); }
+GP_EXPORT int64_t call_getpgrp(void) { return 0; }
+GP_EXPORT int64_t call_getsid(int64_t pid) { errno = ENOSYS; return -1; }
+GP_EXPORT int64_t call_setsid(void) { errno = ENOSYS; return -1; }
+GP_EXPORT int32_t call_getgroups(int64_t size, int64_t* out) { return 0; }
+GP_EXPORT int32_t call_getrusage(int32_t who, uint64_t* out) { return unsupported(); }
+GP_EXPORT int32_t call_openpty(int32_t *outvars) { return unsupported(); }
+GP_EXPORT int32_t call_ctermid(char *buf) { return unsupported(); }
+GP_EXPORT int32_t call_setenv(char *name, char *value, int overwrite) { return _putenv_s(name, value); }
+GP_EXPORT int32_t call_unsetenv(char *name) { return _putenv_s(name, ""); }
+GP_EXPORT void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) { errno = ENOSYS; }
+GP_EXPORT int32_t call_system(const char *pathname) { return system(pathname); }
+GP_EXPORT int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) { return 0; }
+GP_EXPORT int32_t call_munmap(int64_t address, int64_t length) { return unsupported(); }
+GP_EXPORT void call_msync(int64_t address, int64_t offset, int64_t length) {}
+
+GP_EXPORT int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
+    if (ensure_winsock() < 0) {
+        return -1;
+    }
+    SOCKET s = socket(family, type, protocol);
+    if (s == INVALID_SOCKET) {
+        return set_wsa_errno();
+    }
+    return win_alloc_socket_fd(s);
+}
+
+GP_EXPORT int32_t call_accept(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
+    int len = sizeof(struct sockaddr_storage);
+    SOCKET s = accept(win_socket_from_fd(sockfd), (struct sockaddr *) addr, &len);
+    if (s == INVALID_SOCKET) {
+        return set_wsa_errno();
+    }
+    *addr_len = len;
+    return win_alloc_socket_fd(s);
+}
+
+GP_EXPORT int32_t call_bind(int32_t sockfd, int8_t *addr, int32_t addr_len) { int r = bind(win_socket_from_fd(sockfd), (struct sockaddr *) addr, addr_len); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
+GP_EXPORT int32_t call_connect(int32_t sockfd, int8_t *addr, int32_t addr_len) { int r = connect(win_socket_from_fd(sockfd), (struct sockaddr *) addr, addr_len); if (r == SOCKET_ERROR) { int error = WSAGetLastError(); errno = error == WSAEWOULDBLOCK ? GP_EINPROGRESS : wsa_errno_to_posix(error); return -1; } return r; }
+GP_EXPORT int32_t call_listen(int32_t sockfd, int32_t backlog) { int r = listen(win_socket_from_fd(sockfd), backlog); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
+GP_EXPORT int32_t call_getpeername(int32_t sockfd, int8_t *addr, int32_t *addr_len) { int len = sizeof(struct sockaddr_storage); int r = getpeername(win_socket_from_fd(sockfd), (struct sockaddr *) addr, &len); if (r == SOCKET_ERROR) return set_wsa_errno(); *addr_len = len; return r; }
+GP_EXPORT int32_t call_getsockname(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
+    SOCKET s = win_socket_from_fd(sockfd);
+    if (s == INVALID_SOCKET) {
+        errno = get_osfhandle_noraise(sockfd) == -1 ? EBADF : GP_ENOTSOCK;
+        return -1;
+    }
+    int len = sizeof(struct sockaddr_storage);
+    int r = getsockname(s, (struct sockaddr *) addr, &len);
+    if (r == SOCKET_ERROR) {
+        return set_wsa_errno();
+    }
+    *addr_len = len;
+    return r;
+}
+GP_EXPORT int32_t call_send(int32_t sockfd, void *buf, int32_t len, int32_t flags) { int r = send(win_socket_from_fd(sockfd), buf, len, flags); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
+GP_EXPORT int32_t call_sendto(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *addr, int32_t addr_len) { int r = sendto(win_socket_from_fd(sockfd), ((char *) buf) + offset, len, flags, (struct sockaddr *) addr, addr_len); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
+GP_EXPORT int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flags) { int r = recv(win_socket_from_fd(sockfd), buf, len, flags); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
+GP_EXPORT int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *src_addr, int32_t *addr_len) { int l = sizeof(struct sockaddr_storage); int r = recvfrom(win_socket_from_fd(sockfd), ((char *) buf) + offset, len, flags, (struct sockaddr *) src_addr, &l); if (r == SOCKET_ERROR) return set_wsa_errno(); *addr_len = l; return r; }
+GP_EXPORT int32_t call_shutdown(int32_t sockfd, int32_t how) { int r = shutdown(win_socket_from_fd(sockfd), how); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
+GP_EXPORT int32_t call_getsockopt(int32_t sockfd, int32_t level, int32_t optname, void *buf, int32_t *bufLen) { int len = *bufLen; int r = getsockopt(win_socket_from_fd(sockfd), level, optname, buf, &len); if (r == SOCKET_ERROR) return set_wsa_errno(); *bufLen = len; return r; }
+GP_EXPORT int32_t call_setsockopt(int32_t sockfd, int32_t level, int32_t optname, void *buf, int32_t bufLen) { int r = setsockopt(win_socket_from_fd(sockfd), level, optname, buf, bufLen); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
+GP_EXPORT int32_t call_inet_addr(const char *src) { return ntohl(inet_addr(src)); }
+GP_EXPORT int64_t call_inet_aton(const char *src) { struct in_addr addr; int r = inet_pton(AF_INET, src, &addr); return r == 1 ? (ntohl(addr.s_addr) & 0xFFFFFFFF) : -1; }
+GP_EXPORT int32_t call_inet_ntoa(int32_t src, char *dst) { struct in_addr addr; addr.s_addr = htonl(src); const char *s = inet_ntop(AF_INET, &addr, dst, INET_ADDRSTRLEN); return s == NULL ? -1 : (int32_t) strlen(s); }
+GP_EXPORT int32_t call_inet_pton(int32_t family, const char *src, void *dst) { int r = inet_pton(family, src, dst); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
+GP_EXPORT int32_t call_inet_ntop(int32_t family, void *src, char *dst, int32_t dstSize) { return inet_ntop(family, src, dst, dstSize) == NULL ? set_wsa_errno() : 0; }
+GP_EXPORT int32_t call_gethostname(char *buf, int64_t bufLen) {
+    wchar_t stack_buf[MAX_COMPUTERNAME_LENGTH + 1];
+    DWORD size = sizeof(stack_buf) / sizeof(stack_buf[0]);
+    wchar_t *name = stack_buf;
+    int result = 0;
+
+    if (!GetComputerNameExW(ComputerNamePhysicalDnsHostname, stack_buf, &size)) {
+        if (GetLastError() != ERROR_MORE_DATA) {
+            errno = GetLastError();
+            return -1;
+        }
+        if (size == 0) {
+            if (bufLen > 0) {
+                buf[0] = '\0';
+                return 0;
+            }
+            errno = EFAULT;
+            return -1;
+        }
+        name = malloc(size * sizeof(wchar_t));
+        if (name == NULL) {
+            errno = ENOMEM;
+            return -1;
+        }
+        if (!GetComputerNameExW(ComputerNamePhysicalDnsHostname, name, &size)) {
+            errno = GetLastError();
+            free(name);
+            return -1;
+        }
+    }
+
+    int needed = WideCharToMultiByte(CP_UTF8, 0, name, size, NULL, 0, NULL, NULL);
+    if (needed <= 0) {
+        errno = GetLastError();
+        result = -1;
+    } else if (needed >= bufLen) {
+        errno = ENAMETOOLONG;
+        result = -1;
+    } else {
+        int written = WideCharToMultiByte(CP_UTF8, 0, name, size, buf, (int) bufLen, NULL, NULL);
+        if (written <= 0) {
+            errno = GetLastError();
+            result = -1;
+        } else {
+            buf[written] = '\0';
+        }
+    }
+
+    if (name != stack_buf) {
+        free(name);
+    }
+    return result;
+}
+GP_EXPORT int32_t call_getnameinfo(int8_t *addr, int32_t addr_len, char *hostBuf, int32_t hostBufLen, char *servBuf, int32_t servBufLen, int32_t flags) { return getnameinfo((struct sockaddr *) addr, addr_len, hostBuf, hostBufLen, servBuf, servBufLen, flags); }
+GP_EXPORT int32_t call_getaddrinfo(const char *node, const char *service, int32_t family, int32_t sockType, int32_t protocol, int32_t flags, int64_t *ptr) { struct addrinfo hints = {0}; struct addrinfo *res = NULL; hints.ai_family = family; hints.ai_socktype = sockType; hints.ai_protocol = protocol; hints.ai_flags = flags; int ret = getaddrinfo(node, service, &hints, &res); if (ret == 0) { *ptr = (int64_t) res; } return ret; }
+GP_EXPORT void call_freeaddrinfo(int64_t ptr) { freeaddrinfo((struct addrinfo *) ptr); }
+GP_EXPORT void call_gai_strerror(int32_t error, char *buf, int32_t buflen) { snprintf(buf, buflen, "%d", error); }
+GP_EXPORT int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData, int8_t *addr) {
+    struct addrinfo *ai = (struct addrinfo *) ptr;
+    if (!ai) {
+        return 0;
+    }
+
+    memcpy(addr, ai->ai_addr, ai->ai_addrlen);
+
+    longData[0] = (int64_t) ai->ai_canonname;
+    longData[1] = (int64_t) ai->ai_next;
+
+    intData[0] = ai->ai_flags;
+    intData[1] = ai->ai_family;
+    intData[2] = ai->ai_socktype;
+    intData[3] = ai->ai_protocol;
+    intData[4] = (int32_t) ai->ai_addrlen;
+    intData[5] = ai->ai_addr->sa_family;
+    intData[6] = 0;
+    if (ai->ai_canonname != NULL) {
+        size_t len = strlen(ai->ai_canonname);
+        if (len >= 0x7fffffff) {
+            return -1;
+        }
+        intData[6] = (int32_t) len;
+    }
+    return 0;
+}
+
+GP_EXPORT void *call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t value) { errno = ENOSYS; return NULL; }
+GP_EXPORT int32_t call_sem_close(void* handle) { return unsupported(); }
+GP_EXPORT int32_t call_sem_unlink(const char *name) { return unsupported(); }
+GP_EXPORT int32_t call_sem_getvalue(void* handle, int32_t *value) { return unsupported(); }
+GP_EXPORT int32_t call_sem_post(void* handle) { return unsupported(); }
+GP_EXPORT int32_t call_sem_wait(void* handle) { return unsupported(); }
+GP_EXPORT int32_t call_sem_trywait(void* handle) { return unsupported(); }
+GP_EXPORT int32_t call_sem_timedwait(void* handle, int64_t deadlineNs) { return unsupported(); }
+GP_EXPORT int64_t get_sysconf_getpw_r_size_max(void) { return -1; }
+GP_EXPORT int32_t call_getpwuid_r(uint64_t uid, char *buffer, int32_t bufferSize, uint64_t *output) {
+    if (uid != 0) {
+        return -1;
+    }
+    return fill_current_pwd(uid, buffer, bufferSize, output);
+}
+
+GP_EXPORT int32_t call_getpwname_r(const char *name, char *buffer, int32_t bufferSize, uint64_t *output) {
+    char current_name[256];
+    int result = get_current_username(current_name, sizeof(current_name));
+    if (result != 0) {
+        return result;
+    }
+    if (_stricmp(name, current_name) != 0) {
+        return -1;
+    }
+    return fill_current_pwd(0, buffer, bufferSize, output);
+}
+GP_EXPORT void call_setpwent(void) {}
+GP_EXPORT void call_endpwent(void) {}
+GP_EXPORT void *call_getpwent(int64_t *bufferSize) { return NULL; }
+GP_EXPORT int32_t get_getpwent_data(void *p, char *buffer, int32_t bufferSize, uint64_t *output) { return ENOSYS; }
+GP_EXPORT int32_t call_ioctl_bytes(int32_t fd, uint64_t request, char* buffer) { return unsupported(); }
+GP_EXPORT int32_t call_ioctl_int(int32_t fd, uint64_t request, int32_t arg) { return unsupported(); }
+GP_EXPORT int64_t call_sysconf(int32_t name) { errno = EINVAL; return -1; }
+GP_EXPORT int32_t get_errno(void) { return errno; }
+GP_EXPORT void set_errno(int e) { errno = e; }
+
+GP_EXPORT void call_initialize(void) {
+    _setmode(0, _O_BINARY);
+    _setmode(1, _O_BINARY);
+    _setmode(2, _O_BINARY);
+}
+
+GP_EXPORT int32_t init_constants(int64_t* out, int32_t len) {
+    if (len != 33)
+        return -1;
+    out[0] = sizeof(struct sockaddr);
+    out[1] = sizeof(((struct sockaddr*)0)->sa_family);
+    out[2] = offsetof(struct sockaddr, sa_family);
+    out[3] = sizeof(struct sockaddr_storage);
+    out[4] = sizeof(struct sockaddr_in);
+    out[5] = sizeof(((struct sockaddr_in*)0)->sin_family);
+    out[6] = offsetof(struct sockaddr_in, sin_family);
+    out[7] = sizeof(((struct sockaddr_in*)0)->sin_port);
+    out[8] = offsetof(struct sockaddr_in, sin_port);
+    out[9] = sizeof(((struct sockaddr_in*)0)->sin_addr);
+    out[10] = offsetof(struct sockaddr_in, sin_addr);
+    out[11] = sizeof(struct sockaddr_in6);
+    out[12] = sizeof(((struct sockaddr_in6*)0)->sin6_family);
+    out[13] = offsetof(struct sockaddr_in6, sin6_family);
+    out[14] = sizeof(((struct sockaddr_in6*)0)->sin6_port);
+    out[15] = offsetof(struct sockaddr_in6, sin6_port);
+    out[16] = sizeof(((struct sockaddr_in6*)0)->sin6_flowinfo);
+    out[17] = offsetof(struct sockaddr_in6, sin6_flowinfo);
+    out[18] = sizeof(((struct sockaddr_in6*)0)->sin6_addr);
+    out[19] = offsetof(struct sockaddr_in6, sin6_addr);
+    out[20] = sizeof(((struct sockaddr_in6*)0)->sin6_scope_id);
+    out[21] = offsetof(struct sockaddr_in6, sin6_scope_id);
+    out[22] = sizeof(struct in_addr);
+    out[23] = sizeof(((struct in_addr*)0)->s_addr);
+    out[24] = offsetof(struct in_addr, s_addr);
+    out[25] = sizeof(struct in6_addr);
+    out[26] = sizeof(((struct in6_addr*)0)->s6_addr);
+    out[27] = offsetof(struct in6_addr, s6_addr);
+    out[28] = sizeof(struct sockaddr_un);
+    out[29] = sizeof(((struct sockaddr_un*)0)->sun_family);
+    out[30] = offsetof(struct sockaddr_un, sun_family);
+    out[31] = sizeof(((struct sockaddr_un*)0)->sun_path);
+    out[32] = offsetof(struct sockaddr_un, sun_path);
+    return 0;
+}
+
+#else
+
 // This file uses GNU extensions. Functions that require non-GNU versions (e.g. strerror_r)
 // need to go to posix_no_gnu.c
 #if defined(__gnu_linux__) && !defined(_GNU_SOURCE)
@@ -168,6 +1757,20 @@ int32_t call_dup2(int32_t oldfd, int32_t newfd, int32_t inheritable) {
         return -1;
     }
     return res;
+}
+
+int32_t call_get_osfhandle(int32_t fd, int64_t *out) {
+    (void) fd;
+    (void) out;
+    errno = ENOSYS;
+    return -1;
+}
+
+int32_t call_open_osfhandle(int64_t handle, int32_t flags) {
+    (void) handle;
+    (void) flags;
+    errno = ENOSYS;
+    return -1;
 }
 
 int32_t call_pipe2(int32_t *pipefd) {
@@ -569,6 +2172,10 @@ int32_t call_utimes(const char *filename, int64_t *timeval) {
 
 int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
     CAPTURE_ERRNO_AND_RETURN(-1, renameat(oldDirFd, oldPath, newDirFd, newPath));
+}
+
+int32_t call_replaceat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
+    return renameat(oldDirFd, oldPath, newDirFd, newPath);
 }
 
 int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t effectiveIds, int32_t followSymlinks) {
@@ -1256,11 +2863,9 @@ int32_t get_errno() {
     return errno_capture;
 }
 
-#ifdef _WIN32
-#define unix_or_0(x) 0
-#else
+void call_initialize(void) {
+}
 #define unix_or_0(x) x
-#endif
 
 // start generated
 int32_t init_constants(int64_t* out, int32_t len) {
@@ -1302,3 +2907,5 @@ int32_t init_constants(int64_t* out, int32_t len) {
     return 0;
 }
 // end generated
+
+#endif

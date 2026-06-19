@@ -242,6 +242,28 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getOsfHandle(int fd,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getOsfHandle", "%d", fd);
+        try {
+            return logExit("getOsfHandle", "%d", lib.getOsfHandle(delegate, fd));
+        } catch (PosixException e) {
+            throw logException("getOsfHandle", e);
+        }
+    }
+
+    @ExportMessage
+    final int openOsfHandle(long handle, int flags,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("openOsfHandle", "%d, %d", handle, flags);
+        try {
+            return logExit("openOsfHandle", "%d", lib.openOsfHandle(delegate, handle, flags));
+        } catch (PosixException e) {
+            throw logException("openOsfHandle", e);
+        }
+    }
+
+    @ExportMessage
     final int[] pipe(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("pipe", "");
@@ -678,6 +700,17 @@ public class LoggingPosixSupport extends PosixSupport {
             lib.renameat(delegate, oldDirFd, oldPath, newDirFd, newPath);
         } catch (PosixException e) {
             throw logException("renameAt", e);
+        }
+    }
+
+    @ExportMessage
+    final void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("replaceAt", "%d, %s, %d, %s", oldDirFd, oldPath, newDirFd, newPath);
+        try {
+            lib.replaceat(delegate, oldDirFd, oldPath, newDirFd, newPath);
+        } catch (PosixException e) {
+            throw logException("replaceAt", e);
         }
     }
 

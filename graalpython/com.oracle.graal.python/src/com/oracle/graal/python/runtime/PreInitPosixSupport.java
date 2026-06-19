@@ -243,6 +243,20 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getOsfHandle(int fd,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.getOsfHandle(nativePosixSupport, fd);
+    }
+
+    @ExportMessage
+    final int openOsfHandle(long handle, int flags,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.openOsfHandle(nativePosixSupport, handle, flags);
+    }
+
+    @ExportMessage
     final int[] pipe(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();
         return nativeLib.pipe(nativePosixSupport);
@@ -545,6 +559,13 @@ public class PreInitPosixSupport extends PosixSupport {
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();
         nativeLib.renameat(nativePosixSupport, oldDirFd, oldPath, newDirFd, newPath);
+    }
+
+    @ExportMessage
+    final void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        nativeLib.replaceat(nativePosixSupport, oldDirFd, oldPath, newDirFd, newPath);
     }
 
     @ExportMessage

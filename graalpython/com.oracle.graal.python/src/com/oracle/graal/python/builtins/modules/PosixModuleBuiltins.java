@@ -2280,14 +2280,27 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "src_dir_fd", conversionClass = DirFdConversionNode.class)
     @ArgumentClinic(name = "dst_dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    abstract static class ReplaceNode extends RenameNode {
-
-        // although this built-in is the same as rename(), we need to provide our own
-        // ArgumentClinicProvider because the error messages contain the name of the built-in
+    abstract static class ReplaceNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return PosixModuleBuiltinsClinicProviders.ReplaceNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PNone replace(VirtualFrame frame, PosixPath src, PosixPath dst, int srcDirFd, int dstDirFd,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind Node inliningTarget,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(frame, inliningTarget, T_OS_RENAME, src.originalObject, dst.originalObject, dirFdForAudit(srcDirFd), dirFdForAudit(dstDirFd));
+            try {
+                posixLib.replaceat(context.getPosixSupport(), srcDirFd, src.value, dstDirFd, dst.value);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
+            }
+            return PNone.NONE;
         }
     }
 

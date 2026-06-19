@@ -620,7 +620,12 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
      * @return The absolute path to the program or {@code null}.
      */
     private String calculateProgramFullPath(String program, Predicate<Path> isExecutable, String envPath) {
-        Path programPath = Paths.get(program);
+        Path programPath;
+        try {
+            programPath = Paths.get(program);
+        } catch (InvalidPathException e) {
+            return null;
+        }
 
         // If this is an absolute path, we are already fine.
         if (programPath.isAbsolute()) {
@@ -876,10 +881,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
 
         setOptionIfNotSetViaCommandLine(contextBuilder, "AllowSignalHandlers", "true");
-
-        if (IS_WINDOWS) {
-            contextBuilder.option("python.PosixModuleBackend", "java");
-        }
 
         setOptionIfNotSetViaCommandLine(contextBuilder, "WarnExperimentalFeatures", "false");
         setOptionIfNotSetViaCommandLine(contextBuilder, "UnicodeCharacterDatabaseNativeFallback", "true");
@@ -1285,7 +1286,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
 
     private static ConsoleHandler createConsoleHandler(InputStream inStream, OutputStream outStream) {
         if (!isTTY()) {
-            return new DefaultConsoleHandler(inStream);
+            return new DefaultConsoleHandler(inStream, IS_WINDOWS);
         } else {
             return new JLineConsoleHandler(inStream, outStream);
         }
@@ -1470,7 +1471,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         if (ImageInfo.inImageRuntimeCode()) {
             // This is the fastest, most straightforward way to get the name of the actual
             // executable, i.e., with symlinks resolved all the way down to graalpy
-            String executableName = ProcessProperties.getExecutableName();
+            String executableName = getNativeExecutableName();
             if (executableName != null) {
                 return executableName;
             }
@@ -1499,7 +1500,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     private List<String> getCmdline(List<String> args, List<String> subProcessDefs) {
         List<String> cmd = new ArrayList<>();
         if (isAOT()) {
-            cmd.add(ProcessProperties.getExecutableName());
+            cmd.add(getNativeExecutableName());
             for (String subProcArg : subProcessDefs) {
                 assert subProcArg.startsWith("D");
                 cmd.add("--native." + subProcArg);
@@ -1528,6 +1529,20 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
 
         cmd.addAll(args);
         return cmd;
+    }
+
+    private static String getNativeExecutableName() {
+        String executableName = ProcessProperties.getExecutableName();
+        if (executableName != null) {
+            try {
+                if (Files.isExecutable(Path.of(executableName))) {
+                    return executableName;
+                }
+            } catch (InvalidPathException e) {
+                // Try the process handle below.
+            }
+        }
+        return ProcessHandle.current().info().command().orElse(executableName);
     }
 
     private static final class ExitException extends RuntimeException {

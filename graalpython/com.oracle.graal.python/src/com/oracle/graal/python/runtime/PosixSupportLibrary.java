@@ -104,6 +104,10 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void setInheritable(Object receiver, int fd, boolean inheritable) throws PosixException;
 
+    public abstract long getOsfHandle(Object receiver, int fd) throws PosixException;
+
+    public abstract int openOsfHandle(Object receiver, long handle, int flags) throws PosixException;
+
     public abstract int[] pipe(Object receiver) throws PosixException;
 
     public abstract SelectResult select(Object receiver, int[] readfds, int[] writefds, int[] errorfds, Timeval timeout) throws PosixException;
@@ -246,6 +250,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void utimes(Object receiver, Object filename, Timeval[] timeval) throws PosixException;
 
     public abstract void renameat(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
+
+    public abstract void replaceat(Object receiver, int oldDirFd, Object oldPath, int newDirFd, Object newPath) throws PosixException;
 
     public abstract boolean faccessat(Object receiver, int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks) throws UnsupportedPosixFeatureException;
 

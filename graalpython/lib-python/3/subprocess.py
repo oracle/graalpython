@@ -1407,7 +1407,8 @@ class Popen:
                 else:
                     # Assuming file-like object
                     errwrite = msvcrt.get_osfhandle(stderr.fileno())
-                errwrite = self._make_inheritable(errwrite)
+                if stderr != STDOUT:
+                    errwrite = self._make_inheritable(errwrite)
 
             return (p2cread, p2cwrite,
                     c2pread, c2pwrite,
@@ -1420,6 +1421,11 @@ class Popen:
                 _winapi.GetCurrentProcess(), handle,
                 _winapi.GetCurrentProcess(), 0, 1,
                 _winapi.DUPLICATE_SAME_ACCESS)
+            if isinstance(handle, Handle):
+                # CPython closes this original handle immediately via refcounted
+                # finalization when the local variable is overwritten. GraalPy
+                # needs the close to be explicit so pipe EOF is observable.
+                handle.Close()
             return Handle(h)
 
 
