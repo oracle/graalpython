@@ -146,7 +146,6 @@
     local GPY_JVM21_STANDALONE      = "graalpy-jvm21-standalone",
     local GPY_JVM_STANDALONE        = "graalpy-jvm-standalone",
     local GPY_NATIVE_STANDALONE     = "graalpy-native-standalone",
-    local GPY_NATIVE_GRAALOS_STANDALONE = "graalpy-native-graalos-standalone",
     local GPYEE_JVM_STANDALONE      = "graalpy-ee-jvm-standalone",
     local GPYEE_NATIVE_STANDALONE   = "graalpy-ee-native-standalone",
     local GRAAL_JDK_LATEST          = "graal-jdk-latest",
@@ -312,7 +311,8 @@
             "linux:amd64:jdk-latest"     : tier3,
         }),
         "python-svm-graalos-standalone-build": gpgate_ee + internet_access_env + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest": tier3 + $.ol8 + $.provide_graalpy_graalos_standalone_artifact(GPY_NATIVE_GRAALOS_STANDALONE) + task_spec({
+            "linux:amd64:jdk-latest": tier3 + $.ol8 + task_spec({
+                deploysArtifacts: true,
                 environment +: {
                     GRAALPY_GRAALOS_TOOLCHAIN_URL: $.overlay_imports.GRAALPY_GRAALOS_TOOLCHAIN_URL,
                     GRAALPY_GRAALOS_RUNTIME_URL: $.overlay_imports.GRAALPY_GRAALOS_RUNTIME_URL,

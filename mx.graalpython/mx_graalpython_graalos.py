@@ -258,6 +258,40 @@ def _set_graalos_standalone_env(standalone_home: Path, key, value, on_fail=mx.ab
     return config_path, original_config
 
 
+def _upload_graalos_standalone_artifact(standalone_home: Path, work_dir: Path):
+    script = os.environ.get("ARTIFACT_UPLOADER_SCRIPT")
+    if not script:
+        mx.log("Skipping GRAALPY_NATIVE_GRAALOS_STANDALONE artifact upload: ARTIFACT_UPLOADER_SCRIPT is not set")
+        return
+
+    revision = str(SUITE.vc.tip(SUITE.dir)).strip()
+    short_revision = revision[:10]
+    archive_base = work_dir / f"graalpy-native-graalos-standalone-linux-amd64-dev-g{short_revision}"
+    archive_path = shutil.make_archive(
+        str(archive_base),
+        "gztar",
+        root_dir=str(standalone_home.parent),
+        base_dir=standalone_home.name,
+    )
+    artifact_name = Path(archive_path).name
+    upload_cmd = [
+        sys.executable,
+        script,
+        archive_path,
+        f"graalpy/{artifact_name}",
+        "graalpy",
+        "--artifact-type", "graalpy-native-graalos-standalone",
+        "--version", f"dev-g{short_revision}",
+        "--revision", revision,
+        "--edition", "ee",
+        "--lifecycle", "snapshot",
+        "--platform", "linux-amd64",
+    ]
+    if repo_key := os.environ.get("ARTIFACT_REPO_KEY_LOCATION"):
+        upload_cmd += ["--artifact-repo-key", repo_key]
+    run(upload_cmd)
+
+
 def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
     artifact_base_url = os.environ.get("GRAALPY_GRAALOS_ARTIFACT_BASE_URL")
     if not artifact_base_url:
@@ -328,3 +362,4 @@ def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
         )
     finally:
         config_path.write_text(original_config, encoding="utf-8")
+    _upload_graalos_standalone_artifact(standalone_home, work_dir)
