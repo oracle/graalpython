@@ -15,9 +15,8 @@ The story:
 
 ## Setup
 
-From the rebuilt standalone directory, I ran this. This needs a patched
-graalhost right now (I reported GRAALOS-8260), so the bundle currently includes
-it.
+From the rebuilt standalone directory, install `pip` inside the sandbox, then
+install the demo wheels from a host-downloaded wheel cache:
 
 ```bash
 cd mxbuild/linux-amd64/GRAALPY_NATIVE_GRAALOS_STANDALONE
@@ -29,6 +28,34 @@ python3 -m pip download --only-binary=:all: --dest demo-wheels rich asteval
 The online download is intentionally done outside the sandbox. The sandboxed
 standalone has no outbound network mapping by default, which is one of the
 things the demo can show.
+
+### GRAALOS-8260 workaround
+
+If the standalone uses a vanilla GraalOS runtime where the in-sandbox
+`ensurepip` subprocess path is not fixed yet, install the pure-Python wheels
+from the host directly into the standalone's `site-packages`:
+
+```bash
+cd mxbuild/linux-amd64/GRAALPY_NATIVE_GRAALOS_STANDALONE
+python3 -m pip download \
+  --only-binary=:all: \
+  --implementation py \
+  --python-version 3.12 \
+  --abi none \
+  --platform any \
+  --dest demo-wheels \
+  rich asteval
+
+python3 -m pip install \
+  --target lib/python3.12/site-packages \
+  --no-index \
+  --find-links demo-wheels \
+  --no-compile \
+  rich asteval
+```
+
+Use this workaround only for pure-Python wheels such as `py3-none-any`; native
+wheels need GraalOS/GraalPy-specific handling.
 
 Copy or place `graalos_sandbox_chat.py` in the standalone root, then run:
 
