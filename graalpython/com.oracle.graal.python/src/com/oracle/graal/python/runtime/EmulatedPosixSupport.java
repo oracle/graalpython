@@ -2859,7 +2859,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    final MMapHandle mmap(long length, int prot, int flags, int fd, long offset,
+    final MMapHandle mmap(long length, int prot, int flags, int fd, long offset, @SuppressWarnings("unused") Object tagname,
                     @Bind Node inliningTarget,
                     @Shared("defaultDirProfile") @Cached InlinedConditionProfile isAnonymousProfile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,

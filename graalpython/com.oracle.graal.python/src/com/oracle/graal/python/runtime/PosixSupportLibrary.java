@@ -370,7 +370,7 @@ public abstract class PosixSupportLibrary extends Library {
     // does not throw, because posix does not exactly define the return value
     public abstract int system(Object receiver, Object command);
 
-    public abstract Object mmap(Object receiver, long length, int prot, int flags, int fd, long offset) throws PosixException;
+    public abstract Object mmap(Object receiver, long length, int prot, int flags, int fd, long offset, Object tagname) throws PosixException;
 
     public abstract byte mmapReadByte(Object receiver, Object mmap, long index) throws PosixException;
 

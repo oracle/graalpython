@@ -850,10 +850,10 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final Object mmap(long length, int prot, int flags, int fd, long offset,
+    final Object mmap(long length, int prot, int flags, int fd, long offset, Object tagname,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.mmap(nativePosixSupport, length, prot, flags, fd, offset);
+        return nativeLib.mmap(nativePosixSupport, length, prot, flags, fd, offset, tagname);
     }
 
     @ExportMessage

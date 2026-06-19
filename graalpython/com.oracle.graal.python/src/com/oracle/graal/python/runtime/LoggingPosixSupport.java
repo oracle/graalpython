@@ -858,11 +858,11 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public Object mmap(long length, int prot, int flags, int fd, long offset,
+    public Object mmap(long length, int prot, int flags, int fd, long offset, Object tagname,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("mmap", "%d, %d, %d, %d, %d", length, prot, flags, fd, offset);
+        logEnter("mmap", "%d, %d, %d, %d, %d, %s", length, prot, flags, fd, offset, tagname);
         try {
-            return logExit("mmap", "%s", lib.mmap(delegate, length, prot, flags, fd, offset));
+            return logExit("mmap", "%s", lib.mmap(delegate, length, prot, flags, fd, offset, tagname));
         } catch (PosixException e) {
             throw logException("mmap", e);
         }

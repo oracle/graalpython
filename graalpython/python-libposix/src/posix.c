@@ -347,11 +347,21 @@ typedef struct {
     int blocking;
 } win_socket_entry_t;
 
+typedef struct {
+    void *view;
+    HANDLE mapping;
+} win_mmap_entry_t;
+
 #define WIN_SOCKET_TABLE_SIZE 1024
+#define WIN_MMAP_TABLE_SIZE 1024
 
 static win_socket_entry_t win_socket_table[WIN_SOCKET_TABLE_SIZE];
 static INIT_ONCE win_socket_table_init_once = INIT_ONCE_STATIC_INIT;
 static CRITICAL_SECTION win_socket_table_lock;
+
+static win_mmap_entry_t win_mmap_table[WIN_MMAP_TABLE_SIZE];
+static INIT_ONCE win_mmap_table_init_once = INIT_ONCE_STATIC_INIT;
+static CRITICAL_SECTION win_mmap_table_lock;
 
 static BOOL CALLBACK win_socket_table_init(PINIT_ONCE init_once, PVOID parameter, PVOID *context) {
     (void) init_once;
@@ -368,6 +378,54 @@ static BOOL CALLBACK win_socket_table_init(PINIT_ONCE init_once, PVOID parameter
 
 static void ensure_socket_table(void) {
     InitOnceExecuteOnce(&win_socket_table_init_once, win_socket_table_init, NULL, NULL);
+}
+
+static BOOL CALLBACK win_mmap_table_init(PINIT_ONCE init_once, PVOID parameter, PVOID *context) {
+    (void) init_once;
+    (void) parameter;
+    (void) context;
+    InitializeCriticalSection(&win_mmap_table_lock);
+    for (int i = 0; i < WIN_MMAP_TABLE_SIZE; i++) {
+        win_mmap_table[i].view = NULL;
+        win_mmap_table[i].mapping = NULL;
+    }
+    return TRUE;
+}
+
+static void ensure_mmap_table(void) {
+    InitOnceExecuteOnce(&win_mmap_table_init_once, win_mmap_table_init, NULL, NULL);
+}
+
+static int win_add_mmap(void *view, HANDLE mapping) {
+    ensure_mmap_table();
+    EnterCriticalSection(&win_mmap_table_lock);
+    for (int i = 0; i < WIN_MMAP_TABLE_SIZE; i++) {
+        if (win_mmap_table[i].view == NULL) {
+            win_mmap_table[i].view = view;
+            win_mmap_table[i].mapping = mapping;
+            LeaveCriticalSection(&win_mmap_table_lock);
+            return 0;
+        }
+    }
+    LeaveCriticalSection(&win_mmap_table_lock);
+    errno = ENOMEM;
+    return -1;
+}
+
+static HANDLE win_remove_mmap(void *view) {
+    HANDLE mapping = NULL;
+    ensure_mmap_table();
+    EnterCriticalSection(&win_mmap_table_lock);
+    for (int i = 0; i < WIN_MMAP_TABLE_SIZE; i++) {
+        if (win_mmap_table[i].view == view) {
+            mapping = win_mmap_table[i].mapping;
+            win_mmap_table[i].view = NULL;
+            win_mmap_table[i].mapping = NULL;
+            break;
+        }
+    }
+    LeaveCriticalSection(&win_mmap_table_lock);
+    return mapping;
 }
 
 static SOCKET win_socket_from_fd(int32_t fd) {
@@ -607,6 +665,17 @@ static int statvfs_from_root(const char *root, int64_t *out) {
 }
 
 static int statvfs_from_path(const char *path, int64_t *out) {
+    wchar_t *wide_path = utf8_to_wide_path(path);
+    if (wide_path == NULL) {
+        return -1;
+    }
+    DWORD attributes = GetFileAttributesW(wide_path);
+    free(wide_path);
+    if (attributes == INVALID_FILE_ATTRIBUTES) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+
     char root[MAX_PATH];
     if (root_path_from_path(path, root, sizeof(root)) != 0) {
         return -1;
@@ -1399,7 +1468,29 @@ GP_EXPORT int32_t call_wifexited(int32_t status) { return 0; }
 GP_EXPORT int32_t call_wexitstatus(int32_t status) { return status; }
 GP_EXPORT int32_t call_wtermsig(int32_t status) { return 0; }
 GP_EXPORT int32_t call_wstopsig(int32_t status) { return 0; }
-GP_EXPORT int32_t call_kill(int64_t pid, int32_t signal) { return unsupported(); }
+GP_EXPORT int32_t call_kill(int64_t pid, int32_t signal) {
+    if (signal == CTRL_C_EVENT || signal == CTRL_BREAK_EVENT) {
+        if (!GenerateConsoleCtrlEvent((DWORD) signal, (DWORD) pid)) {
+            set_win_errno(GetLastError());
+            return -1;
+        }
+        return 0;
+    }
+
+    HANDLE process = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD) pid);
+    if (process == NULL) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    BOOL result = TerminateProcess(process, (UINT) signal);
+    DWORD error = GetLastError();
+    CloseHandle(process);
+    if (!result) {
+        set_win_errno(error);
+        return -1;
+    }
+    return 0;
+}
 GP_EXPORT int32_t call_raise(int32_t signal) { return raise(signal); }
 GP_EXPORT int32_t call_alarm(int32_t seconds) { return 0; }
 GP_EXPORT int32_t call_getitimer(int32_t which, int64_t *current_value) { return unsupported(); }
@@ -1424,9 +1515,125 @@ GP_EXPORT int32_t call_setenv(char *name, char *value, int overwrite) { return _
 GP_EXPORT int32_t call_unsetenv(char *name) { return _putenv_s(name, ""); }
 GP_EXPORT void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) { errno = ENOSYS; }
 GP_EXPORT int32_t call_system(const char *pathname) { return system(pathname); }
-GP_EXPORT int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) { return 0; }
-GP_EXPORT int32_t call_munmap(int64_t address, int64_t length) { return unsupported(); }
-GP_EXPORT void call_msync(int64_t address, int64_t offset, int64_t length) {}
+static WCHAR *utf8_to_wchar(const char *input) {
+    if (input == NULL) {
+        return NULL;
+    }
+    int wchar_len = MultiByteToWideChar(CP_UTF8, 0, input, -1, NULL, 0);
+    if (wchar_len == 0) {
+        set_win_errno(GetLastError());
+        return NULL;
+    }
+    WCHAR *result = (WCHAR *) malloc((size_t) wchar_len * sizeof(WCHAR));
+    if (result == NULL) {
+        errno = ENOMEM;
+        return NULL;
+    }
+    if (MultiByteToWideChar(CP_UTF8, 0, input, -1, result, wchar_len) == 0) {
+        set_win_errno(GetLastError());
+        free(result);
+        return NULL;
+    }
+    return result;
+}
+
+GP_EXPORT int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset, char *tagname) {
+    const int32_t win_prot_read = 1;
+    const int32_t win_prot_write = 2;
+    const int32_t win_map_shared = 1;
+    HANDLE file_handle = INVALID_HANDLE_VALUE;
+    DWORD protect;
+    DWORD desired_access;
+    uint64_t max_size = (uint64_t) (offset + length);
+    HANDLE mapping;
+    DWORD mapping_error;
+    void *view;
+    WCHAR *wide_tagname = NULL;
+
+    if (length < 0 || offset < 0) {
+        errno = EINVAL;
+        return 0;
+    }
+
+    if (fd != -1) {
+        intptr_t os_handle = get_osfhandle_noraise(fd);
+        if (os_handle == -1) {
+            return 0;
+        }
+        file_handle = (HANDLE) os_handle;
+    } else {
+        max_size = (uint64_t) length;
+    }
+
+    if ((prot & win_prot_write) != 0) {
+        if ((flags & win_map_shared) != 0) {
+            protect = PAGE_READWRITE;
+            desired_access = FILE_MAP_WRITE;
+        } else {
+            protect = PAGE_WRITECOPY;
+            desired_access = FILE_MAP_COPY;
+        }
+    } else if ((prot & win_prot_read) != 0) {
+        protect = PAGE_READONLY;
+        desired_access = FILE_MAP_READ;
+    } else {
+        protect = PAGE_NOACCESS;
+        desired_access = 0;
+    }
+
+    wide_tagname = utf8_to_wchar(tagname);
+    if (tagname != NULL && wide_tagname == NULL) {
+        return 0;
+    }
+
+    SetLastError(ERROR_SUCCESS);
+    mapping = CreateFileMappingW(file_handle, NULL, protect, (DWORD) (max_size >> 32), (DWORD) max_size, wide_tagname);
+    mapping_error = GetLastError();
+    free(wide_tagname);
+    if (mapping == NULL) {
+        set_win_errno(mapping_error);
+        return 0;
+    }
+
+    view = MapViewOfFile(mapping, desired_access, (DWORD) ((uint64_t) offset >> 32), (DWORD) offset, (SIZE_T) length);
+    if (view == NULL) {
+        set_win_errno(GetLastError());
+        CloseHandle(mapping);
+        return 0;
+    }
+
+    if (win_add_mmap(view, mapping) < 0) {
+        UnmapViewOfFile(view);
+        CloseHandle(mapping);
+        return 0;
+    }
+    SetLastError(mapping_error);
+    return (int64_t) view;
+}
+
+GP_EXPORT int32_t call_munmap(int64_t address, int64_t length) {
+    (void) length;
+    void *view = (void *) address;
+    HANDLE mapping = win_remove_mmap(view);
+    int result = 0;
+    if (mapping == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (!UnmapViewOfFile(view)) {
+        set_win_errno(GetLastError());
+        result = -1;
+    }
+    if (!CloseHandle(mapping) && result == 0) {
+        set_win_errno(GetLastError());
+        result = -1;
+    }
+    return result;
+}
+
+GP_EXPORT void call_msync(int64_t address, int64_t offset, int64_t length) {
+    FlushViewOfFile((void *) (address + offset), (SIZE_T) length);
+}
 
 GP_EXPORT int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
     if (ensure_winsock() < 0) {
@@ -1492,7 +1699,13 @@ GP_EXPORT int32_t call_setsockopt(int32_t sockfd, int32_t level, int32_t optname
     return r == SOCKET_ERROR ? set_wsa_errno() : r;
 }
 GP_EXPORT int32_t call_inet_addr(const char *src) { return ntohl(inet_addr(src)); }
-GP_EXPORT int64_t call_inet_aton(const char *src) { struct in_addr addr; int r = inet_pton(AF_INET, src, &addr); return r == 1 ? (ntohl(addr.s_addr) & 0xFFFFFFFF) : -1; }
+GP_EXPORT int64_t call_inet_aton(const char *src) {
+    unsigned long packed = inet_addr(src);
+    if (packed == INADDR_NONE && strcmp(src, "255.255.255.255") != 0) {
+        return -1;
+    }
+    return (int64_t) (uint32_t) ntohl(packed);
+}
 GP_EXPORT int32_t call_inet_ntoa(int32_t src, char *dst) { struct in_addr addr; addr.s_addr = htonl(src); const char *s = inet_ntop(AF_INET, &addr, dst, INET_ADDRSTRLEN); return s == NULL ? -1 : (int32_t) strlen(s); }
 GP_EXPORT int32_t call_inet_pton(int32_t family, const char *src, void *dst) { int r = inet_pton(family, src, dst); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
 GP_EXPORT int32_t call_inet_ntop(int32_t family, void *src, char *dst, int32_t dstSize) { return inet_ntop(family, src, dst, dstSize) == NULL ? set_wsa_errno() : 0; }
@@ -2472,7 +2685,8 @@ int32_t call_system(const char *pathname) {
     return system(pathname);
 }
 
-int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) {
+int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset, char *tagname) {
+    (void) tagname;
     void *result = mmap(NULL, length, prot, flags, fd, offset);
     if (result == MAP_FAILED) {
         capture_errno();

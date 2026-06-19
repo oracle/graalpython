@@ -75,6 +75,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -126,6 +127,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.LongIndexConverterNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
@@ -178,7 +181,7 @@ public final class MMapBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "flags", "prot", "access",
-                    "offset"})
+                    "offset"}, keywordOnlyNames = {"tagname"})
     @GenerateNodeFactory
     // Note: it really should not call fileno on fd as per Python spec
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
@@ -202,12 +205,25 @@ public final class MMapBuiltins extends PythonBuiltins {
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset=0])
         @Specialization(guards = "!isIllegal(fd)")
         static PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, int flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
+                        Object tagname,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached CastToTruffleStringNode castTagnameNode,
                         @Cached PRaiseNode raiseNode) {
+            if (tagname != PNone.NO_VALUE && PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, "mmap", "tagname");
+            }
+            Object mmapTagname = PNone.NONE;
+            if (tagname != PNone.NO_VALUE && !isPNone(tagname)) {
+                try {
+                    mmapTagname = castTagnameNode.execute(inliningTarget, tagname);
+                } catch (CannotCastException e) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, tagname);
+                }
+            }
             if (lengthIn < 0) {
                 throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MEM_MAPPED_LENGTH_MUST_BE_POSITIVE);
             }
@@ -287,7 +303,7 @@ public final class MMapBuiltins extends PythonBuiltins {
 
             Object mmapHandle;
             try {
-                mmapHandle = posixSupport.mmap(posixSupport1, length, prot, flags, dupFd, offset);
+                mmapHandle = posixSupport.mmap(posixSupport1, length, prot, flags, dupFd, offset, mmapTagname);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
@@ -298,7 +314,11 @@ public final class MMapBuiltins extends PythonBuiltins {
         @Specialization(guards = "isIllegal(fd)")
         @SuppressWarnings("unused")
         static PMMap doIllegal(Object clazz, int fd, long lengthIn, int flagsIn, int protIn, int accessIn, long offset,
+                        Object tagname,
                         @Bind Node inliningTarget) {
+            if (tagname != PNone.NO_VALUE && PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, "mmap", "tagname");
+            }
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.OSError);
         }
 

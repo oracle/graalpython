@@ -179,8 +179,8 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(critical = true, returnType = SINT32)
         abstract int get_errno();
 
-        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64, SINT32, SINT32, SINT32, SINT64})
-        abstract long call_mmap(long length, int prot, int flags, int fd, long offset);
+        @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64, SINT32, SINT32, SINT32, SINT64, POINTER})
+        abstract long call_mmap(long length, int prot, int flags, int fd, long offset, long tagname);
 
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, SINT64})
         abstract int call_munmap(long address, long length);
@@ -2103,12 +2103,22 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public Object mmap(long length, int prot, int flags, int fd, long offset) throws PosixException {
-        long address = posixNativeFunctionInvoker.call_mmap(length, prot, flags, fd, offset);
-        if (address == 0) {
-            throw getErrnoAndThrowPosixException();
+    public Object mmap(long length, int prot, int flags, int fd, long offset, Object tagname,
+                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
+                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) throws PosixException {
+        long tagnamePtr = NULLPTR;
+        try {
+            if (tagname instanceof TruffleString tagnameString) {
+                tagnamePtr = stringToNativeUTF8CString(tagnameString, switchEncodingToUtf8Node, copyToByteArrayNode);
+            }
+            long address = posixNativeFunctionInvoker.call_mmap(length, prot, flags, fd, offset, tagnamePtr);
+            if (address == 0) {
+                throw getErrnoAndThrowPosixException();
+            }
+            return new MMapHandle(address, length);
+        } finally {
+            NativeMemory.free(tagnamePtr);
         }
-        return new MMapHandle(address, length);
     }
 
     @ExportMessage
