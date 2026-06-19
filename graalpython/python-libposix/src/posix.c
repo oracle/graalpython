@@ -61,6 +61,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifndef SO_UPDATE_ACCEPT_CONTEXT
+#define SO_UPDATE_ACCEPT_CONTEXT 0x700B
+#endif
 #ifndef ENOTSUP
 #define ENOTSUP ENOSYS
 #endif
@@ -851,6 +854,20 @@ GP_EXPORT int32_t call_get_osfhandle(int32_t fd, int64_t *out) {
     return 0;
 }
 
+GP_EXPORT int32_t graalpy_get_socket_handle(int32_t fd, int64_t *out) {
+    SOCKET s = win_socket_from_fd(fd);
+    if (s != INVALID_SOCKET) {
+        out[0] = (int64_t) s;
+        return 0;
+    }
+    if (get_osfhandle_noraise(fd) == -1) {
+        errno = EBADF;
+    } else {
+        errno = GP_ENOTSOCK;
+    }
+    return -1;
+}
+
 GP_EXPORT int32_t call_open_osfhandle(int64_t handle, int32_t flags) {
     if ((flags & _O_TEXT) == 0) {
         flags |= _O_BINARY;
@@ -1456,7 +1473,24 @@ GP_EXPORT int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flag
 GP_EXPORT int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *src_addr, int32_t *addr_len) { int l = sizeof(struct sockaddr_storage); int r = recvfrom(win_socket_from_fd(sockfd), ((char *) buf) + offset, len, flags, (struct sockaddr *) src_addr, &l); if (r == SOCKET_ERROR) return set_wsa_errno(); *addr_len = l; return r; }
 GP_EXPORT int32_t call_shutdown(int32_t sockfd, int32_t how) { int r = shutdown(win_socket_from_fd(sockfd), how); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
 GP_EXPORT int32_t call_getsockopt(int32_t sockfd, int32_t level, int32_t optname, void *buf, int32_t *bufLen) { int len = *bufLen; int r = getsockopt(win_socket_from_fd(sockfd), level, optname, buf, &len); if (r == SOCKET_ERROR) return set_wsa_errno(); *bufLen = len; return r; }
-GP_EXPORT int32_t call_setsockopt(int32_t sockfd, int32_t level, int32_t optname, void *buf, int32_t bufLen) { int r = setsockopt(win_socket_from_fd(sockfd), level, optname, buf, bufLen); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
+GP_EXPORT int32_t call_setsockopt(int32_t sockfd, int32_t level, int32_t optname, void *buf, int32_t bufLen) {
+    SOCKET s = win_socket_from_fd(sockfd);
+    uintptr_t socket_handle;
+    if (s == INVALID_SOCKET) {
+        return set_wsa_errno();
+    }
+    if (level == SOL_SOCKET && optname == SO_UPDATE_ACCEPT_CONTEXT && buf != NULL && bufLen == sizeof(uintptr_t)) {
+        int32_t listen_fd = (int32_t) (*(uintptr_t *) buf);
+        SOCKET listen_socket = win_socket_from_fd(listen_fd);
+        if (listen_socket == INVALID_SOCKET) {
+            return set_wsa_errno();
+        }
+        socket_handle = (uintptr_t) listen_socket;
+        buf = &socket_handle;
+    }
+    int r = setsockopt(s, level, optname, buf, bufLen);
+    return r == SOCKET_ERROR ? set_wsa_errno() : r;
+}
 GP_EXPORT int32_t call_inet_addr(const char *src) { return ntohl(inet_addr(src)); }
 GP_EXPORT int64_t call_inet_aton(const char *src) { struct in_addr addr; int r = inet_pton(AF_INET, src, &addr); return r == 1 ? (ntohl(addr.s_addr) & 0xFFFFFFFF) : -1; }
 GP_EXPORT int32_t call_inet_ntoa(int32_t src, char *dst) { struct in_addr addr; addr.s_addr = htonl(src); const char *s = inet_ntop(AF_INET, &addr, dst, INET_ADDRSTRLEN); return s == NULL ? -1 : (int32_t) strlen(s); }
