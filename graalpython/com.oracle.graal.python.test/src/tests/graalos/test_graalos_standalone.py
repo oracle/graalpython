@@ -76,7 +76,7 @@ class GraalOSStandaloneTests(unittest.TestCase):
 
     def test_sandbox_chat_demo(self):
         result = subprocess.run(
-            [sys.executable, "/graalos_sandbox_chat.py", "--demo"],
+            [sys.executable, "/test_graalos_sandbox_chat.py", "--demo"],
             check=False,
             capture_output=True,
             text=True,

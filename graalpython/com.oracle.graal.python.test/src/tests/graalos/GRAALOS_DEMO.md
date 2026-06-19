@@ -15,11 +15,10 @@ The story:
 
 ## Setup
 
-From the rebuilt standalone directory, install `pip` inside the sandbox, then
+From the standalone directory, install `pip` inside the sandbox, then
 install the demo wheels from a host-downloaded wheel cache:
 
 ```bash
-cd mxbuild/linux-amd64/GRAALPY_NATIVE_GRAALOS_STANDALONE
 ./bin/graalpy -Im ensurepip
 python3 -m pip download --only-binary=:all: --dest demo-wheels rich asteval
 ./bin/graalpy -Im pip install --no-index --find-links /demo-wheels rich asteval
@@ -31,9 +30,9 @@ things the demo can show.
 
 ### GRAALOS-8260 workaround
 
-If the standalone uses a vanilla GraalOS runtime where the in-sandbox
-`ensurepip` subprocess path is not fixed yet, install the pure-Python wheels
-from the host directly into the standalone's `site-packages`:
+There is currently a bug in GraalOS that prevents the above ensurepip command
+from working. Until it is fixed, we can install the pure-Python wheels from the
+host directly into the standalone's `site-packages`:
 
 ```bash
 cd mxbuild/linux-amd64/GRAALPY_NATIVE_GRAALOS_STANDALONE
@@ -57,16 +56,18 @@ python3 -m pip install \
 Use this workaround only for pure-Python wheels such as `py3-none-any`; native
 wheels need GraalOS/GraalPy-specific handling.
 
-Copy or place `graalos_sandbox_chat.py` in the standalone root, then run:
+There should be a file `test_graalos_sandbox_chat.py` in this directory. If
+not, find it in and copy it from the GraalPy source repository. From inside the
+sandbox that file is available as `/test_graalos_sandbox_chat.py`, so run:
 
 ```bash
-./bin/graalpy graalos_sandbox_chat.py
+./bin/graalpy /test_graalos_sandbox_chat.py
 ```
 
 For a non-interactive walkthrough:
 
 ```bash
-./bin/graalpy graalos_sandbox_chat.py --demo
+./bin/graalpy /test_graalos_sandbox_chat.py --demo
 ```
 
 ## Demo Beats

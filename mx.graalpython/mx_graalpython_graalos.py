@@ -208,6 +208,8 @@ def _prepare_graalos_demo(standalone_home: Path, env):
         "rich",
         "asteval",
     ], env=env)
+    # Work around GRAALOS-8260 by installing pure-Python demo wheels from the
+    # host. Remove this once in-sandbox ensurepip/pip subprocesses work there.
     run([
         sys.executable, "-m", "pip", "install",
         "--target", str(site_packages),
@@ -219,22 +221,24 @@ def _prepare_graalos_demo(standalone_home: Path, env):
         "asteval",
     ], env=env)
 
-    shutil.copy2(
-        Path(SUITE.dir) / "graalos_sandbox_chat.py",
-        standalone_home / "graalos_sandbox_chat.py",
-    )
+    from mx_graalpython import _python_unittest_root
+    graalos_tests = Path(_python_unittest_root()) / "graalos"
+    shutil.copy2(graalos_tests / "test_graalos_sandbox_chat.py", standalone_home / "test_graalos_sandbox_chat.py")
+    shutil.copy2(graalos_tests / "GRAALOS_DEMO.md", standalone_home / "GRAALOS_DEMO.md")
 
 
 def _stage_graalos_test_harness(standalone_home: Path):
+    from mx_graalpython import _python_test_runner, _python_unittest_root
+    graalos_tests = Path(_python_unittest_root()) / "graalos"
     harness_dir = standalone_home / "test-harness"
     tests_dir = harness_dir / "tests"
     tests_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(
-        Path(SUITE.dir) / "graalpython" / "com.oracle.graal.python.test" / "src" / "runner.py",
+        _python_test_runner(),
         harness_dir / "runner.py",
     )
     shutil.copy2(
-        Path(SUITE.dir) / "graalpython" / "com.oracle.graal.python.test" / "src" / "tests" / "test_graalos_standalone.py",
+        graalos_tests / "test_graalos_standalone.py",
         tests_dir / "test_graalos_standalone.py",
     )
 
