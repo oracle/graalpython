@@ -1,0 +1,23 @@
+(?:#!.*)?# Copyright \(c\) (20[0-9][0-9], )*(20[0-9][0-9]), Oracle and\/or its affiliates\. All rights reserved\.\s*
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER\.\s*
+#\s*
+# This code is free software; you can redistribute it and\/or modify it\s*
+# under the terms of the GNU General Public License version 2 only, as\s*
+# published by the Free Software Foundation\.\s+Oracle designates this\s*
+# particular file as subject to the "Classpath" exception as provided\s*
+# by Oracle in the LICENSE file that accompanied this code\.\s*
+#\s*
+# This code is distributed in the hope that it will be useful, but WITHOUT\s*
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or\s*
+# FITNESS FOR A PARTICULAR PURPOSE\.\s+See the GNU General Public License\s*
+# version 2 for more details \(a copy is included in the LICENSE file that\s*
+# accompanied this code\)\.\s*
+#\s*
+# You should have received a copy of the GNU General Public License version\s*
+# 2 along with this work; if not, write to the Free Software Foundation,\s*
+# Inc\., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA\.\s*
+#\s*
+# Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA\s*
+# or visit www\.oracle\.com if you need additional information or have any\s*
+# questions\.\s*
+.*
