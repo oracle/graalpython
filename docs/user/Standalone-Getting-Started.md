@@ -61,14 +61,14 @@ pyenv shell graalpy-25.0.3
 
 1. Download the appropriate binary from [GitHub releases](https://github.com/oracle/graalpython/releases):
 
-   - AMD64: `graalpy3.12-25.1.0-linux-amd64.tar.gz`
-   - ARM64: `graalpy3.12-25.1.0-linux-aarch64.tar.gz`
+   - AMD64: `graalpy3.12-25.1.3-linux-amd64.tar.gz`
+   - ARM64: `graalpy3.12-25.1.3-linux-aarch64.tar.gz`
 
 2. Extract and add it to your `PATH` environment variable:
 
    ```bash
-   tar -xzf graalpy3.12-25.1.0-linux-amd64.tar.gz
-   export PATH="$PWD/graalpy3.12-25.1.0-linux-amd64/bin:$PATH"
+   tar -xzf graalpy3.12-25.1.3-linux-amd64.tar.gz
+   export PATH="$PWD/graalpy3.12-25.1.3-linux-amd64/bin:$PATH"
    ```
 
 ### macOS
@@ -98,8 +98,8 @@ pyenv shell graalpy-25.0.3
 3. Extract and add it to your `PATH` environment variable:
 
    ```bash
-   tar -xzf graalpy3.12-25.1.0-macos-aarch64.tar.gz
-   export PATH="$PWD/graalpy3.12-25.1.0-macos-aarch64/bin:$PATH"
+   tar -xzf graalpy3.12-25.1.3-macos-aarch64.tar.gz
+   export PATH="$PWD/graalpy3.12-25.1.3-macos-aarch64/bin:$PATH"
    ```
 
 ### Windows
@@ -112,9 +112,9 @@ pyenv shell graalpy-25.0.3
 
    ```powershell
    # Extract the file and update your PATH environment variable
-   # to include the graalpy3.12-25.1.0-windows-amd64/bin directory
-   tar -xzf graalpy3.12-25.1.0-windows-amd64.zip
-   $env:PATH = "$PWD\graalpy3.12-25.1.0-windows-amd64\bin;$env:PATH"
+   # to include the graalpy3.12-25.1.3-windows-amd64/bin directory
+   tar -xzf graalpy3.12-25.1.3-windows-amd64.zip
+   $env:PATH = "$PWD\graalpy3.12-25.1.3-windows-amd64\bin;$env:PATH"
    ```
 
 #### Known Windows Limitations

@@ -59,7 +59,7 @@ LOCAL_GROUP_ID = "${project.groupId}"
 LOCAL_VERSION = "${project.version}"
 GRAALVM_VERSION = "${graalvm.version}"
 DEFAULT_GRAALVM_VERSION = "25.0.0"
-CURRENT_GRAALVM_VERSION = "25.1.0"
+CURRENT_GRAALVM_VERSION = "25.1.3"
 
 XML_UPL_HEADER = """<!--
 Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.

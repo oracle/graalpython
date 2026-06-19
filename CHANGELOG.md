@@ -3,7 +3,7 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
-## Version 25.1.0
+## Version 25.1.3
 * The standalone artifacts now include the Python version name before the Graal version. The new artifacts now start with `graalpy<PYTHON_VERSION>-<GRAAL_VERSION>-<OPERATING_SYSTEM>-<ARCHITECTURE>`.
 * Standalone JVM artifacts are no longer released as separate distributions. For standalone deployments, use the GraalPy native artifacts. If you require Java interoperability, use our jbang launcher (`jbang graalpy@oracle/graalpython -c "print('hello from GraalPy')"`) or a custom embedding.
 * Add `-X jit=0|1|2` presets to tune startup-heavy or throughput-oriented workloads, and make the GraalPy launcher default to the `jit=1` preset.
