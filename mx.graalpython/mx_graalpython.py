@@ -30,6 +30,7 @@ import datetime
 import glob
 import gzip
 import itertools
+import json
 import os
 import pathlib
 import re
@@ -62,6 +63,7 @@ import mx_sdk_vm_ng
 import mx_subst
 import mx_truffle
 import mx_graalpython_bisect
+import mx_graalpython_graalos
 import mx_graalpython_import
 import mx_pominit
 import mx_graalpython_python_benchmarks
@@ -1063,6 +1065,7 @@ class GraalPythonTags(object):
     unittest_standalone = 'python-unittest-standalone'
     tagged = 'python-tagged-unittest'
     svmbuild = 'python-svm-build'
+    svm_graalos_standalone_build = 'python-svm-graalos-standalone-build'
     svmunit = 'python-svm-unittest'
     svmunit_sandboxed = 'python-svm-unittest-sandboxed'
     graalvm = 'python-graalvm'
@@ -2011,6 +2014,10 @@ def graalpython_gate_runner(_, tasks):
         if task:
             graalpy_standalone_native()
 
+    with Task('GraalPython GraalOS standalone build on SVM', tasks, tags=[GraalPythonTags.svm_graalos_standalone_build]) as task:
+        if task:
+            mx_graalpython_graalos.graalpy_graalos_standalone_build_and_test(report=report())
+
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
             run_python_unittests(graalpy_standalone_native(), parallel=8, report=report())
@@ -2345,17 +2352,12 @@ def graalpy_cmake_build_type(*_):
     return 'Debug' if 'GRAALPY_NATIVE_DEBUG_BUILD' in os.environ else 'Release'
 
 
-def _graalpy_sysconfig_platform(os):
+def _graalpy_sysconfig_platform():
+    os = mx_subst.path_substitutions.substitute('<os>')
     if os == 'darwin':
         return 'darwin'
     if os == 'windows':
         return 'win32'
-    if _is_graalos_build():
-        libc = _libc()
-        if 'swcfi' in libc:
-            return 'graalos'
-        elif 'hwcfi' in libc:
-            return 'graalos_hwcfi'
     return 'linux'
 
 
@@ -2369,27 +2371,33 @@ def _graalpy_sysconfig_arch():
 
 
 def graalpy_soabi(*_):
-    os = mx_subst.path_substitutions.substitute('<os>')
-    pyos = _graalpy_sysconfig_platform(os)
+    pyos = _graalpy_sysconfig_platform()
     return f'{abi_version()}{graalpy_abiflags()}-native-{graalpy_multiarch(os=pyos)}'
 
 
 def graalpy_ext(*_):
-    os = mx_subst.path_substitutions.substitute('<os>')
+    os = _graalpy_sysconfig_platform()
     # on Windows we use '.pyd' else '.so' but never '.dylib' (similar to CPython):
     # https://github.com/python/cpython/issues/37510
-    ext = 'pyd' if os == 'windows' else 'so'
+    ext = 'pyd' if os == 'win32' else 'so'
     return f'.{graalpy_soabi()}.{ext}'
 
 
 def graalpy_sysconfigdata(*_):
-    os = mx_subst.path_substitutions.substitute('<os>')
-    pyos = _graalpy_sysconfig_platform(os)
+    pyos = _graalpy_sysconfig_platform()
     return f'_sysconfigdata_{graalpy_abiflags()}_{pyos}_{graalpy_multiarch(os=pyos)}'
 
 
 def graalpy_multiarch(*_, os=None):
-    pyos = os if os is not None else _graalpy_sysconfig_platform(mx_subst.path_substitutions.substitute('<os>'))
+    pyos = os if os is not None else _graalpy_sysconfig_platform()
+    if pyos == 'linux' and _is_graalos_build():
+        libc = _libc()
+        if 'swcfi' in libc:
+            pyos = 'graalos'
+        elif 'hwcfi' in libc:
+            pyos = 'graalos_hwcfi'
+        elif 'nocfi' in libc:
+            pyos = 'graalos_nocfi'
     return f'{_graalpy_sysconfig_arch()}-{pyos}'
 
 
@@ -3496,7 +3504,6 @@ def run_downstream_test(args):
 
 def _get_github_unittest_tag_pr_commits():
     import urllib
-    import json
 
     params = {
         'q': "repo:oracle/graalpython is:pr in:title Weekly Retagger: Update tags",

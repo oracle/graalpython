@@ -60,7 +60,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_MODE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_R;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_W;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
-import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.lib.PyTraceBackPrint.castToString;
 import static com.oracle.graal.python.lib.PyTraceBackPrint.classNameNoDot;
 import static com.oracle.graal.python.lib.PyTraceBackPrint.fileFlush;
@@ -119,7 +118,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_BACKSLASHREPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BASE_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BIG;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -561,7 +559,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         if (os == PLATFORM_DARWIN) {
             addBuiltinConstant("_framework", FRAMEWORK);
         }
-        final TruffleString gmultiarch = cat(PythonUtils.getPythonArch(), T_DASH, osName);
+        final TruffleString gmultiarch = toTruffleStringUncached(PythonLanguage.GRAALPY_MULTIARCH);
         addBuiltinConstant("__gmultiarch", gmultiarch);
 
         // Initialized later in postInitialize

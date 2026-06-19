@@ -5,7 +5,7 @@
 (import "ci/python-gate.libsonnet") +
 (import "ci/python-bench.libsonnet") +
 {
-    overlay: "40bd8048e1a6ba45494605955ffe748ae4db20be",
+    overlay: "30def35dbfc43256d57ad3b9b981d92718728e2a",
     specVersion: "8",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
@@ -30,6 +30,9 @@
         BISECT_EMAIL_FROM: "",
         npm_config_registry: "",
         RODINIA_DATASET_ZIP: "",
+        GRAALPY_GRAALOS_TOOLCHAIN_URL: "",
+        GRAALPY_GRAALOS_RUNTIME_URL: "",
+        GRAALPY_GRAALOS_ARTIFACT_BASE_URL: "",
         BUILDBOT_COMMIT_SERVICE: "",
         INTERNET_ACCESS_ENV: {},
     },
@@ -329,6 +332,15 @@
         }),
         "tox-example": gpgate_ee + require(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
+        }),
+        "python-svm-graalos-standalone-build": gpgate_ee + internet_access_env + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest": tier3 + $.ol8 + task_spec({
+                environment +: {
+                    GRAALPY_GRAALOS_TOOLCHAIN_URL: $.overlay_imports.GRAALPY_GRAALOS_TOOLCHAIN_URL,
+                    GRAALPY_GRAALOS_RUNTIME_URL: $.overlay_imports.GRAALPY_GRAALOS_RUNTIME_URL,
+                    GRAALPY_GRAALOS_ARTIFACT_BASE_URL: $.overlay_imports.GRAALPY_GRAALOS_ARTIFACT_BASE_URL,
+                },
+            }),
         }),
     },
 

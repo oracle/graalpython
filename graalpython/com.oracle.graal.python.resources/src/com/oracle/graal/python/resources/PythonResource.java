@@ -90,7 +90,8 @@ public final class PythonResource implements InternalResource {
             while ((ch = is.read()) != '\n' && ch != -1) {
                 // skip ABI version
             }
-            PYTHON_ABIFLAGS = ch == -1 ? "" : new String(is.readAllBytes(), StandardCharsets.US_ASCII).strip();
+            String[] abiParts = ch == -1 ? new String[0] : new String(is.readAllBytes(), StandardCharsets.US_ASCII).split("\\R", 4);
+            PYTHON_ABIFLAGS = abiParts.length > 0 ? abiParts[0].strip() : "";
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -647,11 +647,18 @@ suite = {
         "graalpy-versions": {
             "subDir": "graalpython",
             "class": "CMakeNinjaProject",
+            "multitarget": [
+                {"libc": ["glibc", "default"]},
+                {"libc": ["musl"], "variant": ["swcfi"]},
+            ],
             "max_jobs": "1",
             "ninja_targets": ["all"],
             "cmakeConfig": {
                 "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><release_level:binary><abi_version>",
                 "GRAALPY_ABIFLAGS": "<graalpy_abiflags>",
+                "GRAALPY_EXT_SUFFIX": "<graalpy_ext>",
+                "GRAALPY_MULTIARCH": "<graalpy_multiarch>",
+                "GRAALPY_SOABI": "<graalpy_soabi>",
             },
             "results": [
                 "graalpy_versions"
@@ -871,6 +878,45 @@ suite = {
             "community_3rd_party_license_file": "THIRD_PARTY_LICENSE.txt",
         },
 
+        "graalpy_graalos_standalone_payload": {
+            "subDir": "graalpython",
+            "class": "CMakeNinjaProject",
+            "defaultBuild": False,
+            "max_jobs": "1",
+            "ninja_targets": ["all"],
+            "results": [
+                "bin/<exe:graalpy>",
+                "bin/<exe:python>",
+                "bin/<exe:python3>",
+                "bin/<exe:graalpy-config>",
+                "libexec/<exe:graalpy-polyglot-get>",
+                "config.json",
+                "lib/graalos/graalpy-sandbox-launcher",
+                "lib/graalos/graalpy-sandbox-expand-config",
+                "lib/graalos/graalpy-sandbox-fsmappings",
+                "lib/graalos/graalhost",
+                "lib/graalos/libc.so",
+                "lib/graalos/libbinsweep.so",
+                "lib/graalos/sysroot/lib/libc++.so",
+                "lib/graalos/sysroot/lib/libc++.so.1",
+                "lib/graalos/sysroot/lib/libc++.so.1.0",
+                "lib/graalos/sysroot/lib/libc++abi.so",
+                "lib/graalos/sysroot/lib/libc++abi.so.1",
+                "lib/graalos/sysroot/lib/libc++abi.so.1.0",
+                "lib/graalos/sysroot/lib/libunwind.so",
+                "lib/graalos/sysroot/lib/libunwind.so.1",
+                "lib/graalos/sysroot/lib/libunwind.so.1.0",
+            ],
+            "cmakeConfig": {
+                "GRAALPY_LAUNCHER": "<exe:graalpy>",
+                "PYTHON_LAUNCHER": "<exe:python>",
+                "PYTHON3_LAUNCHER": "<exe:python3>",
+                "GRAALPY_CONFIG_LAUNCHER": "<exe:graalpy-config>",
+                "GRAALPY_POLYGLOT_GET_LAUNCHER": "<exe:graalpy-polyglot-get>",
+                "GRAALPY_SUITE_PARENT": "<suite_parent:graalpython>",
+            },
+        },
+
         "graalpy_thin_launcher": {
             "class": "ThinLauncherProject",
             "mainClass": "com.oracle.graal.python.shell.GraalPythonMain",
@@ -950,13 +996,13 @@ suite = {
         "GRAALPYTHON_VERSIONS_RES": {
             "type": "dir",
             "layout": {
-                "./": "dependency:graalpy-versions/graalpy_versions",
+                "./": "dependency:graalpy-versions/<os>-<arch>/<multitarget_libc_selection>/graalpy_versions",
             },
         },
         "GRAALPYTHON_VERSIONS_MAIN": {
             "type": "dir",
             "layout": {
-                "./": "dependency:graalpy-versions/graalpy_versions",
+                "./": "dependency:graalpy-versions/<os>-<arch>/<multitarget_libc_selection>/graalpy_versions",
             },
         },
 
@@ -1510,6 +1556,19 @@ suite = {
             },
         },
 
+        "GRAALPY_GRAALOS_STANDALONE_PAYLOAD": {
+            "description": "GraalOS runtime and generated support files for the GraalPy GraalOS standalone",
+            "type": "dir",
+            "defaultBuild": False,
+            "platformDependent": True,
+            "platforms": "local",
+            "layout": {
+                "./": [
+                    "dependency:graalpy_graalos_standalone_payload/*",
+                ],
+            },
+        },
+
         "GRAALPY_NATIVE_STANDALONE": {
             "description": "GraalPy Native standalone",
             "type": "dir",
@@ -1520,6 +1579,21 @@ suite = {
                     "dependency:GRAALPY_STANDALONE_COMMON/*",
                 ],
                 "lib/": "dependency:libpythonvm",
+            },
+        },
+
+        "GRAALPY_NATIVE_GRAALOS_STANDALONE": {
+            "description": "GraalPy GraalOS standalone",
+            "type": "dir",
+            "defaultBuild": False,
+            "platformDependent": True,
+            "platforms": "local",
+            "layout": {
+                "./": [
+                    "dependency:GRAALPY_NATIVE_STANDALONE/*",
+                    "dependency:GRAALPY_GRAALOS_STANDALONE_PAYLOAD/*",
+                ],
+                "lib/graalos/native-bin/": "dependency:GRAALPY_NATIVE_STANDALONE/bin/*",
             },
         },
 
@@ -1728,6 +1802,17 @@ suite = {
             "standalone_dist": "GRAALPY_JVM_STANDALONE",
             "community_archive_name": "graalpy-community-jvm",
             "enterprise_archive_name": "graalpy-jvm",
+            "language_id": "python",
+        },
+
+        "GRAALPY_GRAALOS_STANDALONE_RELEASE_ARCHIVE": {
+            "class": "DeliverableStandaloneArchive",
+            "deploy": False,
+            "defaultBuild": False,
+            "platformDependent": True,
+            "standalone_dist": "GRAALPY_NATIVE_GRAALOS_STANDALONE",
+            "community_archive_name": "graalpy-community-graalos<py_ver:major_minor>",
+            "enterprise_archive_name": "graalpy-graalos<py_ver:major_minor>",
             "language_id": "python",
         },
     },

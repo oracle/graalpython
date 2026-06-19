@@ -1,0 +1,16 @@
+{
+  "env": {
+    "HOME": "/home",
+    "PATH": "/bin",
+    "PYTHONHOME": "/"
+  },
+  "working_dir": "/",
+  "testing_default_mappings": true,
+  "allowed_ports": [],
+  "graalhost": {
+    "seccomp": null,
+    "log_level": null,
+    "extra_args": []
+  },
+  "fsmappings": []
+}

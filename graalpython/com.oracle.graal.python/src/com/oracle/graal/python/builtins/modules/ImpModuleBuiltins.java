@@ -833,7 +833,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run(
                         @Bind PythonLanguage language) {
-            return PFactory.createList(language, new Object[]{PythonContext.get(this).getSoAbi(), T_EXT_SO, T_EXT_PYD});
+            return PFactory.createList(language, new Object[]{PythonContext.get(this).getExtensionSuffix(), T_EXT_SO, T_EXT_PYD});
         }
     }
 
