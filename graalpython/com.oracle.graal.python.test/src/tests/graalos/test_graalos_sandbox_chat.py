@@ -42,8 +42,11 @@
 from __future__ import annotations
 
 import argparse
+import io
+import sysconfig
 import textwrap
 import time
+import unittest
 from dataclasses import dataclass
 
 from asteval import Interpreter
@@ -201,6 +204,42 @@ def main(argv: list[str] | None = None) -> int:
         run_demo()
         return 0
     return interactive()
+
+
+def skip_unless_graalos():
+    soabi = sysconfig.get_config_var("SOABI") or ""
+    if "graalos" not in soabi:
+        raise unittest.SkipTest(f"requires GraalOS SOABI, got {soabi!r}")
+
+
+class GraalOSSandboxChatTests(unittest.TestCase):
+
+    def setUp(self):
+        skip_unless_graalos()
+
+    def test_demo_packages(self):
+        import asteval
+        import rich
+
+        self.assertTrue(asteval.__version__)
+        self.assertTrue(rich.get_console())
+
+    def test_sandbox_chat_demo(self):
+        global console
+        old_console = console
+        output = io.StringIO()
+        console = Console(file=output, force_terminal=False, color_system=None, width=120)
+        try:
+            self.assertEqual(main(["--demo"]), 0)
+        finally:
+            console = old_console
+
+        stdout = output.getvalue()
+        self.assertIn("sum([i*i for i in range(1000)])", stdout)
+        self.assertIn("__import__('socket').create_connection", stdout)
+        self.assertIn("gaierror", stdout)
+        self.assertIn("FileNotFoundError", stdout)
+        self.assertIn("operation denied", stdout)
 
 
 if __name__ == "__main__":

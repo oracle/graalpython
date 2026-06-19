@@ -37,8 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import subprocess
-import sys
 import sysconfig
 import unittest
 
@@ -66,24 +64,3 @@ class GraalOSStandaloneTests(unittest.TestCase):
             self.assertEqual(conn.execute("select sum(value) from values_for_sum").fetchone()[0], 6)
         finally:
             conn.close()
-
-    def test_demo_packages(self):
-        import asteval
-        import rich
-
-        self.assertTrue(asteval.__version__)
-        self.assertTrue(rich.get_console())
-
-    def test_sandbox_chat_demo(self):
-        result = subprocess.run(
-            [sys.executable, "/test_graalos_sandbox_chat.py", "--demo"],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("sum([i*i for i in range(1000)])", result.stdout)
-        self.assertIn("__import__('socket').create_connection", result.stdout)
-        self.assertIn("gaierror", result.stdout)
-        self.assertIn("FileNotFoundError", result.stdout)
-        self.assertIn("operation denied", result.stdout)

@@ -241,6 +241,10 @@ def _stage_graalos_test_harness(standalone_home: Path):
         graalos_tests / "test_graalos_standalone.py",
         tests_dir / "test_graalos_standalone.py",
     )
+    shutil.copy2(
+        graalos_tests / "test_graalos_sandbox_chat.py",
+        tests_dir / "test_graalos_sandbox_chat.py",
+    )
 
 
 def _set_graalos_standalone_env(standalone_home: Path, key, value, on_fail=mx.abort):
@@ -358,7 +362,10 @@ def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
     try:
         run_python_unittests(
             str(launcher),
-            paths=["/test-harness/tests/test_graalos_standalone.py"],
+            paths=[
+                "/test-harness/tests/test_graalos_standalone.py",
+                "/test-harness/tests/test_graalos_sandbox_chat.py",
+            ],
             env=env,
             report=report,
             parallel=0,
