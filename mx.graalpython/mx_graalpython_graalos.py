@@ -215,6 +215,7 @@ def _prepare_graalos_demo(standalone_home: Path, env):
         "--target", str(site_packages),
         "--no-index",
         "--find-links", str(demo_wheels),
+        "--ignore-requires-python",
         "--no-compile",
         "--upgrade",
         "rich",
