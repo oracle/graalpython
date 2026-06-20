@@ -384,6 +384,10 @@ wmain(int argc, wchar_t ** argv)
     }
     envCur = env;
     for (int i = 0; i = wcslen(envCur); i) {
+        if (wcsncmp(envCur, GRAAL_PYTHON_ARGS, wcslen(GRAAL_PYTHON_ARGS)) == 0) {
+            envCur = envCur + i + 1;
+            continue;
+        }
         // env needs room for key=value and \0
         envSize = envSize + i + 1;
         envCur = envCur + i + 1;
@@ -416,6 +420,10 @@ wmain(int argc, wchar_t ** argv)
     envCur = env;
     newEnvCur = newEnv;
     for (int i = 0; i = wcslen(envCur); i) {
+        if (wcsncmp(envCur, GRAAL_PYTHON_ARGS, wcslen(GRAAL_PYTHON_ARGS)) == 0) {
+            envCur = envCur + i + 1;
+            continue;
+        }
         exitCode = wcscpy_s(newEnvCur, envSize, envCur);
         if (exitCode) {
             winerror(exitCode, L"Failed to copy envvar");

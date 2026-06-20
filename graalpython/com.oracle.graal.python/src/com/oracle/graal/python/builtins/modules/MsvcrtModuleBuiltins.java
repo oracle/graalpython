@@ -105,7 +105,7 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(frame, inliningTarget, T_MSVCRT_LOCKING, fd, mode, nbytes);
             try {
-                posixLib.fcntlLock(getPosixSupport(), fd, mode == LK_NBLCK, mode == LK_LOCK ? 1 : 0, 0, 0, nbytes);
+                posixLib.fcntlLock(getPosixSupport(), fd, mode != LK_NBLCK, mode == LK_UNLOCK ? 0 : 1, 0, 0, nbytes);
             } catch (PosixSupportLibrary.PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }

@@ -72,7 +72,8 @@ try:
 except ModuleNotFoundError:
     _mswindows = False
 else:
-    # GraalPy change: under emulated posix, use the posix APIs even under windows
+    # GraalPy change: the Java posix backend is pure Java and does not expose
+    # CPython-style Windows handles. Keep it on the POSIX subprocess path.
     _mswindows = not (sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java')
 
 # wasm32-emscripten and wasm32-wasi do not support processes
@@ -1837,8 +1838,11 @@ class Popen:
                     comspec = os.environ.get("COMSPEC", "cmd.exe")
                     executable = comspec
                     # This very specific replace is for the pattern in distutils.
-                    # We really ought to finally implement enough of the winapi
-                    # to use the Windows codepaths...
+                    # This is all working around the fact that emulating CreateProcess
+                    # through an EmulatedPosixBackend that goes through Truffle API
+                    # to a Java API introduces layers of escaping that are deeply troubling
+                    # and cannot possibly be correctly handled in all cases. But we do our,
+                    # best, oh don't you know, it we do.
                     args = [arg.replace(" && ", " ^&^& ") for arg in args]
                     if len(args) == 1:
                         args = [comspec, "/u", "/c", *args]
