@@ -312,6 +312,7 @@
         }),
         "python-svm-graalos-standalone-build": gpgate_ee + internet_access_env + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest": tier3 + $.ol8 + task_spec({
+                capabilities+: ["mpk", "!fast", "!x82", "!x82_16_367"],
                 deploysArtifacts: true,
                 environment +: {
                     GRAALPY_GRAALOS_TOOLCHAIN_URL: $.overlay_imports.GRAALPY_GRAALOS_TOOLCHAIN_URL,
