@@ -68,6 +68,8 @@ Common top-level fields:
   wired
 - `allowed_ports`: explicit bind and listen allowlist
 - `netmappings`: outbound and inbound network policy
+- `allow_runtime_codegen`: allow runtime-generated code after GraalOS
+  binsweep verification
 - `allow_signal_self_snapshot`: allows the process to create a snapshot by
   signaling itself
 - `memlimit`: memory budget in GiB
