@@ -48,6 +48,7 @@ import re
 import shutil
 import sys
 import tarfile
+import tempfile
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -360,6 +361,16 @@ def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
         "true",
         on_fail=on_fail,
     )
+    reportfile = None
+    runner_reportfile = None
+    if report:
+        report_dir = standalone_home / "tmp"
+        report_dir.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            prefix="test-report-", suffix=".json", dir=report_dir, delete=False
+        ) as report_tmp:
+            reportfile = report_tmp.name
+        runner_reportfile = f"/tmp/{os.path.basename(reportfile)}"
     try:
         run_python_unittests(
             str(launcher),
@@ -371,6 +382,8 @@ def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
             report=report,
             parallel=0,
             test_runner="/test-harness/runner.py",
+            reportfile=reportfile,
+            runner_reportfile=runner_reportfile,
         )
     finally:
         config_path.write_text(original_config, encoding="utf-8")
