@@ -5,6 +5,7 @@
     "PYTHONHOME": "/"
   },
   "working_dir": "/",
+  "allow_runtime_codegen": true,
   "testing_default_mappings": true,
   "allowed_ports": [],
   "graalhost": {
