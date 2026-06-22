@@ -49,15 +49,8 @@ import time
 import unittest
 from dataclasses import dataclass
 
-from asteval import Interpreter
-from rich.console import Console
-from rich.panel import Panel
-from rich.syntax import Syntax
-from rich.table import Table
-from rich.text import Text
 
-
-console = Console()
+console = None
 
 
 @dataclass
@@ -68,7 +61,8 @@ class EvalResult:
     elapsed_ms: float
 
 
-def make_interpreter() -> Interpreter:
+def make_interpreter():
+    from asteval import Interpreter
     aeval = Interpreter()
     # Keep the demo's "safe" lane expression-oriented. GraalOS is the real
     # containment boundary; this prevents the app-level evaluator from opening files.
@@ -77,10 +71,12 @@ def make_interpreter() -> Interpreter:
 
 
 def render_message(role: str, body: str, style: str) -> None:
+    from rich.panel import Panel
+    from rich.text import Text
     console.print(Panel(Text(body), title=role, title_align="left", border_style=style))
 
 
-def safe_eval(aeval: Interpreter, expr: str) -> EvalResult:
+def safe_eval(aeval, expr: str):
     start = time.perf_counter()
     aeval.error = []
     try:
@@ -96,7 +92,7 @@ def safe_eval(aeval: Interpreter, expr: str) -> EvalResult:
     return EvalResult("asteval", True, repr(value), elapsed)
 
 
-def unsafe_eval(expr: str) -> EvalResult:
+def unsafe_eval(expr: str):
     start = time.perf_counter()
     try:
         value = eval(expr)
@@ -109,7 +105,8 @@ def unsafe_eval(expr: str) -> EvalResult:
         return EvalResult("python eval", False, f"{type(exc).__name__}: {exc}", elapsed)
 
 
-def render_result(result: EvalResult) -> None:
+def render_result(result) -> None:
+    from rich.table import Table
     table = Table.grid(padding=(0, 1))
     table.add_column(style="bold")
     table.add_column()
@@ -120,7 +117,7 @@ def render_result(result: EvalResult) -> None:
     render_message("sandbox", result.output, "green" if result.ok else "red")
 
 
-def evaluate(aeval: Interpreter, line: str) -> None:
+def evaluate(aeval, line: str) -> None:
     line = line.strip()
     if not line:
         return
@@ -162,6 +159,7 @@ def print_intro() -> None:
 
 def print_help() -> None:
     examples = "\n".join(demo_script())
+    from rich.syntax import Syntax
     console.print(Syntax(examples, "python", theme="ansi_dark", word_wrap=True))
 
 
@@ -186,7 +184,7 @@ def interactive() -> int:
         evaluate(aeval, line)
 
 
-def run_demo(aeval: Interpreter | None = None) -> None:
+def run_demo(aeval=None) -> None:
     if aeval is None:
         aeval = make_interpreter()
     for line in demo_script():
@@ -195,6 +193,9 @@ def run_demo(aeval: Interpreter | None = None) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    global console, Console
+    from rich.console import Console
+    console = Console()
     parser = argparse.ArgumentParser()
     parser.add_argument("--demo", action="store_true", help="run the prepared demo script and exit")
     args = parser.parse_args(argv)
@@ -226,14 +227,9 @@ class GraalOSSandboxChatTests(unittest.TestCase):
 
     def test_sandbox_chat_demo(self):
         global console
-        old_console = console
         output = io.StringIO()
         console = Console(file=output, force_terminal=False, color_system=None, width=120)
-        try:
-            self.assertEqual(main(["--demo"]), 0)
-        finally:
-            console = old_console
-
+        self.assertEqual(main(["--demo"]), 0)
         stdout = output.getvalue()
         self.assertIn("sum([i*i for i in range(1000)])", stdout)
         self.assertIn("__import__('socket').create_connection", stdout)
