@@ -5,7 +5,7 @@
 (import "ci/python-gate.libsonnet") +
 (import "ci/python-bench.libsonnet") +
 {
-    overlay: "30def35dbfc43256d57ad3b9b981d92718728e2a",
+    overlay: "26571215e27b3c415afb8119d38a0418c14b29c9",
     specVersion: "8",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
