@@ -629,8 +629,8 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(VirtualFrame frame, Node inliningTarget, Object source, Object encoding, Object errors);
 
-        @Specialization
-        static byte[] none(@SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+        @Specialization(guards = "isNoValue(source)")
+        static byte[] noValue(@SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return PythonUtils.EMPTY_BYTE_ARRAY;
         }
 

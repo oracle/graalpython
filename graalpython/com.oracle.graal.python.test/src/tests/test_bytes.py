@@ -72,6 +72,22 @@ def test_from_list():
     assert list(b) == ints
 
 
+def test_bytearray_from_none():
+    assert_raises(TypeError, bytes, None)
+    assert_raises(TypeError, bytearray, None)
+
+
+def test_bytes_with_encoding_does_not_call_dunder_bytes():
+    class BytesLike:
+        def __bytes__(self):
+            return b"bytes"
+
+    assert bytes(BytesLike()) == b"bytes"
+    assert_raises(TypeError, bytes, BytesLike(), None)
+    assert_raises(TypeError, bytes, encoding="utf-8")
+    assert_raises(TypeError, bytes, errors="strict")
+
+
 def test_from_ssize():
     assert bytes(0) == b''
     assert bytes(1) == b'\x00'
