@@ -245,6 +245,27 @@ bin/graalpy \
   -c 'print("hello")'
 ```
 
+### Install extra packages
+
+You may install additional packages directly into the standalone from the
+outside, by selecting compatible tags, for example:
+
+```bash
+python3 -m pip install \
+  --target GRAALPY_NATIVE_GRAALOS_STANDALONE/lib/python3.12/site-packages \
+  --only-binary=:all: \
+  --python-version 3.12 \
+  --implementation py --implementation graalpy \
+  --abi none --abi graalpy250_312_native \
+  --platform any --platform graalos_x86_64 \
+  --no-compile \
+  rich asteval
+```
+
+You may have to set --extra-index-url to an index that provides provides
+pre-built binary wheels for GraalOS, since this building these requires a
+special toolchain.
+
 ## Notes About Graalhost
 
 The standalone wraps `graalhost`, which is the GraalOS runtime responsible for:

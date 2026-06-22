@@ -35,20 +35,13 @@ from working. Until it is fixed, we can install the pure-Python wheels from the
 host directly into the standalone's `site-packages`:
 
 ```bash
-cd mxbuild/linux-amd64/GRAALPY_NATIVE_GRAALOS_STANDALONE
-python3 -m pip download \
-  --only-binary=:all: \
-  --implementation py \
-  --python-version 3.12 \
-  --abi none \
-  --platform any \
-  --dest demo-wheels \
-  rich asteval
-
 python3 -m pip install \
-  --target lib/python3.12/site-packages \
-  --no-index \
-  --find-links demo-wheels \
+  --target GRAALPY_NATIVE_GRAALOS_STANDALONE/lib/python3.12/site-packages \
+  --only-binary=:all: \
+  --python-version 3.12 \
+  --implementation py --implementation graalpy \
+  --abi none --abi graalpy250_312_native \
+  --platform any --platform graalos_x86_64 \
   --no-compile \
   rich asteval
 ```
