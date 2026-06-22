@@ -44,7 +44,7 @@ import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.UNKN
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
-import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleStackTraceElement;
@@ -155,7 +155,7 @@ public class LazyTraceback {
         if (frame != null) {
             // only include frames of non-builtin python functions
             Object info = frame.getFrameDescriptor().getInfo();
-            if (info instanceof FrameInfo frameInfo) {
+            if (info instanceof BytecodeDSLFrameInfo frameInfo) {
                 return frameInfo.includeInTraceback();
             }
         }

@@ -93,7 +93,6 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -532,8 +531,4 @@ public abstract class PGuards {
         return isBuiltinDict(dict) || getSlots.execute(inliningTarget, getClassNode.execute(inliningTarget, dict)).tp_iter() == DictBuiltins.SLOTS.tp_iter();
     }
 
-    @Idempotent
-    public static boolean isBytecodeDSLInterpreter() {
-        return PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-    }
 }

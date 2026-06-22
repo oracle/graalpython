@@ -41,7 +41,7 @@ import sys
 import time
 import unittest
 
-IS_BYTECODE_DSL = sys.implementation.name == 'graalpy' and __graalpython__.is_bytecode_dsl_interpreter
+IS_BYTECODE_DSL = sys.implementation.name == 'graalpy'
 TRANSIENT_GRAALPY_STARTUP_BLOCKING_IO = "ERROR: BlockingIOError: [Errno 11] Resource temporarily unavailable"
 
 
@@ -79,22 +79,6 @@ def needs_capi(test):
     if not has_capi():
         return unittest.skip("Needs C API support on JDK 25 or newer")(test)
     return test
-
-
-def skipIfBytecodeDSL(reason=''):
-    def wrapper(test):
-        if IS_BYTECODE_DSL:
-            return unittest.skip(f"Skipped on Bytecode DSL interpreter. {reason}")(test)
-        return test
-    return wrapper
-
-
-def skipUnlessBytecodeDSL(reason=''):
-    def wrapper(test):
-        if sys.implementation.name == 'graalpy' and not __graalpython__.is_bytecode_dsl_interpreter:
-            return unittest.skip(f"Skipped on manual interpreter. {reason}")(test)
-        return test
-    return wrapper
 
 
 def storage_to_native(s):

@@ -49,9 +49,7 @@ import com.oracle.truffle.api.frame.Frame;
  * <li>Function calls: non-variadic arguments as individual items in order of {@code co_varnames},
  * then varargs as {@code Object[]} iff the function takes them, then variadic keywords as
  * {@code PKeyword[]} iff the function takes them. Implemented by {@link CreateArgumentsNode}</li>
- * <li>Generator resumes (non-DSL): generator frame ({@code MaterializedFrame}), then the send value
- * or null</li>
- * <li>Generator resumes (DSL): doesn't use PArguments to call the continuation root</li>
+ * <li>Generator resumes: don't use PArguments to call the continuation root</li>
  * </ul>
  * </li>
  * </ul>

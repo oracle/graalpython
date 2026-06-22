@@ -100,10 +100,7 @@ class VenvTest(unittest.TestCase):
         expected_base = os.path.realpath(getattr(sys, "_base_executable", sys.executable))
         with tempfile.TemporaryDirectory() as outer_dir, tempfile.TemporaryDirectory() as inner_root:
             inner_dir = os.path.join(inner_root, "inner")
-            extra_args = [
-                f'--vm.Dpython.EnableBytecodeDSLInterpreter={repr(__graalpython__.is_bytecode_dsl_interpreter).lower()}'
-            ]
-            subprocess.check_output([sys.executable] + extra_args + ["-m", "venv", outer_dir, "--without-pip"], stderr=subprocess.STDOUT)
+            subprocess.check_output([sys.executable, "-m", "venv", outer_dir, "--without-pip"], stderr=subprocess.STDOUT)
             outer_python = os.path.join(outer_dir, BINDIR, f"python{EXESUF}")
             out = subprocess.check_output([
                 outer_python,
@@ -166,10 +163,7 @@ class VenvTest(unittest.TestCase):
         run = None
         run_output = ''
         try:
-            extra_args = []
-            if sys.implementation.name == "graalpy":
-                extra_args = [f'--vm.Dpython.EnableBytecodeDSLInterpreter={repr(__graalpython__.is_bytecode_dsl_interpreter).lower()}']
-            subprocess.check_output([sys.executable] + extra_args + ["-m", "venv", self.env_dir, "--without-pip"], stderr=subprocess.STDOUT)
+            subprocess.check_output([sys.executable, "-m", "venv", self.env_dir, "--without-pip"], stderr=subprocess.STDOUT)
             run = subprocess.getoutput(f"{self.env_dir}/{BINDIR}/python{EXESUF} -m site")
         except subprocess.CalledProcessError as err:
             if err.output:
@@ -185,10 +179,7 @@ class VenvTest(unittest.TestCase):
         run = None
         msg = ''
         try:
-            extra_args = []
-            if sys.implementation.name == "graalpy":
-                extra_args = [f'--vm.Dpython.EnableBytecodeDSLInterpreter={repr(__graalpython__.is_bytecode_dsl_interpreter).lower()}']
-            subprocess.check_output([sys.executable] + extra_args + ["-m", "venv", self.env_dir2], stderr=subprocess.STDOUT)
+            subprocess.check_output([sys.executable, "-m", "venv", self.env_dir2], stderr=subprocess.STDOUT)
             run = subprocess.getoutput(f"{self.env_dir2}/{BINDIR}/python{EXESUF} -m pip list")
         except subprocess.CalledProcessError as err:
             if err.output:

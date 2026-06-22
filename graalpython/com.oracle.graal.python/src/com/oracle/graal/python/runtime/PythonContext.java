@@ -424,9 +424,7 @@ public final class PythonContext extends Python3Core {
         Object asyncgenFirstIter;
 
         /*
-         * Instrumentation data (Bytecode DSL interpreter only). For the manual bytecode
-         * interpreter, this data is stored in a local state variable, but the DSL interpreter must
-         * use a thread local.
+         * Instrumentation data for bytecode roots.
          */
         PBytecodeDSLRootNode.InstrumentationData instrumentationData;
 
@@ -1588,7 +1586,7 @@ public final class PythonContext extends Python3Core {
             }
             releaseGil();
         }
-        PythonOptions.checkBytecodeDSLEnv();
+
     }
 
     public void resetPerfCounter() {
@@ -1610,7 +1608,7 @@ public final class PythonContext extends Python3Core {
         } finally {
             releaseGil();
         }
-        PythonOptions.checkBytecodeDSLEnv();
+
     }
 
     private void importSiteIfForced() {

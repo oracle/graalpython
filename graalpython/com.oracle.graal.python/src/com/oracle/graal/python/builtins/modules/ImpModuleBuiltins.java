@@ -90,7 +90,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
-import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -155,12 +155,12 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
     private static class FrozenInfo {
         @SuppressWarnings("unused") final TruffleString name;
-        final CodeUnit code;
+        final BytecodeDSLCodeUnit code;
         final boolean isPackage;
         final TruffleString origName;
         @SuppressWarnings("unused") final boolean isAlias;
 
-        FrozenInfo(TruffleString name, CodeUnit code, boolean isPackage, TruffleString origName, boolean isAlias) {
+        FrozenInfo(TruffleString name, BytecodeDSLCodeUnit code, boolean isPackage, TruffleString origName, boolean isAlias) {
             this.name = name;
             this.code = code;
             this.isPackage = isPackage;

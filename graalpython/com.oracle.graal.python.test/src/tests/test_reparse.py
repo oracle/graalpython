@@ -77,7 +77,7 @@ def _terminate_and_collect(proc):
 
 @contextlib.contextmanager
 def pyc_reparse(test_content, expect_success=True, python_options=()):
-    if sys.implementation.name != "graalpy" or not __graalpython__.is_bytecode_dsl_interpreter:
+    if sys.implementation.name != "graalpy":
         raise unittest.SkipTest("Reparsing tests are only meaningful on bytecode DSL interpreter")
     with tempfile.TemporaryDirectory() as tempdir:
         tempdir_path = Path(tempdir)

@@ -37,8 +37,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from tests import util
-
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
     try:
@@ -948,7 +946,6 @@ def test_free_var_with_nonlocals():
     assert c.co_cellvars == tuple()
 
 
-@util.skipUnlessBytecodeDSL("name atttribute not populated in manual interpreter")
 def test_name_errors():
     def assert_raises_name_error(name, fn, *args, **kwargs):
         try:

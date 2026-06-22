@@ -120,8 +120,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
-import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
+import com.oracle.graal.python.compiler.MakeTypeParamKind;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyGenFetchStopIterationValue;
@@ -743,7 +742,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     private TracingNodes getTracingNodes(BytecodeNode location) {
         /*
-         * The TracingNodes node must be child of the BytecodeNode and not the PBytecodeRootNode, so
+         * The TracingNodes node must be child of the BytecodeNode and not the root node, so
          * in case BytecodeNode changed, we must reinsert it
          */
         if (tracingNodes == null || tracingNodes.getParent() != location) {
@@ -1301,7 +1300,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         Object result = cell.getRef();
         if (result == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            CodeUnit codeUnit = ((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).getCodeUnit();
+            BytecodeDSLCodeUnit codeUnit = ((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).getCodeUnit();
             if (index < codeUnit.cellvars.length) {
                 TruffleString localName = codeUnit.cellvars[index];
                 throw PRaiseNode.raiseStatic(bytecodeNode, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
@@ -1430,9 +1429,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             PArguments.setCurrentFrameInfo(continuationFrame, new PFrame.Reference(innerRoot, PFrame.Reference.EMPTY));
             if (innerRoot.getCodeUnit().isGenerator()) {
-                return PFactory.createGenerator(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
+                return PFactory.createGenerator(language, generatorFunction, innerRoot, continuationRootNode, continuationFrame);
             } else if (innerRoot.getCodeUnit().isCoroutine()) {
-                return PFactory.createCoroutine(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
+                return PFactory.createCoroutine(language, generatorFunction, innerRoot, continuationRootNode, continuationFrame);
             } else if (innerRoot.getCodeUnit().isAsyncGenerator()) {
                 return PFactory.createAsyncGenerator(language, generatorFunction, innerRoot, continuationRootNode, continuationFrame);
             }
@@ -3139,7 +3138,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecodeNode,
                         @Bind Node inliningTarget,
                         @Cached ReadFromLocalsNode readLocalsNode) {
-            CodeUnit co = ((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).getCodeUnit();
+            BytecodeDSLCodeUnit co = ((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).getCodeUnit();
             TruffleString name;
             if (index < co.cellvars.length) {
                 name = co.cellvars[index];

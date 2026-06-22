@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -151,7 +151,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     @StoreBytecodeIndex
     public static boolean doOthers(VirtualFrame frame, Object object,
                     @Cached PyObjectIsTrueNodeGeneric internalNode) {
-        // Cached PyObjectItTrue nodes used in PBytecodeRootNode are significant contributors to
+        // Cached PyObjectItTrue nodes used in bytecode roots are significant contributors to
         // footprint, so we use indirection to save all the fields for the nodes used in the generic
         // variant + this is one polymorphic dispatch to the execute method. Inside the cached
         // execute method, the hosted inlining can then inline cached nodes, unlike if we inlined to

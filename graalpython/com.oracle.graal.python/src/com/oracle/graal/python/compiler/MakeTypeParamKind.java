@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,19 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.bytecode;
+package com.oracle.graal.python.compiler;
 
-import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
-import com.oracle.truffle.api.exception.AbstractTruffleException;
-
-/*
-Container for for propagating exceptions from OSR without handling them twice.
- */
-public class OSRException extends PythonControlFlowException {
-    private static final long serialVersionUID = 425126860491305807L;
-    public final AbstractTruffleException exception;
-
-    public OSRException(AbstractTruffleException exception) {
-        this.exception = exception;
-    }
+public final class MakeTypeParamKind {
+    public static final int TYPE_VAR = 0;
+    public static final int TYPE_VAR_TUPLE = 1;
+    public static final int PARAM_SPEC = 2;
+    public static final int TYPE_VAR_WITH_BOUND = 3;
+    public static final int TYPE_VAR_WITH_CONSTRAINTS = 4;
 }

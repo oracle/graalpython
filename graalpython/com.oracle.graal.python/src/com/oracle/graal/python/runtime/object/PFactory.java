@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.asyncio.PANextAwaitable;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGen;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenASend;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenAThrow;
-import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 import com.oracle.graal.python.builtins.objects.asyncio.PCoroutineWrapper;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -232,9 +231,7 @@ import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
-import com.oracle.graal.python.compiler.BytecodeCodeUnit;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.NativeZlibSupport;
@@ -789,30 +786,18 @@ public final class PFactory {
      * Special objects: generators, proxies, references, cells
      */
 
-    public static PGenerator createGenerator(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return PGenerator.create(language, function, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator);
-    }
-
-    public static PGenerator createGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments, ContinuationRootNode continuationRootNode,
+    public static PGenerator createGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode,
                     MaterializedFrame continuationFrame) {
-        return PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator, continuationRootNode, continuationFrame);
+        return PGenerator.create(language, function, rootNode, PythonBuiltinClassType.PGenerator, continuationRootNode, continuationFrame);
     }
 
-    public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return PGenerator.create(language, function, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine);
-    }
-
-    public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments, ContinuationRootNode continuationRootNode,
+    public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode,
                     MaterializedFrame continuationFrame) {
-        return PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PCoroutine, continuationRootNode, continuationFrame);
+        return PGenerator.create(language, function, rootNode, PythonBuiltinClassType.PCoroutine, continuationRootNode, continuationFrame);
     }
 
     public static PCoroutineWrapper createCoroutineWrapper(PythonLanguage language, PGenerator generator) {
         return new PCoroutineWrapper(language, generator);
-    }
-
-    public static PAsyncGen createAsyncGenerator(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return PAsyncGen.create(language, function, rootNode, callTargets, arguments);
     }
 
     public static PAsyncGen createAsyncGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode,
@@ -1087,15 +1072,6 @@ public final class PFactory {
     public static PCode createCode(PythonLanguage language, RootCallTarget ct, int flags, int firstlineno, byte[] linetable, TruffleString filename) {
         return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), ct.getRootNode(), Signature.fromCallTarget(ct),
                         -1, -1, flags, null, null, null, null, null, filename, null, null, firstlineno, linetable);
-    }
-
-    public static PCode createCode(PythonLanguage language, RootCallTarget callTarget, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
-        return createCode(language, callTarget.getRootNode(), signature, codeUnit, filename);
-    }
-
-    public static PCode createCode(PythonLanguage language, RootNode rootNode, Signature signature, BytecodeCodeUnit codeUnit, TruffleString filename) {
-        return new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(language), rootNode, signature,
-                        codeUnit.varnames.length, -1, -1, null, null, null, null, null, filename, codeUnit.name, codeUnit.qualname, -1, codeUnit.srcOffsetTable);
     }
 
     public static PCode createCode(PythonLanguage language, RootNode rootNode, Signature signature, BytecodeDSLCodeUnit codeUnit, TruffleString filename) {
@@ -1577,10 +1553,6 @@ public final class PFactory {
 
     public static PAsyncGenAThrow createAsyncGeneratorAThrow(PythonLanguage language, PAsyncGen receiver, Object arg1, Object arg2, Object arg3) {
         return new PAsyncGenAThrow(language, receiver, arg1, arg2, arg3);
-    }
-
-    public static PAsyncGenWrappedValue createAsyncGeneratorWrappedValue(PythonLanguage language, Object wrapped) {
-        return new PAsyncGenWrappedValue(language, wrapped);
     }
 
     // pickle

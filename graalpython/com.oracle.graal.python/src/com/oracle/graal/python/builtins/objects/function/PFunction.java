@@ -42,7 +42,7 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.compiler.CodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -155,7 +155,7 @@ public final class PFunction extends PythonObject {
 
     @TruffleBoundary
     private void extractDoc() {
-        CodeUnit co = getCode().getCodeUnit();
+        BytecodeDSLCodeUnit co = getCode().getCodeUnit();
         if (co != null && co.constants.length > 0 && PyUnicodeCheckNode.executeUncached(co.constants[0])) {
             doc = co.constants[0];
         } else {

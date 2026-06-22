@@ -11,7 +11,6 @@ import marshal
 import ntpath
 import os
 import posixpath
-import shutil
 import sys
 from collections import namedtuple
 from io import StringIO
@@ -646,13 +645,8 @@ def main():
     STDLIB_DIR = os.path.abspath(parsed_args.python_lib)
     FROZEN_MODULES_DIR = os.path.abspath(parsed_args.binary_dir)
 
-    if __graalpython__.is_bytecode_dsl_interpreter:
-        suffix = "bin_dsl"
-        assert os.path.isdir(parsed_args.binary_dir), "Frozen modules for the DSL should be built after the manual bytecode interpreter."
-    else:
-        suffix = "bin"
-        shutil.rmtree(parsed_args.binary_dir, ignore_errors=True)
-        os.makedirs(parsed_args.binary_dir)
+    suffix = "bin_dsl"
+    os.makedirs(parsed_args.binary_dir, exist_ok=True)
 
     # create module specs
     modules = list(parse_frozen_specs(suffix))

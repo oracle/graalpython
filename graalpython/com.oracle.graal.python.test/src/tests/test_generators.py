@@ -697,7 +697,6 @@ def test_normal_generator():
         assert e.value == "Stop from send method, value='SENT_VALUE2'", e.value
         assert e != original_ex
 
-@util.skipUnlessBytecodeDSL()
 def test_raise_stop_iter_in_throw_generator():
     global original_ex
     original_ex = None
@@ -718,7 +717,6 @@ class RaiseInThrowGenerator(BaseTestGenerator):
         raise original_ex
 
 
-@util.skipUnlessBytecodeDSL()
 def test_raise_ex_in_throw_generator():
     global original_ex
     original_ex = None

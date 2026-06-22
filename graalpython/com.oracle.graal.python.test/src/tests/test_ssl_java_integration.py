@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -64,8 +64,4 @@ if sys.implementation.name == "graalpy" and not __graalpython__.is_native:
         env = os.environ.copy()
         env['JAVA_TOOL_OPTIONS'] = f"-Djavax.net.ssl.trustStore={curdir}/ssldata/signing_keystore.jks"
 
-        args = []
-        if __graalpython__.is_bytecode_dsl_interpreter:
-            args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
-
-        subprocess.run([sys.executable, *args, '-c', src], env=env, check=True)
+        subprocess.run([sys.executable, '-c', src], env=env, check=True)

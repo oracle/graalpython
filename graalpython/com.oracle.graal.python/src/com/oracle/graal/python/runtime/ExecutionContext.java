@@ -400,13 +400,6 @@ public abstract class ExecutionContext {
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
         }
 
-        public static void enterGenerator(VirtualFrame frame, MaterializedFrame generatorFrame) {
-            assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-            PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorFrame);
-            ref.setCallerInfo(PArguments.getCallerFrameInfo(frame));
-            PArguments.setCurrentFrameInfo(frame, ref);
-        }
-
         public void exit(VirtualFrame frame, PRootNode node) {
             // For Bytecode DSL root node we need BytecodeNode as location
             assert !(node instanceof PBytecodeDSLRootNode);
@@ -462,7 +455,6 @@ public abstract class ExecutionContext {
             // go to the other branch and setNeedsCallerFrame. This helps to prevent one-off
             // initializations (importing a module) from invalidating the assumption
 
-            // force the frame so that it can be accessed later
             materializeNode.execute(location, false, true, frame);
             // if this frame escaped we must ensure that also f_back does
             callerInfo.markAsEscaped();
@@ -588,7 +580,7 @@ public abstract class ExecutionContext {
         }
 
         private static void validateBoundaryCallData(BoundaryCallData boundaryCallData) {
-            assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || boundaryCallData.isUncached() ||
+            assert boundaryCallData.isUncached() ||
                             (!(boundaryCallData.getRootNode() instanceof PBytecodeDSLRootNode) || BytecodeNode.get(boundaryCallData) != null);
         }
     }

@@ -42,8 +42,6 @@ import subprocess
 import sys
 import textwrap
 
-from tests.util import skipIfBytecodeDSL
-
 
 class ExceptStarPrintTest(unittest.TestCase):
     def test_01_eg_simple(self):

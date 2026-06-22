@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,8 +44,8 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.Unparser;
+import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.ParserCallbacks;
@@ -56,7 +56,6 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.test.PythonTests;
-import com.oracle.graal.python.test.compiler.CompilerTests.TestParserCallbacksImpl;
 
 public class UnparserTests extends PythonTests {
 
@@ -94,7 +93,7 @@ public class UnparserTests extends PythonTests {
 
     private static void checkRoundTrip(String source) {
         ParserCallbacks parserCallbacks = new TestParserCallbacksImpl();
-        Parser parser = Compiler.createParser(source, parserCallbacks, InputType.EVAL, false, false);
+        Parser parser = BytecodeDSLCompiler.createParser(source, parserCallbacks, InputType.EVAL, false, false);
         ModTy.Expression result = (ModTy.Expression) parser.parse();
         assertEquals(source, unparse(result.body));
     }
@@ -109,5 +108,26 @@ public class UnparserTests extends PythonTests {
 
     private static String unparseConstant(ConstantValue constantValue, String kind) {
         return unparse(new ExprTy.Constant(constantValue, kind, SourceRange.ARTIFICIAL_RANGE));
+    }
+
+    static class TestParserCallbacksImpl implements ParserCallbacks {
+        @Override
+        public void safePointPoll() {
+        }
+
+        @Override
+        public RuntimeException reportIncompleteSource(int line) {
+            throw new AssertionError("Unexpected call to reportIncompleteSource");
+        }
+
+        @Override
+        public RuntimeException onError(ParserCallbacks.ErrorType errorType, SourceRange sourceRange, String message) {
+            throw new AssertionError(errorType + ": " + message);
+        }
+
+        @Override
+        public void onWarning(ParserCallbacks.WarningType warningType, SourceRange sourceRange, String message) {
+            throw new AssertionError("Unexpected " + warningType + " warning: " + message);
+        }
     }
 }

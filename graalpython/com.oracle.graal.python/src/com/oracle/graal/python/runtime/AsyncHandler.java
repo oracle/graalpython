@@ -175,7 +175,7 @@ public class AsyncHandler {
                         if (location instanceof RootNode root && PBytecodeDSLRootNode.cast(root) != null) {
                             // PBytecodeDSLRootNode is not usable as a location. To resolve the BCI
                             // stored in the frame, we need the currently executing BytecodeNode,
-                            // using PBytecodeRootNode.getBytecodeNode() is not correct. We use the
+                            // using the root's BytecodeNode is not correct. We use the
                             // dummy node to pass our assertions during stack walking that "call
                             // node" is never PBytecodeDSLRootNode
                             prev = encapsulatingNodeRef.set(language.unavailableSafepointLocation);

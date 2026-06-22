@@ -285,7 +285,6 @@ class TracingEventsUnitTest(unittest.TestCase):
         return offset_func.__code__.co_firstlineno - self.first_line
 
 class TraceTestsStmtWith(TracingEventsUnitTest):
-    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
     def test_01_break_in_with(self):
         class C:
             def __enter__(self):
@@ -367,7 +366,6 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
     def test_03_break_in_with_nested(self):
         class C:
             def __enter__(self):
@@ -417,7 +415,6 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
     def test_04_except_in_with(self):
         class C:
             def __enter__(self):
@@ -454,7 +451,6 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
     def test_05_except_in_with_nested(self):
         class C:
             def __enter__(self):
@@ -969,7 +965,6 @@ class MultilineCallsTraceTest(TracingEventsUnitTest):
         self.assert_events(self.events, events)
 
 class TraceTestsStmtTry(TracingEventsUnitTest):
-    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
     def test_01_reraise(self):
         def func():
             try:
@@ -998,7 +993,6 @@ class TraceTestsStmtTry(TracingEventsUnitTest):
         self.assert_events(self.events, events)
 
 class ExceptStarTraceTest(TracingEventsUnitTest):
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_01_except_star_with_name(self):
         def func():
             try:
@@ -1028,7 +1022,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_02_except_star_multi_with_name(self):
         def func():
             try:
@@ -1065,7 +1058,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_03_except_star_with_finally(self):
         def func():
             try:
@@ -1098,8 +1090,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
-    @util.skipIfBytecodeDSL("TODO: Fix return in finally.")
+    @unittest.skip("TODO: Fix return in finally.")
     def test_04_test_try_except_star_with_wrong_type(self):
         def func():
             try:
@@ -1127,7 +1118,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_05_if_false_in_try_except_star(self):
         def func():
             try:
@@ -1147,7 +1137,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     @unittest.skipIf(sys.implementation.name == "cpython", "TODO: seems broken on CPython")
     def test_06_try_in_try_with_exception(self):
         def func():
@@ -1216,7 +1205,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_08_try_except_star_no_exception(self):
         def func():
             try:
@@ -1250,7 +1238,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_09_try_except_star_named_no_exception(self):
         def func():
             try:
@@ -1275,7 +1262,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_10_try_except_star_exception_caught(self):
         def func():
             try:
@@ -1302,7 +1288,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_11_try_except_star_named_exception_caught(self):
         def func():
             try:
@@ -1329,7 +1314,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_12_try_except_star_exception_not_caught(self):
         def func():
             try:
@@ -1356,7 +1340,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_13_try_except_star_named_exception_not_caught(self):
         def func():
             try:
@@ -1383,7 +1366,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_14_try_except_star_nested(self):
         def func():
             try:

@@ -670,7 +670,6 @@ class GraalPythonPolyBenchVm(GuestVm):
             BUILD_NATIVE_IMAGE_WITH_ASSERTIONS,
             GITHUB_CI,
             _graalpy_launcher,
-            bytecode_dsl_build_args,
             run_mx,
             set_env,
         )
@@ -692,7 +691,6 @@ class GraalPythonPolyBenchVm(GuestVm):
         elif BUILD_NATIVE_IMAGE_WITH_ASSERTIONS and not use_product_profile:
             mx_args.append("--extra-image-builder-argument=-ea")
             mx_args.append("--extra-image-builder-argument=-J-ea")
-        mx_args += bytecode_dsl_build_args(prefix="--extra-image-builder-argument=")
         for arg in self._mx_extra_image_builder_args(self._image_build_args(host)):
             mx_args.append(f"--extra-image-builder-argument={arg}")
 

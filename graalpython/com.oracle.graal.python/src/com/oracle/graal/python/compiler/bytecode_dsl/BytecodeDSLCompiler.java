@@ -40,23 +40,33 @@
  */
 package com.oracle.graal.python.compiler.bytecode_dsl;
 
+import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
+
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
+import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.pegparser.FutureFeature;
+import com.oracle.graal.python.pegparser.InputType;
+import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
+import com.oracle.graal.python.pegparser.ParserCallbacks;
+import com.oracle.graal.python.pegparser.ParserCallbacks.ErrorType;
+import com.oracle.graal.python.pegparser.sst.AliasTy;
+import com.oracle.graal.python.pegparser.sst.ConstantValue;
+import com.oracle.graal.python.pegparser.sst.ExprTy;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.truffle.api.source.Source;
 
 public class BytecodeDSLCompiler {
+    public static final int BYTECODE_VERSION = 33;
 
     public static final record BytecodeDSLCompilerResult(PBytecodeDSLRootNode rootNode, BytecodeDSLCodeUnit codeUnit) {
     }
@@ -83,7 +93,96 @@ public class BytecodeDSLCompiler {
         } else {
             return -1;
         }
-        return Compiler.parseFuture(stmts, futureFeatures, parserCallbacks);
+        return parseFuture(stmts, futureFeatures, parserCallbacks);
+    }
+
+    private static int parseFuture(StmtTy[] modBody, EnumSet<FutureFeature> futureFeatures, ParserCallbacks parserCallbacks) {
+        int lastFutureLine = -1;
+        if (modBody == null || modBody.length == 0) {
+            return lastFutureLine;
+        }
+        boolean done = false;
+        int prevLine = 0;
+        int i = 0;
+        if (findDocstring(modBody) != null) {
+            i++;
+        }
+
+        for (; i < modBody.length; i++) {
+            StmtTy s = modBody[i];
+            int line = s.getSourceRange().startLine;
+            if (done && line > prevLine) {
+                return lastFutureLine;
+            }
+            prevLine = line;
+            if (s instanceof StmtTy.ImportFrom importFrom) {
+                if ("__future__".equals(importFrom.module)) {
+                    if (done) {
+                        throw parserCallbacks.onError(ErrorType.Syntax, s.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
+                    }
+                    parseFutureFeatures(importFrom, futureFeatures, parserCallbacks);
+                    lastFutureLine = line;
+                } else {
+                    done = true;
+                }
+            } else {
+                done = true;
+            }
+        }
+        return lastFutureLine;
+    }
+
+    private static void parseFutureFeatures(StmtTy.ImportFrom node, EnumSet<FutureFeature> features, ParserCallbacks parserCallbacks) {
+        for (AliasTy alias : node.names) {
+            if (alias.name != null) {
+                switch (alias.name) {
+                    case "nested_scopes":
+                    case "generators":
+                    case "division":
+                    case "absolute_import":
+                    case "with_statement":
+                    case "print_function":
+                    case "unicode_literals":
+                    case "generator_stop":
+                        break;
+                    case "barry_as_FLUFL":
+                        features.add(FutureFeature.BARRY_AS_BDFL);
+                        break;
+                    case "annotations":
+                        features.add(FutureFeature.ANNOTATIONS);
+                        break;
+                    case "braces":
+                        throw parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "not a chance");
+                    default:
+                        throw parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "future feature %s is not defined", alias.name);
+                }
+            }
+        }
+    }
+
+    private static Object findDocstring(StmtTy[] body) {
+        if (body != null && body.length > 0 && body[0] instanceof StmtTy.Expr stmt && stmt.value instanceof ExprTy.Constant expr) {
+            ConstantValue value = expr.value;
+            if (value.kind == ConstantValue.Kind.CODEPOINTS) {
+                return codePointsToTruffleString(value.getCodePoints());
+            }
+        }
+        return null;
+    }
+
+    public static Parser createParser(String src, ParserCallbacks errorCb, InputType inputType, boolean interactiveTerminal, boolean allowIncompleteInput) {
+        EnumSet<AbstractParser.Flags> flags = EnumSet.noneOf(AbstractParser.Flags.class);
+        if (interactiveTerminal) {
+            flags.add(AbstractParser.Flags.INTERACTIVE_TERMINAL);
+        }
+        if (allowIncompleteInput) {
+            flags.add(AbstractParser.Flags.ALLOW_INCOMPLETE_INPUT);
+        }
+        return createParser(src, errorCb, inputType, flags, PythonLanguage.MINOR);
+    }
+
+    public static Parser createParser(String src, ParserCallbacks errorCb, InputType inputType, EnumSet<AbstractParser.Flags> flags, int featureVersion) {
+        return new Parser(src, errorCb, inputType, flags, featureVersion);
     }
 
     public static class BytecodeDSLCompilerContext {

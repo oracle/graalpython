@@ -77,14 +77,9 @@ import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.compiler.BytecodeCodeUnit;
-import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.CompilationUnit;
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.BytecodeDSLCompilerResult;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -208,7 +203,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String GRAALPY_MULTIARCH;
 
     /* Magic number used to mark pyc files */
-    public static final int MAGIC_NUMBER = 21000 + Compiler.BYTECODE_VERSION * 10;
+    public static final int MAGIC_NUMBER = 21000 + BytecodeDSLCompiler.BYTECODE_VERSION * 10;
     public static final byte[] MAGIC_NUMBER_BYTES = new byte[4];
 
     static {
@@ -567,18 +562,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return parse(context, source, inputType, topLevel, optimize, interactiveTerminal, argumentNames, futureFeatures);
     }
 
-    public RootCallTarget callTargetFromBytecode(Source source, CodeUnit code) {
+    public RootCallTarget callTargetFromBytecode(Source source, BytecodeDSLCodeUnit code) {
         return callTargetFromBytecode(source, code, source.isInternal());
     }
 
-    public RootCallTarget callTargetFromBytecode(Source source, CodeUnit code, boolean isInternal) {
-        RootNode rootNode;
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(this, isInternal);
-        } else {
-            rootNode = PBytecodeRootNode.create(this, (BytecodeCodeUnit) code, source, isInternal);
-        }
-
+    public RootCallTarget callTargetFromBytecode(Source source, BytecodeDSLCodeUnit code, boolean isInternal) {
+        RootNode rootNode = code.createRootNode(this, isInternal);
         return PythonUtils.getOrCreateCallTarget(rootNode);
     }
 
@@ -594,7 +583,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
                 LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
             }
-            Parser parser = Compiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal, allowIncompleteInput);
+            Parser parser = BytecodeDSLCompiler.createParser(source.getCharacters().toString(), errorCb, type, interactiveTerminal, allowIncompleteInput);
             ModTy mod = (ModTy) parser.parse();
             assert mod != null;
             return compileModule(context, mod, source, topLevel, optimize, argumentNames, errorCb, futureFeatures);
@@ -628,12 +617,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 mod = modIn;
             }
 
-            RootNode rootNode;
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                rootNode = compileForBytecodeDSLInterpreter(mod, source, optimize, errorCb, futureFeatures);
-            } else {
-                rootNode = compileForBytecodeInterpreter(mod, source, optimize, errorCb, futureFeatures);
-            }
+            RootNode rootNode = compileForBytecodeDSLInterpreter(mod, source, optimize, errorCb, futureFeatures);
 
             if (topLevel) {
                 GilNode gil = GilNode.getUncached();
@@ -657,13 +641,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             throw e;
         }
-    }
-
-    private RootNode compileForBytecodeInterpreter(ModTy mod, Source source, int optimize, ParserCallbacksImpl parserCallbacks, EnumSet<FutureFeature> futureFeatures) {
-        Compiler compiler = new Compiler(parserCallbacks);
-        CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
-        BytecodeCodeUnit co = cu.assemble();
-        return PBytecodeRootNode.create(this, co, source, source.isInternal(), parserCallbacks);
     }
 
     private RootNode compileForBytecodeDSLInterpreter(ModTy mod, Source source, int optimize,
@@ -1144,7 +1121,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
     }
 
-    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, CodeUnit key) {
+    public <T extends RootNode> T createCachedRootNode(Function<PythonLanguage, T> rootNodeFunction, BytecodeDSLCodeUnit key) {
         return createCachedRootNodeUnsafe(rootNodeFunction, true, key);
     }
 

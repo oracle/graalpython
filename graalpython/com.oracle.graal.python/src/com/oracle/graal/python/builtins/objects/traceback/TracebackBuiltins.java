@@ -54,8 +54,6 @@ import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltinsClini
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
@@ -64,7 +62,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -218,13 +215,10 @@ public final class TracebackBuiltins extends PythonBuiltins {
         private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode, PException pException, List<TruffleStackTraceElement> stackTrace) {
             Node location = element.getLocation();
             RootNode rootNode = element.getTarget().getRootNode();
-            if (rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode) {
-                location = rootNode;
-            }
             // We must have a callNode for Bytecode DSL root nodes. If this assertion fires,
             // it can be because of missing BoundaryCallContext.enter/exit around
             // @TruffleBoundary calls that may call back into Python code.
-            assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) ||
+            assert !(unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) ||
                             location != null : String.format("root: %s, frame count: %d, start frame index: %d, stack trace:\n\n%s",
                                             rootNode, pException.getTracebackFrameCount(), pException.getTracebackStartIndex(), Arrays.toString(stackTrace.toArray()));
             // create the PFrame and refresh frame values

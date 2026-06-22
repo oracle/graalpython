@@ -167,8 +167,8 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
+import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyAIterCheckNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
@@ -223,7 +223,6 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -1041,7 +1040,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if (context.getEnv().getOptions().get(PythonOptions.ParserLogFiles)) {
                     PythonLanguage.LOGGER.log(Level.FINE, () -> "parse '" + source.getName() + "'");
                 }
-                Parser parser = Compiler.createParser(code.toJavaStringUncached(), parserCb, type, compilerFlags, featureVersion);
+                Parser parser = BytecodeDSLCompiler.createParser(code.toJavaStringUncached(), parserCb, type, compilerFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
                 parserCb.triggerDeprecationWarnings();
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);
@@ -1105,12 +1104,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget, TruffleString filename) {
             RootNode rootNode = rootCallTarget.getRootNode();
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
-                    bytecodeDSLRootNode.triggerDeferredDeprecationWarnings();
-                }
-            } else if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
-                bytecodeRootNode.triggerDeferredDeprecationWarnings();
+            if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
+                bytecodeDSLRootNode.triggerDeferredDeprecationWarnings();
             }
             return PFactory.createCode(PythonLanguage.get(null), rootCallTarget, filename);
         }

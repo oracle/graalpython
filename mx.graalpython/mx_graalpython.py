@@ -150,7 +150,6 @@ CI = get_boolean_env("CI")
 GITHUB_CI = get_boolean_env("GITHUB_CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
-BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', True)
 GRAALPY_WITH_BOUNCYCASTLE = get_boolean_env("GRAALPY_WITH_BOUNCYCASTLE", True)
 
 mx_gate.add_jacoco_excludes([
@@ -480,7 +479,7 @@ def github_ci_build_args():
         ]
 
 def libpythonvm_build_args():
-    build_args = bytecode_dsl_build_args()
+    build_args = []
     if os.environ.get("GITHUB_CI"):
         build_args += github_ci_build_args()
 
@@ -868,12 +867,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
     return mx.run_java(vm_args + graalpython_args, jdk=jdk, env=env, **kwargs)
 
 
-def node_footprint_analyzer(args, **kwargs):
-    main_class = 'com.oracle.graal.python.test.advanced.NodeFootprintAnalyzer'
-    vm_args = mx.get_runtime_jvm_args(['GRAALPYTHON_UNIT_TESTS', 'GRAALPYTHON'])
-    return mx.run_java(vm_args + [main_class] + args, **kwargs)
-
-
 def _dev_pythonhome_context():
     home = os.environ.get("GRAAL_PYTHONHOME", _dev_pythonhome())
     return set_env(GRAAL_PYTHONHOME=home)
@@ -942,7 +935,6 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
     if mx.suite('compiler', fatalIfMissing=False):
         vm_args.append('-Dpolyglot.engine.CompilationFailureAction=ExitVM')
-    vm_args += bytecode_dsl_build_args()
 
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
@@ -1018,7 +1010,7 @@ def verify_junit_compilation_failure():
         '--suite', 'graalpython',
         '--verbose',
         '-Dpolyglot.engine.CompilationFailureAction=ExitVM',
-    ] + bytecode_dsl_build_args() + [
+    ] + [
         compiler_failure_exit_test,
     ]
     output = mx.OutputCapture()
@@ -1163,19 +1155,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx.abort(f"GRAALPY_HOME is not compatible with the requested JDK version.\n"
                      f"actual version: '{actual_jdk_version}', version string: {line}, requested version: {jdk_version}.")
 
-        launcher = os.path.join(python_home, 'bin', _graalpy_launcher())
-        out = mx.OutputCapture()
-        mx.run([launcher, "-c", "print('__GRAALPY_BYTECODE_DSL_INTERPRETER__ =', __graalpython__.is_bytecode_dsl_interpreter)"], nonZeroIsFatal=False, out=out, err=out)
-        is_bytecode_dsl_interpreter = "__GRAALPY_BYTECODE_DSL_INTERPRETER__ = True" in out.data
-        if is_bytecode_dsl_interpreter != BYTECODE_DSL_INTERPRETER:
-            requested = "Bytecode DSL" if BYTECODE_DSL_INTERPRETER else "Manual"
-            actual = "Bytecode DSL" if is_bytecode_dsl_interpreter else "Manual"
-            mx.abort(f"GRAALPY_HOME is not compatible with requested interpreter kind ({requested=}, {actual=})\n"
-                     f"Used launcher: {launcher}\n"
-                     f"Found Python home: {python_home}\n"
-                     f"GRAALPY_HOME env variable: {os.environ.get('GRAALPY_HOME', None)}\n"
-                     f"Raw output:\n\n{out}\n\n")
-
         return python_home
 
     # Build
@@ -1223,10 +1202,9 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         mx_args.append("--extra-image-builder-argument=-J-ea")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
-        mx_build_args = mx_args + bytecode_dsl_build_args(prefix="--extra-image-builder-argument=")
         # This build is purposefully done without the LATEST_JAVA_HOME in the
         # environment, so we can build JVM standalones on an older Graal JDK
-        run_mx(mx_build_args + ["build", "--target", standalone_dist])
+        run_mx(mx_args + ["build", "--target", standalone_dist])
 
     python_home = os.path.join(SUITE.dir, 'mxbuild', f"{mx.get_os()}-{mx.get_arch()}", standalone_dist)
 
@@ -1580,9 +1558,6 @@ def graalpytest(args):
             gp_args += ["--vm.ea", "--vm.esa"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args = [*gp_args, *python_args]
-    if is_graalpy and not BYTECODE_DSL_INTERPRETER:
-        python_args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=false")
-
     runner_args.append(f'--subprocess-args={shlex.join(arg for arg in python_args if arg != "-repeated-run")}')
     if is_graalpy:
         runner_args.append(f'--append-path={os.path.join(_dev_pythonhome(), "lib-python", "3")}')
@@ -1633,8 +1608,6 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         # index in in that case
         env["PIP_EXTRA_INDEX_URL"] = pip_index
 
-    if not BYTECODE_DSL_INTERPRETER:
-        args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=false']
     args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
@@ -2777,10 +2750,6 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     stability="experimental",
 ))
 
-
-def bytecode_dsl_build_args(prefix=''):
-    return [] if BYTECODE_DSL_INTERPRETER else [prefix + '-Dpython.EnableBytecodeDSLInterpreter=false']
-
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
     name='GraalVM Python',
@@ -2822,7 +2791,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
                 '-Dpolyglot.python.Sha3ModuleBackend=native',
                 '-Dpolyglot.python.CompressionModulesBackend=native',
                 '-Dpolyglot.python.UnicodeCharacterDatabaseNativeFallback=true',
-            ] + bytecode_dsl_build_args(),
+            ],
             language='python',
             default_vm_args=[
                 '--vm.Xss16777216', # request 16M of stack
@@ -3247,16 +3216,11 @@ class GraalpythonProject(mx.ArchivableProject):
 
 class GraalpythonFrozenModuleBuildTask(GraalpythonBuildTask):
     def build(self):
-        # We freeze modules twice: once for the manual Bytecode interpreter and once for the DSL interpreter.
         args = [mx_subst.path_substitutions.substitute(a, dependency=self) for a in cast(GraalpythonProject, self.subject).args]
 
-        manual_vm_args = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000"] if 'DEBUG_FROZEN' in os.environ else []
-        dsl_vm_args = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000"] if 'DEBUG_FROZEN_BCI' in os.environ else []
+        vm_args = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000"] if 'DEBUG_FROZEN' in os.environ else []
 
-        return bool(
-            self.run_for(args, "manual bytecode", extra_vm_args=manual_vm_args + ["-Dpython.EnableBytecodeDSLInterpreter=false"]) or
-            self.run_for(args, "dsl", extra_vm_args=dsl_vm_args + ["-Dpython.EnableBytecodeDSLInterpreter=true"])
-        )
+        return bool(self.run_for(args, "dsl", extra_vm_args=vm_args))
 
     def run_for(self, args, interpreter_kind, extra_vm_args=None):
         mx.log(f"Building frozen modules for {interpreter_kind} interpreter.")
@@ -3585,7 +3549,6 @@ mx.update_commands(SUITE, {
     'clean': [python_clean, '[--just-pyc]'],
     'bisect-benchmark': [mx_graalpython_bisect.bisect_benchmark, ''],
     'python-leak-test': [run_leak_launcher, ''],
-    'python-nodes-footprint': [node_footprint_analyzer, ''],
     'python-checkcopyrights': [python_checkcopyrights, '[--fix]'],
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
     'tox-example': [tox_example, ''],
