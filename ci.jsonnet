@@ -144,7 +144,6 @@
             "windows:amd64:jdk21"        : daily     + t("01:30:00") + provide(GPY_JVM21_STANDALONE),
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
-            "darwin:amd64:jdk-latest"    : daily     + t("01:30:00") + daily + provide(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_JVM_STANDALONE),
             "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
         }),
@@ -160,7 +159,6 @@
             "windows:amd64:jdk21"        : daily     + t("02:00:00"),
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : daily     + t("01:30:00") + require(GPY_JVM_STANDALONE),
-            "darwin:amd64:jdk-latest"    : daily     + t("01:00:00") + require(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : daily     + t("01:00:00") + require(GPY_JVM_STANDALONE),
             "windows:amd64:jdk-latest"   : daily     + t("01:30:00"),
         }),
@@ -170,7 +168,6 @@
             "darwin:aarch64:jdk21"       : daily     + t("00:30:00") + require(GPY_JVM21_STANDALONE),
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : daily     + t("00:30:00") + require(GPY_JVM_STANDALONE),
-            "darwin:amd64:jdk-latest"    : daily     + t("00:30:00") + require(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : daily     + t("00:30:00") + require(GPY_JVM_STANDALONE),
         }),
         "python-unittest-hpy": gpgate + require(GPY_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
@@ -182,14 +179,12 @@
         "python-unittest-posix": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_JVM_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE),
-            "darwin:amd64:jdk-latest"    : daily     + t("01:30:00") + require(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_JVM_STANDALONE),
         }),
         "python-unittest-standalone": gpgate_maven + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
             "linux:aarch64:jdk21"        : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
             "darwin:aarch64:jdk21"       : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE),
-            "darwin:amd64:jdk-latest"    : daily     + t("02:00:00") + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk21"        : daily     + t("02:00:00") + require(GPY_JVM21_STANDALONE) + batches(2),
             "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_JVM_STANDALONE) + require(GRAAL_JDK_LATEST),
@@ -203,7 +198,6 @@
             "windows:amd64:jdk21"        : daily     + t("01:00:00"),
             "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
-            "darwin:amd64:jdk-latest"    : daily     + t("01:30:00"),
             "darwin:aarch64:jdk-latest"  : tier3                      + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
         }),
@@ -217,7 +211,6 @@
             "windows:amd64:jdk21"        : daily     + t("01:30:00"),
             "linux:amd64:jdk-latest"     : tier3                     + provide(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GRAAL_JDK_LATEST),
-            "darwin:amd64:jdk-latest"    : daily     + t("01:30:00") + provide(GRAAL_JDK_LATEST),
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GRAAL_JDK_LATEST),
             "windows:amd64:jdk-latest"   : tier3                     + provide(GRAAL_JDK_LATEST),
         }),
@@ -233,7 +226,6 @@
         "python-svm-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_NATIVE_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
-            "darwin:amd64:jdk-latest"    : daily     + t("01:30:00") + provide(GPY_NATIVE_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_NATIVE_STANDALONE),
             "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
         }),
@@ -243,7 +235,6 @@
         "python-tagged-unittest": gpgate + require(GPY_NATIVE_STANDALONE) + batches(TAGGED_UNITTESTS_SPLIT) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2,
             "linux:aarch64:jdk-latest"   : tier3,
-            "darwin:amd64:jdk-latest"    : daily     + t("02:00:00"),
             "darwin:aarch64:jdk-latest"  : tier3,
             "windows:amd64:jdk-latest"   : daily     + t("02:00:00"),
         }),
@@ -253,7 +244,6 @@
         "python-graalvm": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST),
             "linux:aarch64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
-            "darwin:amd64:jdk-latest"    : daily     + t("01:00:00") + daily,
             "darwin:aarch64:jdk-latest"  : tier3                      + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
         }),
