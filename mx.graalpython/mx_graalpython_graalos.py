@@ -207,7 +207,6 @@ def _prepare_graalos_demo(standalone_home: Path, env):
         "--platform", "any",
         "--dest", str(demo_wheels),
         "rich",
-        "asteval",
     ], env=env)
     # Work around GRAALOS-8260 by installing pure-Python demo wheels from the
     # host. Remove this once in-sandbox ensurepip/pip subprocesses work there.
@@ -220,7 +219,6 @@ def _prepare_graalos_demo(standalone_home: Path, env):
         "--no-compile",
         "--upgrade",
         "rich",
-        "asteval",
     ], env=env)
 
     from mx_graalpython import _python_unittest_root

@@ -1,38 +1,24 @@
 # GraalOS Standalone Sandbox Demo
 
-This demo shows a small chat-style expression evaluator running inside the
+This demo shows a small chat-style Python evaluator running inside the
 GraalPy GraalOS standalone.
 
 The story:
 
 1. `rich` renders a friendly terminal UI.
-2. `asteval` evaluates normal user expressions with an application-level
-   restricted evaluator. This demo also removes `open` from that evaluator.
-3. `/unsafe ...` expressions deliberately bypass `asteval` and use Python
-   `eval` directly.
-4. The process is still inside the GraalOS sandbox, so file, subprocess,
+2. The demo treats each entered expression as untrusted Python code, such as
+   code produced by an LLM agent or pasted by a human operator.
+3. The process is inside the GraalOS sandbox, so file, subprocess,
    network, and native library attempts remain contained.
 
 ## Setup
 
-From the standalone directory, install `pip` inside the sandbox, then
-install the demo wheels from a host-downloaded wheel cache:
-
-```bash
-./bin/graalpy -Im ensurepip
-python3 -m pip download --only-binary=:all: --dest demo-wheels rich asteval
-./bin/graalpy -Im pip install --no-index --find-links /demo-wheels rich asteval
-```
-
-The online download is intentionally done outside the sandbox. The sandboxed
-standalone has no outbound network mapping by default, which is one of the
-things the demo can show.
-
-### GRAALOS-8260 workaround
-
-There is currently a bug in GraalOS that prevents the above ensurepip command
-from working. Until it is fixed, we can install the pure-Python wheels from the
-host directly into the standalone's `site-packages`:
+We can install the `rich` wheel directly into the standalone's `site-packages`
+using any standard Python. While we could run `ensurepip` and `pip` inside the
+sandbox by configuring the appropriate network access, we do this here
+intentionally done outside the sandbox. The sandboxed standalone has no
+outbound network mapping by default, which is one of the things the demo can
+show.
 
 ```bash
 python3 -m pip install \
@@ -43,11 +29,8 @@ python3 -m pip install \
   --abi none --abi graalpy250_312_native \
   --platform any --platform graalos_x86_64 \
   --no-compile \
-  rich asteval
+  rich
 ```
-
-Use this workaround only for pure-Python wheels such as `py3-none-any`; native
-wheels need GraalOS/GraalPy-specific handling.
 
 There should be a file `test_graalos_sandbox_chat.py` in this directory. If
 not, find it in and copy it from the GraalPy source repository. From inside the
@@ -71,21 +54,15 @@ Start with a normal expression:
 sum([i*i for i in range(1000)])
 ```
 
-Then show that the app-level evaluator blocks direct file access:
+Then move on to untrusted code that tries to access host resources:
 
 ```python
 open('/etc/passwd').read()
-```
-
-Switch to `/unsafe` mode to bypass the app-level evaluator while keeping the
-outer GraalOS sandbox:
-
-```python
-/unsafe open('/etc/passwd').read().splitlines()[:3]
-/unsafe open('/etc/shadow').read()
-/unsafe __import__('subprocess').run(['/bin/sh', '-c', 'id'], capture_output=True, text=True)
-/unsafe __import__('socket').create_connection(('example.com', 80), timeout=2)
-/unsafe __import__('ctypes').CDLL('libc.so').system(b'cat /etc/shadow')
+open('/etc/passwd').read().splitlines()[:3]
+open('/etc/shadow').read()
+__import__('subprocess').run(['/bin/sh', '-c', 'id'], capture_output=True, text=True)
+__import__('socket').create_connection(('example.com', 80), timeout=2)
+__import__('ctypes').CDLL('libc.so').system(b'cat /etc/shadow')
 ```
 
 Expected result: harmless operations work or fail normally; sensitive host
@@ -95,7 +72,7 @@ filesystem, process namespace, and configured network policy. The native
 
 ## Why This Is Useful
 
-`asteval` is an application-level guardrail. It reduces accidental exposure but
-it is not a complete containment boundary. GraalOS is the outer boundary: even
-if application logic accidentally evaluates dangerous code in `/unsafe` mode,
-the runtime still mediates filesystem, subprocess, native, and network behavior.
+This is a deliberately unsafe application pattern: it evaluates untrusted Python
+code directly. That is useful for demonstrating the actual containment boundary.
+GraalOS is that boundary, and it mediates filesystem, subprocess, native, and
+network behavior even when the application itself offers no extra guardrails.

@@ -37,7 +37,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""Small Rich + asteval demo for the GraalOS standalone sandbox."""
+"""Small Rich demo for the GraalOS standalone sandbox."""
 
 from __future__ import annotations
 
@@ -59,37 +59,10 @@ class EvalResult:
     ok: bool
     output: str
     elapsed_ms: float
-
-
-def make_interpreter():
-    from asteval import Interpreter
-    aeval = Interpreter()
-    # Keep the demo's "safe" lane expression-oriented. GraalOS is the real
-    # containment boundary; this prevents the app-level evaluator from opening files.
-    aeval.symtable.pop("open", None)
-    return aeval
-
-
 def render_message(role: str, body: str, style: str) -> None:
     from rich.panel import Panel
     from rich.text import Text
     console.print(Panel(Text(body), title=role, title_align="left", border_style=style))
-
-
-def safe_eval(aeval, expr: str):
-    start = time.perf_counter()
-    aeval.error = []
-    try:
-        value = aeval(expr)
-    except Exception as exc:  # asteval normally records errors instead of raising
-        elapsed = (time.perf_counter() - start) * 1000
-        return EvalResult("asteval", False, f"{type(exc).__name__}: {exc}", elapsed)
-
-    elapsed = (time.perf_counter() - start) * 1000
-    if aeval.error:
-        errors = "\n".join(str(err.get_error()) for err in aeval.error)
-        return EvalResult("asteval", False, errors, elapsed)
-    return EvalResult("asteval", True, repr(value), elapsed)
 
 
 def unsafe_eval(expr: str):
@@ -117,15 +90,11 @@ def render_result(result) -> None:
     render_message("sandbox", result.output, "green" if result.ok else "red")
 
 
-def evaluate(aeval, line: str) -> None:
+def evaluate(line: str) -> None:
     line = line.strip()
     if not line:
         return
-    if line.startswith("/unsafe "):
-        expr = line[len("/unsafe ") :].strip()
-        render_result(unsafe_eval(expr))
-    else:
-        render_result(safe_eval(aeval, line))
+    render_result(unsafe_eval(line))
 
 
 def demo_script() -> list[str]:
@@ -133,11 +102,11 @@ def demo_script() -> list[str]:
         "sum([i*i for i in range(1000)])",
         "sin(pi / 4) ** 2 + cos(pi / 4) ** 2",
         "open('/etc/passwd').read()",
-        "/unsafe open('/etc/passwd').read().splitlines()[:3]",
-        "/unsafe open('/etc/shadow').read()",
-        "/unsafe __import__('subprocess').run(['/bin/sh', '-c', 'id'], capture_output=True, text=True)",
-        "/unsafe __import__('socket').create_connection(('example.com', 80), timeout=2)",
-        "/unsafe __import__('ctypes').CDLL('libc.so').system(b'cat /etc/shadow')",
+        "open('/etc/passwd').read().splitlines()[:3]",
+        "open('/etc/shadow').read()",
+        "__import__('subprocess').run(['/bin/sh', '-c', 'id'], capture_output=True, text=True)",
+        "__import__('socket').create_connection(('example.com', 80), timeout=2)",
+        "__import__('ctypes').CDLL('libc.so').system(b'cat /etc/shadow')",
     ]
 
 
@@ -146,10 +115,10 @@ def print_intro() -> None:
         """
         Type Python expressions and get chat-style results.
 
-        Normal input uses asteval, a restricted expression evaluator.
-        Prefix with /unsafe to bypass asteval and use Python eval directly.
-        The process is still inside the GraalOS sandbox, so filesystem,
-        subprocess, native library, and network attempts remain contained.
+        This demo treats each expression as untrusted Python code, such as
+        code proposed by an LLM agent or pasted by a human operator.
+        GraalOS sandboxes that code, so filesystem, subprocess, native
+        library, and network attempts remain contained.
 
         Commands: /demo, /help, /quit
         """
@@ -164,7 +133,6 @@ def print_help() -> None:
 
 
 def interactive() -> int:
-    aeval = make_interpreter()
     print_intro()
     while True:
         try:
@@ -179,22 +147,20 @@ def interactive() -> int:
             print_help()
             continue
         if command == "/demo":
-            run_demo(aeval)
+            run_demo()
             continue
-        evaluate(aeval, line)
+        evaluate(line)
 
 
-def run_demo(aeval=None) -> None:
-    if aeval is None:
-        aeval = make_interpreter()
+def run_demo() -> None:
     for line in demo_script():
         render_message("you", line, "blue")
-        evaluate(aeval, line)
+        evaluate(line)
 
 
 def main(argv: list[str] | None = None) -> int:
-    global console, Console
     from rich.console import Console
+    global console
     console = Console()
     parser = argparse.ArgumentParser()
     parser.add_argument("--demo", action="store_true", help="run the prepared demo script and exit")
@@ -219,13 +185,12 @@ class GraalOSSandboxChatTests(unittest.TestCase):
         skip_unless_graalos()
 
     def test_demo_packages(self):
-        import asteval
         import rich
 
-        self.assertTrue(asteval.__version__)
         self.assertTrue(rich.get_console())
 
     def test_sandbox_chat_demo(self):
+        from rich.console import Console
         global console
         output = io.StringIO()
         console = Console(file=output, force_terminal=False, color_system=None, width=120)
