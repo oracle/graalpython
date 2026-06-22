@@ -227,6 +227,12 @@ bin/graalpy --graalhost.run_snapshot=/path/to/persistIso...
 Restoring a snapshot uses the saved process state. It does not take additional
 Python command-line arguments on the same invocation.
 
+When `allow_signal_self_snapshot` is enabled, the launcher keeps the generated
+expanded endpoint config under `tmp/graalpy-sandbox.*` instead of deleting it
+at process exit. Snapshot restore needs that original directory to remain
+available because the saved endpoint configuration records it as
+`endpoint_config_path`.
+
 ### Show Graalhost Diagnostics
 
 For launcher-level troubleshooting:

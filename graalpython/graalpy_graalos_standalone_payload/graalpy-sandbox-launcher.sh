@@ -67,6 +67,7 @@ config="${standalone_home}/config.json"
 tmp_root="${standalone_home}/tmp"
 launcher_verbose=false
 launcher_show_help=false
+cleanup_tmpdir=true
 
 if [ ! -x "$graalhost" ]; then
     echo "missing or non-executable GraalHost binary: $graalhost" >&2
@@ -94,8 +95,17 @@ if [ -z "$tmp_base" ] || [ ! -d "$tmp_base" ]; then
     tmp_base="$tmp_root"
 fi
 
+# Snapshot restore reuses the endpoint config persisted in the snapshot. When
+# self-snapshotting is enabled, keep the generated config directory so the
+# snapshotted endpoint_config_path still exists on resume.
+if grep -Eq '^[[:space:]]*"allow_signal_self_snapshot"[[:space:]]*:[[:space:]]*true([[:space:]]*[,}])' "$config"; then
+    cleanup_tmpdir=false
+fi
+
 tmpdir="$(mktemp -d "${tmp_base}/graalpy-sandbox.XXXXXXXXXX")"
-trap 'rm -rf "$tmpdir"' EXIT
+if [ "$cleanup_tmpdir" = "true" ]; then
+    trap 'rm -rf "$tmpdir"' EXIT
+fi
 endpoint_config="${tmpdir}/config.json"
 "$expand_config" "$standalone_home" "$config" "$endpoint_config"
 
