@@ -1280,7 +1280,7 @@ def graalvm_jdk(enterprise=False):
 
     jdk_major_version = mx.get_jdk().version.parts[0]
     if enterprise:
-        mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', '..', 'graal-enterprise', 'vm-enterprise'), '--env', 'ee']
+        mx_args = ['-p', str(next(Path(mx.suite('truffle').dir).resolve().parent.parent.glob('*/vm-enterprise'))), '--env', 'ee']
         edition = ""
     else:
         mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
