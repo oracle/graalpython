@@ -257,6 +257,9 @@ public final class SuperBuiltins extends PythonBuiltins {
         PNone init(VirtualFrame frame, SuperObject self, Object cls, Object obj,
                         @Bind Node inliningTarget,
                         @Cached @Exclusive PRaiseNode raiseNode) {
+            if (!ensureIsTypeNode().executeCached(cls)) {
+                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.FIRST_ARGUMENT_MUST_BE_A_TYPE_OBJECT_NOT_P, cls);
+            }
             if (!(obj instanceof PNone)) {
                 Object type = supercheck(frame, inliningTarget, cls, obj, raiseNode);
                 self.init(cls, type, obj);
