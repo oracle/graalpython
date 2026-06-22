@@ -1190,7 +1190,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
         } else {
             // the path is passed through a context option, may be empty when running from stdin
-            src = Source.newBuilder(getLanguageId(), "__graalpython__.run_path()", "<internal>").internal(true).build();
+            src = Source.newBuilder(getLanguageId(), "__graalpython__.run_path()", "<internal>").internal(true).option("python.NoPythonFrame", "true").build();
         }
         context.eval(src);
     }

@@ -64,6 +64,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonSourceOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -86,6 +87,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.source.Source;
 
 @GenerateUncached
 @GenerateInline(false)
@@ -111,7 +113,14 @@ public abstract class ReadFrameNode extends Node {
 
         @Override
         public boolean skip(RootNode rootNode) {
-            return PBytecodeDSLRootNode.cast(rootNode) == null;
+            PBytecodeDSLRootNode bytecodeDSLRootNode = PBytecodeDSLRootNode.cast(rootNode);
+            return bytecodeDSLRootNode == null || hasNoPythonFrame(bytecodeDSLRootNode);
+        }
+
+        @TruffleBoundary
+        private static boolean hasNoPythonFrame(PBytecodeDSLRootNode rootNode) {
+            Source source = rootNode.getSource();
+            return source != null && source.getOptions(PythonLanguage.get(rootNode)).get(PythonSourceOptions.NoPythonFrame);
         }
     }
 
