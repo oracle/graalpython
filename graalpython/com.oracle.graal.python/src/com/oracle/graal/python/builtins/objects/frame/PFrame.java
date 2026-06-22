@@ -359,6 +359,10 @@ public final class PFrame extends PythonBuiltinObject {
         return getCode().getRootCallTarget();
     }
 
+    public PFunction getFunction() {
+        return function;
+    }
+
     public PCode getCode() {
         if (code == null && function != null) {
             code = function.getCode();

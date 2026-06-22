@@ -184,6 +184,54 @@ def test_code():
     assert code.co_name == test_code.__code__.co_name
 
 
+def test_getframemodulename():
+    assert sys._getframemodulename() == __name__
+    assert sys._getframemodulename(0) == __name__
+    assert sys._getframemodulename(-1) == __name__
+    assert sys._getframemodulename(10**6) is None
+
+    namespace = {"sys": sys, "__name__": "test_getframemodulename_custom"}
+    exec("def get_module_name(depth=0): return sys._getframemodulename(depth)", namespace)
+    assert namespace["get_module_name"]() == "test_getframemodulename_custom"
+    assert namespace["get_module_name"](1) == __name__
+
+
+def test_getframemodulename_uses_function_module():
+    def get_module_name():
+        return sys._getframemodulename()
+
+    old_module = get_module_name.__module__
+    try:
+        get_module_name.__module__ = "test_getframemodulename_function_module"
+        assert get_module_name() == "test_getframemodulename_function_module"
+    finally:
+        get_module_name.__module__ = old_module
+
+
+def test_getframemodulename_missing_name():
+    namespace = {"sys": sys}
+    exec("def get_module_name(): return sys._getframemodulename()", namespace)
+    assert namespace["get_module_name"]() is None
+
+
+def test_getframemodulename_non_string_name():
+    namespace = {"sys": sys, "__name__": 42}
+    exec("def get_module_name(): return sys._getframemodulename()", namespace)
+    assert namespace["get_module_name"]() == 42
+
+
+def test_getframemodulename_audit():
+    seen = []
+
+    def hook(event, args):
+        if event == "sys._getframemodulename":
+            seen.append(args)
+
+    sys.addaudithook(hook)
+    assert sys._getframemodulename() == __name__
+    assert seen[-1] == (0,)
+
+
 def test_builtins():
     assert print == sys._getframe().f_builtins["print"]
 
