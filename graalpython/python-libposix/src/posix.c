@@ -134,10 +134,12 @@ int32_t call_close(int32_t fd) {
 }
 
 int64_t call_read(int32_t fd, void *buf, uint64_t count) {
+    errno = 0;
     return read(fd, buf, count);
 }
 
 int64_t call_write(int32_t fd, void *buf, uint64_t count) {
+    errno = 0;
     return write(fd, buf, count);
 }
 
@@ -876,22 +878,26 @@ int32_t call_getsockname(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
 
 //TODO len should be size_t, retval should be ssize_t
 int32_t call_send(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    errno = 0;
     return send(sockfd, buf, len, flags);
 }
 
 int32_t call_sendto(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *addr, int32_t addr_len) {
     struct sockaddr_storage sa;
     memcpy(&sa, addr, addr_len);
+    errno = 0;
     return sendto(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, addr_len);
 }
 
 int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    errno = 0;
     return recv(sockfd, buf, len, flags);
 }
 
 int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *src_addr, int32_t *addr_len) {
     struct sockaddr_storage sa;
     socklen_t l = sizeof(sa);
+    errno = 0;
     int res = recvfrom(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, &l);
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
@@ -1180,14 +1186,6 @@ int32_t call_ioctl_int(int32_t fd, uint64_t request, int32_t arg) {
 int64_t call_sysconf(int32_t name) {
     errno = 0;
     return sysconf(name);
-}
-
-int32_t get_errno() {
-    return errno;
-}
-
-void set_errno(int e) {
-    errno = e;
 }
 
 #ifdef _WIN32

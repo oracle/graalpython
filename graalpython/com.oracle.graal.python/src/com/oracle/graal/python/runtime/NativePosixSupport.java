@@ -167,9 +167,6 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(captureCallState = true, returnType = SINT32, argumentTypes = {POINTER, SINT32})
         abstract int init_constants(long out, int len);
 
-        @DowncallSignature(captureCallState = true, returnType = VOID, argumentTypes = {SINT32})
-        abstract void set_errno(int errno);
-
         @DowncallSignature(captureCallState = true, returnType = SINT64, argumentTypes = {SINT64, SINT32, SINT32, SINT32, SINT64})
         abstract long call_mmap(long length, int prot, int flags, int fd, long offset);
 
@@ -737,7 +734,6 @@ public final class NativePosixSupport extends PosixSupport {
         Buffer buffer = Buffer.allocate(count);
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(count);
         try {
-            posixNativeFunctionInvoker.set_errno(0);
             long n = posixNativeFunctionInvoker.call_read(fd, nativeBuffer, count);
             if (n < 0) {
                 throw getErrnoAndThrowPosixException();
@@ -754,7 +750,6 @@ public final class NativePosixSupport extends PosixSupport {
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(data.length);
         try {
             NativeMemory.writeByteArrayElements(nativeBuffer, 0, data.data, 0, (int) data.length);
-            posixNativeFunctionInvoker.set_errno(0);
             long n = posixNativeFunctionInvoker.call_write(fd, nativeBuffer, data.length);
             if (n < 0) {
                 throw getErrnoAndThrowPosixException();
@@ -2242,7 +2237,6 @@ public final class NativePosixSupport extends PosixSupport {
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
         try {
             NativeMemory.writeByteArrayElements(nativeBuffer, 0, buf, offset, len);
-            posixNativeFunctionInvoker.set_errno(0);
             int result = posixNativeFunctionInvoker.call_send(sockfd, nativeBuffer, len, flags);
             if (result == -1) {
                 throw getErrnoAndThrowPosixException();
@@ -2265,7 +2259,6 @@ public final class NativePosixSupport extends PosixSupport {
             NativeMemory.writeByteArrayElements(nativeBuffer, 0, buf, offset, len);
             nativeDestAddr = NativeMemory.mallocByteArrayOrNull(destAddrLen);
             NativeMemory.writeByteArrayElements(nativeDestAddr, 0, destAddr.data, 0, destAddrLen);
-            posixNativeFunctionInvoker.set_errno(0);
             int result = posixNativeFunctionInvoker.call_sendto(sockfd, nativeBuffer, 0, len, flags, nativeDestAddr, destAddrLen);
             if (result == -1) {
                 throw getErrnoAndThrowPosixException();
@@ -2282,7 +2275,6 @@ public final class NativePosixSupport extends PosixSupport {
         checkBounds(buf, offset, len);
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
         try {
-            posixNativeFunctionInvoker.set_errno(0);
             int result = posixNativeFunctionInvoker.call_recv(sockfd, nativeBuffer, len, flags);
             if (result == -1) {
                 throw getErrnoAndThrowPosixException();
@@ -2305,7 +2297,6 @@ public final class NativePosixSupport extends PosixSupport {
             nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
             nativeSrcAddr = NativeMemory.mallocByteArray(srcAddr.data.length);
             nativeAddrLen = NativeMemory.mallocIntArray(1);
-            posixNativeFunctionInvoker.set_errno(0);
             int result = posixNativeFunctionInvoker.call_recvfrom(sockfd, nativeBuffer, 0, len, flags, nativeSrcAddr, nativeAddrLen);
             if (result == -1) {
                 throw getErrnoAndThrowPosixException();
