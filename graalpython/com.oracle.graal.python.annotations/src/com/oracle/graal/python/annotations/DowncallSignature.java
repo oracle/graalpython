@@ -55,4 +55,6 @@ public @interface DowncallSignature {
     Class<?> retConversion() default void.class;
 
     Class<?>[] argConversions() default {};
+
+    boolean captureCallState() default false;
 }

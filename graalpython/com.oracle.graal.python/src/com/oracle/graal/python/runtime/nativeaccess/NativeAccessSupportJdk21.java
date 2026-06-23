@@ -66,8 +66,23 @@ final class NativeAccessSupportJdk21 extends NativeAccessSupport {
     }
 
     @Override
-    protected MethodHandle createDowncallHandleImpl(MethodType methodType, boolean critical) {
+    protected MethodHandle createDowncallHandleImpl(MethodType methodType, boolean critical, boolean captureCallState) {
         return unsupportedDowncallHandle(methodType);
+    }
+
+    @Override
+    protected Object createCapturedCallStateImpl(Object arena) {
+        throw unsupported();
+    }
+
+    @Override
+    protected int readCapturedErrnoImpl(Object state) {
+        throw unsupported();
+    }
+
+    @Override
+    protected int readCapturedGetLastErrorImpl(Object state) {
+        throw unsupported();
     }
 
     @Override

@@ -95,13 +95,16 @@ final class NativeDowncallMethodHandleGenerator {
                         "MethodType.methodType(" + toClassLiteral(returnType) + ", " + String.join(", ", methodTypeArgs) + "), false);");
     }
 
-    static void emitMethodHandleField(List<String> lines, String fieldName, NativeSimpleType returnType, List<NativeSimpleType> argTypes) {
+    static void emitMethodHandleField(List<String> lines, String fieldName, NativeSimpleType returnType, List<NativeSimpleType> argTypes, boolean critical, boolean captureCallState) {
         List<String> methodTypeArgs = new ArrayList<>();
         methodTypeArgs.add("long.class");
+        if (captureCallState) {
+            methodTypeArgs.add("MemorySegment.class");
+        }
         for (NativeSimpleType argType : argTypes) {
             methodTypeArgs.add(toClassLiteral(argType));
         }
         lines.add("    private static final MethodHandle " + fieldName + " = NativeAccessSupport.createDowncallHandle(" +
-                        "MethodType.methodType(" + toClassLiteral(returnType) + ", " + String.join(", ", methodTypeArgs) + "), false);");
+                        "MethodType.methodType(" + toClassLiteral(returnType) + ", " + String.join(", ", methodTypeArgs) + "), " + critical + ", " + captureCallState + ");");
     }
 }
