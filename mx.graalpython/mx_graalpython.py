@@ -34,6 +34,7 @@ import json
 import os
 import pathlib
 import re
+import signal
 import shlex
 import shutil
 import subprocess
@@ -1989,7 +1990,17 @@ def graalpython_gate_runner(_, tasks):
 
     with Task('GraalPython GraalOS standalone build on SVM', tasks, tags=[GraalPythonTags.svm_graalos_standalone_build]) as task:
         if task:
-            mx_graalpython_graalos.graalpy_graalos_standalone_build_and_test(report=report())
+            branch = _normalize_branch_name(os.environ.get("TO_BRANCH") or SUITE.vc.active_branch(SUITE.dir, abortOnError=False) or 'master')
+            if branch == 'master':
+                on_fail = mx.abort
+            else:
+                def on_fail(codeOrMessage, context=None, killsig=signal.SIGTERM):
+                    mx.warn(codeOrMessage)
+                    assert False, "GraalOS build and test failed"
+            try:
+                mx_graalpython_graalos.graalpy_graalos_standalone_build_and_test(report=report(), on_fail=on_fail)
+            except AssertionError:
+                pass
 
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:

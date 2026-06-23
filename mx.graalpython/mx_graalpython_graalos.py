@@ -64,17 +64,17 @@ def run(*args, **kwargs):
     return run(*args, **kwargs)
 
 
-def _download_graalos_standalone_artifact(source, target):
+def _download_graalos_standalone_artifact(source, target, on_fail=mx.abort):
     source = mx_urlrewrites.rewriteurl(source)
     if "artifact/latest" in source:
         artifact_base_url = os.environ.get("GRAALPY_GRAALOS_ARTIFACT_BASE_URL")
         if not artifact_base_url:
-            mx.abort("GRAALPY_GRAALOS_ARTIFACT_BASE_URL must be set to resolve GraalOS artifact metadata")
+            on_fail("GRAALPY_GRAALOS_ARTIFACT_BASE_URL must be set to resolve GraalOS artifact metadata")
         with urllib.request.urlopen(urllib.request.Request(source, headers={"Accept": "application/json"})) as response:
             metadata = json.loads(response.read().decode("utf-8"))
         artifact_name = metadata.get("artifactName")
         if not artifact_name:
-            mx.abort(f"GraalOS artifact metadata does not contain artifactName: {source}")
+            on_fail(f"GraalOS artifact metadata does not contain artifactName: {source}")
         if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
             run([sys.executable, script, artifact_name, target])
             return
@@ -85,7 +85,7 @@ def _download_graalos_standalone_artifact(source, target):
         shutil.copyfileobj(response, fp)
 
 
-def _extract_tarball(tarball, destination, strip_components=0):
+def _extract_tarball(tarball, destination, strip_components=0, on_fail=mx.abort):
     if os.path.isdir(destination):
         shutil.rmtree(destination)
     mx_util.ensure_dir_exists(destination)
@@ -102,24 +102,24 @@ def _extract_tarball(tarball, destination, strip_components=0):
             if not stripped_name:
                 continue
             if not mx.Extractor._is_sane_name(stripped_name):  # pylint: disable=protected-access
-                mx.abort(f"Refusing to extract unsafe archive entry after stripping: {original_name}")
+                on_fail(f"Refusing to extract unsafe archive entry after stripping: {original_name}")
             member.name = stripped_name
             archive.extract(member, destination)
             member.name = original_name
     os.utime(destination, None)
 
 
-def _find_graalos_runtime_home(runtime_root):
+def _find_graalos_runtime_home(runtime_root, on_fail=mx.abort):
     default = os.path.join(runtime_root, "opt", "graalos")
     if os.path.isdir(default):
         return default
     for root, dirs, _ in os.walk(runtime_root):
         if os.path.basename(root) == "opt" and "graalos" in dirs:
             return os.path.join(root, "graalos")
-    mx.abort(f"Could not find opt/graalos in extracted GraalOS runtime artifact: {runtime_root}")
+    on_fail(f"Could not find opt/graalos in extracted GraalOS runtime artifact: {runtime_root}")
 
 
-def _ensure_graalos_runtime_inputs(runtime_home):
+def _ensure_graalos_runtime_inputs(runtime_home, on_fail=mx.abort):
     graalhost_dir = os.path.join(runtime_home, "graalhost")
     required = [
         os.path.join(graalhost_dir, "graalhost"),
@@ -134,10 +134,10 @@ def _ensure_graalos_runtime_inputs(runtime_home):
     required.append(libbinsweep)
     missing = [path for path in required if not os.path.exists(path)]
     if missing:
-        mx.abort("Extracted GraalOS runtime artifact is missing required files:\n" + "\n".join(missing))
+        on_fail("Extracted GraalOS runtime artifact is missing required files:\n" + "\n".join(missing))
 
 
-def graalpy_graalos_standalone_build_and_test(report=None):
+def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
     del report  # This gate executes an in-sandbox smoke test directly instead of using the source-tree test runner.
     toolchain_url = os.environ.get("GRAALPY_GRAALOS_TOOLCHAIN_URL")
     runtime_url = os.environ.get("GRAALPY_GRAALOS_RUNTIME_URL")
@@ -155,18 +155,18 @@ def graalpy_graalos_standalone_build_and_test(report=None):
     graalvm_home = os.path.join(work_dir, "graalvm")
     runtime_root = os.path.join(work_dir, "runtime")
 
-    _download_graalos_standalone_artifact(toolchain_url, graalvm_tarball)
-    _extract_tarball(graalvm_tarball, graalvm_home, strip_components=1)
+    _download_graalos_standalone_artifact(toolchain_url, graalvm_tarball, on_fail=on_fail)
+    _extract_tarball(graalvm_tarball, graalvm_home, strip_components=1, on_fail=on_fail)
     musl_toolchain = os.path.join(graalvm_home, "lib", "toolchains", "musl-swcfi")
     if not os.path.exists(os.path.join(graalvm_home, "bin", mx.exe_suffix("java"))):
-        mx.abort(f"Extracted GraalOS toolchain artifact does not contain bin/java: {graalvm_home}")
+        on_fail(f"Extracted GraalOS toolchain artifact does not contain bin/java: {graalvm_home}")
     if not os.path.isdir(musl_toolchain):
-        mx.abort(f"Extracted GraalOS toolchain artifact does not contain musl-swcfi toolchain: {musl_toolchain}")
+        on_fail(f"Extracted GraalOS toolchain artifact does not contain musl-swcfi toolchain: {musl_toolchain}")
 
-    _download_graalos_standalone_artifact(runtime_url, runtime_tarball)
-    _extract_tarball(runtime_tarball, runtime_root)
-    graalos_runtime_home = _find_graalos_runtime_home(runtime_root)
-    _ensure_graalos_runtime_inputs(graalos_runtime_home)
+    _download_graalos_standalone_artifact(runtime_url, runtime_tarball, on_fail=on_fail)
+    _extract_tarball(runtime_tarball, runtime_root, on_fail=on_fail)
+    graalos_runtime_home = _find_graalos_runtime_home(runtime_root, on_fail=on_fail)
+    _ensure_graalos_runtime_inputs(graalos_runtime_home, on_fail=on_fail)
 
     from mx_graalpython import extend_os_env, run_mx, _graalpy_launcher
     env = extend_os_env(
@@ -176,16 +176,18 @@ def graalpy_graalos_standalone_build_and_test(report=None):
         GRAALOS_RUNTIME_HOME=graalos_runtime_home,
         NATIVE_IMAGE_EXPERIMENTAL_OPTIONS_ARE_FATAL="false",
     )
-    run_mx([
+    result = run_mx([
         "--multitarget=linux-amd64-musl-swcfi",
         "build",
         "--target", "GRAALPY_NATIVE_GRAALOS_STANDALONE",
-    ], env=env)
+    ], env=env, nonZeroIsFatal=(on_fail == mx.abort))
+    if result != 0:
+        on_fail("Building GRAALPY_NATIVE_GRAALOS_STANDALONE failed")
 
     standalone_home = os.path.join(SUITE.dir, "mxbuild", "linux-amd64", "GRAALPY_NATIVE_GRAALOS_STANDALONE")
     launcher = os.path.join(standalone_home, "bin", _graalpy_launcher())
     if not os.path.exists(launcher):
-        mx.abort(f"GRAALPY_NATIVE_GRAALOS_STANDALONE launcher was not built: {launcher}")
+        on_fail(f"GRAALPY_NATIVE_GRAALOS_STANDALONE launcher was not built: {launcher}")
 
     test_path = os.path.join(
         SUITE.dir,
@@ -205,4 +207,6 @@ except unittest.SkipTest as e:
 """
     smoke_test_arg = base64.b64encode(smoke_test.encode("utf-8")).decode("ascii")
     smoke_test_command = f"import base64; exec(base64.b64decode({smoke_test_arg!r}).decode('utf-8'))"
-    run([launcher, "-c", smoke_test_command], env=env)
+    result = run([launcher, "-c", smoke_test_command], env=env, nonZeroIsFatal=(on_fail == mx.abort))
+    if result != 0:
+        on_fail("Testing GraalOS standalone failed")
