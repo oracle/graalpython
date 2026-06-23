@@ -2612,6 +2612,8 @@ def update_import_cmd(args):
     shutil.copy(truffle_repo / "common.json", repo / "ci" / "graal" / "common.json")
     shutil.copytree(truffle_repo / "ci", repo / "ci" / "graal" / "ci", dirs_exist_ok=True)
 
+    mx_graalpython_graalos.update_graalos_versions()
+
     if args.rota:
         import_updated = _commit_if_dirty(vc, repo, "Update imports")
         _apply_github_unittest_tags(no_commit=True)
