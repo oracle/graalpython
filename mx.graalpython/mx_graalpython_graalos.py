@@ -94,7 +94,7 @@ def update_graalos_versions():
     content = json.dumps(versions, indent=2, sort_keys=True)
     content += "\n"
     mx.update_file(GRAALOS_VERSIONS_PATH.as_posix(), content, showDiff=True)
-    SUITE.vc.git_command(SUITE.dir, ["add", GRAALOS_VERSIONS_PATH.relative_to(SUITE.dir)], abortOnError=True)
+    SUITE.vc.git_command(SUITE.dir, ["add", str(GRAALOS_VERSIONS_PATH.relative_to(SUITE.dir))], abortOnError=True)
 
 
 def resolve_latest_graalos_artifact_name(source, on_fail=mx.abort):
@@ -328,6 +328,7 @@ def graalpy_graalos_standalone_build_and_test(report=None, on_fail=mx.abort):
     _download_graalos_standalone_artifact(versions["runtime"], runtime_tarball, on_fail=on_fail)
     _extract_tarball(runtime_tarball, runtime_root, on_fail=on_fail)
     graalos_runtime_home = _find_graalos_runtime_home(runtime_root, on_fail=on_fail)
+    assert graalos_runtime_home
     _ensure_graalos_runtime_inputs(graalos_runtime_home, on_fail=on_fail)
 
     from mx_graalpython import extend_os_env, run_mx, run_python_unittests, _graalpy_launcher
