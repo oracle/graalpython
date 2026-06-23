@@ -34,6 +34,7 @@ import json
 import os
 import pathlib
 import re
+import signal
 import shlex
 import shutil
 import subprocess
@@ -1280,7 +1281,7 @@ def graalvm_jdk(enterprise=False):
 
     jdk_major_version = mx.get_jdk().version.parts[0]
     if enterprise:
-        mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', '..', 'graal-enterprise', 'vm-enterprise'), '--env', 'ee']
+        mx_args = ['-p', str(next(Path(mx.suite('truffle').dir).resolve().parent.parent.glob('*/vm-enterprise'))), '--env', 'ee']
         edition = ""
     else:
         mx_args = ['-p', os.path.join(mx.suite('truffle').dir, '..', 'vm'), '--env', 'ce']
@@ -1989,7 +1990,17 @@ def graalpython_gate_runner(_, tasks):
 
     with Task('GraalPython GraalOS standalone build on SVM', tasks, tags=[GraalPythonTags.svm_graalos_standalone_build]) as task:
         if task:
-            mx_graalpython_graalos.graalpy_graalos_standalone_build_and_test(report=report())
+            branch = _normalize_branch_name(os.environ.get("TO_BRANCH") or SUITE.vc.active_branch(SUITE.dir, abortOnError=False) or 'master')
+            if branch == 'master':
+                on_fail = mx.abort
+            else:
+                def on_fail(codeOrMessage, context=None, killsig=signal.SIGTERM):
+                    mx.warn(codeOrMessage)
+                    assert False, "GraalOS build and test failed"
+            try:
+                mx_graalpython_graalos.graalpy_graalos_standalone_build_and_test(report=report(), on_fail=on_fail)
+            except AssertionError:
+                pass
 
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
@@ -2600,6 +2611,8 @@ def update_import_cmd(args):
 
     shutil.copy(truffle_repo / "common.json", repo / "ci" / "graal" / "common.json")
     shutil.copytree(truffle_repo / "ci", repo / "ci" / "graal" / "ci", dirs_exist_ok=True)
+
+    mx_graalpython_graalos.update_graalos_versions()
 
     if args.rota:
         import_updated = _commit_if_dirty(vc, repo, "Update imports")
