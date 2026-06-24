@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -34,6 +34,9 @@ PyAPI_FUNC(PyObject *) PyList_New(Py_ssize_t size);
 PyAPI_FUNC(Py_ssize_t) PyList_Size(PyObject *);
 
 PyAPI_FUNC(PyObject *) PyList_GetItem(PyObject *, Py_ssize_t);
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x030d0000
+PyAPI_FUNC(PyObject *) PyList_GetItemRef(PyObject *, Py_ssize_t);
+#endif
 PyAPI_FUNC(int) PyList_SetItem(PyObject *, Py_ssize_t, PyObject *);
 PyAPI_FUNC(int) PyList_Insert(PyObject *, Py_ssize_t, PyObject *);
 PyAPI_FUNC(int) PyList_Append(PyObject *, PyObject *);

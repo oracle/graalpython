@@ -61,7 +61,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
@@ -271,44 +271,46 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
-    abstract static class _PyLong_AsByteArray extends CApi5BuiltinNode {
-        private static void checkSign(Node inliningTarget, boolean negative, int isSigned, PRaiseNode raiseNode) {
+    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int, Int}, call = Direct)
+    abstract static class _PyLong_AsByteArray extends CApi6BuiltinNode {
+        private static void checkSign(Node inliningTarget, boolean negative, int isSigned, int withExceptions, PRaiseNode raiseNode) {
             if (negative) {
                 if (isSigned == 0) {
-                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+                    if (withExceptions != 0) {
+                        throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+                    }
                 }
             }
         }
 
         @Specialization
-        static Object get(int value, long bytes, long n, int littleEndian, int isSigned,
+        static Object get(int value, long bytes, long n, int littleEndian, int isSigned, int withExceptions,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            checkSign(inliningTarget, value < 0, isSigned, raiseNode);
+            checkSign(inliningTarget, value < 0, isSigned, withExceptions, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             NativeMemory.writeByteArrayElements(bytes, 0L, array, 0, array.length);
             return 0;
         }
 
         @Specialization
-        static Object get(long value, long bytes, long n, int littleEndian, int isSigned,
+        static Object get(long value, long bytes, long n, int littleEndian, int isSigned, int withExceptions,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            checkSign(inliningTarget, value < 0, isSigned, raiseNode);
+            checkSign(inliningTarget, value < 0, isSigned, withExceptions, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             NativeMemory.writeByteArrayElements(bytes, 0L, array, 0, array.length);
             return 0;
         }
 
         @Specialization
-        static Object get(PInt value, long bytes, long n, int littleEndian, int isSigned,
+        static Object get(PInt value, long bytes, long n, int littleEndian, int isSigned, int withExceptions,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            checkSign(inliningTarget, value.isNegative(), isSigned, raiseNode);
+            checkSign(inliningTarget, value.isNegative(), isSigned, withExceptions, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromBigInteger(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             NativeMemory.writeByteArrayElements(bytes, 0L, array, 0, array.length);
             return 0;

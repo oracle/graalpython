@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -6,8 +6,6 @@
 #ifndef Py_CPYTHON_MEMORYOBJECT_H
 #  error "this header file must not be included directly"
 #endif
-
-PyAPI_DATA(PyTypeObject) _PyManagedBuffer_Type;
 
 /* The structs are declared here so that macros can work, but they shouldn't
    be considered public. Don't access their fields directly, use the macros

@@ -3,12 +3,14 @@
 
 import array
 import functools
+import gc
 import io
 import os
 import struct
 import sys
 import unittest
 from subprocess import PIPE, Popen
+from test.support import catch_unraisable_exception
 from test.support import import_helper, impl_detail
 from test.support import os_helper
 from test.support import _4G, bigmemtest, requires_subprocess
@@ -587,6 +589,8 @@ class TestGzip(BaseTest):
             self.assertRaises(AttributeError, f.fileno)
 
     def test_fileobj_mode(self):
+        self.assertEqual(gzip.READ, 'rb')
+        self.assertEqual(gzip.WRITE, 'wb')
         gzip.GzipFile(self.filename, "wb").close()
         with open(self.filename, "r+b") as f:
             with gzip.GzipFile(fileobj=f, mode='r') as g:
@@ -712,13 +716,23 @@ class TestGzip(BaseTest):
                         self.assertEqual(f.mtime, mtime)
 
     def test_compress_correct_level(self):
-        # gzip.compress calls with mtime == 0 take a different code path.
         for mtime in (0, 42):
             with self.subTest(mtime=mtime):
                 nocompress = gzip.compress(data1, compresslevel=0, mtime=mtime)
                 yescompress = gzip.compress(data1, compresslevel=1, mtime=mtime)
                 self.assertIn(data1, nocompress)
                 self.assertNotIn(data1, yescompress)
+
+    def test_issue112346(self):
+        # The OS byte should be 255, this should not change between Python versions.
+        for mtime in (0, 42):
+            with self.subTest(mtime=mtime):
+                compress = gzip.compress(data1, compresslevel=1, mtime=mtime)
+                self.assertEqual(
+                    struct.unpack("<IxB", compress[4:10]),
+                    (mtime, 255),
+                    "Gzip header does not properly set either mtime or OS byte."
+                )
 
     def test_decompress(self):
         for data in (data1, data2):
@@ -834,6 +848,17 @@ class TestGzip(BaseTest):
             f.write(message)
         data = b.getvalue()
         self.assertEqual(gzip.decompress(data), message * 2)
+
+
+    def test_refloop_unraisable(self):
+        # Ensure a GzipFile referring to a temporary fileobj deletes cleanly.
+        # Previously an unraisable exception would occur on close because the
+        # fileobj would be closed before the GzipFile as the result of a
+        # reference loop. See issue gh-129726
+        with catch_unraisable_exception() as cm:
+            gzip.GzipFile(fileobj=io.BytesIO(), mode="w")
+            gc.collect()
+            self.assertIsNone(cm.unraisable)
 
 
 class TestOpen(BaseTest):

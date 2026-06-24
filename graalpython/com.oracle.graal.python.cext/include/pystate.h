@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -65,7 +65,7 @@ PyAPI_FUNC(void) PyThreadState_Delete(PyThreadState *);
 
    The caller must hold the GIL.
 
-   See also _PyThreadState_UncheckedGet() and _PyThreadState_GET(). */
+   See also PyThreadState_GetUnchecked() and _PyThreadState_GET(). */
 PyAPI_FUNC(PyThreadState *) PyThreadState_Get(void);
 
 // Alias to PyThreadState_Get()

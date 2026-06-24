@@ -16,7 +16,6 @@ typedef struct {
 } PyTupleObject;
 
 PyAPI_FUNC(int) _PyTuple_Resize(PyObject **, Py_ssize_t);
-PyAPI_FUNC(void) _PyTuple_MaybeUntrack(PyObject *);
 
 /* Cast argument to PyTupleObject* type. */
 #define _PyTuple_CAST(op) \
@@ -40,9 +39,10 @@ PyAPI_FUNC(void) GraalPyTuple_SET_ITEM(PyObject*, Py_ssize_t, PyObject*);
 /* Function *only* to be used to fill in brand new tuples */
 static inline void
 PyTuple_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
+    PyTupleObject *tuple = _PyTuple_CAST(op);
+    assert(0 <= index);
+    assert(index < Py_SIZE(tuple));
     GraalPyTuple_SET_ITEM(op, index, value);
 }
 #define PyTuple_SET_ITEM(op, index, value) \
     PyTuple_SET_ITEM(_PyObject_CAST(op), (index), _PyObject_CAST(value))
-
-PyAPI_FUNC(void) _PyTuple_DebugMallocStats(FILE *out);

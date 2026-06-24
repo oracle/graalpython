@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2019, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -22,15 +22,6 @@ PyAPI_FUNC(char *) PyOS_double_to_string(double val,
                                          int precision,
                                          int flags,
                                          int *type);
-
-#ifndef Py_LIMITED_API
-PyAPI_FUNC(PyObject *) _Py_string_to_number_with_underscores(
-    const char *str, Py_ssize_t len, const char *what, PyObject *obj, void *arg,
-    PyObject *(*innerfunc)(const char *, Py_ssize_t, void *));
-
-PyAPI_FUNC(double) _Py_parse_inf_or_nan(const char *p, char **endptr);
-#endif
-
 
 /* PyOS_double_to_string's "flags" parameter can be set to 0 or more of: */
 #define Py_DTSF_SIGN      0x01 /* always add the sign */

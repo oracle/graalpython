@@ -1,9 +1,11 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 /* Common code for use by all hashlib related modules. */
+
+#include "pycore_lock.h"        // PyMutex
 
 /*
  * Given a PyObject* obj, fill in the Py_buffer* viewp with the result
@@ -53,19 +55,58 @@
 
 #include "pythread.h"
 #define ENTER_HASHLIB(obj) \
-    if ((obj)->lock) { \
-        if (!PyThread_acquire_lock((obj)->lock, 0)) { \
-            Py_BEGIN_ALLOW_THREADS \
-            PyThread_acquire_lock((obj)->lock, 1); \
-            Py_END_ALLOW_THREADS \
-        } \
+    if ((obj)->use_mutex) { \
+        PyMutex_Lock(&(obj)->mutex); \
     }
 #define LEAVE_HASHLIB(obj) \
-    if ((obj)->lock) { \
-        PyThread_release_lock((obj)->lock); \
+    if ((obj)->use_mutex) { \
+        PyMutex_Unlock(&(obj)->mutex); \
     }
+
+#ifdef Py_GIL_DISABLED
+#define HASHLIB_INIT_MUTEX(obj) \
+    do { \
+        (obj)->mutex = (PyMutex){0}; \
+        (obj)->use_mutex = true; \
+    } while (0)
+#else
+#define HASHLIB_INIT_MUTEX(obj) \
+    do { \
+        (obj)->mutex = (PyMutex){0}; \
+        (obj)->use_mutex = false; \
+    } while (0)
+#endif
 
 /* TODO(gpshead): We should make this a module or class attribute
  * to allow the user to optimize based on the platform they're using. */
 #define HASHLIB_GIL_MINSIZE 2048
 
+static inline int
+_Py_hashlib_data_argument(PyObject **res, PyObject *data, PyObject *string)
+{
+    if (data != NULL && string == NULL) {
+        // called as H(data) or H(data=...)
+        *res = data;
+        return 1;
+    }
+    else if (data == NULL && string != NULL) {
+        // called as H(string=...)
+        *res = string;
+        return 1;
+    }
+    else if (data == NULL && string == NULL) {
+        // fast path when no data is given
+        assert(!PyErr_Occurred());
+        *res = NULL;
+        return 0;
+    }
+    else {
+        // called as H(data=..., string)
+        *res = NULL;
+        PyErr_SetString(PyExc_TypeError,
+                        "'data' and 'string' are mutually exclusive "
+                        "and support for 'string' keyword parameter "
+                        "is slated for removal in a future version.");
+        return -1;
+    }
+}

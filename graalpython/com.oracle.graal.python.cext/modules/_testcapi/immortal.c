@@ -1,9 +1,12 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 #include "parts.h"
+
+#define Py_BUILD_CORE
+#include "internal/pycore_long.h"   // _PyLong_IsSmallInt()
 
 int verify_immortality(PyObject *object)
 {
@@ -31,7 +34,17 @@ static PyObject *
 test_immortal_small_ints(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
     for (int i = -5; i <= 256; i++) {
-        assert(verify_immortality(PyLong_FromLong(i)));
+        PyObject *obj = PyLong_FromLong(i);
+        assert(verify_immortality(obj));
+        int is_small_int = _PyLong_IsSmallInt((PyLongObject *)obj);
+        assert(is_small_int);
+    }
+    for (int i = 257; i <= 260; i++) {
+        PyObject *obj = PyLong_FromLong(i);
+        assert(obj);
+        int is_small_int = _PyLong_IsSmallInt((PyLongObject *)obj);
+        assert(!is_small_int);
+        Py_DECREF(obj);
     }
     Py_RETURN_NONE;
 }

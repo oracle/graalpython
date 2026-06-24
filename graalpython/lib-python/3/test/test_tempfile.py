@@ -334,17 +334,40 @@ class TestBadTempdir:
     )
     def test_read_only_directory(self):
         with _inside_empty_temp_dir():
-            oldmode = mode = os.stat(tempfile.tempdir).st_mode
-            mode &= ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
-            os.chmod(tempfile.tempdir, mode)
+            probe = os.path.join(tempfile.tempdir, 'probe')
+            if os.name == 'nt':
+                # Use security identifier *S-1-1-0 instead
+                # of localized "Everyone" to not depend on the locale.
+                cmd = ['icacls', tempfile.tempdir, '/deny', '*S-1-1-0:(W)']
+                stdout = None if support.verbose > 1 else subprocess.DEVNULL
+                subprocess.run(cmd, check=True, stdout=stdout)
+            else:
+                oldmode = mode = os.stat(tempfile.tempdir).st_mode
+                mode &= ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)
+                mode = stat.S_IREAD
+                os.chmod(tempfile.tempdir, mode)
             try:
-                if os.access(tempfile.tempdir, os.W_OK):
+                # Check that the directory is read-only.
+                try:
+                    os.mkdir(probe)
+                except PermissionError:
+                    pass
+                else:
+                    os.rmdir(probe)
                     self.skipTest("can't set the directory read-only")
+                # gh-66305: Now it takes a split second, but previously
+                # it took about 10 days on Windows.
                 with self.assertRaises(PermissionError):
                     self.make_temp()
-                self.assertEqual(os.listdir(tempfile.tempdir), [])
             finally:
-                os.chmod(tempfile.tempdir, oldmode)
+                if os.name == 'nt':
+                    # Use security identifier *S-1-1-0 instead
+                    # of localized "Everyone" to not depend on the locale.
+                    cmd = ['icacls', tempfile.tempdir, '/grant:r', '*S-1-1-0:(M)']
+                    subprocess.run(cmd, check=True, stdout=stdout)
+                else:
+                    os.chmod(tempfile.tempdir, oldmode)
+            self.assertEqual(os.listdir(tempfile.tempdir), [])
 
     def test_nonexisting_directory(self):
         with _inside_empty_temp_dir():
@@ -1287,6 +1310,34 @@ class TestSpooledTemporaryFile(BaseTestCase):
         self.assertEqual(pos, 0)
         buf = f.read()
         self.assertEqual(buf, b'xyz')
+
+    def test_writelines_rollover(self):
+        # Verify writelines rolls over before exhausting the iterator
+        f = self.do_create(max_size=2)
+
+        def it():
+            yield b'xy'
+            self.assertFalse(f._rolled)
+            yield b'z'
+            self.assertTrue(f._rolled)
+
+        f.writelines(it())
+        pos = f.seek(0)
+        self.assertEqual(pos, 0)
+        buf = f.read()
+        self.assertEqual(buf, b'xyz')
+
+    def test_writelines_fast_path(self):
+        f = self.do_create(max_size=2)
+        f.write(b'abc')
+        self.assertTrue(f._rolled)
+
+        f.writelines([b'd', b'e', b'f'])
+        pos = f.seek(0)
+        self.assertEqual(pos, 0)
+        buf = f.read()
+        self.assertEqual(buf, b'abcdef')
+
 
     def test_writelines_sequential(self):
         # A SpooledTemporaryFile should hold exactly max_size bytes, and roll

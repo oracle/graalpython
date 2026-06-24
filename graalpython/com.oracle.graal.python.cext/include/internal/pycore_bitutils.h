@@ -1,4 +1,4 @@
-/* Copyright (c) 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2025, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2025 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -31,9 +31,9 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-   /* Get _byteswap_ushort(), _byteswap_ulong(), _byteswap_uint64() */
-#  include <intrin.h>
+#  include <intrin.h>             // _byteswap_uint64()
 #endif
+
 
 static inline uint16_t
 _Py_bswap16(uint16_t word)

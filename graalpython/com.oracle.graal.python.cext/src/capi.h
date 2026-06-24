@@ -289,10 +289,11 @@ Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
 PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);
 PyAPI_FUNC(int) _PyArg_ParseTuple_SizeT(PyObject *, const char *, ...);
 PyAPI_FUNC(int) _PyArg_ParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
-                                                  const char *, char **, ...);
+                                                  const char *, const char * const *, ...);
 PyAPI_FUNC(int) _PyArg_VaParse_SizeT(PyObject *, const char *, va_list);
 PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
-                                                  const char *, char **, va_list);
+                                                  const char *, const char * const *, va_list);
+PyAPI_FUNC(PyObject *) _Py_VaBuildValue_SizeT(const char *, va_list);
 
 
 /*

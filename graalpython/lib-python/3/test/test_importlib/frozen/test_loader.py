@@ -2,10 +2,8 @@ from test.test_importlib import abc, util
 
 machinery = util.import_importlib('importlib.machinery')
 
-from test.support import captured_stdout, import_helper, STDLIB_DIR, impl_detail
-import _imp
+from test.support import captured_stdout, import_helper, STDLIB_DIR
 import contextlib
-import marshal
 import os.path
 import types
 import unittest
@@ -66,7 +64,7 @@ class ExecModuleTests(abc.LoaderTests):
             module.main()
 
         self.assertTrue(module.initialized)
-        self.assertTrue(hasattr(module, '__spec__'))
+        self.assertHasAttr(module, '__spec__')
         self.assertEqual(module.__spec__.origin, 'frozen')
         return module, stdout.getvalue()
 
@@ -77,7 +75,7 @@ class ExecModuleTests(abc.LoaderTests):
         for attr, value in check.items():
             self.assertEqual(getattr(module, attr), value)
         self.assertEqual(output, 'Hello world!\n')
-        self.assertTrue(hasattr(module, '__spec__'))
+        self.assertHasAttr(module, '__spec__')
         self.assertEqual(module.__spec__.loader_state.origname, name)
 
     def test_package(self):
@@ -141,7 +139,7 @@ class InspectLoaderTests:
             exec(code, mod.__dict__)
         with captured_stdout() as stdout:
             mod.main()
-        self.assertTrue(hasattr(mod, 'initialized'))
+        self.assertHasAttr(mod, 'initialized')
         self.assertEqual(stdout.getvalue(), 'Hello world!\n')
 
     def test_get_source(self):

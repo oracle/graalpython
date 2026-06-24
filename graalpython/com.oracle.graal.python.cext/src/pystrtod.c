@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -8,7 +8,8 @@
 #include <Python.h>
 #include "pycore_dtoa.h"          // _Py_dg_strtod()
 #include "pycore_pymath.h"        // _PY_SHORT_FLOAT_REPR
-#include <locale.h>
+
+#include <locale.h>               // localeconv()
 
 /* Case-insensitive string match used for nan and inf detection; t should be
    lower-case.  Returns 1 for a successful match, 0 otherwise. */

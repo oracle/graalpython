@@ -1,18 +1,15 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-
-/* Bytes object interface */
+// Bytes object interface
 
 #ifndef Py_BYTESOBJECT_H
 #define Py_BYTESOBJECT_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdarg.h>               // va_list
 
 /*
 Type PyBytesObject represents a byte string.  An extra zero byte is

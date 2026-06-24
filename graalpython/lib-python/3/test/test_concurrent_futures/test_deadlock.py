@@ -248,6 +248,8 @@ class ExecutorDeadlockTest:
             with self.assertRaises(BrokenProcessPool):
                 list(executor.map(_crash_with_data, [data] * 10))
 
+        executor.shutdown(wait=True)
+
     def test_gh105829_should_not_deadlock_if_wakeup_pipe_full(self):
         # Issue #105829: The _ExecutorManagerThread wakeup pipe could
         # fill up and block. See: https://github.com/python/cpython/issues/105829

@@ -1,4 +1,4 @@
-/* Copyright (c) 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2025, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2025 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -6,16 +6,17 @@
 #ifndef Py_BUILD_CORE_BUILTIN
 #  define Py_BUILD_CORE_MODULE 1
 #endif
+
 #include <Python.h>
 #include <ffi.h>
 #ifdef MS_WIN32
-#include <windows.h>
+#  include <windows.h>
 #else
-#include <sys/mman.h>
-#include <unistd.h>
-# if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
-#  define MAP_ANONYMOUS MAP_ANON
-# endif
+#  include <sys/mman.h>
+#  include <unistd.h>             // sysconf()
+#  if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#    define MAP_ANONYMOUS MAP_ANON
+#  endif
 #endif
 #include "ctypes.h"
 

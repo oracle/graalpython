@@ -208,6 +208,17 @@ class XMLRPCTestCase(unittest.TestCase):
         self.assertEqual(xmlrpclib.loads(strg)[0][0], value)
         self.assertEqual(xmlrpclib.loads(strg)[1], methodname)
 
+    def test_dump_escape_methodname(self):
+        payload = 'foo</methodName><injected attr="evil"/><methodName>bar'
+        s = xmlrpclib.dumps((), methodname=payload)
+        self.assertIn(
+            '<methodName>foo&lt;/methodName&gt;&lt;injected attr="evil"/&gt;'
+            '&lt;methodName&gt;bar</methodName>', s
+        )
+        self.assertNotIn('<injected attr="evil"/>', s)
+        load, m = xmlrpclib.loads(s)
+        self.assertEqual(m, payload)
+
     def test_dump_bytes(self):
         sample = b"my dog has fleas"
         self.assertEqual(sample, xmlrpclib.Binary(sample))
@@ -511,9 +522,15 @@ class DateTimeTestCase(unittest.TestCase):
         self.assertEqual(str(t), time.strftime("%Y%m%dT%H:%M:%S", d))
 
     def test_datetime_datetime(self):
+        # naive (no tzinfo)
         d = datetime.datetime(2007,1,2,3,4,5)
         t = xmlrpclib.DateTime(d)
         self.assertEqual(str(t), '20070102T03:04:05')
+
+        # aware (with tzinfo): the timezone is ignored
+        d = datetime.datetime(2023, 6, 12, 13, 30, tzinfo=datetime.UTC)
+        t = xmlrpclib.DateTime(d)
+        self.assertEqual(str(t), '20230612T13:30:00')
 
     def test_repr(self):
         d = datetime.datetime(2007,1,2,3,4,5)

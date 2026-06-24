@@ -1,15 +1,29 @@
-/* Copyright (c) 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2025, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2025 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-#include <Python.h>
-
-#ifdef MS_WIN32
-#include <windows.h>
+// Need limited C API version 3.13 for Py_mod_gil
+#include "pyconfig.h"   // Py_GIL_DISABLED
+#ifndef Py_GIL_DISABLED
+#  define Py_LIMITED_API 0x030d0000
 #endif
 
+// gh-85283: On Windows, Py_LIMITED_API requires Py_BUILD_CORE to not attempt
+// linking the extension to python3.lib (which fails). Py_BUILD_CORE_MODULE is
+// needed to import Python symbols. Then Python.h undefines Py_BUILD_CORE and
+// Py_BUILD_CORE_MODULE if Py_LIMITED_API is defined.
+#define Py_BUILD_CORE
+#define Py_BUILD_CORE_MODULE
+
+#include <Python.h>
+
+#include <stdio.h>                // printf()
 #include <stdlib.h>               // qsort()
+#include <string.h>               // memset()
+#ifdef MS_WIN32
+#  include <windows.h>
+#endif
 
 #define EXPORT(x) Py_EXPORTED_SYMBOL x
 
@@ -396,7 +410,7 @@ EXPORT(char *)my_strtok(char *token, const char *delim)
     return strtok(token, delim);
 }
 
-EXPORT(char *)my_strchr(const char *s, int c)
+EXPORT(const char *) my_strchr(const char *s, int c)
 {
     return strchr(s, c);
 }
@@ -862,13 +876,10 @@ EXPORT(RECT) ReturnRect(int i, RECT ar, RECT* br, POINT cp, RECT dr,
     {
     case 0:
         return ar;
-        break;
     case 1:
         return dr;
-        break;
     case 2:
         return gr;
-        break;
 
     }
     return ar;
@@ -1158,6 +1169,7 @@ _testfunc_pylist_append(PyObject *list, PyObject *item)
 
 static struct PyModuleDef_Slot _ctypes_test_slots[] = {
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL}
 };
 

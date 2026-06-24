@@ -14,7 +14,7 @@ from _testcapi import getargs_keywords, getargs_keyword_only
 try:
     import _testinternalcapi
 except ImportError:
-    _testinternalcapi = None # NULL GraalPy change
+    _testinternalcapi = None
 
 # > How about the following counterproposal. This also changes some of
 # > the other format codes to be a little more regular.
@@ -670,7 +670,7 @@ class Keywords_TestCase(unittest.TestCase):
         try:
             getargs_keywords((1,2),3,arg5=10,arg666=666)
         except TypeError as err:
-            self.assertEqual(str(err), "'arg666' is an invalid keyword argument for this function")
+            self.assertEqual(str(err), "this function got an unexpected keyword argument 'arg666'")
         else:
             self.fail('TypeError should have been raised')
 
@@ -678,7 +678,7 @@ class Keywords_TestCase(unittest.TestCase):
         try:
             getargs_keywords((1,2), 3, (4,(5,6)), (7,8,9), **{'\uDC80': 10})
         except TypeError as err:
-            self.assertEqual(str(err), "'\udc80' is an invalid keyword argument for this function")
+            self.assertEqual(str(err), "this function got an unexpected keyword argument '\udc80'")
         else:
             self.fail('TypeError should have been raised')
 
@@ -745,12 +745,12 @@ class KeywordOnly_TestCase(unittest.TestCase):
     def test_invalid_keyword(self):
         # extraneous keyword arg
         with self.assertRaisesRegex(TypeError,
-            "'monster' is an invalid keyword argument for this function"):
+            "this function got an unexpected keyword argument 'monster'"):
             getargs_keyword_only(1, 2, monster=666)
 
     def test_surrogate_keyword(self):
         with self.assertRaisesRegex(TypeError,
-            "'\udc80' is an invalid keyword argument for this function"):
+            "this function got an unexpected keyword argument '\udc80'"):
             getargs_keyword_only(1, 2, **{'\uDC80': 10})
 
     def test_weird_str_subclass(self):
@@ -764,7 +764,7 @@ class KeywordOnly_TestCase(unittest.TestCase):
             "invalid keyword argument for this function"):
             getargs_keyword_only(1, 2, **{BadStr("keyword_only"): 3})
         with self.assertRaisesRegex(TypeError,
-            "invalid keyword argument for this function"):
+            "this function got an unexpected keyword argument"):
             getargs_keyword_only(1, 2, **{BadStr("monster"): 666})
 
     def test_weird_str_subclass2(self):
@@ -777,7 +777,7 @@ class KeywordOnly_TestCase(unittest.TestCase):
             "invalid keyword argument for this function"):
             getargs_keyword_only(1, 2, **{BadStr("keyword_only"): 3})
         with self.assertRaisesRegex(TypeError,
-            "invalid keyword argument for this function"):
+            "this function got an unexpected keyword argument"):
             getargs_keyword_only(1, 2, **{BadStr("monster"): 666})
 
 
@@ -810,7 +810,7 @@ class PositionalOnlyAndKeywords_TestCase(unittest.TestCase):
 
     def test_empty_keyword(self):
         with self.assertRaisesRegex(TypeError,
-            "'' is an invalid keyword argument for this function"):
+            "this function got an unexpected keyword argument ''"):
             self.getargs(1, 2, **{'': 666})
 
 
@@ -859,20 +859,33 @@ class Bytes_TestCase(unittest.TestCase):
 
     def test_w_star(self):
         # getargs_w_star() modifies first and last byte
-        from _testcapi import getargs_w_star
-        self.assertRaises(TypeError, getargs_w_star, 'abc\xe9')
-        self.assertRaises(TypeError, getargs_w_star, b'bytes')
-        self.assertRaises(TypeError, getargs_w_star, b'nul:\0')
-        self.assertRaises(TypeError, getargs_w_star, memoryview(b'bytes'))
-        buf = bytearray(b'bytearray')
-        self.assertEqual(getargs_w_star(buf), b'[ytearra]')
-        self.assertEqual(buf, bytearray(b'[ytearra]'))
-        buf = bytearray(b'memoryview')
-        self.assertEqual(getargs_w_star(memoryview(buf)), b'[emoryvie]')
-        self.assertEqual(buf, bytearray(b'[emoryvie]'))
-        self.assertRaises(TypeError, getargs_w_star, None)
-        self.assertRaises(TypeError, getargs_w_star, NONCONTIG_WRITABLE)
-        self.assertRaises(TypeError, getargs_w_star, NONCONTIG_READONLY)
+        # getargs_w_star_opt() takes additional optional args: with one
+        #   argument it should behave the same as getargs_w_star
+        from _testcapi import getargs_w_star, getargs_w_star_opt
+        for func in (getargs_w_star, getargs_w_star_opt):
+            with self.subTest(func=func):
+                self.assertRaises(TypeError, func, 'abc\xe9')
+                self.assertRaises(TypeError, func, b'bytes')
+                self.assertRaises(TypeError, func, b'nul:\0')
+                self.assertRaises(TypeError, func, memoryview(b'bytes'))
+                buf = bytearray(b'bytearray')
+                self.assertEqual(func(buf), b'[ytearra]')
+                self.assertEqual(buf, bytearray(b'[ytearra]'))
+                buf = bytearray(b'memoryview')
+                self.assertEqual(func(memoryview(buf)), b'[emoryvie]')
+                self.assertEqual(buf, bytearray(b'[emoryvie]'))
+                self.assertRaises(TypeError, func, None)
+                self.assertRaises(TypeError, func, NONCONTIG_WRITABLE)
+                self.assertRaises(TypeError, func, NONCONTIG_READONLY)
+
+    def test_getargs_empty(self):
+        from _testcapi import getargs_empty
+        self.assertTrue(getargs_empty())
+        self.assertRaises(TypeError, getargs_empty, 1)
+        self.assertRaises(TypeError, getargs_empty, 1, 2, 3)
+        self.assertRaises(TypeError, getargs_empty, a=1)
+        self.assertRaises(TypeError, getargs_empty, a=1, b=2)
+        self.assertRaises(TypeError, getargs_empty, 'x', 'y', 'z', a=1, b=2)
 
 
 class String_TestCase(unittest.TestCase):
@@ -919,23 +932,6 @@ class String_TestCase(unittest.TestCase):
         # TypeError: must be read-only bytes-like object, not memoryview
         self.assertRaises(TypeError, getargs_s_hash, NONCONTIG_WRITABLE)
         self.assertRaises(TypeError, getargs_s_hash, NONCONTIG_READONLY)
-
-    def test_s_hash_int(self):
-        # "s#" without PY_SSIZE_T_CLEAN defined.
-        from _testcapi import getargs_s_hash_int
-        from _testcapi import getargs_s_hash_int2
-        buf = bytearray([1, 2])
-        self.assertRaises(SystemError, getargs_s_hash_int, buf, "abc")
-        self.assertRaises(SystemError, getargs_s_hash_int, buf, x=42)
-        self.assertRaises(SystemError, getargs_s_hash_int, buf, x="abc")
-        self.assertRaises(SystemError, getargs_s_hash_int2, buf, ("abc",))
-        self.assertRaises(SystemError, getargs_s_hash_int2, buf, x=42)
-        self.assertRaises(SystemError, getargs_s_hash_int2, buf, x="abc")
-        buf.append(3)  # still mutable -- not locked by a buffer export
-        # getargs_s_hash_int(buf) may not raise SystemError because skipitem()
-        # is not called. But it is an implementation detail.
-        # getargs_s_hash_int(buf)
-        # getargs_s_hash_int2(buf)
 
     def test_z(self):
         from _testcapi import getargs_z
@@ -1045,70 +1041,6 @@ class String_TestCase(unittest.TestCase):
         buf = bytearray()
         self.assertRaises(ValueError, getargs_et_hash, 'abc\xe9', 'latin1', buf)
 
-    @support.requires_legacy_unicode_capi()
-    def test_u(self):
-        from _testcapi import getargs_u
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(getargs_u('abc\xe9'), 'abc\xe9')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(ValueError, getargs_u, 'nul:\0')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_u, b'bytes')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_u, bytearray(b'bytearray'))
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_u, memoryview(b'memoryview'))
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_u, None)
-
-    @support.requires_legacy_unicode_capi()
-    def test_u_hash(self):
-        from _testcapi import getargs_u_hash
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(getargs_u_hash('abc\xe9'), 'abc\xe9')
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(getargs_u_hash('nul:\0'), 'nul:\0')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_u_hash, b'bytes')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_u_hash, bytearray(b'bytearray'))
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_u_hash, memoryview(b'memoryview'))
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_u_hash, None)
-
-    @support.requires_legacy_unicode_capi()
-    def test_Z(self):
-        from _testcapi import getargs_Z
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(getargs_Z('abc\xe9'), 'abc\xe9')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(ValueError, getargs_Z, 'nul:\0')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_Z, b'bytes')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_Z, bytearray(b'bytearray'))
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_Z, memoryview(b'memoryview'))
-        with self.assertWarns(DeprecationWarning):
-            self.assertIsNone(getargs_Z(None))
-
-    @support.requires_legacy_unicode_capi()
-    def test_Z_hash(self):
-        from _testcapi import getargs_Z_hash
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(getargs_Z_hash('abc\xe9'), 'abc\xe9')
-        with self.assertWarns(DeprecationWarning):
-            self.assertEqual(getargs_Z_hash('nul:\0'), 'nul:\0')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_Z_hash, b'bytes')
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_Z_hash, bytearray(b'bytearray'))
-        with self.assertWarns(DeprecationWarning):
-            self.assertRaises(TypeError, getargs_Z_hash, memoryview(b'memoryview'))
-        with self.assertWarns(DeprecationWarning):
-            self.assertIsNone(getargs_Z_hash(None))
-
     def test_gh_99240_clear_args(self):
         from _testcapi import gh_99240_clear_args
         self.assertRaises(TypeError, gh_99240_clear_args, 'a', '\0b')
@@ -1187,9 +1119,9 @@ class SkipitemTest(unittest.TestCase):
             c = chr(i)
 
             # skip parentheses, the error reporting is inconsistent about them
-            # skip 'e', it's always a two-character code
+            # skip 'e' and 'w', they're always two-character codes
             # skip '|' and '$', they don't represent arguments anyway
-            if c in '()e|$':
+            if c in '()ew|$':
                 continue
 
             # test the format unit when not skipped
@@ -1227,7 +1159,7 @@ class SkipitemTest(unittest.TestCase):
         dict_b = {'b':1}
         keywords = ["a", "b"]
 
-        supported = ('s#', 's*', 'z#', 'z*', 'y#', 'y*', 'w#', 'w*')
+        supported = ('s#', 's*', 'z#', 'z*', 'y#', 'y*', 'w*')
         for c in string.ascii_letters:
             for c2 in '#*':
                 f = c + c2
@@ -1279,7 +1211,7 @@ class ParseTupleAndKeywords_Test(unittest.TestCase):
                 "function missing required argument 'a'"):
             parse((), {}, 'O', ['a'])
         with self.assertRaisesRegex(TypeError,
-                "'b' is an invalid keyword argument"):
+                "this function got an unexpected keyword argument 'b'"):
             parse((), {'b': 1}, '|O', ['a'])
         with self.assertRaisesRegex(TypeError,
                 fr"argument for function given by name \('a'\) "
@@ -1338,11 +1270,56 @@ class ParseTupleAndKeywords_Test(unittest.TestCase):
         with self.assertRaisesRegex(SystemError, 'Empty keyword'):
             parse((1,), {}, 'O|OO', ['', 'a', ''])
 
+    def test_nonascii_keywords(self):
+        parse = _testcapi.parse_tuple_and_keywords
 
-class Test_testcapi(unittest.TestCase):
-    locals().update((name, getattr(_testcapi, name))
-                    for name in dir(_testcapi)
-                    if name.startswith('test_') and name.endswith('_code'))
+        for name in ('a', 'ä', 'ŷ', '㷷', '𐀀'):
+            with self.subTest(name=name):
+                self.assertEqual(parse((), {name: 1}, 'O', [name]), (1,))
+                self.assertEqual(parse((), {}, '|O', [name]), (NULL,))
+                with self.assertRaisesRegex(TypeError,
+                        f"function missing required argument '{name}'"):
+                    parse((), {}, 'O', [name])
+                with self.assertRaisesRegex(TypeError,
+                        fr"argument for function given by name \('{name}'\) "
+                        fr"and position \(1\)"):
+                    parse((1,), {name: 2}, 'O|O', [name, 'b'])
+                with self.assertRaisesRegex(TypeError,
+                        f"this function got an unexpected keyword argument '{name}'"):
+                    parse((), {name: 1}, '|O', ['b'])
+                with self.assertRaisesRegex(TypeError,
+                        "this function got an unexpected keyword argument 'b'"):
+                    parse((), {'b': 1}, '|O', [name])
+
+                invalid = name.encode() + (name.encode()[:-1] or b'\x80')
+                self.assertEqual(parse((), {}, '|O', [invalid]), (NULL,))
+                self.assertEqual(parse((1,), {'b': 2}, 'O|O', [invalid, 'b']),
+                                    (1, 2))
+                with self.assertRaisesRegex(TypeError,
+                        f"function missing required argument '{name}\ufffd'"):
+                    parse((), {}, 'O', [invalid])
+                with self.assertRaisesRegex(UnicodeDecodeError,
+                        f"'utf-8' codec can't decode bytes? "):
+                    parse((), {'b': 1}, '|OO', [invalid, 'b'])
+                with self.assertRaisesRegex(UnicodeDecodeError,
+                        f"'utf-8' codec can't decode bytes? "):
+                    parse((), {'b': 1}, '|O', [invalid])
+
+                for name2 in ('b', 'ë', 'ĉ', 'Ɐ', '𐀁'):
+                    with self.subTest(name2=name2):
+                        with self.assertRaisesRegex(TypeError,
+                                f"this function got an unexpected keyword argument '{name2}'"):
+                            parse((), {name2: 1}, '|O', [name])
+
+                name2 = name.encode().decode('latin1')
+                if name2 != name:
+                    with self.assertRaisesRegex(TypeError,
+                            f"this function got an unexpected keyword argument '{name2}'"):
+                        parse((), {name2: 1}, '|O', [name])
+                    name3 = name + '3'
+                    with self.assertRaisesRegex(TypeError,
+                            f"this function got an unexpected keyword argument '{name2}'"):
+                        parse((), {name2: 1, name3: 2}, '|OO', [name, name3])
 
     def test_nested_tuple(self):
         parse = _testcapi.parse_tuple_and_keywords

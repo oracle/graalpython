@@ -8,7 +8,16 @@ import sys
 import unittest
 import weakref
 from test import support
-from test.support import import_helper, C_RECURSION_LIMIT
+from test.support import import_helper, get_c_recursion_limit
+
+
+class CustomHash:
+    def __init__(self, hash):
+        self.hash = hash
+    def __hash__(self):
+        return self.hash
+    def __repr__(self):
+        return f'<CustomHash {self.hash} at {id(self):#x}>'
 
 
 class DictTest(unittest.TestCase):
@@ -265,6 +274,39 @@ class DictTest(unittest.TestCase):
 
         self.assertRaises(ValueError, {}.update, [(1, 2, 3)])
 
+    def test_update_shared_keys(self):
+        class MyClass: pass
+
+        # Subclass str to enable us to create an object during the
+        # dict.update() call.
+        class MyStr(str):
+            def __hash__(self):
+                return super().__hash__()
+
+            def __eq__(self, other):
+                # Create an object that shares the same PyDictKeysObject as
+                # obj.__dict__.
+                obj2 = MyClass()
+                obj2.a = "a"
+                obj2.b = "b"
+                obj2.c = "c"
+                return super().__eq__(other)
+
+        obj = MyClass()
+        obj.a = "a"
+        obj.b = "b"
+
+        x = {}
+        x[MyStr("a")] = MyStr("a")
+
+        # gh-132617: this previously raised "dict mutated during update" error
+        x.update(obj.__dict__)
+
+        self.assertEqual(x, {
+            MyStr("a"): "a",
+            "b": "b",
+        })
+
     def test_fromkeys(self):
         self.assertEqual(dict.fromkeys('abc'), {'a':None, 'b':None, 'c':None})
         d = {}
@@ -312,16 +354,33 @@ class DictTest(unittest.TestCase):
         self.assertRaises(Exc, baddict2.fromkeys, [1])
 
         # test fast path for dictionary inputs
+        res = dict(zip(range(6), [0]*6))
         d = dict(zip(range(6), range(6)))
-        self.assertEqual(dict.fromkeys(d, 0), dict(zip(range(6), [0]*6)))
+        self.assertEqual(dict.fromkeys(d, 0), res)
+        # test fast path for set inputs
+        d = set(range(6))
+        self.assertEqual(dict.fromkeys(d, 0), res)
+        # test slow path for other iterable inputs
+        d = list(range(6))
+        self.assertEqual(dict.fromkeys(d, 0), res)
 
+        # test fast path when object's constructor returns large non-empty dict
         class baddict3(dict):
             def __new__(cls):
                 return d
-        d = {i : i for i in range(10)}
+        d = {i : i for i in range(1000)}
         res = d.copy()
         res.update(a=None, b=None, c=None)
         self.assertEqual(baddict3.fromkeys({"a", "b", "c"}), res)
+
+        # test slow path when object is a proper subclass of dict
+        class baddict4(dict):
+            def __init__(self):
+                dict.__init__(self, d)
+        d = {i : i for i in range(1000)}
+        res = d.copy()
+        res.update(a=None, b=None, c=None)
+        self.assertEqual(baddict4.fromkeys({"a", "b", "c"}), res)
 
     def test_copy(self):
         d = {1: 1, 2: 2, 3: 3}
@@ -596,7 +655,7 @@ class DictTest(unittest.TestCase):
 
     def test_repr_deep(self):
         d = {}
-        for i in range(C_RECURSION_LIMIT + 1):
+        for i in range(get_c_recursion_limit() + 1):
             d = {1: d}
         self.assertRaises(RecursionError, repr, d)
 
@@ -990,6 +1049,18 @@ class DictTest(unittest.TestCase):
             pass
         self._tracked(MyDict())
 
+    @support.cpython_only
+    def test_track_lazy_instance_dicts(self):
+        class C:
+            pass
+        o = C()
+        d = o.__dict__
+        self._not_tracked(d)
+        o.untracked = 42
+        self._not_tracked(d)
+        o.tracked = []
+        self._tracked(d)
+
     def make_shared_key_dict(self, n):
         class C:
             pass
@@ -1104,10 +1175,8 @@ class DictTest(unittest.TestCase):
         a = C()
         a.x = 1
         d = a.__dict__
-        before_resize = sys.getsizeof(d)
         d[2] = 2 # split table is resized to a generic combined table
 
-        self.assertGreater(sys.getsizeof(d), before_resize)
         self.assertEqual(list(d), ['x', 2])
 
     def test_iterator_pickling(self):
@@ -1595,14 +1664,166 @@ class DictTest(unittest.TestCase):
                 self.assertEqual(d.get(key3_3), 44)
                 self.assertGreaterEqual(eq_count, 1)
 
+    def test_overwrite_managed_dict(self):
+        # GH-130327: Overwriting an object's managed dictionary with another object's
+        # skipped traversal in favor of inline values, causing the GC to believe that
+        # the __dict__ wasn't reachable.
+        import gc
+
+        class Shenanigans:
+            pass
+
+        to_be_deleted = Shenanigans()
+        to_be_deleted.attr = "whatever"
+        holds_reference = Shenanigans()
+        holds_reference.__dict__ = to_be_deleted.__dict__
+        holds_reference.ref = {"circular": to_be_deleted, "data": 42}
+
+        del to_be_deleted
+        gc.collect()
+        self.assertEqual(holds_reference.ref['data'], 42)
+        self.assertEqual(holds_reference.attr, "whatever")
+    def test_clear_at_lookup(self):
+        # gh-140551 dict crash if clear is called at lookup stage
+        class X:
+            def __hash__(self):
+                return 1
+            def __eq__(self, other):
+                nonlocal d
+                d.clear()
+
+        d = {}
+        for _ in range(10):
+            d[X()] = None
+
+        self.assertEqual(len(d), 1)
+
+        d = {}
+        for _ in range(10):
+            d.setdefault(X(), None)
+
+        self.assertEqual(len(d), 1)
+
+    def test_split_table_update_with_str_subclass(self):
+        # gh-142218: inserting into a split table dictionary with a non str
+        # key that matches an existing key.
+        class MyStr(str): pass
+        class MyClass: pass
+        obj = MyClass()
+        obj.attr = 1
+        obj.__dict__[MyStr('attr')] = 2
+        self.assertEqual(obj.attr, 2)
+
+    def test_split_table_insert_with_str_subclass(self):
+        # gh-143189: inserting into split table dictionary with a non str
+        # key that matches an existing key in the shared table but not in
+        # the dict yet.
+
+        class MyStr(str): pass
+        class MyClass: pass
+
+        obj = MyClass()
+        obj.attr1 = 1
+
+        obj2 = MyClass()
+        d = obj2.__dict__
+        d[MyStr("attr1")] = 2
+        self.assertIsInstance(list(d)[0], MyStr)
+
+    def test_hash_collision_remove_add(self):
+        self.maxDiff = None
+        # There should be enough space, so all elements with unique hash
+        # will be placed in corresponding cells without collision.
+        n = 64
+        items = [(CustomHash(h), h) for h in range(n)]
+        # Keys with hash collision.
+        a = CustomHash(n)
+        b = CustomHash(n)
+        items += [(a, 'a'), (b, 'b')]
+        d = dict(items)
+        self.assertEqual(len(d), len(items), d)
+        del d[a]
+        # "a" has been replaced with a dummy.
+        del items[n]
+        self.assertEqual(len(d), len(items), d)
+        self.assertEqual(d, dict(items))
+        d[b] = 'c'
+        # "b" should not replace the dummy.
+        items[n] = (b, 'c')
+        self.assertEqual(len(d), len(items), d)
+        self.assertEqual(d, dict(items))
+
+    def test_clear_reentrant_embedded(self):
+        # gh-130555: dict.clear() must be safe when values are embedded
+        # in an object and a destructor mutates the dict.
+        class MyObj: pass
+        class ClearOnDelete:
+            def __del__(self):
+                nonlocal x
+                del x
+
+        x = MyObj()
+        x.a = ClearOnDelete()
+
+        d = x.__dict__
+        d.clear()
+
+    def test_clear_reentrant_cycle(self):
+        # gh-130555: dict.clear() must be safe for embedded dicts when the
+        # object is part of a reference cycle and the last reference to the
+        # dict is via the cycle.
+        class MyObj: pass
+        obj = MyObj()
+        obj.f = obj
+        obj.attr = "attr"
+
+        d = obj.__dict__
+        del obj
+
+        d.clear()
+
+    def test_clear_reentrant_force_combined(self):
+        # gh-130555: dict.clear() must be safe when a destructor forces the
+        # dict from embedded/split to combined (setting ma_values to NULL).
+        class MyObj: pass
+        class ForceConvert:
+            def __del__(self):
+                d[1] = "trigger"
+
+        x = MyObj()
+        x.a = ForceConvert()
+        x.b = "other"
+
+        d = x.__dict__
+        d.clear()
+
+    def test_clear_reentrant_delete(self):
+        # gh-130555: dict.clear() must be safe when a destructor deletes
+        # a key from the same embedded dict.
+        class MyObj: pass
+        class DelKey:
+            def __del__(self):
+                try:
+                    del d['b']
+                except KeyError:
+                    pass
+
+        x = MyObj()
+        x.a = DelKey()
+        x.b = "value_b"
+        x.c = "value_c"
+
+        d = x.__dict__
+        d.clear()
+
 
 class CAPITest(unittest.TestCase):
 
     # Test _PyDict_GetItem_KnownHash()
     @support.cpython_only
     def test_getitem_knownhash(self):
-        _testcapi = import_helper.import_module('_testcapi')
-        dict_getitem_knownhash = _testcapi.dict_getitem_knownhash
+        _testinternalcapi = import_helper.import_module('_testinternalcapi')
+        dict_getitem_knownhash = _testinternalcapi.dict_getitem_knownhash
 
         d = {'x': 1, 'y': 2, 'z': 3}
         self.assertEqual(dict_getitem_knownhash(d, 'x', hash('x')), 1)

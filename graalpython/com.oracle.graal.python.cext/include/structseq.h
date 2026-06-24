@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -36,17 +36,14 @@ PyAPI_FUNC(PyTypeObject*) PyStructSequence_NewType(PyStructSequence_Desc *desc);
 
 PyAPI_FUNC(PyObject *) PyStructSequence_New(PyTypeObject* type);
 
-#ifndef Py_LIMITED_API
-typedef PyTupleObject PyStructSequence;
-
-/* Macro, *only* to be used to fill in brand new objects */
-#define PyStructSequence_SET_ITEM(op, i, v) PyTuple_SET_ITEM((op), (i), (v))
-
-#define PyStructSequence_GET_ITEM(op, i) PyTuple_GET_ITEM((op), (i))
-#endif
-
 PyAPI_FUNC(void) PyStructSequence_SetItem(PyObject*, Py_ssize_t, PyObject*);
 PyAPI_FUNC(PyObject*) PyStructSequence_GetItem(PyObject*, Py_ssize_t);
+
+#ifndef Py_LIMITED_API
+typedef PyTupleObject PyStructSequence;
+#define PyStructSequence_SET_ITEM PyStructSequence_SetItem
+#define PyStructSequence_GET_ITEM PyStructSequence_GetItem
+#endif
 
 #ifdef __cplusplus
 }

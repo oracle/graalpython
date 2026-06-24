@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -8,10 +8,11 @@ preserve
 [clinic start generated code]*/
 
 #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
-#  include "pycore_gc.h"            // PyGC_Head
-#  include "pycore_runtime.h"       // _Py_ID()
+#  include "pycore_gc.h"          // PyGC_Head
+#  include "pycore_runtime.h"     // _Py_ID()
 #endif
-
+#include "pycore_abstract.h"      // _PyNumber_Index()
+#include "pycore_modsupport.h"    // _PyArg_UnpackKeywords()
 
 PyDoc_STRVAR(_sre_getcodesize__doc__,
 "getcodesize($module, /)\n"
@@ -58,7 +59,7 @@ _sre_ascii_iscased(PyObject *module, PyObject *arg)
     int character;
     int _return_value;
 
-    character = _PyLong_AsInt(arg);
+    character = PyLong_AsInt(arg);
     if (character == -1 && PyErr_Occurred()) {
         goto exit;
     }
@@ -90,7 +91,7 @@ _sre_unicode_iscased(PyObject *module, PyObject *arg)
     int character;
     int _return_value;
 
-    character = _PyLong_AsInt(arg);
+    character = PyLong_AsInt(arg);
     if (character == -1 && PyErr_Occurred()) {
         goto exit;
     }
@@ -122,7 +123,7 @@ _sre_ascii_tolower(PyObject *module, PyObject *arg)
     int character;
     int _return_value;
 
-    character = _PyLong_AsInt(arg);
+    character = PyLong_AsInt(arg);
     if (character == -1 && PyErr_Occurred()) {
         goto exit;
     }
@@ -154,7 +155,7 @@ _sre_unicode_tolower(PyObject *module, PyObject *arg)
     int character;
     int _return_value;
 
-    character = _PyLong_AsInt(arg);
+    character = PyLong_AsInt(arg);
     if (character == -1 && PyErr_Occurred()) {
         goto exit;
     }
@@ -1014,7 +1015,7 @@ _sre_SRE_Pattern__fail_after(PatternObject *self, PyObject *const *args, Py_ssiz
     if (!_PyArg_CheckPositional("_fail_after", nargs, 2, 2)) {
         goto exit;
     }
-    count = _PyLong_AsInt(args[0]);
+    count = PyLong_AsInt(args[0]);
     if (count == -1 && PyErr_Occurred()) {
         goto exit;
     }
@@ -1084,7 +1085,7 @@ _sre_compile(PyObject *module, PyObject *const *args, Py_ssize_t nargs, PyObject
         goto exit;
     }
     pattern = args[0];
-    flags = _PyLong_AsInt(args[1]);
+    flags = PyLong_AsInt(args[1]);
     if (flags == -1 && PyErr_Occurred()) {
         goto exit;
     }
@@ -1520,4 +1521,4 @@ _sre_SRE_Scanner_search(ScannerObject *self, PyTypeObject *cls, PyObject *const 
 #ifndef _SRE_SRE_PATTERN__FAIL_AFTER_METHODDEF
     #define _SRE_SRE_PATTERN__FAIL_AFTER_METHODDEF
 #endif /* !defined(_SRE_SRE_PATTERN__FAIL_AFTER_METHODDEF) */
-/*[clinic end generated code: output=2165ecf43a7c20e8 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=32f2528c7b5b6081 input=a9049054013a1b77]*/

@@ -1,9 +1,7 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
-from typing import Optional
-
 from pegen import grammar
 from pegen.grammar import Alt, GrammarVisitor, Rhs, Rule
 
@@ -15,7 +13,7 @@ class ValidationError(Exception):
 class GrammarValidator(GrammarVisitor):
     def __init__(self, grammar: grammar.Grammar) -> None:
         self.grammar = grammar
-        self.rulename: Optional[str] = None
+        self.rulename: str | None = None
 
     def validate_rule(self, rulename: str, node: Rule) -> None:
         self.rulename = rulename

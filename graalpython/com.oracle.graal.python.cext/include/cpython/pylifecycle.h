@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -10,13 +10,6 @@
 /* Py_FrozenMain is kept out of the Limited API until documented and present
    in all builds of Python */
 PyAPI_FUNC(int) Py_FrozenMain(int argc, char **argv);
-
-/* Only used by applications that embed the interpreter and need to
- * override the standard encoding determination mechanism
- */
-Py_DEPRECATED(3.11) PyAPI_FUNC(int) Py_SetStandardStreamEncoding(
-    const char *encoding,
-    const char *errors);
 
 /* PEP 432 Multi-phase initialization API (Private while provisional!) */
 
@@ -31,13 +24,13 @@ PyAPI_FUNC(PyStatus) Py_PreInitializeFromArgs(
     Py_ssize_t argc,
     wchar_t **argv);
 
-PyAPI_FUNC(int) _Py_IsCoreInitialized(void);
-
 
 /* Initialization and finalization */
 
 PyAPI_FUNC(PyStatus) Py_InitializeFromConfig(
     const PyConfig *config);
+
+// Python 3.8 provisional API (PEP 587)
 PyAPI_FUNC(PyStatus) _Py_InitializeMain(void);
 
 PyAPI_FUNC(int) Py_RunMain(void);
@@ -45,28 +38,7 @@ PyAPI_FUNC(int) Py_RunMain(void);
 
 PyAPI_FUNC(void) _Py_NO_RETURN Py_ExitStatusException(PyStatus err);
 
-/* Restore signals that the interpreter has called SIG_IGN on to SIG_DFL. */
-PyAPI_FUNC(void) _Py_RestoreSignals(void);
-
 PyAPI_FUNC(int) Py_FdIsInteractive(FILE *, const char *);
-PyAPI_FUNC(int) _Py_FdIsInteractive(FILE *fp, PyObject *filename);
-
-Py_DEPRECATED(3.11) PyAPI_FUNC(void) _Py_SetProgramFullPath(const wchar_t *);
-
-PyAPI_FUNC(const char *) _Py_gitidentifier(void);
-PyAPI_FUNC(const char *) _Py_gitversion(void);
-
-PyAPI_FUNC(int) _Py_IsFinalizing(void);
-PyAPI_FUNC(int) _Py_IsInterpreterFinalizing(PyInterpreterState *interp);
-
-/* Random */
-PyAPI_FUNC(int) _PyOS_URandom(void *buffer, Py_ssize_t size);
-PyAPI_FUNC(int) _PyOS_URandomNonblock(void *buffer, Py_ssize_t size);
-
-/* Legacy locale support */
-PyAPI_FUNC(int) _Py_CoerceLegacyLocale(int warn);
-PyAPI_FUNC(int) _Py_LegacyLocaleDetected(int warn);
-PyAPI_FUNC(char *) _Py_SetLocaleFromEnv(int category);
 
 /* --- PyInterpreterConfig ------------------------------------ */
 
@@ -96,6 +68,15 @@ typedef struct {
         .gil = PyInterpreterConfig_OWN_GIL, \
     }
 
+// gh-117649: The free-threaded build does not currently support single-phase
+// init extensions in subinterpreters. For now, we ensure that
+// `check_multi_interp_extensions` is always `1`, even in the legacy config.
+#ifdef Py_GIL_DISABLED
+#  define _PyInterpreterConfig_LEGACY_CHECK_MULTI_INTERP_EXTENSIONS 1
+#else
+#  define _PyInterpreterConfig_LEGACY_CHECK_MULTI_INTERP_EXTENSIONS 0
+#endif
+
 #define _PyInterpreterConfig_LEGACY_INIT \
     { \
         .use_main_obmalloc = 1, \
@@ -103,7 +84,7 @@ typedef struct {
         .allow_exec = 1, \
         .allow_threads = 1, \
         .allow_daemon_threads = 1, \
-        .check_multi_interp_extensions = 0, \
+        .check_multi_interp_extensions = _PyInterpreterConfig_LEGACY_CHECK_MULTI_INTERP_EXTENSIONS, \
         .gil = PyInterpreterConfig_SHARED_GIL, \
     }
 
@@ -112,5 +93,5 @@ PyAPI_FUNC(PyStatus) Py_NewInterpreterFromConfig(
     const PyInterpreterConfig *config);
 
 typedef void (*atexit_datacallbackfunc)(void *);
-PyAPI_FUNC(int) _Py_AtExit(
+PyAPI_FUNC(int) PyUnstable_AtExit(
         PyInterpreterState *, atexit_datacallbackfunc, void *);

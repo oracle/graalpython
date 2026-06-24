@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -97,6 +97,7 @@ typedef struct {
     int charsize; /* character size */
     int match_all;
     int must_advance;
+    int debug;
     /* marks */
     int lastmark;
     int lastindex;

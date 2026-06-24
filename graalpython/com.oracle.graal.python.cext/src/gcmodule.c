@@ -4,40 +4,21 @@
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 /*
-
-  Reference Cycle Garbage Collection
-  ==================================
-
-  Neil Schemenauer <nas@arctrix.com>
-
-  Based on a post on the python-dev list.  Ideas from Guido van Rossum,
-  Eric Tiedemann, and various others.
-
-  http://www.arctrix.com/nas/python/gc/
-
-  The following mailing list threads provide a historical perspective on
-  the design of this module.  Note that a fair amount of refinement has
-  occurred since those discussions.
-
-  http://mail.python.org/pipermail/python-dev/2000-March/002385.html
-  http://mail.python.org/pipermail/python-dev/2000-March/002434.html
-  http://mail.python.org/pipermail/python-dev/2000-March/002497.html
-
-  For a highlevel view of the collection process, read the collect
-  function.
-
-*/
+ * Python interface to the garbage collector.
+ *
+ * See Python/gc.c for the implementation of the garbage collector.
+ */
 
 #include "capi.h" // GraalPy change
 #include "Python.h"
-#if 0 // GraalPy change
-#include "pycore_context.h"
-#include "pycore_initconfig.h"
-#include "pycore_interp.h"      // PyInterpreterState.gc
-#endif // GraalPy change
+#include "pycore_gc.h"
+#include "pycore_object.h"      // _PyObject_IS_GC()
+#include "pycore_pystate.h"     // _PyInterpreterState_GET()
 #include "pycore_object.h"
+#include "pycore_dict.h"
 #include "pycore_pyerrors.h"
 #include "pycore_pystate.h"     // _PyThreadState_GET()
+#include "pycore_tuple.h"
 #include "pydtrace.h"
 
 static inline int
@@ -1439,9 +1420,10 @@ delete_garbage(PyThreadState *tstate, GCState *gcstate,
                 Py_INCREF(op);
                 (void) clear(op);
                 if (_PyErr_Occurred(tstate)) {
-                    _PyErr_WriteUnraisableMsg("in tp_clear of",
-                                              (PyObject*)Py_TYPE(op));
+                    PyErr_FormatUnraisable("Exception ignored in tp_clear of %s",
+                                           Py_TYPE(op)->tp_name);
                 }
+
                 Py_DECREF(op);
             }
         }
@@ -1785,7 +1767,7 @@ gc_collect_main(PyThreadState *tstate, int generation,
             _PyErr_Clear(tstate);
         }
         else {
-            _PyErr_WriteUnraisableMsg("in garbage collection", NULL);
+            PyErr_FormatUnraisable("Exception ignored in garbage collection");
         }
     }
 
@@ -2574,7 +2556,7 @@ PyGC_Collect(void)
 }
 
 // GraalPy change: exported sym because called from Java
-PyAPI_FUNC(Py_ssize_t)
+PyAPI_FUNC(void)
 _PyGC_CollectNoFail(PyThreadState *tstate)
 {
     /* Ideally, this function is only called on interpreter shutdown,
@@ -2585,14 +2567,12 @@ _PyGC_CollectNoFail(PyThreadState *tstate)
        */
     GCState *gcstate = graalpy_get_gc_state(tstate); // GraalPy change
     if (gcstate->collecting) {
-        return 0;
+        return;
     }
 
-    Py_ssize_t n;
     gcstate->collecting = 1;
-    n = gc_collect_main(tstate, NUM_GENERATIONS - 1, NULL, NULL, 1);
+    (void)gc_collect_main(tstate, NUM_GENERATIONS - 1, NULL, NULL, 1);
     gcstate->collecting = 0;
-    return n;
 }
 
 #if 0 // GraalPy change
@@ -2744,7 +2724,7 @@ PyObject_IS_GC(PyObject *obj)
 }
 
 void
-_Py_ScheduleGC(PyInterpreterState *interp)
+_Py_ScheduleGC(PyThreadState *tstate)
 {
 #if 0 // GraalPy change
     GCState *gcstate = &interp->gc;
@@ -2776,7 +2756,7 @@ _PyObject_GC_Link(PyObject *op)
         !gcstate->collecting &&
         !_PyErr_Occurred(tstate))
     {
-        _Py_ScheduleGC(tstate->interp);
+        _Py_ScheduleGC(tstate);
     }
 }
 

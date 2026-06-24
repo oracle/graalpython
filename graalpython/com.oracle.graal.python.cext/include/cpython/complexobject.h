@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -12,8 +12,7 @@ typedef struct {
     double imag;
 } Py_complex;
 
-/* Operations on complex numbers from complexmodule.c */
-
+// Operations on complex numbers.
 PyAPI_FUNC(Py_complex) _Py_c_sum(Py_complex, Py_complex);
 PyAPI_FUNC(Py_complex) _Py_c_diff(Py_complex, Py_complex);
 PyAPI_FUNC(Py_complex) _Py_c_neg(Py_complex);
@@ -21,6 +20,7 @@ PyAPI_FUNC(Py_complex) _Py_c_prod(Py_complex, Py_complex);
 PyAPI_FUNC(Py_complex) _Py_c_quot(Py_complex, Py_complex);
 PyAPI_FUNC(Py_complex) _Py_c_pow(Py_complex, Py_complex);
 PyAPI_FUNC(double) _Py_c_abs(Py_complex);
+
 
 /* Complex object interface */
 
@@ -36,14 +36,3 @@ typedef struct {
 PyAPI_FUNC(PyObject *) PyComplex_FromCComplex(Py_complex);
 
 PyAPI_FUNC(Py_complex) PyComplex_AsCComplex(PyObject *op);
-
-#ifdef Py_BUILD_CORE
-/* Format the object based on the format_spec, as defined in PEP 3101
-   (Advanced String Formatting). */
-extern int _PyComplex_FormatAdvancedWriter(
-    _PyUnicodeWriter *writer,
-    PyObject *obj,
-    PyObject *format_spec,
-    Py_ssize_t start,
-    Py_ssize_t end);
-#endif  // Py_BUILD_CORE

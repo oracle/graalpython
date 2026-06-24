@@ -180,6 +180,18 @@ class ListComprehensionTest(unittest.TestCase):
                 code, outputs={"res": [2]}, scopes=["module", "function"])
         self._check_in_scopes(code, raises=NameError, scopes=["class"])
 
+    def test_references___classdict__(self):
+        code = """
+            class i: [__classdict__ for x in y]
+        """
+        self._check_in_scopes(code, raises=NameError)
+
+    def test_references___conditional_annotations__(self):
+        code = """
+            class i: [__conditional_annotations__ for x in y]
+        """
+        self._check_in_scopes(code, raises=NameError)
+
     def test_references___class___enclosing(self):
         code = """
             __class__ = 2
@@ -650,9 +662,14 @@ class ListComprehensionTest(unittest.TestCase):
 
     def test_frame_locals(self):
         code = """
-            val = [sys._getframe().f_locals for a in [0]][0]["a"]
+            val = "a" in [sys._getframe().f_locals for a in [0]][0]
         """
         import sys
+        self._check_in_scopes(code, {"val": False}, ns={"sys": sys})
+
+        code = """
+            val = [sys._getframe().f_locals["a"] for a in [0]][0]
+        """
         self._check_in_scopes(code, {"val": 0}, ns={"sys": sys})
 
     def _recursive_replace(self, maybe_code):
@@ -711,7 +728,7 @@ class ListComprehensionTest(unittest.TestCase):
 
     def test_exception_locations(self):
         # The location of an exception raised from __init__ or
-        # __next__ should should be the iterator expression
+        # __next__ should be the iterator expression
 
         def init_raises():
             try:

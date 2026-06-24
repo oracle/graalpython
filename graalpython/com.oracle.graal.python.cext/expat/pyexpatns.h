@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2019, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -87,6 +87,8 @@
 #define XmlPrologStateInit              PyExpat_XmlPrologStateInit
 #define XmlPrologStateInitExternalEntity    PyExpat_XmlPrologStateInitExternalEntity
 #define XML_ResumeParser                PyExpat_XML_ResumeParser
+#define XML_SetAllocTrackerActivationThreshold PyExpat_XML_SetAllocTrackerActivationThreshold
+#define XML_SetAllocTrackerMaximumAmplification PyExpat_XML_SetAllocTrackerMaximumAmplification
 #define XML_SetAttlistDeclHandler       PyExpat_XML_SetAttlistDeclHandler
 #define XML_SetBase                     PyExpat_XML_SetBase
 #define XML_SetBillionLaughsAttackProtectionActivationThreshold PyExpat_XML_SetBillionLaughsAttackProtectionActivationThreshold

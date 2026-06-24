@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -70,10 +70,6 @@ PyAPI_FUNC(PyObject *) PyContextVar_Set(PyObject *var, PyObject *value);
    Returns 0 on success, -1 on error.
 */
 PyAPI_FUNC(int) PyContextVar_Reset(PyObject *var, PyObject *token);
-
-
-/* This method is exposed only for CPython tests. Don not use it. */
-PyAPI_FUNC(PyObject *) _PyContext_NewHamtForTests(void);
 
 
 #ifdef __cplusplus

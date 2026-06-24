@@ -1,17 +1,15 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
+// Error handling definitions
+
 #ifndef Py_ERRORS_H
 #define Py_ERRORS_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdarg.h>               // va_list
-
-/* Error handling definitions */
 
 PyAPI_FUNC(void) PyErr_SetNone(PyObject *);
 PyAPI_FUNC(void) PyErr_SetObject(PyObject *, PyObject *);
@@ -152,8 +150,6 @@ PyAPI_DATA(PyObject *) PyExc_IOError;
 #ifdef MS_WINDOWS
 PyAPI_DATA(PyObject *) PyExc_WindowsError;
 #endif
-
-PyAPI_DATA(PyObject *) PyExc_RecursionErrorInst;
 
 /* Predefined warning categories */
 PyAPI_DATA(PyObject *) PyExc_Warning;

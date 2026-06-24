@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -104,10 +104,11 @@ slot_tp_del(PyObject *self)
         return;
     }
     /* Execute __del__ method, if any. */
-    del = _PyType_Lookup(Py_TYPE(self), tp_del);
+    del = _PyType_LookupRef(Py_TYPE(self), tp_del);
     Py_DECREF(tp_del);
     if (del != NULL) {
         res = PyObject_CallOneArg(del, self);
+        Py_DECREF(del);
         if (res == NULL)
             PyErr_WriteUnraisable(del);
         else
@@ -131,9 +132,7 @@ slot_tp_del(PyObject *self)
      * never happened.
      */
     {
-        Py_ssize_t refcnt = Py_REFCNT(self);
-        _Py_NewReferenceNoTotal(self);
-        Py_SET_REFCNT(self, refcnt);
+        _Py_ResurrectReference(self);
     }
     assert(!PyType_IS_GC(Py_TYPE(self)) || PyObject_GC_IsTracked(self));
 }

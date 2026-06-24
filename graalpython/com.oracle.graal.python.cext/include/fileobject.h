@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -32,14 +32,6 @@ Py_DEPRECATED(3.12) PyAPI_DATA(int) Py_HasFileSystemDefaultEncoding;
 
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03070000
 Py_DEPRECATED(3.12) PyAPI_DATA(int) Py_UTF8Mode;
-#endif
-
-/* A routine to check if a file descriptor can be select()-ed. */
-#ifdef _MSC_VER
-    /* On Windows, any socket fd can be select()-ed, no matter how high */
-    #define _PyIsSelectable_fd(FD) (1)
-#else
-    #define _PyIsSelectable_fd(FD) ((unsigned int)(FD) < (unsigned int)FD_SETSIZE)
 #endif
 
 #ifndef Py_LIMITED_API

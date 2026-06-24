@@ -28,7 +28,7 @@ from fileinput import FileInput
 from itertools import chain
 from http.cookies import Morsel
 try:
-    from multiprocessing.managers import ValueProxy
+    from multiprocessing.managers import ValueProxy, DictProxy, ListProxy
     from multiprocessing.pool import ApplyResult
     from multiprocessing.queues import SimpleQueue as MPSimpleQueue
     from multiprocessing.queues import Queue as MPQueue
@@ -36,6 +36,8 @@ try:
 except ImportError:
     # _multiprocessing module is optional
     ValueProxy = None
+    DictProxy = None
+    ListProxy = None
     ApplyResult = None
     MPSimpleQueue = None
     MPQueue = None
@@ -47,16 +49,15 @@ except ImportError:
     ShareableList = None
 from os import DirEntry
 from re import Pattern, Match
-from types import GenericAlias, MappingProxyType, AsyncGeneratorType
+from types import GenericAlias, MappingProxyType, AsyncGeneratorType, CoroutineType, GeneratorType
 from tempfile import TemporaryDirectory, SpooledTemporaryFile
 from urllib.parse import SplitResult, ParseResult
 from unittest.case import _AssertRaisesContext
 from queue import Queue, SimpleQueue
 from weakref import WeakSet, ReferenceType, ref
 import typing
-from typing import Unpack
+from typing import TypeVar, Unpack
 
-from typing import TypeVar
 T = TypeVar('T')
 K = TypeVar('K')
 V = TypeVar('V')
@@ -118,6 +119,7 @@ class BaseTest(unittest.TestCase):
                      KeysView, ItemsView, ValuesView,
                      Sequence, MutableSequence,
                      MappingProxyType, AsyncGeneratorType,
+                     GeneratorType, CoroutineType,
                      DirEntry,
                      chain,
                      LoggerAdapter, StreamHandler,
@@ -134,7 +136,7 @@ class BaseTest(unittest.TestCase):
     if ctypes is not None:
         generic_types.extend((ctypes.Array, ctypes.LibraryLoader))
     if ValueProxy is not None:
-        generic_types.extend((ValueProxy, ApplyResult,
+        generic_types.extend((ValueProxy, DictProxy, ListProxy, ApplyResult,
                               MPSimpleQueue, MPQueue, MPJoinableQueue))
 
     def test_subscriptable(self):
@@ -228,6 +230,56 @@ class BaseTest(unittest.TestCase):
         self.assertTrue(repr(MyGeneric[int]).endswith('MyGeneric[int]'))
         self.assertTrue(repr(MyGeneric[[]]).endswith('MyGeneric[[]]'))
         self.assertTrue(repr(MyGeneric[[int, str]]).endswith('MyGeneric[[int, str]]'))
+
+    def test_evil_repr1(self):
+        # gh-143635
+        class Zap:
+            def __init__(self, container):
+                self.container = container
+            def __getattr__(self, name):
+                if name == "__origin__":
+                    self.container.clear()
+                    return None
+                if name == "__args__":
+                    return ()
+                raise AttributeError
+
+        params = []
+        params.append(Zap(params))
+        alias = GenericAlias(list, (params,))
+        repr_str = repr(alias)
+        self.assertTrue(repr_str.startswith("list[["), repr_str)
+
+    def test_evil_repr2(self):
+        class Zap:
+            def __init__(self, container):
+                self.container = container
+            def __getattr__(self, name):
+                if name == "__qualname__":
+                    self.container.clear()
+                    return "abcd"
+                if name == "__module__":
+                    return None
+                raise AttributeError
+
+        params = []
+        params.append(Zap(params))
+        alias = GenericAlias(list, (params,))
+        repr_str = repr(alias)
+        self.assertTrue(repr_str.startswith("list[["), repr_str)
+
+    def test_evil_repr3(self):
+        # gh-143823
+        lst = []
+        class X:
+            def __repr__(self):
+                lst.clear()
+                return "x"
+
+        lst += [X(), 1]
+        ga = GenericAlias(int, lst)
+        with self.assertRaises(IndexError):
+            repr(ga)
 
     def test_exposed_type(self):
         import types
@@ -387,7 +439,10 @@ class BaseTest(unittest.TestCase):
         aliases = [
             GenericAlias(list, T),
             GenericAlias(deque, T),
-            GenericAlias(X, T)
+            GenericAlias(X, T),
+            X[T],
+            list[T],
+            deque[T],
         ] + _UNPACKED_TUPLES
         for alias in aliases:
             with self.subTest(alias=alias):
@@ -417,10 +472,26 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(a.__parameters__, (T,))
 
     def test_dir(self):
-        dir_of_gen_alias = set(dir(list[int]))
+        ga = list[int]
+        dir_of_gen_alias = set(dir(ga))
         self.assertTrue(dir_of_gen_alias.issuperset(dir(list)))
-        for generic_alias_property in ("__origin__", "__args__", "__parameters__"):
-            self.assertIn(generic_alias_property, dir_of_gen_alias)
+        for generic_alias_property in (
+            "__origin__", "__args__", "__parameters__",
+            "__unpacked__",
+        ):
+            with self.subTest(generic_alias_property=generic_alias_property):
+                self.assertIn(generic_alias_property, dir_of_gen_alias)
+        for blocked in (
+            "__bases__",
+            "__copy__",
+            "__deepcopy__",
+        ):
+            with self.subTest(blocked=blocked):
+                self.assertNotIn(blocked, dir_of_gen_alias)
+
+        for entry in dir_of_gen_alias:
+            with self.subTest(entry=entry):
+                getattr(ga, entry)  # must not raise `AttributeError`
 
     def test_weakref(self):
         for t in self.generic_types:
@@ -465,6 +536,13 @@ class BaseTest(unittest.TestCase):
         iter_x = iter(t)
         del iter_x
 
+    def test_gh150146(self):
+        # It used to crash:
+        for container in [list, tuple]:
+            with self.subTest(container=container):
+                x = container[TypeVar("")]
+                with self.assertRaises(TypeError):
+                    x[*typing.Mapping[..., ...]]
 
 class TypeIterationTests(unittest.TestCase):
     _UNITERABLE_TYPES = (list, tuple)

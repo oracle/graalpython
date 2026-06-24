@@ -118,12 +118,6 @@ else()
 endif()
 
 
-# preprocessor defines for all platforms
-add_compile_definitions(
-    WITH_FREELISTS=1
-)
-
-
 if(WIN32)
     add_compile_definitions(
         MS_WINDOWS
@@ -207,11 +201,13 @@ function(native_module name core src_files)
     if(APPLE)
         target_link_options(${name} PRIVATE -undefined dynamic_lookup)
     endif()
-    if(${core})
-        target_compile_definitions(${name} PRIVATE Py_BUILD_CORE)
-        target_include_directories(${name} PRIVATE "${SRC_DIR}/include/internal")
+    if(NOT "NO_CORE_DEFINES" IN_LIST ARGN)
+        if(${core})
+            target_compile_definitions(${name} PRIVATE Py_BUILD_CORE)
+            target_include_directories(${name} PRIVATE "${SRC_DIR}/include/internal")
+        endif()
+        target_compile_definitions(${name} PRIVATE Py_BUILD_CORE_MODULE)
     endif()
-    target_compile_definitions(${name} PRIVATE Py_BUILD_CORE_MODULE)
     set_target_properties(${name} PROPERTIES SUFFIX "${GRAALPY_EXT}"
                                              PREFIX "")
     target_sources(${name} PRIVATE ${src_files})
@@ -285,7 +281,6 @@ target_include_directories("_sha3" PUBLIC "${LIBHACL_HEADERS}")
 set(TESTCAPI_SRC
     "${SRC_DIR}/modules/_testcapi/abstract.c"
     "${SRC_DIR}/modules/_testcapi/buffer.c"
-    "${SRC_DIR}/modules/_testcapi/bytearray.c"
     "${SRC_DIR}/modules/_testcapi/bytes.c"
     # "${SRC_DIR}/modules/_testcapi/code.c"
     "${SRC_DIR}/modules/_testcapi/codec.c"
@@ -306,13 +301,9 @@ set(TESTCAPI_SRC
     "${SRC_DIR}/modules/_testcapi/mem.c"
     "${SRC_DIR}/modules/_testcapi/numbers.c"
     "${SRC_DIR}/modules/_testcapi/parts.h"
-    "${SRC_DIR}/modules/_testcapi/pyos.c"
-    "${SRC_DIR}/modules/_testcapi/pytime.c"
     "${SRC_DIR}/modules/_testcapi/run.c"
     "${SRC_DIR}/modules/_testcapi/set.c"
     "${SRC_DIR}/modules/_testcapi/structmember.c"
-    "${SRC_DIR}/modules/_testcapi/sys.c"
-    "${SRC_DIR}/modules/_testcapi/testcapi_long.h"
     "${SRC_DIR}/modules/_testcapi/tuple.c"
     "${SRC_DIR}/modules/_testcapi/unicode.c"
     "${SRC_DIR}/modules/_testcapi/util.h"
@@ -323,6 +314,7 @@ set(TESTCAPI_SRC
 )
 
 native_module("_testcapi" FALSE "${TESTCAPI_SRC}")
+target_include_directories("_testcapi" PRIVATE "${SRC_DIR}/include/internal")
 if(WIN32)
     target_compile_options("_testcapi" PRIVATE /wd4296 /wd4130)
 endif()
@@ -367,7 +359,7 @@ target_compile_definitions(${TARGET_PYEXPAT} PRIVATE
 )
 
 ###################### CTYPES ######################
-native_module("_ctypes_test" TRUE "${SRC_DIR}/modules/_ctypes/_ctypes_test.c")
+native_module("_ctypes_test" TRUE "${SRC_DIR}/modules/_ctypes/_ctypes_test.c" NO_CORE_DEFINES)
 if(WIN32)
     target_compile_definitions("_ctypes_test" PRIVATE MS_WIN32 MS_WINDOWS)
 endif()

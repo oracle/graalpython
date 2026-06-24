@@ -11,6 +11,10 @@ Py_file_input = _testcapi.Py_file_input
 Py_eval_input = _testcapi.Py_eval_input
 
 
+class DictSubclass(dict):
+    pass
+
+
 class CAPITest(unittest.TestCase):
     # TODO: Test the following functions:
     #
@@ -35,6 +39,7 @@ class CAPITest(unittest.TestCase):
 
     def test_run_stringflags(self):
         # Test PyRun_StringFlags().
+        # XXX: fopen() uses different path encoding than Python on Windows.
         def run(s, *args):
             return _testcapi.run_stringflags(s, Py_file_input, *args)
         source = b'a\n'
@@ -49,21 +54,24 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, run, b'a\n', dict(a=1), [])
         self.assertRaises(TypeError, run, b'a\n', dict(a=1), 1)
 
+        self.assertIsNone(run(b'a\n', DictSubclass(a=1)))
+        self.assertIsNone(run(b'a\n', DictSubclass(), dict(a=1)))
+        self.assertRaises(NameError, run, b'a\n', DictSubclass())
+
         self.assertIsNone(run(b'\xc3\xa4\n', {'\xe4': 1}))
         self.assertRaises(SyntaxError, run, b'\xe4\n', {})
 
-        # CRASHES run(b'a\n', NULL)
-        # CRASHES run(b'a\n', NULL, {})
-        # CRASHES run(b'a\n', NULL, dict(a=1))
-        # CRASHES run(b'a\n', UserDict())
-        # CRASHES run(b'a\n', UserDict(), {})
-        # CRASHES run(b'a\n', UserDict(), dict(a=1))
+        self.assertRaises(SystemError, run, b'a\n', NULL)
+        self.assertRaises(SystemError, run, b'a\n', NULL, {})
+        self.assertRaises(SystemError, run, b'a\n', NULL, dict(a=1))
+        self.assertRaises(SystemError, run, b'a\n', UserDict())
+        self.assertRaises(SystemError, run, b'a\n', UserDict(), {})
+        self.assertRaises(SystemError, run, b'a\n', UserDict(), dict(a=1))
 
         # CRASHES run(NULL, {})
 
     def test_run_fileexflags(self):
         # Test PyRun_FileExFlags().
-        # XXX: fopen() uses different path encoding than Python on Windows.
         filename = os.fsencode(TESTFN if os.name != 'nt' else TESTFN_ASCII)
         with open(filename, 'wb') as fp:
             fp.write(b'a\n')
@@ -82,12 +90,16 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(TypeError, run, dict(a=1), [])
         self.assertRaises(TypeError, run, dict(a=1), 1)
 
-        # CRASHES run(NULL)
-        # CRASHES run(NULL, {})
-        # CRASHES run(NULL, dict(a=1))
-        # CRASHES run(UserDict())
-        # CRASHES run(UserDict(), {})
-        # CRASHES run(UserDict(), dict(a=1))
+        self.assertIsNone(run(DictSubclass(a=1)))
+        self.assertIsNone(run(DictSubclass(), dict(a=1)))
+        self.assertRaises(NameError, run, DictSubclass())
+
+        self.assertRaises(SystemError, run, NULL)
+        self.assertRaises(SystemError, run, NULL, {})
+        self.assertRaises(SystemError, run, NULL, dict(a=1))
+        self.assertRaises(SystemError, run, UserDict())
+        self.assertRaises(SystemError, run, UserDict(), {})
+        self.assertRaises(SystemError, run, UserDict(), dict(a=1))
 
     @unittest.skipUnless(TESTFN_UNDECODABLE, 'only works if there are undecodable paths')
     @unittest.skipIf(os.name == 'nt', 'does not work on Windows')

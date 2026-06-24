@@ -9,7 +9,7 @@ import sys
 import weakref
 
 from test import support
-from test.support import import_helper
+from test.support import import_helper, suppress_immortalization
 from test.support.script_helper import assert_python_ok
 
 ISBIGENDIAN = sys.byteorder == "big"
@@ -392,6 +392,21 @@ class StructTest(unittest.TestCase):
         big = (1 << 25) - 1
         big = math.ldexp(big, 127 - 24)
         self.assertRaises(OverflowError, struct.pack, ">f", big)
+        self.assertRaises(OverflowError, struct.pack, "<f", big)
+        # same for native format, see gh-145633
+        self.assertRaises(OverflowError, struct.pack, "f", big)
+
+        # And for half-floats
+        big = (1 << 11) - 1
+        big = math.ldexp(big, 15 - 10)
+        packed = struct.pack(">e", big)
+        unpacked = struct.unpack(">e", packed)[0]
+        self.assertEqual(big, unpacked)
+        big = (1 << 12) - 1
+        big = math.ldexp(big, 15 - 11)
+        self.assertRaises(OverflowError, struct.pack, ">e", big)
+        self.assertRaises(OverflowError, struct.pack, "<e", big)
+        self.assertRaises(OverflowError, struct.pack, "e", big)
 
     def test_1530559(self):
         for code, byteorder in iter_integer_formats():
@@ -428,41 +443,11 @@ class StructTest(unittest.TestCase):
         self.assertEqual(s.unpack_from(buffer=test_string, offset=2),
                          (b'cd01',))
 
-    def test_pack_into(self):
+    def _test_pack_into(self, pack_into):
         test_string = b'Reykjavik rocks, eow!'
-        writable_buf = array.array('b', b' '*100)
-        fmt = '21s'
-        s = struct.Struct(fmt)
+        writable_buf = memoryview(array.array('b', b' '*100))
 
         # Test without offset
-        s.pack_into(writable_buf, 0, test_string)
-        from_buf = writable_buf.tobytes()[:len(test_string)]
-        self.assertEqual(from_buf, test_string)
-
-        # Test with offset.
-        s.pack_into(writable_buf, 10, test_string)
-        from_buf = writable_buf.tobytes()[:len(test_string)+10]
-        self.assertEqual(from_buf, test_string[:10] + test_string)
-
-        # Go beyond boundaries.
-        small_buf = array.array('b', b' '*10)
-        self.assertRaises((ValueError, struct.error), s.pack_into, small_buf, 0,
-                          test_string)
-        self.assertRaises((ValueError, struct.error), s.pack_into, small_buf, 2,
-                          test_string)
-
-        # Test bogus offset (issue 3694)
-        sb = small_buf
-        self.assertRaises((TypeError, struct.error), struct.pack_into, b'', sb,
-                          None)
-
-    def test_pack_into_fn(self):
-        test_string = b'Reykjavik rocks, eow!'
-        writable_buf = array.array('b', b' '*100)
-        fmt = '21s'
-        pack_into = lambda *args: struct.pack_into(fmt, *args)
-
-        # Test without offset.
         pack_into(writable_buf, 0, test_string)
         from_buf = writable_buf.tobytes()[:len(test_string)]
         self.assertEqual(from_buf, test_string)
@@ -472,12 +457,49 @@ class StructTest(unittest.TestCase):
         from_buf = writable_buf.tobytes()[:len(test_string)+10]
         self.assertEqual(from_buf, test_string[:10] + test_string)
 
+        # Test with negative offset.
+        pack_into(writable_buf, -30, test_string)
+        from_buf = writable_buf.tobytes()[-30:-30+len(test_string)]
+        self.assertEqual(from_buf, test_string)
+
         # Go beyond boundaries.
         small_buf = array.array('b', b' '*10)
-        self.assertRaises((ValueError, struct.error), pack_into, small_buf, 0,
-                          test_string)
-        self.assertRaises((ValueError, struct.error), pack_into, small_buf, 2,
-                          test_string)
+        with self.assertRaises((ValueError, struct.error)):
+            pack_into(small_buf, 0, test_string)
+        with self.assertRaises((ValueError, struct.error)):
+            pack_into(writable_buf, 90, test_string)
+        with self.assertRaises((ValueError, struct.error)):
+            pack_into(writable_buf, -10, test_string)
+        with self.assertRaises((ValueError, struct.error)):
+            pack_into(writable_buf, 150, test_string)
+        with self.assertRaises((ValueError, struct.error)):
+            pack_into(writable_buf, -150, test_string)
+
+        # Test invalid buffer.
+        self.assertRaises(TypeError, pack_into, b' '*100, 0, test_string)
+        self.assertRaises(TypeError, pack_into, ' '*100, 0, test_string)
+        self.assertRaises(TypeError, pack_into, [0]*100, 0, test_string)
+        self.assertRaises(TypeError, pack_into, None, 0, test_string)
+        self.assertRaises(TypeError, pack_into, writable_buf[::2], 0, test_string)
+        self.assertRaises(TypeError, pack_into, writable_buf[::-1], 0, test_string)
+
+        # Test bogus offset (issue bpo-3694)
+        with self.assertRaises(TypeError):
+            pack_into(writable_buf, None, test_string)
+        with self.assertRaises(TypeError):
+            pack_into(writable_buf, 0.0, test_string)
+        with self.assertRaises((IndexError, OverflowError)):
+            pack_into(writable_buf, 2**1000, test_string)
+        with self.assertRaises((IndexError, OverflowError)):
+            pack_into(writable_buf, -2**1000, test_string)
+
+    def test_pack_into(self):
+        s = struct.Struct('21s')
+        self._test_pack_into(s.pack_into)
+
+    def test_pack_into_fn(self):
+        pack_into = lambda *args: struct.pack_into('21s', *args)
+        self._test_pack_into(pack_into)
 
     def test_unpack_with_buffer(self):
         # SF bug 1563759: struct.unpack doesn't support buffer protocol objects
@@ -542,6 +564,15 @@ class StructTest(unittest.TestCase):
         hugecount2 = '{}b{}H'.format(sys.maxsize//2, sys.maxsize//2)
         self.assertRaises(struct.error, struct.calcsize, hugecount2)
 
+        hugecount3 = '{}i{}q'.format(sys.maxsize // 4, sys.maxsize // 8)
+        self.assertRaises(struct.error, struct.calcsize, hugecount3)
+
+        hugecount4 = '{}?s'.format(sys.maxsize)
+        self.assertRaises(struct.error, struct.calcsize, hugecount4)
+
+        hugecount5 = '{}?p'.format(sys.maxsize)
+        self.assertRaises(struct.error, struct.calcsize, hugecount5)
+
     def test_trailing_counter(self):
         store = array.array('b', b' '*100)
 
@@ -571,8 +602,24 @@ class StructTest(unittest.TestCase):
         # Issue 9422: there was a memory leak when reinitializing a
         # Struct instance.  This test can be used to detect the leak
         # when running with regrtest -L.
-        s = struct.Struct('i')
-        s.__init__('ii')
+        s = struct.Struct('>h')
+        s.__init__('>hh')
+        self.assertEqual(s.format, '>hh')
+        packed = b'\x00\x01\x00\x02'
+        self.assertEqual(s.pack(1, 2), packed)
+        self.assertEqual(s.unpack(packed), (1, 2))
+
+        with self.assertRaises(UnicodeEncodeError):
+            s.__init__('\udc00')
+        self.assertEqual(s.format, '>hh')
+        self.assertEqual(s.pack(1, 2), packed)
+        self.assertEqual(s.unpack(packed), (1, 2))
+
+        with self.assertRaises(struct.error):
+            s.__init__('$')
+        self.assertEqual(s.format, '>hh')
+        self.assertEqual(s.pack(1, 2), packed)
+        self.assertEqual(s.unpack(packed), (1, 2))
 
     def check_sizeof(self, format_str, number_of_codes):
         # The size of 'PyStructObject'
@@ -688,6 +735,7 @@ class StructTest(unittest.TestCase):
         self.assertIn(b"Exception ignored in:", stderr)
         self.assertIn(b"C.__del__", stderr)
 
+    @suppress_immortalization()
     def test__struct_reference_cycle_cleaned_up(self):
         # Regression test for python/cpython#94207.
 
@@ -782,6 +830,45 @@ class StructTest(unittest.TestCase):
 
         my_struct = MyStruct()
         self.assertEqual(my_struct.pack(12345), b'\x30\x39')
+
+    def test_repr(self):
+        s = struct.Struct('=i2H')
+        self.assertEqual(repr(s), f'Struct({s.format!r})')
+
+    def test_operations_on_half_initialized_Struct(self):
+        S = struct.Struct.__new__(struct.Struct)
+
+        spam = array.array('b', b' ')
+        self.assertRaises(RuntimeError, S.iter_unpack, spam)
+        self.assertRaises(RuntimeError, S.pack, 1)
+        self.assertRaises(RuntimeError, S.pack_into, spam, 1)
+        self.assertRaises(RuntimeError, S.unpack, spam)
+        self.assertRaises(RuntimeError, S.unpack_from, spam)
+        self.assertRaises(RuntimeError, getattr, S, 'format')
+        self.assertRaises(RuntimeError, S.__sizeof__)
+        self.assertRaises(RuntimeError, repr, S)
+        self.assertEqual(S.size, -1)
+
+    def test_float_round_trip(self):
+        INF = float('inf')
+        NAN = float('nan')
+
+        for format in (
+            "f", "<f", ">f",
+            "d", "<d", ">d",
+            "e", "<e", ">e",
+        ):
+            with self.subTest(format=format):
+                f = struct.unpack(format, struct.pack(format, 1.5))[0]
+                self.assertEqual(f, 1.5)
+                f = struct.unpack(format, struct.pack(format, NAN))[0]
+                self.assertTrue(math.isnan(f), f)
+                f = struct.unpack(format, struct.pack(format, INF))[0]
+                self.assertTrue(math.isinf(f), f)
+                self.assertEqual(math.copysign(1.0, f), 1.0)
+                f = struct.unpack(format, struct.pack(format, -INF))[0]
+                self.assertTrue(math.isinf(f), f)
+                self.assertEqual(math.copysign(1.0, f), -1.0)
 
 
 class UnpackIteratorTest(unittest.TestCase):

@@ -16,6 +16,7 @@ TestCase = unittest.TestCase
 from test import support
 from test.support import os_helper
 from test.support import socket_helper
+from test.support.testcase import ExtraAssertions
 
 support.requires_working_socket(module=True)
 
@@ -134,7 +135,7 @@ class FakeSocketHTTPConnection(client.HTTPConnection):
     def create_connection(self, *pos, **kw):
         return FakeSocket(*self.fake_socket_args)
 
-class HeaderTests(TestCase):
+class HeaderTests(TestCase, ExtraAssertions):
     def test_auto_headers(self):
         # Some headers are added automatically, but should not be added by
         # .request() if they are explicitly set.
@@ -273,7 +274,7 @@ class HeaderTests(TestCase):
         sock = FakeSocket('')
         conn.sock = sock
         conn.request('GET', '/foo')
-        self.assertTrue(sock.data.startswith(expected))
+        self.assertStartsWith(sock.data, expected)
 
         expected = b'GET /foo HTTP/1.1\r\nHost: [2001:102A::]\r\n' \
                    b'Accept-Encoding: identity\r\n\r\n'
@@ -281,7 +282,7 @@ class HeaderTests(TestCase):
         sock = FakeSocket('')
         conn.sock = sock
         conn.request('GET', '/foo')
-        self.assertTrue(sock.data.startswith(expected))
+        self.assertStartsWith(sock.data, expected)
 
         expected = b'GET /foo HTTP/1.1\r\nHost: [fe80::]\r\n' \
                    b'Accept-Encoding: identity\r\n\r\n'
@@ -289,7 +290,7 @@ class HeaderTests(TestCase):
         sock = FakeSocket('')
         conn.sock = sock
         conn.request('GET', '/foo')
-        self.assertTrue(sock.data.startswith(expected))
+        self.assertStartsWith(sock.data, expected)
 
         expected = b'GET /foo HTTP/1.1\r\nHost: [fe80::]:81\r\n' \
                    b'Accept-Encoding: identity\r\n\r\n'
@@ -297,7 +298,7 @@ class HeaderTests(TestCase):
         sock = FakeSocket('')
         conn.sock = sock
         conn.request('GET', '/foo')
-        self.assertTrue(sock.data.startswith(expected))
+        self.assertStartsWith(sock.data, expected)
 
     def test_malformed_headers_coped_with(self):
         # Issue 19996
@@ -335,9 +336,9 @@ class HeaderTests(TestCase):
         self.assertIsNotNone(resp.getheader('obs-text'))
         self.assertIn('obs-text', resp.msg)
         for folded in (resp.getheader('obs-fold'), resp.msg['obs-fold']):
-            self.assertTrue(folded.startswith('text'))
+            self.assertStartsWith(folded, 'text')
             self.assertIn(' folded with space', folded)
-            self.assertTrue(folded.endswith('folded with tab'))
+            self.assertEndsWith(folded, 'folded with tab')
 
     def test_invalid_headers(self):
         conn = client.HTTPConnection('example.com')
@@ -368,6 +369,51 @@ class HeaderTests(TestCase):
             with self.subTest((name, value)):
                 with self.assertRaisesRegex(ValueError, 'Invalid header'):
                     conn.putheader(name, value)
+
+    def test_invalid_tunnel_headers(self):
+        cases = (
+            ('Invalid\r\nName', 'ValidValue'),
+            ('Invalid\rName', 'ValidValue'),
+            ('Invalid\nName', 'ValidValue'),
+            ('\r\nInvalidName', 'ValidValue'),
+            ('\rInvalidName', 'ValidValue'),
+            ('\nInvalidName', 'ValidValue'),
+            (' InvalidName', 'ValidValue'),
+            ('\tInvalidName', 'ValidValue'),
+            ('Invalid:Name', 'ValidValue'),
+            (':InvalidName', 'ValidValue'),
+            ('ValidName', 'Invalid\r\nValue'),
+            ('ValidName', 'Invalid\rValue'),
+            ('ValidName', 'Invalid\nValue'),
+            ('ValidName', 'InvalidValue\r\n'),
+            ('ValidName', 'InvalidValue\r'),
+            ('ValidName', 'InvalidValue\n'),
+        )
+        for name, value in cases:
+            with self.subTest((name, value)):
+                conn = client.HTTPConnection('example.com')
+                conn.set_tunnel('tunnel', headers={
+                    name: value
+                })
+                conn.sock = FakeSocket('')
+                with self.assertRaisesRegex(ValueError, 'Invalid header'):
+                    conn._tunnel()  # Called in .connect()
+
+    def test_invalid_tunnel_host(self):
+        cases = (
+            'invalid\r.host',
+            '\ninvalid.host',
+            'invalid.host\r\n',
+            'invalid.host\x00',
+            'invalid host',
+        )
+        for tunnel_host in cases:
+            with self.subTest(tunnel_host):
+                conn = client.HTTPConnection('example.com')
+                conn.set_tunnel(tunnel_host)
+                conn.sock = FakeSocket('')
+                with self.assertRaisesRegex(ValueError, 'Tunnel host can\'t contain control characters'):
+                    conn._tunnel()  # Called in .connect()
 
     def test_headers_debuglevel(self):
         body = (
@@ -537,7 +583,7 @@ class TransferEncodingTest(TestCase):
         return b''.join(body)
 
 
-class BasicTest(TestCase):
+class BasicTest(TestCase, ExtraAssertions):
     def test_dir_with_added_behavior_on_status(self):
         # see issue40084
         self.assertTrue({'description', 'name', 'phrase', 'value'} <= set(dir(HTTPStatus(404))))
@@ -651,22 +697,25 @@ class BasicTest(TestCase):
                 'Client must specify Content-Length')
             PRECONDITION_FAILED = (412, 'Precondition Failed',
                 'Precondition in headers is false')
-            REQUEST_ENTITY_TOO_LARGE = (413, 'Request Entity Too Large',
-                'Entity is too large')
-            REQUEST_URI_TOO_LONG = (414, 'Request-URI Too Long',
-                'URI is too long')
+            CONTENT_TOO_LARGE = (413, 'Content Too Large',
+                'Content is too large')
+            REQUEST_ENTITY_TOO_LARGE = CONTENT_TOO_LARGE
+            URI_TOO_LONG = (414, 'URI Too Long', 'URI is too long')
+            REQUEST_URI_TOO_LONG = URI_TOO_LONG
             UNSUPPORTED_MEDIA_TYPE = (415, 'Unsupported Media Type',
                 'Entity body in unsupported format')
-            REQUESTED_RANGE_NOT_SATISFIABLE = (416,
-                'Requested Range Not Satisfiable',
+            RANGE_NOT_SATISFIABLE = (416,
+                'Range Not Satisfiable',
                 'Cannot satisfy request range')
+            REQUESTED_RANGE_NOT_SATISFIABLE = RANGE_NOT_SATISFIABLE
             EXPECTATION_FAILED = (417, 'Expectation Failed',
                 'Expect condition could not be satisfied')
             IM_A_TEAPOT = (418, 'I\'m a Teapot',
                 'Server refuses to brew coffee because it is a teapot.')
             MISDIRECTED_REQUEST = (421, 'Misdirected Request',
                 'Server is not able to produce a response')
-            UNPROCESSABLE_ENTITY = 422, 'Unprocessable Entity'
+            UNPROCESSABLE_CONTENT = 422, 'Unprocessable Content'
+            UNPROCESSABLE_ENTITY = UNPROCESSABLE_CONTENT
             LOCKED = 423, 'Locked'
             FAILED_DEPENDENCY = 424, 'Failed Dependency'
             TOO_EARLY = 425, 'Too Early'
@@ -986,8 +1035,7 @@ class BasicTest(TestCase):
             sock = FakeSocket(body)
             conn.sock = sock
             conn.request('GET', '/foo', body)
-            self.assertTrue(sock.data.startswith(expected), '%r != %r' %
-                    (sock.data[:len(expected)], expected))
+            self.assertStartsWith(sock.data, expected)
 
     def test_send(self):
         expected = b'this is a test this is only a test'
@@ -1077,6 +1125,25 @@ class BasicTest(TestCase):
         resp.begin()
         self.assertEqual(resp.read(), expected)
         resp.close()
+
+        # Explicit full read
+        for n in (-123, -1, None):
+            with self.subTest('full read', n=n):
+                sock = FakeSocket(chunked_start + last_chunk + chunked_end)
+                resp = client.HTTPResponse(sock, method="GET")
+                resp.begin()
+                self.assertTrue(resp.chunked)
+                self.assertEqual(resp.read(n), expected)
+                resp.close()
+
+        # Read first chunk
+        with self.subTest('read1(-1)'):
+            sock = FakeSocket(chunked_start + last_chunk + chunked_end)
+            resp = client.HTTPResponse(sock, method="GET")
+            resp.begin()
+            self.assertTrue(resp.chunked)
+            self.assertEqual(resp.read1(-1), b"hello worl")
+            resp.close()
 
         # Various read sizes
         for n in range(1, 12):
@@ -1433,6 +1500,72 @@ class BasicTest(TestCase):
         thread.join()
         self.assertEqual(result, b"proxied data\n")
 
+    def test_large_content_length(self):
+        serv = socket.create_server((HOST, 0))
+        self.addCleanup(serv.close)
+
+        def run_server():
+            [conn, address] = serv.accept()
+            with conn:
+                while conn.recv(1024):
+                    conn.sendall(
+                        b"HTTP/1.1 200 Ok\r\n"
+                        b"Content-Length: %d\r\n"
+                        b"\r\n" % size)
+                    conn.sendall(b'A' * (size//3))
+                    conn.sendall(b'B' * (size - size//3))
+
+        thread = threading.Thread(target=run_server)
+        thread.start()
+        self.addCleanup(thread.join, 1.0)
+
+        conn = client.HTTPConnection(*serv.getsockname())
+        try:
+            for w in range(15, 27):
+                size = 1 << w
+                conn.request("GET", "/")
+                with conn.getresponse() as response:
+                    self.assertEqual(len(response.read()), size)
+        finally:
+            conn.close()
+            thread.join(1.0)
+
+    def test_large_content_length_truncated(self):
+        serv = socket.create_server((HOST, 0))
+        self.addCleanup(serv.close)
+
+        def run_server():
+            while True:
+                [conn, address] = serv.accept()
+                with conn:
+                    conn.recv(1024)
+                    if not size:
+                        break
+                    conn.sendall(
+                        b"HTTP/1.1 200 Ok\r\n"
+                        b"Content-Length: %d\r\n"
+                        b"\r\n"
+                        b"Text" % size)
+
+        thread = threading.Thread(target=run_server)
+        thread.start()
+        self.addCleanup(thread.join, 1.0)
+
+        conn = client.HTTPConnection(*serv.getsockname())
+        try:
+            for w in range(18, 65):
+                size = 1 << w
+                conn.request("GET", "/")
+                with conn.getresponse() as response:
+                    self.assertRaises(client.IncompleteRead, response.read)
+                conn.close()
+        finally:
+            conn.close()
+            size = 0
+            conn.request("GET", "/")
+            conn.close()
+            thread.join(1.0)
+
     def test_putrequest_override_domain_validation(self):
         """
         It should be possible to override the default validation
@@ -1472,7 +1605,7 @@ class BasicTest(TestCase):
         conn.putrequest('GET', '/☃')
 
 
-class ExtendedReadTest(TestCase):
+class ExtendedReadTest(TestCase, ExtraAssertions):
     """
     Test peek(), read1(), readline()
     """
@@ -1531,7 +1664,7 @@ class ExtendedReadTest(TestCase):
                 # then unbounded peek
                 p2 = resp.peek()
                 self.assertGreaterEqual(len(p2), len(p))
-                self.assertTrue(p2.startswith(p))
+                self.assertStartsWith(p2, p)
                 next = resp.read(len(p2))
                 self.assertEqual(next, p2)
             else:
@@ -1556,7 +1689,7 @@ class ExtendedReadTest(TestCase):
             line = readline(limit)
             if line and line != b"foo":
                 if len(line) < 5:
-                    self.assertTrue(line.endswith(b"\n"))
+                    self.assertEndsWith(line, b"\n")
             all.append(line)
             if not line:
                 break
@@ -1665,7 +1798,7 @@ class Readliner:
             raise
 
 
-class OfflineTest(TestCase):
+class OfflineTest(TestCase, ExtraAssertions):
     def test_all(self):
         # Documented objects defined in the module should be in __all__
         expected = {"responses"}  # Allowlist documented dict() object
@@ -1718,13 +1851,17 @@ class OfflineTest(TestCase):
             'GONE',
             'LENGTH_REQUIRED',
             'PRECONDITION_FAILED',
+            'CONTENT_TOO_LARGE',
             'REQUEST_ENTITY_TOO_LARGE',
+            'URI_TOO_LONG',
             'REQUEST_URI_TOO_LONG',
             'UNSUPPORTED_MEDIA_TYPE',
+            'RANGE_NOT_SATISFIABLE',
             'REQUESTED_RANGE_NOT_SATISFIABLE',
             'EXPECTATION_FAILED',
             'IM_A_TEAPOT',
             'MISDIRECTED_REQUEST',
+            'UNPROCESSABLE_CONTENT',
             'UNPROCESSABLE_ENTITY',
             'LOCKED',
             'FAILED_DEPENDENCY',
@@ -1747,7 +1884,7 @@ class OfflineTest(TestCase):
         ]
         for const in expected:
             with self.subTest(constant=const):
-                self.assertTrue(hasattr(client, const))
+                self.assertHasAttr(client, const)
 
 
 class SourceAddressTest(TestCase):
@@ -2215,7 +2352,7 @@ class HTTPResponseTest(TestCase):
         header = self.resp.getheader('No-Such-Header',default=42)
         self.assertEqual(header, 42)
 
-class TunnelTests(TestCase):
+class TunnelTests(TestCase, ExtraAssertions):
     def setUp(self):
         response_text = (
             'HTTP/1.1 200 OK\r\n\r\n' # Reply to CONNECT
@@ -2389,8 +2526,7 @@ class TunnelTests(TestCase):
                 msg=f'unexpected number of send calls: {mock_send.mock_calls}')
         proxy_setup_data_sent = mock_send.mock_calls[0][1][0]
         self.assertIn(b'CONNECT destination.com', proxy_setup_data_sent)
-        self.assertTrue(
-                proxy_setup_data_sent.endswith(b'\r\n\r\n'),
+        self.assertEndsWith(proxy_setup_data_sent, b'\r\n\r\n',
                 msg=f'unexpected proxy data sent {proxy_setup_data_sent!r}')
 
     def test_connect_put_request(self):

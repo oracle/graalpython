@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -46,9 +46,6 @@ PyAPI_DATA(PyTypeObject) PyGen_Type;
 PyAPI_FUNC(PyObject *) PyGen_New(PyFrameObject *);
 PyAPI_FUNC(PyObject *) PyGen_NewWithQualName(PyFrameObject *,
     PyObject *name, PyObject *qualname);
-PyAPI_FUNC(int) _PyGen_SetStopIterationValue(PyObject *);
-PyAPI_FUNC(int) _PyGen_FetchStopIterationValue(PyObject **);
-PyAPI_FUNC(void) _PyGen_Finalize(PyObject *self);
 PyAPI_FUNC(PyCodeObject *) PyGen_GetCode(PyGenObject *gen);
 
 
@@ -59,7 +56,6 @@ typedef struct {
 } PyCoroObject;
 
 PyAPI_DATA(PyTypeObject) PyCoro_Type;
-PyAPI_DATA(PyTypeObject) _PyCoroWrapper_Type;
 
 #define PyCoro_CheckExact(op) Py_IS_TYPE((op), &PyCoro_Type)
 PyAPI_FUNC(PyObject *) PyCoro_New(PyFrameObject *,
@@ -74,8 +70,6 @@ typedef struct {
 
 PyAPI_DATA(PyTypeObject) PyAsyncGen_Type;
 PyAPI_DATA(PyTypeObject) _PyAsyncGenASend_Type;
-PyAPI_DATA(PyTypeObject) _PyAsyncGenWrappedValue_Type;
-PyAPI_DATA(PyTypeObject) _PyAsyncGenAThrow_Type;
 
 PyAPI_FUNC(PyObject *) PyAsyncGen_New(PyFrameObject *,
     PyObject *name, PyObject *qualname);

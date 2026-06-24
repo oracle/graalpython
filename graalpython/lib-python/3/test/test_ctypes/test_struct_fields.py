@@ -1,5 +1,9 @@
 import unittest
-from ctypes import *
+import sys
+from ctypes import Structure, Union, sizeof, c_char, c_int
+from ._support import (CField, Py_TPFLAGS_DISALLOW_INSTANTIATION,
+                       Py_TPFLAGS_IMMUTABLETYPE)
+
 
 class StructFieldsTestCase(unittest.TestCase):
     # Structure/Union classes must get 'finalized' sooner or
@@ -11,7 +15,6 @@ class StructFieldsTestCase(unittest.TestCase):
     # 4. The type is subclassed
     #
     # When they are finalized, assigning _fields_ is no longer allowed.
-
     def test_1_A(self):
         class X(Structure):
             pass
@@ -55,19 +58,44 @@ class StructFieldsTestCase(unittest.TestCase):
         self.assertEqual(bytes(x), b'a\x00###')
 
     def test_6(self):
-        class X(Structure):
-            _fields_ = [("x", c_int)]
-        CField = type(X.x)
         self.assertRaises(TypeError, CField)
+
+    def test_cfield_type_flags(self):
+        self.assertTrue(CField.__flags__ & Py_TPFLAGS_DISALLOW_INSTANTIATION)
+        self.assertTrue(CField.__flags__ & Py_TPFLAGS_IMMUTABLETYPE)
+
+    def test_cfield_inheritance_hierarchy(self):
+        self.assertEqual(CField.mro(), [CField, object])
 
     def test_gh99275(self):
         class BrokenStructure(Structure):
             def __init_subclass__(cls, **kwargs):
-                cls._fields_ = []  # This line will fail, `stgdict` is not ready
+                cls._fields_ = []  # This line will fail, `stginfo` is not ready
 
         with self.assertRaisesRegex(TypeError,
                                     'ctypes state is not initialized'):
             class Subclass(BrokenStructure): ...
+
+    def test_max_field_size_gh126937(self):
+        # Classes for big structs should be created successfully.
+        # (But they most likely can't be instantiated.)
+        # The size must fit in Py_ssize_t.
+
+        class X(Structure):
+            _fields_ = [('char', c_char),]
+        max_field_size = sys.maxsize
+
+        class Y(Structure):
+            _fields_ = [('largeField', X * max_field_size)]
+        class Z(Structure):
+            _fields_ = [('largeField', c_char * max_field_size)]
+
+        with self.assertRaises(OverflowError):
+            class TooBig(Structure):
+                _fields_ = [('largeField', X * (max_field_size + 1))]
+        with self.assertRaises(OverflowError):
+            class TooBig(Structure):
+                _fields_ = [('largeField', c_char * (max_field_size + 1))]
 
     # __set__ and __get__ should raise a TypeError in case their self
     # argument is not a ctype instance.
@@ -92,6 +120,7 @@ class StructFieldsTestCase(unittest.TestCase):
             _fields_ = (("field", c_int),)
         self.assertRaises(TypeError,
                           MyCUnion.field.__get__, 'wrong type self', 42)
+
 
 if __name__ == "__main__":
     unittest.main()

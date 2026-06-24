@@ -345,6 +345,7 @@ PyLong_AsLong;long;PyObject*
 PyLong_AsLongAndOverflow;long;PyObject*|int*
 PyLong_AsLongLong;long long;PyObject*
 PyLong_AsLongLongAndOverflow;long long;PyObject*|int*
+PyLong_AsNativeBytes;Py_ssize_t;PyObject*|void*|Py_ssize_t|int
 PyLong_AsSize_t;size_t;PyObject*
 PyLong_AsSsize_t;Py_ssize_t;PyObject*
 PyLong_AsUnsignedLong;unsigned long;PyObject*
@@ -355,10 +356,12 @@ PyLong_AsVoidPtr;void*;PyObject*
 PyLong_FromDouble;PyObject*;double
 PyLong_FromLong;PyObject*;long
 PyLong_FromLongLong;PyObject*;long long
+PyLong_FromNativeBytes;PyObject*;const void*|size_t|int
 PyLong_FromSize_t;PyObject*;size_t
 PyLong_FromSsize_t;PyObject*;Py_ssize_t
 PyLong_FromString;PyObject*;const char*|char**|int
 PyLong_FromUnicodeObject;PyObject*;PyObject*|int
+PyLong_FromUnsignedNativeBytes;PyObject*;const void*|size_t|int
 PyLong_FromUnsignedLong;PyObject*;unsigned long
 PyLong_FromUnsignedLongLong;PyObject*;unsigned long long
 PyLong_FromVoidPtr;PyObject*;void*
@@ -956,8 +959,8 @@ _PyCrossInterpreterData_NewObject;PyObject*;_PyCrossInterpreterData*
 _PyCrossInterpreterData_RegisterClass;int;PyTypeObject*|crossinterpdatafunc
 _PyCrossInterpreterData_Release;int;_PyCrossInterpreterData*
 _PyCrossInterpreterData_UnregisterClass;int;PyTypeObject*
-_PyDeadline_Get;_PyTime_t;_PyTime_t
-_PyDeadline_Init;_PyTime_t;_PyTime_t
+_PyDeadline_Get;PyTime_t;PyTime_t
+_PyDeadline_Init;PyTime_t;PyTime_t
 _PyDebugAllocatorStats;void;FILE*|const char*|int|size_t
 _PyDictView_Intersect;PyObject*;PyObject*|PyObject*
 _PyDictView_New;PyObject*;PyObject*|PyTypeObject*
@@ -1031,7 +1034,7 @@ _PyInterpreterState_SetConfig;int;const struct PyConfig*
 _PyInterpreterState_SetEvalFrameFunc;void;PyInterpreterState*|_PyFrameEvalFunction
 _PyList_DebugMallocStats;void;FILE*
 _PyList_Extend;PyObject*;PyListObject*|PyObject*
-_PyLong_AsByteArray;int;PyLongObject*|unsigned char*|size_t|int|int
+_PyLong_AsByteArray;int;PyLongObject*|unsigned char*|size_t|int|int|int
 _PyLong_AsInt;int;PyObject*
 _PyLong_AsTime_t;time_t;PyObject*
 _PyLong_Copy;PyObject*;PyLongObject*
@@ -1123,32 +1126,32 @@ _PyThreadState_UncheckedGet;PyThreadState*;void
 _PyThread_CurrentExceptions;PyObject*;void
 _PyThread_CurrentFrames;PyObject*;void
 _PyThread_at_fork_reinit;int;PyThread_type_lock*
-_PyTime_Add;_PyTime_t;_PyTime_t|_PyTime_t
-_PyTime_AsMicroseconds;_PyTime_t;_PyTime_t|_PyTime_round_t
-_PyTime_AsMilliseconds;_PyTime_t;_PyTime_t|_PyTime_round_t
-_PyTime_AsNanoseconds;_PyTime_t;_PyTime_t
-_PyTime_AsNanosecondsObject;PyObject*;_PyTime_t
-_PyTime_AsSecondsDouble;double;_PyTime_t
-_PyTime_AsTimespec;int;_PyTime_t|struct timespec*
-_PyTime_AsTimespec_clamp;void;_PyTime_t|struct timespec*
-_PyTime_AsTimeval;int;_PyTime_t|struct timeval*|_PyTime_round_t
-_PyTime_AsTimevalTime_t;int;_PyTime_t|time_t*|int*|_PyTime_round_t
-_PyTime_AsTimeval_clamp;void;_PyTime_t|struct timeval*|_PyTime_round_t
-_PyTime_FromMicrosecondsClamp;_PyTime_t;_PyTime_t
-_PyTime_FromMillisecondsObject;int;_PyTime_t*|PyObject*|_PyTime_round_t
-_PyTime_FromNanoseconds;_PyTime_t;_PyTime_t
-_PyTime_FromNanosecondsObject;int;_PyTime_t*|PyObject*
-_PyTime_FromSeconds;_PyTime_t;int
-_PyTime_FromSecondsObject;int;_PyTime_t*|PyObject*|_PyTime_round_t
-_PyTime_FromTimespec;int;_PyTime_t*|struct timespec*
-_PyTime_FromTimeval;int;_PyTime_t*|struct timeval*
-_PyTime_GetMonotonicClock;_PyTime_t;void
-_PyTime_GetMonotonicClockWithInfo;int;_PyTime_t*|_Py_clock_info_t*
-_PyTime_GetPerfCounter;_PyTime_t;void
-_PyTime_GetPerfCounterWithInfo;int;_PyTime_t*|_Py_clock_info_t*
-_PyTime_GetSystemClock;_PyTime_t;void
-_PyTime_GetSystemClockWithInfo;int;_PyTime_t*|_Py_clock_info_t*
-_PyTime_MulDiv;_PyTime_t;_PyTime_t|_PyTime_t|_PyTime_t
+_PyTime_Add;PyTime_t;PyTime_t|PyTime_t
+_PyTime_AsMicroseconds;PyTime_t;PyTime_t|_PyTime_round_t
+_PyTime_AsMilliseconds;PyTime_t;PyTime_t|_PyTime_round_t
+_PyTime_AsNanoseconds;PyTime_t;PyTime_t
+_PyTime_AsNanosecondsObject;PyObject*;PyTime_t
+_PyTime_AsSecondsDouble;double;PyTime_t
+_PyTime_AsTimespec;int;PyTime_t|struct timespec*
+_PyTime_AsTimespec_clamp;void;PyTime_t|struct timespec*
+_PyTime_AsTimeval;int;PyTime_t|struct timeval*|_PyTime_round_t
+_PyTime_AsTimevalTime_t;int;PyTime_t|time_t*|int*|_PyTime_round_t
+_PyTime_AsTimeval_clamp;void;PyTime_t|struct timeval*|_PyTime_round_t
+_PyTime_FromMicrosecondsClamp;PyTime_t;PyTime_t
+_PyTime_FromMillisecondsObject;int;PyTime_t*|PyObject*|_PyTime_round_t
+_PyTime_FromNanoseconds;PyTime_t;PyTime_t
+_PyTime_FromNanosecondsObject;int;PyTime_t*|PyObject*
+_PyTime_FromSeconds;PyTime_t;int
+_PyTime_FromSecondsObject;int;PyTime_t*|PyObject*|_PyTime_round_t
+_PyTime_FromTimespec;int;PyTime_t*|struct timespec*
+_PyTime_FromTimeval;int;PyTime_t*|struct timeval*
+_PyTime_GetMonotonicClock;PyTime_t;void
+_PyTime_GetMonotonicClockWithInfo;int;PyTime_t*|_Py_clock_info_t*
+_PyTime_GetPerfCounter;PyTime_t;void
+_PyTime_GetPerfCounterWithInfo;int;PyTime_t*|_Py_clock_info_t*
+_PyTime_GetSystemClock;PyTime_t;void
+_PyTime_GetSystemClockWithInfo;int;PyTime_t*|_Py_clock_info_t*
+_PyTime_MulDiv;PyTime_t;PyTime_t|PyTime_t|PyTime_t
 _PyTime_ObjectToTime_t;int;PyObject*|time_t*|_PyTime_round_t
 _PyTime_ObjectToTimespec;int;PyObject*|time_t*|long*|_PyTime_round_t
 _PyTime_ObjectToTimeval;int;PyObject*|time_t*|long*|_PyTime_round_t

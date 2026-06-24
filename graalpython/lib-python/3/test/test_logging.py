@@ -24,6 +24,7 @@ import logging.config
 
 import codecs
 import configparser
+import contextlib
 import copy
 import datetime
 import pathlib
@@ -51,6 +52,7 @@ from test.support import warnings_helper
 from test.support import asyncore
 from test.support import smtpd
 from test.support.logging_helper import TestHandler
+from test.support.testcase import ExtraAssertions
 import textwrap
 import threading
 import asyncio
@@ -100,8 +102,7 @@ class BaseTest(unittest.TestCase):
         self._threading_key = threading_helper.threading_setup()
 
         logger_dict = logging.getLogger().manager.loggerDict
-        logging._acquireLock()
-        try:
+        with logging._lock:
             self.saved_handlers = logging._handlers.copy()
             self.saved_handler_list = logging._handlerList[:]
             self.saved_loggers = saved_loggers = logger_dict.copy()
@@ -111,8 +112,6 @@ class BaseTest(unittest.TestCase):
             for name in saved_loggers:
                 logger_states[name] = getattr(saved_loggers[name],
                                               'disabled', None)
-        finally:
-            logging._releaseLock()
 
         # Set two unused loggers
         self.logger1 = logging.getLogger("\xab\xd7\xbb")
@@ -146,8 +145,7 @@ class BaseTest(unittest.TestCase):
             self.root_logger.removeHandler(h)
             h.close()
         self.root_logger.setLevel(self.original_logging_level)
-        logging._acquireLock()
-        try:
+        with logging._lock:
             logging._levelToName.clear()
             logging._levelToName.update(self.saved_level_to_name)
             logging._nameToLevel.clear()
@@ -164,8 +162,6 @@ class BaseTest(unittest.TestCase):
             for name in self.logger_states:
                 if logger_states[name] is not None:
                     self.saved_loggers[name].disabled = logger_states[name]
-        finally:
-            logging._releaseLock()
 
         self.doCleanups()
         threading_helper.threading_cleanup(*self._threading_key)
@@ -613,7 +609,7 @@ class HandlerTest(BaseTest):
     def test_builtin_handlers(self):
         # We can't actually *use* too many handlers in the tests,
         # but we can try instantiating them with various options
-        if sys.platform in ('linux', 'darwin'):
+        if sys.platform in ('linux', 'android', 'darwin'):
             for existing in (True, False):
                 fn = make_temp_file()
                 if not existing:
@@ -677,7 +673,7 @@ class HandlerTest(BaseTest):
                     (logging.handlers.RotatingFileHandler, (pfn, 'a')),
                     (logging.handlers.TimedRotatingFileHandler, (pfn, 'h')),
                 )
-        if sys.platform in ('linux', 'darwin'):
+        if sys.platform in ('linux', 'android', 'darwin'):
             cases += ((logging.handlers.WatchedFileHandler, (pfn, 'w')),)
         for cls, args in cases:
             h = cls(*args, encoding="utf-8")
@@ -751,11 +747,8 @@ class HandlerTest(BaseTest):
                     stream=open('/dev/null', 'wt', encoding='utf-8'))
 
             def emit(self, record):
-                self.sub_handler.acquire()
-                try:
+                with self.sub_handler.lock:
                     self.sub_handler.emit(record)
-                finally:
-                    self.sub_handler.release()
 
         self.assertEqual(len(logging._handlers), 0)
         refed_h = _OurHandler()
@@ -771,29 +764,22 @@ class HandlerTest(BaseTest):
         fork_happened__release_locks_and_end_thread = threading.Event()
 
         def lock_holder_thread_fn():
-            logging._acquireLock()
-            try:
-                refed_h.acquire()
-                try:
-                    # Tell the main thread to do the fork.
-                    locks_held__ready_to_fork.set()
+            with logging._lock, refed_h.lock:
+                # Tell the main thread to do the fork.
+                locks_held__ready_to_fork.set()
 
-                    # If the deadlock bug exists, the fork will happen
-                    # without dealing with the locks we hold, deadlocking
-                    # the child.
+                # If the deadlock bug exists, the fork will happen
+                # without dealing with the locks we hold, deadlocking
+                # the child.
 
-                    # Wait for a successful fork or an unreasonable amount of
-                    # time before releasing our locks.  To avoid a timing based
-                    # test we'd need communication from os.fork() as to when it
-                    # has actually happened.  Given this is a regression test
-                    # for a fixed issue, potentially less reliably detecting
-                    # regression via timing is acceptable for simplicity.
-                    # The test will always take at least this long. :(
-                    fork_happened__release_locks_and_end_thread.wait(0.5)
-                finally:
-                    refed_h.release()
-            finally:
-                logging._releaseLock()
+                # Wait for a successful fork or an unreasonable amount of
+                # time before releasing our locks.  To avoid a timing based
+                # test we'd need communication from os.fork() as to when it
+                # has actually happened.  Given this is a regression test
+                # for a fixed issue, potentially less reliably detecting
+                # regression via timing is acceptable for simplicity.
+                # The test will always take at least this long. :(
+                fork_happened__release_locks_and_end_thread.wait(0.5)
 
         lock_holder_thread = threading.Thread(
                 target=lock_holder_thread_fn,
@@ -2210,7 +2196,8 @@ class HTTPHandlerTest(BaseTest):
                 self.handled.clear()
                 msg = "sp\xe4m"
                 logger.error(msg)
-                self.handled.wait()
+                handled = self.handled.wait(support.SHORT_TIMEOUT)
+                self.assertTrue(handled, "HTTP request timed out")
                 self.assertEqual(self.log_data.path, '/frob')
                 self.assertEqual(self.command, method)
                 if method == 'GET':
@@ -3768,7 +3755,28 @@ class ConfigDictTest(BaseTest):
         d = {
             'atuple': (1, 2, 3),
             'alist': ['a', 'b', 'c'],
-            'adict': {'d': 'e', 'f': 3 },
+            'adict': {
+                'd': 'e', 'f': 3 ,
+                'alpha numeric 1 with spaces' : 5,
+                'alpha numeric 1 %( - © ©ß¯' : 9,
+                'alpha numeric ] 1 with spaces' : 15,
+                'alpha ]] numeric 1 %( - © ©ß¯]' : 19,
+                ' alpha [ numeric 1 %( - © ©ß¯] ' : 11,
+                ' alpha ' : 32,
+                '' : 10,
+                'nest4' : {
+                    'd': 'e', 'f': 3 ,
+                    'alpha numeric 1 with spaces' : 5,
+                    'alpha numeric 1 %( - © ©ß¯' : 9,
+                    '' : 10,
+                    'somelist' :  ('g', ('h', 'i'), 'j'),
+                    'somedict' : {
+                        'a' : 1,
+                        'a with 1 and space' : 3,
+                        'a with ( and space' : 4,
+                    }
+                }
+            },
             'nest1': ('g', ('h', 'i'), 'j'),
             'nest2': ['k', ['l', 'm'], 'n'],
             'nest3': ['o', 'cfg://alist', 'p'],
@@ -3780,11 +3788,36 @@ class ConfigDictTest(BaseTest):
         self.assertEqual(bc.convert('cfg://nest2[1][1]'), 'm')
         self.assertEqual(bc.convert('cfg://adict.d'), 'e')
         self.assertEqual(bc.convert('cfg://adict[f]'), 3)
+        self.assertEqual(bc.convert('cfg://adict[alpha numeric 1 with spaces]'), 5)
+        self.assertEqual(bc.convert('cfg://adict[alpha numeric 1 %( - © ©ß¯]'), 9)
+        self.assertEqual(bc.convert('cfg://adict[]'), 10)
+        self.assertEqual(bc.convert('cfg://adict.nest4.d'), 'e')
+        self.assertEqual(bc.convert('cfg://adict.nest4[d]'), 'e')
+        self.assertEqual(bc.convert('cfg://adict[nest4].d'), 'e')
+        self.assertEqual(bc.convert('cfg://adict[nest4][f]'), 3)
+        self.assertEqual(bc.convert('cfg://adict[nest4][alpha numeric 1 with spaces]'), 5)
+        self.assertEqual(bc.convert('cfg://adict[nest4][alpha numeric 1 %( - © ©ß¯]'), 9)
+        self.assertEqual(bc.convert('cfg://adict[nest4][]'), 10)
+        self.assertEqual(bc.convert('cfg://adict[nest4][somelist][0]'), 'g')
+        self.assertEqual(bc.convert('cfg://adict[nest4][somelist][1][0]'), 'h')
+        self.assertEqual(bc.convert('cfg://adict[nest4][somelist][1][1]'), 'i')
+        self.assertEqual(bc.convert('cfg://adict[nest4][somelist][2]'), 'j')
+        self.assertEqual(bc.convert('cfg://adict[nest4].somedict.a'), 1)
+        self.assertEqual(bc.convert('cfg://adict[nest4].somedict[a]'), 1)
+        self.assertEqual(bc.convert('cfg://adict[nest4].somedict[a with 1 and space]'), 3)
+        self.assertEqual(bc.convert('cfg://adict[nest4].somedict[a with ( and space]'), 4)
+        self.assertEqual(bc.convert('cfg://adict.nest4.somelist[1][1]'), 'i')
+        self.assertEqual(bc.convert('cfg://adict.nest4.somelist[2]'), 'j')
+        self.assertEqual(bc.convert('cfg://adict.nest4.somedict.a'), 1)
+        self.assertEqual(bc.convert('cfg://adict.nest4.somedict[a]'), 1)
         v = bc.convert('cfg://nest3')
         self.assertEqual(v.pop(1), ['a', 'b', 'c'])
         self.assertRaises(KeyError, bc.convert, 'cfg://nosuch')
         self.assertRaises(ValueError, bc.convert, 'cfg://!')
         self.assertRaises(KeyError, bc.convert, 'cfg://adict[2]')
+        self.assertRaises(KeyError, bc.convert, 'cfg://adict[alpha numeric ] 1 with spaces]')
+        self.assertRaises(ValueError, bc.convert, 'cfg://adict[ alpha ]] numeric 1 %( - © ©ß¯] ]')
+        self.assertRaises(ValueError, bc.convert, 'cfg://adict[ alpha [ numeric 1 %( - © ©ß¯] ]')
 
     def test_namedtuple(self):
         # see bpo-39142
@@ -3990,7 +4023,7 @@ class ConfigDictTest(BaseTest):
     @skip_if_tsan_fork
     @support.requires_subprocess()
     @unittest.skipUnless(support.Py_DEBUG, "requires a debug build for testing"
-                                           "assertions in multiprocessing")
+                                           " assertions in multiprocessing")
     def test_config_queue_handler_multiprocessing_context(self):
         # regression test for gh-121723
         if support.MS_WINDOWS:
@@ -4027,6 +4060,7 @@ class ConfigDictTest(BaseTest):
         # log a message (this creates a record put in the queue)
         logging.getLogger().info(message_to_log)
 
+    @skip_if_tsan_fork
     @support.requires_subprocess()
     def test_multiprocessing_queues(self):
         # See gh-119819
@@ -4270,8 +4304,6 @@ class QueueHandlerTest(BaseTest):
         self.assertEqual(formatted_msg, log_record.msg)
         self.assertEqual(formatted_msg, log_record.message)
 
-    @unittest.skipUnless(hasattr(logging.handlers, 'QueueListener'),
-                         'logging.handlers.QueueListener required for this test')
     def test_queue_listener(self):
         handler = TestHandler(support.Matcher())
         listener = logging.handlers.QueueListener(self.queue, handler)
@@ -4282,6 +4314,7 @@ class QueueHandlerTest(BaseTest):
             self.que_logger.critical(self.next_message())
         finally:
             listener.stop()
+            listener.stop()  # gh-114706 - ensure no crash if called again
         self.assertTrue(handler.matches(levelno=logging.WARNING, message='1'))
         self.assertTrue(handler.matches(levelno=logging.ERROR, message='2'))
         self.assertTrue(handler.matches(levelno=logging.CRITICAL, message='3'))
@@ -4305,8 +4338,18 @@ class QueueHandlerTest(BaseTest):
         self.assertTrue(handler.matches(levelno=logging.CRITICAL, message='6'))
         handler.close()
 
-    @unittest.skipUnless(hasattr(logging.handlers, 'QueueListener'),
-                         'logging.handlers.QueueListener required for this test')
+        # doesn't hurt to call stop() more than once.
+        listener.stop()
+        self.assertIsNone(listener._thread)
+
+    def test_queue_listener_multi_start(self):
+        handler = TestHandler(support.Matcher())
+        listener = logging.handlers.QueueListener(self.queue, handler)
+        listener.start()
+        self.assertRaises(RuntimeError, listener.start)
+        listener.stop()
+        self.assertIsNone(listener._thread)
+
     def test_queue_listener_with_StreamHandler(self):
         # Test that traceback and stack-info only appends once (bpo-34334, bpo-46755).
         listener = logging.handlers.QueueListener(self.queue, self.root_hdlr)
@@ -4321,8 +4364,6 @@ class QueueHandlerTest(BaseTest):
         self.assertEqual(self.stream.getvalue().strip().count('Traceback'), 1)
         self.assertEqual(self.stream.getvalue().strip().count('Stack'), 1)
 
-    @unittest.skipUnless(hasattr(logging.handlers, 'QueueListener'),
-                         'logging.handlers.QueueListener required for this test')
     def test_queue_listener_with_multiple_handlers(self):
         # Test that queue handler format doesn't affect other handler formats (bpo-35726).
         self.que_hdlr.setFormatter(self.root_formatter)
@@ -4338,6 +4379,7 @@ if hasattr(logging.handlers, 'QueueListener'):
     import multiprocessing
     from unittest.mock import patch
 
+    @skip_if_tsan_fork
     @threading_helper.requires_working_threading()
     class QueueListenerTest(BaseTest):
         """
@@ -4738,6 +4780,77 @@ class FormatterTest(unittest.TestCase, AssertErrorMessage):
             r = logging.makeLogRecord({'msg': 'Message %d' % (i + 1)})
             s = f.format(r)
             self.assertNotIn('.1000', s)
+
+    def test_msecs_has_no_floating_point_precision_loss(self):
+        # See issue gh-102402
+        tests = (
+            # time_ns is approx. 2023-03-04 04:25:20 UTC
+            # (time_ns, expected_msecs_value)
+            (1_677_902_297_100_000_000, 100.0),  # exactly 100ms
+            (1_677_903_920_999_998_503, 999.0),  # check truncating doesn't round
+            (1_677_903_920_000_998_503, 0.0),  # check truncating doesn't round
+            (1_677_903_920_999_999_900, 0.0), # check rounding up
+        )
+        for ns, want in tests:
+            with patch('time.time_ns') as patched_ns:
+                patched_ns.return_value = ns
+                record = logging.makeLogRecord({'msg': 'test'})
+            with self.subTest(ns):
+                self.assertEqual(record.msecs, want)
+                self.assertEqual(record.created, ns / 1e9)
+                self.assertAlmostEqual(record.created - int(record.created),
+                                       record.msecs / 1e3,
+                                       delta=1e-3)
+
+    def test_relativeCreated_has_higher_precision(self):
+        # See issue gh-102402.
+        # Run the code in the subprocess, because the time module should
+        # be patched before the first import of the logging package.
+        # Temporary unloading and re-importing the logging package has
+        # side effects (including registering the atexit callback and
+        # references leak).
+        start_ns = 1_677_903_920_000_998_503  # approx. 2023-03-04 04:25:20 UTC
+        offsets_ns = (200, 500, 12_354, 99_999, 1_677_903_456_999_123_456)
+        code = textwrap.dedent(f"""
+            start_ns = {start_ns!r}
+            offsets_ns = {offsets_ns!r}
+            start_monotonic_ns = start_ns - 1
+
+            import time
+            # Only time.time_ns needs to be patched for the current
+            # implementation, but patch also other functions to make
+            # the test less implementation depending.
+            old_time_ns = time.time_ns
+            old_time = time.time
+            old_monotonic_ns = time.monotonic_ns
+            old_monotonic = time.monotonic
+            time_ns_result = start_ns
+            time.time_ns = lambda: time_ns_result
+            time.time = lambda: time.time_ns()/1e9
+            time.monotonic_ns = lambda: time_ns_result - start_monotonic_ns
+            time.monotonic = lambda: time.monotonic_ns()/1e9
+            try:
+                import logging
+
+                for offset_ns in offsets_ns:
+                    # mock for log record creation
+                    time_ns_result = start_ns + offset_ns
+                    record = logging.makeLogRecord({{'msg': 'test'}})
+                    print(record.created, record.relativeCreated)
+            finally:
+                time.time_ns = old_time_ns
+                time.time = old_time
+                time.monotonic_ns = old_monotonic_ns
+                time.monotonic = old_monotonic
+        """)
+        rc, out, err = assert_python_ok("-c", code)
+        out = out.decode()
+        for offset_ns, line in zip(offsets_ns, out.splitlines(), strict=True):
+            with self.subTest(offset_ns=offset_ns):
+                created, relativeCreated = map(float, line.split())
+                self.assertAlmostEqual(created, (start_ns + offset_ns) / 1e9, places=6)
+                # After PR gh-102412, precision (places) increases from 3 to 7
+                self.assertAlmostEqual(relativeCreated, offset_ns / 1e6, places=7)
 
 
 class TestBufferingFormatter(logging.BufferingFormatter):
@@ -5167,6 +5280,7 @@ class LogRecordTest(BaseTest):
         else:
             return results
 
+    @skip_if_tsan_fork
     def test_multiprocessing(self):
         support.skip_if_broken_multiprocessing_synchronize()
         multiprocessing_imported = 'multiprocessing' in sys.modules
@@ -5613,7 +5727,7 @@ class BasicConfigTest(unittest.TestCase):
         self._test_log('critical')
 
 
-class LoggerAdapterTest(unittest.TestCase):
+class LoggerAdapterTest(unittest.TestCase, ExtraAssertions):
     def setUp(self):
         super(LoggerAdapterTest, self).setUp()
         old_handler_list = logging._handlerList[:]
@@ -5629,7 +5743,7 @@ class LoggerAdapterTest(unittest.TestCase):
 
         self.addCleanup(cleanup)
         self.addCleanup(logging.shutdown)
-        self.adapter = logging.LoggerAdapter(logger=self.logger, extra=None)
+        self.adapter = logging.LoggerAdapter(logger=self.logger)
 
     def test_exception(self):
         msg = 'testing exception: %r'
@@ -5786,6 +5900,61 @@ class LoggerAdapterTest(unittest.TestCase):
         self.assertEqual(len(self.recording.records), 1)
         record = self.recording.records[0]
         self.assertFalse(hasattr(record, 'foo'))
+
+    def test_extra_merged(self):
+        self.adapter = logging.LoggerAdapter(logger=self.logger,
+                                             extra={'foo': '1'},
+                                             merge_extra=True)
+
+        self.adapter.critical('foo and bar should be here', extra={'bar': '2'})
+        self.assertEqual(len(self.recording.records), 1)
+        record = self.recording.records[0]
+        self.assertTrue(hasattr(record, 'foo'))
+        self.assertTrue(hasattr(record, 'bar'))
+        self.assertEqual(record.foo, '1')
+        self.assertEqual(record.bar, '2')
+
+        self.adapter.critical('no extra')  # should not fail
+        self.assertEqual(len(self.recording.records), 2)
+        record = self.recording.records[-1]
+        self.assertEqual(record.foo, '1')
+        self.assertNotHasAttr(record, 'bar')
+
+        self.adapter.critical('none extra', extra=None)  # should not fail
+        self.assertEqual(len(self.recording.records), 3)
+        record = self.recording.records[-1]
+        self.assertEqual(record.foo, '1')
+        self.assertNotHasAttr(record, 'bar')
+
+    def test_extra_merged_log_call_has_precedence(self):
+        self.adapter = logging.LoggerAdapter(logger=self.logger,
+                                             extra={'foo': '1'},
+                                             merge_extra=True)
+
+        self.adapter.critical('foo shall be min', extra={'foo': '2'})
+        self.assertEqual(len(self.recording.records), 1)
+        record = self.recording.records[0]
+        self.assertTrue(hasattr(record, 'foo'))
+        self.assertEqual(record.foo, '2')
+
+    def test_extra_merged_without_extra(self):
+        self.adapter = logging.LoggerAdapter(logger=self.logger,
+                                             merge_extra=True)
+
+        self.adapter.critical('foo should be here', extra={'foo': '1'})
+        self.assertEqual(len(self.recording.records), 1)
+        record = self.recording.records[-1]
+        self.assertEqual(record.foo, '1')
+
+        self.adapter.critical('no extra')  # should not fail
+        self.assertEqual(len(self.recording.records), 2)
+        record = self.recording.records[-1]
+        self.assertNotHasAttr(record, 'foo')
+
+        self.adapter.critical('none extra', extra=None)  # should not fail
+        self.assertEqual(len(self.recording.records), 3)
+        record = self.recording.records[-1]
+        self.assertNotHasAttr(record, 'foo')
 
 
 class PrefixAdapter(logging.LoggerAdapter):
@@ -6116,6 +6285,32 @@ class RotatingFileHandlerTest(BaseFileTest):
                 os.devnull, encoding="utf-8", maxBytes=1)
         self.assertFalse(rh.shouldRollover(self.next_rec()))
         rh.close()
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), 'requires os.mkfifo()')
+    def test_should_not_rollover_named_pipe(self):
+        # gh-143237 - test with non-seekable special file (named pipe)
+        filename = os_helper.TESTFN
+        self.addCleanup(os_helper.unlink, filename)
+        try:
+            os.mkfifo(filename)
+        except PermissionError as e:
+            self.skipTest('os.mkfifo(): %s' % e)
+
+        data = 'not read'
+        def other_side():
+            nonlocal data
+            with open(filename, 'rb') as f:
+                data = f.read()
+
+        thread = threading.Thread(target=other_side)
+        with threading_helper.start_threads([thread]):
+            rh = logging.handlers.RotatingFileHandler(
+                    filename, encoding="utf-8", maxBytes=1)
+            with contextlib.closing(rh):
+                m = self.next_rec()
+                self.assertFalse(rh.shouldRollover(m))
+                rh.emit(m)
+        self.assertEqual(data.decode(), m.msg + os.linesep)
 
     def test_should_rollover(self):
         with open(self.fn, 'wb') as f:

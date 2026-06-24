@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -13,6 +13,14 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
+extern void _PyModule_Clear(PyObject *);
+extern void _PyModule_ClearDict(PyObject *);
+extern int _PyModuleSpec_IsInitializing(PyObject *);
+extern int _PyModuleSpec_GetFileOrigin(PyObject *, PyObject **);
+extern int _PyModule_IsPossiblyShadowing(PyObject *);
+
+extern int _PyModule_IsExtension(PyObject *obj);
+
 typedef struct {
     PyObject_HEAD
     PyObject *md_dict;
@@ -21,6 +29,9 @@ typedef struct {
     PyObject *md_weaklist;
     // for logging purposes after md_dict is cleared
     PyObject *md_name;
+#ifdef Py_GIL_DISABLED
+    void *md_gil;
+#endif
 } PyModuleObject;
 
 static inline PyModuleDef* _PyModule_GetDef(PyObject *mod) {

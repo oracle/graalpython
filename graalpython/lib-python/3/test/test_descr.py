@@ -15,6 +15,7 @@ import weakref
 from copy import deepcopy
 from contextlib import redirect_stdout
 from test import support
+from test.support.testcase import ExtraAssertions
 
 try:
     import _testcapi
@@ -403,15 +404,7 @@ class OperatorsTest(unittest.TestCase):
         self.assertEqual(range(sys.maxsize).__len__(), sys.maxsize)
 
 
-class ClassPropertiesAndMethods(unittest.TestCase):
-
-    def assertHasAttr(self, obj, name):
-        self.assertTrue(hasattr(obj, name),
-                        '%r has no attribute %r' % (obj, name))
-
-    def assertNotHasAttr(self, obj, name):
-        self.assertFalse(hasattr(obj, name),
-                         '%r has unexpected attribute %r' % (obj, name))
+class ClassPropertiesAndMethods(unittest.TestCase, ExtraAssertions):
 
     def test_python_dicts(self):
         # Testing Python subclass of dict...
@@ -989,8 +982,8 @@ class ClassPropertiesAndMethods(unittest.TestCase):
 
     def test_mro_disagreement(self):
         # Testing error messages for MRO disagreement...
-        mro_err_msg = """Cannot create a consistent method resolution
-order (MRO) for bases """
+        mro_err_msg = ("Cannot create a consistent method resolution "
+                       "order (MRO) for bases ")
 
         def raises(exc, expected, callable, *args):
             try:
@@ -1197,10 +1190,9 @@ order (MRO) for bases """
             pass
         else:
             self.fail("[''] slots not caught")
-        class C(object):
+
+        class WithValidIdentifiers(object):
             __slots__ = ["a", "a_b", "_a", "A0123456789Z"]
-        # XXX(nnorwitz): was there supposed to be something tested
-        # from the class above?
 
         # Test a single string is not expanded as a sequence.
         class C(object):
@@ -1315,7 +1307,7 @@ order (MRO) for bases """
         # Inherit from object on purpose to check some backwards compatibility paths
         class X(object):
             __slots__ = "a"
-        with self.assertRaisesRegex(AttributeError, "'X' object has no attribute 'a'"):
+        with self.assertRaisesRegex(AttributeError, "'test.test_descr.ClassPropertiesAndMethods.test_slots.<locals>.X' object has no attribute 'a'"):
             X().a
 
         # Test string subclass in `__slots__`, see gh-98783
@@ -1597,7 +1589,7 @@ order (MRO) for bases """
         cm_dict = {'__annotations__': {},
                    '__doc__': (
                        "f docstring"
-                       if support.HAVE_DOCSTRINGS
+                       if support.HAVE_PY_DOCSTRINGS
                        else None
                     ),
                    '__module__': __name__,
@@ -1671,6 +1663,28 @@ order (MRO) for bases """
             spam_cm.__get__(None, list)
         self.assertEqual(str(cm.exception), expected_errmsg)
 
+    @support.cpython_only
+    def test_method_get_meth_method_invalid_type(self):
+        # gh-146615: method_get() for METH_METHOD descriptors used to pass
+        # Py_TYPE(type)->tp_name as the %V fallback instead of the separate
+        # %s argument, causing a missing argument for %s and a crash.
+        # Verify the error message is correct when __get__() is called with a
+        # non-type as the second argument.
+        #
+        # METH_METHOD|METH_FASTCALL|METH_KEYWORDS is the only flag combination
+        # that enters the affected branch in method_get().
+        import io
+
+        obj = io.StringIO()
+        descr = io.TextIOBase.read
+
+        with self.assertRaises(TypeError) as cm:
+            descr.__get__(obj, "not_a_type")
+        self.assertEqual(
+            str(cm.exception),
+            "descriptor 'read' needs a type, not 'str', as arg 2",
+        )
+
     def test_staticmethods(self):
         # Testing static methods...
         class C(object):
@@ -1688,10 +1702,10 @@ order (MRO) for bases """
         self.assertEqual(d.foo(1), (d, 1))
         self.assertEqual(D.foo(d, 1), (d, 1))
         sm = staticmethod(None)
-        self.assertEqual(sm.__dict__, {'__doc__': None})
+        self.assertEqual(sm.__dict__, {'__doc__': None.__doc__})
         sm.x = 42
         self.assertEqual(sm.x, 42)
-        self.assertEqual(sm.__dict__, {"x" : 42, '__doc__': None})
+        self.assertEqual(sm.__dict__, {"x" : 42, '__doc__': None.__doc__})
         del sm.x
         self.assertNotHasAttr(sm, "x")
 
@@ -4748,6 +4762,20 @@ order (MRO) for bases """
         with self.assertRaises(AttributeError):
             del X.__abstractmethods__
 
+    def test_gh55664(self):
+        # gh-55664: issue a warning when the
+        # __dict__ of a class contains non-string keys
+        with self.assertWarnsRegex(RuntimeWarning, 'MyClass'):
+            MyClass = type('MyClass', (), {1: 2})
+
+        class meta(type):
+            def __new__(mcls, name, bases, ns):
+                ns[1] = 2
+                return super().__new__(mcls, name, bases, ns)
+
+        with self.assertWarnsRegex(RuntimeWarning, 'MyClass'):
+            MyClass = meta('MyClass', (), {})
+
     def test_proxy_call(self):
         class FakeStr:
             __class__ = str
@@ -4771,24 +4799,24 @@ order (MRO) for bases """
         thing = Thing()
         for i in range(20):
             with self.assertRaises(TypeError):
-                # PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS
+                # CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS
                 list.sort(thing)
         for i in range(20):
             with self.assertRaises(TypeError):
-                # PRECALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS
+                # CALL_METHOD_DESCRIPTOR_FAST_WITH_KEYWORDS
                 str.split(thing)
         for i in range(20):
             with self.assertRaises(TypeError):
-                # PRECALL_NO_KW_METHOD_DESCRIPTOR_NOARGS
+                # CALL_METHOD_DESCRIPTOR_NOARGS
                 str.upper(thing)
         for i in range(20):
             with self.assertRaises(TypeError):
-                # PRECALL_NO_KW_METHOD_DESCRIPTOR_FAST
+                # CALL_METHOD_DESCRIPTOR_FAST
                 str.strip(thing)
         from collections import deque
         for i in range(20):
             with self.assertRaises(TypeError):
-                # PRECALL_NO_KW_METHOD_DESCRIPTOR_O
+                # CALL_METHOD_DESCRIPTOR_O
                 deque.append(thing, thing)
 
     def test_repr_as_str(self):
@@ -5002,6 +5030,7 @@ order (MRO) for bases """
                 cls.lst = [2**i for i in range(10000)]
         X.descr
 
+    @support.suppress_immortalization()
     def test_remove_subclass(self):
         # bpo-46417: when the last subclass of a type is deleted,
         # remove_subclass() clears the internal dictionary of subclasses:
@@ -5018,6 +5047,21 @@ order (MRO) for bases """
         del Child
         support.gc_collect(lambda: len(Parent.__subclasses__()) > 0)
         self.assertEqual(Parent.__subclasses__(), [])
+
+    def test_instance_method_get_behavior(self):
+        # test case for gh-113157
+
+        class A:
+            def meth(self):
+                return self
+
+        class B:
+            pass
+
+        a = A()
+        b = B()
+        b.meth = a.meth.__get__(b, B)
+        self.assertEqual(b.meth(), a)
 
     def test_attr_raise_through_property(self):
         # test case for gh-103272
@@ -5045,6 +5089,26 @@ order (MRO) for bases """
         with self.assertRaisesRegex(NotImplementedError, "BAR"):
             B().foo
 
+    def test_staticmethod_new(self):
+        class MyStaticMethod(staticmethod):
+            def __init__(self, func):
+                pass
+        def func(): pass
+        sm = MyStaticMethod(func)
+        self.assertEqual(repr(sm), '<staticmethod(None)>')
+        self.assertIsNone(sm.__func__)
+        self.assertIsNone(sm.__wrapped__)
+
+    def test_classmethod_new(self):
+        class MyClassMethod(classmethod):
+            def __init__(self, func):
+                pass
+        def func(): pass
+        cm = MyClassMethod(func)
+        self.assertEqual(repr(cm), '<classmethod(None)>')
+        self.assertIsNone(cm.__func__)
+        self.assertIsNone(cm.__wrapped__)
+
 
 class DictProxyTests(unittest.TestCase):
     def setUp(self):
@@ -5061,8 +5125,10 @@ class DictProxyTests(unittest.TestCase):
         self.assertNotIsInstance(it, list)
         keys = list(it)
         keys.sort()
-        self.assertEqual(keys, ['__dict__', '__doc__', '__module__',
-                                '__weakref__', 'meth'])
+        self.assertEqual(keys, ['__dict__', '__doc__', '__firstlineno__',
+                                '__module__',
+                                '__static_attributes__', '__weakref__',
+                                'meth'])
 
     @unittest.skipIf(hasattr(sys, 'gettrace') and sys.gettrace(),
                         'trace function introduces __local__')
@@ -5071,7 +5137,7 @@ class DictProxyTests(unittest.TestCase):
         it = self.C.__dict__.values()
         self.assertNotIsInstance(it, list)
         values = list(it)
-        self.assertEqual(len(values), 5)
+        self.assertEqual(len(values), 7)
 
     @unittest.skipIf(hasattr(sys, 'gettrace') and sys.gettrace(),
                         'trace function introduces __local__')
@@ -5081,8 +5147,10 @@ class DictProxyTests(unittest.TestCase):
         self.assertNotIsInstance(it, list)
         keys = [item[0] for item in it]
         keys.sort()
-        self.assertEqual(keys, ['__dict__', '__doc__', '__module__',
-                                '__weakref__', 'meth'])
+        self.assertEqual(keys, ['__dict__', '__doc__', '__firstlineno__',
+                                '__module__',
+                                '__static_attributes__', '__weakref__',
+                                'meth'])
 
     def test_dict_type_with_metaclass(self):
         # Testing type of __dict__ when metaclass set...
@@ -5151,11 +5219,17 @@ class MiscTests(unittest.TestCase):
             mykey = 'from Base2'
             mykey2 = 'from Base2'
 
-        X = type('X', (Base,), {MyKey(): 5})
+        with self.assertWarnsRegex(RuntimeWarning, 'X'):
+            X = type('X', (Base,), {MyKey(): 5})
+
+        # Note that the access below uses getattr() rather than normally
+        # accessing the attribute.  That is done to avoid the bytecode
+        # specializer activating on repeated runs of the test.
+
         # mykey is read from Base
-        self.assertEqual(X.mykey, 'from Base')
+        self.assertEqual(getattr(X, 'mykey'), 'from Base')
         # mykey2 is read from Base2 because MyKey.__eq__ has set __bases__
-        self.assertEqual(X.mykey2, 'from Base2')
+        self.assertEqual(getattr(X, 'mykey2'), 'from Base2')
 
 
 class PicklingTests(unittest.TestCase):

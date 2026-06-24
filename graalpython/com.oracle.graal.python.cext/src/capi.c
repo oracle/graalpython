@@ -42,7 +42,9 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "pycore_crossinterp.h" // _PyCrossInterpreterData
 #include "pycore_gc.h" // _PyGC_InitState
+#include "pycore_time.h" // _PyTime_round_t, _Py_clock_info_t
 
 #define GRAALPY_ENABLE_TESTING_CAPI
 #include "graalpy/testcapi.h"
@@ -640,6 +642,8 @@ static void unimplemented(const char* name) {
     printf("Function not implemented in GraalPy: %s\n", name);
     print_c_stacktrace();
 }
+
+extern PyObject* _PyObject_NextNotImplemented(PyObject *);
 
 #define FUNC_NOT_IMPLEMENTED unimplemented(__func__); GraalPyPrivate_PrintStacktrace(); exit(-1);
 

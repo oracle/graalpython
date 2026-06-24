@@ -8,11 +8,15 @@ import os
 import os.path
 from test import support
 from test.support import import_helper
+from test.support import is_apple_mobile
 from test.support import os_helper
+from test.support.testcase import ExtraAssertions
 import unittest
 import sys
 import tempfile
 import types
+
+import_helper.import_module("_testmultiphase")
 
 
 BUILTINS = types.SimpleNamespace()
@@ -43,6 +47,11 @@ else:
         global EXTENSIONS
         for path in sys.path:
             for ext in machinery.EXTENSION_SUFFIXES:
+                # Apple mobile platforms mechanically load .so files,
+                # but the findable files are labelled .fwork
+                if is_apple_mobile:
+                    ext = ext.replace(".so", ".fwork")
+
                 filename = EXTENSIONS.name + ext
                 file_path = os.path.join(path, filename)
                 if os.path.exists(file_path):
@@ -72,7 +81,7 @@ def specialize_class(cls, kind, base=None, **kwargs):
     elif not isinstance(base, type):
         base = base[kind]
     name = '{}_{}'.format(kind, cls.__name__)
-    bases = (cls, base)
+    bases = (cls, base, ExtraAssertions)
     specialized = types.new_class(name, bases)
     specialized.__module__ = cls.__module__
     specialized._NAME = cls.__name__
