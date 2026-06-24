@@ -154,7 +154,6 @@ graalpython/com.oracle.graal.python.cext/include/genericaliasobject.h,python.cop
 graalpython/com.oracle.graal.python.cext/include/import.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/osdefs.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_abstract.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/internal/pycore_atomic.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_bitutils.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_blocks_output_buffer.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_call.h,python.copyright
@@ -225,7 +224,6 @@ graalpython/com.oracle.graal.python.cext/include/structmember.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structseq.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/sysmodule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/traceback.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/tracemalloc.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/typeslots.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/unicodeobject.h,python.copyright
@@ -300,7 +298,6 @@ graalpython/com.oracle.graal.python.cext/modules/_testcapi/clinic/vectorcall.c.h
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/clinic/watchers.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/abstract.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/buffer.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_testcapi/bytearray.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/bytes.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/code.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/codec.c,python.copyright
@@ -314,25 +311,19 @@ graalpython/com.oracle.graal.python.cext/modules/_testcapi/float.c,python.copyri
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/gc.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/getargs.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/heaptype.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_testcapi/heaptype_relative.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/immortal.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/list.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/long.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/mem.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/numbers.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/parts.h,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_testcapi/pyos.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_testcapi/pytime.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/run.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/set.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/structmember.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_testcapi/sys.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_testcapi/testcapi_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/tuple.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/unicode.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/util.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/vectorcall.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_testcapi/vectorcall_limited.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi/watchers.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testcapi.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_testbuffer.c,python.copyright
@@ -346,7 +337,6 @@ graalpython/com.oracle.graal.python.cext/modules/clinic/termios.c.h,python.copyr
 graalpython/com.oracle.graal.python.cext/modules/clinic/unicodedata.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/pyexpat.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/termios.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_ctypes/_ctypes.c,python.copyright

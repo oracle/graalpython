@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -156,11 +156,8 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_testcapi.c": CopyFrom("Modules/_testcapimodule.c"),
-    "graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h": CopyFrom("Modules/clinic/_struct.c.h"),
-    "graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c": CopyFrom("Modules/_struct.c"),
     "graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h": CopyFrom("Objects/clinic/memoryobject.c.h"),
     "graalpython/com.oracle.graal.python.cext/modules/clinic/sha3module.c.h": CopyFrom("Modules/clinic/sha3module.c.h"),
-    "graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h": CopyFrom("Modules/_testcapi/testcapi_long.h"),
     "graalpython/com.oracle.graal.python.cext/modules": CopyFromWithOverrides("Modules"),
 
     "graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c": CopyFrom("Modules/getbuildinfo.c"),
