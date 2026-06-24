@@ -565,6 +565,7 @@ public final class PythonContext extends Python3Core {
                 NativeMemory.writePtr(nativeThreadLocalVarPointer, NULLPTR);
             }
             nativeThreadLocalVarPointer = NULLPTR;
+
         }
 
         public Object getTraceFun() {
@@ -658,6 +659,7 @@ public final class PythonContext extends Python3Core {
         public boolean isNativeThreadStateInitialized() {
             return nativeThreadLocalVarPointer != NULLPTR;
         }
+
     }
 
     private static final class AtExitHook {

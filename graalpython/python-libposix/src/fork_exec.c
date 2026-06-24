@@ -21,6 +21,8 @@
 #include <limits.h>
 #include <signal.h>
 
+#include "errno_capture.h"
+
 // These definitions emulate CPython's equivalents so that the copy&pasted code below works without too many changes
 #define HAVE_DIRFD 1
 #define HAVE_SETSID 1
@@ -568,8 +570,7 @@ do_fork_exec(char *const exec_list[],
  * allowVFork - if nonzero, use vfork() instead of fork() where it is safe and supported
  * fdsToKeep, fdsToKeepLen - a sorted list of fds to keep open (the child clears their O_CLOEXEC)
  */
-int32_t fork_exec(
-            char *data, int64_t *offsets, int32_t offsetsLen, int32_t argsPos, int32_t envPos, int32_t cwdPos,
+int32_t fork_exec(char *data, int64_t *offsets, int32_t offsetsLen, int32_t argsPos, int32_t envPos, int32_t cwdPos,
             int32_t stdinRdFd, int32_t stdinWrFd,
             int32_t stdoutRdFd, int32_t stdoutWrFd,
             int32_t stderrRdFd, int32_t stderrWrFd,
@@ -579,8 +580,7 @@ int32_t fork_exec(
             int32_t callSetsid,
             int32_t pgidToSet,
             int32_t allowVFork,
-            int32_t *fdsToKeep, int64_t fdsToKeepLen
-            ) {
+            int32_t *fdsToKeep, int64_t fdsToKeepLen) {
 
     // We reuse the memory allocated for offsets to avoid the need to allocate and reliably free another array
     char **strings = (char **) offsets;
@@ -603,6 +603,7 @@ int32_t fork_exec(
         int err = pthread_sigmask(SIG_BLOCK, &allSigs, &oldSigs);
         if (err) {
             errno = err;
+            capture_errno();
             return -1;
         }
         oldSigmask = &oldSigs;
@@ -631,5 +632,6 @@ int32_t fork_exec(
     }
 #endif
 
+    capture_errno();
     return pid;
 }
