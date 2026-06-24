@@ -131,14 +131,14 @@ public class BytesBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isNoValue(source)")
+        @Specialization(guards = {"isNoValue(source)", "isNoValue(encoding)", "isNoValue(errors)"})
         static Object doEmpty(Object cls, PNone source, PNone encoding, PNone errors,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached CreateBytes createBytes) {
             return createBytes.execute(inliningTarget, cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
-        @Specialization(guards = "!isNoValue(source)")
+        @Specialization(guards = {"!isNoValue(source)", "isNoValue(encoding)", "isNoValue(errors)"})
         static Object doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,

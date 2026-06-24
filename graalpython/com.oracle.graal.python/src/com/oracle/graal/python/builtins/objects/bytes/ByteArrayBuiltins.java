@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -164,18 +164,12 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             return ByteArrayBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "!isNone(source)")
+        @Specialization
         static PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
                         @Bind Node inliningTarget,
                         @Cached BytesNodes.BytesInitNode toBytesNode) {
             self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, inliningTarget, source, encoding, errors)));
             return PNone.NONE;
-        }
-
-        @Specialization(guards = "isNone(self)")
-        static PNone doInit(@SuppressWarnings("unused") PByteArray self, Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, "bytearray");
         }
 
         @Specialization(guards = "!isBytes(self)")

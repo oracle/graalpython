@@ -49,6 +49,15 @@ def test_super():
     assert B().m() == ["B", "A"]
 
 
+def test_super_requires_type_arg():
+    try:
+        super([])
+    except TypeError:
+        pass
+    else:
+        assert False
+
+
 def test_super_subclass_descr_get_invokes_subclass_type():
     class MySuper(super):
         news = []
