@@ -35,6 +35,8 @@ except ImportError:
         raise
     _winapi = None
 
+# GraalPy change: temporary until we implement proper multiprocessing for Windows
+_winapi = None
 #
 #
 #
