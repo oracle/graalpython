@@ -78,6 +78,10 @@ except ImportError:
 HAS_SHAREDCTYPES = False
 HAS_SHMEM = False
 IS_LINUX = sys.platform.startswith("linux")
+IS_GRAALPY_JAVA_POSIX = (
+    sys.implementation.name == 'graalpy' and
+    __graalpython__.posix_module_backend() == 'java'
+)
 # End Truffle change
 
 try:
@@ -240,10 +244,6 @@ class TestInternalDecorators(unittest.TestCase):
             multiprocessing.set_start_method(orig_start_method, force=True)
 
 
-# GraalPy change
-def get_id():
-    return multiprocessing.context._default_context._get_id()
-
 #
 # Creates a wrapper for a function which records the time it takes to finish
 #
@@ -332,10 +332,7 @@ class _TestProcess(BaseTestCase):
         self.assertTrue(not current.daemon)
         self.assertIsInstance(authkey, bytes)
         self.assertTrue(len(authkey) > 0)
-        # Begin Truffle change
-        # self.assertEqual(current.ident, os.getpid())
-        self.assertEqual(current.ident, get_id())
-        # End Truffle change
+        self.assertEqual(current.ident, os.getpid())
         self.assertEqual(current.exitcode, None)
 
     def test_set_executable(self):
@@ -413,10 +410,7 @@ class _TestProcess(BaseTestCase):
         p.join()
         parent_pid, parent_name = rconn.recv()
         self.assertEqual(parent_pid, self.current_process().pid)
-        # Begin Truffle change
-        # self.assertEqual(parent_pid, os.getpid())
-        self.assertEqual(parent_pid, get_id())
-        # End Truffle change
+        self.assertEqual(parent_pid, os.getpid())
         self.assertEqual(parent_name, self.current_process().name)
 
     @classmethod
@@ -3239,7 +3233,8 @@ class _TestMyManager(BaseTestCase):
         manager.start()
         with manager:
             self.common(manager)
-        self.assertEqual(manager._process.exitcode, 0)
+        # GraalPy change: JVM exits with 143 on SIGTERM
+        self.assertIn(manager._process.exitcode, (0, -signal.SIGTERM, 128 + signal.SIGTERM))
 
     def common(self, manager):
         foo = manager.Foo()
@@ -5174,10 +5169,7 @@ class TestWait(unittest.TestCase):
         for i in range(10):
             if slow:
                 time.sleep(random.random() * 0.100)
-            # Begin Truffle change
-            #w.send((i, os.getpid()))
-            w.send((i, get_id()))
-            # End Truffle change
+            w.send((i, os.getpid()))
         w.close()
 
     def test_wait(self, slow=False):
@@ -5626,13 +5618,8 @@ class TestStartMethod(unittest.TestCase):
         p.join()
         self.assertEqual(child_method, ctx.get_start_method())
 
-    @support.impl_detail("It's not possible to switch between graalpy and spawn context without changing the global default", graalpy=False)
     def test_context(self):
-        # Begin Truffle change
-        # 'fork' and 'forkserver' not supported
-        # for method in ('fork', 'spawn', 'forkserver'):
         for method in multiprocessing.get_all_start_methods():
-        # End Truffle change
             try:
                 ctx = multiprocessing.get_context(method)
             except ValueError:
@@ -5651,16 +5638,16 @@ class TestStartMethod(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, 'module_names must be a list of strings'):
             ctx.set_forkserver_preload([1, 2, 3])
 
-    @support.impl_detail("It's not possible to switch between graalpy and spawn context without changing the global default", graalpy=False)
     def test_set_get(self):
         multiprocessing.set_forkserver_preload(PRELOAD)
         count = 0
+        if not multiprocessing.get_all_start_methods():
+            self.assertIsNone(multiprocessing.get_start_method(allow_none=True))
+            self.assertRaises(ValueError, multiprocessing.get_start_method)
+            return
         old_method = multiprocessing.get_start_method()
         try:
-            # Begin Truffle change
-            # 'fork' and 'forkserver' not supported
             for method in multiprocessing.get_all_start_methods():
-            # End Truffle change
                 try:
                     multiprocessing.set_start_method(method, force=True)
                 except ValueError:
@@ -5680,11 +5667,11 @@ class TestStartMethod(unittest.TestCase):
     def test_get_all(self):
         methods = multiprocessing.get_all_start_methods()
         if sys.platform == 'win32':
-            # GraalVM change
-            self.assertEqual(methods, ['graalpy'])
+            self.assertEqual(methods, ['spawn'])
+        elif IS_GRAALPY_JAVA_POSIX:
+            self.assertEqual(methods, [])
         else:
-            # GraalVM change
-            self.assertEqual(methods, ['spawn', 'graalpy'])
+            self.assertEqual(methods, ['spawn'])
 
     def test_preload_resources(self):
         if multiprocessing.get_start_method() != 'forkserver':

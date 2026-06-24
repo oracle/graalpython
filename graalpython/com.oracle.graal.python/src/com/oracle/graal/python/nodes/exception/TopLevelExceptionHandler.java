@@ -147,9 +147,6 @@ public final class TopLevelExceptionHandler extends RootNode {
                     throw new PythonInterruptedException();
                 } catch (AbstractTruffleException e) {
                     assert !PArguments.isPythonFrame(frame);
-                    if (e instanceof PException pe && pe.getEscapedException() instanceof PBaseException managedException && getContext().isChildContext() && isSystemExit(managedException)) {
-                        return handleChildContextExit(managedException);
-                    }
                     throw handlePythonException(e);
                 } catch (ThreadDeath e) {
                     // Do not handle, result of TruffleContext.closeCancelled()
@@ -212,9 +209,6 @@ public final class TopLevelExceptionHandler extends RootNode {
             throw new PythonExitException(this, exitCode);
         }
         if (!source.isInteractive()) {
-            if (getContext().isChildContext()) {
-                getContext().getChildContextData().setExitCode(1);
-            }
             throw new PythonExitException(this, exitCode);
         }
     }
@@ -272,20 +266,6 @@ public final class TopLevelExceptionHandler extends RootNode {
         } catch (CannotCastException e) {
             if (handleAlwaysRunExceptHook(theContext, pythonException)) {
                 throw new PythonExitException(this, 1);
-            } else {
-                throw pythonException.getExceptionForReraise(pythonException.getTraceback());
-            }
-        }
-    }
-
-    @TruffleBoundary
-    private Object handleChildContextExit(PBaseException pythonException) throws PException {
-        // avoid throwing PythonExitException from spawned child context, return only exitCode
-        try {
-            return getExitCode(pythonException);
-        } catch (CannotCastException cce) {
-            if (handleAlwaysRunExceptHook(getContext(), pythonException)) {
-                return 1;
             } else {
                 throw pythonException.getExceptionForReraise(pythonException.getTraceback());
             }

@@ -32,8 +32,6 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
-import java.util.concurrent.Semaphore;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
@@ -69,7 +67,6 @@ import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
 import com.oracle.graal.python.builtins.modules.json.PJSONScanner;
 import com.oracle.graal.python.builtins.modules.lsprof.Profiler;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
-import com.oracle.graal.python.builtins.modules.multiprocessing.PGraalPySemLock;
 import com.oracle.graal.python.builtins.modules.multiprocessing.PSemLock;
 import com.oracle.graal.python.builtins.modules.pickle.PPickleBuffer;
 import com.oracle.graal.python.builtins.modules.pickle.PPickler;
@@ -1120,14 +1117,6 @@ public final class PFactory {
 
     public static PSemLock createSemLock(Object cls, Shape shape, long handle, int kind, int maxValue, TruffleString name) {
         return new PSemLock(cls, shape, handle, kind, maxValue, name);
-    }
-
-    public static PGraalPySemLock createGraalPySemLock(PythonLanguage language, TruffleString name, int kind, Semaphore sharedSemaphore) {
-        return createGraalPySemLock(PythonBuiltinClassType.PGraalPySemLock, PythonBuiltinClassType.PGraalPySemLock.getInstanceShape(language), name, kind, sharedSemaphore);
-    }
-
-    public static PGraalPySemLock createGraalPySemLock(Object cls, Shape shape, TruffleString name, int kind, Semaphore sharedSemaphore) {
-        return new PGraalPySemLock(cls, shape, name, kind, sharedSemaphore);
     }
 
     public static PScandirIterator createScandirIterator(PythonLanguage language, PythonContext context, Object dirStream, PosixFileHandle path, boolean needsRewind) {

@@ -195,8 +195,6 @@ import com.oracle.graal.python.builtins.modules.lsprof.ProfilerBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.multiprocessing.GraalPySemLockBuiltins;
-import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingGraalPyModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.MultiprocessingModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.SemLockBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PickleBufferBuiltins;
@@ -765,8 +763,6 @@ public abstract class Python3Core {
                         // _multiprocessing
                         PythonImageBuildOptions.WITHOUT_NATIVE_POSIX ? null : new MultiprocessingModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_NATIVE_POSIX ? null : new SemLockBuiltins(),
-                        new MultiprocessingGraalPyModuleBuiltins(),
-                        new GraalPySemLockBuiltins(),
 
                         new WarningsModuleBuiltins(),
                         new GraalPythonModuleBuiltins(),

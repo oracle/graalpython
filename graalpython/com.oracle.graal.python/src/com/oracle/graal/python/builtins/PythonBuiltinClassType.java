@@ -124,7 +124,6 @@ import com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins;
 import com.oracle.graal.python.builtins.modules.lsprof.ProfilerBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
-import com.oracle.graal.python.builtins.modules.multiprocessing.GraalPySemLockBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.SemLockBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PickleBufferBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
@@ -635,7 +634,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PLock("LockType", PythonObject, newBuilder().publishInModule(J__THREAD).disallowInstantiation().slots(CommonLockBuiltins.SLOTS, LockTypeBuiltins.SLOTS)),
     PRLock("RLock", PythonObject, newBuilder().publishInModule(J__THREAD).basetype().slots(CommonLockBuiltins.SLOTS, RLockBuiltins.SLOTS)),
     PSemLock("SemLock", PythonObject, newBuilder().publishInModule("_multiprocessing").basetype().slots(SemLockBuiltins.SLOTS)),
-    PGraalPySemLock("SemLock", PythonObject, newBuilder().publishInModule("_multiprocessing_graalpy").basetype().slots(GraalPySemLockBuiltins.SLOTS)),
     PSocket("socket", PythonObject, newBuilder().publishInModule(J__SOCKET).basetype().slots(SocketBuiltins.SLOTS)),
     PStaticmethod("staticmethod", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().addDict(24).slots(StaticmethodBuiltins.SLOTS).doc("""
                     staticmethod(function) -> method
