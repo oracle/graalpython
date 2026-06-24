@@ -7,9 +7,17 @@ import difflib
 import gc
 from functools import wraps
 import asyncio
-from test.support import import_helper
+from test.support import import_helper, requires_subprocess
 import contextlib
+import os
+import tempfile
+import textwrap
+import subprocess
 import warnings
+try:
+    import _testinternalcapi
+except ImportError:
+    _testinternalcapi = None
 
 support.requires_working_socket(module=True)
 
@@ -318,6 +326,13 @@ generator_example.events = ([(0, 'call'),
                             [(5, 'line'), (5, 'return')])
 
 
+def lineno_matches_lasti(frame):
+    last_line = None
+    for start, end, line in frame.f_code.co_lines():
+        if start <= frame.f_lasti < end:
+            last_line = line
+    return last_line == frame.f_lineno
+
 class Tracer:
     def __init__(self, trace_line_events=None, trace_opcode_events=None):
         self.trace_line_events = trace_line_events
@@ -331,6 +346,7 @@ class Tracer:
             frame.f_trace_opcodes = self.trace_opcode_events
 
     def trace(self, frame, event, arg):
+        assert lineno_matches_lasti(frame)
         self._reconfigure_frame(frame)
         self.events.append((frame.f_lineno, event))
         return self.trace
@@ -1659,8 +1675,30 @@ class TraceTestCase(unittest.TestCase):
 
         self.run_and_compare(func, EXPECTED_EVENTS)
 
-    def test_settrace_error(self):
+    def test_correct_tracing_quickened_call_class_init(self):
 
+        class C:
+            def __init__(self):
+                self
+
+        def func():
+            C()
+
+        EXPECTED_EVENTS = [
+            (0, 'call'),
+            (1, 'line'),
+            (-3, 'call'),
+            (-2, 'line'),
+            (-2, 'return'),
+            (1, 'return')]
+
+        self.run_and_compare(func, EXPECTED_EVENTS)
+        # Quicken
+        for _ in range(100):
+            func()
+        self.run_and_compare(func, EXPECTED_EVENTS)
+
+    def test_settrace_error(self):
         raised = False
         def error_once(frame, event, arg):
             nonlocal raised
@@ -1771,6 +1809,40 @@ class TraceOpcodesTestCase(TraceTestCase):
     @staticmethod
     def make_tracer():
         return Tracer(trace_opcode_events=True)
+
+    @requires_subprocess()
+    def test_trace_opcodes_after_settrace(self):
+        """Make sure setting f_trace_opcodes after starting trace works even
+        if it's the first time f_trace_opcodes is being set. GH-103615"""
+
+        code = textwrap.dedent("""
+            import sys
+
+            def opcode_trace_func(frame, event, arg):
+                if event == "opcode":
+                    print("opcode trace triggered")
+                return opcode_trace_func
+
+            sys.settrace(opcode_trace_func)
+            sys._getframe().f_trace = opcode_trace_func
+            sys._getframe().f_trace_opcodes = True
+            a = 1
+        """)
+
+        # We can't use context manager because Windows can't execute a file while
+        # it's being written
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.py')
+        tmp.write(code.encode('utf-8'))
+        tmp.close()
+        try:
+            p = subprocess.Popen([sys.executable, tmp.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p.wait()
+            out = p.stdout.read()
+        finally:
+            os.remove(tmp.name)
+            p.stdout.close()
+            p.stderr.close()
+        self.assertIn(b"opcode trace triggered", out)
 
 
 class RaisingTraceFuncTestCase(unittest.TestCase):
@@ -1898,6 +1970,7 @@ class JumpTracer:
     def trace(self, frame, event, arg):
         if self.done:
             return
+        assert lineno_matches_lasti(frame)
         # frame.f_code.co_firstlineno is the first line of the decorator when
         # 'function' is decorated and the decorator may be written using
         # multiple physical lines when it is too long. Use the first line
@@ -2965,7 +3038,8 @@ class TestExtendedArgs(unittest.TestCase):
         self.assertEqual(counts, {'call': 1, 'line': 301, 'return': 1})
 
     def test_trace_lots_of_globals(self):
-        count = min(1000, int(support.C_RECURSION_LIMIT * 0.8))
+
+        count = min(1000, int(support.get_c_recursion_limit() * 0.8))
 
         code = """if 1:
             def f():

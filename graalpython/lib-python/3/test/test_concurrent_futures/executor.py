@@ -1,8 +1,10 @@
 import threading
 import time
+import unittest
 import weakref
 from concurrent import futures
 from test import support
+from test.support import Py_GIL_DISABLED
 
 
 def mul(x, y):
@@ -19,6 +21,21 @@ class MyObject(object):
 
 def make_dummy_object(_):
     return MyObject()
+
+
+# Used in test_swallows_falsey_exceptions
+def raiser(exception, msg='std'):
+    raise exception(msg)
+
+
+class FalseyBoolException(Exception):
+    def __bool__(self):
+        return False
+
+
+class FalseyLenException(Exception):
+    def __len__(self):
+        return 0
 
 
 class ExecutorTest:
@@ -81,13 +98,34 @@ class ExecutorTest:
         # references.
         my_object = MyObject()
         my_object_collected = threading.Event()
-        my_object_callback = weakref.ref(
-            my_object, lambda obj: my_object_collected.set())
+        def set_event():
+            if Py_GIL_DISABLED:
+                # gh-117688 Avoid deadlock by setting the event in a
+                # background thread. The current thread may be in the middle
+                # of the my_object_collected.wait() call, which holds locks
+                # needed by my_object_collected.set().
+                threading.Thread(target=my_object_collected.set).start()
+            else:
+                my_object_collected.set()
+        my_object_callback = weakref.ref(my_object, lambda obj: set_event())
         # Deliberately discarding the future.
         self.executor.submit(my_object.my_method)
         del my_object
 
-        collected = my_object_collected.wait(timeout=support.SHORT_TIMEOUT)
+        if Py_GIL_DISABLED:
+            # Due to biased reference counting, my_object might only be
+            # deallocated while the thread that created it runs -- if the
+            # thread is paused waiting on an event, it may not merge the
+            # refcount of the queued object. For that reason, we alternate
+            # between running the GC and waiting for the event.
+            wait_time = 0
+            collected = False
+            while not collected and wait_time <= support.SHORT_TIMEOUT:
+                support.gc_collect()
+                collected = my_object_collected.wait(timeout=1.0)
+                wait_time += 1.0
+        else:
+            collected = my_object_collected.wait(timeout=support.SHORT_TIMEOUT)
         self.assertTrue(collected,
                         "Stale reference not collected within timeout.")
 
@@ -105,4 +143,20 @@ class ExecutorTest:
             wr = weakref.ref(obj)
             del obj
             support.gc_collect()  # For PyPy or other GCs.
-            self.assertIsNone(wr())
+
+            for _ in support.sleeping_retry(support.SHORT_TIMEOUT):
+                if wr() is None:
+                    break
+
+    def test_swallows_falsey_exceptions(self):
+        # see gh-132063: Prevent exceptions that evaluate as falsey
+        # from being ignored.
+        # Recall: `x` is falsey if `len(x)` returns 0 or `bool(x)` returns False.
+
+        msg = 'boolbool'
+        with self.assertRaisesRegex(FalseyBoolException, msg):
+            self.executor.submit(raiser, FalseyBoolException, msg).result()
+
+        msg = 'lenlen'
+        with self.assertRaisesRegex(FalseyLenException, msg):
+            self.executor.submit(raiser, FalseyLenException, msg).result()

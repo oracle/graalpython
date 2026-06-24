@@ -1,5 +1,7 @@
-from ctypes import *
 import unittest
+from ctypes import (Structure, POINTER, pointer,  _pointer_type_cache,
+                    c_char_p, c_int)
+
 
 class SimpleTestCase(unittest.TestCase):
     def test_cint(self):
@@ -17,6 +19,7 @@ class SimpleTestCase(unittest.TestCase):
         self.assertEqual(x._objects, b"abc")
         x = c_char_p(b"spam")
         self.assertEqual(x._objects, b"spam")
+
 
 class StructureTestCase(unittest.TestCase):
     def test_cint_struct(self):
@@ -64,6 +67,7 @@ class StructureTestCase(unittest.TestCase):
         r.lr = POINT()
         self.assertEqual(r._objects, {'0': {}, '1': {}})
 
+
 class ArrayTestCase(unittest.TestCase):
     def test_cint_array(self):
         INTARR = c_int * 3
@@ -87,6 +91,7 @@ class ArrayTestCase(unittest.TestCase):
         x.a = ia
         self.assertEqual(x._objects, {'1': {}})
 
+
 class PointerTestCase(unittest.TestCase):
     def test_p_cint(self):
         i = c_int(42)
@@ -106,17 +111,14 @@ class PointerToStructure(unittest.TestCase):
 
         r.a = pointer(p1)
         r.b = pointer(p1)
-##        from pprint import pprint as pp
-##        pp(p1._objects)
-##        pp(r._objects)
 
         r.a[0].x = 42
         r.a[0].y = 99
 
         # to avoid leaking when tests are run several times
         # clean up the types left in the cache.
-        from ctypes import _pointer_type_cache
         del _pointer_type_cache[POINT]
+
 
 if __name__ == "__main__":
     unittest.main()

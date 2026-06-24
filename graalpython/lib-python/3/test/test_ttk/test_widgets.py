@@ -5,6 +5,7 @@ from test.support import requires, gc_collect
 import sys
 
 from test.test_ttk_textonly import MockTclObj
+from test.test_tkinter.support import setUpModule  # noqa: F401
 from test.test_tkinter.support import (
     AbstractTkTest, requires_tk, tk_version, get_tk_patchlevel,
     simulate_mouse_click, AbstractDefaultRootTest)
@@ -1967,14 +1968,6 @@ class DefaultRootTest(AbstractDefaultRootTest, unittest.TestCase):
     def test_label(self):
         self._test_widget(ttk.Label)
 
-
-tests_gui = (
-        ButtonTest, CheckbuttonTest, ComboboxTest, EntryTest,
-        FrameTest, LabelFrameTest, LabelTest, MenubuttonTest,
-        NotebookTest, PanedWindowTest, ProgressbarTest,
-        RadiobuttonTest, ScaleTest, ScrollbarTest, SeparatorTest,
-        SizegripTest, SpinboxTest, TreeviewTest, WidgetTest, DefaultRootTest,
-        )
 
 if __name__ == "__main__":
     unittest.main()

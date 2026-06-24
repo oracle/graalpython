@@ -1,9 +1,11 @@
 from test.support import (
-    requires, _2G, _4G, gc_collect, cpython_only, is_emscripten
+    requires, _2G, _4G, gc_collect, cpython_only, is_emscripten, is_apple,
 )
 from test.support.import_helper import import_module
 from test.support.os_helper import TESTFN, unlink
+from test.support.script_helper import assert_python_ok
 import unittest
+import errno
 import os
 import re
 import itertools
@@ -11,6 +13,7 @@ import random
 import socket
 import string
 import sys
+import textwrap
 import weakref
 
 # Skip test if we can't import mmap.
@@ -93,11 +96,12 @@ class MmapTests(unittest.TestCase):
             self.assertEqual(end, PAGESIZE + 6)
 
         # test seeking around (try to overflow the seek implementation)
-        m.seek(0,0)
+        self.assertTrue(m.seekable())
+        self.assertEqual(m.seek(0, 0), 0)
         self.assertEqual(m.tell(), 0)
-        m.seek(42,1)
+        self.assertEqual(m.seek(42, 1), 42)
         self.assertEqual(m.tell(), 42)
-        m.seek(0,2)
+        self.assertEqual(m.seek(0, 2), len(m))
         self.assertEqual(m.tell(), len(m))
 
         # Try to seek to negative position...
@@ -162,7 +166,7 @@ class MmapTests(unittest.TestCase):
 
             # Ensuring that readonly mmap can't be write() to
             try:
-                m.seek(0,0)
+                m.seek(0, 0)
                 m.write(b'abc')
             except TypeError:
                 pass
@@ -171,7 +175,7 @@ class MmapTests(unittest.TestCase):
 
             # Ensuring that readonly mmap can't be write_byte() to
             try:
-                m.seek(0,0)
+                m.seek(0, 0)
                 m.write_byte(b'd')
             except TypeError:
                 pass
@@ -264,6 +268,62 @@ class MmapTests(unittest.TestCase):
                     self.assertRaises(TypeError, m.write, b"abcdef")
                     self.assertRaises(TypeError, m.write_byte, 0)
                     m.close()
+
+    @unittest.skipIf(os.name == 'nt', 'trackfd not present on Windows')
+    def test_trackfd_parameter(self):
+        size = 64
+        with open(TESTFN, "wb") as f:
+            f.write(b"a"*size)
+        for close_original_fd in True, False:
+            with self.subTest(close_original_fd=close_original_fd):
+                with open(TESTFN, "r+b") as f:
+                    with mmap.mmap(f.fileno(), size, trackfd=False) as m:
+                        if close_original_fd:
+                            f.close()
+                        self.assertEqual(len(m), size)
+                        with self.assertRaises(OSError) as err_cm:
+                            m.size()
+                        self.assertEqual(err_cm.exception.errno, errno.EBADF)
+                        with self.assertRaises(ValueError):
+                            m.resize(size * 2)
+                        with self.assertRaises(ValueError):
+                            m.resize(size // 2)
+                        self.assertEqual(m.closed, False)
+
+                        # Smoke-test other API
+                        m.write_byte(ord('X'))
+                        m[2] = ord('Y')
+                        m.flush()
+                        with open(TESTFN, "rb") as f:
+                            self.assertEqual(f.read(4), b'XaYa')
+                        self.assertEqual(m.tell(), 1)
+                        m.seek(0)
+                        self.assertEqual(m.tell(), 0)
+                        self.assertEqual(m.read_byte(), ord('X'))
+
+                self.assertEqual(m.closed, True)
+                self.assertEqual(os.stat(TESTFN).st_size, size)
+
+    @unittest.skipIf(os.name == 'nt', 'trackfd not present on Windows')
+    def test_trackfd_neg1(self):
+        size = 64
+        with mmap.mmap(-1, size, trackfd=False) as m:
+            with self.assertRaises(OSError):
+                m.size()
+            with self.assertRaises(ValueError):
+                m.resize(size // 2)
+            self.assertEqual(len(m), size)
+            m[0] = ord('a')
+            assert m[0] == ord('a')
+
+    @unittest.skipIf(os.name != 'nt', 'trackfd only fails on Windows')
+    def test_no_trackfd_parameter_on_windows(self):
+        # 'trackffd' is an invalid keyword argument for this function
+        size = 64
+        with self.assertRaises(TypeError):
+            mmap.mmap(-1, size, trackfd=True)
+        with self.assertRaises(TypeError):
+            mmap.mmap(-1, size, trackfd=False)
 
     def test_bad_file_desc(self):
         # Try opening a bad file descriptor...
@@ -779,7 +839,7 @@ class MmapTests(unittest.TestCase):
         mm.write(b'python')
         result = mm.flush()
         self.assertIsNone(result)
-        if sys.platform.startswith('linux'):
+        if sys.platform.startswith(('linux', 'android')):
             # 'offset' must be a multiple of mmap.PAGESIZE on Linux.
             # See bpo-34754 for details.
             self.assertRaises(OSError, mm.flush, 1, len(b'python'))
@@ -839,35 +899,69 @@ class MmapTests(unittest.TestCase):
         self.assertEqual(m.madvise(mmap.MADV_NORMAL, 0, 2), None)
         self.assertEqual(m.madvise(mmap.MADV_NORMAL, 0, size), None)
 
-    @unittest.skipUnless(os.name == 'nt', 'requires Windows')
-    def test_resize_up_when_mapped_to_pagefile(self):
+    def test_resize_up_anonymous_mapping(self):
         """If the mmap is backed by the pagefile ensure a resize up can happen
         and that the original data is still in place
         """
         start_size = PAGESIZE
         new_size = 2 * start_size
-        data = bytes(random.getrandbits(8) for _ in range(start_size))
+        data = random.randbytes(start_size)
 
-        m = mmap.mmap(-1, start_size)
-        m[:] = data
-        m.resize(new_size)
-        self.assertEqual(len(m), new_size)
-        self.assertEqual(m[:start_size], data[:start_size])
+        with mmap.mmap(-1, start_size) as m:
+            m[:] = data
+            if sys.platform.startswith(('linux', 'android')):
+                # Can't expand a shared anonymous mapping on Linux.
+                # See https://bugzilla.kernel.org/show_bug.cgi?id=8691
+                with self.assertRaises(ValueError):
+                    m.resize(new_size)
+            else:
+                try:
+                    m.resize(new_size)
+                except SystemError:
+                    pass
+                else:
+                    self.assertEqual(len(m), new_size)
+                    self.assertEqual(m[:start_size], data)
+                    self.assertEqual(m[start_size:], b'\0' * (new_size - start_size))
 
-    @unittest.skipUnless(os.name == 'nt', 'requires Windows')
-    def test_resize_down_when_mapped_to_pagefile(self):
+    @unittest.skipUnless(os.name == 'posix', 'requires Posix')
+    def test_resize_up_private_anonymous_mapping(self):
+        start_size = PAGESIZE
+        new_size = 2 * start_size
+        data = random.randbytes(start_size)
+
+        with mmap.mmap(-1, start_size, flags=mmap.MAP_PRIVATE) as m:
+            m[:] = data
+            try:
+                m.resize(new_size)
+            except SystemError:
+                pass
+            else:
+                self.assertEqual(len(m), new_size)
+                self.assertEqual(m[:start_size], data)
+                self.assertEqual(m[start_size:], b'\0' * (new_size - start_size))
+
+    def test_resize_down_anonymous_mapping(self):
         """If the mmap is backed by the pagefile ensure a resize down up can happen
         and that a truncated form of the original data is still in place
         """
-        start_size = PAGESIZE
+        start_size = 2 * PAGESIZE
         new_size = start_size // 2
-        data = bytes(random.getrandbits(8) for _ in range(start_size))
+        data = random.randbytes(start_size)
 
-        m = mmap.mmap(-1, start_size)
-        m[:] = data
-        m.resize(new_size)
-        self.assertEqual(len(m), new_size)
-        self.assertEqual(m[:new_size], data[:new_size])
+        with mmap.mmap(-1, start_size) as m:
+            m[:] = data
+            try:
+                m.resize(new_size)
+            except SystemError:
+                pass
+            else:
+                self.assertEqual(len(m), new_size)
+                self.assertEqual(m[:], data[:new_size])
+                if sys.platform.startswith(('linux', 'android')):
+                    # Can't expand to its original size.
+                    with self.assertRaises(ValueError):
+                        m.resize(start_size)
 
     @unittest.skipUnless(os.name == 'nt', 'requires Windows')
     def test_resize_fails_if_mapping_held_elsewhere(self):
@@ -1000,6 +1094,81 @@ class MmapTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "mmap closed or invalid"):
                     m.write_byte(X())
 
+    @unittest.skipUnless(os.name == 'nt', 'requires Windows')
+    @unittest.skipUnless(hasattr(mmap.mmap, '_protect'), 'test needs debug build')
+    def test_access_violations(self):
+        from test.support.os_helper import TESTFN
+
+        code = textwrap.dedent("""
+            import faulthandler
+            import mmap
+            import os
+            import sys
+            from contextlib import suppress
+
+            # Prevent logging access violations to stderr.
+            faulthandler.disable()
+
+            PAGESIZE = mmap.PAGESIZE
+            PAGE_NOACCESS = 0x01
+
+            with open(sys.argv[1], 'bw+') as f:
+                f.write(b'A'* PAGESIZE)
+                f.flush()
+
+                m = mmap.mmap(f.fileno(), PAGESIZE)
+                m._protect(PAGE_NOACCESS, 0, PAGESIZE)
+                with suppress(OSError):
+                    m.read(PAGESIZE)
+                    assert False, 'mmap.read() did not raise'
+                with suppress(OSError):
+                    m.read_byte()
+                    assert False, 'mmap.read_byte() did not raise'
+                with suppress(OSError):
+                    m.readline()
+                    assert False, 'mmap.readline() did not raise'
+                with suppress(OSError):
+                    m.write(b'A'* PAGESIZE)
+                    assert False, 'mmap.write() did not raise'
+                with suppress(OSError):
+                    m.write_byte(0)
+                    assert False, 'mmap.write_byte() did not raise'
+                with suppress(OSError):
+                    m[0]  # test mmap_subscript
+                    assert False, 'mmap.__getitem__() did not raise'
+                with suppress(OSError):
+                    m[0:10]  # test mmap_subscript
+                    assert False, 'mmap.__getitem__() did not raise'
+                with suppress(OSError):
+                    m[0:10:2]  # test mmap_subscript
+                    assert False, 'mmap.__getitem__() did not raise'
+                with suppress(OSError):
+                    m[0] = 1
+                    assert False, 'mmap.__setitem__() did not raise'
+                with suppress(OSError):
+                    m[0:10] = b'A'* 10
+                    assert False, 'mmap.__setitem__() did not raise'
+                with suppress(OSError):
+                    m[0:10:2] = b'A'* 5
+                    assert False, 'mmap.__setitem__() did not raise'
+                with suppress(OSError):
+                    m.move(0, 10, 1)
+                    assert False, 'mmap.move() did not raise'
+                with suppress(OSError):
+                    list(m)  # test mmap_item
+                    assert False, 'mmap.__getitem__() did not raise'
+                with suppress(OSError):
+                    m.find(b'A')
+                    assert False, 'mmap.find() did not raise'
+                with suppress(OSError):
+                    m.rfind(b'A')
+                    assert False, 'mmap.rfind() did not raise'
+        """)
+        rt, stdout, stderr = assert_python_ok("-c", code, TESTFN)
+        self.assertEqual(stdout.strip(), b'')
+        self.assertEqual(stderr.strip(), b'')
+
+
 class LargeMmapTests(unittest.TestCase):
 
     def setUp(self):
@@ -1009,7 +1178,7 @@ class LargeMmapTests(unittest.TestCase):
         unlink(TESTFN)
 
     def _make_test_file(self, num_zeroes, tail):
-        if sys.platform[:3] == 'win' or sys.platform == 'darwin':
+        if sys.platform[:3] == 'win' or is_apple:
             requires('largefile',
                 'test requires %s bytes and a long time to run' % str(0x180000000))
         f = open(TESTFN, 'w+b')

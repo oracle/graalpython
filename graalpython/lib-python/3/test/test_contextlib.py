@@ -24,6 +24,16 @@ class TestAbstractContextManager(unittest.TestCase):
         manager = DefaultEnter()
         self.assertIs(manager.__enter__(), manager)
 
+    def test_slots(self):
+        class DefaultContextManager(AbstractContextManager):
+            __slots__ = ()
+
+            def __exit__(self, *args):
+                super().__exit__(*args)
+
+        with self.assertRaises(AttributeError):
+            DefaultContextManager().var = 42
+
     def test_exit_is_abstract(self):
         class MissingExit(AbstractContextManager):
             pass
@@ -1134,7 +1144,7 @@ class TestBaseExitStack:
 class TestExitStack(TestBaseExitStack, unittest.TestCase):
     exit_stack = ExitStack
     callback_error_internal_frames = [
-        ('__exit__', 'raise exc_details[1]'),
+        ('__exit__', 'raise exc'),
         ('__exit__', 'if cb(*exc_details):'),
     ]
 
@@ -1324,7 +1334,7 @@ class TestChdir(unittest.TestCase):
     def test_reentrant(self):
         old_cwd = os.getcwd()
         target1 = self.make_relative_path('data')
-        target2 = self.make_relative_path('ziptestdata')
+        target2 = self.make_relative_path('archivetestdata')
         self.assertNotIn(old_cwd, (target1, target2))
         chdir1, chdir2 = chdir(target1), chdir(target2)
 

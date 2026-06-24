@@ -43,6 +43,9 @@ class WindowsConsoleIOTests(unittest.TestCase):
             self.assertEqual(0, f.fileno())
             f.close()   # multiple close should not crash
             f.close()
+            with self.assertWarns(RuntimeWarning):
+                with ConIO(False):
+                    pass
 
         try:
             f = ConIO(1, 'w')
@@ -55,6 +58,9 @@ class WindowsConsoleIOTests(unittest.TestCase):
             self.assertEqual(1, f.fileno())
             f.close()
             f.close()
+            with self.assertWarns(RuntimeWarning):
+                with ConIO(False):
+                    pass
 
         try:
             f = ConIO(2, 'w')
@@ -97,6 +103,16 @@ class WindowsConsoleIOTests(unittest.TestCase):
             f = open('C:/con', 'rb', buffering=0)
             self.assertIsInstance(f, ConIO)
             f.close()
+
+    def test_subclass_repr(self):
+        class TestSubclass(ConIO):
+            pass
+
+        f = TestSubclass("CON")
+        with f:
+            self.assertIn(TestSubclass.__name__, repr(f))
+
+        self.assertIn(TestSubclass.__name__, repr(f))
 
     @unittest.skipIf(sys.getwindowsversion()[:2] <= (6, 1),
         "test does not work on Windows 7 and earlier")

@@ -109,7 +109,8 @@ req_template = """
 
     subjectKeyIdentifier=hash
     authorityKeyIdentifier=keyid:always,issuer
-    basicConstraints = CA:true
+    basicConstraints = critical, CA:true
+    keyUsage = critical, digitalSignature, keyCertSign, cRLSign
 
     """
 
@@ -252,6 +253,8 @@ if __name__ == '__main__':
     with open('keycert3.pem', 'w') as f:
         f.write(key)
         f.write(cert)
+
+    check_call(['openssl', 'x509', '-outform', 'pem', '-in', 'keycert3.pem', '-out', 'cert3.pem'])
 
     cert, key = make_cert_key('fakehostname', sign=True)
     with open('keycert4.pem', 'w') as f:

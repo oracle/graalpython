@@ -10,12 +10,14 @@ from weakref import proxy
 from functools import wraps
 
 from test.support import (
-    cpython_only, swap_attr, gc_collect, is_emscripten, is_wasi
+    cpython_only, swap_attr, gc_collect, is_emscripten, is_wasi,
+    infinite_recursion,
 )
 from test.support.os_helper import (
     TESTFN, TESTFN_ASCII, TESTFN_UNICODE, make_bad_fd,
     )
 from test.support.warnings_helper import check_warnings
+from test.support.import_helper import import_module
 from collections import UserList
 
 import _io  # C implementation of io
@@ -173,6 +175,16 @@ class AutoFileTests:
         self.assertEqual(repr(self.f),
                          "<%s.FileIO [closed]>" % (self.modulename,))
 
+    def test_subclass_repr(self):
+        class TestSubclass(self.FileIO):
+            pass
+
+        f = TestSubclass(TESTFN)
+        with f:
+            self.assertIn(TestSubclass.__name__, repr(f))
+
+        self.assertIn(TestSubclass.__name__, repr(f))
+
     def testReprNoCloseFD(self):
         fd = os.open(TESTFN, os.O_RDONLY)
         try:
@@ -183,6 +195,7 @@ class AutoFileTests:
         finally:
             os.close(fd)
 
+    @infinite_recursion(25)
     def testRecursiveRepr(self):
         # Issue #25455
         with swap_attr(self.f, 'name', self.f):
@@ -438,7 +451,7 @@ class OtherFileTests:
         try:
             f.write(b"abc")
             f.close()
-            with open(TESTFN_ASCII, "rb") as f:
+            with self.open(TESTFN_ASCII, "rb") as f:
                 self.assertEqual(f.read(), b"abc")
         finally:
             os.unlink(TESTFN_ASCII)
@@ -455,7 +468,7 @@ class OtherFileTests:
         try:
             f.write(b"abc")
             f.close()
-            with open(TESTFN_UNICODE, "rb") as f:
+            with self.open(TESTFN_UNICODE, "rb") as f:
                 self.assertEqual(f.read(), b"abc")
         finally:
             os.unlink(TESTFN_UNICODE)
@@ -471,6 +484,14 @@ class OtherFileTests:
         if sys.platform == 'win32':
             import msvcrt
             self.assertRaises(OSError, msvcrt.get_osfhandle, make_bad_fd())
+
+    def testBooleanFd(self):
+        for fd in False, True:
+            with self.assertWarnsRegex(RuntimeWarning,
+                    'bool is used as a file descriptor') as cm:
+                f = self.FileIO(fd, closefd=False)
+            f.close()
+            self.assertEqual(cm.filename, __file__)
 
     def testBadModeArgument(self):
         # verify that we get a sensible error message for bad mode argument
@@ -531,13 +552,13 @@ class OtherFileTests:
 
     def testAppend(self):
         try:
-            f = open(TESTFN, 'wb')
+            f = self.FileIO(TESTFN, 'wb')
             f.write(b'spam')
             f.close()
-            f = open(TESTFN, 'ab')
+            f = self.FileIO(TESTFN, 'ab')
             f.write(b'eggs')
             f.close()
-            f = open(TESTFN, 'rb')
+            f = self.FileIO(TESTFN, 'rb')
             d = f.read()
             f.close()
             self.assertEqual(d, b'spameggs')
@@ -573,11 +594,12 @@ class OtherFileTests:
 class COtherFileTests(OtherFileTests, unittest.TestCase):
     FileIO = _io.FileIO
     modulename = '_io'
+    open = _io.open
 
     @cpython_only
     def testInvalidFd_overflow(self):
         # Issue 15989
-        import _testcapi
+        _testcapi = import_module("_testcapi")
         self.assertRaises(TypeError, self.FileIO, _testcapi.INT_MAX + 1)
         self.assertRaises(TypeError, self.FileIO, _testcapi.INT_MIN - 1)
 
@@ -594,6 +616,7 @@ class COtherFileTests(OtherFileTests, unittest.TestCase):
 class PyOtherFileTests(OtherFileTests, unittest.TestCase):
     FileIO = _pyio.FileIO
     modulename = '_pyio'
+    open = _pyio.open
 
     def test_open_code(self):
         # Check that the default behaviour of open_code matches

@@ -259,6 +259,36 @@ SyntaxError: expected ':'
 Traceback (most recent call last):
 SyntaxError: invalid syntax
 
+Comprehensions without 'in' keyword:
+
+>>> [x for x if range(1)]
+Traceback (most recent call last):
+SyntaxError: 'in' expected after for-loop variables
+
+>>> tuple(x for x if range(1))
+Traceback (most recent call last):
+SyntaxError: 'in' expected after for-loop variables
+
+>>> [x for x() in a]
+Traceback (most recent call last):
+SyntaxError: cannot assign to function call
+
+>>> [x for a, b, (c + 1, d()) in y]
+Traceback (most recent call last):
+SyntaxError: cannot assign to expression
+
+>>> [x for a, b, (c + 1, d()) if y]
+Traceback (most recent call last):
+SyntaxError: 'in' expected after for-loop variables
+
+>>> [x for x+1 in y]
+Traceback (most recent call last):
+SyntaxError: cannot assign to expression
+
+>>> [x for x+1, x() in y]
+Traceback (most recent call last):
+SyntaxError: cannot assign to expression
+
 Comprehensions creating tuples without parentheses
 should produce a specialized error message:
 
@@ -321,6 +351,13 @@ SyntaxError: invalid syntax
 ...        ...
 Traceback (most recent call last):
 SyntaxError: invalid syntax
+
+# But prefixes of soft keywords should
+# still raise specialized errors
+
+>>> (mat x)
+Traceback (most recent call last):
+SyntaxError: invalid syntax. Perhaps you forgot a comma?
 
 From compiler_complex_args():
 
@@ -1183,6 +1220,22 @@ Missing parens after function definition
    Traceback (most recent call last):
    SyntaxError: expected '('
 
+   >>> def f -> int:
+   Traceback (most recent call last):
+   SyntaxError: expected '('
+
+   >>> async def f -> int:  # type: int
+   Traceback (most recent call last):
+   SyntaxError: expected '('
+
+   >>> async def f[T]:
+   Traceback (most recent call last):
+   SyntaxError: expected '('
+
+   >>> def f[T] -> str:
+   Traceback (most recent call last):
+   SyntaxError: expected '('
+
 Parenthesized arguments in function definitions
 
    >>> def f(x, (y, z), w):
@@ -1669,6 +1722,18 @@ SyntaxError: Did you mean to use 'from ... import ...' instead?
 Traceback (most recent call last):
 SyntaxError: invalid syntax
 
+>>> from i import
+Traceback (most recent call last):
+SyntaxError: Expected one or more names after 'import'
+
+>>> from .. import
+Traceback (most recent call last):
+SyntaxError: Expected one or more names after 'import'
+
+>>> import
+Traceback (most recent call last):
+SyntaxError: Expected one or more names after 'import'
+
 >>> (): int
 Traceback (most recent call last):
 SyntaxError: only single target (not tuple) can be annotated
@@ -1681,6 +1746,49 @@ SyntaxError: only single target (not tuple) can be annotated
 >>> ([]): int
 Traceback (most recent call last):
 SyntaxError: only single target (not list) can be annotated
+
+# 'not' after operators:
+
+>>> 3 + not 3
+Traceback (most recent call last):
+SyntaxError: 'not' after an operator must be parenthesized
+
+>>> 3 * not 3
+Traceback (most recent call last):
+SyntaxError: 'not' after an operator must be parenthesized
+
+>>> + not 3
+Traceback (most recent call last):
+SyntaxError: 'not' after an operator must be parenthesized
+
+>>> - not 3
+Traceback (most recent call last):
+SyntaxError: 'not' after an operator must be parenthesized
+
+>>> ~ not 3
+Traceback (most recent call last):
+SyntaxError: 'not' after an operator must be parenthesized
+
+>>> 3 + - not 3
+Traceback (most recent call last):
+SyntaxError: 'not' after an operator must be parenthesized
+
+>>> 3 + not -1
+Traceback (most recent call last):
+SyntaxError: 'not' after an operator must be parenthesized
+
+# Check that we don't introduce misleading errors
+>>> not 1 */ 2
+Traceback (most recent call last):
+SyntaxError: invalid syntax
+
+>>> not 1 +
+Traceback (most recent call last):
+SyntaxError: invalid syntax
+
+>>> not + 1 +
+Traceback (most recent call last):
+SyntaxError: invalid syntax
 
 Corner-cases that used to fail to raise the correct error:
 
@@ -1920,15 +2028,115 @@ Invalid bytes literals:
 
 Invalid expressions in type scopes:
 
+   >>> type A[] = int
+   Traceback (most recent call last):
+   ...
+   SyntaxError: Type parameter list cannot be empty
+
+   >>> class A[]: ...
+   Traceback (most recent call last):
+   ...
+   SyntaxError: Type parameter list cannot be empty
+
+   >>> def some[](): ...
+   Traceback (most recent call last):
+   ...
+   SyntaxError: Type parameter list cannot be empty
+
+   >>> def some[]()
+   Traceback (most recent call last):
+   ...
+   SyntaxError: Type parameter list cannot be empty
+
+   >>> async def some[]:  # type: int
+   Traceback (most recent call last):
+   ...
+   SyntaxError: Type parameter list cannot be empty
+
+   >>> def f[T: (x:=3)](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: named expression cannot be used within a TypeVar bound
+
+   >>> def f[T: ((x:= 3), int)](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: named expression cannot be used within a TypeVar constraint
+
+   >>> def f[T = ((x:=3))](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: named expression cannot be used within a TypeVar default
+
+   >>> async def f[T: (x:=3)](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: named expression cannot be used within a TypeVar bound
+
+   >>> async def f[T: ((x:= 3), int)](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: named expression cannot be used within a TypeVar constraint
+
+   >>> async def f[T = ((x:=3))](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: named expression cannot be used within a TypeVar default
+
    >>> type A[T: (x:=3)] = int
    Traceback (most recent call last):
       ...
    SyntaxError: named expression cannot be used within a TypeVar bound
 
+   >>> type A[T: ((x:= 3), int)] = int
+   Traceback (most recent call last):
+      ...
+   SyntaxError: named expression cannot be used within a TypeVar constraint
+
+   >>> type A[T = ((x:=3))] = int
+   Traceback (most recent call last):
+      ...
+   SyntaxError: named expression cannot be used within a TypeVar default
+
+   >>> def f[T: (yield)](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVar bound
+
+   >>> def f[T: (int, (yield))](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVar constraint
+
+   >>> def f[T = (yield)](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVar default
+
+   >>> def f[*Ts = (yield)](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVarTuple default
+
+   >>> def f[**P = [(yield), int]](): pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a ParamSpec default
+
    >>> type A[T: (yield 3)] = int
    Traceback (most recent call last):
       ...
    SyntaxError: yield expression cannot be used within a TypeVar bound
+
+   >>> type A[T: (int, (yield 3))] = int
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVar constraint
+
+   >>> type A[T = (yield 3)] = int
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVar default
 
    >>> type A[T: (await 3)] = int
    Traceback (most recent call last):
@@ -1939,6 +2147,31 @@ Invalid expressions in type scopes:
    Traceback (most recent call last):
       ...
    SyntaxError: yield expression cannot be used within a TypeVar bound
+
+   >>> class A[T: (yield 3)]: pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVar bound
+
+   >>> class A[T: (int, (yield 3))]: pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVar constraint
+
+   >>> class A[T = (yield)]: pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVar default
+
+   >>> class A[*Ts = (yield)]: pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a TypeVarTuple default
+
+   >>> class A[**P = [(yield), int]]: pass
+   Traceback (most recent call last):
+      ...
+   SyntaxError: yield expression cannot be used within a ParamSpec default
 
    >>> type A = (x := 3)
    Traceback (most recent call last):
@@ -2245,6 +2478,25 @@ if x:
         self.assertRaises(IndentationError, exec, code)
 
     @support.cpython_only
+    def test_disallowed_type_param_names(self):
+        # See gh-128632
+
+        self._check_error(f"class A[__classdict__]: pass",
+                        f"reserved name '__classdict__' cannot be used for type parameter")
+        self._check_error(f"def f[__classdict__](): pass",
+                        f"reserved name '__classdict__' cannot be used for type parameter")
+        self._check_error(f"type T[__classdict__] = tuple[__classdict__]",
+                        f"reserved name '__classdict__' cannot be used for type parameter")
+
+        # These compilations are here to make sure __class__, __classcell__ and __classdictcell__
+        # don't break in the future like __classdict__ did in this case.
+        for name in ('__class__', '__classcell__', '__classdictcell__'):
+            compile(f"""
+class A:
+    class B[{name}]: pass
+                """, "<testcase>", mode="exec")
+
+    @support.cpython_only
     def test_nested_named_except_blocks(self):
         code = ""
         for i in range(12):
@@ -2369,8 +2621,14 @@ func(
 
     def test_error_string_literal(self):
 
-        self._check_error("'blech", "unterminated string literal")
-        self._check_error('"blech', "unterminated string literal")
+        self._check_error("'blech", r"unterminated string literal \(.*\)$")
+        self._check_error('"blech', r"unterminated string literal \(.*\)$")
+        self._check_error(
+            r'"blech\"', r"unterminated string literal \(.*\); perhaps you escaped the end quote"
+        )
+        self._check_error(
+            r'r"blech\"', r"unterminated string literal \(.*\); perhaps you escaped the end quote"
+        )
         self._check_error("'''blech", "unterminated triple-quoted string literal")
         self._check_error('"""blech', "unterminated triple-quoted string literal")
 
