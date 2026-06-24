@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -130,6 +130,7 @@ CI = get_boolean_env("CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', False)
+GRAALPY_WITH_BOUNCYCASTLE = get_boolean_env("GRAALPY_WITH_BOUNCYCASTLE", True)
 
 mx_gate.add_jacoco_excludes([
     "com.oracle.graal.python.pegparser.sst",
@@ -164,7 +165,54 @@ if wants_debug_build():
     )
 
 
+def _is_graalos_build():
+    return False
+
+
+def _with_bouncycastle():
+    return GRAALPY_WITH_BOUNCYCASTLE and not _is_graalos_build()
+
+
+def bcflags():
+    if _with_bouncycastle():
+        return '--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util'
+    return ''
+
+
+def _quote_argfile_arg(arg):
+    if not arg:
+        return '""'
+    if any(c.isspace() or c in arg for c in ['"', '#']):
+        return '"' + arg.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    return arg
+
+
 if WIN32:
+    original_NativeImageBuildTask_build = mx_sdk_vm_ng.NativeImageBuildTask.build
+
+    def build_libpythonvm_with_argfile_on_windows(self):
+        if self.subject.name != "libpythonvm":
+            return original_NativeImageBuildTask_build(self)
+
+        mx_util.ensure_dir_exists(self.subject.build_directory())
+        native_image_command = self.get_build_command()
+        argfile = os.path.join(self.subject.build_directory(), self.subject.output_file_name() + ".args")
+        with open(argfile, "w", newline="\n") as f:
+            for arg in native_image_command[1:]:
+                f.write(_quote_argfile_arg(arg) + "\n")
+
+        # The 25.0 Windows native-image launcher can split long --vm.* arguments
+        # while parsing them in cmd.exe. Keep the successful-build command file
+        # expanded for mx rebuild checks, but execute via an argfile.
+        out = mx.PrefixCapture(lambda l: mx.log(l, end=''), self.subject.output_file_name())
+        err = mx.PrefixCapture(lambda l: mx.log(l, end='', file=sys.stderr), out.identifier)
+        mx.run([native_image_command[0], "@" + argfile.replace(os.sep, "/")], nonZeroIsFatal=True, out=out, err=err)
+
+        with open(self._get_command_file(), 'w') as f:
+            f.writelines((l + os.linesep for l in native_image_command))
+
+    mx_sdk_vm_ng.NativeImageBuildTask.build = build_libpythonvm_with_argfile_on_windows
+
     # we need the .lib for pythonjni
     original_DefaultNativeProject_getArchivableResults = mx_native.DefaultNativeProject.getArchivableResults
     def getArchivableResultsWithLib(self, *args, **kwargs):
@@ -266,6 +314,14 @@ def get_jdk():
 def graalpy_standalone_deps():
     include_truffle_runtime = not mx.env_var_to_bool("EXCLUDE_TRUFFLE_RUNTIME")
     deps = mx_truffle.resolve_truffle_dist_names(use_optimized_runtime=include_truffle_runtime)
+    if _with_bouncycastle():
+        mx.log("Including bouncycastle with GraalPy standalone")
+        deps += [
+            "graalpython:GRAALPYTHON_BOUNCYCASTLE",
+            "graalpython:BOUNCYCASTLE-PROVIDER",
+            "graalpython:BOUNCYCASTLE-PKIX",
+            "graalpython:BOUNCYCASTLE-UTIL",
+        ]
     return deps
 
 
@@ -1690,6 +1746,9 @@ mx_subst.results_substitutions.register_with_arg('dev_tag', dev_tag)
 mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 
+mx_subst.path_substitutions.register_no_arg('bcflags', bcflags)
+mx_subst.results_substitutions.register_no_arg('bcflags', bcflags)
+mx_subst.string_substitutions.register_no_arg('bcflags', bcflags)
 
 def update_import(name, suite_py: Path, args):
     parent = os.path.join(SUITE.dir, "..")
@@ -1903,6 +1962,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     ],
     truffle_jars=[
         'graalpython:GRAALPYTHON',
+        'graalpython:GRAALPYTHON_BOUNCYCASTLE',
         'graalpython:BOUNCYCASTLE-PROVIDER',
         'graalpython:BOUNCYCASTLE-PKIX',
         'graalpython:BOUNCYCASTLE-UTIL',
@@ -1996,6 +2056,8 @@ def warn_about_old_hardcoded_version():
     replacements = set()
     for path, patterns in files_with_versions.items():
         full_path = os.path.join(SUITE.dir, path)
+        if not os.path.exists(full_path):
+            continue
         with open(full_path, "r", encoding="utf-8") as f:
             content = f.read()
         for pattern, test in patterns.items():

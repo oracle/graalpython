@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -1559,6 +1559,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             this.pythonContext = context;
         }
 
+        @TruffleBoundary
         public void serialize(SerializerContext context, DataOutput buffer, Object object) throws IOException {
             /*
              * NB: Since the deserializer uses a fresh Marshal instance for each object (see below)

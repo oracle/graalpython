@@ -3,6 +3,28 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 25.1.0
+* Treat foreign buffer objects as Python buffer-compatible binary objects, so APIs like `memoryview`, `bytes`, `bytearray`, `binascii.hexlify`, and `io.BytesIO` work naturally on them when embedding GraalPy in Java. This allows passing binary data between Python and Java's `ByteBuffer` and `ByteSequence` types with minimal (sometimes zero) copies.
+* Add support for [Truffle source options](https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/source/Source.SourceBuilder.html#option(java.lang.String,java.lang.String)):
+  * The `python.Optimize` option can be used to specify the optimization level, like the `-O` (level 1) and `-OO` (level 2) commandline options.
+  * The `python.NewGlobals` option can be used to run a source with a fresh globals dictionary instead of the main module globals, which is useful for embeddings that want isolated top-level execution.
+* Intern string literals in source files
+* Allocation reporting via Truffle has been removed. Python object sizes were never reported correctly, so the data was misleading and there was a non-neglible overhead for object allocations even when reporting was inactive.
+* Better `readline` support via JLine. Autocompletion and history now works in `pdb`
+* Remove the intrinsified _ctypes module in favor of the native CPython version. This makes GraalPy's ctypes implementation more compatible and reduces the memory footprint of using ctypes.
+* Add a new, more natural style of subclassing Java classes from Python by passing the `new_style=True` keyword. Multiple levels of inheritance are supported, and `super()` calls both in the constructor override via `__new__` as well as in Java method overrides work as expected.
+* Add `polyglot.gil_locked_during_interop` context manager. By default, the global interpreter lock (GIL) is unlocked when interacting with objects from another language, to give other Python threads a chance to run in parallel. While this avoids potential deadlocks, repeated unlocking and locking of the GIL can decrease performance, so this context manager can be used to keep the lock held around short-running interop.
+* Add Github workflows that run our gates from the same job definitions as our internal CI. This will make it easier for contributors opening PRs on Github to ensure code contributions pass the same tests that we are running internally.
+* Added support for specifying generics on foreign classes, and inheriting from such classes. Especially when using Java classes that support generics, this allows expressing the generic types in Python type annotations as well.
+* Added a new `java` backend for the `pyexpat` module that uses a Java XML parser instead of the native `expat` library. It can be useful when running without native access or multiple-context scenarios. This backend is the default when embedding and can be switched back to native `expat` by setting `python.PyExpatModuleBackend` option to `native`. Standalone distribution still defaults to native expat backend.
+* Add a new context option `python.UnicodeCharacterDatabaseNativeFallback` to control whether the ICU database may fall back to the native unicode character database from CPython for features and characters not supported by ICU. This requires native access to be enabled and is disabled by default for embeddings.
+* Add an experimental `python.InitializationEntropySource` option to control the entropy source used for initialization-only randomness such as hash secret generation and `random.Random(None)` seeding. This means embeddings and tests can select deterministic or externally provided initialization entropy without affecting cryptographically relevant APIs like `os.urandom()` or `random.SystemRandom()`.
+* Foreign temporal objects (dates, times, and timezones) are now given a Python class corresponding to their interop traits, i.e., `date`, `time`, `datetime`, or `tzinfo`. This allows any foreign objects with these traits to be used in place of the native Python types and Python methods available on these types work on the foreign types.
+* Make BouncyCastle an optional dependency for embedding use cases. BouncyCastle is only needed for legacy RSA, DSA, and EC privat keys versions 0 and 1. To support these from Python embeddings, BouncyCastle must now be explicitly enabled by adding the `org.graalvm.python:python-bouncycastle-support` Maven artifact.
+
+## Version 25.0.1
+* Allow users to keep going on unsupported JDK/OS/ARCH combinations at their own risk by opting out of early failure using `-Dtruffle.UseFallbackRuntime=true`, `-Dpolyglot.engine.userResourceCache=/set/to/a/writeable/dir`, `-Dpolyglot.engine.allowUnsupportedPlatform=true`, and `-Dpolyglot.python.UnsupportedPlatformEmulates=[linux|macos|windows]` and `-Dorg.graalvm.python.resources.exclude=native.files`.
+
 ## Version 25.0.0
 * `sys.implementation.version` now returns the GraalPy version instead of the Python version it implements. Also available as `sys.graalpy_version_info` for better discoverability by people already familiar with PyPy and its `sys.pypy_version_info`.
 * `GRAALPY_VERSION_NUM` C macro now inlcudes the release level and serial number at the end to conform to the `hexversion` format. This shouldn't break any existing comparisons.

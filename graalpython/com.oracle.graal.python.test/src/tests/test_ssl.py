@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -372,6 +372,18 @@ class CertTests(unittest.TestCase):
     def test_private_key_pkcs1_password(self):
         self.check_keypair("signed_cert_pkcs1_password.pem", "signing_ca.pem", password="password")
 
+    def test_private_key_ec_legacy(self):
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(data_file("keycertecc.pem"), keyfile=data_file("pk_ecc_legacy.pem"))
+        client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client_context.check_hostname = False
+        client_context.verify_mode = ssl.CERT_NONE
+        check_handshake(server_context, client_context)
+
+    def test_private_key_dsa_legacy(self):
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(data_file("cert_dsa.pem"), keyfile=data_file("pk_dsa_legacy.pem"))
+
     def test_alpn(self):
         signed_cert = data_file("signed_cert.pem")
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -426,3 +438,7 @@ class CipherTests(unittest.TestCase):
             get_cipher_list("ALL:!ALL:ADH")
         with self.assertRaisesRegex(ssl.SSLError, "No cipher can be selected"):
             get_cipher_list("ALL:@XXX")
+        import sys
+        if sys.implementation.name == "graalpy":
+            with self.assertRaisesRegex(NotImplementedError, "only @SECLEVEL=1 is supported"):
+                get_cipher_list("@SECLEVEL=2:ALL")
