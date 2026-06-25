@@ -3055,10 +3055,11 @@ public final class NativePosixSupport extends PosixSupport {
     @ExportMessage
     int semGetValue(long handle) throws PosixException {
         /*
-         * msimacek: It works on Linux, and it doesn't work on Darwin. It might work on some other
-         * Unix-likes, but it's hard to check, so let's assume it only works on Linux for now
+         * This works on Linux and is emulated with Windows semaphore APIs as on CPython. It
+         * doesn't work on Darwin. It might work on some other Unix-likes, but it's hard to check,
+         * so keep the allow-list narrow.
          */
-        if (PythonLanguage.getPythonOS() != PythonOS.PLATFORM_LINUX) {
+        if (PythonLanguage.getPythonOS() != PythonOS.PLATFORM_LINUX && PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32) {
             throw NO_SEM_GETVALUE_EXCEPTION;
         }
         long nativeValue = NativeMemory.mallocIntArray(1);

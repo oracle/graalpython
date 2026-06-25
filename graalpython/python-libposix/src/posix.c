@@ -70,6 +70,9 @@
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK 11
 #endif
+#ifndef EOVERFLOW
+#define EOVERFLOW 75
+#endif
 #ifndef EALREADY
 #define EALREADY 114
 #endif
@@ -1794,13 +1797,76 @@ GP_EXPORT int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *l
     return 0;
 }
 
-GP_EXPORT void *call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t value) { errno = ENOSYS; return NULL; }
-GP_EXPORT int32_t call_sem_close(void* handle) { return unsupported(); }
-GP_EXPORT int32_t call_sem_unlink(const char *name) { return unsupported(); }
-GP_EXPORT int32_t call_sem_getvalue(void* handle, int32_t *value) { return unsupported(); }
-GP_EXPORT int32_t call_sem_post(void* handle) { return unsupported(); }
-GP_EXPORT int32_t call_sem_wait(void* handle) { return unsupported(); }
-GP_EXPORT int32_t call_sem_trywait(void* handle) { return unsupported(); }
+GP_EXPORT void *call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t value) {
+    (void) mode;
+    HANDLE handle;
+    if ((openFlags & O_CREAT) != 0) {
+        handle = CreateSemaphoreA(NULL, value, LONG_MAX, NULL);
+    } else {
+        handle = OpenSemaphoreA(SEMAPHORE_ALL_ACCESS, FALSE, name);
+    }
+    if (handle == NULL) {
+        set_win_errno(GetLastError());
+    }
+    return handle;
+}
+GP_EXPORT int32_t call_sem_close(void* handle) {
+    if (!CloseHandle((HANDLE) handle)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    return 0;
+}
+GP_EXPORT int32_t call_sem_unlink(const char *name) {
+    (void) name;
+    return 0;
+}
+GP_EXPORT int32_t call_sem_getvalue(void* handle, int32_t *value) {
+    DWORD result = WaitForSingleObject((HANDLE) handle, 0);
+    if (result == WAIT_TIMEOUT) {
+        *value = 0;
+        return 0;
+    }
+    if (result != WAIT_OBJECT_0) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    LONG previousCount;
+    if (!ReleaseSemaphore((HANDLE) handle, 1, &previousCount)) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    *value = previousCount + 1;
+    return 0;
+}
+GP_EXPORT int32_t call_sem_post(void* handle) {
+    if (!ReleaseSemaphore((HANDLE) handle, 1, NULL)) {
+        DWORD error = GetLastError();
+        errno = error == ERROR_TOO_MANY_POSTS ? EOVERFLOW : (int) error;
+        return -1;
+    }
+    return 0;
+}
+GP_EXPORT int32_t call_sem_wait(void* handle) {
+    DWORD result = WaitForSingleObject((HANDLE) handle, INFINITE);
+    if (result == WAIT_OBJECT_0) {
+        return 0;
+    }
+    set_win_errno(GetLastError());
+    return -1;
+}
+GP_EXPORT int32_t call_sem_trywait(void* handle) {
+    DWORD result = WaitForSingleObject((HANDLE) handle, 0);
+    if (result == WAIT_OBJECT_0) {
+        return 0;
+    }
+    if (result == WAIT_TIMEOUT) {
+        errno = EAGAIN;
+    } else {
+        set_win_errno(GetLastError());
+    }
+    return -1;
+}
 GP_EXPORT int32_t call_sem_timedwait(void* handle, int64_t deadlineNs) { return unsupported(); }
 GP_EXPORT int64_t get_sysconf_getpw_r_size_max(void) { return -1; }
 GP_EXPORT int32_t call_getpwuid_r(uint64_t uid, char *buffer, int32_t bufferSize, uint64_t *output) {

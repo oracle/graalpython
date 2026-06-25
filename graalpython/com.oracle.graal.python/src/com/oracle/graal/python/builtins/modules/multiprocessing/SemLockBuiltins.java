@@ -49,8 +49,10 @@ import static com.oracle.graal.python.runtime.PosixConstants.O_EXCL;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -145,7 +147,8 @@ public class SemLockBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             }
-            return PFactory.createSemLock(cls, getInstanceShape.execute(cls), handle, kind, maxValue, name);
+            TruffleString storedName = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? null : name;
+            return PFactory.createSemLock(cls, getInstanceShape.execute(cls), handle, kind, maxValue, storedName);
         }
 
         @Override
@@ -177,7 +180,8 @@ public class SemLockBuiltins extends PythonBuiltins {
     abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PSemLock self) {
-            return self.getName();
+            TruffleString name = self.getName();
+            return name == null ? PNone.NONE : name;
         }
     }
 
@@ -413,24 +417,27 @@ public class SemLockBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "handle", conversion = ArgumentClinic.ClinicConversion.Long)
     @ArgumentClinic(name = "kind", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "maxvalue", conversion = ArgumentClinic.ClinicConversion.Int)
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class RebuildNode extends PythonClinicBuiltinNode {
         @Specialization
-        static Object rebuild(VirtualFrame frame, Object cls, @SuppressWarnings("unused") long origHandle, int kind, int maxValue, TruffleString name,
+        static Object rebuild(VirtualFrame frame, Object cls, long origHandle, int kind, int maxValue, Object name,
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            Object posixName = posixLib.createPathFromString(posixSupport, name);
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                return PFactory.createSemLock(cls, getInstanceShape.execute(cls), origHandle, kind, maxValue, null);
+            }
+            TruffleString posixNameString = (TruffleString) name;
+            Object posixName = posixLib.createPathFromString(posixSupport, posixNameString);
             long handle;
             try {
                 handle = posixLib.semOpen(posixSupport, posixName);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
-            return PFactory.createSemLock(cls, getInstanceShape.execute(cls), handle, kind, maxValue, name);
+            return PFactory.createSemLock(cls, getInstanceShape.execute(cls), handle, kind, maxValue, posixNameString);
         }
 
         @Override
