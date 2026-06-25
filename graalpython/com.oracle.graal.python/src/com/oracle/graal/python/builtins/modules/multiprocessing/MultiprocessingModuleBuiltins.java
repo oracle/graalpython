@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,16 +42,24 @@ package com.oracle.graal.python.builtins.modules.multiprocessing;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -67,6 +75,73 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return MultiprocessingModuleBuiltinsFactory.getFactories();
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "recv", minNumOfPositionalArgs = 2, parameterNames = {"handle", "size"}, os = PythonOS.PLATFORM_WIN32)
+    abstract static class Recv extends PythonBinaryBuiltinNode {
+        @Specialization
+        PBytes doit(VirtualFrame frame, Object handle, Object size,
+                        @Bind PythonContext context,
+                        @Bind PythonLanguage language,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind Node inliningTarget,
+                        @Cached CastToJavaIntExactNode castHandleToJavaIntNode,
+                        @Cached CastToJavaIntExactNode castSizeToJavaIntNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            int len = castSizeToJavaIntNode.execute(inliningTarget, size);
+            byte[] buffer = new byte[len];
+            try {
+                int received = posixLib.recv(context.getPosixSupport(), castHandleToJavaIntNode.execute(inliningTarget, handle), buffer, 0, len, 0);
+                if (received == len) {
+                    return PFactory.createBytes(language, buffer);
+                }
+                byte[] result = new byte[received];
+                System.arraycopy(buffer, 0, result, 0, received);
+                return PFactory.createBytes(language, result);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "send", minNumOfPositionalArgs = 2, parameterNames = {"handle", "data"}, os = PythonOS.PLATFORM_WIN32)
+    abstract static class Send extends PythonBinaryBuiltinNode {
+        @Specialization
+        int doit(VirtualFrame frame, Object handle, Object data,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind Node inliningTarget,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            byte[] bytes = toBytesNode.execute(frame, data);
+            try {
+                return posixLib.send(context.getPosixSupport(), castToJavaIntNode.execute(inliningTarget, handle), bytes, 0, bytes.length, 0);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "closesocket", minNumOfPositionalArgs = 1, parameterNames = {"handle"}, os = PythonOS.PLATFORM_WIN32)
+    abstract static class CloseSocket extends PythonUnaryBuiltinNode {
+        @Specialization
+        PNone doit(VirtualFrame frame, Object handle,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind Node inliningTarget,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                posixLib.close(context.getPosixSupport(), castToJavaIntNode.execute(inliningTarget, handle));
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
     }
 
     @GenerateNodeFactory
