@@ -45,7 +45,7 @@ test.test_import.ImportTracebackTests.test_exec_failure_nested @ darwin-arm64,li
 test.test_import.ImportTracebackTests.test_nonexistent_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_import.ImportTracebackTests.test_nonexistent_module_nested @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_import.ImportTracebackTests.test_syntax_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_import.ImportTracebackTests.test_unencodable_filename @ linux-x86_64-github
+test.test_import.ImportTracebackTests.test_unencodable_filename @ linux-aarch64-github,linux-x86_64-github
 test.test_import.OverridingImportBuiltinTests.test_override_builtin @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_import.PathsTests.test_trailing_slash @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_import.PycRewritingTests.test_basics @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

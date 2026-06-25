@@ -76,7 +76,7 @@ test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_kwargs @ darwi
 test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_err_restore @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_err_set_raised @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_format @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_setfromerrnowithfilename @ linux-x86_64-github
+test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_setfromerrnowithfilename @ linux-aarch64-github,linux-x86_64-github
 test.test_capi.test_float.CAPIFloatTest.test_asdouble @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_float.CAPIFloatTest.test_check @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_float.CAPIFloatTest.test_checkexact @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

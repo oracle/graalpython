@@ -1,7 +1,7 @@
-test.test_audit.AuditTest.test_basic @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
-test.test_audit.AuditTest.test_block_add_hook @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
-test.test_audit.AuditTest.test_block_add_hook_baseexception @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
-test.test_audit.AuditTest.test_http @ linux-x86_64-github
-test.test_audit.AuditTest.test_mmap @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
-test.test_audit.AuditTest.test_socket @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
-test.test_audit.AuditTest.test_sqlite3 @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
+test.test_audit.AuditTest.test_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_audit.AuditTest.test_block_add_hook @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_audit.AuditTest.test_block_add_hook_baseexception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_audit.AuditTest.test_http @ linux-aarch64-github,linux-x86_64-github
+test.test_audit.AuditTest.test_mmap @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_audit.AuditTest.test_socket @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_audit.AuditTest.test_sqlite3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

@@ -1,2 +1,2 @@
-test.test_unicode_file.TestUnicodeFiles.test_directories @ linux-x86_64-github
-test.test_unicode_file.TestUnicodeFiles.test_single_files @ linux-x86_64-github
+test.test_unicode_file.TestUnicodeFiles.test_directories @ linux-aarch64-github,linux-x86_64-github
+test.test_unicode_file.TestUnicodeFiles.test_single_files @ linux-aarch64-github,linux-x86_64-github
