@@ -72,4 +72,5 @@ test.test_httpservers.SimpleHTTPServerTestCase.test_html_escape_filename @ darwi
 test.test_httpservers.SimpleHTTPServerTestCase.test_invalid_requests @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httpservers.SimpleHTTPServerTestCase.test_last_modified @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_httpservers.SimpleHTTPServerTestCase.test_path_without_leading_slash @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_httpservers.SimpleHTTPServerTestCase.test_undecodable_filename @ linux-x86_64-github
 test.test_httpservers.SimpleHTTPServerTestCase.test_undecodable_parameter @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
