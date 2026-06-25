@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProvider
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.StrfTimeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProviders.StrptimeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -75,10 +74,13 @@ import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -94,6 +96,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
@@ -106,6 +109,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -617,6 +621,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "strftime", minNumOfPositionalArgs = 2, declaresExplicitSelf = true, parameterNames = {"$self", "format", "time"})
     @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class StrfTimeNode extends PythonTernaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -635,12 +640,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return PythonUtils.formatJString("%02d:%02d:%02d", date[TM_HOUR], date[TM_MIN], date[TM_SEC]);
         }
 
-        protected static int[] checkStructtime(VirtualFrame frame, Node inliningTarget, PTuple time,
+        protected static int[] checkStructtime(VirtualFrame frame, Node inliningTarget, SequenceStorage timeStorage,
                         SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         PyNumberAsSizeNode asSizeNode,
                         PRaiseNode raiseNode) {
-            Object[] otime = getInternalObjectArrayNode.execute(inliningTarget, time.getSequenceStorage());
-            if (time.getSequenceStorage().length() != 9) {
+            Object[] otime = getInternalObjectArrayNode.execute(inliningTarget, timeStorage);
+            if (timeStorage.length() != 9) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ILLEGAL_TIME_TUPLE_ARG, "asctime()");
             }
             int[] date = new int[9];
@@ -987,16 +992,18 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), getTimeZone(moduleState.currentZoneId), fromJavaStringNode);
         }
 
-        @Specialization
-        static TruffleString formatTime(VirtualFrame frame, PythonModule module, TruffleString format, PTuple time,
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, time)", limit = "1")
+        static TruffleString formatTime(VirtualFrame frame, PythonModule module, TruffleString format, Object time,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
                         @Shared("ts2js") @Cached ToJavaStringNode toJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            int[] date = checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, raiseNode);
+            int[] date = checkStructtime(frame, inliningTarget, getTupleStorage.execute(inliningTarget, time), getArray, asSizeNode, raiseNode);
             return format(toJavaStringNode.execute(format), date, getTimeZone(module.getModuleState(ModuleState.class).currentZoneId), fromJavaStringNode);
         }
 
@@ -1014,20 +1021,25 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     "time zones; instead the returned value will either be equal to that\n" +
                     "of the timezone or altzone attributes on the time module.")
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     abstract static class MkTimeNode extends PythonBinaryBuiltinNode {
         private static final int ELEMENT_COUNT = 9;
 
-        @Specialization
         @ExplodeLoop
-        static double mktime(VirtualFrame frame, PythonModule module, PTuple tuple,
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, tuple)", limit = "1")
+        static double mktime(VirtualFrame frame, PythonModule module, Object tuple,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PRaiseNode raiseNode) {
-            Object[] items = getObjectArrayNode.execute(inliningTarget, tuple);
-            if (items.length != ELEMENT_COUNT) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS, ELEMENT_COUNT, items.length);
+            SequenceStorage storage = getTupleStorage.execute(inliningTarget, tuple);
+            int storageLength = storage.length();
+            if (storageLength != ELEMENT_COUNT) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS, ELEMENT_COUNT, storageLength);
             }
+            Object[] items = getArray.execute(inliningTarget, storage);
             int[] integers = new int[ELEMENT_COUNT];
             for (int i = 0; i < ELEMENT_COUNT; i++) {
                 integers[i] = asSizeNode.executeExact(frame, inliningTarget, items[i]);
@@ -1066,6 +1078,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     // time.asctime([t])
     @Builtin(name = "asctime", maxNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class ASCTimeNode extends PythonBinaryBuiltinNode {
 
         static final String[] WDAY_NAME = new String[]{
@@ -1083,14 +1096,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return format(getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), fromJavaStringNode);
         }
 
-        @Specialization
-        static TruffleString localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, PTuple time,
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, time)", limit = "1")
+        static TruffleString localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, Object time,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
-            return format(StrfTimeNode.checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, raiseNode), fromJavaStringNode);
+            return format(StrfTimeNode.checkStructtime(frame, inliningTarget, getTupleStorage.execute(inliningTarget, time), getArray, asSizeNode, raiseNode), fromJavaStringNode);
         }
 
         @Fallback

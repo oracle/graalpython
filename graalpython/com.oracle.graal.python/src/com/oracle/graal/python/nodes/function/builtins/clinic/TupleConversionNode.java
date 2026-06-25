@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,17 +45,23 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S_NOT_P;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
+@ImportStatic({PGuards.class, PyTupleCheckNode.class})
 public abstract class TupleConversionNode extends ArgumentCastNode {
     @Specialization
     static Object[] doNone(@SuppressWarnings("unused") PNone none) {
@@ -67,6 +73,14 @@ public abstract class TupleConversionNode extends ArgumentCastNode {
                     @Bind Node inliningTarget,
                     @Cached SequenceStorageNodes.GetInternalObjectArrayNode getInternalArrayNode) {
         return getInternalArrayNode.execute(inliningTarget, t.getSequenceStorage());
+    }
+
+    @Specialization(guards = "checkNative(t)")
+    static Object[] doNativeTuple(PythonAbstractNativeObject t,
+                    @Bind Node inliningTarget,
+                    @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                    @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
+        return toArrayNode.execute(inliningTarget, getTupleStorage.execute(inliningTarget, t));
     }
 
     @Fallback

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) -2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -25,6 +25,7 @@ import com.oracle.graal.python.lib.PyNumberCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -249,10 +250,7 @@ abstract class FormatProcessor<T> {
         Object mapping = null;
         this.args = args1;
 
-        // We need to do a full subtype-check because native objects may inherit from tuple but have
-        // Java type 'PythonNativeObject' (e.g. 'namedtuple' alias 'structseq').
-        final Object args1LazyClass = GetClassNode.executeUncached(args1);
-        boolean tupleArgs = PGuards.isPTuple(args1) || isSubtype(args1LazyClass, PythonBuiltinClassType.PTuple);
+        boolean tupleArgs = PyTupleCheckNode.executeUncached(args1);
         if (tupleArgs) {
             // We will simply work through the tuple elements
             argIndex = 0;

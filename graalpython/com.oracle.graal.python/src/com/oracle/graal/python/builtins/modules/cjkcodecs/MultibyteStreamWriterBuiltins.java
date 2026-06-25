@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,20 +53,21 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PySequenceCheckNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode;
+import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -75,11 +76,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -168,29 +166,27 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
 
         // _multibytecodec_MultibyteStreamWriter_writelines
         @Specialization
-        static Object writelines(VirtualFrame frame, MultibyteStreamWriterObject self, PSequence lines,
+        static Object doGeneric(VirtualFrame frame, MultibyteStreamWriterObject self, Object lines,
                         @Bind Node inliningTarget,
+                        @Cached PySequenceCheckNode sequenceCheckNode,
+                        @Cached PySequenceSizeNode sizeNode,
+                        @Cached PySequenceGetItemNode getItemNode,
                         @Cached MultibyteIncrementalEncoderBuiltins.EncodeStatefulNode encodeStatefulNode,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorage,
-                        @Cached SequenceStorageNodes.GetItemNode getItem,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
 
-            SequenceStorage sq = getStorage.execute(inliningTarget, lines);
-            for (int i = 0; i < sq.length(); i++) {
+            if (!sequenceCheckNode.execute(inliningTarget, lines)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_MUST_BE_A_SEQUENCE_OBJECT);
+            }
+
+            int n = sizeNode.execute(frame, inliningTarget, lines);
+            for (int i = 0; i < n; i++) {
                 /* length can be changed even within this loop */
-                Object strobj = getItem.execute(sq, i);
+                Object strobj = getItemNode.execute(lines, i);
                 // mbstreamwriter_iwrite
                 Object str = encodeStatefulNode.execute(frame, self, strobj, 0);
                 callMethod.execute(frame, inliningTarget, self.stream, WRITE, str);
             }
             return PNone.NONE;
-        }
-
-        // assuming !pySequenceCheck.execute(lines)
-        @Fallback
-        static Object writelines(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object lines,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ARG_MUST_BE_A_SEQUENCE_OBJECT);
         }
     }
 

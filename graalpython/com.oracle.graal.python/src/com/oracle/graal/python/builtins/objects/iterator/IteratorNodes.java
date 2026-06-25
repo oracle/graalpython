@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LENGTH_HINT__
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -71,6 +70,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -83,8 +83,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CastBuiltinStringToTruffleStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -341,7 +341,7 @@ public abstract class IteratorNodes {
         public abstract Object[] execute(VirtualFrame frame, Object iterable);
 
         @Specialization(guards = "isString(iterableObj)")
-        public static Object[] doIt(Object iterableObj,
+        static Object[] doString(Object iterableObj,
                         @Bind Node inliningTarget,
                         @Cached CastBuiltinStringToTruffleStringNode castToStringNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
@@ -361,22 +361,23 @@ public abstract class IteratorNodes {
             return result;
         }
 
-        @Specialization
-        public static Object[] doIt(PSequence iterable,
+        @Specialization(guards = "isPSequence(seq) || tupleCheckNode.execute(inliningTarget, seq)", limit = "1")
+        static Object[] doSequenceWithStorage(Object seq,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
-            SequenceStorage storage = getStorageNode.execute(inliningTarget, iterable);
+            SequenceStorage storage = getStorageNode.execute(inliningTarget, seq);
             return toArrayNode.execute(inliningTarget, storage);
         }
 
         @Fallback
-        public static Object[] doIt(VirtualFrame frame, Object iterable,
+        static Object[] doGeneric(VirtualFrame frame, Object iterable,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode) {
             Object it = getIter.execute(frame, inliningTarget, iterable);
-            List<Object> result = createlist();
+            ArrayList<Object> result = new ArrayList<>();
             while (true) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, it);
@@ -385,12 +386,7 @@ public abstract class IteratorNodes {
                     break;
                 }
             }
-            return result.toArray(new Object[result.size()]);
-        }
-
-        @TruffleBoundary
-        private static List<Object> createlist() {
-            return new ArrayList<>();
+            return PythonUtils.toArray(result);
         }
     }
 }

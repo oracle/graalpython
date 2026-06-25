@@ -919,12 +919,7 @@ public final class PythonCextUnicodeBuiltins {
         try {
             int size = PInt.intValueExact(lsize);
             TruffleString candidate = TruffleString.fromNativePointerUncached(s, 0, size, UTF_8, true);
-            TruffleString str;
-            if (candidate.isValidUncached(UTF_8)) {
-                str = candidate.switchEncodingUncached(TS_ENCODING);
-            } else {
-                str = candidate.switchEncodingUncached(TS_ENCODING, SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER);
-            }
+            TruffleString str = candidate.switchEncodingUncached(TS_ENCODING, SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER);
             // implicitly promotes TruffleString to PString
             return PythonToNativeInternalNode.executeNewRefUncached(str);
         } catch (OverflowException e) {

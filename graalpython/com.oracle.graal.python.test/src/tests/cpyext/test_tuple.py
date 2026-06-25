@@ -36,6 +36,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import _io
+import codecs
+import functools
+import io
+import itertools
+import json
+import os
+import pickle
+import tempfile
 import unittest
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType, \
@@ -379,3 +388,121 @@ class TestNativeSubclass(unittest.TestCase):
         assert is_native_object(shape)
         view = memoryview(b"abcd").cast("B", shape)
         assert view.shape == (2, 2)
+
+    def test_utime_ns_divmod_native_tuple(self):
+        class NativeDivmod:
+            def __divmod__(self, other):
+                assert other == 1000000000
+                result = TupleSubclass(1, 234567890)
+                assert is_native_object(result)
+                return result
+
+        with tempfile.NamedTemporaryFile() as f:
+            os.utime(f.name, ns=(NativeDivmod(), NativeDivmod()))
+            stat = os.stat(f.name)
+            expected = 1234567890
+            # We don't care about the exact value. It's about if native tuples are accepted.
+            tolerance = 1_000_000_000
+            assert abs(stat.st_atime_ns - expected) <= tolerance
+            assert abs(stat.st_mtime_ns - expected) <= tolerance
+
+    def test_percent_format_native_tuple(self):
+        args = TupleSubclass("native", 7)
+        assert is_native_object(args)
+        assert "%s:%d" % args == "native:7"
+
+        bytes_args = TupleSubclass(b"native", 7)
+        assert is_native_object(bytes_args)
+        assert b"%s:%d" % bytes_args == b"native:7"
+
+    def test_incremental_newline_decoder_getstate_native_tuple(self):
+        class Decoder:
+            def getstate(self):
+                state = TupleSubclass(b"", 0)
+                assert is_native_object(state)
+                return state
+
+        decoder = _io.IncrementalNewlineDecoder(Decoder(), translate=False)
+        assert decoder.getstate() == (b"", 0)
+
+    def test_incremental_newline_decoder_setstate_native_tuple(self):
+        state = TupleSubclass(b"buffer", 1)
+        assert is_native_object(state)
+
+        decoder = _io.IncrementalNewlineDecoder(None, translate=False)
+        decoder.setstate(state)
+        assert decoder.getstate() == (b"", 1)
+
+        class Decoder:
+            def setstate(self, state):
+                self.state = state
+
+            def getstate(self):
+                return self.state
+
+        state = TupleSubclass(b"buffer", 3)
+        assert is_native_object(state)
+
+        wrapped_decoder = Decoder()
+        decoder = _io.IncrementalNewlineDecoder(wrapped_decoder, translate=False)
+        decoder.setstate(state)
+        assert wrapped_decoder.state == (b"buffer", 1)
+        assert decoder.getstate() == (b"buffer", 3)
+
+    def test_functools_partial_setstate_native_tuple_args(self):
+        args = TupleSubclass(2, 5)
+        assert is_native_object(args)
+        partial = functools.partial(int)
+        partial.__setstate__((pow, args, None, None))
+        assert partial() == 32
+
+    def test_pickle_memo_accepts_native_tuple_value(self):
+        value = TupleSubclass(11, "memo")
+        assert is_native_object(value)
+        pickler = pickle.Pickler(io.BytesIO())
+        pickler.memo = {0: value}
+
+    def test_json_encodes_native_tuple(self):
+        array = TupleSubclass("native", 7)
+        assert is_native_object(array)
+        assert json.dumps(array, separators=(",", ":")) == '["native",7]'
+
+    def test_itertools_cycle_setstate_native_tuple(self):
+        state = TupleSubclass([], 0)
+        assert is_native_object(state)
+        cycle = itertools.cycle([1])
+        cycle.__setstate__(state)
+        assert next(cycle) == 1
+
+    def test_reversed_native_tuple(self):
+        values = TupleSubclass(1, 2, 3)
+        assert is_native_object(values)
+        assert list(reversed(values)) == [3, 2, 1]
+
+    def test_base_exception_group_native_tuple(self):
+        exceptions = TupleSubclass(ValueError("native"), TypeError("tuple"))
+        assert is_native_object(exceptions)
+        group = BaseExceptionGroup("msg", exceptions)
+        assert group.message == "msg"
+        assert tuple(type(e) for e in group.exceptions) == (ValueError, TypeError)
+
+    def test_base_exception_group_copies_native_tuple_notes(self):
+        group = BaseExceptionGroup("msg", (ValueError("native"), TypeError("tuple")))
+        notes = TupleSubclass("note 1", "note 2")
+        assert is_native_object(notes)
+        group.__notes__ = notes
+
+        match, rest = group.split(ValueError)
+        assert match.__notes__ == ["note 1", "note 2"]
+        assert rest.__notes__ == ["note 1", "note 2"]
+        assert match.__notes__ is not notes
+        assert rest.__notes__ is not notes
+        assert match.__notes__ is not rest.__notes__
+
+    def test_multibyte_stream_writer_writelines_native_tuple(self):
+        lines = TupleSubclass("native", " tuple")
+        assert is_native_object(lines)
+        stream = io.BytesIO()
+        writer = codecs.getwriter("euc_jp")(stream)
+        writer.writelines(lines)
+        assert stream.getvalue() == b"native tuple"

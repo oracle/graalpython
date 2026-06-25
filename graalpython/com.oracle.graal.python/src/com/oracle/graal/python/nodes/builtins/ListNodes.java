@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -346,7 +346,7 @@ public abstract class ListNodes {
             long array = readPtrField(listRawPtr, PyListObject__ob_item);
             int size = (int) readLongField(listRawPtr, PyVarObject__ob_size);
             int allocated = (int) readLongField(listRawPtr, PyListObject__allocated);
-            return NativeObjectSequenceStorage.create(array, size, allocated, false);
+            return NativeObjectSequenceStorage.create(array, size, allocated, list);
         }
     }
 }

@@ -86,6 +86,7 @@ import com.oracle.graal.python.lib.PyNumberRemainderNode;
 import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.RichCmpOp;
@@ -721,7 +722,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
      * get_float_as_integer_ratio())
      */
     private static void validateAsIntegerRatioResult(Object object, Node inliningTarget, PRaiseNode raiseNode) {
-        if (!(object instanceof PTuple)) {
+        if (!PyTupleCheckNode.executeUncached(object)) {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNEXPECTED_RETURN_TYPE_FROM_AS_INTEGER_RATIO_EXPECTED_TUPLE_GOT_P, object);
         }
         if (PyTupleSizeNode.executeUncached(object) != 2) {

@@ -70,12 +70,12 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
     @Specialization
     static PTuple getBasesCached(VirtualFrame frame, Node inliningTarget, Object cls,
                     @Cached PyObjectLookupAttr lookupAttr,
-                    @Cached PyTupleCheckNode tupleCheck,
+                    @Cached PyTupleCheckNode tupleCheckNode,
                     @Cached ConstructTupleNode constructTupleNode) {
         Object bases = lookupAttr.execute(frame, inliningTarget, cls, T___BASES__);
         if (bases instanceof PTuple) {
             return (PTuple) bases;
-        } else if (tupleCheck.execute(inliningTarget, bases)) {
+        } else if (tupleCheckNode.execute(inliningTarget, bases)) {
             return constructTupleNode.execute(frame, bases);
         }
         return null;

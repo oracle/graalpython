@@ -452,10 +452,10 @@ public abstract class ObjectNodes {
             static Pair<Object, Object> doNewArgsEx(VirtualFrame frame, Object getNewArgsExAttr, @SuppressWarnings("unused") Object getNewArgsAttr,
                             @Bind Node inliningTarget,
                             @Exclusive @Cached CallNode callNode,
-                            @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                             @Cached PyDictCheckNode isDictSubClassNode,
                             @Cached PyObjectGetItem getItemNode,
                             @Cached PyObjectSizeNode sizeNode,
+                            @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                             @Exclusive @Cached PRaiseNode raiseNode) {
                 Object newargs = callNode.execute(frame, getNewArgsExAttr);
                 if (!tupleCheckNode.execute(inliningTarget, newargs)) {

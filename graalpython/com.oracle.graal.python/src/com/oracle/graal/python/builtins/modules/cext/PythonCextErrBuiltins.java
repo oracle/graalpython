@@ -99,10 +99,12 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.EnsureManagedTupleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -522,10 +524,16 @@ public final class PythonCextErrBuiltins {
     abstract static class PyException_SetArgs extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object set(PBaseException exc, PTuple args,
+        static Object set(PBaseException exc, Object args,
                         @Bind Node inliningTarget,
+                        @Cached EnsureManagedTupleNode ensureManagedTupleNode,
                         @Cached ExceptionNodes.SetArgsNode setArgsNode) {
-            setArgsNode.execute(inliningTarget, exc, args);
+            PTuple execute = ensureManagedTupleNode.execute(inliningTarget, args);
+            if (execute == null) {
+                // CPython doesn't do that check but they just expect that to be a tuple. We need to convert to PTuple, so we need to check eagerly.
+                throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, args, args);
+            }
+            setArgsNode.execute(inliningTarget, exc, execute);
             return PNone.NO_VALUE;
         }
     }

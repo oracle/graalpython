@@ -2252,8 +2252,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(status)")
         static Object exit(VirtualFrame frame, @SuppressWarnings("unused") PythonModule sys, Object status,
                         @Bind Node inliningTarget,
-                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TupleBuiltins.LenNode tupleLenNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached PyTupleGetItem getItemNode) {
             Object code = status;
             if (tupleCheckNode.execute(inliningTarget, status)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -87,6 +87,7 @@ import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -346,21 +347,23 @@ public final class PartialBuiltins extends PythonBuiltins {
     public abstract static class PartialSetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static Object setState(VirtualFrame frame, PPartial self, PTuple state,
+        static Object setState(VirtualFrame frame, PPartial self, Object state,
                         @Bind Node inliningTarget,
                         @Cached SetDictNode setDictNode,
                         @Cached DeleteDictNode deleteDictNode,
                         @Cached SequenceNodes.GetSequenceStorageNode storageNode,
                         @Cached SequenceStorageNodes.ToArrayNode arrayNode,
                         @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached PyTupleCheckExactNode tupleCheckExactNode,
                         @Cached PyDictCheckExactNode dictCheckExactNode,
                         @Cached PyTupleGetItem getItemNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
+                        @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached HashingStorageCopy copyStorageNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
-            if (state.getSequenceStorage().length() != 4) {
+            if (!tupleCheckNode.execute(inliningTarget, state) || getTupleStorage.execute(inliningTarget, state).length() != 4) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
 
@@ -370,7 +373,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             final Object dict = getItemNode.execute(inliningTarget, state, 3);
 
             if (!callableCheckNode.execute(inliningTarget, function) ||
-                            !PGuards.isPTuple(fnArgs) ||
+                            !tupleCheckNode.execute(inliningTarget, fnArgs) ||
                             (fnKwargs != PNone.NONE && !PGuards.isDict(fnKwargs))) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
@@ -378,10 +381,10 @@ public final class PartialBuiltins extends PythonBuiltins {
             self.setFn(function);
 
             final PTuple fnArgsTuple;
-            if (!tupleCheckExactNode.execute(inliningTarget, fnArgs)) {
-                fnArgsTuple = constructTupleNode.execute(frame, fnArgs);
-            } else {
+            if (fnArgs instanceof PTuple && tupleCheckExactNode.execute(inliningTarget, fnArgs)) {
                 fnArgsTuple = (PTuple) fnArgs;
+            } else {
+                fnArgsTuple = constructTupleNode.execute(frame, fnArgs);
             }
             self.setArgs(inliningTarget, fnArgsTuple, storageNode, arrayNode);
 

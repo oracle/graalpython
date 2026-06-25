@@ -95,6 +95,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -507,6 +508,7 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyObjectCallMethodObjArgs callMethodGetState,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -529,7 +531,7 @@ public abstract class TextIOWrapperNodes {
                  * Given this, we know there was a valid snapshot point len(decBuffer) bytes ago
                  * with decoder state (b'', decFlags).
                  */
-                if (!(state instanceof PTuple)) {
+                if (!tupleCheckNode.execute(inliningTarget, state)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_DECODER_STATE);
                 }
                 Object[] array = getArray.execute(inliningTarget, state);
