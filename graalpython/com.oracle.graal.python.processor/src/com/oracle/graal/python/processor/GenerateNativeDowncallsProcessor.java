@@ -63,7 +63,7 @@ import com.oracle.graal.python.annotations.DowncallSignature;
 import com.oracle.graal.python.annotations.NativeSimpleType;
 
 public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
-    private record NativeDowncallDesc(String name, NativeSimpleType returnType, List<NativeSimpleType> argumentTypes, List<String> argumentNames, boolean captureCallState) {
+    private record NativeDowncallDesc(String name, NativeSimpleType returnType, List<NativeSimpleType> argumentTypes, List<String> argumentNames, boolean critical, boolean captureCallState) {
     }
 
     private static final String CAPTURE_CALL_STATE_FIELD = "callState";
@@ -163,7 +163,8 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
         lines.add("");
 
         for (NativeDowncallDesc downcall : downcalls) {
-            NativeDowncallMethodHandleGenerator.emitMethodHandleField(lines, methodHandleName(downcall.name), downcall.returnType, downcall.argumentTypes, false, downcall.captureCallState);
+            NativeDowncallMethodHandleGenerator.emitMethodHandleField(lines, methodHandleName(downcall.name), downcall.returnType, downcall.argumentTypes, downcall.critical,
+                            downcall.captureCallState);
         }
 
         lines.add("");
@@ -249,6 +250,7 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
                         annotation.returnType(),
                         argumentTypes,
                         argumentNames,
+                        annotation.critical(),
                         annotation.captureCallState());
     }
 

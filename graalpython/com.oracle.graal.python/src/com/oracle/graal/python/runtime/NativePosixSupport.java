@@ -173,7 +173,7 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
         abstract int init_constants(long out, int len);
 
-        @DowncallSignature(returnType = SINT32)
+        @DowncallSignature(critical = true, returnType = SINT32)
         abstract int get_errno();
 
         @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64, SINT32, SINT32, SINT32, SINT64})
