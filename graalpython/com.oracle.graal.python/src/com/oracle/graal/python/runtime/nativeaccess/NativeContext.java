@@ -112,7 +112,7 @@ public final class NativeContext {
             if (isWindows()) {
                 int callFlags = sanitizeWindowsLoadLibraryFlags(flags) | WINDOWS_DEFAULT_LOAD_LIBRARY_FLAGS;
                 Object callStateBuffer = callState.get();
-                lib = (long) LOAD_LIBRARY_EX_CAPTURED.invokeExact(loadLibraryExPtr, callStateBuffer, nativeName, 0L, callFlags);
+                lib = (long) LOAD_LIBRARY_EX_CAPTURED.invoke(loadLibraryExPtr, callStateBuffer, nativeName, 0L, callFlags);
             } else {
                 int callFlags = flags;
                 if ((callFlags & (RTLD_LAZY | RTLD_NOW)) == 0) {
@@ -169,14 +169,14 @@ public final class NativeContext {
     private static final long RTLD_DEFAULT_LINUX = 0L;
     private static final long RTLD_DEFAULT_DARWIN = -2L;
 
-    private static final MethodHandle DLOPEN = NativeAccessSupport.createDowncallHandle(SINT64, POINTER, SINT32);
-    private static final MethodHandle DLCLOSE = NativeAccessSupport.createDowncallHandle(SINT32, SINT64);
-    private static final MethodHandle DLSYM = NativeAccessSupport.createDowncallHandle(SINT64, SINT64, POINTER);
-    private static final MethodHandle FREE_LIBRARY = NativeAccessSupport.createDowncallHandle(SINT32, SINT64);
-    private static final MethodHandle GET_PROC_ADDRESS = NativeAccessSupport.createDowncallHandle(SINT64, SINT64, POINTER);
-    private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(SINT32, SINT32, POINTER, SINT32, SINT32, POINTER, SINT32, POINTER);
-    private static final MethodHandle DLERROR = NativeAccessSupport.createDowncallHandle(SINT64);
-    private static final MethodHandle LOAD_LIBRARY_EX_CAPTURED = isWindows() ? NativeAccessSupport.createCapturedDowncallHandle(SINT64, POINTER, POINTER, SINT32) : null;
+    private static final MethodHandle DLOPEN = NativeAccessSupport.createDowncallHandle(false, false, SINT64, POINTER, SINT32);
+    private static final MethodHandle DLCLOSE = NativeAccessSupport.createDowncallHandle(false, false, SINT32, SINT64);
+    private static final MethodHandle DLSYM = NativeAccessSupport.createDowncallHandle(false, false, SINT64, SINT64, POINTER);
+    private static final MethodHandle FREE_LIBRARY = NativeAccessSupport.createDowncallHandle(false, false, SINT32, SINT64);
+    private static final MethodHandle GET_PROC_ADDRESS = NativeAccessSupport.createDowncallHandle(false, false, SINT64, SINT64, POINTER);
+    private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(false, false, SINT32, SINT32, POINTER, SINT32, SINT32, POINTER, SINT32, POINTER);
+    private static final MethodHandle DLERROR = NativeAccessSupport.createDowncallHandle(false, false, SINT64);
+    private static final MethodHandle LOAD_LIBRARY_EX_CAPTURED = isWindows() ? NativeAccessSupport.createDowncallHandle(false, true, SINT64, POINTER, POINTER, SINT32) : null;
 
     private static long dlopenPtr;
     private static long dlclosePtr;

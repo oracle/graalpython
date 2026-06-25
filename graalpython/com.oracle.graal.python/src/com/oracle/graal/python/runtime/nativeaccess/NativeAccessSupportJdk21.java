@@ -66,8 +66,21 @@ final class NativeAccessSupportJdk21 extends NativeAccessSupport {
     }
 
     @Override
-    protected MethodHandle createDowncallHandleImpl(MethodType methodType, boolean critical, boolean captureCallState) {
-        return unsupportedDowncallHandle(methodType);
+    protected MethodHandle createDowncallHandleImpl(boolean critical, boolean captureCallState, NativeSimpleType resType, NativeSimpleType[] argTypes) {
+        return unsupportedDowncallHandle(createMethodType(captureCallState, resType, argTypes));
+    }
+
+    private static MethodType createMethodType(boolean captureCallState, NativeSimpleType resType, NativeSimpleType... argTypes) {
+        int injectedArgumentCount = captureCallState ? 2 : 1;
+        Class<?>[] parameterTypes = new Class<?>[argTypes.length + injectedArgumentCount];
+        parameterTypes[0] = long.class;
+        if (captureCallState) {
+            parameterTypes[1] = Object.class;
+        }
+        for (int i = 0; i < argTypes.length; i++) {
+            parameterTypes[i + injectedArgumentCount] = asJavaType(argTypes[i]);
+        }
+        return MethodType.methodType(asJavaType(resType), parameterTypes);
     }
 
     @Override

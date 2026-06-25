@@ -104,16 +104,8 @@ public abstract class NativeAccessSupport {
         return INSTANCE.lookupDefaultImpl(name);
     }
 
-    static MethodHandle createDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
-        return INSTANCE.createTypedDowncallHandle(resType, argTypes);
-    }
-
-    public static MethodHandle createDowncallHandle(MethodType methodType, boolean critical) {
-        return INSTANCE.createDowncallHandleImpl(methodType, critical, false);
-    }
-
-    public static MethodHandle createDowncallHandle(MethodType methodType, boolean critical, boolean captureCallState) {
-        return INSTANCE.createDowncallHandleImpl(methodType, critical, captureCallState);
+    public static MethodHandle createDowncallHandle(boolean critical, boolean captureCallState, NativeSimpleType resType, NativeSimpleType... argTypes) {
+        return INSTANCE.createDowncallHandleImpl(critical, captureCallState, resType, argTypes);
     }
 
     public static Object createCapturedCallState(Object arena) {
@@ -130,10 +122,6 @@ public abstract class NativeAccessSupport {
         return INSTANCE.readCapturedGetLastErrorImpl(capturedCallStatePtr);
     }
 
-    static MethodHandle createCapturedDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
-        return INSTANCE.createTypedCapturedDowncallHandle(resType, argTypes);
-    }
-
     public static boolean isAvailable() {
         return INSTANCE.isAvailableImpl();
     }
@@ -146,25 +134,6 @@ public abstract class NativeAccessSupport {
         return INSTANCE.isCurrentThreadVirtualImpl();
     }
 
-    private MethodHandle createTypedDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
-        Class<?>[] parameterTypes = new Class<?>[argTypes.length + 1];
-        parameterTypes[0] = long.class;
-        for (int i = 0; i < argTypes.length; i++) {
-            parameterTypes[i + 1] = asJavaType(argTypes[i]);
-        }
-        return createDowncallHandleImpl(MethodType.methodType(asJavaType(resType), parameterTypes), false, false);
-    }
-
-    private MethodHandle createTypedCapturedDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
-        Class<?>[] parameterTypes = new Class<?>[argTypes.length + 2];
-        parameterTypes[0] = long.class;
-        parameterTypes[1] = long.class;
-        for (int i = 0; i < argTypes.length; i++) {
-            parameterTypes[i + 2] = asJavaType(argTypes[i]);
-        }
-        return createDowncallHandleImpl(MethodType.methodType(asJavaType(resType), parameterTypes), false, true);
-    }
-
     protected abstract Object createArenaImpl();
 
     protected abstract void closeArenaImpl(Object arena);
@@ -173,7 +142,7 @@ public abstract class NativeAccessSupport {
 
     protected abstract long lookupDefaultImpl(String name);
 
-    protected abstract MethodHandle createDowncallHandleImpl(MethodType methodType, boolean critical, boolean captureCallState);
+    protected abstract MethodHandle createDowncallHandleImpl(boolean critical, boolean captureCallState, NativeSimpleType resType, NativeSimpleType[] argTypes);
 
     protected abstract Object createCapturedCallStateImpl(Object arena);
 

@@ -143,10 +143,10 @@ public class GenerateNativeDowncallsProcessor extends AbstractProcessor {
         lines.add("");
         lines.add("import java.lang.foreign.MemorySegment;");
         lines.add("import java.lang.invoke.MethodHandle;");
-        lines.add("import java.lang.invoke.MethodType;");
         lines.add("import java.util.concurrent.atomic.AtomicLongArray;");
         lines.add("import java.util.List;");
         lines.add("");
+        lines.add("import com.oracle.graal.python.annotations.NativeSimpleType;");
         lines.add("import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;");
         lines.add("import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;");
         lines.add("import com.oracle.truffle.api.CompilerDirectives;");
