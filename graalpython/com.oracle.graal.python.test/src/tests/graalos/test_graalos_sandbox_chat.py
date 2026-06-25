@@ -161,7 +161,8 @@ def run_demo() -> None:
 def main(argv: list[str] | None = None) -> int:
     from rich.console import Console
     global console
-    console = Console()
+    if console is None:
+        console = Console()
     parser = argparse.ArgumentParser()
     parser.add_argument("--demo", action="store_true", help="run the prepared demo script and exit")
     args = parser.parse_args(argv)
