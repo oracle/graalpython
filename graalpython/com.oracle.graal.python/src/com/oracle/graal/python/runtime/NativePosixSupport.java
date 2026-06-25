@@ -144,8 +144,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
 
-/** Implementation that invokes the native POSIX support library through generated native-access
- * downcalls. */
+/**
+ * Implementation that invokes the native POSIX support library through generated native-access
+ * downcalls.
+ *
+ * POSIX calls use a custom errno capture path instead of FFM call-state capture. The native wrapper
+ * functions store errno in a C thread-local only when the POSIX return value indicates an error. This
+ * avoids unconditional FFM call-state capture on the hot POSIX path.
+ */
 @ExportLibrary(PosixSupportLibrary.class)
 public final class NativePosixSupport extends PosixSupport {
     private static final String SUPPORTING_NATIVE_LIB_NAME = "posix";
