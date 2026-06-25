@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -139,9 +140,13 @@ public abstract class SequenceNodes {
             return getPSequenceStorageNode.execute(inliningTarget, seq);
         }
 
-        @Specialization(guards = "isTuple(seq)")
-        static SequenceStorage doNativeTuple(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject seq) {
+        @Specialization(guards = "isNativeTuple(seq)")
+        static SequenceStorage doNativeTuple(PythonAbstractNativeObject seq) {
             return GetTupleStorage.doNative(seq);
+        }
+
+        static boolean isNativeTuple(PythonAbstractNativeObject seq) {
+            return PyTupleCheckNode.checkNative(seq);
         }
 
         // Note: this does not seem currently used but is good to accept foreign lists in more

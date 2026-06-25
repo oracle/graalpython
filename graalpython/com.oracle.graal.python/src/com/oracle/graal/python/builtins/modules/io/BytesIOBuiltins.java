@@ -106,6 +106,7 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
@@ -671,8 +672,9 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetOrCreateDictNode getDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached PRaiseNode raiseNode) {
-            if (!PGuards.isTuple(state)) {
+            if (!tupleCheckNode.execute(inliningTarget, state)) {
                 throw raiseNode.raise(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 3, state);
             }
             self.checkExports(inliningTarget, raiseNode);

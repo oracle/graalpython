@@ -58,6 +58,7 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyListCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -188,6 +189,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached PyTupleCheckNode pyTupleCheckNode,
                         @Cached PyTupleCheckExactNode pyTupleCheckExactNode,
                         @Cached PyListCheckExactNode pyListCheckExactNode,
                         @Cached ConstructListNode constructListNode,
@@ -279,7 +281,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                                 stackStorage = null;
                                 stackIterator = genericIterator;
                             }
-                        } else if (PGuards.isTuple(value)) {
+                        } else if (pyTupleCheckNode.execute(inliningTarget, value)) {
                             appendCodePointNode.execute(builder, '[');
                             first = true;
                             if (pyTupleCheckExactNode.execute(inliningTarget, value)) {
@@ -353,7 +355,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                                 Object item = pyIterNextNode.execute(frame, inliningTarget, genericIterator);
                                 if (state == STATE_GENERIC_DICT) {
                                     genericDictProfile.enter(inliningTarget);
-                                    if (!PGuards.isTuple(item)) {
+                                    if (!pyTupleCheckNode.execute(inliningTarget, item)) {
                                         errorProfile.enter(inliningTarget);
                                         throw PRaiseNode.raiseStatic(this, ValueError, ErrorMessages.ITEMS_MUST_RETURN_2_TUPLES);
                                     }

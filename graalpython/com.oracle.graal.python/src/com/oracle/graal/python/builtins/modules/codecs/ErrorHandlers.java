@@ -84,6 +84,7 @@ import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -851,8 +852,9 @@ public final class ErrorHandlers {
     abstract static class ParseDecodingErrorHandlerResultNode extends Node {
         abstract DecodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, Object result);
 
-        @Specialization(guards = "isTuple(result)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, result)", limit = "1")
         static DecodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, Object result,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CastToTruffleStringChecked0Node castToTruffleStringCheckedNode,
@@ -926,8 +928,9 @@ public final class ErrorHandlers {
     abstract static class ParseEncodingErrorHandlerResultNode extends Node {
         abstract EncodingErrorHandlerResult execute(Frame frame, Node inliningTarget, Object result);
 
-        @Specialization(guards = "isTuple(result)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, result)", limit = "1")
         static EncodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, Object result,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached PyNumberAsSizeNode asSizeNode,

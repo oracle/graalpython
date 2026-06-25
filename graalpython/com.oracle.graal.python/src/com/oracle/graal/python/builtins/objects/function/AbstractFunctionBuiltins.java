@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -83,6 +84,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -272,19 +274,21 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
             return typeParams;
         }
 
-        @Specialization(guards = {"!isBuiltinFunction(self)", "isTuple(value)"})
+        @Specialization(guards = {"!isBuiltinFunction(self)", "tupleCheckNode.execute(inliningTarget, value)"}, limit = "1")
         static Object setTypeParams(PFunction self, Object value,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached EnsureManagedTupleNode ensureManagedTupleNode,
                         @Cached WriteAttributeToObjectNode writeObject) {
             writeObject.execute(self, T___TYPE_PARAMS__, ensureManagedTupleNode.execute(inliningTarget, value));
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)", "!isTuple(value)"})
+        @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)", "!tupleCheckNode.execute(inliningTarget, value)"}, limit = "1")
         @SuppressWarnings("unused")
         static Object setNotTuple(PFunction self, Object value,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheckNode) {
             throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.MUST_BE_SET_TO_S, J___TYPE_PARAMS__, "tuple");
         }
 

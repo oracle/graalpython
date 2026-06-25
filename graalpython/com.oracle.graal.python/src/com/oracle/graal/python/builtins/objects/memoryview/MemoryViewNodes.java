@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycle
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -392,9 +393,10 @@ public class MemoryViewNodes {
             return ptr;
         }
 
-        @Specialization(guards = "isTuple(indices)", replaces = "resolveTupleCached")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, indices)", replaces = "resolveTupleCached")
         MemoryPointer resolveTupleGeneric(VirtualFrame frame, PMemoryView self, Object indices,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached PyTupleCheckNode tupleCheckNode,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,
                         @Shared @Cached GetTupleStorage getTupleStorage,
@@ -412,9 +414,10 @@ public class MemoryViewNodes {
             return ptr;
         }
 
-        @Specialization(guards = "!isTuple(indexObj)")
+        @Specialization(guards = "!tupleCheckNode.execute(inliningTarget, indexObj)")
         MemoryPointer resolveIntObj(VirtualFrame frame, PMemoryView self, Object indexObj,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared @Cached PyTupleCheckNode tupleCheckNode,
                         @Shared @Cached InlinedConditionProfile hasOneDimensionProfile,
                         @Shared @Cached InlinedConditionProfile hasSuboffsetsProfile,
                         @Shared @Cached PyIndexCheckNode indexCheckNode,

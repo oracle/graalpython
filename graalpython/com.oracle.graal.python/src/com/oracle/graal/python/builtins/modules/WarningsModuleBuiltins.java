@@ -103,7 +103,6 @@ import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
@@ -1003,11 +1002,12 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached StringNodes.CastToTruffleStringChecked1Node castToStringChecked,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached WarningsModuleNode moduleFunctionsNode) {
             // warnings_warn_impl
             TruffleString[] skipFilePrefixes = null;
-            if (PGuards.isTuple(skipFilePrefixesObj)) {
+            if (tupleCheckNode.execute(inliningTarget, skipFilePrefixesObj)) {
                 SequenceStorage storage = getTupleStorage.execute(inliningTarget, skipFilePrefixesObj);
                 if (storage.length() > 0) {
                     skipFilePrefixes = new TruffleString[storage.length()];

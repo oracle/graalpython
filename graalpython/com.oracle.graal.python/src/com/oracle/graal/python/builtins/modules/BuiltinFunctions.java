@@ -205,6 +205,7 @@ import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -2139,6 +2140,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached PyObjectLookupAttr getMroEntries,
                         @Cached CallUnaryMethodNode callMroEntries,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached PyTupleSizeNode tupleSize,
                         @Cached PyTupleGetItem tupleGetItem,
                         @Cached PRaiseNode raiseNode) {
@@ -2167,7 +2169,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     originalBases = PFactory.createTuple(language, bases);
                 }
                 Object newBase = callMroEntries.executeObject(null, meth, originalBases);
-                if (!PGuards.isTuple(newBase)) {
+                if (!tupleCheckNode.execute(inliningTarget, newBase)) {
                     throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.MRO_ENTRIES_MUST_RETURN_TUPLE);
                 }
                 if (newBases == null) {

@@ -119,9 +119,9 @@ import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -305,6 +305,7 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CallNode callNode,
                         @Cached GetTupleStorage getTupleStorage,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             try {
 
@@ -314,7 +315,7 @@ public abstract class PythonCextObjectBuiltins {
                     keywords = PKeyword.EMPTY_KEYWORDS;
                 } else if (kwargs instanceof PDict) {
                     keywords = castKwargsNode.execute(inliningTarget, kwargs);
-                } else if (PGuards.isTuple(kwargs)) {
+                } else if (tupleCheckNode.execute(inliningTarget, kwargs)) {
                     // We have a tuple with kw names and an array with kw values
                     SequenceStorage storage = getTupleStorage.execute(inliningTarget, kwargs);
                     int kwcount = storage.length();

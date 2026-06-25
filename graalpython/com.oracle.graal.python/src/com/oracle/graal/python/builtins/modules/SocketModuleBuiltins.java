@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStrin
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -548,10 +549,11 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class GetNameInfoNode extends PythonBinaryClinicBuiltinNode {
-        @Specialization(guards = "isTuple(sockaddr)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, sockaddr)", limit = "1")
         static Object getNameInfo(VirtualFrame frame, Object sockaddr, int flags,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,

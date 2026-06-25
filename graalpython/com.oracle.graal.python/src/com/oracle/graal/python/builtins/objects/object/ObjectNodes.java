@@ -122,6 +122,7 @@ import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -454,9 +455,10 @@ public abstract class ObjectNodes {
                             @Cached PyDictCheckNode isDictSubClassNode,
                             @Cached PyObjectGetItem getItemNode,
                             @Cached PyObjectSizeNode sizeNode,
+                            @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                             @Exclusive @Cached PRaiseNode raiseNode) {
                 Object newargs = callNode.execute(frame, getNewArgsExAttr);
-                if (!PGuards.isTuple(newargs)) {
+                if (!tupleCheckNode.execute(inliningTarget, newargs)) {
                     throw raiseNode.raise(inliningTarget, TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS_EX__, "tuple", newargs);
                 }
                 int length = sizeNode.execute(frame, inliningTarget, newargs);
@@ -467,7 +469,7 @@ public abstract class ObjectNodes {
                 Object args = getItemNode.execute(frame, inliningTarget, newargs, 0);
                 Object kwargs = getItemNode.execute(frame, inliningTarget, newargs, 1);
 
-                if (!PGuards.isTuple(args)) {
+                if (!tupleCheckNode.execute(inliningTarget, args)) {
                     throw raiseNode.raise(inliningTarget, TypeError, MUST_BE_TYPE_A_NOT_TYPE_B, "first item of the tuple returned by __getnewargs_ex__", "tuple", args);
                 }
                 if (!isDictSubClassNode.execute(inliningTarget, kwargs)) {
@@ -481,9 +483,10 @@ public abstract class ObjectNodes {
             static Pair<Object, Object> doNewArgs(VirtualFrame frame, @SuppressWarnings("unused") PNone getNewArgsExAttr, Object getNewArgsAttr,
                             @Bind Node inliningTarget,
                             @Exclusive @Cached CallNode callNode,
+                            @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                             @Exclusive @Cached PRaiseNode raiseNode) {
                 Object args = callNode.execute(frame, getNewArgsAttr);
-                if (!PGuards.isTuple(args)) {
+                if (!tupleCheckNode.execute(inliningTarget, args)) {
                     throw raiseNode.raise(inliningTarget, TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, T___GETNEWARGS__, "tuple", args);
                 }
                 return Pair.create(args, PNone.NONE);

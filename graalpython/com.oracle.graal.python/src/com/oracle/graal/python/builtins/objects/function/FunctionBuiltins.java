@@ -74,9 +74,9 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -126,10 +126,11 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return PFactory.createFunction(language, name, code, globals, null);
         }
 
-        @Specialization(guards = "isTuple(closure)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, closure)")
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
                         Object closure,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
                         @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
                         @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
@@ -145,9 +146,10 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, null);
         }
 
-        @Specialization(guards = "isTuple(closure)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, closure)")
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs, Object closure,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
                         @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
                         @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
@@ -155,10 +157,11 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return PFactory.createFunction(language, name, code, globals, PCell.toCellArray(closureArray));
         }
 
-        @Specialization(guards = "isTuple(defaultArgs)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, defaultArgs)")
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, Object defaultArgs,
                         @SuppressWarnings("unused") PNone closure,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
                         @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
                         @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
@@ -167,9 +170,10 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return PFactory.createFunction(language, code.getName(), code, globals, defaultArgsArray, null, null);
         }
 
-        @Specialization(guards = "isTuple(defaultArgs)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, defaultArgs)")
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, Object defaultArgs, @SuppressWarnings("unused") PNone closure,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
                         @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
                         @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
@@ -178,9 +182,10 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return PFactory.createFunction(language, name, code, globals, defaultArgsArray, null, null);
         }
 
-        @Specialization(guards = {"isTuple(defaultArgs)", "isTuple(closure)"})
+        @Specialization(guards = {"tupleCheckNode.execute(inliningTarget, defaultArgs)", "tupleCheckNode.execute(inliningTarget, closure)"})
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, Object defaultArgs, Object closure,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
                         @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
                         @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
@@ -280,9 +285,10 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return (argDefaults.length == 0) ? PNone.NONE : PFactory.createTuple(language, argDefaults);
         }
 
-        @Specialization(guards = "isTuple(defaults)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, defaults)", limit = "1")
         static Object setDefaults(PFunction self, Object defaults,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached ToArrayNode toArray) {
             self.setDefaults(toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaults)));
@@ -443,9 +449,10 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return typeParams;
         }
 
-        @Specialization(guards = "isTuple(typeParams)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, typeParams)", limit = "1")
         static Object set(PFunction self, Object typeParams,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached EnsureManagedTupleNode ensureManagedTupleNode,
                         @Cached WriteAttributeToObjectNode writeObject) {
             writeObject.execute(self, T___TYPE_PARAMS__, ensureManagedTupleNode.execute(inliningTarget, typeParams));

@@ -83,9 +83,13 @@ public abstract class PyMappingCheckNode extends PNodeWithContext {
         return true;
     }
 
-    @Specialization(guards = "isTuple(object)")
+    @Specialization(guards = "isNativeTuple(object)")
     static boolean doSequence(@SuppressWarnings("unused") PythonAbstractNativeObject object) {
         return true;
+    }
+
+    static boolean isNativeTuple(PythonAbstractNativeObject object) {
+        return PyTupleCheckNode.checkNative(object);
     }
 
     @Specialization

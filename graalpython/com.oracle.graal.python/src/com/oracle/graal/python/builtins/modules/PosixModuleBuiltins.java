@@ -94,6 +94,7 @@ import com.oracle.graal.python.lib.PyObjectAsFileDescriptor;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -510,6 +511,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached InlinedConditionProfile isPListProfile,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached ToArrayNode toArrayNode,
                         @Cached ObjectToOpaquePathNode toOpaquePathNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -520,7 +522,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             SequenceStorage argvStorage;
             if (isPListProfile.profile(inliningTarget, argv instanceof PList)) {
                 argvStorage = ((PList) argv).getSequenceStorage();
-            } else if (PGuards.isTuple(argv)) {
+            } else if (tupleCheckNode.execute(inliningTarget, argv)) {
                 argvStorage = getTupleStorage.execute(inliningTarget, argv);
             } else {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S, "execv()", 2, "tuple or list");
@@ -2035,9 +2037,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             return null;
         }
 
-        @Specialization(guards = {"isTuple(times)", "isNoValue(ns)"})
+        @Specialization(guards = {"tupleCheckNode.execute(inliningTarget, times)", "isNoValue(ns)"}, limit = "1")
         static long[] times(VirtualFrame frame, Object times, @SuppressWarnings("unused") PNone ns,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Exclusive @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached ObjectToTimespecNode objectToTimespecNode,
@@ -2045,9 +2048,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             return convertToTimespec(frame, inliningTarget, getTupleStorage.execute(inliningTarget, times), getItemNode, objectToTimespecNode, raiseNode);
         }
 
-        @Specialization(guards = "isTuple(ns)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, ns)", limit = "1")
         static long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, Object ns,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Exclusive @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached SplitLongToSAndNsNode splitLongToSAndNsNode,
@@ -2062,18 +2066,20 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.YOU_MAY_SPECIFY_EITHER_OR_BUT_NOT_BOTH, "utime", "times", "ns");
         }
 
-        @Specialization(guards = {"!isPNone(times)", "!isTuple(times)", "isNoValue(ns)"})
+        @Specialization(guards = {"!isPNone(times)", "!tupleCheckNode.execute(inliningTarget, times)", "isNoValue(ns)"}, limit = "1")
         @SuppressWarnings("unused")
         static long[] timesNotATuple(VirtualFrame frame, Object times, PNone ns,
                         @Bind Node inliningTarget,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             throw timesTupleError(inliningTarget, raiseNode);
         }
 
-        @Specialization(guards = {"!isNoValue(ns)", "!isTuple(ns)"})
+        @Specialization(guards = {"!isNoValue(ns)", "!tupleCheckNode.execute(inliningTarget, ns)"}, limit = "1")
         @SuppressWarnings("unused")
         static long[] nsNotATuple(VirtualFrame frame, PNone times, Object ns,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheckNode) {
             // ns can actually also contain objects implementing __divmod__, but CPython produces
             // this error message
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.MUST_BE, "utime", "ns", "a tuple of two ints");
@@ -3264,11 +3270,12 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         static void doGeneric(VirtualFrame frame, Node inliningTarget, Object value, long[] timespec, int offset,
                         @Cached PyNumberDivmodNode divmodNode,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached(value = "createNotNormalized()", inline = false) GetItemNode getItemNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode) {
             Object divmod = divmodNode.execute(frame, inliningTarget, value, BILLION);
-            if (PGuards.isTuple(divmod)) {
+            if (tupleCheckNode.execute(inliningTarget, divmod)) {
                 SequenceStorage storage = getTupleStorage.execute(inliningTarget, divmod);
                 if (storage.length() == 2) {
                     timespec[offset] = asLongNode.execute(frame, inliningTarget, getItemNode.execute(storage, 0));

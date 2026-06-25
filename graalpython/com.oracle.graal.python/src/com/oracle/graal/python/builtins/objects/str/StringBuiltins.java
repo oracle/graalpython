@@ -651,9 +651,10 @@ public final class StringBuiltins extends PythonBuiltins {
             return execute(self, subStr, start, end, Op.SUFFIX);
         }
 
-        @Specialization(guards = "!isTuple(subStrObj)")
+        @Specialization(guards = "!tupleCheckNode.execute(inliningTarget, subStrObj)", limit = "1")
         static boolean doString(Object selfObj, Object subStrObj, int start, int end, Op op,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Exclusive @Cached CastToTruffleStringChecked2Node castSelfNode,
                         @Exclusive @Cached CastToTruffleStringChecked3Node castPrefixNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -665,9 +666,10 @@ public final class StringBuiltins extends PythonBuiltins {
             return doIt(self, subStr, adjustStartIndex(start, selfLen), adjustEndIndex(end, selfLen), selfLen, subStrLen, regionEqualNode, op);
         }
 
-        @Specialization(guards = "isTuple(subStrs)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, subStrs)", limit = "1")
         static boolean doTuple(Object selfObj, Object subStrs, int start, int end, Op op,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Exclusive @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Exclusive @Cached CastToTruffleStringChecked2Node castSelfNode,

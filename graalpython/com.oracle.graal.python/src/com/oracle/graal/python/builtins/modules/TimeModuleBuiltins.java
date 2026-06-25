@@ -74,6 +74,7 @@ import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -991,9 +992,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), getTimeZone(moduleState.currentZoneId), fromJavaStringNode);
         }
 
-        @Specialization(guards = "isTuple(time)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, time)", limit = "1")
         static TruffleString formatTime(VirtualFrame frame, PythonModule module, TruffleString format, Object time,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -1024,9 +1026,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         private static final int ELEMENT_COUNT = 9;
 
         @ExplodeLoop
-        @Specialization(guards = "isTuple(tuple)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, tuple)", limit = "1")
         static double mktime(VirtualFrame frame, PythonModule module, Object tuple,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
@@ -1093,9 +1096,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return format(getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), fromJavaStringNode);
         }
 
-        @Specialization(guards = "isTuple(time)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, time)", limit = "1")
         static TruffleString localtime(VirtualFrame frame, @SuppressWarnings("unused") PythonModule module, Object time,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,

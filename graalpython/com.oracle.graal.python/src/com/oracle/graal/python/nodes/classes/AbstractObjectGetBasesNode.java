@@ -44,7 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -70,11 +70,12 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
     @Specialization
     static PTuple getBasesCached(VirtualFrame frame, Node inliningTarget, Object cls,
                     @Cached PyObjectLookupAttr lookupAttr,
+                    @Cached PyTupleCheckNode tupleCheckNode,
                     @Cached ConstructTupleNode constructTupleNode) {
         Object bases = lookupAttr.execute(frame, inliningTarget, cls, T___BASES__);
         if (bases instanceof PTuple) {
             return (PTuple) bases;
-        } else if (PGuards.isTuple(bases)) {
+        } else if (tupleCheckNode.execute(inliningTarget, bases)) {
             return constructTupleNode.execute(frame, bases);
         }
         return null;

@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -66,6 +67,10 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 @GenerateCached(false)
 public abstract class PyTupleCheckNode extends Node {
     public abstract boolean execute(Node inliningTarget, Object object);
+
+    public final boolean isTupleOrList(Node inliningTarget, Object object) {
+        return object instanceof PList || execute(inliningTarget, object);
+    }
 
     public static boolean executeUncached(Object object) {
         return PyTupleCheckNodeGen.getUncached().execute(null, object);
@@ -97,11 +102,16 @@ public abstract class PyTupleCheckNode extends Node {
     public abstract static class CachedNode extends Node {
         public abstract boolean execute(Object object);
 
+        public final boolean isTupleOrList(Object object) {
+            return object instanceof PList || execute(object);
+        }
+
         @Specialization
         static boolean doGeneric(Object object,
                         @Bind Node inliningTarget,
-                        @Cached PyTupleCheckNode tupleCheck) {
-            return tupleCheck.execute(inliningTarget, object);
+                        @Cached InlinedBranchProfile isPTupleProfile,
+                        @Cached InlinedBranchProfile isNativeProfile) {
+            return PyTupleCheckNode.doGeneric(inliningTarget, object, isPTupleProfile, isNativeProfile);
         }
 
         @NeverDefault

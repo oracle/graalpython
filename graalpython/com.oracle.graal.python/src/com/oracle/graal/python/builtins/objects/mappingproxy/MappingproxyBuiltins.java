@@ -68,9 +68,9 @@ import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -105,10 +105,11 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         static Object doMapping(@SuppressWarnings("unused") Object cls, Object obj,
                         @Bind Node inliningTarget,
                         @Cached PyMappingCheckNode mappingCheckNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             // descrobject.c mappingproxy_check_mapping()
-            if (!PGuards.isTupleOrList(obj) && mappingCheckNode.execute(inliningTarget, obj)) {
+            if (!tupleCheckNode.isTupleOrList(inliningTarget, obj) && mappingCheckNode.execute(inliningTarget, obj)) {
                 return PFactory.createMappingproxy(language, obj);
             }
             throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);

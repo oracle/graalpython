@@ -78,7 +78,7 @@ public abstract class TupleNodes {
 
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 40 -> 21
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, PyTupleCheckNode.class})
     public abstract static class ConstructTupleNode extends PNodeWithContext {
         public abstract PTuple execute(Frame frame, Object value);
 
@@ -101,7 +101,7 @@ public abstract class TupleNodes {
             return PFactory.createTuple(language, copyNode.execute(inliningTarget, iterable.getSequenceStorage()));
         }
 
-        @Specialization(guards = "isTuple(iterable)")
+        @Specialization(guards = "checkNative(iterable)")
         static PTuple nativeTuple(PythonAbstractNativeObject iterable,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,

@@ -74,11 +74,6 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
         return true;
     }
 
-    @Specialization(guards = "isTuple(object)")
-    static boolean doSequence(@SuppressWarnings("unused") PythonAbstractNativeObject object) {
-        return true;
-    }
-
     @Specialization
     static boolean doString(@SuppressWarnings("unused") TruffleString object) {
         return true;

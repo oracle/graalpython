@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -96,10 +97,11 @@ public abstract class PrepareExceptionNode extends Node {
         throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INSTANCE_EX_MAY_NOT_HAVE_SEP_VALUE);
     }
 
-    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!isTuple(value)"}, limit = "1")
+    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "!isPNone(value)", "!tupleCheckNode.execute(inliningTarget, value)"}, limit = "1")
     static Object doExceptionOrCreate(VirtualFrame frame, Object type, Object value,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Cached PyObjectIsInstanceNode isInstanceNode,
                     @Cached InlinedConditionProfile isInstanceProfile,
@@ -136,10 +138,11 @@ public abstract class PrepareExceptionNode extends Node {
         }
     }
 
-    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "isTuple(value)"}, limit = "1")
+    @Specialization(guards = {"isTypeNode.execute(inliningTarget, type)", "tupleCheckNode.execute(inliningTarget, value)"}, limit = "1")
     static Object doCreateTuple(VirtualFrame frame, Object type, Object value,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Exclusive @Cached IsTypeNode isTypeNode,
+                    @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                     @Exclusive @Cached PyExceptionInstanceCheckNode check,
                     @Exclusive @Cached GetTupleStorage getTupleStorage,
                     @Exclusive @Cached SequenceStorageNodes.ToArrayNode toArrayNode,

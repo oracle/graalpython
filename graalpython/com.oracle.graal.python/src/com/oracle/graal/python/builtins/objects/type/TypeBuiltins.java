@@ -351,6 +351,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached CallSlotTpNewNode callNew,
                         @Cached @Exclusive IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupMroEntriesNode,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached TypeNodes.CreateTypeNode createType,
                         @Cached GetObjectArrayNode getObjectArrayNode,
@@ -358,7 +359,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             PTuple basesTuple;
             if (bases instanceof PTuple) {
                 basesTuple = (PTuple) bases;
-            } else if (PGuards.isTuple(bases)) {
+            } else if (tupleCheckNode.execute(inliningTarget, bases)) {
                 basesTuple = constructTupleNode.execute(frame, bases);
             } else {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 2, "tuple", bases);
@@ -431,6 +432,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TypeNode nextTypeNode,
                         @Cached PRaiseNode raiseNode,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Exclusive @Cached ConstructTupleNode constructTupleNode,
                         @Exclusive @Cached IsTypeNode isTypeNode) {
             Object basesTuple;
@@ -438,7 +440,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 1", name);
             } else if (bases instanceof PTuple) {
                 basesTuple = bases;
-            } else if (PGuards.isTuple(bases)) {
+            } else if (tupleCheckNode.execute(inliningTarget, bases)) {
                 basesTuple = constructTupleNode.execute(frame, bases);
             } else {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 2", bases);
@@ -695,9 +697,10 @@ public final class TypeBuiltins extends PythonBuiltins {
             return PFactory.createTuple(language, getBaseClassesNode.execute(inliningTarget, self));
         }
 
-        @Specialization(guards = "isTuple(value)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, value)", limit = "1")
         static Object setBases(VirtualFrame frame, PythonClass cls, Object value,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached ConstructTupleNode constructTupleNode,
                         @Cached GetObjectArrayNode getArray,
                         @Cached GetBaseClassNode getBase,
@@ -767,9 +770,10 @@ public final class TypeBuiltins extends PythonBuiltins {
             return (isSameTypeNode.execute(inliningTarget, b, PythonBuiltinClassType.PythonObject));
         }
 
-        @Specialization(guards = "!isTuple(value)")
+        @Specialization(guards = "!tupleCheckNode.execute(inliningTarget, value)", limit = "1")
         static Object setObject(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P, "tuple", GetNameNode.executeUncached(cls), "__bases__", value);
         }
 

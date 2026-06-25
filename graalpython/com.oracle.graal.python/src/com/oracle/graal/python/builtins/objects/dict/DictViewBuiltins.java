@@ -97,6 +97,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -225,9 +226,10 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return getItem.hasKey(frame, inliningTarget, self.getWrappedStorage(), key);
         }
 
-        @Specialization(guards = "isTuple(key)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, key)", limit = "1")
         static boolean contains(VirtualFrame frame, PDictItemsView self, Object key,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Exclusive @Cached HashingStorageGetItem getItem,
                         @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached PyObjectRichCompareBool eqNode,
@@ -246,14 +248,15 @@ public final class DictViewBuiltins extends PythonBuiltins {
             }
         }
 
-        protected static boolean isFallback(Node inliningTarget, Object self, Object key) {
-            return !(self instanceof PDictView) || self instanceof PDictItemsView && !PGuards.isTuple(key);
+        protected static boolean isFallback(Node inliningTarget, Object self, Object key, PyTupleCheckNode tupleCheckNode) {
+            return !(self instanceof PDictView) || self instanceof PDictItemsView && !tupleCheckNode.execute(inliningTarget, key);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isFallback(inliningTarget, self, key)")
+        @Specialization(guards = "isFallback(inliningTarget, self, key, tupleCheckNode)", limit = "1")
         static boolean contains(Object self, Object key,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheckNode) {
             return false;
         }
 

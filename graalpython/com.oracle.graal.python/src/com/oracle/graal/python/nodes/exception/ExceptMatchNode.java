@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.exception;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -81,9 +82,10 @@ public abstract class ExceptMatchNode extends Node {
         }
     }
 
-    @Specialization(guards = "!isTuple(clause)")
+    @Specialization(guards = "!tupleCheckNode.execute(inliningTarget, clause)")
     public static boolean matchPythonSingle(PException e, Object clause,
                     @Bind Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared @Cached PyTupleCheckNode tupleCheckNode,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached IsSubtypeNode isSubtype) {
@@ -91,9 +93,10 @@ public abstract class ExceptMatchNode extends Node {
         return isSubtype.execute(getClassNode.execute(inliningTarget, e.getUnreifiedException()), clause);
     }
 
-    @Specialization(guards = "!isTuple(clause)")
+    @Specialization(guards = "!tupleCheckNode.execute(inliningTarget, clause)")
     public static boolean matchPythonBaseSingle(PBaseException e, Object clause,
                     @Bind Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared @Cached PyTupleCheckNode tupleCheckNode,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached IsSubtypeNode isSubtype) {
@@ -101,9 +104,10 @@ public abstract class ExceptMatchNode extends Node {
         return isSubtype.execute(getClassNode.execute(inliningTarget, e), clause);
     }
 
-    @Specialization(guards = {"!isTuple(clause)", "!isPException(e)"}, limit = "1")
+    @Specialization(guards = {"!tupleCheckNode.execute(inliningTarget, clause)", "!isPException(e)"}, limit = "1")
     public static boolean matchJava(AbstractTruffleException e, Object clause,
                     @Bind Node inliningTarget,
+                    @SuppressWarnings("unused") @Shared @Cached PyTupleCheckNode tupleCheckNode,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @CachedLibrary("clause") InteropLibrary clauseLib) {
         // n.b.: we can only allow Java exceptions in clauses, because we cannot tell for other
@@ -121,9 +125,10 @@ public abstract class ExceptMatchNode extends Node {
         }
     }
 
-    @Specialization(guards = "isTuple(clause)")
+    @Specialization(guards = "tupleCheckNode.execute(inliningTarget, clause)", limit = "1")
     public static boolean matchTuple(Object e, Object clause,
                     @Bind Node inliningTarget,
+                    @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                     @Exclusive @Cached ExceptMatchNode recursiveNode,
                     @Exclusive @Cached TupleNodes.GetTupleStorage getTupleStorage,
                     @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {

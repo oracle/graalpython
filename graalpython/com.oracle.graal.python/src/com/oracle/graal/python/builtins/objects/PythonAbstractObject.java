@@ -109,6 +109,7 @@ import com.oracle.graal.python.lib.PySequenceDelItemNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
 import com.oracle.graal.python.lib.PySequenceSetItemNode;
 import com.oracle.graal.python.lib.PySequenceSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -850,6 +851,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
+                    @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
+                    // GR-44020: make shared:
                     @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyTupleGetItem tupleGetItem,
@@ -861,7 +864,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
             if (behavior != null) {
                 Object value = getValue.execute(inliningTarget, behavior, method, this);
-                if (PGuards.isTuple(value)) {
+                if (tupleCheckNode.execute(inliningTarget, value)) {
                     if (pyTupleSizeNode.execute(inliningTarget, value) != 3) {
                         throw raiseNode.raise(inliningTarget, ValueError, S_MUST_BE_A_S_TUPLE, "return value", "3");
                     }
@@ -922,6 +925,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
+                    @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
+                    // GR-44020: make shared:
                     @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyTupleGetItem tupleGetItem,
@@ -933,7 +938,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
             if (behavior != null) {
                 Object value = getValue.execute(inliningTarget, behavior, method, this);
-                if (PGuards.isTuple(value)) {
+                if (tupleCheckNode.execute(inliningTarget, value)) {
                     if (pyTupleSizeNode.execute(inliningTarget, value) != 4) {
                         throw raiseNode.raise(inliningTarget, ValueError, S_MUST_BE_A_S_TUPLE, "return value", "4");
                     }
@@ -1083,6 +1088,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PRaiseNode raiseNode,
                     // GR-44020: make shared:
+                    @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
+                    // GR-44020: make shared:
                     @Exclusive @Cached PyTupleSizeNode pyTupleSizeNode,
                     // GR-44020: make shared:
                     @Exclusive @Cached PyTupleGetItem tupleGetItem,
@@ -1094,7 +1101,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             InteropBehavior behavior = getBehavior.execute(inliningTarget, this, method);
             if (behavior != null) {
                 Object value = getValue.execute(inliningTarget, behavior, method, this);
-                if (PGuards.isTuple(value)) {
+                if (tupleCheckNode.execute(inliningTarget, value)) {
                     if (pyTupleSizeNode.execute(inliningTarget, value) != 2) {
                         throw raiseNode.raise(inliningTarget, ValueError, S_MUST_BE_A_S_TUPLE, "return value", "2");
                     }

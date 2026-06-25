@@ -70,6 +70,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -360,9 +361,10 @@ public abstract class IteratorNodes {
             return result;
         }
 
-        @Specialization(guards = "isPSequence(seq) || isTuple(seq)")
+        @Specialization(guards = "isPSequence(seq) || tupleCheckNode.execute(inliningTarget, seq)", limit = "1")
         static Object[] doSequenceWithStorage(Object seq,
                         @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
             SequenceStorage storage = getStorageNode.execute(inliningTarget, seq);

@@ -82,10 +82,11 @@ abstract class PyObjectRecursiveBinaryCheckNode extends PNodeWithContext {
 
     abstract PyObjectRecursiveBinaryCheckNode getUncachedRecursive();
 
-    @Specialization(guards = {"depth < getNodeRecursionLimit(language)", "isTuple(clsTuple)"}, excludeForUncached = true)
+    @Specialization(guards = {"depth < getNodeRecursionLimit(language)", "tupleCheckNode.execute(inliningTarget, clsTuple)"}, excludeForUncached = true, limit = "1")
     static boolean doRecursiveWithNode(VirtualFrame frame, Object arg, Object clsTuple, int depth,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Bind PythonLanguage language,
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                     @Cached TupleNodes.GetTupleStorage getTupleStorage,
                     @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
                     @Cached("createRecursive()") PyObjectRecursiveBinaryCheckNode recursiveNode) {
@@ -93,10 +94,11 @@ abstract class PyObjectRecursiveBinaryCheckNode extends PNodeWithContext {
     }
 
     @SuppressWarnings("truffle-static-method")
-    @Specialization(guards = {"depth >= getNodeRecursionLimit(language)", "isTuple(clsTuple)"}, excludeForUncached = true)
+    @Specialization(guards = {"depth >= getNodeRecursionLimit(language)", "tupleCheckNode.execute(inliningTarget, clsTuple)"}, excludeForUncached = true, limit = "1")
     boolean doRecursiveTransition(VirtualFrame frame, Object arg, Object clsTuple, @SuppressWarnings("unused") int depth,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Bind PythonLanguage language,
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                     @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                     @Cached TupleNodes.GetTupleStorage getTupleStorage,
                     @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
@@ -110,9 +112,10 @@ abstract class PyObjectRecursiveBinaryCheckNode extends PNodeWithContext {
     }
 
     @SuppressWarnings("truffle-static-method")
-    @Specialization(guards = "isTuple(clsTuple)")
+    @Specialization(guards = "tupleCheckNode.execute(inliningTarget, clsTuple)", limit = "1")
     boolean doRecursiveUncached(VirtualFrame frame, Object arg, Object clsTuple, @SuppressWarnings("unused") int depth,
                     @Bind Node inliningTarget,
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                     @Cached TupleNodes.GetTupleStorage getTupleStorage,
                     @Cached SequenceStorageNodes.ToArrayNode toArrayNode) {
         assert this instanceof UnadoptableNode;

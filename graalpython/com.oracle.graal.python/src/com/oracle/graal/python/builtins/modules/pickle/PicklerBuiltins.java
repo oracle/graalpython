@@ -77,6 +77,7 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -271,6 +272,7 @@ public class PicklerBuiltins extends PythonBuiltins {
         static Object set(VirtualFrame frame, PPickler self, Object obj,
                         @Bind Node inliningTarget,
                         @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached PyTupleSizeNode sizeNode,
                         @Cached PyTupleGetItem getItemNode,
                         @Cached HashingStorageGetIterator getIter,
@@ -287,7 +289,7 @@ public class PicklerBuiltins extends PythonBuiltins {
                 HashingStorageIterator it = getIter.execute(inliningTarget, dictStorage);
                 while (iterNext.execute(inliningTarget, dictStorage, it)) {
                     Object value = iterValue.execute(inliningTarget, dictStorage, it);
-                    if (!PGuards.isTuple(value) || sizeNode.execute(inliningTarget, value) != 2) {
+                    if (!tupleCheckNode.execute(inliningTarget, value) || sizeNode.execute(inliningTarget, value) != 2) {
                         throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.VALUES_MUST_BE_2TUPLES, "memo");
                     }
                     int memoId = asSizeNode.executeExact(frame, inliningTarget, getItemNode.execute(inliningTarget, value, 0));

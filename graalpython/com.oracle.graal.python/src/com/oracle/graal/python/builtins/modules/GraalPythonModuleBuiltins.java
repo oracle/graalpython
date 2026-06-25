@@ -142,9 +142,9 @@ import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
@@ -1021,8 +1021,9 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static TruffleString doSet(Object object,
-                        @Bind Node inliningTarget) {
-            if (PGuards.isTupleOrList(object)) {
+                        @Bind Node inliningTarget,
+                        @Cached PyTupleCheckNode tupleCheckNode) {
+            if (tupleCheckNode.isTupleOrList(inliningTarget, object)) {
                 SequenceStorage sequenceStorage = GetSequenceStorageNode.executeUncached(object);
                 return PythonUtils.toTruffleStringUncached(sequenceStorage.getClass().getSimpleName());
             }
@@ -1037,12 +1038,13 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static Object doGeneric(Object object,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @Cached PyTupleCheckNode tupleCheckNode) {
             if (object instanceof PArray array) {
                 array.setSequenceStorage(ToNativeStorageNode.executeUncached(array.getSequenceStorage(), true));
             } else if (object instanceof PSequence sequence) {
                 sequence.setSequenceStorage(ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), sequence instanceof PBytesLike));
-            } else if (!PGuards.isTupleOrList(object)) {
+            } else if (!tupleCheckNode.isTupleOrList(inliningTarget, object)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
             return object;
@@ -1056,13 +1058,14 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static Object doGeneric(Object object,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @Cached PyTupleCheckNode tupleCheckNode) {
             CApiContext.ensureCapiWasLoaded("internal API");
             if (object instanceof PArray array) {
                 array.setSequenceStorage(ToNativePrimitiveStorageNode.executeUncached(array.getSequenceStorage()));
             } else if (object instanceof PSequence sequence) {
                 sequence.setSequenceStorage(ToNativePrimitiveStorageNode.executeUncached(sequence.getSequenceStorage()));
-            } else if (!PGuards.isTupleOrList(object)) {
+            } else if (!tupleCheckNode.isTupleOrList(inliningTarget, object)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             }
             return object;

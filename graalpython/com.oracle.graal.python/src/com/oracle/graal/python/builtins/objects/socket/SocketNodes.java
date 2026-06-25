@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode.RoundType;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -127,6 +128,7 @@ public abstract class SocketNodes {
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
+                        @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached @Shared("tupleSize") PyTupleSizeNode tupleSize,
                         @Cached @Shared("tupleGetItem") PyTupleGetItem tupleGetItem,
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
@@ -135,7 +137,7 @@ public abstract class SocketNodes {
                         @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode,
                         @Cached @Shared PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            if (!PGuards.isTuple(address)) {
+            if (!tupleCheckNode.execute(inliningTarget, address)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_P, caller, address);
             }
             int length = tupleSize.execute(inliningTarget, address);
@@ -154,6 +156,7 @@ public abstract class SocketNodes {
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") @Shared("sockAddrLib") UniversalSockAddrLibrary sockAddrLib,
+                        @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached @Shared("tupleSize") PyTupleSizeNode tupleSize,
                         @Cached @Shared("tupleGetItem") PyTupleGetItem tupleGetItem,
                         @Cached @Shared("asInt") PyLongAsIntNode asIntNode,
@@ -162,7 +165,7 @@ public abstract class SocketNodes {
                         @Cached @Shared("setIpAddr") SetIpAddrNode setIpAddrNode,
                         @Cached @Shared PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            if (!PGuards.isTuple(address)) {
+            if (!tupleCheckNode.execute(inliningTarget, address)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_AF_INET_VALUES_MUST_BE_TUPLE_NOT_S, caller, address);
             }
             int length = tupleSize.execute(inliningTarget, address);

@@ -92,8 +92,9 @@ public abstract class PyErrExceptionMatchesNode extends Node {
         }
     }
 
-    @Specialization(guards = "isTuple(tuple)")
+    @Specialization(guards = "tupleCheckNode.execute(inliningTarget, tuple)", limit = "1")
     static boolean doTuple(Node inliningTarget, Object exception, Object tuple,
+                    @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                     @Cached TupleNodes.GetTupleStorage getTupleStorage,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                     @Cached InlinedLoopConditionProfile loopConditionProfile,
