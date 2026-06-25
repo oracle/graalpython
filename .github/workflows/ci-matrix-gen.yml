@@ -260,7 +260,19 @@ jobs:
         if: ${{ matrix.run_steps && runner.os == 'Windows' }}
         shell: cmd
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+          if not exist "%VSWHERE%" set "VSWHERE=C:\ProgramData\Chocolatey\bin\vswhere.exe"
+          if not exist "%VSWHERE%" (
+            echo Could not find vswhere.exe
+            exit /b 1
+          )
+          for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath -latest`) do set "VS_INSTALL_DIR=%%i"
+          if not defined VS_INSTALL_DIR (
+            echo Could not find Visual Studio with VC tools
+            exit /b 1
+          )
+          call "%VS_INSTALL_DIR%\VC\Auxiliary\Build\vcvarsall.bat" x64
+          where dumpbin
           ${{ matrix.run_steps }}
 
       - name: Tar artifacts
