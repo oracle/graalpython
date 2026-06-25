@@ -676,12 +676,12 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PRaiseNode raiseNode) {
             if (!PGuards.isTuple(state)) {
-                return notTuple(self, state, inliningTarget);
+                throw raiseNode.raise(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 4, state);
             }
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, state);
             Object[] array = getArray.execute(inliningTarget, storage);
             if (storage.length() < 4) {
-                return notTuple(self, state, inliningTarget);
+                throw raiseNode.raise(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 4, state);
             }
             initNode.execute(frame, self, array[0], array[1]);
             /*
@@ -728,11 +728,6 @@ public final class StringIOBuiltins extends PythonBuiltins {
             }
 
             return PNone.NONE;
-        }
-
-        static Object notTuple(PStringIO self, Object state,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 4, state);
         }
 
         @Specialization(guards = "self.isClosed()")

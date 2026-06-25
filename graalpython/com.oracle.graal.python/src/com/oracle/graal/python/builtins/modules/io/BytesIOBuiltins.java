@@ -673,13 +673,13 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
                         @Cached PRaiseNode raiseNode) {
             if (!PGuards.isTuple(state)) {
-                return notTuple(self, state, inliningTarget);
+                throw raiseNode.raise(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 3, state);
             }
             self.checkExports(inliningTarget, raiseNode);
             SequenceStorage storage = getTupleStorage.execute(inliningTarget, state);
             Object[] array = getArray.execute(inliningTarget, storage);
             if (storage.length() < 3) {
-                return notTuple(self, state, inliningTarget);
+                throw raiseNode.raise(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 3, state);
             }
             /*
              * Reset the object to its default state. This is only needed to handle the case of
@@ -719,11 +719,6 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                 addAllToOtherNode.execute(frame, inliningTarget, ((PDict) array[2]).getDictStorage(), dict);
             }
             return PNone.NONE;
-        }
-
-        static Object notTuple(PBytesIO self, Object state,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 3, state);
         }
     }
 

@@ -126,13 +126,15 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return PFactory.createFunction(language, name, code, globals, null);
         }
 
-        @Specialization
+        @Specialization(guards = "isTuple(closure)")
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
-                        PTuple closure,
+                        Object closure,
                         @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
+                        @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
-            return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
+            Object[] closureArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, closure));
+            return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, PCell.toCellArray(closureArray));
         }
 
         @Specialization
@@ -143,60 +145,14 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, null);
         }
 
-        @Specialization
-        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
-                        @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Bind PythonLanguage language) {
-            return PFactory.createFunction(language, name, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
-        }
-
-        @Specialization
-        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, PTuple defaultArgs,
-                        @SuppressWarnings("unused") PNone closure,
-                        @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Bind PythonLanguage language) {
-            // TODO split defaults of positional args from kwDefaults
-            return PFactory.createFunction(language, code.getName(), code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null, null);
-        }
-
-        @Specialization
-        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
-                        @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Bind PythonLanguage language) {
-            // TODO split defaults of positional args from kwDefaults
-            return PFactory.createFunction(language, name, code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null, null);
-        }
-
-        @Specialization
-        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, PTuple closure,
-                        @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
-                        @Bind PythonLanguage language) {
-            // TODO split defaults of positional args from kwDefaults
-            return PFactory.createFunction(language, name, code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null,
-                            PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
-        }
-
-        @Specialization(guards = "isTuple(closure)")
-        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
-                        Object closure,
-                        @Bind Node inliningTarget,
-                        @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
-                        @Shared("toArray") @Cached ToArrayNode toArray,
-                        @Bind PythonLanguage language) {
-            return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, PCell.toCellArray(toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, closure))));
-        }
-
         @Specialization(guards = "isTuple(closure)")
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs, Object closure,
                         @Bind Node inliningTarget,
                         @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
                         @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
-            return PFactory.createFunction(language, name, code, globals, PCell.toCellArray(toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, closure))));
+            Object[] closureArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, closure));
+            return PFactory.createFunction(language, name, code, globals, PCell.toCellArray(closureArray));
         }
 
         @Specialization(guards = "isTuple(defaultArgs)")
@@ -207,7 +163,8 @@ public final class FunctionBuiltins extends PythonBuiltins {
                         @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
             // TODO split defaults of positional args from kwDefaults
-            return PFactory.createFunction(language, code.getName(), code, globals, toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaultArgs)), null, null);
+            Object[] defaultArgsArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaultArgs));
+            return PFactory.createFunction(language, code.getName(), code, globals, defaultArgsArray, null, null);
         }
 
         @Specialization(guards = "isTuple(defaultArgs)")
@@ -217,7 +174,8 @@ public final class FunctionBuiltins extends PythonBuiltins {
                         @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
             // TODO split defaults of positional args from kwDefaults
-            return PFactory.createFunction(language, name, code, globals, toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaultArgs)), null, null);
+            Object[] defaultArgsArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaultArgs));
+            return PFactory.createFunction(language, name, code, globals, defaultArgsArray, null, null);
         }
 
         @Specialization(guards = {"isTuple(defaultArgs)", "isTuple(closure)"})
@@ -227,8 +185,9 @@ public final class FunctionBuiltins extends PythonBuiltins {
                         @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
             // TODO split defaults of positional args from kwDefaults
-            return PFactory.createFunction(language, name, code, globals, toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaultArgs)), null,
-                            PCell.toCellArray(toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, closure))));
+            Object[] closureArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, closure));
+            Object[] defaultArgsArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaultArgs));
+            return PFactory.createFunction(language, name, code, globals, defaultArgsArray, null, PCell.toCellArray(closureArray));
         }
 
         @Fallback
