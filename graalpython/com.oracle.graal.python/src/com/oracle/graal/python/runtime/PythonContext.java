@@ -1501,7 +1501,7 @@ public final class PythonContext extends Python3Core {
         String pythonHome = newEnv.getOptions().get(PythonOptions.PythonHome);
         if (pythonHome.isEmpty()) {
             try {
-                pythonHome = System.getenv("GRAAL_PYTHONHOME");
+                pythonHome = newEnv.getEnvironment().get("GRAAL_PYTHONHOME");
             } catch (SecurityException e) {
             }
         }
