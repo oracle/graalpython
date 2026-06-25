@@ -1,4 +1,4 @@
 {
-  "runtime": "graalos/graalos_prod_pkeyson_sandboxon-runtime-2026_06_21_v1.0.0_13143_gdf587994b631-1.el8.x86_64.tar.gz",
-  "toolchain": "graal/graalvm-graalos-java25-linux-amd64-25.1.3-dev-g03c51fe.tar.gz"
+  "runtime": "graalos/graalos_prod_pkeyson_sandboxon-runtime-2026_06_25_v1.0.0_13202_g5af02a07e23e-1.el8.x86_64.tar.gz",
+  "toolchain": "graal/graalvm-graalos-java25-linux-amd64-25.2.4-dev-gbc3c7bd.tar.gz"
 }

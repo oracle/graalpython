@@ -41,19 +41,26 @@ import sysconfig
 import unittest
 
 
-def test_graalos_sqlite3_native_extension_smoke():
+def skip_unless_graalos():
     soabi = sysconfig.get_config_var("SOABI") or ""
     if "graalos" not in soabi:
         raise unittest.SkipTest(f"requires GraalOS SOABI, got {soabi!r}")
 
-    import _sqlite3
-    import sqlite3
 
-    assert _sqlite3.sqlite_version
-    conn = sqlite3.connect(":memory:")
-    try:
-        conn.execute("create table values_for_sum(value integer)")
-        conn.executemany("insert into values_for_sum(value) values (?)", [(1,), (2,), (3,)])
-        assert conn.execute("select sum(value) from values_for_sum").fetchone()[0] == 6
-    finally:
-        conn.close()
+class GraalOSStandaloneTests(unittest.TestCase):
+
+    def setUp(self):
+        skip_unless_graalos()
+
+    def test_sqlite3_native_extension_smoke(self):
+        import _sqlite3
+        import sqlite3
+
+        self.assertTrue(_sqlite3.sqlite_version)
+        conn = sqlite3.connect(":memory:")
+        try:
+            conn.execute("create table values_for_sum(value integer)")
+            conn.executemany("insert into values_for_sum(value) values (?)", [(1,), (2,), (3,)])
+            self.assertEqual(conn.execute("select sum(value) from values_for_sum").fetchone()[0], 6)
+        finally:
+            conn.close()

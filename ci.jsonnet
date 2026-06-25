@@ -5,7 +5,7 @@
 (import "ci/python-gate.libsonnet") +
 (import "ci/python-bench.libsonnet") +
 {
-    overlay: "26571215e27b3c415afb8119d38a0418c14b29c9",
+    overlay: "12367561e6a2b54df8d3b1bd400e431de01eef0f",
     specVersion: "8",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
@@ -310,15 +310,17 @@
         "tox-example": gpgate_ee + require(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
         }),
-        // "python-svm-graalos-standalone-build": gpgate_ee + internet_access_env + platform_spec(no_jobs) + platform_spec({
-        //     "linux:amd64:jdk-latest": tier3 + $.ol8 + task_spec({
-        //         environment +: {
-        //             GRAALPY_GRAALOS_TOOLCHAIN_URL: $.overlay_imports.GRAALPY_GRAALOS_TOOLCHAIN_URL,
-        //             GRAALPY_GRAALOS_RUNTIME_URL: $.overlay_imports.GRAALPY_GRAALOS_RUNTIME_URL,
-        //             GRAALPY_GRAALOS_ARTIFACT_BASE_URL: $.overlay_imports.GRAALPY_GRAALOS_ARTIFACT_BASE_URL,
-        //         },
-        //     }),
-        // }),
+        "python-svm-graalos-standalone-build": gpgate_ee + internet_access_env + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest": tier3 + $.ol8 + task_spec({
+                capabilities+: ["mpk", "!fast", "!x82", "!x82_16_367"],
+                deploysArtifacts: true,
+                environment +: {
+                    GRAALPY_GRAALOS_TOOLCHAIN_URL: $.overlay_imports.GRAALPY_GRAALOS_TOOLCHAIN_URL,
+                    GRAALPY_GRAALOS_RUNTIME_URL: $.overlay_imports.GRAALPY_GRAALOS_RUNTIME_URL,
+                    GRAALPY_GRAALOS_ARTIFACT_BASE_URL: $.overlay_imports.GRAALPY_GRAALOS_ARTIFACT_BASE_URL,
+                },
+            }),
+        }),
     },
 
     local need_pgo = task_spec({runAfter: ["python-pgo-profile-post_merge-linux-amd64-jdk-latest"]}),
