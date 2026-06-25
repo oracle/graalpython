@@ -589,7 +589,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode location) {
             if (ate instanceof PException pe) {
-                pe.notifyAddedTracebackFrame(!root.isInternal());
+                pe.notifyAddedTracebackFrame(frame, !root.isInternal());
             }
             // We cannot use instrumentation for exceptional exit
             if (root.needsTraceAndProfileInstrumentation()) {

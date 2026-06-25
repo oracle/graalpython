@@ -238,6 +238,24 @@ def test_backref_from_traceback():
         assert e.__traceback__.tb_next.tb_frame.f_back.f_code == test_backref_from_traceback.__code__
 
 
+def test_backref_from_traceback_after_cached_transition():
+    def bar(should_raise):
+        if should_raise:
+            raise RuntimeError
+
+    def foo(should_raise):
+        bar(should_raise)
+
+    for _ in range(64): # we probably do not execute 64-times in uncached
+        foo(False)
+
+    try:
+        foo(True)
+    except Exception as e:
+        assert e.__traceback__.tb_next.tb_next.tb_frame.f_back.f_code == foo.__code__
+        assert e.__traceback__.tb_next.tb_frame.f_back.f_code == test_backref_from_traceback_after_cached_transition.__code__
+
+
 def test_frame_from_another_thread():
     import sys, threading
     event1 = threading.Event()
