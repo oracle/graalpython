@@ -152,6 +152,11 @@ patch = 'flake8-6.0.0.patch'
 license = 'MIT'
 subdir = 'src'
 
+[[fastparquet.rules]]
+version = '== 2026.5.0'
+patch = 'fastparquet-2026.5.0.patch'
+license = 'Apache-2.0'
+
 [[greenlet.rules]]
 version = '>= 3.1.1'
 patch = 'greenlet-3.1.1.patch'
@@ -298,8 +303,14 @@ patch = 'lightfm-1.15.patch'
 license = 'MIT'
 
 [[llvmlite.rules]]
-# llvmlite only supports up to LLVM 14. That's quite old and installing it in the system typically results leads
-# to dependency hell because rust requires newer LLVM. We add downloading and building LLVM 14 to the setup script.
+version = '>= 0.45'
+patch = 'llvmlite-0.47.patch'
+license = 'BSD-2-Clause'
+
+[[llvmlite.rules]]
+# Older llvmlite versions support up to LLVM 14. Installing it in the system typically leads to dependency hell
+# because rust requires newer LLVM. We add downloading and building LLVM 14 to the setup script.
+version = '< 0.45'
 patch = 'llvmlite.patch'
 license = 'BSD-2-Clause'
 
@@ -381,6 +392,13 @@ license = 'Apache-2.0'
 [[nanobind.rules]]
 patch = 'nanobind.patch'
 license = 'BSD-3-Clause'
+
+[[numba.rules]]
+# Not upstreamable, we disable the JIT
+note = "Numba JIT relies on bytecode parsing and is disabled on GraalPy."
+version = '== 0.65.1'
+patch = 'numba-0.65.1.patch'
+license = 'BSD-2-Clause'
 
 [[numba.rules]]
 # Not upstreamable, we disable the JIT
@@ -914,6 +932,11 @@ license = 'BSD-3-Clause'
 version = '>= 70.1.0'
 patch = 'setuptools.patch'
 license = 'MIT'
+
+[[tables.rules]]
+version = '== 3.11.1'
+patch = 'tables-3.11.1.patch'
+license = 'BSD-3-Clause'
 
 [[tensorflow.rules]]
 version = '== 2.15.0'
