@@ -147,6 +147,10 @@ import sun.misc.Unsafe;
 /**
  * Implementation that invokes the native POSIX support library through generated native-access
  * downcalls.
+ *
+ * POSIX calls use a custom errno capture path instead of FFM call-state capture. The native wrapper
+ * functions store errno in a C thread-local only when the POSIX return value indicates an error. This
+ * avoids unconditional FFM call-state capture on the hot POSIX path.
  */
 @ExportLibrary(PosixSupportLibrary.class)
 public final class NativePosixSupport extends PosixSupport {
@@ -169,11 +173,8 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32})
         abstract int init_constants(long out, int len);
 
-        @DowncallSignature(returnType = SINT32)
+        @DowncallSignature(critical = true, returnType = SINT32)
         abstract int get_errno();
-
-        @DowncallSignature(returnType = VOID, argumentTypes = {SINT32})
-        abstract void set_errno(int errno);
 
         @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64, SINT32, SINT32, SINT32, SINT64})
         abstract long call_mmap(long length, int prot, int flags, int fd, long offset);
@@ -603,7 +604,7 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     abstract static class CryptNativeFunctionInvoker {
-        @DowncallSignature(returnType = POINTER, argumentTypes = {POINTER, POINTER})
+        @DowncallSignature(captureCallState = true, returnType = POINTER, argumentTypes = {POINTER, POINTER})
         abstract long crypt(long word, long salt);
 
         @TruffleBoundary
@@ -707,12 +708,8 @@ public final class NativePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public int umask(int mask) throws PosixException {
-        int result = posixNativeFunctionInvoker.call_umask(mask);
-        if (result < 0) {
-            throw getErrnoAndThrowPosixException();
-        }
-        return result;
+    public int umask(int mask) {
+        return posixNativeFunctionInvoker.call_umask(mask);
     }
 
     @ExportMessage
@@ -744,7 +741,6 @@ public final class NativePosixSupport extends PosixSupport {
         Buffer buffer = Buffer.allocate(count);
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(count);
         try {
-            posixNativeFunctionInvoker.set_errno(0);
             long n = posixNativeFunctionInvoker.call_read(fd, nativeBuffer, count);
             if (n < 0) {
                 throw getErrnoAndThrowPosixException();
@@ -761,7 +757,6 @@ public final class NativePosixSupport extends PosixSupport {
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(data.length);
         try {
             NativeMemory.writeByteArrayElements(nativeBuffer, 0, data.data, 0, (int) data.length);
-            posixNativeFunctionInvoker.set_errno(0);
             long n = posixNativeFunctionInvoker.call_write(fd, nativeBuffer, data.length);
             if (n < 0) {
                 throw getErrnoAndThrowPosixException();
@@ -992,11 +987,8 @@ public final class NativePosixSupport extends PosixSupport {
     @ExportMessage
     public long sysconf(int name) throws PosixException {
         long result = posixNativeFunctionInvoker.call_sysconf(name);
-        if (result == -1) {
-            int errno = posixNativeFunctionInvoker.get_errno();
-            if (errno != 0) {
-                throw newPosixException(errno);
-            }
+        if (result == Long.MIN_VALUE) {
+            throw getErrnoAndThrowPosixException();
         }
         return result;
     }
@@ -1181,7 +1173,7 @@ public final class NativePosixSupport extends PosixSupport {
                     buffer = buffer.withLength(findZero(buffer.data));
                     return buffer;
                 }
-                int errno = posixNativeFunctionInvoker.get_errno();
+                int errno = getErrno();
                 if (errno != OSErrorEnum.ERANGE.getNumber()) {
                     throw newPosixException(errno);
                 }
@@ -1261,23 +1253,22 @@ public final class NativePosixSupport extends PosixSupport {
             int result;
             do {
                 result = posixNativeFunctionInvoker.call_readdir(dirStream, nativeName, DIRENT_NAME_BUF_LENGTH, nativeOut);
-                if (result != 0) {
+                if (result > 0) {
                     NativeMemory.readByteArrayElements(nativeName, 0, name.data, 0, name.data.length);
                 }
-            } while (result != 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
-            if (result != 0) {
+            } while (result > 0 && name.data[0] == '.' && (name.data[1] == 0 || (name.data[1] == '.' && name.data[2] == 0)));
+            if (result > 0) {
                 NativeMemory.readLongArrayElements(nativeOut, 0, out, 0, out.length);
                 return new DirEntry(name.withLength(findZero(name.data)), out[0], (int) out[1]);
+            }
+            if (result < 0) {
+                throw getErrnoAndThrowPosixException();
             }
         } finally {
             NativeMemory.free(nativeOut);
             NativeMemory.free(nativeName);
         }
-        int errno = posixNativeFunctionInvoker.get_errno();
-        if (errno == 0) {
-            return null;
-        }
-        throw newPosixException(errno);
+        return null;
     }
 
     @ExportMessage
@@ -1448,7 +1439,7 @@ public final class NativePosixSupport extends PosixSupport {
             NativeMemory.free(pathPtr);
         }
         if (ret != 0 && LOGGER.isLoggable(Level.FINE)) {
-            log(Level.FINE, "faccessat return value: %d, errno: %d", ret, posixNativeFunctionInvoker.get_errno());
+            log(Level.FINE, "faccessat return value: %d, errno: %d", ret, getErrno());
         }
         return ret == 0;
     }
@@ -1527,8 +1518,8 @@ public final class NativePosixSupport extends PosixSupport {
     @ExportMessage
     public void raise(int signal) throws PosixException {
         int res = posixNativeFunctionInvoker.call_raise(signal);
-        if (res == -1) {
-            throw getErrnoAndThrowPosixException();
+        if (res != 0) {
+            throw newPosixException(OSErrorEnum.EINVAL.getNumber());
         }
     }
 
@@ -1789,13 +1780,10 @@ public final class NativePosixSupport extends PosixSupport {
     @ExportMessage
     public TruffleString ctermid(
                     @Bind Node inliningTarget,
-                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws PosixException {
+                    @Shared("cString") @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) {
         long nativeBuf = NativeMemory.mallocByteArray(L_ctermid.value);
         try {
-            int res = posixNativeFunctionInvoker.call_ctermid(nativeBuf);
-            if (res == -1) {
-                throw getErrnoAndThrowPosixException();
-            }
+            posixNativeFunctionInvoker.call_ctermid(nativeBuf);
             // TODO PyUnicode_DecodeFSDefault
             return zeroTerminatedUtf8ToTruffleStringNode.execute(inliningTarget, nativeBuf);
         } finally {
@@ -2251,7 +2239,6 @@ public final class NativePosixSupport extends PosixSupport {
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
         try {
             NativeMemory.writeByteArrayElements(nativeBuffer, 0, buf, offset, len);
-            posixNativeFunctionInvoker.set_errno(0);
             int result = posixNativeFunctionInvoker.call_send(sockfd, nativeBuffer, len, flags);
             if (result == -1) {
                 throw getErrnoAndThrowPosixException();
@@ -2274,7 +2261,6 @@ public final class NativePosixSupport extends PosixSupport {
             NativeMemory.writeByteArrayElements(nativeBuffer, 0, buf, offset, len);
             nativeDestAddr = NativeMemory.mallocByteArrayOrNull(destAddrLen);
             NativeMemory.writeByteArrayElements(nativeDestAddr, 0, destAddr.data, 0, destAddrLen);
-            posixNativeFunctionInvoker.set_errno(0);
             int result = posixNativeFunctionInvoker.call_sendto(sockfd, nativeBuffer, 0, len, flags, nativeDestAddr, destAddrLen);
             if (result == -1) {
                 throw getErrnoAndThrowPosixException();
@@ -2291,7 +2277,6 @@ public final class NativePosixSupport extends PosixSupport {
         checkBounds(buf, offset, len);
         long nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
         try {
-            posixNativeFunctionInvoker.set_errno(0);
             int result = posixNativeFunctionInvoker.call_recv(sockfd, nativeBuffer, len, flags);
             if (result == -1) {
                 throw getErrnoAndThrowPosixException();
@@ -2314,7 +2299,6 @@ public final class NativePosixSupport extends PosixSupport {
             nativeBuffer = NativeMemory.mallocByteArrayOrNull(len);
             nativeSrcAddr = NativeMemory.mallocByteArray(srcAddr.data.length);
             nativeAddrLen = NativeMemory.mallocIntArray(1);
-            posixNativeFunctionInvoker.set_errno(0);
             int result = posixNativeFunctionInvoker.call_recvfrom(sockfd, nativeBuffer, 0, len, flags, nativeSrcAddr, nativeAddrLen);
             if (result == -1) {
                 throw getErrnoAndThrowPosixException();
@@ -2574,7 +2558,7 @@ public final class NativePosixSupport extends PosixSupport {
                 // CPython doesn't handle the case of "invalid hash" return specially and neither do
                 // we
                 if (resultPtr == 0) {
-                    throw getErrnoAndThrowPosixException();
+                    throw newPosixException(context.ensureNativeContext().getErrno());
                 }
                 return zeroTerminatedUtf8ToTruffleStringNode.execute(raisingNode, resultPtr);
             }
@@ -3008,7 +2992,7 @@ public final class NativePosixSupport extends PosixSupport {
     boolean semTryWait(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_trywait(handle);
         if (res < 0) {
-            int errno = posixNativeFunctionInvoker.get_errno();
+            int errno = getErrno();
             if (errno == OSErrorEnum.EAGAIN.getNumber()) {
                 return false;
             }
@@ -3024,7 +3008,7 @@ public final class NativePosixSupport extends PosixSupport {
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_LINUX) {
             int res = posixNativeFunctionInvoker.call_sem_timedwait(handle, deadlineNs);
             if (res < 0) {
-                int errno = posixNativeFunctionInvoker.get_errno();
+                int errno = getErrno();
                 if (errno == OSErrorEnum.ETIMEDOUT.getNumber()) {
                     return false;
                 }
@@ -3337,7 +3321,7 @@ public final class NativePosixSupport extends PosixSupport {
     // Helpers
 
     private PosixException getErrnoAndThrowPosixException() throws PosixException {
-        throw newPosixException(posixNativeFunctionInvoker.get_errno());
+        throw newPosixException(getErrno());
     }
 
     @TruffleBoundary
@@ -3420,5 +3404,9 @@ public final class NativePosixSupport extends PosixSupport {
         if (LOGGER.isLoggable(level)) {
             LOGGER.log(level, String.format(fmt, args));
         }
+    }
+
+    private int getErrno() {
+        return posixNativeFunctionInvoker.get_errno();
     }
 }

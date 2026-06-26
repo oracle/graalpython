@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,27 +38,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.arrow;
 
-import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
-import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
+#ifndef PYTHON_LIBPOSIX_ERRNO_CAPTURE_H
+#define PYTHON_LIBPOSIX_ERRNO_CAPTURE_H
 
-import java.lang.invoke.MethodHandle;
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+  #define THREAD_LOCAL _Thread_local
+#elif defined(_MSC_VER)
+  #define THREAD_LOCAL __declspec(thread)
+#elif defined(__GNUC__) || defined(__clang__)
+  #define THREAD_LOCAL __thread
+#else
+  #error "No thread-local storage support for this compiler"
+#endif
 
-import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
-import com.oracle.truffle.api.CompilerDirectives;
+extern THREAD_LOCAL int errno_capture;
 
-public final class ArrowReleaseCallback {
-    private static final MethodHandle HANDLE = NativeAccessSupport.createDowncallHandle(false, false, VOID, POINTER);
-
-    private ArrowReleaseCallback() {
-    }
-
-    public static void execute(long releaseCallback, long baseStructure) {
-        try {
-            HANDLE.invokeExact(releaseCallback, baseStructure);
-        } catch (Throwable e) {
-            throw CompilerDirectives.shouldNotReachHere("Unable to call release callback. Error:", e);
-        }
-    }
+static inline void capture_errno(void) {
+    errno_capture = errno;
 }
+
+#define CAPTURE_ERRNO_AND_RETURN(indicator, expr) do { \
+__typeof__(expr) return_value = (expr); \
+if (return_value == (indicator)) { \
+capture_errno(); \
+} \
+return return_value; \
+} while (0)
+
+#endif //PYTHON_LIBPOSIX_ERRNO_CAPTURE_H

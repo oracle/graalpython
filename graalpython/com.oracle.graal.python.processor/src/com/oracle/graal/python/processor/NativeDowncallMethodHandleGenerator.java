@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.processor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.NativeSimpleType;
@@ -60,48 +59,50 @@ final class NativeDowncallMethodHandleGenerator {
         return "NATIVE_METHOD_HANDLE_" + signatureName;
     }
 
-    static String toClassLiteral(String javaType) {
+    private static String toNativeSimpleTypeLiteral(String javaType) {
         return switch (javaType) {
-            case "void" -> "void.class";
-            case "byte" -> "byte.class";
-            case "short" -> "short.class";
-            case "int" -> "int.class";
-            case "long" -> "long.class";
-            case "float" -> "float.class";
-            case "double" -> "double.class";
+            case "void" -> "NativeSimpleType.VOID";
+            case "byte" -> "NativeSimpleType.SINT8";
+            case "short" -> "NativeSimpleType.SINT16";
+            case "int" -> "NativeSimpleType.SINT32";
+            case "long" -> "NativeSimpleType.SINT64";
+            case "float" -> "NativeSimpleType.FLOAT";
+            case "double" -> "NativeSimpleType.DOUBLE";
             default -> throw new IllegalArgumentException("Unexpected Java type: " + javaType);
         };
     }
 
-    static String toClassLiteral(NativeSimpleType nativeType) {
+    private static String toNativeSimpleTypeLiteral(NativeSimpleType nativeType) {
         return switch (nativeType) {
-            case VOID -> "void.class";
-            case SINT8 -> "byte.class";
-            case SINT16 -> "short.class";
-            case SINT32 -> "int.class";
-            case SINT64, POINTER -> "long.class";
-            case FLOAT -> "float.class";
-            case DOUBLE -> "double.class";
+            case VOID -> "NativeSimpleType.VOID";
+            case SINT8 -> "NativeSimpleType.SINT8";
+            case SINT16 -> "NativeSimpleType.SINT16";
+            case SINT32 -> "NativeSimpleType.SINT32";
+            case SINT64 -> "NativeSimpleType.SINT64";
+            case FLOAT -> "NativeSimpleType.FLOAT";
+            case DOUBLE -> "NativeSimpleType.DOUBLE";
+            case POINTER -> "NativeSimpleType.POINTER";
         };
     }
 
     static void emitMethodHandleField(List<String> lines, String fieldName, String returnType, List<String> argTypes) {
-        List<String> methodTypeArgs = new ArrayList<>();
-        methodTypeArgs.add("long.class");
+        StringBuilder createHandle = new StringBuilder("NativeAccessSupport.createDowncallHandle(false, false, ");
+        createHandle.append(toNativeSimpleTypeLiteral(returnType));
         for (String argType : argTypes) {
-            methodTypeArgs.add(toClassLiteral(argType));
+            createHandle.append(", ").append(toNativeSimpleTypeLiteral(argType));
         }
-        lines.add("    private static final MethodHandle " + fieldName + " = NativeAccessSupport.createDowncallHandle(" +
-                        "MethodType.methodType(" + toClassLiteral(returnType) + ", " + String.join(", ", methodTypeArgs) + "), false);");
+        createHandle.append(")");
+        lines.add("    private static final MethodHandle " + fieldName + " = " + createHandle + ";");
     }
 
-    static void emitMethodHandleField(List<String> lines, String fieldName, NativeSimpleType returnType, List<NativeSimpleType> argTypes) {
-        List<String> methodTypeArgs = new ArrayList<>();
-        methodTypeArgs.add("long.class");
+    static void emitMethodHandleField(List<String> lines, String fieldName, NativeSimpleType returnType, List<NativeSimpleType> argTypes, boolean critical, boolean captureCallState) {
+        StringBuilder createHandle = new StringBuilder("NativeAccessSupport.createDowncallHandle(");
+        createHandle.append(critical).append(", ").append(captureCallState).append(", ");
+        createHandle.append(toNativeSimpleTypeLiteral(returnType));
         for (NativeSimpleType argType : argTypes) {
-            methodTypeArgs.add(toClassLiteral(argType));
+            createHandle.append(", ").append(toNativeSimpleTypeLiteral(argType));
         }
-        lines.add("    private static final MethodHandle " + fieldName + " = NativeAccessSupport.createDowncallHandle(" +
-                        "MethodType.methodType(" + toClassLiteral(returnType) + ", " + String.join(", ", methodTypeArgs) + "), false);");
+        createHandle.append(")");
+        lines.add("    private static final MethodHandle " + fieldName + " = " + createHandle + ";");
     }
 }

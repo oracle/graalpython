@@ -104,12 +104,22 @@ public abstract class NativeAccessSupport {
         return INSTANCE.lookupDefaultImpl(name);
     }
 
-    static MethodHandle createDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
-        return INSTANCE.createTypedDowncallHandle(resType, argTypes);
+    public static MethodHandle createDowncallHandle(boolean critical, boolean captureCallState, NativeSimpleType resType, NativeSimpleType... argTypes) {
+        return INSTANCE.createDowncallHandleImpl(critical, captureCallState, resType, argTypes);
     }
 
-    public static MethodHandle createDowncallHandle(MethodType methodType, boolean critical) {
-        return INSTANCE.createDowncallHandleImpl(methodType, critical);
+    public static Object createCapturedCallState(Object arena) {
+        return INSTANCE.createCapturedCallStateImpl(arena);
+    }
+
+    /** Read value of POSIX's {@code errno} from the captured call state buffer. */
+    public static int readCapturedErrno(Object capturedCallStatePtr) {
+        return INSTANCE.readCapturedErrnoImpl(capturedCallStatePtr);
+    }
+
+    /** Read value of WinAPI's {@code GetLastError} from the captured call state buffer. */
+    public static int readCapturedGetLastError(Object capturedCallStatePtr) {
+        return INSTANCE.readCapturedGetLastErrorImpl(capturedCallStatePtr);
     }
 
     public static boolean isAvailable() {
@@ -124,15 +134,6 @@ public abstract class NativeAccessSupport {
         return INSTANCE.isCurrentThreadVirtualImpl();
     }
 
-    private MethodHandle createTypedDowncallHandle(NativeSimpleType resType, NativeSimpleType... argTypes) {
-        Class<?>[] parameterTypes = new Class<?>[argTypes.length + 1];
-        parameterTypes[0] = long.class;
-        for (int i = 0; i < argTypes.length; i++) {
-            parameterTypes[i + 1] = asJavaType(argTypes[i]);
-        }
-        return createDowncallHandleImpl(MethodType.methodType(asJavaType(resType), parameterTypes), false);
-    }
-
     protected abstract Object createArenaImpl();
 
     protected abstract void closeArenaImpl(Object arena);
@@ -141,7 +142,13 @@ public abstract class NativeAccessSupport {
 
     protected abstract long lookupDefaultImpl(String name);
 
-    protected abstract MethodHandle createDowncallHandleImpl(MethodType methodType, boolean critical);
+    protected abstract MethodHandle createDowncallHandleImpl(boolean critical, boolean captureCallState, NativeSimpleType resType, NativeSimpleType[] argTypes);
+
+    protected abstract Object createCapturedCallStateImpl(Object arena);
+
+    protected abstract int readCapturedErrnoImpl(Object capturedCallState);
+
+    protected abstract int readCapturedGetLastErrorImpl(Object capturedCallState);
 
     protected abstract long createClosureImpl(MethodHandle staticMethodHandle, NativeSimpleType resType, NativeSimpleType[] argTypes, Object arena);
 

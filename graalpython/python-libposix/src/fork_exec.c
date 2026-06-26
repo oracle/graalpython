@@ -21,6 +21,8 @@
 #include <limits.h>
 #include <signal.h>
 
+#include "errno_capture.h"
+
 // These definitions emulate CPython's equivalents so that the copy&pasted code below works without too many changes
 #define HAVE_DIRFD 1
 #define HAVE_SETSID 1
@@ -603,6 +605,7 @@ int32_t fork_exec(
         int err = pthread_sigmask(SIG_BLOCK, &allSigs, &oldSigs);
         if (err) {
             errno = err;
+            capture_errno();
             return -1;
         }
         oldSigmask = &oldSigs;
@@ -631,5 +634,6 @@ int32_t fork_exec(
     }
 #endif
 
+    capture_errno();
     return pid;
 }

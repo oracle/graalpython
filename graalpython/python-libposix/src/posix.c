@@ -77,6 +77,10 @@
 #include <unistd.h>
 #include <pwd.h>
 
+#include "errno_capture.h"
+
+THREAD_LOCAL int errno_capture = 0;
+
 int32_t signal_self_segv(void);
 
 #ifdef __APPLE__
@@ -92,7 +96,7 @@ int32_t signal_self_segv(void);
 #include <sys/resource.h>
 #endif
 
-int64_t call_getpid() {
+int64_t call_getpid(void) {
     return getpid();
 }
 
@@ -103,7 +107,8 @@ int32_t call_umask(int32_t mask) {
 int32_t get_inheritable(int32_t fd) {
     int flags = fcntl(fd, F_GETFD, 0);
     if (flags < 0) {
-        return -1;
+        capture_errno();
+        return flags;
     }
     return !(flags & FD_CLOEXEC);
 }
@@ -121,55 +126,57 @@ int32_t set_inheritable(int32_t fd, int32_t inheritable) {
         if (new_flags != res) {
             res = fcntl(fd, F_SETFD, new_flags);
         }
+    } else {
+        capture_errno();
     }
     return res;
 }
 
 int32_t call_openat(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
-    return openat(dirFd, pathname, flags, mode);
+    CAPTURE_ERRNO_AND_RETURN(-1, openat(dirFd, pathname, flags, mode));
 }
 
 int32_t call_close(int32_t fd) {
-    return close(fd);
+    CAPTURE_ERRNO_AND_RETURN(-1, close(fd));
 }
 
 int64_t call_read(int32_t fd, void *buf, uint64_t count) {
-    return read(fd, buf, count);
+    CAPTURE_ERRNO_AND_RETURN(-1, read(fd, buf, count));
 }
 
 int64_t call_write(int32_t fd, void *buf, uint64_t count) {
-    return write(fd, buf, count);
+    CAPTURE_ERRNO_AND_RETURN(-1, write(fd, buf, count));
 }
 
 int32_t call_dup(int32_t fd) {
-    return fcntl(fd, F_DUPFD_CLOEXEC, 0);
+    CAPTURE_ERRNO_AND_RETURN(-1, fcntl(fd, F_DUPFD_CLOEXEC, 0));
 }
 
 int32_t call_dup2(int32_t oldfd, int32_t newfd, int32_t inheritable) {
 #ifdef __gnu_linux__
     if (!inheritable) {
-        return dup3(oldfd, newfd, O_CLOEXEC);
+        CAPTURE_ERRNO_AND_RETURN(-1, dup3(oldfd, newfd, O_CLOEXEC));
     }
 #endif
     int res = dup2(oldfd, newfd);
     if (res < 0) {
+        capture_errno();
         return res;
     }
-    if (!inheritable) {
-        if (set_inheritable(res, 0) < 0) {
-            close(res);
-            return -1;
-        }
+    if (!inheritable && set_inheritable(res, 0) < 0) {
+        close(res);
+        return -1;
     }
     return res;
 }
 
 int32_t call_pipe2(int32_t *pipefd) {
 #ifdef __gnu_linux__
-    return pipe2(pipefd, O_CLOEXEC);
+    CAPTURE_ERRNO_AND_RETURN(-1, pipe2(pipefd, O_CLOEXEC));
 #else
     int res = pipe(pipefd);
     if (res != 0) {
+        capture_errno();
         return res;
     }
     if (set_inheritable(pipefd[0], 0) < 0 || set_inheritable(pipefd[1], 0) < 0) {
@@ -220,7 +227,7 @@ int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
     fill_select_result(readfds, readfdsLen, &readfdsSet, selected, 0);
     fill_select_result(writefds, writefdsLen, &writefdsSet, selected, readfdsLen);
     fill_select_result(errfds, errfdsLen, &errfdsSet, selected, readfdsLen + writefdsLen);
-    return (int32_t) result;
+    CAPTURE_ERRNO_AND_RETURN(-1, (int32_t) result);
 }
 
 int32_t call_poll(int32_t fd, int32_t writing, int64_t timeoutSec, int64_t timeoutUsec) {
@@ -242,37 +249,39 @@ int32_t call_poll(int32_t fd, int32_t writing, int64_t timeoutSec, int64_t timeo
         timeout_ms = -1;
     } else if (timeoutSec > INT_MAX / 1000) {
         errno = EINVAL;
+        capture_errno();
         return -1;
     } else {
         int64_t timeout_ms_64 = timeoutSec * 1000 + timeoutUsec / 1000;
         if (timeout_ms_64 > INT_MAX) {
             errno = EINVAL;
+            capture_errno();
             return -1;
         }
         timeout_ms = (int)timeout_ms_64;
     }
-    return poll(&pollfd, 1, timeout_ms);
+    CAPTURE_ERRNO_AND_RETURN(-1, poll(&pollfd, 1, timeout_ms));
 #endif
 }
 
 int64_t call_lseek(int32_t fd, int64_t offset, int32_t whence) {
-    return lseek(fd, offset, whence);
+    CAPTURE_ERRNO_AND_RETURN(-1, lseek(fd, offset, whence));
 }
 
 int32_t call_ftruncate(int32_t fd, int64_t length) {
-    return ftruncate(fd, length);
+    CAPTURE_ERRNO_AND_RETURN(-1, ftruncate(fd, length));
 }
 
 int32_t call_truncate(const char* path, int64_t length) {
-    return truncate(path, length);
+    CAPTURE_ERRNO_AND_RETURN(-1, truncate(path, length));
 }
 
 int32_t call_fsync(int32_t fd) {
-    return fsync(fd);
+    CAPTURE_ERRNO_AND_RETURN(-1, fsync(fd));
 }
 
 int32_t call_flock(int32_t fd, int32_t operation) {
-    return flock(fd, operation);
+    CAPTURE_ERRNO_AND_RETURN(-1, flock(fd, operation));
 }
 
 int32_t call_fcntl_lock(int32_t fd, int32_t blocking, int32_t lockType, int32_t whence, int64_t start, int64_t length) {
@@ -281,12 +290,13 @@ int32_t call_fcntl_lock(int32_t fd, int32_t blocking, int32_t lockType, int32_t 
     l.l_whence = whence;
     l.l_start = start;
     l.l_len = length;
-    return fcntl(fd, blocking ? F_SETLKW : F_SETLK, &l);
+    CAPTURE_ERRNO_AND_RETURN(-1, fcntl(fd, blocking ? F_SETLKW : F_SETLK, &l));
 }
 
 int32_t get_blocking(int32_t fd) {
     int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0) {
+    if (flags == -1) {
+        capture_errno();
         return -1;
     }
     return !(flags & O_NONBLOCK);
@@ -303,7 +313,7 @@ int32_t set_blocking(int32_t fd, int32_t blocking) {
         }
         res = fcntl(fd, F_SETFL, flags);
     }
-    return res;
+    CAPTURE_ERRNO_AND_RETURN(-1, res);
 }
 
 int32_t get_terminal_size(int32_t fd, int32_t *size) {
@@ -312,6 +322,8 @@ int32_t get_terminal_size(int32_t fd, int32_t *size) {
     if (res == 0) {
         size[0] = w.ws_col;
         size[1] = w.ws_row;
+    } else {
+        capture_errno();
     }
     return res;
 }
@@ -347,6 +359,8 @@ int32_t call_fstatat(int32_t dirFd, const char *path, int32_t followSymlinks, in
     int result = fstatat(dirFd, path, &st, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
+    } else {
+        capture_errno();
     }
     return result;
 }
@@ -356,6 +370,8 @@ int32_t call_fstat(int32_t fd, int64_t *out) {
     int result = fstat(fd, &st);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
+    } else {
+        capture_errno();
     }
     return result;
 }
@@ -380,6 +396,8 @@ int32_t call_statvfs(const char *path, int64_t *out) {
     int result = statvfs(path, &st);
     if (result == 0) {
         statvfs_struct_to_longs(&st, out);
+    } else {
+        capture_errno();
     }
     return result;
 }
@@ -389,6 +407,8 @@ int32_t call_fstatvfs(int32_t fd, int64_t *out) {
     int result = fstatvfs(fd, &st);
     if (result == 0) {
         statvfs_struct_to_longs(&st, out);
+    } else {
+        capture_errno();
     }
     return result;
 }
@@ -402,44 +422,46 @@ int32_t call_uname(char *sysname, char *nodename, char *release, char *version, 
         snprintf(release, size, "%s", buf.release);
         snprintf(version, size, "%s", buf.version);
         snprintf(machine, size, "%s", buf.machine);
+    } else {
+        capture_errno();
     }
     return result;
 }
 
 int32_t call_unlinkat(int32_t dirFd, const char *pathname, int32_t rmdir) {
-    return unlinkat(dirFd, pathname, rmdir ? AT_REMOVEDIR : 0);
+    CAPTURE_ERRNO_AND_RETURN(-1, unlinkat(dirFd, pathname, rmdir ? AT_REMOVEDIR : 0));
 }
 
 int32_t call_linkat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath, int32_t flags) {
-    return linkat(oldDirFd, oldPath, newDirFd, newPath, flags);
+    CAPTURE_ERRNO_AND_RETURN(-1, linkat(oldDirFd, oldPath, newDirFd, newPath, flags));
 }
 
 int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) {
-    return symlinkat(target, dirFd, linkpath);
+    CAPTURE_ERRNO_AND_RETURN(-1, symlinkat(target, dirFd, linkpath));
 }
 
 int32_t call_mkdirat(int32_t dirFd, const char *pathname, int32_t mode) {
-    return mkdirat(dirFd, pathname, mode);
+    CAPTURE_ERRNO_AND_RETURN(-1, mkdirat(dirFd, pathname, mode));
 }
 
 int32_t call_getcwd(char *buf, uint64_t size) {
-    return getcwd(buf, size) == NULL ? -1 : 0;
+    CAPTURE_ERRNO_AND_RETURN(-1, getcwd(buf, size) == NULL ? -1 : 0);
 }
 
 int32_t call_chdir(const char *path) {
-    return chdir(path);
+    CAPTURE_ERRNO_AND_RETURN(-1, chdir(path));
 }
 
 int32_t call_fchdir(int32_t fd) {
-    return fchdir(fd);
+    CAPTURE_ERRNO_AND_RETURN(-1, fchdir(fd));
 }
 
 int32_t call_fchown(int32_t fd, int64_t owner, int64_t group) {
-    return fchown(fd, owner, group);
+    CAPTURE_ERRNO_AND_RETURN(-1, fchown(fd, owner, group));
 }
 
 int32_t call_fchownat(int32_t dirfd, const char *pathname, int64_t owner, int64_t group, int32_t followSymlinks) {
-    return fchownat(dirfd, pathname, owner, group, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    CAPTURE_ERRNO_AND_RETURN(-1, fchownat(dirfd, pathname, owner, group, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW));
 }
 
 int32_t call_isatty(int32_t fd) {
@@ -447,15 +469,15 @@ int32_t call_isatty(int32_t fd) {
 }
 
 intptr_t call_opendir(const char *name) {
-    return (intptr_t) opendir(name);
+    CAPTURE_ERRNO_AND_RETURN(0, (intptr_t) opendir(name));
 }
 
 intptr_t call_fdopendir(int32_t fd) {
-    return (intptr_t) fdopendir(fd);
+    CAPTURE_ERRNO_AND_RETURN(0, (intptr_t) fdopendir(fd));
 }
 
 int32_t call_closedir(intptr_t dirp) {
-    return closedir((DIR *) dirp);
+    CAPTURE_ERRNO_AND_RETURN(-1, closedir((DIR *) dirp));
 }
 
 int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t *out) {
@@ -467,6 +489,10 @@ int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t
         out[1] = dirEntry->d_type;
         return 1;
     }
+    if (errno != 0) {
+        capture_errno();
+        return -1;
+    }
     return 0;
 }
 
@@ -477,72 +503,72 @@ void call_rewinddir(intptr_t dirp) {
 #ifdef __gnu_linux__
 int32_t call_utimensat(int32_t dirFd, const char *path, int64_t *timespec, int32_t followSymlinks) {
     if (!timespec) {
-        return utimensat(dirFd, path, NULL, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+        CAPTURE_ERRNO_AND_RETURN(-1, utimensat(dirFd, path, NULL, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW));
     } else {
         struct timespec times[2];
         times[0].tv_sec = timespec[0];
         times[0].tv_nsec = timespec[1];
         times[1].tv_sec = timespec[2];
         times[1].tv_nsec = timespec[3];
-        return utimensat(dirFd, path, times, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+        CAPTURE_ERRNO_AND_RETURN(-1, utimensat(dirFd, path, times, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW));
     }
 }
 
 int32_t call_futimens(int32_t fd, int64_t *timespec) {
     if (!timespec) {
-        return futimens(fd, NULL);
+        CAPTURE_ERRNO_AND_RETURN(-1, futimens(fd, NULL));
     } else {
         struct timespec times[2];
         times[0].tv_sec = timespec[0];
         times[0].tv_nsec = timespec[1];
         times[1].tv_sec = timespec[2];
         times[1].tv_nsec = timespec[3];
-        return futimens(fd, times);
+        CAPTURE_ERRNO_AND_RETURN(-1, futimens(fd, times));
     }
 }
 #endif
 
 int32_t call_futimes(int32_t fd, int64_t *timeval) {
     if (!timeval) {
-        return futimes(fd, NULL);
+        CAPTURE_ERRNO_AND_RETURN(-1, futimes(fd, NULL));
     } else {
         struct timeval times[2];
         times[0].tv_sec = timeval[0];
         times[0].tv_usec = timeval[1];
         times[1].tv_sec = timeval[2];
         times[1].tv_usec = timeval[3];
-        return futimes(fd, times);
+        CAPTURE_ERRNO_AND_RETURN(-1, futimes(fd, times));
     }
 }
 
 int32_t call_lutimes(const char *filename, int64_t *timeval) {
     if (!timeval) {
-        return lutimes(filename, NULL);
+        CAPTURE_ERRNO_AND_RETURN(-1, lutimes(filename, NULL));
     } else {
         struct timeval times[2];
         times[0].tv_sec = timeval[0];
         times[0].tv_usec = timeval[1];
         times[1].tv_sec = timeval[2];
         times[1].tv_usec = timeval[3];
-        return lutimes(filename, times);
+        CAPTURE_ERRNO_AND_RETURN(-1, lutimes(filename, times));
     }
 }
 
 int32_t call_utimes(const char *filename, int64_t *timeval) {
     if (!timeval) {
-        return utimes(filename, NULL);
+        CAPTURE_ERRNO_AND_RETURN(-1, utimes(filename, NULL));
     } else {
         struct timeval times[2];
         times[0].tv_sec = timeval[0];
         times[0].tv_usec = timeval[1];
         times[1].tv_sec = timeval[2];
         times[1].tv_usec = timeval[3];
-        return utimes(filename, times);
+        CAPTURE_ERRNO_AND_RETURN(-1, utimes(filename, times));
     }
 }
 
 int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
-    return renameat(oldDirFd, oldPath, newDirFd, newPath);
+    CAPTURE_ERRNO_AND_RETURN(-1, renameat(oldDirFd, oldPath, newDirFd, newPath));
 }
 
 int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t effectiveIds, int32_t followSymlinks) {
@@ -553,23 +579,23 @@ int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t ef
     if (effectiveIds) {
         flags |= AT_EACCESS;
     }
-    return faccessat(dirFd, path, mode, flags);
+    CAPTURE_ERRNO_AND_RETURN(-1, faccessat(dirFd, path, mode, flags));
 }
 
 int32_t call_fchmodat(int32_t dirFd, const char *path, int32_t mode, int32_t followSymlinks) {
-    return fchmodat(dirFd, path, mode, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW);
+    CAPTURE_ERRNO_AND_RETURN(-1, fchmodat(dirFd, path, mode, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW));
 }
 
 int32_t call_fchmod(int32_t fd, int32_t mode) {
-    return fchmod(fd, mode);
+    CAPTURE_ERRNO_AND_RETURN(-1, fchmod(fd, mode));
 }
 
 int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
-    return readlinkat(dirFd, path, buf, size);
+    CAPTURE_ERRNO_AND_RETURN(-1, readlinkat(dirFd, path, buf, size));
 }
 
 int64_t call_waitpid(int64_t pid, int32_t *status, int32_t options) {
-    return waitpid(pid, status, options);
+    CAPTURE_ERRNO_AND_RETURN(-1, waitpid(pid, status, options));
 }
 
 int32_t call_wcoredump(int32_t status) {
@@ -605,7 +631,7 @@ int32_t call_wstopsig(int32_t status) {
 }
 
 int32_t call_kill(int64_t pid, int32_t signal) {
-    return kill(pid, signal);
+    CAPTURE_ERRNO_AND_RETURN(-1, kill(pid, signal));
 }
 
 int32_t call_raise(int32_t signal) {
@@ -635,6 +661,8 @@ int32_t call_getitimer(int32_t which, int64_t *current_value) {
     int32_t result = getitimer(which, &current);
     if (result == 0) {
         itimerval_to_long_array(&current, current_value);
+    } else {
+        capture_errno();
     }
     return result;
 }
@@ -646,6 +674,8 @@ int32_t call_setitimer(int32_t which, int64_t *new_value, int64_t *old_value) {
     int32_t result = setitimer(which, &new_timer, &old_timer);
     if (result == 0) {
         itimerval_to_long_array(&old_timer, old_value);
+    } else {
+        capture_errno();
     }
     return result;
 }
@@ -659,53 +689,54 @@ int32_t signal_self(int32_t signal) {
             return signal_self_segv();
         default:
             errno = EINVAL;
+            capture_errno();
             return -1;
     }
     _exit(128 + signal);
 }
 
 int32_t call_killpg(int64_t pgid, int32_t signal) {
-    return killpg(pgid, signal);
+    CAPTURE_ERRNO_AND_RETURN(-1, killpg(pgid, signal));
 }
 
-int64_t call_getuid() {
+int64_t call_getuid(void) {
     return getuid();
 }
 
-int64_t call_geteuid() {
+int64_t call_geteuid(void) {
     return geteuid();
 }
 
-int64_t call_getgid() {
+int64_t call_getgid(void) {
     return getgid();
 }
 
-int64_t call_getegid() {
+int64_t call_getegid(void) {
     return getegid();
 }
 
-int64_t call_getppid() {
+int64_t call_getppid(void) {
     return getppid();
 }
 
 int64_t call_getpgid(int64_t pid) {
-    return getpgid(pid);
+    CAPTURE_ERRNO_AND_RETURN(-1, getpgid(pid));
 }
 
 int32_t call_setpgid(int64_t pid, int64_t pgid) {
-	return setpgid(pid, pgid);
+	CAPTURE_ERRNO_AND_RETURN(-1, setpgid(pid, pgid));
 }
 
-int64_t call_getpgrp() {
+int64_t call_getpgrp(void) {
     return getpgrp();
 }
 
 int64_t call_getsid(int64_t pid) {
-    return getsid(pid);
+    CAPTURE_ERRNO_AND_RETURN(-1, getsid(pid));
 }
 
 int64_t call_setsid() {
-    return setsid();
+    CAPTURE_ERRNO_AND_RETURN(-1, setsid());
 }
 
 int32_t call_getgroups(int64_t size, int64_t* out) {
@@ -720,9 +751,9 @@ int32_t call_getgroups(int64_t size, int64_t* out) {
             out[i] = tmp[i];
         }
         free(tmp);
-        return res;
+        CAPTURE_ERRNO_AND_RETURN(-1, res);
     } else {
-        return getgroups(size, NULL);
+        CAPTURE_ERRNO_AND_RETURN(-1, getgroups(size, NULL));
     }
 }
 
@@ -730,8 +761,8 @@ int32_t call_getrusage(int32_t who, uint64_t* out) {
 #ifndef _WIN32
     struct rusage ru;
     int result = getrusage(who, &ru);
-    if (result != 0) {
-        return result;
+    if (result == -1) {
+        CAPTURE_ERRNO_AND_RETURN(-1, result);
     }
     int offset = 0;
     // POSIX prescribes only ru_utime and ru_stime members, macOS and Linux
@@ -757,16 +788,17 @@ int32_t call_getrusage(int32_t who, uint64_t* out) {
     COPYLONG(ru.ru_nsignals);
     COPYLONG(ru.ru_nvcsw);
     COPYLONG(ru.ru_nivcsw);
-    return 0;
+    CAPTURE_ERRNO_AND_RETURN(-1, 0);
 # undef COPYLONG
 # undef COPYDOUBLE
 #else
-    return -1;
+    errno = ENOSYS;
+    capture_errno();
 #endif
 }
 
 int32_t call_openpty(int32_t *outvars) {
-    return openpty(outvars, outvars + 1, NULL, NULL, NULL);
+    CAPTURE_ERRNO_AND_RETURN(-1, openpty(outvars, outvars + 1, NULL, NULL, NULL));
 }
 
 int32_t call_ctermid(char *buf) {
@@ -774,11 +806,11 @@ int32_t call_ctermid(char *buf) {
 }
 
 int32_t call_setenv(char *name, char *value, int overwrite) {
-    return setenv(name, value, overwrite);
+    CAPTURE_ERRNO_AND_RETURN(-1, setenv(name, value, overwrite));
 }
 
 int32_t call_unsetenv(char *name) {
-    return unsetenv(name);
+    CAPTURE_ERRNO_AND_RETURN(-1, unsetenv(name));
 }
 
 // See comment in NativePosixSupport.execv() for the description of arguments
@@ -792,6 +824,7 @@ void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) {
     char *pathname = strings[0];
     char **argv = strings + 1;
     execv(pathname, argv);
+    capture_errno();
 }
 
 int32_t call_system(const char *pathname) {
@@ -800,11 +833,15 @@ int32_t call_system(const char *pathname) {
 
 int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset) {
     void *result = mmap(NULL, length, prot, flags, fd, offset);
-    return result == MAP_FAILED ? 0 : (int64_t) result;
+    if (result == MAP_FAILED) {
+        capture_errno();
+        return 0;
+    }
+    return (int64_t) result;
 }
 
 int32_t call_munmap(int64_t address, int64_t length) {
-    return munmap((void *) address, length);
+    CAPTURE_ERRNO_AND_RETURN(-1, munmap((void *) address, length));
 }
 
 void call_msync(int64_t address, int64_t offset, int64_t length) {
@@ -814,7 +851,7 @@ void call_msync(int64_t address, int64_t offset, int64_t length) {
 }
 
 int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
-    return socket(family, type, protocol);
+    CAPTURE_ERRNO_AND_RETURN(-1, socket(family, type, protocol));
 }
 
 // On Java side, socket addresses are stored in a Java byte[] (here represented by a int8_t *).
@@ -831,23 +868,23 @@ int32_t call_accept(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
         *addr_len = (int32_t)l;                     // ...so this unsigned->signed conversion is well defined
         memcpy(addr, &sa, l);
     }
-    return res;
+    CAPTURE_ERRNO_AND_RETURN(-1, res);
 }
 
 int32_t call_bind(int32_t sockfd, int8_t *addr, int32_t addr_len) {
     struct sockaddr_storage sa;
     memcpy(&sa, addr, addr_len);
-    return bind(sockfd, (struct sockaddr *) &sa, addr_len);
+    CAPTURE_ERRNO_AND_RETURN(-1, bind(sockfd, (struct sockaddr *) &sa, addr_len));
 }
 
 int32_t call_connect(int32_t sockfd, int8_t *addr, int32_t addr_len) {
     struct sockaddr_storage sa;
     memcpy(&sa, addr, addr_len);
-    return connect(sockfd, (struct sockaddr *) &sa, addr_len);
+    CAPTURE_ERRNO_AND_RETURN(-1, connect(sockfd, (struct sockaddr *) &sa, addr_len));
 }
 
 int32_t call_listen(int32_t sockfd, int32_t backlog) {
-    return listen(sockfd, backlog);
+    CAPTURE_ERRNO_AND_RETURN(-1, listen(sockfd, backlog));
 }
 
 int32_t call_getpeername(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
@@ -858,6 +895,8 @@ int32_t call_getpeername(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
         *addr_len = (int32_t)l;                     // ...so this unsigned->signed conversion is well defined
         memcpy(addr, &sa, l);
+    } else {
+        capture_errno();
     }
     return res;
 }
@@ -870,39 +909,46 @@ int32_t call_getsockname(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
         *addr_len = (int32_t)l;                     // ...so this unsigned->signed conversion is well defined
         memcpy(addr, &sa, l);
+    } else {
+        capture_errno();
     }
     return res;
 }
 
 //TODO len should be size_t, retval should be ssize_t
 int32_t call_send(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
-    return send(sockfd, buf, len, flags);
+    ssize_t res = send(sockfd, buf, len, flags);
+    assert (res == (int32_t) res);
+    CAPTURE_ERRNO_AND_RETURN(-1, res);
 }
 
 int32_t call_sendto(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *addr, int32_t addr_len) {
     struct sockaddr_storage sa;
     memcpy(&sa, addr, addr_len);
-    return sendto(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, addr_len);
+    CAPTURE_ERRNO_AND_RETURN(-1, sendto(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, addr_len));
 }
 
 int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
-    return recv(sockfd, buf, len, flags);
+    CAPTURE_ERRNO_AND_RETURN(-1, recv(sockfd, buf, len, flags));
 }
 
 int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *src_addr, int32_t *addr_len) {
     struct sockaddr_storage sa;
     socklen_t l = sizeof(sa);
-    int res = recvfrom(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, &l);
+    ssize_t res = recvfrom(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, &l);
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
         *addr_len = (int32_t)l;                     // ...so this unsigned->signed conversion is well defined
         memcpy(src_addr, &sa, l);
+    } else {
+        capture_errno();
     }
-    return res;
+    assert (res == (int32_t) res);
+    return (int32_t) res;
 }
 
 int32_t call_shutdown(int32_t sockfd, int32_t how) {
-    return shutdown(sockfd, how);
+    CAPTURE_ERRNO_AND_RETURN(-1, shutdown(sockfd, how));
 }
 
 #define MAX_SOCKOPT_LEN 1024
@@ -921,12 +967,15 @@ int32_t call_getsockopt(int32_t sockfd, int32_t level, int32_t optname, void *bu
     if (len > sizeof(alignedBuf)) {
         // If this ever happens, we can increase MAX_SOCKOPT_LEN or use malloc.
         errno = ENOMEM;
+        capture_errno();
         return -1;
     }
     int res = getsockopt(sockfd, level, optname, alignedBuf, &len);
     if (res == 0) {
         *bufLen = len;
         memcpy(buf, alignedBuf, len);
+    } else {
+        capture_errno();
     }
     return res;
 }
@@ -936,10 +985,11 @@ int32_t call_setsockopt(int32_t sockfd, int32_t level, int32_t optname, void *bu
     char alignedBuf[MAX_SOCKOPT_LEN] __attribute__ ((aligned));
     if (bufLen > sizeof(alignedBuf)) {
         errno = ENOMEM;
+        capture_errno();
         return -1;
     }
     memcpy(alignedBuf, buf, bufLen);
-    return setsockopt(sockfd, level, optname, alignedBuf, bufLen);
+    CAPTURE_ERRNO_AND_RETURN(-1, setsockopt(sockfd, level, optname, alignedBuf, bufLen));
 }
 
 int32_t call_inet_addr(const char *src) {
@@ -966,16 +1016,16 @@ int32_t call_inet_ntoa(int32_t src, char *dst) {
 }
 
 int32_t call_inet_pton(int32_t family, const char *src, void *dst) {
-    return inet_pton(family, src, dst);
+    CAPTURE_ERRNO_AND_RETURN(-1, inet_pton(family, src, dst));
 }
 
 int32_t call_inet_ntop(int32_t family, void *src, char *dst, int32_t dstSize) {
     const char *r = inet_ntop(family, src, dst, dstSize);
-    return r == NULL ? -1 : 0;
+    CAPTURE_ERRNO_AND_RETURN(-1, r == NULL ? -1 : 0);
 }
 
 int32_t call_gethostname(char *buf, int64_t bufLen) {
-    return gethostname(buf, bufLen);
+    CAPTURE_ERRNO_AND_RETURN(-1, gethostname(buf, bufLen));
 }
 
 int32_t call_getnameinfo(int8_t *addr, int32_t addr_len, char *hostBuf, int32_t hostBufLen, char *servBuf, int32_t servBufLen, int32_t flags) {
@@ -1035,50 +1085,54 @@ int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData, i
 
 sem_t* call_sem_open(const char *name, int32_t openFlags, int32_t mode, int32_t value) {
     sem_t* result = sem_open(name, openFlags, mode, value);
-    if (result == (sem_t*)SEM_FAILED) {
-        return NULL;
+    if (result == SEM_FAILED) {
+        capture_errno();
     }
     return result;
 }
 
 int32_t call_sem_close(sem_t* handle) {
-    return sem_close(handle);
+    CAPTURE_ERRNO_AND_RETURN(-1, sem_close(handle));
 }
 
 int32_t call_sem_unlink(const char *name) {
-    return sem_unlink(name);
+    CAPTURE_ERRNO_AND_RETURN(-1, sem_unlink(name));
 }
 
 #ifdef __linux__
 int32_t call_sem_getvalue(sem_t* handle, int32_t *value) {
     int valueInt;
     int res = sem_getvalue(handle, &valueInt);
-    *value = valueInt;
+    if (res == 0) {
+        *value = valueInt;
+    } else {
+        capture_errno();
+    }
     return res;
 }
 #endif
 
 int32_t call_sem_post(sem_t* handle) {
-    return sem_post(handle);
+    CAPTURE_ERRNO_AND_RETURN(-1, sem_post(handle));
 }
 
 int32_t call_sem_wait(sem_t* handle) {
-    return sem_wait(handle);
+    CAPTURE_ERRNO_AND_RETURN(-1, sem_wait(handle));
 }
 
 int32_t call_sem_trywait(sem_t* handle) {
-    return sem_trywait(handle);
+    CAPTURE_ERRNO_AND_RETURN(-1, sem_trywait(handle));
 }
 
 #ifdef __linux__
 int32_t call_sem_timedwait(sem_t* handle, int64_t deadlineNs) {
     const int64_t nsInSec = 1000 * 1000 * 1000;
     struct timespec deadline = {deadlineNs / nsInSec, deadlineNs % nsInSec};
-    return sem_timedwait(handle, &deadline);
+    CAPTURE_ERRNO_AND_RETURN(-1, sem_timedwait(handle, &deadline));
 }
 #endif
 
-int32_t get_sysconf_getpw_r_size_max() {
+int64_t get_sysconf_getpw_r_size_max(void) {
     return sysconf(_SC_GETPW_R_SIZE_MAX);
 }
 
@@ -1129,11 +1183,11 @@ int32_t call_getpwname_r(const char *name, char *buffer, int32_t bufferSize, uin
 
 // Following 3 functions are not thread safe:
 
-void call_setpwent() {
+void call_setpwent(void) {
     setpwent();
 }
 
-void call_endpwent() {
+void call_endpwent(void) {
     endpwent();
 }
 
@@ -1143,6 +1197,8 @@ struct passwd *call_getpwent(int64_t *bufferSize) {
         // the +3 is for terminating '\0'
         *bufferSize = strlen(p->pw_name) + strlen(p->pw_dir) + strlen(p->pw_shell) + 3;
     }
+    // always capture errno because NULL result may also be a valid result
+    capture_errno();
     return p;
 }
 
@@ -1170,24 +1226,26 @@ int32_t get_getpwent_data(struct passwd *p, char *buffer, int32_t bufferSize, ui
 }
 
 int32_t call_ioctl_bytes(int32_t fd, uint64_t request, char* buffer) {
-    return ioctl(fd, request, buffer);
+    CAPTURE_ERRNO_AND_RETURN(-1, ioctl(fd, request, buffer));
 }
 
 int32_t call_ioctl_int(int32_t fd, uint64_t request, int32_t arg) {
-    return ioctl(fd, request, (int)arg);
+    CAPTURE_ERRNO_AND_RETURN(-1, ioctl(fd, request, (int)arg));
 }
 
 int64_t call_sysconf(int32_t name) {
     errno = 0;
-    return sysconf(name);
+    int64_t result = sysconf(name);
+    if (result == -1 && errno != 0) {
+        capture_errno();
+        // Private sentinel: sysconf itself may return -1 without an error.
+        return INT64_MIN;
+    }
+    return result;
 }
 
 int32_t get_errno() {
-    return errno;
-}
-
-void set_errno(int e) {
-    errno = e;
+    return errno_capture;
 }
 
 #ifdef _WIN32
