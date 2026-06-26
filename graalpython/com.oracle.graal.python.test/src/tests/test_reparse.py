@@ -125,7 +125,7 @@ def pyc_reparse(test_content, expect_success=True, python_options=()):
             if expect_success:
                 assert proc.wait() == 0, out
             else:
-                assert proc.wait() == 1 and re.search(r"SystemError:[\s\S]*--python\.KeepBytecodeInMemory", out), out
+                assert proc.wait() == 1 and re.search(r"SystemError:[\s\S]*--python\.KeepBytecodeInMemory", out), repr(out)
 
 
 TRACING_TEST = '''
