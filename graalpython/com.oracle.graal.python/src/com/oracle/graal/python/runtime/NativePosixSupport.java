@@ -440,8 +440,10 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
         abstract int call_unsetenv(long name);
 
-        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32,
-                        SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, POINTER, SINT64})
+        @DowncallSignature(returnType = SINT32, argumentTypes = {
+                        POINTER, POINTER, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32,
+                        SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, SINT32, POINTER, SINT64
+        })
         abstract int fork_exec(long data, long offsets, int offsetsLen, int argsPos, int envPos, int cwdPos, int stdinRdFd, int stdinWrFd, int stdoutRdFd, int stdoutWrFd, int stderrRdFd,
                         int stderrWrFd, int errPipeRdFd, int errPipeWrFd, int closeFds, int restoreSignals, int callSetsid, int pgidToSet, int allowVFork, long fdsToKeep, long fdsToKeepLen);
 
@@ -610,9 +612,11 @@ public final class NativePosixSupport extends PosixSupport {
             if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_DARWIN) {
                 return context.ensureNativeContext().getDefaultLibrary();
             }
-            /* We don't want to link the posix support library against libcrypt, because it might
+            /*
+             * We don't want to link the posix support library against libcrypt, because it might
              * not be available on the target Linux system and would make the whole support library
-             * fail to load. Load it dynamically on demand instead. */
+             * fail to load. Load it dynamically on demand instead.
+             */
             try {
                 return context.ensureNativeContext().loadLibrary("libcrypt.so", PosixConstants.RTLD_LOCAL.value);
             } catch (NativeLibraryLoadException e) {
@@ -2006,9 +2010,11 @@ public final class NativePosixSupport extends PosixSupport {
         return PythonUtils.addExact(len, src.length);   // add space for terminating '\0'
     }
 
-    /** Copies null-terminated strings to a buffer {@code data} starting at position {@code offset},
+    /**
+     * Copies null-terminated strings to a buffer {@code data} starting at position {@code offset},
      * and stores the offset of each string to the {@code offsets} array starting at index
-     * {@code startPos}. */
+     * {@code startPos}.
+     */
     private static long encodeCStringArray(byte[] data, long startOffset, long[] offsets, int startPos, Object[] src) {
         // The code that calculates dataLen already checked that there is no overflow and that all
         // offsets fit into an int.
@@ -2525,12 +2531,14 @@ public final class NativePosixSupport extends PosixSupport {
                     @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
                     @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                     @Exclusive @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws PosixException {
-        /* From the manpage: Upon successful completion, crypt returns a pointer to a string which
+        /*
+         * From the manpage: Upon successful completion, crypt returns a pointer to a string which
          * encodes both the hashed passphrase, and the settings that were used to encode it. See
          * crypt(5) for more detail on the format of hashed passphrases. crypt places its result in
          * a static storage area, which will be overwritten by subsequent calls to crypt. It is not
          * safe to call crypt from multiple threads simultaneously. Upon error, it may return a NULL
-         * pointer or a pointer to an invalid hash, depending on the implementation. */
+         * pointer or a pointer to an invalid hash, depending on the implementation.
+         */
         long wordPtr = NULLPTR;
         long saltPtr = NULLPTR;
         try {
@@ -2575,7 +2583,8 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    /** Provides access to {@code struct addrinfo}.
+    /**
+     * Provides access to {@code struct addrinfo}.
      *
      * The layout of native {@code struct addrinfo} is as follows:
      *
@@ -2590,7 +2599,7 @@ public final class NativePosixSupport extends PosixSupport {
      *         struct sockaddr *ai_addr;            // data copied into socketAddress[]
      *         char            *ai_canonname;       // longData[0]
      *         struct addrinfo *ai_next;            // longData[1]
-     * };
+     *     };
      * }
      * </pre>
      *
@@ -2607,7 +2616,8 @@ public final class NativePosixSupport extends PosixSupport {
      *
      * It is not clear whether it is guaranteed that {@code ai_family} and
      * {@code ai_addr->sa_family} are always the same. We provide both and use the later when
-     * decoding the socket address. */
+     * decoding the socket address.
+     */
     private static class AddrInfo {
         private final int[] intData = new int[7];
         private final long[] longData = new long[2];
@@ -2943,8 +2953,10 @@ public final class NativePosixSupport extends PosixSupport {
 
     @ExportMessage
     int semGetValue(long handle) throws PosixException {
-        /* msimacek: It works on Linux, and it doesn't work on Darwin. It might work on some other
-         * Unix-likes, but it's hard to check, so let's assume it only works on Linux for now */
+        /*
+         * msimacek: It works on Linux, and it doesn't work on Darwin. It might work on some other
+         * Unix-likes, but it's hard to check, so let's assume it only works on Linux for now
+         */
         if (PythonLanguage.getPythonOS() != PythonOS.PLATFORM_LINUX) {
             throw NO_SEM_GETVALUE_EXCEPTION;
         }
