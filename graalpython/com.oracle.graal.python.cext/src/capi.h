@@ -307,6 +307,8 @@ PY_TRUFFLE_TYPE(PyCFunction_Type,                "builtin_function_or_method", &
 PY_TRUFFLE_TYPE(_PyBytesIOBuffer_Type,           "_BytesIOBuffer",             &PyType_Type, 0) \
 PY_TRUFFLE_TYPE(_PyExc_BaseException,            "BaseException",              &PyType_Type, sizeof(PyBaseExceptionObject)) \
 PY_TRUFFLE_TYPE(_PyExc_Exception,                "Exception",                  &PyType_Type, sizeof(PyBaseExceptionObject)) \
+PY_TRUFFLE_TYPE(_PyExc_InterpreterError,         "InterpreterError",           &PyType_Type, sizeof(PyBaseExceptionObject)) \
+PY_TRUFFLE_TYPE(_PyExc_InterpreterNotFoundError, "InterpreterNotFoundError",   &_PyExc_InterpreterError, sizeof(PyBaseExceptionObject)) \
 PY_TRUFFLE_TYPE(_PyExc_StopIteration,            "StopIteration",              &PyType_Type, sizeof(PyStopIterationObject)) \
 PY_TRUFFLE_TYPE(_PyExc_SyntaxError,              "SyntaxError",                &PyType_Type, sizeof(PySyntaxErrorObject)) \
 PY_TRUFFLE_TYPE(_PyNamespace_Type,                "SimpleNamespace",           &PyType_Type, sizeof(_PyNamespaceObject)) \
@@ -454,6 +456,8 @@ EXCEPTION(ImportError) \
 EXCEPTION(ImportWarning) \
 EXCEPTION(IndentationError) \
 EXCEPTION(IndexError) \
+EXCEPTION(InterpreterError) \
+EXCEPTION(InterpreterNotFoundError) \
 EXCEPTION(InterruptedError) \
 EXCEPTION(IOError) \
 EXCEPTION(IsADirectoryError) \
@@ -465,6 +469,7 @@ EXCEPTION(ModuleNotFoundError) \
 EXCEPTION(NameError) \
 EXCEPTION(NotADirectoryError) \
 EXCEPTION(NotImplementedError) \
+EXCEPTION(NotShareableError) \
 EXCEPTION(OSError) \
 EXCEPTION(OverflowError) \
 EXCEPTION(PendingDeprecationWarning) \

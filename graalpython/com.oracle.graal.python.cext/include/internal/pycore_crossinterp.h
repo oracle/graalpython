@@ -22,6 +22,7 @@ extern "C" {
 
 PyAPI_DATA(PyObject *) PyExc_InterpreterError;
 PyAPI_DATA(PyObject *) PyExc_InterpreterNotFoundError;
+PyAPI_DATA(PyObject *) PyExc_NotShareableError;
 
 
 /***************************/

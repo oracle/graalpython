@@ -738,6 +738,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     KeyboardInterrupt("KeyboardInterrupt", PBaseException, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     GeneratorExit("GeneratorExit", PBaseException, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     Exception("Exception", PBaseException, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
+    InterpreterError("InterpreterError", Exception, newBuilder().basetype().addDict().doc("""
+                    A cross-interpreter operation failed""")),
+    InterpreterNotFoundError("InterpreterNotFoundError", InterpreterError, newBuilder().basetype().addDict().doc("""
+                    An interpreter was not found""")),
     ReferenceError("ReferenceError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     RuntimeError("RuntimeError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     NotImplementedError("NotImplementedError", RuntimeError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
@@ -747,6 +751,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     SystemError("SystemError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     TypeError("TypeError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     ValueError("ValueError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
+    NotShareableError("NotShareableError", ValueError, newBuilder().basetype().addDict()),
     StopIteration("StopIteration", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(StopIterationBuiltins.SLOTS)),
     StopAsyncIteration("StopAsyncIteration", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     ArithmeticError("ArithmeticError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
