@@ -1206,10 +1206,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                      */
                     "PySlice_Start", "PySlice_Step", "PySlice_Stop",
                     "PyObject_GetDoc", "PyObject_SetDoc",
-                    // Only in include/internal/pycore_namespace.h, not public
-                    "_PyNamespace_New",
-                    // Only in include/internal/pycore_fileutils.h, not public
-                    "_Py_GetErrorHandler",
+                    /*
+                     * Internal CPython helpers declared in internal/pycore_*.h headers that are implemented as upcalls.
+                     */
+                    "_PyDict_HasOnlyStringKeys", "_PyDict_Next", "_PyDict_SetItem_KnownHash", "_Py_GetErrorHandler",
+                    "_PyErr_GetHandledException", "_PyErr_SetHandledException", "_PyErr_WriteUnraisableMsg",
+                    "_PyList_Extend", "_PyNamespace_New", "_PyObject_MakeTpCall", "_PyTraceback_Add",
+                    "_PyUnicode_AsASCIIString", "_PyUnicode_AsLatin1String", "_PyUnicode_AsUTF8String",
+                    "_PyUnicode_EqualToASCIIString", "_Py_HashBytes",
+                    // TODO: these were removed from CPython and should be removed from GraalPy as well
+                    "_PyImport_GetModuleId", "_PyLong_AsInt", "_PyObject_FastCall", "_PyUnicode_FormatLong",
+                    "_PyUnicode_JoinArray", "_Py_IsFinalizing",
                     // Not actually additional, only defined on Windows.
                     // TODO: fix generated CAPIFunctions.txt
                     "PyUnicode_AsMBCSString", "PyUnicode_EncodeCodePage", "PyUnicode_DecodeMBCS",
