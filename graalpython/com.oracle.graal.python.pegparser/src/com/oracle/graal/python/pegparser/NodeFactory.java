@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -511,15 +511,15 @@ public class NodeFactory {
         return new TypeAlias(name, typeParams, value, sourceRange);
     }
 
-    public TypeVar createTypeVar(String name, ExprTy bound, SourceRange sourceRange) {
-        return new TypeVar(name, bound, sourceRange);
+    public TypeVar createTypeVar(String name, ExprTy bound, ExprTy defaultValue, SourceRange sourceRange) {
+        return new TypeVar(name, bound, defaultValue, sourceRange);
     }
 
-    public TypeVarTuple createTypeVarTuple(String name, SourceRange sourceRange) {
-        return new TypeVarTuple(name, sourceRange);
+    public TypeVarTuple createTypeVarTuple(String name, ExprTy defaultValue, SourceRange sourceRange) {
+        return new TypeVarTuple(name, defaultValue, sourceRange);
     }
 
-    public ParamSpec createParamSpec(String name, SourceRange sourceRange) {
-        return new ParamSpec(name, sourceRange);
+    public ParamSpec createParamSpec(String name, ExprTy defaultValue, SourceRange sourceRange) {
+        return new ParamSpec(name, defaultValue, sourceRange);
     }
 }

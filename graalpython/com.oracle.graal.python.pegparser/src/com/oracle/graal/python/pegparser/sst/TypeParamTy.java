@@ -56,12 +56,14 @@ public abstract class TypeParamTy extends SSTNode {
     public static final class TypeVar extends TypeParamTy {
         public final String name;
         public final ExprTy bound;   // nullable
+        public final ExprTy defaultValue;   // nullable
 
-        public TypeVar(String name, ExprTy bound, SourceRange sourceRange) {
+        public TypeVar(String name, ExprTy bound, ExprTy defaultValue, SourceRange sourceRange) {
             super(sourceRange);
             assert name != null;
             this.name = name;
             this.bound = bound;
+            this.defaultValue = defaultValue;
         }
 
         @Override
@@ -72,11 +74,13 @@ public abstract class TypeParamTy extends SSTNode {
 
     public static final class ParamSpec extends TypeParamTy {
         public final String name;
+        public final ExprTy defaultValue;   // nullable
 
-        public ParamSpec(String name, SourceRange sourceRange) {
+        public ParamSpec(String name, ExprTy defaultValue, SourceRange sourceRange) {
             super(sourceRange);
             assert name != null;
             this.name = name;
+            this.defaultValue = defaultValue;
         }
 
         @Override
@@ -87,11 +91,13 @@ public abstract class TypeParamTy extends SSTNode {
 
     public static final class TypeVarTuple extends TypeParamTy {
         public final String name;
+        public final ExprTy defaultValue;   // nullable
 
-        public TypeVarTuple(String name, SourceRange sourceRange) {
+        public TypeVarTuple(String name, ExprTy defaultValue, SourceRange sourceRange) {
             super(sourceRange);
             assert name != null;
             this.name = name;
+            this.defaultValue = defaultValue;
         }
 
         @Override

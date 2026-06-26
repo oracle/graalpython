@@ -73,6 +73,7 @@ final class AstState {
     static final TruffleString T_F_CONVERSION = tsLiteral("conversion");
     static final TruffleString T_F_CTX = tsLiteral("ctx");
     static final TruffleString T_F_DECORATOR_LIST = tsLiteral("decorator_list");
+    static final TruffleString T_F_DEFAULT_VALUE = tsLiteral("default_value");
     static final TruffleString T_F_DEFAULTS = tsLiteral("defaults");
     static final TruffleString T_F_ELT = tsLiteral("elt");
     static final TruffleString T_F_ELTS = tsLiteral("elts");
@@ -1471,33 +1472,33 @@ final class AstState {
                         tsa(),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(),
-                        ts("type_param = TypeVar(identifier name, expr? bound)\n" +
-                        "           | ParamSpec(identifier name)\n" +
-                        "           | TypeVarTuple(identifier name)")
+                        ts("type_param = TypeVar(identifier name, expr? bound, expr? default_value)\n" +
+                        "           | ParamSpec(identifier name, expr? default_value)\n" +
+                        "           | TypeVarTuple(identifier name, expr? default_value)")
         );
 
         // TypeParamTy.TypeVar
         clsTypeVar = factory.makeType(T_C_TYPEVAR, clsTypeParamTy,
-                        tsa(T_F_NAME, T_F_BOUND),
+                        tsa(T_F_NAME, T_F_BOUND, T_F_DEFAULT_VALUE),
                         null,
-                        tsa(T_F_BOUND),
-                        ts("TypeVar(identifier name, expr? bound)")
+                        tsa(T_F_BOUND, T_F_DEFAULT_VALUE),
+                        ts("TypeVar(identifier name, expr? bound, expr? default_value)")
         );
 
         // TypeParamTy.ParamSpec
         clsParamSpec = factory.makeType(T_C_PARAMSPEC, clsTypeParamTy,
-                        tsa(T_F_NAME),
+                        tsa(T_F_NAME, T_F_DEFAULT_VALUE),
                         null,
-                        tsa(),
-                        ts("ParamSpec(identifier name)")
+                        tsa(T_F_DEFAULT_VALUE),
+                        ts("ParamSpec(identifier name, expr? default_value)")
         );
 
         // TypeParamTy.TypeVarTuple
         clsTypeVarTuple = factory.makeType(T_C_TYPEVARTUPLE, clsTypeParamTy,
-                        tsa(T_F_NAME),
+                        tsa(T_F_NAME, T_F_DEFAULT_VALUE),
                         null,
-                        tsa(),
-                        ts("TypeVarTuple(identifier name)")
+                        tsa(T_F_DEFAULT_VALUE),
+                        ts("TypeVarTuple(identifier name, expr? default_value)")
         );
     }
 

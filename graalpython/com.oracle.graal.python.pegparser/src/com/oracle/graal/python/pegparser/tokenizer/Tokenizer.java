@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2021 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1035,21 +1035,6 @@ public class Tokenizer {
                             if (errMsg != null) {
                                 done = StatusCode.SYNTAX_ERROR;
                                 return createToken(Token.Kind.ERRORTOKEN, errMsg);
-                            }
-                        }
-                        if (!asyncHacks || insideAsyncDef) {
-                            if (tokenString.equals("async")) {
-                                return createToken(Token.Kind.ASYNC);
-                            }
-                            if (tokenString.equals("await")) {
-                                return createToken(Token.Kind.AWAIT);
-                            }
-                        } else if (tokenString.equals("async")) {
-                            Token t = new Tokenizer(this).next();
-                            if (t.type == Token.Kind.NAME && getTokenCodePoints(t).toJavaString().equals("def")) {
-                                insideAsyncDef = true;
-                                indentationOfAsyncDef = currentIndentIndex;
-                                return createToken(Token.Kind.ASYNC);
                             }
                         }
                         return createToken(Token.Kind.NAME);
