@@ -108,6 +108,7 @@ import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
@@ -125,6 +126,7 @@ public abstract class PGuards {
         return value == PNone.NONE;
     }
 
+    @Idempotent
     public static boolean isNoValue(Object object) {
         return object == PNone.NO_VALUE;
     }
@@ -525,4 +527,8 @@ public abstract class PGuards {
         return isBuiltinDict(dict) || getSlots.execute(inliningTarget, getClassNode.execute(inliningTarget, dict)).tp_iter() == DictBuiltins.SLOTS.tp_iter();
     }
 
+    @Idempotent
+    public static boolean hasMaterializedDict(Shape s) {
+        return (s.getFlags() & PythonObject.HAS_MATERIALIZED_DICT) != 0;
+    }
 }

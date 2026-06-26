@@ -72,6 +72,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.object.PropertyGetter;
+import com.oracle.truffle.api.object.Shape;
 
 public final class HiddenAttr {
 
@@ -125,6 +127,10 @@ public final class HiddenAttr {
         return this == ALLOC || this == AS_BUFFER || this == CLEAR || this == DEALLOC ||
                         this == DEL || this == FREE || this == IS_GC || this == TRAVERSE ||
                         this == METHOD_DEF_PTR;
+    }
+
+    public PropertyGetter createPropertyGetter(Shape shape) {
+        return shape.makePropertyGetter(key);
     }
 
     @Override
@@ -192,10 +198,7 @@ public final class HiddenAttr {
         }
 
         private static boolean isGenericDict(PythonObject self, Object value) {
-            if (value instanceof PDict dict && dict.getDictStorage() instanceof DynamicObjectStorage dynamicStorage) {
-                return dynamicStorage.getStore() != self;
-            }
-            return true;
+            return !(value instanceof PDict dict && dict.getDictStorage() instanceof DynamicObjectStorage dom && dom.getStore() == self);
         }
 
         @Specialization(guards = "attr != DICT || !isPythonObject(self)")

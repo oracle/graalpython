@@ -605,11 +605,11 @@ public class HashingStorageNodes {
                 if (val == PNone.NO_VALUE) {
                     return null;
                 } else {
-                    putNode.execute(store, key, PNone.NO_VALUE);
+                    self.setStringKey(key, PNone.NO_VALUE, putNode);
                     return val;
                 }
             } else {
-                return putNode.executeIfPresent(store, key, PNone.NO_VALUE);
+                return self.setStringKeyIfPresent(key, PNone.NO_VALUE, putNode);
             }
         }
 

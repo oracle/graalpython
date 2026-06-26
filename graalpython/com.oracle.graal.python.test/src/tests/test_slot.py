@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -172,6 +172,18 @@ class TestSlots(unittest.TestCase):
         class C:
             __slots__ = ('a', 'b')
         self.assertRaises(AttributeError, setattr, C(), 'c', 42)
+
+    def test_write_attr_without_dict_after_warmup(self):
+        class C:
+            __slots__ = ()
+
+        obj = C()
+
+        def write_attr():
+            obj.x = 42
+
+        for _ in range(20):
+            self.assertRaises(AttributeError, write_attr)
 
 if __name__ == "__main__":
     unittest.main()

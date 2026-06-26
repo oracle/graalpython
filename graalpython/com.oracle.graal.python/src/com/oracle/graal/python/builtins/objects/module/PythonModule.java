@@ -89,7 +89,7 @@ public final class PythonModule extends PythonObject {
         setAttribute(T___SPEC__, PNone.NO_VALUE);
         setAttribute(T___CACHED__, PNone.NO_VALUE);
         setAttribute(T___FILE__, PNone.NO_VALUE);
-        GetOrCreateDictNode.executeUncached(this);
+        GetOrCreateDictNode.ensureModuleDict(this);
     }
 
     /**
@@ -105,7 +105,7 @@ public final class PythonModule extends PythonObject {
         setAttribute(T___SPEC__, PNone.NONE);
         setAttribute(T___CACHED__, PNone.NO_VALUE);
         setAttribute(T___FILE__, PNone.NO_VALUE);
-        GetOrCreateDictNode.executeUncached(this);
+        GetOrCreateDictNode.ensureModuleDict(lang, this);
     }
 
     /**

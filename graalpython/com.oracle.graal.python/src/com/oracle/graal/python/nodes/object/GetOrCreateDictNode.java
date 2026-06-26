@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -76,6 +77,15 @@ public abstract class GetOrCreateDictNode extends PNodeWithContext {
 
     public static PDict executeUncached(Object object) {
         return GetOrCreateDictNodeGen.getUncached().execute(null, object);
+    }
+
+    public static void ensureModuleDict(PythonModule module) {
+        ensureModuleDict(PythonLanguage.get(null), module);
+    }
+
+    public static void ensureModuleDict(PythonLanguage language, PythonModule module) {
+        var dict = PFactory.createDictFixedStorage(language, module);
+        SetDictNode.executeUncached(module, dict);
     }
 
     @Specialization
