@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime.nativeaccess;
 import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
 import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
 import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
+import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
 
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -174,6 +175,7 @@ public final class NativeContext {
     private static final MethodHandle DLSYM = NativeAccessSupport.createDowncallHandle(false, false, SINT64, SINT64, POINTER);
     private static final MethodHandle FREE_LIBRARY = NativeAccessSupport.createDowncallHandle(false, false, SINT32, SINT64);
     private static final MethodHandle GET_PROC_ADDRESS = NativeAccessSupport.createDowncallHandle(false, false, SINT64, SINT64, POINTER);
+    private static final MethodHandle SET_LAST_ERROR = NativeAccessSupport.createDowncallHandle(false, false, VOID, SINT32);
     private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(false, false, SINT32, SINT32, POINTER, SINT32, SINT32, POINTER, SINT32, POINTER);
     private static final MethodHandle DLERROR = NativeAccessSupport.createDowncallHandle(false, false, SINT64);
     private static final MethodHandle LOAD_LIBRARY_EX_CAPTURED = isWindows() ? NativeAccessSupport.createDowncallHandle(false, true, SINT64, POINTER, POINTER, SINT32) : null;
@@ -185,6 +187,7 @@ public final class NativeContext {
     private static long loadLibraryExPtr;
     private static long freeLibraryPtr;
     private static long getProcAddressPtr;
+    private static long setLastErrorPtr;
     private static long formatMessagePtr;
     private static Object windowsLookupArena;
     private static NativeLibraryLookup windowsLookup;
@@ -194,6 +197,7 @@ public final class NativeContext {
             if (loadLibraryExPtr != 0) {
                 assert freeLibraryPtr != 0;
                 assert getProcAddressPtr != 0;
+                assert setLastErrorPtr != 0;
                 assert formatMessagePtr != 0;
                 assert LOAD_LIBRARY_EX_CAPTURED != null;
                 return;
@@ -205,6 +209,7 @@ public final class NativeContext {
             loadLibraryExPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "LoadLibraryExW");
             freeLibraryPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "FreeLibrary");
             getProcAddressPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "GetProcAddress");
+            setLastErrorPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "SetLastError");
             formatMessagePtr = NativeAccessSupport.lookupSymbol(windowsLookup, "FormatMessageW");
             return;
         }
@@ -232,6 +237,16 @@ public final class NativeContext {
             return new NativeLibraryLoadException("dlopen failed");
         }
         return new NativeLibraryLoadException(detail);
+    }
+
+    public static void setLastError(int errorCode) {
+        assert isWindows();
+        ensureLoader();
+        try {
+            SET_LAST_ERROR.invokeExact(setLastErrorPtr, errorCode);
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
     }
 
     private static String getDlError() {

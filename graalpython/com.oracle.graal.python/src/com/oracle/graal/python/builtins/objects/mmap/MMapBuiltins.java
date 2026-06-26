@@ -135,6 +135,7 @@ import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -308,7 +309,11 @@ public final class MMapBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             PythonContext context = PythonContext.get(inliningTarget);
-            return PFactory.createMMap(context, clazz, getInstanceShape.execute(clazz), mmapHandle, dupFd, length, access);
+            PMMap mmap = PFactory.createMMap(context, clazz, getInstanceShape.execute(clazz), mmapHandle, dupFd, length, access);
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                NativeContext.setLastError(0);
+            }
+            return mmap;
         }
 
         @Specialization(guards = "isIllegal(fd)")
