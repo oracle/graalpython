@@ -511,7 +511,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             try {
                 // get_data
                 TruffleString strBytecodePath = PyObjectStrAsTruffleStringNode.executeUncached(bytecodePath);
-                TruffleFile bytecodeFile = context.getPublicTruffleFileRelaxed(strBytecodePath);
+                TruffleFile bytecodeFile = context.getPublicTruffleFileRelaxed(strBytecodePath).getAbsoluteFile().normalize();
                 byte[] bytes = bytecodeFile.readAllBytes();
                 // _classify_pyc
                 if (bytes.length < 16 || !Arrays.equals(bytes, 0, 4, MAGIC_NUMBER_BYTES, 0, 4)) {
@@ -536,7 +536,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     if (!checkHashBasedPycs.equals("never") && (checkSource || checkHashBasedPycs.equals("always"))) {
                         // get_data
                         TruffleString strSourcePath = PyObjectStrAsTruffleStringNode.executeUncached(sourcePath);
-                        TruffleFile sourceFile = context.getEnv().getPublicTruffleFile(strSourcePath.toJavaStringUncached());
+                        TruffleFile sourceFile = context.getEnv().getPublicTruffleFile(strSourcePath.toJavaStringUncached()).getAbsoluteFile().normalize();
                         byte[] sourceBytes = sourceFile.readAllBytes();
                         long sourceHash = ARRAY_ACCESSOR_LE.getLong(ImpModuleBuiltins.SourceHashNode.hashSource(MAGIC_NUMBER, sourceBytes, sourceBytes.length), 0);
                         // _validate_hash_pyc
@@ -571,7 +571,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 if (sourcePath != PNone.NONE) {
                     try {
                         TruffleString strSourcePath = PyObjectStrAsTruffleStringNode.executeUncached(sourcePath);
-                        sourceFile = context.getPublicTruffleFileRelaxed(strSourcePath);
+                        sourceFile = context.getPublicTruffleFileRelaxed(strSourcePath).getAbsoluteFile().normalize();
                     } catch (SecurityException | UnsupportedOperationException | IllegalArgumentException ignored) {
                         // Fall back to Marshal's empty source.
                     }

@@ -182,7 +182,7 @@ def test_reparse_modified():
 
 
 def test_reparse_disabled():
-    with pyc_reparse(TRACING_TEST, python_options=["--python.KeepBytecodeInMemory"], expect_success=True) \
+    with pyc_reparse(TRACING_TEST, python_options=["--experimental-options=true", "--python.KeepBytecodeInMemory"], expect_success=True) \
             as (example_file, pyc_file):
         pyc_file.unlink()
 
