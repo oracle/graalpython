@@ -64,7 +64,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule HEAPQ = new PythonFrozenModule("HEAPQ", "heapq", false);
         private static final PythonFrozenModule REPRLIB = new PythonFrozenModule("REPRLIB", "reprlib", false);
         private static final PythonFrozenModule COLLECTIONS = new PythonFrozenModule("COLLECTIONS", "collections", true);
-        private static final PythonFrozenModule COLLECTIONS_ABC = new PythonFrozenModule("COLLECTIONS_ABC", "collections.abc", false);
         private static final PythonFrozenModule FUNCTOOLS = new PythonFrozenModule("FUNCTOOLS", "functools", false);
         private static final PythonFrozenModule COPYREG = new PythonFrozenModule("COPYREG", "copyreg", false);
         private static final PythonFrozenModule RE = new PythonFrozenModule("RE", "re", true);
@@ -142,8 +141,6 @@ public final class FrozenModules {
                 return Map.COLLECTIONS;
             case "collections.__init__":
                 return Map.COLLECTIONS.asPackage(false);
-            case "collections.abc":
-                return Map.COLLECTIONS_ABC;
             case "functools":
                 return Map.FUNCTOOLS;
             case "copyreg":
