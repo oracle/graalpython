@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.typing.PNoDefault;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -186,6 +187,11 @@ public abstract class GetClassNode extends PNodeWithContext {
     @Specialization
     static Object getEllipsis(@SuppressWarnings("unused") PEllipsis object) {
         return PythonBuiltinClassType.PEllipsis;
+    }
+
+    @Specialization
+    static Object getNoDefault(@SuppressWarnings("unused") PNoDefault object) {
+        return PythonBuiltinClassType.PNoDefault;
     }
 
     @Specialization

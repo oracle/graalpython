@@ -347,6 +347,7 @@ public abstract class TypeNodes {
                 case MultibyteCodec:
                 case PEllipsis:
                 case PNotImplemented:
+                case PNoDefault:
                 case PNone:
                     result = DEFAULT;
                     break;

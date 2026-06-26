@@ -43,6 +43,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_GENERIC;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MD5;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_NO_DEFAULT_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC_ARGS;
@@ -283,6 +284,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.NoDefaultBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecArgsBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecKwargsBuiltins;
@@ -1463,6 +1465,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                     This type is meant for runtime introspection and has no special meaning
                     to static type checkers.
+                    """)),
+    PNoDefault(J_NO_DEFAULT_TYPE, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_BUILTINS).slots(NoDefaultBuiltins.SLOTS).doc("""
+                    NoDefaultType()
+                    --
+
+                    The type of the NoDefault singleton.
                     """)),
     PTypeAliasType(
                     J_TYPE_ALIAS_TYPE,

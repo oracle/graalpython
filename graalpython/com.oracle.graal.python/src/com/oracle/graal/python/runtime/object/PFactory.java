@@ -229,6 +229,7 @@ import com.oracle.graal.python.builtins.objects.typing.PParamSpec;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpecArgs;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
+import com.oracle.graal.python.builtins.objects.typing.PNoDefault;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -1612,28 +1613,59 @@ public final class PFactory {
     public static PTypeVar createTypeVar(PythonLanguage language, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
                     boolean covariant, boolean contravariant, boolean inferVariance) {
         return createTypeVar(PythonBuiltinClassType.PTypeVar, PythonBuiltinClassType.PTypeVar.getInstanceShape(language), name, bound, evaluateBound, constraints, evaluateConstraints,
-                        covariant, contravariant, inferVariance);
+                        covariant, contravariant, inferVariance, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PTypeVar createTypeVar(PythonLanguage language, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
+                    boolean covariant, boolean contravariant, boolean inferVariance, Object defaultValue, Object evaluateDefault) {
+        return createTypeVar(PythonBuiltinClassType.PTypeVar, PythonBuiltinClassType.PTypeVar.getInstanceShape(language), name, bound, evaluateBound, constraints, evaluateConstraints,
+                        covariant, contravariant, inferVariance, defaultValue, evaluateDefault);
     }
 
     public static PTypeVar createTypeVar(Object cls, Shape shape, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
                     boolean covariant, boolean contravariant, boolean inferVariance) {
-        return new PTypeVar(cls, shape, name, bound, evaluateBound, constraints, evaluateConstraints, covariant, contravariant, inferVariance);
+        return createTypeVar(cls, shape, name, bound, evaluateBound, constraints, evaluateConstraints, covariant, contravariant, inferVariance, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PTypeVar createTypeVar(Object cls, Shape shape, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
+                    boolean covariant, boolean contravariant, boolean inferVariance, Object defaultValue, Object evaluateDefault) {
+        return new PTypeVar(cls, shape, name, bound, evaluateBound, constraints, evaluateConstraints, covariant, contravariant, inferVariance, defaultValue, evaluateDefault);
     }
 
     public static PTypeVarTuple createTypeVarTuple(PythonLanguage language, TruffleString name) {
-        return createTypeVarTuple(PythonBuiltinClassType.PTypeVarTuple, PythonBuiltinClassType.PTypeVarTuple.getInstanceShape(language), name);
+        return createTypeVarTuple(PythonBuiltinClassType.PTypeVarTuple, PythonBuiltinClassType.PTypeVarTuple.getInstanceShape(language), name, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PTypeVarTuple createTypeVarTuple(PythonLanguage language, TruffleString name, Object defaultValue, Object evaluateDefault) {
+        return createTypeVarTuple(PythonBuiltinClassType.PTypeVarTuple, PythonBuiltinClassType.PTypeVarTuple.getInstanceShape(language), name, defaultValue, evaluateDefault);
     }
 
     public static PTypeVarTuple createTypeVarTuple(Object cls, Shape shape, TruffleString name) {
-        return new PTypeVarTuple(cls, shape, name);
+        return createTypeVarTuple(cls, shape, name, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PTypeVarTuple createTypeVarTuple(Object cls, Shape shape, TruffleString name, Object defaultValue, Object evaluateDefault) {
+        return new PTypeVarTuple(cls, shape, name, defaultValue, evaluateDefault);
     }
 
     public static PParamSpec createParamSpec(PythonLanguage language, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance) {
-        return createParamSpec(PythonBuiltinClassType.PParamSpec, PythonBuiltinClassType.PParamSpec.getInstanceShape(language), name, bound, covariant, contravariant, inferVariance);
+        return createParamSpec(PythonBuiltinClassType.PParamSpec, PythonBuiltinClassType.PParamSpec.getInstanceShape(language), name, bound, covariant, contravariant, inferVariance,
+                        PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PParamSpec createParamSpec(PythonLanguage language, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance, Object defaultValue,
+                    Object evaluateDefault) {
+        return createParamSpec(PythonBuiltinClassType.PParamSpec, PythonBuiltinClassType.PParamSpec.getInstanceShape(language), name, bound, covariant, contravariant, inferVariance,
+                        defaultValue, evaluateDefault);
     }
 
     public static PParamSpec createParamSpec(Object cls, Shape shape, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance) {
-        return new PParamSpec(cls, shape, name, bound, covariant, contravariant, inferVariance);
+        return createParamSpec(cls, shape, name, bound, covariant, contravariant, inferVariance, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PParamSpec createParamSpec(Object cls, Shape shape, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance, Object defaultValue,
+                    Object evaluateDefault) {
+        return new PParamSpec(cls, shape, name, bound, covariant, contravariant, inferVariance, defaultValue, evaluateDefault);
     }
 
     public static PParamSpecArgs createParamSpecArgs(PythonLanguage language, Object origin) {

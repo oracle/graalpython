@@ -379,6 +379,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.GenericBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.NoDefaultBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecArgsBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecKwargsBuiltins;
@@ -819,6 +820,7 @@ public abstract class Python3Core {
                         new ParamSpecBuiltins(),
                         new ParamSpecArgsBuiltins(),
                         new ParamSpecKwargsBuiltins(),
+                        new NoDefaultBuiltins(),
                         new TypeAliasTypeBuiltins(),
                         new GenericBuiltins()));
         if (HAS_PROFILER_TOOL) {

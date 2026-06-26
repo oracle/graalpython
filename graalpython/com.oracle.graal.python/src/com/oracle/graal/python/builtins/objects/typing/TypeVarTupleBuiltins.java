@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.typing.TypeVarTupleBuiltinsClinicProviders.TypeVarTupleNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -101,8 +102,9 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(name = J_TYPE_VAR_TUPLE, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "name"}, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
+    @SlotSignature(name = J_TYPE_VAR_TUPLE, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "name"}, keywordOnlyNames = {"default"}, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
+    @ArgumentClinic(name = "default", defaultValue = "PNoDefault.NO_DEFAULT")
     @GenerateNodeFactory
     abstract static class TypeVarTupleNode extends PythonClinicBuiltinNode {
 
@@ -112,13 +114,13 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PTypeVarTuple newTypeVarTuple(VirtualFrame frame, Object cls, TruffleString name,
+        static PTypeVarTuple newTypeVarTuple(VirtualFrame frame, Object cls, TruffleString name, Object defaultValue,
                         @Bind Node inliningTarget,
                         @Cached CallerNode callerNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PyObjectSetAttr setAttrNode) {
             Object module = callerNode.execute(frame, inliningTarget);
-            PTypeVarTuple result = PFactory.createTypeVarTuple(cls, getInstanceShape.execute(cls), name);
+            PTypeVarTuple result = PFactory.createTypeVarTuple(cls, getInstanceShape.execute(cls), name, defaultValue, null);
             setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
             return result;
         }
@@ -130,6 +132,33 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doName(PTypeVarTuple self) {
             return self.name;
+        }
+    }
+
+    @Builtin(name = "__default__", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetDefaultNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "self.defaultValue != null")
+        static Object doEvaluated(PTypeVarTuple self) {
+            return self.defaultValue;
+        }
+
+        @Specialization(guards = "self.defaultValue == null")
+        static Object doEvaluate(VirtualFrame frame, PTypeVarTuple self,
+                        @Cached CallNode callNode) {
+            assert self.evaluateDefault != null;
+            self.defaultValue = callNode.execute(frame, self.evaluateDefault);
+            self.evaluateDefault = null;
+            return self.defaultValue;
+        }
+    }
+
+    @Builtin(name = "has_default", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class HasDefaultNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean hasDefault(PTypeVarTuple self) {
+            return self.evaluateDefault != null || self.defaultValue != PNoDefault.NO_DEFAULT;
         }
     }
 

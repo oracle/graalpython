@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,10 +51,13 @@ public final class PParamSpec extends PythonBuiltinObject {
     final boolean covariant;
     final boolean contravariant;
     final boolean inferVariance;
+    Object defaultValue;
+    Object evaluateDefault;
 
-    public PParamSpec(Object cls, Shape instanceShape, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance) {
+    public PParamSpec(Object cls, Shape instanceShape, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance, Object defaultValue, Object evaluateDefault) {
         super(cls, instanceShape);
         assert bound != null;
+        assert (defaultValue == null) != (evaluateDefault == null);
         assert !(covariant && contravariant);
         assert !(inferVariance && (covariant || contravariant));
 
@@ -63,5 +66,7 @@ public final class PParamSpec extends PythonBuiltinObject {
         this.covariant = covariant;
         this.contravariant = contravariant;
         this.inferVariance = inferVariance;
+        this.defaultValue = defaultValue;
+        this.evaluateDefault = evaluateDefault;
     }
 }

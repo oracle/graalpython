@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltinsClinicProviders.ParamSpecNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -101,12 +102,13 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(name = J_PARAM_SPEC, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "name"}, keywordOnlyNames = {"bound", "covariant",
+    @SlotSignature(name = J_PARAM_SPEC, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "name"}, keywordOnlyNames = {"bound", "default", "covariant",
                     "contravariant", "infer_variance"}, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "covariant", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "contravariant", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "infer_variance", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @ArgumentClinic(name = "default", defaultValue = "PNoDefault.NO_DEFAULT")
     @GenerateNodeFactory
     abstract static class ParamSpecNode extends PythonClinicBuiltinNode {
 
@@ -116,7 +118,7 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PParamSpec newParamSpec(VirtualFrame frame, Object cls, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance,
+        static PParamSpec newParamSpec(VirtualFrame frame, Object cls, TruffleString name, Object bound, Object defaultValue, boolean covariant, boolean contravariant, boolean inferVariance,
                         @Bind Node inliningTarget,
                         @Cached CheckBoundNode checkBoundNode,
                         @Cached CallerNode callerNode,
@@ -135,7 +137,7 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
 
             Object module = callerNode.execute(frame, inliningTarget);
 
-            PParamSpec result = PFactory.createParamSpec(cls, getInstanceShape.execute(cls), name, boundChecked, covariant, contravariant, inferVariance);
+            PParamSpec result = PFactory.createParamSpec(cls, getInstanceShape.execute(cls), name, boundChecked, covariant, contravariant, inferVariance, defaultValue, null);
             setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
             return result;
         }
@@ -183,6 +185,33 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
         @Specialization
         static Object doBound(PParamSpec self) {
             return self.bound;
+        }
+    }
+
+    @Builtin(name = "__default__", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetDefaultNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "self.defaultValue != null")
+        static Object doEvaluated(PParamSpec self) {
+            return self.defaultValue;
+        }
+
+        @Specialization(guards = "self.defaultValue == null")
+        static Object doEvaluate(VirtualFrame frame, PParamSpec self,
+                        @Cached CallNode callNode) {
+            assert self.evaluateDefault != null;
+            self.defaultValue = callNode.execute(frame, self.evaluateDefault);
+            self.evaluateDefault = null;
+            return self.defaultValue;
+        }
+    }
+
+    @Builtin(name = "has_default", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class HasDefaultNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean hasDefault(PParamSpec self) {
+            return self.evaluateDefault != null || self.defaultValue != PNoDefault.NO_DEFAULT;
         }
     }
 

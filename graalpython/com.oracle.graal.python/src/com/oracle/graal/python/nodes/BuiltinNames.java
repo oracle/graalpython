@@ -466,6 +466,11 @@ public abstract class BuiltinNames {
     public static final String J_PARAM_SPEC_KWARGS = "ParamSpecKwargs";
     public static final TruffleString T_PARAM_SPEC_KWARGS = tsLiteral(J_PARAM_SPEC_KWARGS);
 
+    public static final String J_NO_DEFAULT = "NoDefault";
+    public static final TruffleString T_NO_DEFAULT = tsLiteral(J_NO_DEFAULT);
+    public static final String J_NO_DEFAULT_TYPE = "NoDefaultType";
+    public static final TruffleString T_NO_DEFAULT_TYPE = tsLiteral(J_NO_DEFAULT_TYPE);
+
     public static final String J_TYPE_ALIAS_TYPE = "TypeAliasType";
     public static final TruffleString T_TYPE_ALIAS_TYPE = tsLiteral(J_TYPE_ALIAS_TYPE);
 

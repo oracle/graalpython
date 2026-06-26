@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,21 +40,24 @@
  */
 package com.oracle.graal.python.builtins.objects.typing;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.truffle.api.CompilerAsserts;
 
-public final class PTypeVarTuple extends PythonBuiltinObject {
+public final class PNoDefault extends PythonAbstractObject {
 
-    final TruffleString name;
-    Object defaultValue;
-    Object evaluateDefault;
+    public static final PNoDefault NO_DEFAULT = new PNoDefault();
 
-    public PTypeVarTuple(Object cls, Shape instanceShape, TruffleString name, Object defaultValue, Object evaluateDefault) {
-        super(cls, instanceShape);
-        assert (defaultValue == null) != (evaluateDefault == null);
-        this.name = name;
-        this.defaultValue = defaultValue;
-        this.evaluateDefault = evaluateDefault;
+    private PNoDefault() {
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return "typing.NoDefault";
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        return this.hashCode() - o.hashCode();
     }
 }
