@@ -73,6 +73,7 @@ check_symbol_exists(copysign "math.h" HAVE_COPYSIGN)
 check_symbol_exists(round "math.h" HAVE_ROUND)
 check_symbol_exists(hypot "math.h" HAVE_HYPOT)
 check_symbol_exists(clock "time.h" HAVE_CLOCK)
+check_symbol_exists(clock_gettime "time.h" HAVE_CLOCK_GETTIME)
 check_symbol_exists(sendfile "sys/sendfile.h" HAVE_SENDFILE)
 
 if(HAVE_SYS_TIME_H)

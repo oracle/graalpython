@@ -909,6 +909,7 @@ _PyTypes_Fini(PyInterpreterState *interp)
     }
 }
 
+
 int
 PyType_AddWatcher(PyType_WatchCallback callback)
 {
@@ -5828,27 +5829,7 @@ clear_static_type_objects(PyInterpreterState *interp, PyTypeObject *type,
     clear_tp_mro(type, final);
     clear_static_tp_subclasses(type, isbuiltin);
 }
-#endif // GraalPy change
 
-static void
-clear_static_tp_subclasses(PyTypeObject *type, int isbuiltin)
-{
-    (void)isbuiltin;
-    clear_tp_subclasses(type);
-}
-
-static void
-clear_static_type_objects(PyInterpreterState *interp, PyTypeObject *type,
-                          int isbuiltin, int final)
-{
-    if (final) {
-        Py_CLEAR(type->tp_cache);
-    }
-    clear_tp_dict(type);
-    clear_tp_bases(type, final);
-    clear_tp_mro(type, final);
-    clear_static_tp_subclasses(type, isbuiltin);
-}
 
 static void
 fini_static_type(PyInterpreterState *interp, PyTypeObject *type,
@@ -5893,6 +5874,7 @@ _PyStaticType_FiniBuiltin(PyInterpreterState *interp, PyTypeObject *type)
 {
     fini_static_type(interp, type, 1, _Py_IsMainInterpreter(interp));
 }
+#endif // GraalPy change
 
 
 static void
@@ -8523,29 +8505,6 @@ _PyStaticType_InitBuiltin(PyInterpreterState *interp, PyTypeObject *self){
     }
     return res;
 }
-#endif // GraalPy change
-
-static int
-init_static_type(PyInterpreterState *interp, PyTypeObject *self,
-                 int isbuiltin, int initial)
-{
-    if (initial) {
-        self->tp_flags |= _Py_TPFLAGS_STATIC_BUILTIN;
-        self->tp_flags |= Py_TPFLAGS_IMMUTABLETYPE;
-    }
-
-    managed_static_type_state_init(interp, self, isbuiltin, initial);
-
-    int res;
-    BEGIN_TYPE_LOCK();
-    res = type_ready(self, initial);
-    END_TYPE_LOCK();
-    if (res < 0) {
-        _PyStaticType_ClearWeakRefs(interp, self);
-        managed_static_type_state_clear(interp, self, isbuiltin, initial);
-    }
-    return res;
-}
 
 int
 _PyStaticType_InitForExtension(PyInterpreterState *interp, PyTypeObject *self)
@@ -8558,6 +8517,7 @@ _PyStaticType_InitBuiltin(PyInterpreterState *interp, PyTypeObject *self)
 {
     return init_static_type(interp, self, 1, _Py_IsMainInterpreter(interp));
 }
+#endif // GraalPy change
 
 
 static int

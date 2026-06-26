@@ -27,7 +27,6 @@
 #include <stdlib.h>
 
 
-#if 0 // GraalPy change
 // Define PY_TIMEOUT_MAX constant.
 #ifdef _POSIX_THREADS
    // PyThread_acquire_lock_timed() uses (us * 1000) to convert microseconds
@@ -48,6 +47,7 @@
 const long long PY_TIMEOUT_MAX = PY_TIMEOUT_MAX_VALUE;
 
 
+#if 0 // GraalPy change
 static void PyThread__init_thread(void); /* Forward */
 
 #define initialized _PyRuntime.threads.initialized
