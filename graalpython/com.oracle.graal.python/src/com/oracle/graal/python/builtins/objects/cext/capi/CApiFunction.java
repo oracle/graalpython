@@ -276,7 +276,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyErr_WarnExplicitObject", ret = Int, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyErr_WarnExplicitObject", ret = Int, args = {PyObject, PyObject, PyObject, Int, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyErr_WarnFormat", ret = Int, args = {PyObject, Py_ssize_t, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
-    @CApiBuiltin(name = "PyErr_WriteUnraisable", ret = Void, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyEval_EvalCode", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyEval_EvalCodeEx", ret = PyObject, args = {PyObject, PyObject, PyObject, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObject,
                     PyObject}, call = CImpl)

@@ -354,6 +354,25 @@ public final class PythonCextErrBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Void, args = {PyObject}, call = Direct)
+    abstract static class PyErr_WriteUnraisable extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object write(Object obj,
+                        @Bind Node inliningTarget,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached WriteUnraisableNode writeUnraisableNode,
+                        @Cached ReadAndClearNativeException readAndClearNativeException) {
+            PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, PythonContext.get(inliningTarget));
+            Object currentException = readAndClearNativeException.execute(inliningTarget, threadState);
+            if (currentException == PNone.NO_VALUE) {
+                // This means an invalid call, but this function is not supposed to raise exceptions
+                return PNone.NONE;
+            }
+            writeUnraisableNode.execute(currentException, null, (obj == PNone.NO_VALUE) ? PNone.NONE : obj);
+            return PNone.NONE;
+        }
+    }
+
     @CApiBuiltin(ret = Void, args = {Int}, call = Direct)
     abstract static class PyErr_PrintEx extends CApiUnaryBuiltinNode {
 

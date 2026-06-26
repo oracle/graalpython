@@ -1427,6 +1427,7 @@ PyInterpreterState_Get(void)
 }
 
 
+#if 0 // GraalPy change
 static PyInterpreterState *
 interp_look_up_id(_PyRuntimeState *runtime, int64_t requested_id)
 {
@@ -1499,7 +1500,6 @@ tstate_is_alive(PyThreadState *tstate)
 /* Minimum size of data stack chunk */
 #define DATA_STACK_CHUNK_SIZE (16*1024)
 
-#if 0 // GraalPy change
 static _PyStackChunk*
 allocate_chunk(int size_in_bytes, _PyStackChunk* previous)
 {
@@ -1620,12 +1620,10 @@ init_threadstate(_PyThreadStateImpl *_tstate,
 
     llist_init(&_tstate->mem_free_queue);
 
-#if 0 // GraalPy change
     if (interp->stoptheworld.requested || _PyRuntime.stoptheworld.requested) {
         // Start in the suspended state if there is an ongoing stop-the-world.
         tstate->state = _Py_THREAD_SUSPENDED;
     }
-#endif // GraalPy change
 
     tstate->_status.initialized = 1;
 }

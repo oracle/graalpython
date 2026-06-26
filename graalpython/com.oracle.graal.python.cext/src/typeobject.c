@@ -2110,9 +2110,11 @@ _PyType_AllocNoTrack(PyTypeObject *type, Py_ssize_t nitems)
     else {
         _PyObject_InitVar((PyVarObject *)obj, type, nitems);
     }
+#if 0 // GraalPy change
     if (type->tp_flags & Py_TPFLAGS_INLINE_VALUES) {
         _PyObject_InitInlineValues(obj, type);
     }
+#endif // GraalPy change
     return obj;
 }
 

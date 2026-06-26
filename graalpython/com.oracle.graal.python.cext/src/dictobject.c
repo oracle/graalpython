@@ -2869,6 +2869,7 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
         *phash = hash;
     return 1;
 }
+#endif // GraalPy change
 
 /*
  * Iterate over a dict.  Use like so:
@@ -2895,6 +2896,7 @@ PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue)
 }
 
 
+#if 0 // GraalPy change
 /* Internal version of dict.pop(). */
 int
 _PyDict_Pop_KnownHash(PyDictObject *mp, PyObject *key, Py_hash_t hash,
