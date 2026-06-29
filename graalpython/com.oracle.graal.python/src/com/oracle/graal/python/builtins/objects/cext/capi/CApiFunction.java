@@ -594,7 +594,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyErr_BadInternalCall", ret = Void, args = {ConstCharPtr, PrimitiveResult32}, call = CImpl)
     @CApiBuiltin(name = "_PyErr_ChainExceptions1", ret = Void, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyEval_SliceIndex", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = CImpl)
-    @CApiBuiltin(name = "_PyLong_AsInt", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_AssertFailed", ret = VoidNoReturn, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int,
                     ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "_PyObject_Dump", ret = Void, args = {PyObject}, call = CImpl)

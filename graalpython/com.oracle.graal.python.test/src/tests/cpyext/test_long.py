@@ -226,7 +226,7 @@ class TestPyLong(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test__PyLong_AsInt = CPyExtFunction(
+    test_PyLong_AsInt = CPyExtFunction(
         _reference_as_int,
         _int_examples,
         resultspec="l",

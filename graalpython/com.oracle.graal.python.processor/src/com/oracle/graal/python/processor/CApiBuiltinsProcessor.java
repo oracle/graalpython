@@ -1216,7 +1216,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     "_PyUnicode_AsASCIIString", "_PyUnicode_AsLatin1String", "_PyUnicode_AsUTF8String",
                     "_PyUnicode_EqualToASCIIString", "_Py_HashBytes",
                     // TODO: these were removed from CPython and should be removed from GraalPy as well
-                    "_PyImport_GetModuleId", "_PyLong_AsInt", "_PyObject_FastCall", "_PyUnicode_FormatLong",
+                    "_PyImport_GetModuleId", "_PyObject_FastCall", "_PyUnicode_FormatLong",
                     "_PyUnicode_JoinArray", "_Py_IsFinalizing",
                     // Not actually additional, only defined on Windows.
                     // TODO: fix generated CAPIFunctions.txt

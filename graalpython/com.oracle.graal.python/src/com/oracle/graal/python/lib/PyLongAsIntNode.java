@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,7 +58,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code _PyLong_AsInt}. Converts an object into a Java int using its
+ * Equivalent of CPython's {@code PyLong_AsInt}. Converts an object into a Java int using its
  * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
  * overflow.
  */
