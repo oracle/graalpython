@@ -5203,84 +5203,13 @@ datetime_fold(PyDateTime_DateTime *self, void *unused)
     return PyLong_FromLong(DATE_GET_FOLD(self));
 }
 
-static int
-set_datetime_hour(PyDateTime_DateTime *self, PyObject *value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(ival, 0, 0, 0, 0) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    DATE_SET_HOUR(self, ival);
-    return 0;
-}
-
-static int
-set_datetime_minute(PyDateTime_DateTime *self, PyObject *value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(0, ival, 0, 0, 0) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    DATE_SET_MINUTE(self, ival);
-    return 0;
-}
-
-static int
-set_datetime_second(PyDateTime_DateTime *self, PyObject *value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(0, 0, ival, 0, 0) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    DATE_SET_SECOND(self, ival);
-    return 0;
-}
-
-static int
-set_datetime_microsecond(PyDateTime_DateTime *self, PyObject *value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(0, 0, 0, ival, 0) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    DATE_SET_MICROSECOND(self, ival);
-    return 0;
-}
-
-static int
-set_datetime_tzinfo(PyDateTime_DateTime *self, PyObject *value, void *unused)
-{
-    if (value != Py_None) {
-        Py_INCREF(value);
-        self->tzinfo = value;
-    }
-    return 0;
-}
-
-static int
-set_datetime_fold(PyDateTime_DateTime *self, PyObject *value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(0, 0, 0, 0, ival) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    DATE_SET_FOLD(self, ival);
-    return 0;
-}
-
 static PyGetSetDef datetime_getset[] = {
-    {"_hour",        (getter)datetime_hour, (setter)set_datetime_hour},
-    {"_minute",      (getter)datetime_minute, (setter)set_datetime_minute},
-    {"_second",      (getter)datetime_second, (setter)set_datetime_second},
-    {"_microsecond", (getter)datetime_microsecond, (setter)set_datetime_microsecond},
-    {"_tzinfo",      (getter)datetime_tzinfo, (setter)set_datetime_tzinfo},
-    {"_fold",        (getter)datetime_fold, (setter)set_datetime_fold},
-    {"_hashcode",    (getter)base_hashcode, (setter)set_base_hashcode},
+    {"hour",        (getter)datetime_hour},
+    {"minute",      (getter)datetime_minute},
+    {"second",      (getter)datetime_second},
+    {"microsecond", (getter)datetime_microsecond},
+    {"tzinfo",      (getter)datetime_tzinfo},
+    {"fold",        (getter)datetime_fold},
     {NULL}
 };
 
@@ -7735,12 +7664,6 @@ error:
 GraalPy_CAPI_HELPER_SYMBOL void
 GraalPyPrivate_InitNativeDateTime(void)
 {
-    /* safe native get/set descriptors */
-    PyGetSetDef* getsets_date = PyDateTime_DateType.tp_getset;
-    PyGetSetDef* getsets_time = PyDateTime_TimeType.tp_getset;
-    PyGetSetDef* getsets_datetime = PyDateTime_DateTimeType.tp_getset;
-    PyMemberDef* members_delta = PyDateTime_DeltaType.tp_members;
-
     static int64_t datetime_types[] = {
         (intptr_t)&PyDateTime_DateType, (intptr_t)"datetime.date",
         (intptr_t)&PyDateTime_DateTimeType, (intptr_t)"datetime.datetime",
@@ -7750,12 +7673,6 @@ GraalPyPrivate_InitNativeDateTime(void)
         0, 0
     };
     GraalPyPrivate_InitBuiltinTypesAndStructs(datetime_types);
-
-    /* register native get/set descriptors to managed types */
-    GraalPyPrivate_Set_Native_Slots(&PyDateTime_DateType, getsets_date, NULL);
-    GraalPyPrivate_Set_Native_Slots(&PyDateTime_DateTimeType, getsets_datetime, NULL);
-    GraalPyPrivate_Set_Native_Slots(&PyDateTime_TimeType, getsets_time, NULL);
-    GraalPyPrivate_Set_Native_Slots(&PyDateTime_DeltaType, NULL, members_delta);
 }
 
 // Used from Java to initialize native subtypes
