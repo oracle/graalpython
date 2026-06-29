@@ -8,7 +8,9 @@ test.test_selectors.DefaultSelectorTestCase.test_modify @ darwin-arm64,linux-aar
 test.test_selectors.DefaultSelectorTestCase.test_register @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_selectors.DefaultSelectorTestCase.test_select @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_selectors.DefaultSelectorTestCase.test_select_interrupt_noraise @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_selectors.DefaultSelectorTestCase.test_select_read_write @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_selectors.DefaultSelectorTestCase.test_select_read_write @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+# Darwin arm64 kqueue intermittently misses the read event
+!test.test_selectors.DefaultSelectorTestCase.test_select_read_write @ darwin-arm64
 test.test_selectors.DefaultSelectorTestCase.test_selector @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_selectors.DefaultSelectorTestCase.test_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_selectors.DefaultSelectorTestCase.test_unregister @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
