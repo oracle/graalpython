@@ -328,6 +328,16 @@ public final class PythonCextErrBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    abstract static class _Py_CalculateSuggestions extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object calculate(@SuppressWarnings("unused") Object dir, @SuppressWarnings("unused") Object name) {
+            // TODO implement suggestions
+            return NATIVE_NULL;
+        }
+    }
+
     @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
     abstract static class _PyErr_WriteUnraisableMsg extends CApiBinaryBuiltinNode {
         @Specialization
