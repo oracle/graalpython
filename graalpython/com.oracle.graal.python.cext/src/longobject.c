@@ -1469,7 +1469,6 @@ _PyLong_UnsignedLong_Converter(PyObject *obj, void *ptr)
     return 1;
 }
 
-#if 0 // GraalPy change
 int
 _PyLong_UnsignedLongLong_Converter(PyObject *obj, void *ptr)
 {
@@ -1505,6 +1504,7 @@ _PyLong_Size_t_Converter(PyObject *obj, void *ptr)
 }
 
 
+#if 0 // GraalPy change
 #define CHECK_BINOP(v,w)                                \
     do {                                                \
         if (!PyLong_Check(v) || !PyLong_Check(w))       \

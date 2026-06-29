@@ -3955,7 +3955,6 @@ PyUnicode_AsUTF8(PyObject *unicode)
     return PyUnicode_AsUTF8AndSize(unicode, NULL);
 }
 
-#if 0 // GraalPy change
 const char *
 _PyUnicode_AsUTF8NoNUL(PyObject *unicode)
 {
@@ -3983,7 +3982,6 @@ PyUnicode_GetSize(PyObject *unicode)
                     "PyUnicode_GetSize has been removed.");
     return -1;
 }
-#endif // GraalPy change
 
 Py_ssize_t
 PyUnicode_GetLength(PyObject *unicode)

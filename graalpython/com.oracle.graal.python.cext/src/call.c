@@ -423,14 +423,12 @@ PyObject_Call(PyObject *callable, PyObject *args, PyObject *kwargs)
 }
 
 
-#if 0 // GraalPy change
 /* Function removed in the Python 3.13 API but kept in the stable ABI. */
 PyAPI_FUNC(PyObject *)
 PyCFunction_Call(PyObject *callable, PyObject *args, PyObject *kwargs)
 {
     return PyObject_Call(callable, args, kwargs);
 }
-#endif // GraalPy change
 
 
 PyObject *

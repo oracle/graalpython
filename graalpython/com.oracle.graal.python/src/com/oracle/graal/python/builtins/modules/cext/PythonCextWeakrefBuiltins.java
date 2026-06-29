@@ -41,14 +41,15 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYWEAKREFERENCE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PROXY_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -122,5 +123,11 @@ public final class PythonCextWeakrefBuiltins {
         if (reference instanceof PReferenceType ref) {
             ref.clearRef();
         }
+    }
+
+    @CApiBuiltin(name = "_PyWeakref_IsDead", ret = Int, args = {PyObjectRawPointer}, call = Direct, acquireGil = false, canRaise = false)
+    public static int PyWeakref_IsDead(long referencePtr) {
+        PReferenceType reference = (PReferenceType) NativeToPythonInternalNode.executeUncached(referencePtr, false);
+        return reference.getObject() == null ? 1 : 0;
     }
 }
