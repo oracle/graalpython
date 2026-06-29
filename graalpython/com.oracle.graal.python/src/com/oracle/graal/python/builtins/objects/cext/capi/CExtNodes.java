@@ -961,6 +961,7 @@ public abstract class CExtNodes {
     private static final int SLOT_PY_MOD_CREATE = 1;
     private static final int SLOT_PY_MOD_EXEC = 2;
     private static final int SLOT_PY_MOD_MULTIPLE_INTERPRETERS = 3;
+    private static final int SLOT_PY_MOD_GIL = 4;
 
     private static final CApiTiming TIMING_MOD_CREATE = CApiTiming.create(true, "Py_mod_create");
     private static final CApiTiming TIMING_MOD_EXEC = CApiTiming.create(true, "Py_mod_exec");
@@ -1028,6 +1029,9 @@ public abstract class CExtNodes {
                     case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
                         // ignored
                         // (mq) TODO: handle multiple interpreter cases
+                        break;
+                    case SLOT_PY_MOD_GIL:
+                        // ignored
                         break;
                     default:
                         throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_USES_UNKNOW_SLOT_ID, mName, slotId);
@@ -1141,6 +1145,9 @@ public abstract class CExtNodes {
                 case SLOT_PY_MOD_MULTIPLE_INTERPRETERS:
                     // ignored
                     // (mq) TODO: handle multiple interpreter cases
+                    break;
+                case SLOT_PY_MOD_GIL:
+                    // ignored
                     break;
                 default:
                     throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
