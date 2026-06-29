@@ -1408,6 +1408,7 @@ type_set_module(PyTypeObject *type, PyObject *value, void *context)
     }
     return PyDict_SetItem(dict, &_Py_ID(__module__), value);
 }
+#endif // GraalPy change
 
 
 PyObject *
@@ -1430,8 +1431,8 @@ _PyType_GetFullyQualifiedName(PyTypeObject *type, char sep)
 
     PyObject *result;
     if (PyUnicode_Check(module)
-        && !_PyUnicode_Equal(module, &_Py_ID(builtins))
-        && !_PyUnicode_Equal(module, &_Py_ID(__main__)))
+        && PyUnicode_CompareWithASCIIString(module, "builtins") != 0
+        && PyUnicode_CompareWithASCIIString(module, "__main__") != 0)
     {
         result = PyUnicode_FromFormat("%U%c%U", module, sep, qualname);
     }
@@ -1450,6 +1451,7 @@ PyType_GetFullyQualifiedName(PyTypeObject *type)
 }
 
 
+#if 0 // GraalPy change
 static PyObject *
 type_abstractmethods(PyTypeObject *type, void *context)
 {

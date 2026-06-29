@@ -896,7 +896,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyThread_start_new_thread", ret = UNSIGNED_LONG, args = {func_voidvoidptr, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "PyTraceBack_Print", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_ClearCache", ret = UNSIGNED_INT, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyType_GetFullyQualifiedName", ret = PyObjectReturn, args = {PyTypeObjectRawPointer}, call = NotImplemented)
+    @CApiBuiltin(name = "PyType_GetFullyQualifiedName", ret = PyObjectReturn, args = {PyTypeObjectRawPointer}, call = CImpl)
     @CApiBuiltin(name = "PyType_SUPPORTS_WEAKREFS", ret = Int, args = {PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEncoding", ret = PyObject, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicodeDecodeError_GetEnd", ret = Int, args = {PyObject, PY_SSIZE_T_PTR}, call = NotImplemented)
