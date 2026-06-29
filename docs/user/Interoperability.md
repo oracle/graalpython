@@ -211,7 +211,7 @@ If you're using Maven with GraalPy, add the JavaScript dependency to your _pom.x
 <dependency>
     <groupId>org.graalvm.polyglot</groupId>
     <artifactId>js</artifactId>
-    <version>25.0.3</version>
+    <version>25.1.3</version>
 </dependency>
 ```
 
@@ -343,6 +343,8 @@ Types not listed in the table below have no special interpretation in Python.
 | `array`        | ForeignList, `list`               | An `array` behaves like a Python `list`. Just like Python lists, the size must fit into a 32-bit signed integer.                                                                                                                           |
 | `boolean`      | ForeignBoolean, ForeignNumber     | `boolean` behaves like Python booleans, including the fact that in Python, all booleans are also integers (`1` and `0` for `true` and `false`, respectively).                                                                                      |
 | `buffer`       | ForeignObject                     | Buffers work like Python buffer objects (such as those used with `memoryview`) to avoid copying data.                            |
+| `date`         | ForeignDate, `date`               | A foreign date behaves like `datetime.date` and provides the corresponding Python methods. |
+| `date` and `time` | ForeignDateTime, `datetime`     | A foreign object with both traits behaves like `datetime.datetime`. |
 | `exception`    | ForeignException, `BaseException` | An `exception` can be caught in a generic `except` clause.                                                                                                                                                                                 |
 | `executable`   | ForeignExecutable                 | An `executable` object can be executed as a function, but never with keyword arguments.                                                                                                                                                    |
 | `hash`         | ForeignDict, `dict`               | A `hash` behaves like a Python `dict`, with any "hashable" object as a key. "Hashable" follows Python semantics: generally every interop type with an identity is deemed "hashable".                                                       |
@@ -354,6 +356,8 @@ Types not listed in the table below have no special interpretation in Python.
 | `null`         | ForeignNone, `NoneType`           | `null` behaves like Python `None`. All interop null values (including JavaScript `undefined` and `null`) are treated as `None` in Python. |
 | `number`       | ForeignNumber                     | `number` behaves like Python numbers (`int` and `float`). Foreign ranges are imported in some places such as typed arrays.                                     |
 | `string`       | ForeignString, `str`              | Behaves in the same way as a Python string.                                                                                                                                                                                                |
+| `time`         | ForeignTime, `time`               | A foreign time behaves like `datetime.time` and provides the corresponding Python methods. |
+| `time zone`    | ForeignTimeZone, `tzinfo`         | A foreign time zone behaves like `datetime.tzinfo`. |
 
 Foreign numbers inherit from `polyglot.ForeignNumber` and not `int` or `float` because `InteropLibrary` has currently no way to differentiate integers and floats.
 
