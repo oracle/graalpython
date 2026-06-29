@@ -256,6 +256,13 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct)
+    public static long _PyUnicode_Copy(long unicodePtr) {
+        Object unicode = NativeToPythonInternalNode.executeUncached(unicodePtr, false);
+        Object copy = PFactory.createString(PythonLanguage.get(null), CastToTruffleStringNode.castKnownStringUncached(unicode));
+        return PythonToNativeInternalNode.executeUncached(copy, true);
+    }
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Concat extends CApiBinaryBuiltinNode {

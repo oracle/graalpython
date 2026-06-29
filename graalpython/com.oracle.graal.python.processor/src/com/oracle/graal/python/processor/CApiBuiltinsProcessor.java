@@ -1212,7 +1212,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     "_PyDict_HasOnlyStringKeys", "_PyDict_Next", "_PyDict_SetItem_KnownHash", "_Py_GetErrorHandler",
                     "_PyErr_GetHandledException", "_PyErr_SetHandledException", "_PyErr_WriteUnraisableMsg",
                     "_PyList_Extend", "_PyNamespace_New", "_PyObject_MakeTpCall", "_PyTraceback_Add",
-                    "_PyUnicode_AsASCIIString", "_PyUnicode_AsLatin1String", "_PyUnicode_AsUTF8String",
+                    "_PyUnicode_AsASCIIString", "_PyUnicode_AsLatin1String", "_PyUnicode_AsUTF8String", "_PyUnicode_Copy",
                     "_PyUnicode_EqualToASCIIString", "_Py_HashBytes",
                     "_Py_CalculateSuggestions", "_PyWeakref_IsDead",
                     // TODO: these were removed from CPython and should be removed from GraalPy as well
