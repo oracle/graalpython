@@ -1,0 +1,2 @@
+test.test_unicode_file.TestUnicodeFiles.test_directories @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_unicode_file.TestUnicodeFiles.test_single_files @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
