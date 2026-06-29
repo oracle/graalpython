@@ -74,8 +74,6 @@ static int vgetargskeywordsfast_impl(PyObject *const *args, Py_ssize_t nargs,
                           va_list *p_va, int flags);
 static const char *skipitem(const char **, va_list *, int);
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 int
 PyArg_Parse(PyObject *args, const char *format, ...)
 {
@@ -88,8 +86,6 @@ PyArg_Parse(PyObject *args, const char *format, ...)
     return retval;
 }
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 PyAPI_FUNC(int)
 _PyArg_Parse_SizeT(PyObject *args, const char *format, ...)
 {
@@ -103,8 +99,6 @@ _PyArg_Parse_SizeT(PyObject *args, const char *format, ...)
 }
 
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 int
 PyArg_ParseTuple(PyObject *args, const char *format, ...)
 {
@@ -117,8 +111,6 @@ PyArg_ParseTuple(PyObject *args, const char *format, ...)
     return retval;
 }
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 int
 _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...)
 {
@@ -132,8 +124,6 @@ _PyArg_ParseTuple_SizeT(PyObject *args, const char *format, ...)
 }
 
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 int
 _PyArg_ParseStack(PyObject *const *args, Py_ssize_t nargs, const char *format, ...)
 {
@@ -1264,8 +1254,6 @@ getbuffer(PyObject *arg, Py_buffer *view, const char **errmsg)
    Geoff Philbrick <philbric@delphi.hks.com> */
 
 /* Return false (0) for error, else true. */
-// GraalPy change: add NO_INLINE
-NO_INLINE
 int
 PyArg_ParseTupleAndKeywords(PyObject *args,
                             PyObject *keywords,
@@ -1290,8 +1278,6 @@ PyArg_ParseTupleAndKeywords(PyObject *args,
     return retval;
 }
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 int
 _PyArg_ParseTupleAndKeywords_SizeT(PyObject *args,
                                   PyObject *keywords,
@@ -1369,8 +1355,6 @@ _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *args,
     return retval;
 }
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 PyAPI_FUNC(int)
 _PyArg_ParseTupleAndKeywordsFast(PyObject *args, PyObject *keywords,
                             struct _PyArg_Parser *parser, ...)
@@ -1384,8 +1368,6 @@ _PyArg_ParseTupleAndKeywordsFast(PyObject *args, PyObject *keywords,
     return retval;
 }
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 int
 _PyArg_ParseTupleAndKeywordsFast_SizeT(PyObject *args, PyObject *keywords,
                             struct _PyArg_Parser *parser, ...)
@@ -2838,8 +2820,6 @@ unpack_stack(PyObject *const *args, Py_ssize_t nargs, const char *name,
     return 1;
 }
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 int
 PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize_t max, ...)
 {
@@ -2862,8 +2842,6 @@ PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize_t m
     return retval;
 }
 
-// GraalPy change: add NO_INLINE
-NO_INLINE
 int
 _PyArg_UnpackStack(PyObject *const *args, Py_ssize_t nargs, const char *name,
                    Py_ssize_t min, Py_ssize_t max, ...)

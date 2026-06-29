@@ -242,7 +242,6 @@ _PyTuple_MaybeUntrack(PyObject *op)
     _PyObject_GC_UNTRACK(op);
 }
 
-NO_INLINE // GraalPy change: disallow bitcode inlining
 PyObject *
 PyTuple_Pack(Py_ssize_t n, ...)
 {
