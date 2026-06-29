@@ -80,10 +80,10 @@ test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_too_long_name
 test.test_multiprocessing_spawn.test_misc.TestSimpleQueue.test_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSimpleQueue.test_empty @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSimpleQueue.test_empty_exceptions @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestStartMethod.test_context @ linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.TestStartMethod.test_context @ linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestStartMethod.test_get_all @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestStartMethod.test_nested_startmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestStartMethod.test_set_get @ linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.TestStartMethod.test_set_get @ linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestStdinBadfiledescriptor.test_flushing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestStdinBadfiledescriptor.test_pool_in_process @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestStdinBadfiledescriptor.test_queue_in_process @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
