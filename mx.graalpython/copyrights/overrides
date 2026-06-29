@@ -199,6 +199,7 @@ graalpython/com.oracle.graal.python.cext/include/internal/pycore_namespace.h,pyt
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_object.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_object_alloc.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_object_stack.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_parking_lot.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_pyerrors.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_pylifecycle.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_pymath.h,python.copyright
@@ -210,6 +211,7 @@ graalpython/com.oracle.graal.python.cext/include/internal/pycore_pystate.h,pytho
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_qsbr.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_runtime.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_runtime_init.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/internal/pycore_semaphore.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_strhex.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_symtable.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/internal/pycore_time.h,python.copyright
@@ -411,6 +413,7 @@ graalpython/com.oracle.graal.python.cext/src/getcompiler.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getversion.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/import.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/initconfig.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/lock.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/longobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/memoryobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/modsupport.c,python.copyright
@@ -418,6 +421,7 @@ graalpython/com.oracle.graal.python.cext/src/moduleobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/mysnprintf.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/mystrtoul.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/object.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/parking_lot.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pyctype.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pyhash.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/pystate.c,python.copyright
@@ -428,6 +432,9 @@ graalpython/com.oracle.graal.python.cext/src/pytime.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/sliceobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/structseq.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/thread.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/thread_nt.h,python.copyright
+graalpython/com.oracle.graal.python.cext/src/thread_pthread.h,python.copyright
+graalpython/com.oracle.graal.python.cext/src/thread_pthread_stubs.h,python.copyright
 graalpython/com.oracle.graal.python.cext/src/tupleobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/typeobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/unicodectype.c,python.copyright

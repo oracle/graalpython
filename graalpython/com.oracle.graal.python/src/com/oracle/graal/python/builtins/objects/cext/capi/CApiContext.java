@@ -69,7 +69,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
@@ -110,7 +109,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
-import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -190,18 +188,6 @@ public final class CApiContext extends CExtContext {
     /** corresponds to {@code unicodeobject.c: interned} */
     private final ConcurrentWeakSet<PString> pstringInterningCache = new ConcurrentWeakSet<>();
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
-
-    public final ConcurrentHashMap<Long, PLock> locks = new ConcurrentHashMap<>();
-    public final AtomicLong lockId = new AtomicLong();
-
-    /**
-     * Thread local storage for PyThread_tss_* APIs
-     */
-    private final ConcurrentHashMap<Long, ThreadLocal<Long>> tssStorage = new ConcurrentHashMap<>();
-    /**
-     * Next key that will be allocated byt PyThread_tss_create
-     */
-    private final AtomicLong nextTssKey = new AtomicLong();
 
     public Object timezoneType;
     private PyCapsule pyDateTimeCAPICapsule;
@@ -357,29 +343,6 @@ public final class CApiContext extends CExtContext {
 
     public ConcurrentWeakSet<PString> getPstringInterningCache() {
         return pstringInterningCache;
-    }
-
-    public long nextTssKey() {
-        return nextTssKey.incrementAndGet();
-    }
-
-    @TruffleBoundary
-    public long tssGet(long key) {
-        ThreadLocal<Long> local = tssStorage.get(key);
-        if (local != null) {
-            return local.get();
-        }
-        return NULLPTR;
-    }
-
-    @TruffleBoundary
-    public void tssSet(long key, long ptr) {
-        tssStorage.computeIfAbsent(key, (k) -> new ThreadLocal<>()).set(ptr);
-    }
-
-    @TruffleBoundary
-    public void tssDelete(long key) {
-        tssStorage.remove(key);
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)

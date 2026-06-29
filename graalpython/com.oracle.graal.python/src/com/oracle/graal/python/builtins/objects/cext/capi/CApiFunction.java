@@ -186,9 +186,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
  */
 public final class CApiFunction {
 
-    /*
-     * Functions that are implemented as C code that can be executed in native
-     */
     @CApiBuiltin(name = "PyGILState_Check", ret = Int, args = {}, acquireGil = false, call = CImpl)
     @CApiBuiltin(name = "PyArg_Parse", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyArg_ParseTuple", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
@@ -647,10 +644,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_Py_c_prod", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "_Py_c_quot", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
     @CApiBuiltin(name = "_Py_c_sum", ret = PY_COMPLEX, args = {PY_COMPLEX, PY_COMPLEX}, call = CImpl)
-
-    /*
-     * Functions that are not implemented at the moment:
-     */
     @CApiBuiltin(name = "PyAIter_Check", ret = Int, args = {PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyAsyncGen_New", ret = PyObject, args = {PyFrameObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyByteArray_Concat", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
@@ -807,8 +800,8 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyMember_SetOne", ret = Int, args = {CHAR_PTR, PyMemberDef, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyMonitoring_EnterScope", ret = PrimitiveResult32, args = {PY_MONITORING_STATE_PTR, UINT64_T_PTR, CONST_UINT8_T_PTR, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "PyMonitoring_ExitScope", ret = PrimitiveResult32, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyMutex_Lock", ret = Void, args = {PY_MUTEX_PTR}, call = NotImplemented)
-    @CApiBuiltin(name = "PyMutex_Unlock", ret = Void, args = {PY_MUTEX_PTR}, call = NotImplemented)
+    @CApiBuiltin(name = "PyMutex_Lock", ret = Void, args = {PY_MUTEX_PTR}, call = CImpl)
+    @CApiBuiltin(name = "PyMutex_Unlock", ret = Void, args = {PY_MUTEX_PTR}, call = CImpl)
     @CApiBuiltin(name = "PyODict_DelItem", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyODict_New", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyODict_SetItem", ret = Int, args = {PyObject, PyObject, PyObject}, call = NotImplemented)
@@ -881,19 +874,23 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyThreadState_Next", ret = PyThreadState, args = {PyThreadState}, call = CImpl)
     @CApiBuiltin(name = "PyThreadState_Swap", ret = PyThreadState, args = {PyThreadState}, call = NotImplemented)
     @CApiBuiltin(name = "PyThread_GetInfo", ret = PyObject, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_ReInitTLS", ret = Void, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_acquire_lock_timed", ret = PY_LOCK_STATUS, args = {PY_THREAD_TYPE_LOCK, LONG_LONG, Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_create_key", ret = Int, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_delete_key", ret = Void, args = {Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_delete_key_value", ret = Void, args = {Int}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_exit_thread", ret = VoidNoReturn, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_get_key_value", ret = Pointer, args = {Int}, call = NotImplemented)
+    @CApiBuiltin(name = "PyThread_ReInitTLS", ret = Void, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_acquire_lock_timed", ret = PY_LOCK_STATUS, args = {PY_THREAD_TYPE_LOCK, LONG_LONG, Int}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_create_key", ret = Int, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_delete_key", ret = Void, args = {Int}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_delete_key_value", ret = Void, args = {Int}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_exit_thread", ret = VoidNoReturn, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_get_key_value", ret = Pointer, args = {Int}, call = CImpl)
     @CApiBuiltin(name = "PyThread_get_stacksize", ret = SIZE_T, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_get_thread_native_id", ret = UNSIGNED_LONG, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_init_thread", ret = Void, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_set_key_value", ret = Int, args = {Int, Pointer}, call = NotImplemented)
+    @CApiBuiltin(name = "PyThread_get_thread_native_id", ret = UNSIGNED_LONG, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_init_thread", ret = Void, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_set_key_value", ret = Int, args = {Int, Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyThread_set_stacksize", ret = Int, args = {SIZE_T}, call = NotImplemented)
-    @CApiBuiltin(name = "PyThread_start_new_thread", ret = UNSIGNED_LONG, args = {func_voidvoidptr, Pointer}, call = NotImplemented)
+    @CApiBuiltin(name = "PyThread_start_new_thread", ret = UNSIGNED_LONG, args = {func_voidvoidptr, Pointer}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_acquire_lock", ret = PrimitiveResult32, args = {PY_THREAD_TYPE_LOCK, PrimitiveResult32}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_allocate_lock", ret = PY_THREAD_TYPE_LOCK, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_get_thread_ident", ret = UNSIGNED_LONG, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyThread_release_lock", ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = CImpl)
     @CApiBuiltin(name = "PyTraceBack_Print", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_ClearCache", ret = UNSIGNED_INT, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_GetFullyQualifiedName", ret = PyObjectReturn, args = {PyTypeObjectRawPointer}, call = CImpl)

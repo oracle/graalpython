@@ -30,8 +30,8 @@ extern "C" {
 #endif // GraalPy change
 #include "pycore_pyhash.h"          // struct pyhash_runtime_state
 #include "pycore_pymem.h"           // struct _pymem_allocators
-#if 0 // GraalPy change
 #include "pycore_pythread.h"        // struct _pythread_runtime_state
+#if 0 // GraalPy change
 #include "pycore_signal.h"          // struct _signals_runtime_state
 #include "pycore_tracemalloc.h"     // struct _tracemalloc_runtime_state
 #endif // GraalPy change
@@ -296,7 +296,9 @@ typedef struct pyruntimestate {
 #if 0 // GraalPy change
     struct _obmalloc_global_state obmalloc;
     struct pyhash_runtime_state pyhash_state;
+#endif // GraalPy change
     struct _pythread_runtime_state threads;
+#if 0 // GraalPy change
     struct _signals_runtime_state signals;
 #endif // GraalPy change
 

@@ -3188,6 +3188,7 @@ int PyEval_ThreadsInitialized() {
     return 1;
 }
 
-// GraalPy change: different implmentation compare to Python/thread_pthread.h
-void PyThread_free_lock(PyThread_type_lock lock) {
+// GraalPy change: different implmentation compare to cpython/Python/ceval_gil.c
+int _PyEval_MakePendingCalls(PyThreadState *tstate) {
+    return 0;
 }

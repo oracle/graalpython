@@ -47,7 +47,6 @@
 const long long PY_TIMEOUT_MAX = PY_TIMEOUT_MAX_VALUE;
 
 
-#if 0 // GraalPy change
 static void PyThread__init_thread(void); /* Forward */
 
 #define initialized _PyRuntime.threads.initialized
@@ -80,6 +79,7 @@ PyThread_init_thread(void)
 #endif
 
 
+#if 0 // GraalPy change
 /* return the current thread stack size */
 size_t
 PyThread_get_stacksize(void)
@@ -311,39 +311,3 @@ _PyThread_FiniType(PyInterpreterState *interp)
     _PyStructSequence_FiniBuiltin(interp, &ThreadInfoType);
 }
 #endif // GraalPy change
-
-
-// GraalPy change: In CPython, the following functions have separate implementations for posix and win32 in different files. We just put ours here.
-
-int
-PyThread_tss_create(Py_tss_t *key)
-{
-    if (key->_is_initialized) {
-        return 0;
-    }
-    key->_key = GraalPyPrivate_tss_create();
-    key->_is_initialized = 1;
-    return 0;
-}
-
-void *
-PyThread_tss_get(Py_tss_t *key)
-{
-    return GraalPyPrivate_tss_get(key->_key);
-}
-
-int
-PyThread_tss_set(Py_tss_t *key, void *value)
-{
-    return GraalPyPrivate_tss_set(key->_key, value);
-}
-
-void
-PyThread_tss_delete(Py_tss_t *key)
-{
-    if (!key->_is_initialized) {
-        return;
-    }
-    GraalPyPrivate_tss_delete(key->_key);
-    key->_is_initialized = 0;
-}
