@@ -1720,8 +1720,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static boolean perform(VirtualFrame frame, LocalAccessor values, Object map, Object[] keys,
                         @Bind BytecodeNode bytecodeNode,
                         @Cached MatchKeysNode node) {
-            values.setObject(bytecodeNode, frame, node.execute(frame, map, keys));
-            return node.execute(frame, map, keys) != PNone.NONE;
+            Object match = node.execute(frame, map, keys);
+            values.setObject(bytecodeNode, frame, match);
+            return match != PNone.NONE;
         }
     }
 
