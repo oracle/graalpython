@@ -1220,6 +1220,42 @@ resize_compact(PyObject *unicode, Py_ssize_t length)
     return unicode;
 }
 
+/*
+ * A managed GraalPyUnicodeObject is physically compact: a single native
+ * allocation contains its header and the character data immediately after it.
+ * PyUnicode_IS_COMPACT nevertheless reports false because it denotes
+ * CPython's PyASCIIObject/PyCompactUnicodeObject layout, which a handle-space
+ * GraalPyUnicodeObject does not use. Its tagged handle and NativeMemory
+ * allocation therefore cannot be passed to PyObject_Realloc.
+ *
+ * A unicode writer owns an unmaterialized string and only needs to shrink its
+ * logical size when it finishes. This function does not resize the allocation:
+ * it retains the overallocated native storage and updates the visible length
+ * metadata in place. This avoids allocating and copying a second Unicode
+ * object, as well as the upcall that allocation would require.
+ */
+static PyObject*
+graalpy_resize_compact(PyObject *unicode, Py_ssize_t length)
+{
+    GraalPyUnicodeObject *native_unicode;
+    int kind;
+
+    assert(unicode_modifiable(unicode));
+    assert(!PyUnicode_IS_COMPACT(unicode));
+    assert(points_to_py_handle_space(unicode));
+
+    native_unicode = (GraalPyUnicodeObject *)pointer_to_stub(unicode);
+    assert(0 <= length && length <= native_unicode->length);
+
+    // TODO: Actually shrink the allocation when capacity exceeds length by a large amount.
+    kind = PyUnicode_KIND(unicode);
+    native_unicode->length = length;
+    native_unicode->byte_length = length * kind;
+    PyUnicode_WRITE(kind, native_unicode->data, length, 0);
+    assert(_PyUnicode_CheckConsistency(unicode, 0));
+    return unicode;
+}
+
 #if 0 // GraalPy change
 static int
 resize_inplace(PyObject *unicode, Py_ssize_t length)
@@ -12950,17 +12986,18 @@ _PyUnicodeWriter_Finish(_PyUnicodeWriter *writer)
         PyObject *str2;
 #if 0 // GraalPy change: different implementation
         str2 = resize_compact(str, writer->pos);
+#else // GraalPy change
+        if (points_to_py_handle_space(str)) {
+            str2 = graalpy_resize_compact(str, writer->pos);
+        }
+        else {
+            str2 = resize_compact(str, writer->pos);
+        }
+#endif // GraalPy change
         if (str2 == NULL) {
             Py_DECREF(str);
             return NULL;
         }
-#else // GraalPy change
-        str2 = PyUnicode_New(writer->pos, writer->maxchar);
-        if (str2 == NULL)
-            return -1;
-        _PyUnicode_FastCopyCharacters(str2, 0, str, 0, writer->pos);
-        Py_DECREF(str);
-#endif // GraalPy change
         str = str2;
     }
 
