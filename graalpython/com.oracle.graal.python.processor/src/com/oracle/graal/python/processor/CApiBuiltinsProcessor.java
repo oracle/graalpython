@@ -1613,6 +1613,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("");
         lines.add("public final class " + NATIVE_ACCESS_SUPPORT_IMPL_CLASS_NAME + " extends " + NATIVE_ACCESS_SUPPORT_CLASS_NAME + " {");
         lines.add("    private static final MethodHandle OF_ADDRESS;");
+        lines.add("    private static final Class<? extends MemorySegment> NATIVE_MEMORY_SEGMENT_CLASS = MemorySegment.NULL.getClass();");
         lines.add("    private static final boolean WINDOWS = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32;");
         lines.add("    private static final MemoryLayout CAPTURE_STATE_LAYOUT = Linker.Option.captureStateLayout();");
         lines.add("    private static final VarHandle ERRNO = captureStateVarHandle(\"errno\");");
@@ -1633,7 +1634,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("");
         lines.add("    private static MethodType createMethodType(boolean captureCallState, FunctionDescriptor functionDescriptor) {");
         lines.add("        MethodType methodType = functionDescriptor.toMethodType().insertParameterTypes(0, long.class);");
-        lines.add("        return captureCallState ? methodType.insertParameterTypes(1, MemorySegment.class) : methodType;");
+        lines.add("        return captureCallState ? methodType.insertParameterTypes(1, Object.class) : methodType;");
         lines.add("    }");
         lines.add("");
         lines.add("    @Override");
