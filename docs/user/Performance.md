@@ -27,6 +27,10 @@ The GraalPy launcher provides `-X jit=0|1|2` presets for common startup-heavy an
 
 These presets are launcher conveniences that expand to engine options. They can still be combined with explicit `--engine.*` options when more detailed tuning is needed.
 
+### Native Standalone Memory Usage
+
+On Linux, the GraalPy native standalone uses a lower-footprint garbage collection configuration by default. This reduces resident set size for many workloads, but may increase startup and warmup time and may reduce performance for some workloads.
+
 ## Code Loading Performance and Footprint
 
 It takes time to parse Python code so when using GraalPy to embed another language in Python, observe the general advice for embedding Graal languages related to [code caching](https://www.graalvm.org/latest/reference-manual/embed-languages/#code-caching-across-multiple-contexts).
@@ -116,4 +120,3 @@ The developer can also effectively disable the creation of _.pyc_ files by disab
 If _.pyc_ files are not readable, their location is not writable.
 If the _.pyc_ files' serialization data or magic numbers are corrupted in any way, the deserialization fails and GraalPy parses the _.py_ source code file again.
 This comes with a minor performance hit *only* for the parsing of modules, which should not be significant for most applications (provided the application performs actual work in addition to loading Python code).
-
