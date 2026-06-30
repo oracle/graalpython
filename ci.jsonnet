@@ -303,7 +303,7 @@
         }),
         // tests with sandboxed backends for various modules (posix, sha3, compression, pyexpat, ...)
         "python-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk21"          : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
+            "linux:amd64:jdk21"          : tier2     + provide(GPY_JVM21_STANDALONE),
             "linux:aarch64:jdk21"        : daily     + t("02:00:00") + provide(GPY_JVM21_STANDALONE),
             "darwin:aarch64:jdk21"       : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
             "windows:amd64:jdk21"        : daily     + t("01:30:00") + provide(GPY_JVM21_STANDALONE),
