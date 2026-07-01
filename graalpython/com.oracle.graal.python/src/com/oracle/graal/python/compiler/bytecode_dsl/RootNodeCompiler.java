@@ -5439,12 +5439,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                     if (starTarget != null) {
                         BytecodeLocal starVariable = pc.allocateBindVariable(starTarget);
-                        b.beginStoreLocal(starVariable);
-                            b.beginCopyDictWithoutKeys();
-                                b.emitLoadLocal(pc.subject);
-                                b.emitLoadLocal(keysChecked);
-                            b.endCopyDictWithoutKeys();
-                        b.endStoreLocal();
+                        b.beginIfThen();
+                            b.emitLoadLocal(temp);
+                            b.beginBlock();
+                                b.beginStoreLocal(starVariable);
+                                    b.beginCopyDictWithoutKeys();
+                                        b.emitLoadLocal(pc.subject);
+                                        b.emitLoadLocal(keysChecked);
+                                    b.endCopyDictWithoutKeys();
+                                b.endStoreLocal();
+                            b.endBlock();
+                        b.endIfThen();
                     }
 
                     endTemporaryLocal(keysChecked);
