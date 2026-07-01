@@ -223,7 +223,7 @@ jobs:
           fi
       - name: Install Oracle Instant Client
         run: |
-          curl -fL https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip -o instantclient-basiclite.zip
+          curl -fL https://download.oracle.com/otn_software/linux/instantclient/2380000/instantclient-basiclite-linux.x64-23.8.0.25.04.zip -o instantclient-basiclite.zip
           sudo mkdir -p "$ORACLE_CLIENT_DIR"
           sudo unzip -q instantclient-basiclite.zip -d /opt/oracle
           sudo mv /opt/oracle/instantclient_*/* "$ORACLE_CLIENT_DIR"
