@@ -58,3 +58,36 @@ class MultiprocessingTest(unittest.TestCase):
         multiprocessing.Value('d', 0.0)
         arr = multiprocessing.Array('i', range(10))
         self.assertEqual(arr[1], 1)
+
+
+@unittest.skipIf(POSIX_BACKEND_IS_JAVA, "shared memory doesn't work on emulated backend")
+@unittest.skipUnless(sys.platform != 'win32', "POSIX shared memory")
+class SharedMemoryTest(unittest.TestCase):
+    def test_create_write_read_unlink(self):
+        from multiprocessing.shared_memory import SharedMemory
+        shm = SharedMemory(create=True, size=16)
+        try:
+            shm.buf[:5] = b"hello"
+            other = SharedMemory(shm.name)
+            try:
+                self.assertEqual(bytes(other.buf[:5]), b"hello")
+            finally:
+                other.close()
+        finally:
+            shm.close()
+            shm.unlink()
+
+    def test_open_missing_raises(self):
+        from multiprocessing.shared_memory import SharedMemory
+        with self.assertRaises(FileNotFoundError):
+            SharedMemory("graalpy_nonexistent_shm")
+
+    def test_create_existing_raises(self):
+        from multiprocessing.shared_memory import SharedMemory
+        shm = SharedMemory(create=True, size=16)
+        try:
+            with self.assertRaises(FileExistsError):
+                SharedMemory(shm.name, create=True, size=16)
+        finally:
+            shm.close()
+            shm.unlink()
