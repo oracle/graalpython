@@ -19,7 +19,7 @@ version = '== 1.0.0'
 dist-type = 'wheel'
 # Optional. When applying a patch for a sdist that was created against a wheel, there can be a mismatch in the paths,
 # when the wheel was built from a subdirectory. When applying a patch on a sdist, this option will cause the patch
-# process to be run from given subdirectory. Has no effect when applying patches on wheels. 
+# process to be run from given subdirectory. Has no effect when applying patches on wheels.
 subdir = 'src'
 # Optional. Can specify preference for or against this version when selecting which version to install. Defaults to 1.
 # When ordering all available versions in the index, each version gets a priority of the first entry it matches in this
@@ -29,6 +29,8 @@ subdir = 'src'
 # a number greater than 1 if you want given version to be preferred to other entries. Additionally, if you set the
 # priority to 0, the version will not be shown in the suggestion list we display when we didn't find an applicable patch
 install-priority = 1
+# Optional. Whether to run the `autopatch_capi` before applying the explicit patch. Defaults to true.
+autopatch = true
 
 # The next entry will apply to all other versions of foo that didn't get matched by the previous rule
 [[foo.rules]]

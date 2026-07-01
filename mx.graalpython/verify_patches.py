@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -60,7 +60,7 @@ ALLOWED_WITH_CLAUSES = {
 }
 
 SECTIONS = frozenset({'rules', 'add-sources'})
-RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority', 'note'})
+RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority', 'note', 'autopatch'})
 
 
 def validate_metadata(patches_dir):
@@ -94,6 +94,8 @@ def validate_metadata(patches_dir):
                         assert isinstance(install_priority, int), "'rules.install_priority' must be an int"
                     if dist_type := rule.get('dist-type'):
                         assert dist_type in ('wheel', 'sdist'), "'rules.dist_type' must be on of 'wheel', 'sdist'"
+                    if 'autopatch' in rule:
+                        assert isinstance(rule['autopatch'], bool), "'rules.autopatch' must be a bool"
                     if version := rule.get('version'):
                         # Just try that it doesn't raise
                         SpecifierSet(version)

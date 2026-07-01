@@ -300,8 +300,18 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
 
     # we expect filename to be something like "pytest-5.4.2-py3-none-any.whl"
     archive_name = os.path.basename(filename)
-    name_ver_match = re.match(r"^(?P<name>.*?)-(?P<version>[^-]+).*?\.(?P<suffix>tar\.gz|tar|whl|zip)$",
-                              archive_name, re.I)
+    if archive_name.endswith('.whl'):
+        name_ver_match = re.match(
+            r"^(?P<name>[^-]+)-(?P<version>[^-]+)(?:-(?P<build_tag>[^-]+))?-(?P<python_tag>[^-]+)-(?P<abi_tag>[^-]+)-(?P<platform_tag>[^-]+)\.(?P<suffix>whl)$",
+            archive_name,
+            re.I,
+        )
+    else:
+        name_ver_match = re.match(
+            r"^(?P<name>.*)-(?P<version>[^-]+)\.(?P<suffix>tar\.gz|tar|zip)$",
+            archive_name,
+            re.I,
+        )
     if not name_ver_match:
         logger.warning(f"GraalPy warning: could not parse package name, version, or format from {archive_name!r}.\n"
                        "Could not determine if any GraalPy specific patches need to be applied.")
@@ -315,11 +325,6 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
     if is_wheel and is_wheel_marked(filename):
         # We already processed it when building from source
         return
-
-    import autopatch_capi
-    import subprocess
-
-    autopatch_capi.auto_patch_tree(location)
 
     logger.info(f"Looking for GraalPy patches for {name}")
     repository = get_patch_repository()
@@ -337,6 +342,10 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
             # with a patch intended for a binary distribution, because in the source
             # distribution the actual deployed sources may be in a subdirectory (typically "src")
             location = os.path.join(location, subdir)
+    if not rule or rule.get('autopatch', True):
+        import autopatch_capi
+
+        autopatch_capi.auto_patch_tree(location)
     if rule:
         if patch := rule.get('patch'):
             with repository.resolve_patch(patch) as patch_path:
@@ -345,6 +354,8 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
                 logger.info(f"Patching package {name} using {patch}")
                 exe = '.exe' if os.name == 'nt' else ''
                 try:
+                    import subprocess
+
                     subprocess.run([f"patch{exe}", "-f", "-d", str(location), "-p1", "-i", str(patch_path)], check=True)
                 except FileNotFoundError:
                     logger.warning(
