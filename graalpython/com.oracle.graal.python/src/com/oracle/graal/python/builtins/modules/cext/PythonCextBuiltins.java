@@ -649,6 +649,21 @@ public final class PythonCextBuiltins {
         }
 
         @Override
+        public String getName() {
+            return self.name();
+        }
+
+        @Override
+        public String getQualifiedName() {
+            return self.name();
+        }
+
+        @Override
+        public String toString() {
+            return self.name();
+        }
+
+        @Override
         public Object execute(VirtualFrame frame) {
             if (executeBuiltinNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
