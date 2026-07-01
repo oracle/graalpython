@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
@@ -61,7 +60,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
-@ImportStatic({PGuards.class, PyTupleCheckNode.class})
+@ImportStatic(PGuards.class)
 public abstract class TupleConversionNode extends ArgumentCastNode {
     @Specialization
     static Object[] doNone(@SuppressWarnings("unused") PNone none) {
@@ -75,7 +74,7 @@ public abstract class TupleConversionNode extends ArgumentCastNode {
         return getInternalArrayNode.execute(inliningTarget, t.getSequenceStorage());
     }
 
-    @Specialization(guards = "checkNative(t)")
+    @Specialization(guards = "isNativeTuple(t)")
     static Object[] doNativeTuple(PythonAbstractNativeObject t,
                     @Bind Node inliningTarget,
                     @Cached TupleNodes.GetTupleStorage getTupleStorage,

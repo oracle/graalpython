@@ -94,10 +94,6 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
         return true;
     }
 
-    static boolean isNativeTuple(PythonAbstractNativeObject object) {
-        return PyTupleCheckNode.checkNative(object);
-    }
-
     @Fallback
     static boolean doGeneric(Node inliningTarget, Object object,
                     @Cached PyDictCheckNode dictCheckNode,
