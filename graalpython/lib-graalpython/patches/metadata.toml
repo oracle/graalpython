@@ -775,6 +775,11 @@ install-priority = 0
 patch = 'pyperf-2.3.1.patch'
 license = 'MIT'
 
+[[pyperf.rules]]
+version = '== 2.10.0'
+patch = 'pyperf-2.10.0.patch'
+license = 'MIT'
+
 [[pyperformance.rules]]
 version = '== 1.0.5'
 patch = 'pyperformance-1.0.5.patch'

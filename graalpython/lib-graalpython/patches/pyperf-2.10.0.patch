@@ -1,0 +1,13 @@
+diff --git a/pyperf/_runner.py b/pyperf/_runner.py
+index d87a2f6..e17780f 100644
+--- a/pyperf/_runner.py
++++ b/pyperf/_runner.py
+@@ -77,7 +77,7 @@ class Runner:
+                  loops=0, min_time=0.1, metadata=None,
+                  show_name=True,
+                  program_args=None, add_cmdline_args=None,
+-                 _argparser=None, warmups=1):
++                 _argparser=None, warmups=None):
+ 
+         # Watchdog: ensure that only once instance of Runner (or a Runner
+         # subclass) is created per process to prevent bad surprises
