@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,15 +42,30 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = "_posixshmem")
 public final class PosixShMemModuleBuiltins extends PythonBuiltins {
@@ -60,12 +75,53 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
         return PosixShMemModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "shm_unlink", minNumOfPositionalArgs = 1)
+    @Builtin(name = "shm_open", minNumOfPositionalArgs = 2, parameterNames = {"path", "flags", "mode"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
     @GenerateNodeFactory
-    public abstract static class LocaleConvNode extends PythonUnaryBuiltinNode {
-        @SuppressWarnings("unused")
+    public abstract static class ShmOpenNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixShMemModuleBuiltinsClinicProviders.ShmOpenNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        public Object doit(Object path) {
+        static int shmOpen(VirtualFrame frame, PosixPath path, int flags, int mode,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                return posixLib.shmOpen(context.getPosixSupport(), path.value, flags, mode);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
+        }
+    }
+
+    @Builtin(name = "shm_unlink", minNumOfPositionalArgs = 1, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @GenerateNodeFactory
+    public abstract static class ShmUnlinkNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixShMemModuleBuiltinsClinicProviders.ShmUnlinkNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PNone shmUnlink(VirtualFrame frame, PosixPath path,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                posixLib.shmUnlink(context.getPosixSupport(), path.value);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+            }
             return PNone.NONE;
         }
     }

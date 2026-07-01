@@ -1106,6 +1106,20 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int shmOpen(Object name, int openFlags, int mode,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInPreInitialization();
+        return lib.shmOpen(nativePosixSupport, name, openFlags, mode);
+    }
+
+    @ExportMessage
+    final void shmUnlink(Object name,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
+        checkNotInPreInitialization();
+        lib.shmUnlink(nativePosixSupport, name);
+    }
+
+    @ExportMessage
     final int semGetValue(long handle,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
         checkNotInPreInitialization();
