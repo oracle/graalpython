@@ -234,10 +234,12 @@ import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
+import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -4306,18 +4308,40 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     /**
-     * Returns false, if provided argument is PNone, else returns true.
+     * Returns false if the provided argument is PNone, else returns true.
      */
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class IsNotNone {
         @Specialization
-        static boolean makeNone(PNone none) {
+        static boolean doNone(PNone none) {
             return false;
         }
 
         @Fallback
-        static boolean makeOther(Object o) {
+        static boolean doOther(Object o,
+                        @Bind Node inliningTarget,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @Cached LazyInteropLibrary lib) {
+            return !(isForeignObjectNode.execute(inliningTarget, o) && lib.get(inliningTarget).isNull(o));
+        }
+    }
+
+    /**
+     * Returns true if the provided argument is PNone, else returns false.
+     */
+    @Operation(storeBytecodeIndex = false)
+    public static final class IsNone {
+        @Specialization
+        static boolean doNone(PNone none) {
             return true;
+        }
+
+        @Fallback
+        static boolean doOther(Object o,
+                        @Bind Node inliningTarget,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @Cached LazyInteropLibrary lib) {
+            return isForeignObjectNode.execute(inliningTarget, o) && lib.get(inliningTarget).isNull(o);
         }
     }
 

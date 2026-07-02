@@ -2540,7 +2540,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             for (int i = 0; i < node.comparators.length; i++) {
                 beginTraceLineChecked(b);
-                beginComparison(node.ops[i]);
+
+                boolean comparesWithNone = node.comparators[i] instanceof ExprTy.Constant constant && constant.value.kind == ConstantValue.Kind.NONE;
+                boolean isNoneComparison = comparesWithNone && (node.ops[i] == CmpOpTy.Is);
+                boolean isNotNoneComparison = comparesWithNone && (node.ops[i] == CmpOpTy.IsNot);
+
+                if (isNoneComparison) {
+                    b.beginIsNone();
+                } else if (isNotNoneComparison) {
+                    b.beginIsNotNone();
+                } else {
+                    beginComparison(node.ops[i]);
+                }
 
                 if (i == 0) {
                     node.left.accept(this);
@@ -2550,15 +2561,21 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     loadAndEndTemporaryLocal(tmp);
                 }
 
-                if (i != node.comparators.length - 1) {
-                    b.beginTeeLocal(tmp);
-                }
-                node.comparators[i].accept(this);
-                if (i != node.comparators.length - 1) {
-                    b.endTeeLocal();
+                if (isNoneComparison) {
+                    b.endIsNone();
+                } else if (isNotNoneComparison) {
+                    b.endIsNotNone();
+                } else {
+                    if (i != node.comparators.length - 1) {
+                        b.beginTeeLocal(tmp);
+                    }
+                    node.comparators[i].accept(this);
+                    if (i != node.comparators.length - 1) {
+                        b.endTeeLocal();
+                    }
+                    endComparison(node.ops[i]);
                 }
 
-                endComparison(node.ops[i]);
                 endTraceLineChecked(node, b);
             }
 
@@ -4684,6 +4701,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         private void visitCondition(ExprTy node) {
+            if (tryVisitIsNoneCondition(node)) {
+                return;
+            }
+
             boolean mayNeedCoercion = !producesBoolean(node);
             if (mayNeedCoercion) {
                 b.beginYes();
@@ -4694,6 +4715,27 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (mayNeedCoercion) {
                 b.endYes();
             }
+        }
+
+        private boolean tryVisitIsNoneCondition(ExprTy node) {
+            if (!(node instanceof ExprTy.Compare cmp) || cmp.comparators == null || cmp.comparators.length != 1 || !(cmp.comparators[0] instanceof ExprTy.Constant constant) ||
+                            constant.value.kind != Kind.NONE) {
+                return false;
+            }
+
+            if (cmp.ops[0] == CmpOpTy.Is) {
+                b.beginIsNone();
+                cmp.left.accept(this);
+                b.endIsNone();
+            } else if (cmp.ops[0] == CmpOpTy.IsNot) {
+                b.beginIsNotNone();
+                cmp.left.accept(this);
+                b.endIsNotNone();
+            } else {
+                return false;
+            }
+
+            return true;
         }
 
         @Override
