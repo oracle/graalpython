@@ -213,9 +213,17 @@ jobs:
             lld liblld-dev \
             clang libclang-dev \
             cmake
+          if sudo apt-get install -y libaio1t64; then
+            # Oracle Instant Client still looks for the pre-t64 SONAME on Ubuntu 24.04.
+            libaio_t64="$(dpkg -L libaio1t64 | grep '/libaio\.so\.1t64$')"
+            sudo ln -sf "$libaio_t64" "$(dirname "$libaio_t64")/libaio.so.1"
+            sudo ldconfig
+          else
+            sudo apt-get install -y libaio1
+          fi
       - name: Install Oracle Instant Client
         run: |
-          curl -fL https://download.oracle.com/otn_software/linux/instantclient/instantclient-basiclite-linuxx64.zip -o instantclient-basiclite.zip
+          curl -fL https://download.oracle.com/otn_software/linux/instantclient/2380000/instantclient-basiclite-linux.x64-23.8.0.25.04.zip -o instantclient-basiclite.zip
           sudo mkdir -p "$ORACLE_CLIENT_DIR"
           sudo unzip -q instantclient-basiclite.zip -d /opt/oracle
           sudo mv /opt/oracle/instantclient_*/* "$ORACLE_CLIENT_DIR"

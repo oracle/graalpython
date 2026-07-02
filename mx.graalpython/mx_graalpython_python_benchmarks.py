@@ -131,6 +131,21 @@ SKIPPED_PANDAS_BENCHMARKS = [
 
 SETUPTOOLS_PIN = "77.0.1"
 
+
+def add_cpython_build_env(env=None):
+    if python3_home := os.environ.get("PYTHON3_HOME"):
+        include_dir = join(python3_home, "Include")
+        if os.path.exists(join(include_dir, "Python.h")):
+            env = env.copy() if env is not None else os.environ.copy()
+            python_includes = os.pathsep.join([include_dir, python3_home])
+            include_flags = " ".join(f"-I{path}" for path in python_includes.split(os.pathsep))
+            env["CPATH"] = python_includes + (os.pathsep + env["CPATH"] if env.get("CPATH") else "")
+            for key in ["CFLAGS", "CPPFLAGS", "CXXFLAGS"]:
+                env[key] = include_flags + (" " + env[key] if env.get(key) else "")
+            env["LIBRARY_PATH"] = python3_home + (os.pathsep + env["LIBRARY_PATH"] if env.get("LIBRARY_PATH") else "")
+    return env
+
+
 DEFAULT_PYPERFORMANCE_BENCHMARKS = [
     # "2to3",
     # "chameleon",
@@ -703,7 +718,8 @@ class NumPySuite(PySuite):
 
             vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
             pip = join(workdir, vm_venv, "bin", "pip")
-            mx.run([pip, "install", *self.BENCHMARK_REQ], cwd=workdir)
+            env = add_cpython_build_env() if vm.name() == "cpython" else None
+            mx.run([pip, "install", *self.BENCHMARK_REQ], cwd=workdir, env=env)
             if vm.name() == "cpython":
                 patch_asv_for_cpython_312(workdir, vm_venv)
             mx.run(
@@ -843,6 +859,8 @@ class PandasSuite(PySuite):
                 constraints.flush()
                 env = os.environ.copy()
                 env['PIP_CONSTRAINT'] = constraints.name
+                if vm.name() == "cpython":
+                    env = add_cpython_build_env(env)
                 mx.run([pip, "install", *self.BENCHMARK_REQ], cwd=workdir, env=env)
             if vm.name() == "cpython":
                 patch_asv_for_cpython_312(workdir, vm_venv)
