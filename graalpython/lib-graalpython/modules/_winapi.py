@@ -145,6 +145,7 @@ LCMAP_LOWERCASE = 0x00000100
 _ctypes = None
 _wintypes = None
 _kernel32 = None
+_GetLastError = None
 _NeedCurrentDirectoryForExePathW = None
 _CancelIoEx = None
 _SECURITY_ATTRIBUTES = None
@@ -154,7 +155,7 @@ _OVERLAPPED = None
 
 
 def _native():
-    global _ctypes, _wintypes, _kernel32, _NeedCurrentDirectoryForExePathW, _CancelIoEx
+    global _ctypes, _wintypes, _kernel32, _GetLastError, _NeedCurrentDirectoryForExePathW, _CancelIoEx
     if _kernel32 is not None:
         return _ctypes, _wintypes, _kernel32
 
@@ -328,6 +329,12 @@ def _native():
     ]
     kernel32.LCMapStringEx.restype = ctypes.c_int
 
+    # _winapi.GetLastError must read the actual OS thread state. Calling it through the
+    # use_last_error=True DLL would swap in ctypes' private last-error copy first.
+    get_last_error = ctypes.WinDLL("kernel32").GetLastError
+    get_last_error.argtypes = []
+    get_last_error.restype = wintypes.DWORD
+
     try:
         need_current_directory = kernel32.NeedCurrentDirectoryForExePathW
     except AttributeError:
@@ -347,6 +354,7 @@ def _native():
     _ctypes = ctypes
     _wintypes = wintypes
     _kernel32 = kernel32
+    _GetLastError = get_last_error
     _NeedCurrentDirectoryForExePathW = need_current_directory
     _CancelIoEx = cancel_io_ex
     return _ctypes, _wintypes, _kernel32
@@ -572,8 +580,8 @@ def CloseHandle(handle):
 
 
 def GetLastError():
-    _, _, kernel32 = _native()
-    return kernel32.GetLastError()
+    _native()
+    return _GetLastError()
 
 
 def GetCurrentProcess():

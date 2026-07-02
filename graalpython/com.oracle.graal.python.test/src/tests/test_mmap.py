@@ -38,10 +38,33 @@
 # SOFTWARE.
 
 import mmap
+import os
 import sys
+import time
 
 PAGESIZE = mmap.PAGESIZE
 FIND_BUFFER_SIZE = 1024  # keep in sync with FindNode#BUFFER_SIZE
+
+
+def test_named_mmap_clears_windows_last_error():
+    if sys.platform != "win32":
+        return
+
+    import ctypes
+    import _winapi
+
+    # A use_last_error ctypes call must not make _winapi.GetLastError return the stale private
+    # ctypes copy after mmap has cleared the actual OS thread state.
+    ctypes.set_last_error(_winapi.ERROR_ALREADY_EXISTS)
+    try:
+        tagname = f"graalpy-mmap-test-{os.getpid()}-{time.time_ns()}"
+        m = mmap.mmap(-1, 1, tagname=tagname)
+        try:
+            assert _winapi.GetLastError() == 0
+        finally:
+            m.close()
+    finally:
+        ctypes.set_last_error(0)
 
 
 def test_map_private_constant_matches_platform():
