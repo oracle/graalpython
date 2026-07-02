@@ -284,6 +284,68 @@ class PosixTests(unittest.TestCase):
             os.close(read_fd)
             os.close(write_fd)
 
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() != 'java',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_error_codes(self):
+        missing_path = os.path.join(TEMP_DIR, 'graalpython_missing_path_for_winerror')
+        try:
+            os.unlink(missing_path)
+        except FileNotFoundError:
+            pass
+
+        with self.assertRaises(OSError) as missing_error:
+            os.stat(missing_path)
+        self.assertEqual(errno.ENOENT, missing_error.exception.errno)
+        self.assertEqual(2, missing_error.exception.winerror)  # ERROR_FILE_NOT_FOUND
+
+        # A CRT failure following a WinAPI failure must not reuse the earlier winerror.
+        read_fd, write_fd = os.pipe()
+        os.close(read_fd)
+        os.close(write_fd)
+        with self.assertRaises(OSError) as crt_error:
+            os.read(read_fd, 1)
+        self.assertEqual(errno.EBADF, crt_error.exception.errno)
+        self.assertIsNone(crt_error.exception.winerror)
+
+        def assert_crt_error(operation, expected_errno):
+            # Seed the native last-error state before every CRT failure.
+            with self.assertRaises(OSError) as winapi_error:
+                os.stat(missing_path)
+            self.assertEqual(2, winapi_error.exception.winerror)
+            with self.assertRaises(OSError) as error:
+                operation()
+            self.assertEqual(expected_errno, error.exception.errno)
+            self.assertIsNone(error.exception.winerror)
+
+        assert_crt_error(lambda: os.rename(missing_path, missing_path + '.renamed'), errno.ENOENT)
+        assert_crt_error(lambda: os.chmod(missing_path, 0o600), errno.ENOENT)
+        assert_crt_error(lambda: os.listdir(''), errno.ENOENT)
+
+        import socket
+        first = socket.socket()
+        second = socket.socket()
+        try:
+            first.bind(('127.0.0.1', 0))
+            with self.assertRaises(OSError) as socket_error:
+                second.bind(first.getsockname())
+            self.assertEqual(errno.EADDRINUSE, socket_error.exception.errno)
+            self.assertEqual(10048, socket_error.exception.winerror)  # WSAEADDRINUSE
+        finally:
+            first.close()
+            second.close()
+
+        # Winsock reports WSAEWOULDBLOCK while a timed connect is in progress. The socket layer
+        # must treat that as EINPROGRESS and wait for completion instead of raising immediately.
+        server = socket.socket()
+        try:
+            server.bind(('127.0.0.1', 0))
+            server.listen()
+            with socket.create_connection(server.getsockname(), timeout=10) as client:
+                accepted, _ = server.accept()
+                accepted.close()
+        finally:
+            server.close()
+
     def test_fd_converter(self):
         class MyInt(int):
             def fileno(self): return 0

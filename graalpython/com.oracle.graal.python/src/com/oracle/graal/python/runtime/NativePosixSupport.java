@@ -159,6 +159,9 @@ public final class NativePosixSupport extends PosixSupport {
     private static final int PWD_OUTPUT_LEN = 5;
     private static final int PWD_BUFFER_MAX_SIZE = Integer.MAX_VALUE >> 2;
     private static final int STRERROR_BUF_LENGTH = 1024;
+    private static final int ERROR_SOURCE_ERRNO = 0;
+    private static final int ERROR_SOURCE_WINAPI = 1;
+    private static final int ERROR_SOURCE_WINSOCK = 2;
     private static final byte NATIVE_FILENAME_SEPARATOR = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? (byte) '\\' : (byte) '/';
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
@@ -178,6 +181,15 @@ public final class NativePosixSupport extends PosixSupport {
 
         @DowncallSignature(critical = true, returnType = SINT32)
         abstract int get_errno();
+
+        @DowncallSignature(critical = true, returnType = SINT32)
+        abstract int get_winerror();
+
+        @DowncallSignature(critical = true, returnType = SINT32)
+        abstract int get_wsaerror();
+
+        @DowncallSignature(critical = true, returnType = SINT32)
+        abstract int get_error_source();
 
         @DowncallSignature(returnType = SINT64, argumentTypes = {SINT64, SINT32, SINT32, SINT32, SINT64, POINTER})
         abstract long call_mmap(long length, int prot, int flags, int fd, long offset, long tagname);
@@ -2249,7 +2261,7 @@ public final class NativePosixSupport extends PosixSupport {
             nativeAddr = NativeMemory.copyToNativeByteArray(addr.data, 0, addrLen);
             int result = posixNativeFunctionInvoker.call_connect(sockfd, nativeAddr, addrLen);
             if (result == -1) {
-                throw getErrnoAndThrowPosixException();
+                throw getConnectErrnoAndThrowPosixException();
             }
         } finally {
             NativeMemory.free(nativeAddr);
@@ -3078,7 +3090,7 @@ public final class NativePosixSupport extends PosixSupport {
     void semPost(long handle) throws PosixException {
         int res = posixNativeFunctionInvoker.call_sem_post(handle);
         if (res < 0) {
-            throw getErrnoAndThrowPosixException();
+            throw getSemPostErrnoAndThrowPosixException();
         }
     }
 
@@ -3422,13 +3434,108 @@ public final class NativePosixSupport extends PosixSupport {
     // ------------------
     // Helpers
 
+    @TruffleBoundary
     private PosixException getErrnoAndThrowPosixException() throws PosixException {
         throw newPosixException(getErrno());
     }
 
     @TruffleBoundary
+    private PosixException getConnectErrnoAndThrowPosixException() throws PosixException {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && posixNativeFunctionInvoker.get_error_source() == ERROR_SOURCE_WINSOCK) {
+            int winerror = posixNativeFunctionInvoker.get_wsaerror();
+            // A nonblocking Winsock connect reports WSAEWOULDBLOCK, but the socket layer uses
+            // EINPROGRESS to decide whether to wait for the connection to complete.
+            if (winerror == 10035) {
+                throw newPosixException(OSErrorEnum.EINPROGRESS.getNumber(), winerror);
+            }
+        }
+        throw newPosixException(getErrno());
+    }
+
+    @TruffleBoundary
+    private PosixException getSemPostErrnoAndThrowPosixException() throws PosixException {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && posixNativeFunctionInvoker.get_error_source() == ERROR_SOURCE_WINAPI) {
+            int winerror = posixNativeFunctionInvoker.get_winerror();
+            // ReleaseSemaphore reports ERROR_TOO_MANY_POSTS when sem_post would exceed the
+            // semaphore's maximum count. POSIX exposes that condition as EOVERFLOW.
+            if (winerror == 298) {
+                throw newPosixException(OSErrorEnum.EOVERFLOW.getNumber(), winerror);
+            }
+        }
+        throw newPosixException(getErrno());
+    }
+
+    @TruffleBoundary
     private PosixException newPosixException(int errno) throws PosixException {
-        throw new PosixErrnoException(errno, strerror(errno, null, NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.getUncached()));
+        Integer winerror = null;
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            switch (posixNativeFunctionInvoker.get_error_source()) {
+                case ERROR_SOURCE_WINAPI -> {
+                    winerror = posixNativeFunctionInvoker.get_winerror();
+                    errno = winapiErrorToErrno(winerror);
+                }
+                case ERROR_SOURCE_WINSOCK -> {
+                    winerror = posixNativeFunctionInvoker.get_wsaerror();
+                    errno = winsockErrorToErrno(winerror);
+                }
+                default -> {
+                    // everything already in-place
+                }
+            }
+        }
+        throw newPosixException(errno, winerror);
+    }
+
+    @TruffleBoundary
+    private PosixException newPosixException(int errno, Integer winerror) throws PosixException {
+        throw new PosixErrnoException(errno, strerror(errno, null, NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode.getUncached()), winerror);
+    }
+
+    // CPython performs this mapping in PC/errmap.h:winerror_to_errno().
+    private static int winapiErrorToErrno(int error) {
+        return switch (error) {
+            case 2, 3, 1113 -> OSErrorEnum.ENOENT.getNumber(); // ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND, ERROR_NO_UNICODE_TRANSLATION
+            case 5 -> OSErrorEnum.EACCES.getNumber(); // ERROR_ACCESS_DENIED
+            case 267 -> OSErrorEnum.ENOTDIR.getNumber(); // ERROR_DIRECTORY
+            case 87, 123 -> OSErrorEnum.EINVAL.getNumber(); // ERROR_INVALID_PARAMETER, ERROR_INVALID_NAME
+            default -> error;
+        };
+    }
+
+    // CPython handles Winsock errors in PC/errmap.h:winerror_to_errno().
+    private static int winsockErrorToErrno(int error) {
+        return switch (error) {
+            case 10004 -> OSErrorEnum.EINTR.getNumber();
+            case 10009 -> OSErrorEnum.EBADF.getNumber();
+            case 10013 -> OSErrorEnum.EACCES.getNumber();
+            case 10014 -> OSErrorEnum.EFAULT.getNumber();
+            case 10022 -> OSErrorEnum.EINVAL.getNumber();
+            case 10024 -> OSErrorEnum.EMFILE.getNumber();
+            case 10035 -> OSErrorEnum.EWOULDBLOCK.getNumber();
+            case 10036 -> OSErrorEnum.EINPROGRESS.getNumber();
+            case 10037 -> OSErrorEnum.EALREADY.getNumber();
+            case 10038 -> OSErrorEnum.ENOTSOCK.getNumber();
+            case 10039 -> OSErrorEnum.EDESTADDRREQ.getNumber();
+            case 10040 -> OSErrorEnum.EMSGSIZE.getNumber();
+            case 10041 -> OSErrorEnum.EPROTOTYPE.getNumber();
+            case 10042 -> OSErrorEnum.ENOPROTOOPT.getNumber();
+            case 10043 -> OSErrorEnum.EPROTONOSUPPORT.getNumber();
+            case 10047 -> OSErrorEnum.EAFNOSUPPORT.getNumber();
+            case 10048 -> OSErrorEnum.EADDRINUSE.getNumber();
+            case 10049 -> OSErrorEnum.EADDRNOTAVAIL.getNumber();
+            case 10050 -> OSErrorEnum.ENETDOWN.getNumber();
+            case 10051 -> OSErrorEnum.ENETUNREACH.getNumber();
+            case 10052 -> OSErrorEnum.ENETRESET.getNumber();
+            case 10053 -> OSErrorEnum.ECONNABORTED.getNumber();
+            case 10054 -> OSErrorEnum.ECONNRESET.getNumber();
+            case 10055 -> OSErrorEnum.ENOBUFS.getNumber();
+            case 10056 -> OSErrorEnum.EISCONN.getNumber();
+            case 10057 -> OSErrorEnum.ENOTCONN.getNumber();
+            case 10060 -> OSErrorEnum.ETIMEDOUT.getNumber();
+            case 10061 -> OSErrorEnum.ECONNREFUSED.getNumber();
+            case 10065 -> OSErrorEnum.EHOSTUNREACH.getNumber();
+            default -> error;
+        };
     }
 
     private static long copyTimevalArrayToNativeOrNull(Timeval[] timeval) {

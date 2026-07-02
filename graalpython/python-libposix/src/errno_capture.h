@@ -53,10 +53,29 @@
 #endif
 
 extern THREAD_LOCAL int errno_capture;
+#ifdef _WIN32
+extern THREAD_LOCAL int winerror_capture;
+extern THREAD_LOCAL int wsaerror_capture;
+extern THREAD_LOCAL int error_source_capture;
+#endif
 
-static inline void capture_errno(void) {
+enum error_capture_source {
+    ERROR_CAPTURE_ERRNO = 0,
+    ERROR_CAPTURE_WINAPI = 1,
+    ERROR_CAPTURE_WINSOCK = 2,
+};
+
+static inline void capture_errors(void) {
     errno_capture = errno;
+#ifdef _WIN32
+    winerror_capture = (int) GetLastError();
+    wsaerror_capture = WSAGetLastError();
+    error_source_capture = ERROR_CAPTURE_ERRNO;
+#endif
 }
+
+/* Temporary compatibility alias while existing wrappers migrate to the plural API. */
+#define capture_errno capture_errors
 
 #define CAPTURE_ERRNO_AND_RETURN(indicator, expr) do { \
 __typeof__(expr) return_value = (expr); \

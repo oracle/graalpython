@@ -1061,10 +1061,16 @@ public abstract class PosixSupportLibrary extends Library {
 
         private final int errorCode;
         private final transient TruffleString msg;
+        private final Integer winerror;
 
         public PosixErrnoException(int errorCode, TruffleString message) {
+            this(errorCode, message, null);
+        }
+
+        public PosixErrnoException(int errorCode, TruffleString message, Integer winerror) {
             this.errorCode = errorCode;
             msg = message;
+            this.winerror = winerror;
         }
 
         public TruffleString getMessageAsTruffleString() {
@@ -1078,6 +1084,10 @@ public abstract class PosixSupportLibrary extends Library {
 
         public int getErrorCode() {
             return errorCode;
+        }
+
+        public Integer getWinerror() {
+            return winerror;
         }
     }
 

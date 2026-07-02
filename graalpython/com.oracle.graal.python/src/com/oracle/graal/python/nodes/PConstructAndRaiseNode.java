@@ -49,6 +49,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -194,6 +195,20 @@ public abstract class PConstructAndRaiseNode extends Node {
         return new Object[]{errno, message};
     }
 
+    private static Object[] createOsErrorArgs(int errno, TruffleString message, Integer winerror, Object filename1, Object filename2) {
+        if (winerror == null) {
+            return createOsErrorArgs(errno, message, filename1, filename2);
+        }
+        if (filename1 == null) {
+            assert filename2 == null;
+            return new Object[]{errno, message, PNone.NONE, winerror};
+        }
+        if (filename2 == null) {
+            return new Object[]{errno, message, filename1, winerror};
+        }
+        return new Object[]{errno, message, filename1, winerror, filename2};
+    }
+
     private static Object[] createOsErrorArgs(OSErrorEnum osErrorEnum) {
         return new Object[]{osErrorEnum.getNumber(), osErrorEnum.getMessage()};
     }
@@ -233,7 +248,7 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e) {
         if (e instanceof PosixErrnoException errnoException) {
-            return raiseOSErrorInternal(frame, createOsErrorArgs(errnoException.getErrorCode(), errnoException.getMessageAsTruffleString()));
+            return raiseOSErrorInternal(frame, createOsErrorArgs(errnoException.getErrorCode(), errnoException.getMessageAsTruffleString(), errnoException.getWinerror(), null, null));
         }
         assert e instanceof UnsupportedPosixFeatureException;
         return raiseOSErrorUnsupported(frame, (UnsupportedPosixFeatureException) e);
@@ -241,7 +256,7 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1) {
         if (e instanceof PosixErrnoException errnoException) {
-            return raiseOSErrorInternal(frame, createOsErrorArgs(errnoException.getErrorCode(), errnoException.getMessageAsTruffleString(), filename1));
+            return raiseOSErrorInternal(frame, createOsErrorArgs(errnoException.getErrorCode(), errnoException.getMessageAsTruffleString(), errnoException.getWinerror(), filename1, null));
         }
         assert e instanceof UnsupportedPosixFeatureException;
         return raiseOSErrorUnsupported(frame, (UnsupportedPosixFeatureException) e);
@@ -249,7 +264,7 @@ public abstract class PConstructAndRaiseNode extends Node {
 
     public final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixException e, Object filename1, Object filename2) {
         if (e instanceof PosixErrnoException errnoException) {
-            return raiseOSErrorInternal(frame, createOsErrorArgs(errnoException.getErrorCode(), errnoException.getMessageAsTruffleString(), filename1, filename2));
+            return raiseOSErrorInternal(frame, createOsErrorArgs(errnoException.getErrorCode(), errnoException.getMessageAsTruffleString(), errnoException.getWinerror(), filename1, filename2));
         }
         assert e instanceof UnsupportedPosixFeatureException;
         return raiseOSErrorUnsupported(frame, (UnsupportedPosixFeatureException) e);
