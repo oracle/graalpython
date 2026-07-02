@@ -251,6 +251,13 @@ class WorksResult(BenchmarkResult):
         return "works" if self.value == 0 else "doesn't work"
 
 
+def filter_benchmark_results(docs, benchmark_name):
+    exact_docs = [x for x in docs if x['benchmark'] == benchmark_name]
+    if exact_docs:
+        return exact_docs
+    return [x for x in docs if x['benchmark'].endswith(f'.{benchmark_name}')]
+
+
 def _bisect_benchmark(argv, bisect_id, email_to):
     default_metric = 'time'
     if 'BISECT_BENCHMARK_CONFIG' in os.environ:
@@ -360,7 +367,7 @@ def _bisect_benchmark(argv, bisect_id, email_to):
             data = json.load(f)
         docs = [x for x in data['queries'] if x['metric.name'] == args.benchmark_metric]
         if args.benchmark_name:
-            docs = [x for x in docs if x['benchmark'] == args.benchmark_name]
+            docs = filter_benchmark_results(docs, args.benchmark_name)
         if not docs:
             raise RuntimeError(f"Couldn't find specified metric {args.benchmark_metric!r} in the results")
         if len(docs) > 1:
