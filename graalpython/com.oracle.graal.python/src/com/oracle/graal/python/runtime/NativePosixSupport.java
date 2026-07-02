@@ -3445,7 +3445,7 @@ public final class NativePosixSupport extends PosixSupport {
             int winerror = posixNativeFunctionInvoker.get_wsaerror();
             // A nonblocking Winsock connect reports WSAEWOULDBLOCK, but the socket layer uses
             // EINPROGRESS to decide whether to wait for the connection to complete.
-            if (winerror == 10035) {
+            if (winerror == WSAError.WSAEWOULDBLOCK.getNumber()) {
                 throw newPosixException(OSErrorEnum.EINPROGRESS.getNumber(), winerror);
             }
         }
@@ -3458,7 +3458,7 @@ public final class NativePosixSupport extends PosixSupport {
             int winerror = posixNativeFunctionInvoker.get_winerror();
             // ReleaseSemaphore reports ERROR_TOO_MANY_POSTS when sem_post would exceed the
             // semaphore's maximum count. POSIX exposes that condition as EOVERFLOW.
-            if (winerror == 298) {
+            if (winerror == WinAPIError.ERROR_TOO_MANY_POSTS.getNumber()) {
                 throw newPosixException(OSErrorEnum.EOVERFLOW.getNumber(), winerror);
             }
         }
@@ -3493,49 +3493,111 @@ public final class NativePosixSupport extends PosixSupport {
 
     // CPython performs this mapping in PC/errmap.h:winerror_to_errno().
     private static int winapiErrorToErrno(int error) {
-        return switch (error) {
-            case 2, 3, 1113 -> OSErrorEnum.ENOENT.getNumber(); // ERROR_FILE_NOT_FOUND, ERROR_PATH_NOT_FOUND, ERROR_NO_UNICODE_TRANSLATION
-            case 5 -> OSErrorEnum.EACCES.getNumber(); // ERROR_ACCESS_DENIED
-            case 267 -> OSErrorEnum.ENOTDIR.getNumber(); // ERROR_DIRECTORY
-            case 87, 123 -> OSErrorEnum.EINVAL.getNumber(); // ERROR_INVALID_PARAMETER, ERROR_INVALID_NAME
-            default -> error;
-        };
+        WinAPIError winAPIError = WinAPIError.fromNumber(error);
+        return winAPIError == null ? error : winAPIError.getDefaultErrnoNumber();
     }
 
     // CPython handles Winsock errors in PC/errmap.h:winerror_to_errno().
     private static int winsockErrorToErrno(int error) {
-        return switch (error) {
-            case 10004 -> OSErrorEnum.EINTR.getNumber();
-            case 10009 -> OSErrorEnum.EBADF.getNumber();
-            case 10013 -> OSErrorEnum.EACCES.getNumber();
-            case 10014 -> OSErrorEnum.EFAULT.getNumber();
-            case 10022 -> OSErrorEnum.EINVAL.getNumber();
-            case 10024 -> OSErrorEnum.EMFILE.getNumber();
-            case 10035 -> OSErrorEnum.EWOULDBLOCK.getNumber();
-            case 10036 -> OSErrorEnum.EINPROGRESS.getNumber();
-            case 10037 -> OSErrorEnum.EALREADY.getNumber();
-            case 10038 -> OSErrorEnum.ENOTSOCK.getNumber();
-            case 10039 -> OSErrorEnum.EDESTADDRREQ.getNumber();
-            case 10040 -> OSErrorEnum.EMSGSIZE.getNumber();
-            case 10041 -> OSErrorEnum.EPROTOTYPE.getNumber();
-            case 10042 -> OSErrorEnum.ENOPROTOOPT.getNumber();
-            case 10043 -> OSErrorEnum.EPROTONOSUPPORT.getNumber();
-            case 10047 -> OSErrorEnum.EAFNOSUPPORT.getNumber();
-            case 10048 -> OSErrorEnum.EADDRINUSE.getNumber();
-            case 10049 -> OSErrorEnum.EADDRNOTAVAIL.getNumber();
-            case 10050 -> OSErrorEnum.ENETDOWN.getNumber();
-            case 10051 -> OSErrorEnum.ENETUNREACH.getNumber();
-            case 10052 -> OSErrorEnum.ENETRESET.getNumber();
-            case 10053 -> OSErrorEnum.ECONNABORTED.getNumber();
-            case 10054 -> OSErrorEnum.ECONNRESET.getNumber();
-            case 10055 -> OSErrorEnum.ENOBUFS.getNumber();
-            case 10056 -> OSErrorEnum.EISCONN.getNumber();
-            case 10057 -> OSErrorEnum.ENOTCONN.getNumber();
-            case 10060 -> OSErrorEnum.ETIMEDOUT.getNumber();
-            case 10061 -> OSErrorEnum.ECONNREFUSED.getNumber();
-            case 10065 -> OSErrorEnum.EHOSTUNREACH.getNumber();
-            default -> error;
-        };
+        WSAError wsaError = WSAError.fromNumber(error);
+        return wsaError == null ? error : wsaError.getDefaultErrnoNumber();
+    }
+
+    private enum WinAPIError {
+        ERROR_FILE_NOT_FOUND(2, OSErrorEnum.ENOENT),
+        ERROR_PATH_NOT_FOUND(3, OSErrorEnum.ENOENT),
+        ERROR_ACCESS_DENIED(5, OSErrorEnum.EACCES),
+        ERROR_INVALID_PARAMETER(87, OSErrorEnum.EINVAL),
+        ERROR_INVALID_NAME(123, OSErrorEnum.EINVAL),
+        ERROR_DIRECTORY(267, OSErrorEnum.ENOTDIR),
+        ERROR_TOO_MANY_POSTS(298),
+        ERROR_NO_UNICODE_TRANSLATION(1113, OSErrorEnum.ENOENT);
+
+        private final int number;
+        private final OSErrorEnum defaultErrno;
+
+        WinAPIError(int number) {
+            this(number, null);
+        }
+
+        WinAPIError(int number, OSErrorEnum defaultErrno) {
+            this.number = number;
+            this.defaultErrno = defaultErrno;
+        }
+
+        int getNumber() {
+            return number;
+        }
+
+        int getDefaultErrnoNumber() {
+            return defaultErrno == null ? number : defaultErrno.getNumber();
+        }
+
+        static WinAPIError fromNumber(int number) {
+            for (WinAPIError error : values()) {
+                if (error.number == number) {
+                    return error;
+                }
+            }
+            return null;
+        }
+    }
+
+    private enum WSAError {
+        WSAEINTR(10004, OSErrorEnum.EINTR),
+        WSAEBADF(10009, OSErrorEnum.EBADF),
+        WSAEACCES(10013, OSErrorEnum.EACCES),
+        WSAEFAULT(10014, OSErrorEnum.EFAULT),
+        WSAEINVAL(10022, OSErrorEnum.EINVAL),
+        WSAEMFILE(10024, OSErrorEnum.EMFILE),
+        WSAEWOULDBLOCK(10035, OSErrorEnum.EWOULDBLOCK),
+        WSAEINPROGRESS(10036, OSErrorEnum.EINPROGRESS),
+        WSAEALREADY(10037, OSErrorEnum.EALREADY),
+        WSAENOTSOCK(10038, OSErrorEnum.ENOTSOCK),
+        WSAEDESTADDRREQ(10039, OSErrorEnum.EDESTADDRREQ),
+        WSAEMSGSIZE(10040, OSErrorEnum.EMSGSIZE),
+        WSAEPROTOTYPE(10041, OSErrorEnum.EPROTOTYPE),
+        WSAENOPROTOOPT(10042, OSErrorEnum.ENOPROTOOPT),
+        WSAEPROTONOSUPPORT(10043, OSErrorEnum.EPROTONOSUPPORT),
+        WSAEAFNOSUPPORT(10047, OSErrorEnum.EAFNOSUPPORT),
+        WSAEADDRINUSE(10048, OSErrorEnum.EADDRINUSE),
+        WSAEADDRNOTAVAIL(10049, OSErrorEnum.EADDRNOTAVAIL),
+        WSAENETDOWN(10050, OSErrorEnum.ENETDOWN),
+        WSAENETUNREACH(10051, OSErrorEnum.ENETUNREACH),
+        WSAENETRESET(10052, OSErrorEnum.ENETRESET),
+        WSAECONNABORTED(10053, OSErrorEnum.ECONNABORTED),
+        WSAECONNRESET(10054, OSErrorEnum.ECONNRESET),
+        WSAENOBUFS(10055, OSErrorEnum.ENOBUFS),
+        WSAEISCONN(10056, OSErrorEnum.EISCONN),
+        WSAENOTCONN(10057, OSErrorEnum.ENOTCONN),
+        WSAETIMEDOUT(10060, OSErrorEnum.ETIMEDOUT),
+        WSAECONNREFUSED(10061, OSErrorEnum.ECONNREFUSED),
+        WSAEHOSTUNREACH(10065, OSErrorEnum.EHOSTUNREACH);
+
+        private final int number;
+        private final OSErrorEnum defaultErrno;
+
+        WSAError(int number, OSErrorEnum defaultErrno) {
+            this.number = number;
+            this.defaultErrno = defaultErrno;
+        }
+
+        int getNumber() {
+            return number;
+        }
+
+        int getDefaultErrnoNumber() {
+            return defaultErrno.getNumber();
+        }
+
+        static WSAError fromNumber(int number) {
+            for (WSAError error : values()) {
+                if (error.number == number) {
+                    return error;
+                }
+            }
+            return null;
+        }
     }
 
     private static long copyTimevalArrayToNativeOrNull(Timeval[] timeval) {
