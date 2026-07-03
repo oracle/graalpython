@@ -834,7 +834,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "ldlibs": ["-lutil"],
+                        "ldlibs": ["-lutil", "-lrt"],
                         "defaultBuild": True,
                         "multitarget": [
                             {"libc": ["glibc", "default"]},

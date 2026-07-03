@@ -558,6 +558,12 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
         abstract int call_sem_unlink(long name);
 
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, SINT32, SINT32})
+        abstract int call_shm_open(long name, int openFlags, int mode);
+
+        @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
+        abstract int call_shm_unlink(long name);
+
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER, POINTER})
         abstract int call_sem_getvalue(long handle, long value);
 
@@ -2941,6 +2947,33 @@ public final class NativePosixSupport extends PosixSupport {
         long namePtr = pathToNativeCString(name);
         try {
             int res = posixNativeFunctionInvoker.call_sem_unlink(namePtr);
+            if (res < 0) {
+                throw getErrnoAndThrowPosixException();
+            }
+        } finally {
+            NativeMemory.free(namePtr);
+        }
+    }
+
+    @ExportMessage
+    int shmOpen(Object name, int openFlags, int mode) throws PosixException {
+        long namePtr = pathToNativeCString(name);
+        try {
+            int fd = posixNativeFunctionInvoker.call_shm_open(namePtr, openFlags, mode);
+            if (fd < 0) {
+                throw getErrnoAndThrowPosixException();
+            }
+            return fd;
+        } finally {
+            NativeMemory.free(namePtr);
+        }
+    }
+
+    @ExportMessage
+    void shmUnlink(Object name) throws PosixException {
+        long namePtr = pathToNativeCString(name);
+        try {
+            int res = posixNativeFunctionInvoker.call_shm_unlink(namePtr);
             if (res < 0) {
                 throw getErrnoAndThrowPosixException();
             }

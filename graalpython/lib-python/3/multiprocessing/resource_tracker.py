@@ -46,10 +46,9 @@ if os.name == 'posix':
         _CLEANUP_FUNCS.update({
             'semaphore': _multiprocessing.sem_unlink,
         })
-    # GraalPy change: comment out unit we implement _posixshmem properly
-    # _CLEANUP_FUNCS.update({
-    #     'shared_memory': _posixshmem.shm_unlink,
-    # })
+    _CLEANUP_FUNCS.update({
+        'shared_memory': _posixshmem.shm_unlink,
+    })
 
 
 class ReentrantCallError(RuntimeError):

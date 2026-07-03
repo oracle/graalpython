@@ -1095,6 +1095,14 @@ int32_t call_sem_close(sem_t* handle) {
     CAPTURE_ERRNO_AND_RETURN(-1, sem_close(handle));
 }
 
+int32_t call_shm_open(const char *name, int32_t openFlags, int32_t mode) {
+    CAPTURE_ERRNO_AND_RETURN(-1, shm_open(name, openFlags, mode));
+}
+
+int32_t call_shm_unlink(const char *name) {
+    CAPTURE_ERRNO_AND_RETURN(-1, shm_unlink(name));
+}
+
 int32_t call_sem_unlink(const char *name) {
     CAPTURE_ERRNO_AND_RETURN(-1, sem_unlink(name));
 }
