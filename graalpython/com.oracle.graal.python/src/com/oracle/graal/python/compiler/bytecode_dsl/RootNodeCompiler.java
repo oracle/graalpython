@@ -2585,9 +2585,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             for (int i = 0; i < node.comparators.length; i++) {
                 beginTraceLineChecked(b);
 
-                boolean comparesWithNone = node.comparators[i] instanceof ExprTy.Constant constant && constant.value.kind == ConstantValue.Kind.NONE;
-                boolean isNoneComparison = comparesWithNone && (node.ops[i] == CmpOpTy.Is);
-                boolean isNotNoneComparison = comparesWithNone && (node.ops[i] == CmpOpTy.IsNot);
+                boolean isNoneComparison = false;
+                boolean isNotNoneComparison = false;
+                // Don't optimize to IsNone/IsNotNone if the rhs None must be stored to tmp for a later comparison.
+                if (i == node.comparators.length - 1) {
+                    boolean comparesWithNone = node.comparators[i] instanceof ExprTy.Constant constant && constant.value.kind == ConstantValue.Kind.NONE;
+                    isNoneComparison = comparesWithNone && (node.ops[i] == CmpOpTy.Is);
+                    isNotNoneComparison = comparesWithNone && (node.ops[i] == CmpOpTy.IsNot);
+                }
 
                 if (isNoneComparison) {
                     b.beginIsNone();
