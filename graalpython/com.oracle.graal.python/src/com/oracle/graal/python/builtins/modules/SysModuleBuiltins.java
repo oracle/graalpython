@@ -112,6 +112,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECTATED_SYS_C
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SIZEOF__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NEWLINE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BACKSLASHREPLACE;
@@ -161,6 +162,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameModuleNameNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.SetDlopenFlagsClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
@@ -203,6 +205,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.OsEnvironGetNode;
+import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyExceptionGroupInstanceCheckNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -894,6 +897,46 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
             requested.getRef().markAsEscaped();
             return requested;
+        }
+    }
+
+    @Builtin(name = "_getframemodulename", parameterNames = "depth", minNumOfPositionalArgs = 0, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
+    @ArgumentClinic(name = "depth", defaultValue = "0", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class GetFrameModuleNameNode extends PythonUnaryClinicBuiltinNode {
+        private static final TruffleString T_SYS_GET_FRAME_MODULE_NAME = tsLiteral("sys._getframemodulename");
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GetFrameModuleNameNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static Object counted(VirtualFrame frame, int depth,
+                        @Bind Node inliningTarget,
+                        @Cached AuditNode auditNode,
+                        @Cached ReadFrameNode readFrameNode,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached PyDictGetItem getItem) {
+            auditNode.audit(frame, inliningTarget, T_SYS_GET_FRAME_MODULE_NAME, depth);
+            int frameDepth = Math.max(depth, 0);
+            PFrame pFrame = readFrameNode.getFrameForReference(frame, PArguments.getCurrentFrameInfo(frame), ReadFrameNode.AllPythonFramesSelector.INSTANCE, frameDepth, 0);
+            if (pFrame == null) {
+                return PNone.NONE;
+            }
+
+            if (pFrame.getFunction() != null) {
+                Object moduleName = lookupAttrNode.execute(frame, inliningTarget, pFrame.getFunction(), T___MODULE__);
+                return moduleName != PNone.NO_VALUE ? moduleName : PNone.NONE;
+            }
+            /*
+             * Unlike CPython, we don't construct function objects for modules, so we have to try the function globals.
+             */
+            if (pFrame.getGlobals() instanceof PDict globals) {
+                Object moduleName = getItem.execute(frame, inliningTarget, globals, T___NAME__);
+                return moduleName != null ? moduleName : PNone.NONE;
+            }
+            return PNone.NONE;
         }
     }
 

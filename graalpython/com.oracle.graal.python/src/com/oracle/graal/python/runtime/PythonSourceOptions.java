@@ -65,5 +65,8 @@ public final class PythonSourceOptions {
     @Option(category = OptionCategory.USER, stability = OptionStability.STABLE, help = "Run this source with a fresh globals dictionary instead of the main module globals") //
     public static final OptionKey<Boolean> NewGlobals = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.INTERNAL, stability = OptionStability.STABLE, help = "Do not expose this source as a Python frame") //
+    public static final OptionKey<Boolean> NoPythonFrame = new OptionKey<>(false);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonSourceOptionsOptionDescriptors();
 }

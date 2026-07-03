@@ -26,8 +26,6 @@
         PIP_EXTRA_INDEX_URL: "",
         WATCHDOG_GIT: "",
         COMPLIANCE_GIT: "",
-        BISECT_EMAIL_SMTP_SERVER: "",
-        BISECT_EMAIL_FROM: "",
         npm_config_registry: "",
         RODINIA_DATASET_ZIP: "",
         GRAALPY_GRAALOS_TOOLCHAIN_URL: "",
