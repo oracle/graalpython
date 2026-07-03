@@ -40,9 +40,7 @@ import abc
 import argparse
 import json
 import os
-import re
 import shlex
-import sys
 import types
 from pathlib import Path
 
@@ -258,7 +256,7 @@ def filter_benchmark_results(docs, benchmark_name):
     return [x for x in docs if x['benchmark'].endswith(f'.{benchmark_name}')]
 
 
-def _bisect_benchmark(argv, bisect_id, email_to):
+def _bisect_benchmark(argv, bisect_id):
     default_metric = 'time'
     if 'BISECT_BENCHMARK_CONFIG' in os.environ:
         import configparser
@@ -423,41 +421,12 @@ def _bisect_benchmark(argv, bisect_id, email_to):
                 print_line(40)
                 mx.run(shlex.split(cmd.strip()), nonZeroIsFatal=False)
 
-    send_email(
-        bisect_id,
-        email_to,
-        "Bisection job has finished successfully.\n{}\n".format(summary)
-        + "Note I'm just a script and I don't validate statistical significance of the above result.\n"
-        + "Please take a moment to also inspect the detailed results below.\n\n{}\n\n".format(visualization)
-        + os.environ.get('BUILD_URL', 'Unknown URL')
-    )
-
 
 def bisect_benchmark(argv):
     initial_branch = GIT.git_command(DIR, ['rev-parse', '--abbrev-ref', 'HEAD']).strip()
     initial_commit = GIT.git_command(DIR, ['log', '--format=%s', '-n', '1']).strip()
-    email_to = GIT.git_command(DIR, ['log', '--format=%cE', '-n', '1']).strip()
     bisect_id = f'{initial_branch}: {initial_commit}'
     try:
-        _bisect_benchmark(argv, bisect_id, email_to)
+        _bisect_benchmark(argv, bisect_id)
     finally:
         GIT.update_to_branch(DIR, initial_branch)
-
-
-def send_email(bisect_id, email_to, content):
-    if 'BISECT_EMAIL_SMTP_SERVER' in os.environ:
-        import smtplib
-        from email.message import EmailMessage
-
-        msg = EmailMessage()
-        msg['Subject'] = "Bisection result for {}".format(bisect_id)
-        msg['From'] = os.environ['BISECT_EMAIL_FROM']
-        validate_to = os.environ['BISECT_EMAIL_TO_PATTERN']
-        if not re.match(validate_to, email_to):
-            sys.exit("Email {} not allowed, aborting sending".format(email_to))
-        msg['To'] = email_to
-        msg.set_content(content)
-        print(msg)
-        smtp = smtplib.SMTP(os.environ['BISECT_EMAIL_SMTP_SERVER'])
-        smtp.send_message(msg)
-        smtp.quit()
