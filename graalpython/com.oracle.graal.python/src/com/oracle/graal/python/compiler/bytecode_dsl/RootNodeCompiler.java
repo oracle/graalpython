@@ -154,6 +154,7 @@ import com.oracle.truffle.api.bytecode.BytecodeLabel;
 import com.oracle.truffle.api.bytecode.BytecodeLocal;
 import com.oracle.truffle.api.bytecode.BytecodeParser;
 import com.oracle.truffle.api.bytecode.BytecodeRootNodes;
+import com.oracle.truffle.api.bytecode.StackValue;
 import com.oracle.truffle.api.bytecode.serialization.BytecodeSerializer;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.instrumentation.StandardTags.StatementTag;
@@ -1146,15 +1147,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             beginRootNode(node, typeParamsUnitArgs, b);
             StatementCompiler statementCompiler = new StatementCompiler(b);
 
-            // typeParamsLocal = {type parameters}
-            BytecodeLocal typeParamsLocal = beginTemporaryLocal(b);
-            b.beginStoreLocal(typeParamsLocal);
-            statementCompiler.visitTypeParams(typeParams);
-            b.endStoreLocal();
+            b.beginBlock();
 
-            // funLocal = {make function}
-            BytecodeLocal funLocal = beginTemporaryLocal(b);
-            b.beginStoreLocal(funLocal);
+            // typeParamsStackValue = {type parameters}
+            b.beginBindStackValue();
+            statementCompiler.visitTypeParams(typeParams);
+            StackValue typeParamsStackValue = b.endBindStackValue();
+
+            // funStackValue = {make function}
+            b.beginBindStackValue();
             List<ParamAnnotation> annotations = collectParamAnnotations(args, returns);
             BytecodeLocal defaultArgsLocal = null;
             BytecodeLocal defaultKwargsLocal = null;
@@ -1167,18 +1168,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 assert defaultKwargsLocal != null;
             }
             statementCompiler.emitMakeFunction(codeUnit, node, name, defaultArgsLocal, defaultKwargsLocal, null, annotations);
-            b.endStoreLocal();
+            StackValue funStackValue = b.endBindStackValue();
 
-            // funLocal.__type_params__ = typeParamsLocal
+            // funStackValue.__type_params__ = typeParamsStackValue
             beginSetAttribute(J___TYPE_PARAMS__, b);
-            loadAndEndTemporaryLocal(typeParamsLocal, b);
-            b.emitLoadLocal(funLocal);
+            b.emitLoadStackValue(typeParamsStackValue);
+            b.emitLoadStackValue(funStackValue);
             b.endSetAttribute();
 
-            // return funLocal
+            // return funStackValue
             b.beginReturn();
-            loadAndEndTemporaryLocal(funLocal, b);
+            b.emitLoadStackValue(funStackValue);
             b.endReturn();
+
+            b.endBlock();
 
             endRootNode(b);
         });
@@ -1365,8 +1368,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private void emitComprehension(ComprehensionTy[] generators, int index, Builder b, ComprehensionType type,
-                    BytecodeLocal collectionLocal,
-                    BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer) {
+                    StackValue collection,
+                    BiConsumer<StatementCompiler, StackValue> accumulateProducer) {
         ComprehensionTy comp = generators[index];
         boolean newStatement = beginSourceSection(comp, b);
         StatementCompiler statementCompiler = new StatementCompiler(b);
@@ -1377,12 +1380,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 iter = comp.iter;
             }
             statementCompiler.emitAsyncFor(iter, comp.target, null, true, index,
-                            (stmtComp, idx) -> emitComprehensionBody(generators, idx, type, collectionLocal, accumulateProducer, stmtComp));
+                            (stmtComp, idx) -> emitComprehensionBody(generators, idx, type, collection, accumulateProducer, stmtComp));
         } else {
-            BytecodeLocal localIter = beginTemporaryLocal(b);
             BytecodeLocal localValue = beginTemporaryLocal(b);
 
-            b.beginStoreLocal(localIter);
+            b.beginBlock();
+            b.beginBindStackValue();
             if (index == 0) {
                 // The iterator is the function argument for the outermost generator
                 b.emitLoadArgument(PArguments.USER_ARGUMENTS_OFFSET);
@@ -1391,7 +1394,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 comp.iter.accept(statementCompiler);
                 b.endGetIter();
             }
-            b.endStoreLocal();
+            StackValue iter = b.endBindStackValue();
 
             b.beginWhile();
 
@@ -1402,19 +1405,19 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.emitClearTraceLine();
             }
             b.beginForIterate(localValue);
-            b.emitLoadLocal(localIter);
+            b.emitLoadStackValue(iter);
             b.endForIterate();
             b.endBlock();
 
             b.beginBlock();
 
             comp.target.accept(statementCompiler.new StoreVisitor(() -> b.emitLoadLocal(localValue)));
-            emitComprehensionBody(generators, index, type, collectionLocal, accumulateProducer, statementCompiler);
+            emitComprehensionBody(generators, index, type, collection, accumulateProducer, statementCompiler);
 
             b.endBlock();
             b.endWhile();
 
-            endTemporaryLocal(localIter, b);
+            b.endBlock();
             endTemporaryLocal(localValue, b);
         }
 
@@ -1422,7 +1425,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private void emitComprehensionBody(ComprehensionTy[] generators, int index,
-                    ComprehensionType type, BytecodeLocal collectionLocal, BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer,
+                    ComprehensionType type, StackValue collection, BiConsumer<StatementCompiler, StackValue> accumulateProducer,
                     StatementCompiler statementCompiler) {
         ComprehensionTy comp = generators[index];
         Builder b = statementCompiler.b;
@@ -1435,9 +1438,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         if (index == generators.length - 1) {
-            accumulateProducer.accept(statementCompiler, collectionLocal);
+            accumulateProducer.accept(statementCompiler, collection);
         } else {
-            emitComprehension(generators, index + 1, b, type, collectionLocal, accumulateProducer);
+            emitComprehension(generators, index + 1, b, type, collection, accumulateProducer);
         }
 
         if (comp.ifs != null) {
@@ -1463,7 +1466,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     private BytecodeDSLCompilerResult buildComprehensionCodeUnit(SSTNode node, ComprehensionTy[] generators, ComprehensionType type,
                     Consumer<StatementCompiler> emptyCollectionProducer,
-                    BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer) {
+                    BiConsumer<StatementCompiler, StackValue> accumulateProducer) {
         if (scope.isCoroutine() && type != ComprehensionType.GENEXPR && scopeType != CompilationScope.AsyncFunction && scopeType != CompilationScope.Comprehension) {
             throw ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "asynchronous comprehension outside of an asynchronous function");
         }
@@ -1478,24 +1481,25 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             StatementCompiler statementCompiler = new StatementCompiler(b);
-            BytecodeLocal collectionLocal = null;
+            b.beginBlock();
+            StackValue collection = null;
             if (!scope.isGenerator()) {
-                collectionLocal = beginTemporaryLocal(b);
-                b.beginStoreLocal(collectionLocal);
+                b.beginBindStackValue();
                 emptyCollectionProducer.accept(statementCompiler);
-                b.endStoreLocal();
+                collection = b.endBindStackValue();
             }
 
-            emitComprehension(generators, 0, b, type, collectionLocal, accumulateProducer);
+            emitComprehension(generators, 0, b, type, collection, accumulateProducer);
 
             beginReturn(b);
             if (scope.isGenerator()) {
                 // TODO: what if someone sends us some value?
                 b.emitLoadConstant(PNone.NONE);
             } else {
-                loadAndEndTemporaryLocal(collectionLocal, b);
+                b.emitLoadStackValue(collection);
             }
             endReturn(b);
+            b.endBlock();
 
             endRootNode(b);
         });
@@ -1510,7 +1514,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         },
                         (statementCompiler, collection) -> {
                             statementCompiler.b.beginListAppend();
-                            statementCompiler.b.emitLoadLocal(collection);
+                            statementCompiler.b.emitLoadStackValue(collection);
                             node.element.accept(statementCompiler);
                             statementCompiler.b.endListAppend();
                         });
@@ -1525,7 +1529,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         },
                         (statementCompiler, collection) -> {
                             statementCompiler.b.beginSetDictItem();
-                            statementCompiler.b.emitLoadLocal(collection);
+                            statementCompiler.b.emitLoadStackValue(collection);
                             node.key.accept(statementCompiler);
                             node.value.accept(statementCompiler);
                             statementCompiler.b.endSetDictItem();
@@ -1541,7 +1545,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         },
                         (statementCompiler, collection) -> {
                             statementCompiler.b.beginSetAdd();
-                            statementCompiler.b.emitLoadLocal(collection);
+                            statementCompiler.b.emitLoadStackValue(collection);
                             node.element.accept(statementCompiler);
                             statementCompiler.b.endSetAdd();
                         });
@@ -2339,6 +2343,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 needsKeywordsMerge = !(keywordGroups.length == 1 && keywordGroups[0] instanceof NamedKeywords);
             }
 
+            StackValue receiver = null;
+            if (isMethodCall) {
+                // Reserve a stack value for the receiver.
+                b.beginBlock();
+                b.beginBindStackValue();
+                assert isAttributeLoad(func);
+                ExprTy.Attribute attrAccess = (ExprTy.Attribute) func;
+                attrAccess.value.accept(this);
+                receiver = b.endBindStackValue();
+            }
+
             // @formatter:off
             if (useVariadic) {
                 beginCallVarargsMethod();
@@ -2350,35 +2365,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             if (isMethodCall) {
                 // The receiver is needed for method lookup and for the first argument.
-                BytecodeLocal receiver = beginTemporaryLocal();
                 if (useVariadic) {
-                    BytecodeLocal function = null;
-                    if (hasKeywords && needsKeywordsMerge) {
-                        function = beginTemporaryLocal();
-                        b.beginBlock();
-                        b.beginStoreLocal(function);
-                        b.beginInstrumentCallable();
-                        emitGetMethod(func, receiver);
-                        b.endInstrumentCallable();
-                        b.endStoreLocal();
-                        b.emitLoadLocal(function);
-                        b.endBlock();
-                    } else {
-                        b.beginInstrumentCallable();
-                        emitGetMethod(func, receiver);
-                        b.endInstrumentCallable();
-                    }
+                    b.beginInstrumentCallable();
+                    emitGetMethod(func, receiver);
+                    b.endInstrumentCallable();
 
                     b.beginCollectToObjectArray();
-                    emitUnstar(() -> loadAndEndTemporaryLocal(receiver), args, null, func);
+                    StackValue finalReceiver = receiver;
+                    emitUnstar(() -> b.emitLoadStackValue(finalReceiver), args, null, func);
                     b.endCollectToObjectArray();
                     b.beginInstrumentCall();
-                    if (hasKeywords) {
-                        emitNonEmptyKeywords(keywordGroups, function);
-                        // function local cleared in emitNonEmptyKeywords
-                    } else {
-                        emitEmptyKeywords();
-                    }
+                    emitEmptyKeywords();
                     b.endInstrumentCall();
                 } else {
                     assert len(keywords) == 0;
@@ -2388,30 +2385,22 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.endInstrumentCallable();
                     if (numArgs == 1) {
                         b.beginInstrumentCall();
-                        loadAndEndTemporaryLocal(receiver); // callable
+                        b.emitLoadStackValue(receiver); // callable
                         b.endInstrumentCall();
                     } else {
-                        loadAndEndTemporaryLocal(receiver); // callable
+                        b.emitLoadStackValue(receiver); // callable
                         visitArguments(func, args, numArgs - 1);
                     }
                 }
             } else {
                 if (useVariadic) {
-                    BytecodeLocal function = null;
+                    StackValue function = null;
                     if (hasKeywords && needsKeywordsMerge) {
-                        function = beginTemporaryLocal();
-                        b.beginBlock();
-                        b.beginStoreLocal(function);
-                        func.accept(this);
-                        b.endStoreLocal();
-                        b.beginInstrumentCallable();
-                        b.emitLoadLocal(function);
-                        b.endInstrumentCallable();
-                        b.endBlock();
-                    } else if (hasKeywords) {
+                        b.beginBindStackValue();
                         b.beginInstrumentCallable();
                         func.accept(this);
                         b.endInstrumentCallable();
+                        function = b.endBindStackValue();
                     } else {
                         b.beginInstrumentCallable();
                         func.accept(this);
@@ -2424,7 +2413,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.beginInstrumentCall();
                     if (hasKeywords) {
                         emitNonEmptyKeywords(keywordGroups, function);
-                        // function local cleared in emitNonEmptyKeywords
                     } else {
                         emitEmptyKeywords();
                     }
@@ -2462,21 +2450,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 endCallNAry(numArgs);
             }
             // @formatter:on
+
+            if (isMethodCall) {
+                // End the block owning the receiver stack value.
+                b.endBlock();
+            }
         }
 
-        private void emitGetMethod(ExprTy func, BytecodeLocal receiver) {
+        private void emitGetMethod(ExprTy func, StackValue receiver) {
             assert isAttributeLoad(func);
             ExprTy.Attribute attrAccess = (ExprTy.Attribute) func;
-            b.beginBlock();
-            b.beginStoreLocal(receiver);
-            attrAccess.value.accept(this);
-            b.endStoreLocal();
-
             String mangled = maybeMangle(attrAccess.attr);
             b.beginGetMethod(toTruffleStringUncached(mangled));
-            b.emitLoadLocal(receiver);
+            b.emitLoadStackValue(receiver);
             b.endGetMethod();
-            b.endBlock();
         }
 
         @Override
@@ -2569,6 +2556,22 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
         }
 
+        /**
+         * Emits bytecode for a Compare node, which has one or more comparisons.
+         * <b>
+         * When multiple comparisons are present, all operands except the first and last participate
+         * in two comparisons. For example, in {@code a <= b <= c <= d}, the value of {@code b} is
+         * used in both {@code a <= b} and {@code b <= c}. To support this, we stash the second operand
+         * in a temporary and read it in the subsequent comparison. For example, {@code a <= b <= c <= d}
+         * is implemented using:
+         * <pre>
+         * BoolAnd(
+         *   Le(a, TeeStackValue(tmp, b)),
+         *   Le(LoadStackValue(tmp), TeeStackValue(tmp, c)),
+         *   Le(LoadStackValue(tmp), d)
+         * )
+         * </pre>
+         */
         @Override
         public Void visit(ExprTy.Compare node) {
             boolean newStatement = beginSourceSection(node, b);
@@ -2576,10 +2579,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             boolean multipleComparisons = node.comparators.length > 1;
 
-            BytecodeLocal tmp = null;
+            StackValue tmp = null;
             if (multipleComparisons) {
+                b.beginBlock();
+                // Reserve a stack value for the operands used in two comparisons.
+                b.beginBindStackValue();
+                b.emitLoadNull();
+                tmp = b.endBindStackValue();
+
                 b.beginBoolAnd();
-                tmp = beginTemporaryLocal();
             }
 
             for (int i = 0; i < node.comparators.length; i++) {
@@ -2604,10 +2612,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                 if (i == 0) {
                     node.left.accept(this);
-                } else if (i < node.comparators.length - 1) {
-                    b.emitLoadLocal(tmp);
                 } else {
-                    loadAndEndTemporaryLocal(tmp);
+                    // LHS stashed on stack from previous comparison.
+                    b.emitLoadStackValue(tmp);
                 }
 
                 if (isNoneComparison) {
@@ -2615,12 +2622,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 } else if (isNotNoneComparison) {
                     b.endIsNotNone();
                 } else {
-                    if (i != node.comparators.length - 1) {
-                        b.beginTeeLocal(tmp);
-                    }
-                    node.comparators[i].accept(this);
-                    if (i != node.comparators.length - 1) {
-                        b.endTeeLocal();
+                    if (i == node.comparators.length - 1) {
+                        node.comparators[i].accept(this);
+                    } else {
+                        // Stash RHS on stack for next comparison.
+                        b.beginBlock();
+                        b.beginStoreStackValue(tmp);
+                        node.comparators[i].accept(this);
+                        b.endStoreStackValue();
+                        b.emitLoadStackValue(tmp);
+                        b.endBlock();
                     }
                     endComparison(node.ops[i]);
                 }
@@ -2630,6 +2641,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             if (multipleComparisons) {
                 b.endBoolAnd();
+                b.endBlock();
             }
 
             endSourceSection(b, newStatement);
@@ -2926,16 +2938,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.beginBlock();
 
             // save expr result to "tmp"
-            BytecodeLocal tmp = beginTemporaryLocal();
-            b.beginStoreLocal(tmp);
+            b.beginBindStackValue();
             node.value.accept(this);
-            b.endStoreLocal();
+            StackValue tmp = b.endBindStackValue();
 
             node.target.accept(new StoreVisitor(() -> {
-                b.emitLoadLocal(tmp);
+                b.emitLoadStackValue(tmp);
             }));
 
-            loadAndEndTemporaryLocal(tmp);
+            b.emitLoadStackValue(tmp);
 
             b.endBlock();
             endTraceLineChecked(node, b);
@@ -3290,29 +3301,27 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
              * end: # Step 4: returnValue local is assigned
              * @formatter:on
              */
-            BytecodeLocal generator = beginTemporaryLocal();
-            BytecodeLocal sentValue = beginTemporaryLocal();
             BytecodeLocal yieldValue = beginTemporaryLocal();
             b.beginBlock();
             BytecodeLabel end = b.createLabel();
 
             // @formatter:off
-            b.beginStoreLocal(generator);
+            b.beginBindStackValue();
                 generatorOrCoroutineProducer.run();
-            b.endStoreLocal();
+            StackValue generator = b.endBindStackValue();
 
             assert yieldFromGenerator != null;
             b.beginStoreLocal(yieldFromGenerator);
-                b.emitLoadLocal(generator);
+                b.emitLoadStackValue(generator);
             b.endStoreLocal();
 
             b.beginStoreLocal(returnValue);
                 b.emitLoadConstant(PNone.NONE);
             b.endStoreLocal();
 
-            b.beginStoreLocal(sentValue);
+            b.beginBindStackValue();
                 b.emitLoadConstant(PNone.NONE);
-            b.endStoreLocal();
+            StackValue sentValue = b.endBindStackValue();
 
             // Step 1: prime the generator
             emitSend(generator, sentValue, yieldValue, returnValue, end);
@@ -3324,14 +3333,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     // Step 2: yield yieldValue to the caller
                     b.beginTryCatch();
                         // try clause: yield
-                        b.beginStoreLocal(sentValue);
+                        b.beginStoreStackValue(sentValue);
                         emitYield((statementCompiler) -> statementCompiler.b.emitLoadLocal(yieldValue), this);
-                        b.endStoreLocal();
+                        b.endStoreStackValue();
 
                         // catch clause: handle throw/close exceptions.
                         b.beginIfThenElse();
                             b.beginYieldFromThrow(yieldValue, returnValue);
-                                b.emitLoadLocal(generator);
+                                b.emitLoadStackValue(generator);
                                 b.emitLoadException();
                             b.endYieldFromThrow();
 
@@ -3352,8 +3361,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             // Step 4: the returnValue local is assigned when branching to "end" label
             b.emitLabel(end);
-            endTemporaryLocal(generator);
-            endTemporaryLocal(sentValue);
             endTemporaryLocal(yieldValue);
             b.beginStoreLocal(yieldFromGenerator);
                 b.emitLoadNull();
@@ -3363,12 +3370,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endBlock();
         }
 
-        private void emitSend(BytecodeLocal generator, BytecodeLocal sentValue, BytecodeLocal yieldValue, BytecodeLocal returnValue, BytecodeLabel end) {
+        private void emitSend(StackValue generator, StackValue sentValue, BytecodeLocal yieldValue, BytecodeLocal returnValue, BytecodeLabel end) {
             b.beginIfThen();
             // When the generator raises StopIteration, send evaluates to true; branch to the end.
             b.beginYieldFromSend(yieldValue, returnValue);
-            b.emitLoadLocal(generator);
-            b.emitLoadLocal(sentValue);
+            b.emitLoadStackValue(generator);
+            b.emitLoadStackValue(sentValue);
             b.endYieldFromSend();
 
             b.emitBranch(end);
@@ -3767,21 +3774,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 boolean newStatement = beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 b.beginBlock();
-                BytecodeLocal target = beginTemporaryLocal();
-                // @formatter:off
 
-                b.beginStoreLocal(target);
+                // @formatter:off
+                b.beginBindStackValue();
                     node.value.accept(StatementCompiler.this);
-                b.endStoreLocal();
+                StackValue target = b.endBindStackValue();
 
                 beginSetAttribute(node.attr, b);
                     beginAugAssign();
                         beginGetAttribute(node.attr, b);
-                            b.emitLoadLocal(target);
+                            b.emitLoadStackValue(target);
                         b.endGetAttribute();
                         value.accept(StatementCompiler.this);
                     endAugAssign();
-                    loadAndEndTemporaryLocal(target);
+                    b.emitLoadStackValue(target);
                 b.endSetAttribute();
 
                 // @formatter:on
@@ -3795,28 +3801,26 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 boolean newStatement = beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 b.beginBlock();
-                BytecodeLocal target = beginTemporaryLocal();
-                BytecodeLocal slice = beginTemporaryLocal();
                 // @formatter:off
 
-                b.beginStoreLocal(target);
+                b.beginBindStackValue();
                     node.value.accept(StatementCompiler.this);
-                b.endStoreLocal();
+                StackValue target = b.endBindStackValue();
 
-                b.beginStoreLocal(slice);
+                b.beginBindStackValue();
                     node.slice.accept(StatementCompiler.this);
-                b.endStoreLocal();
+                StackValue slice = b.endBindStackValue();
 
                 b.beginSetItem();
                     beginAugAssign();
                         b.beginBinarySubscript();
-                            b.emitLoadLocal(target);
-                            b.emitLoadLocal(slice);
+                            b.emitLoadStackValue(target);
+                            b.emitLoadStackValue(slice);
                         b.endBinarySubscript();
                         value.accept(StatementCompiler.this);
                     endAugAssign();
-                    loadAndEndTemporaryLocal(target);
-                    loadAndEndTemporaryLocal(slice);
+                    b.emitLoadStackValue(target);
+                    b.emitLoadStackValue(slice);
                 b.endSetItem();
 
                 // @formatter:on
@@ -3843,17 +3847,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     value.accept(this);
                 }));
             } else {
-                BytecodeLocal tmp = beginTemporaryLocal();
-                b.beginStoreLocal(tmp);
+                b.beginBlock();
+                b.beginBindStackValue();
                 value.accept(this);
-                b.endStoreLocal();
+                StackValue tmp = b.endBindStackValue();
 
                 for (ExprTy target : targets) {
                     target.accept(new StoreVisitor(() -> {
-                        b.emitLoadLocal(tmp);
+                        b.emitLoadStackValue(tmp);
                     }));
                 }
-                endTemporaryLocal(tmp);
+                b.endBlock();
             }
         }
 
@@ -3881,8 +3885,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         private <T> void emitAsyncFor(ExprTy iterOrNull, ExprTy target, StmtTy[] orElse, boolean isComprehension,
                         T arg, BiConsumer<StatementCompiler, T> body) {
             assert !isComprehension || orElse == null;
-            BytecodeLocal iterLocal = beginTemporaryLocal();
-            b.beginStoreLocal(iterLocal);
+            b.beginBlock();
+            b.beginBindStackValue();
             if (iterOrNull == null) {
                 b.emitLoadArgument(PArguments.USER_ARGUMENTS_OFFSET);
             } else {
@@ -3890,9 +3894,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 iterOrNull.accept(this);
                 b.endGetAIter();
             }
-            b.endStoreLocal();
+            StackValue iterStackValue = b.endBindStackValue();
 
-            b.beginBlock();
             BytecodeLocal result = beginTemporaryLocal();
             BytecodeLabel loopEnd = b.createLabel();
             BytecodeLabel currentBreakLabel = null;
@@ -3917,7 +3920,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                 // try:
                                 emitYieldFrom(() -> {
                                     b.beginGetANext();
-                                        b.emitLoadLocal(iterLocal);
+                                        b.emitLoadStackValue(iterStackValue);
                                     b.endGetANext();
                                 }, result);
                                 // catch:
@@ -3941,7 +3944,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endWhile();
             b.emitLabel(loopEnd);
             endTemporaryLocal(result);
-            endTemporaryLocal(iterLocal);
             if (!isComprehension) {
                 visitSequence(orElse);
                 b.emitLabel(currentBreakLabel);
@@ -4001,20 +4003,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.emitLoadConstant(PKeyword.EMPTY_KEYWORDS);
         }
 
-        /** Clears the functionTempLocal */
-        private void emitNonEmptyKeywords(KeywordTy[] kws, BytecodeLocal functionTempLocal) {
+        private void emitNonEmptyKeywords(KeywordTy[] kws, StackValue functionTempStackValue) {
             assert len(kws) > 0;
             KeywordGroup[] groups = partitionKeywords(kws);
-            emitNonEmptyKeywords(groups, functionTempLocal);
+            emitNonEmptyKeywords(groups, functionTempStackValue);
         }
 
-        /** Clears the functionTempLocal if not null */
-        private void emitNonEmptyKeywords(KeywordGroup[] groups, BytecodeLocal functionTempLocal) {
+        private void emitNonEmptyKeywords(KeywordGroup[] groups, StackValue functionTempStackValue) {
             assert groups.length > 0;
             // The nodes that validate keyword arguments operate on PDicts, so we convert into
             // a list of PKeywords after validation.
             b.beginMappingToKeywords();
-            emitKeywordsRecursive(groups, groups.length - 1, functionTempLocal);
+            emitKeywordsRecursive(groups, groups.length - 1, functionTempStackValue);
             b.endMappingToKeywords();
         }
 
@@ -4043,8 +4043,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             return groups.toArray(KeywordGroup[]::new);
         }
 
-        /** Clears the functionTempLocal */
-        private void emitKeywordsRecursive(KeywordGroup[] groups, int i, BytecodeLocal functionTempLocal) {
+        private void emitKeywordsRecursive(KeywordGroup[] groups, int i, StackValue functionTempStackValue) {
             /*
              * Keyword groups should be merged left-to-right. For example, for groups [A, B, C] we
              * should emit KwArgsMerge(KwArgsMerge(A, B), C).
@@ -4053,49 +4052,37 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
              * KwargsMerge to be executed. The function local can be omitted only if there are no
              * keywords to be merged.
              */
-            boolean clearFunctionLocal = i == groups.length - 1;
-            checkTemporaryLocal(functionTempLocal);
             if (i == 0) {
-                emitKeywordGroup(groups[i], true, clearFunctionLocal, functionTempLocal);
+                emitKeywordGroup(groups[i], true, functionTempStackValue);
             } else {
-                assert functionTempLocal != null;
-                b.beginKwargsMerge(clearFunctionLocal, functionTempLocal);
-                emitKeywordsRecursive(groups, i - 1, functionTempLocal);
-                emitKeywordGroup(groups[i], false, false, functionTempLocal);
+                assert functionTempStackValue != null;
+                b.beginKwargsMerge();
+                b.emitLoadStackValue(functionTempStackValue);
+                emitKeywordsRecursive(groups, i - 1, functionTempStackValue);
+                emitKeywordGroup(groups[i], false, functionTempStackValue);
                 b.endKwargsMerge();
-                if (clearFunctionLocal) {
-                    markTemporaryLocalCleared(functionTempLocal);
-                }
             }
         }
 
-        private void emitKeywordGroup(KeywordGroup group, boolean copy, boolean clearLocal, BytecodeLocal functionTempLocal) {
+        private void emitKeywordGroup(KeywordGroup group, boolean copy, StackValue functionTempStackValue) {
             if (group instanceof NamedKeywords namedKeywords) {
-                b.beginBlock();
-                if (clearLocal && functionTempLocal != null) {
-                    endTemporaryLocal(functionTempLocal);
-                }
                 b.beginMakeDict(namedKeywords.names.size());
                 for (int i = 0; i < namedKeywords.names.size(); i++) {
                     emitPythonConstant(namedKeywords.names.get(i), b);
                     namedKeywords.values.get(i).accept(this);
                 }
                 b.endMakeDict();
-                b.endBlock();
             } else {
                 SplatKeywords splatKeywords = (SplatKeywords) group;
 
                 if (copy) {
-                    b.beginKwargsMerge(clearLocal, functionTempLocal);
+                    b.beginKwargsMerge();
+                    b.emitLoadStackValue(functionTempStackValue);
                     b.beginMakeDict(0);
                     b.endMakeDict();
                     splatKeywords.expr.accept(this);
                     b.endKwargsMerge();
-                    if (clearLocal) {
-                        markTemporaryLocalCleared(functionTempLocal);
-                    }
                 } else {
-                    assert !clearLocal;
                     splatKeywords.expr.accept(this);
                 }
             }
@@ -4164,13 +4151,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             boolean hasEmptyKeywords = len(node.keywords) == 0;
 
-            BytecodeLocal buildClassFunction = null;
+            StackValue buildClassFunction = null;
             if (!hasEmptyKeywords) {
-                buildClassFunction = beginTemporaryLocal();
+                b.beginBindStackValue();
                 // compute __build_class__ and keep it
-                b.beginStoreLocal(buildClassFunction);
                 b.emitLoadBuildClass();
-                b.endStoreLocal();
+                buildClassFunction = b.endBindStackValue();
             }
 
             beginCallVarargsMethod();
@@ -4178,7 +4164,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (hasEmptyKeywords) {
                 b.emitLoadBuildClass();
             } else {
-                b.emitLoadLocal(buildClassFunction);
+                b.emitLoadStackValue(buildClassFunction);
             }
             b.endInstrumentCallable();
 
@@ -4342,14 +4328,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             inExceptStar = false;
             b.beginBlock();
 
-            BytecodeLocal iter = beginTemporaryLocal();
             BytecodeLocal value = beginTemporaryLocal();
 
-            b.beginStoreLocal(iter);
+            b.beginBindStackValue();
             b.beginGetIter();
             node.iter.accept(this);
             b.endGetIter();
-            b.endStoreLocal();
+            StackValue iter = b.endBindStackValue();
 
             BytecodeLabel oldBreakLabel = breakLabel;
             BytecodeLabel oldContinueLabel = continueLabel;
@@ -4363,7 +4348,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.beginBlock();
             b.emitTraceLineAtLoopHeader(currentLocation.startLine);
             b.beginForIterate(value);
-            b.emitLoadLocal(iter);
+            b.emitLoadStackValue(iter);
             b.endForIterate();
             b.endBlock();
 
@@ -4386,7 +4371,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.emitLabel(currentBreakLabel);
 
             endTemporaryLocal(value);
-            endTemporaryLocal(iter);
             b.endBlock();
             endSourceSection(b, newStatement);
             inExceptStar = saveInExceptStar;
@@ -4515,28 +4499,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public void emitBuildFunction(BytecodeDSLCodeUnit codeUnit, StmtTy node, String name, ArgumentsTy args, ExprTy[] decoratorList, ExprTy returns) {
             List<ParamAnnotation> annotations = collectParamAnnotations(args, returns);
             emitMakeFunction(codeUnit, node, name, args, annotations);
-        }
-
-        /**
-         * Evaluates the decorator expressions and stores them in bytecode locals that are returned.
-         * Returns array of temporary locals.
-         */
-        public BytecodeLocal[] evaluateDecorators(ExprTy[] decorators) {
-            int numDeco = len(decorators);
-            BytecodeLocal[] locals = new BytecodeLocal[numDeco];
-            for (int i = 0; i < locals.length; i++) {
-                BytecodeLocal local = locals[i] = beginTemporaryLocal();
-                b.beginStoreLocal(local);
-                decorators[i].accept(this);
-                b.endStoreLocal();
-            }
-            return locals;
-        }
-
-        public void endTemporaryLocals(BytecodeLocal[] locals) {
-            for (BytecodeLocal l : locals) {
-                endTemporaryLocal(l);
-            }
         }
 
         /**
@@ -4850,16 +4812,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             } else {
                 b.beginBlock();
 
-                BytecodeLocal module = beginTemporaryLocal();
-
                 TruffleString[] fromList = new TruffleString[node.names.length];
                 for (int i = 0; i < fromList.length; i++) {
                     fromList[i] = toTruffleStringUncached(node.names[i].name);
                 }
 
-                b.beginStoreLocal(module);
+                b.beginBindStackValue();
                 b.emitImport(tsModuleName, fromList, node.level);
-                b.endStoreLocal();
+                StackValue module = b.endBindStackValue();
 
                 TruffleString[] importedNames = new TruffleString[node.names.length];
                 for (int i = 0; i < node.names.length; i++) {
@@ -4871,14 +4831,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     TruffleString name = toTruffleStringUncached(alias.name);
                     importedNames[i] = name;
                     b.beginImportFrom(name);
-                    b.emitLoadLocal(module);
+                    b.emitLoadStackValue(module);
                     b.endImportFrom();
 
                     endStoreLocal(asName, b);
                 }
                 addConstant(importedNames);
-
-                endTemporaryLocal(module);
                 b.endBlock();
             }
 
@@ -6369,16 +6327,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endBlock(); // try
 
                 b.beginBlock(); // catch
-                    BytecodeLocal exceptionOrig = beginTemporaryLocal();
                     BytecodeLocal savedException = beginTemporaryLocal();
                     BytecodeLocal prevPrevEx = enterSaveExceptionBlock(savedException);
 
                     emitSaveCurrentException(savedException);
                     emitSetCurrentException();
 
-                    b.beginStoreLocal(exceptionOrig);
+                    b.beginBindStackValue();
                         b.emitGetCaughtException();
-                    b.endStoreLocal();
+                    StackValue exceptionOrig = b.endBindStackValue();
                     // Mark this location for the stack trace.
                     b.beginMarkExceptionAsCaught();
                         b.emitLoadException(); // ex
@@ -6388,34 +6345,33 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         b.beginBlock(); // try (all handlers)
                             BytecodeLocal matchedExceptions = beginTemporaryLocal();
                             BytecodeLocal unmatchedExceptions = beginTemporaryLocal();
-                            BytecodeLocal exceptionAcc = beginTemporaryLocal();
                             b.beginStoreLocal(unmatchedExceptions);
                                 b.emitLoadException();
                             b.endStoreLocal();
 
-                            b.beginStoreLocal(exceptionAcc);
+                            b.beginBindStackValue();
                                 b.emitLoadConstant(PNone.NONE);
-                            b.endStoreLocal();
+                            StackValue exceptionAcc = b.endBindStackValue();
 
                             for (ExceptHandlerTy h : node.handlers) {
                                 boolean newStatement = beginSourceSection(h, b);
                                 emitTraceLineChecked(h, b);
-                                BytecodeLocal handlerType = beginTemporaryLocal();
 
                                 ExceptHandlerTy.ExceptHandler handler = (ExceptHandlerTy.ExceptHandler) h;
                                 if (handler.type == null) {
                                     ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "cannot have bare 'except' in 'try' containing 'except*' clauses.");
                                 }
 
-                                b.beginStoreLocal(handlerType);
+                                b.beginBlock(); // handler
+                                b.beginBindStackValue();
                                     handler.type.accept(this);
-                                b.endStoreLocal();
+                                StackValue handlerType = b.endBindStackValue();
 
                                 b.beginIfThen();
                                     b.beginSplitExceptionGroups(matchedExceptions, unmatchedExceptions);
                                         b.emitLoadLocal(unmatchedExceptions); // ex
-                                        b.emitLoadLocal(handlerType);
-                                        b.emitLoadLocal(exceptionOrig);
+                                        b.emitLoadStackValue(handlerType);
+                                        b.emitLoadStackValue(exceptionOrig);
                                     b.endSplitExceptionGroups();
 
                                     b.beginBlock(); // then; handler body
@@ -6442,7 +6398,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                                     inExceptStar = saveInExceptStarState;
 
                                                     b.beginSetCurrentException();
-                                                        b.emitLoadLocal(exceptionOrig);
+                                                        b.emitLoadStackValue(exceptionOrig);
                                                     b.endSetCurrentException();
                                                 b.endBlock(); // try (this handler only)
 
@@ -6456,18 +6412,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                                     b.beginIfThenElse();
                                                         b.beginIsExceptionGroup(); // if
                                                             b.emitLoadException();
-                                                            b.emitLoadLocal(exceptionOrig);
+                                                            b.emitLoadStackValue(exceptionOrig);
                                                         b.endIsExceptionGroup();
 
                                                         b.beginBlock(); // then (explicit raises and reraises)
-                                                            b.beginStoreLocal(exceptionAcc);
+                                                            b.beginStoreStackValue(exceptionAcc);
                                                                 b.beginHandleExceptionsInHandler();
                                                                     b.emitLoadException(); // handler_i_ex (exception thrown in this handler)
-                                                                    b.emitLoadLocal(exceptionAcc);
-                                                                    b.emitLoadLocal(exceptionOrig);
-                                                                    b.emitLoadLocal(handlerType);
+                                                                    b.emitLoadStackValue(exceptionAcc);
+                                                                    b.emitLoadStackValue(exceptionOrig);
+                                                                    b.emitLoadStackValue(handlerType);
                                                                 b.endHandleExceptionsInHandler();
-                                                            b.endStoreLocal();
+                                                            b.endStoreStackValue();
                                                         b.endBlock();
 
                                                         b.beginBlock(); // else (new exceptions raised)
@@ -6481,19 +6437,19 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                                                 b.endThrow();
 
                                                                 b.beginBlock(); // catch and insert into exception group
-                                                                    b.beginStoreLocal(exceptionAcc);
+                                                                    b.beginStoreStackValue(exceptionAcc);
                                                                         b.beginHandleExceptionsInHandler();
                                                                             b.emitLoadException();
-                                                                            b.emitLoadLocal(exceptionAcc);
-                                                                            b.emitLoadLocal(exceptionOrig);
+                                                                            b.emitLoadStackValue(exceptionAcc);
+                                                                            b.emitLoadStackValue(exceptionOrig);
                                                                             b.emitLoadConstant(PNone.NONE);
                                                                         b.endHandleExceptionsInHandler();
-                                                                    b.endStoreLocal();
+                                                                    b.endStoreStackValue();
                                                                 b.endBlock();
                                                             b.endTryCatch();
 
                                                             b.beginSetCurrentException();
-                                                                b.emitLoadLocal(exceptionOrig);
+                                                                b.emitLoadStackValue(exceptionOrig);
                                                             b.endSetCurrentException();
                                                         b.endBlock();
                                                     b.endIfThenElse();
@@ -6514,19 +6470,19 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                                                         inExceptStar = saveInExceptStarState;
                                                         b.beginSetCurrentException();
-                                                            b.emitLoadLocal(exceptionOrig);
+                                                            b.emitLoadStackValue(exceptionOrig);
                                                         b.endSetCurrentException();
                                                     b.endBlock();
 
                                                     b.beginBlock(); // catch (exception thrown in bare handler)
-                                                        b.beginStoreLocal(exceptionAcc);
+                                                        b.beginStoreStackValue(exceptionAcc);
                                                             b.beginHandleExceptionsInHandler();
                                                                 b.emitLoadException(); // handler_i_ex (exception thrown in bare handler)
-                                                                b.emitLoadLocal(exceptionAcc);
-                                                                b.emitLoadLocal(exceptionOrig);
-                                                                b.emitLoadLocal(handlerType);
+                                                                b.emitLoadStackValue(exceptionAcc);
+                                                                b.emitLoadStackValue(exceptionOrig);
+                                                                b.emitLoadStackValue(handlerType);
                                                             b.endHandleExceptionsInHandler();
-                                                        b.endStoreLocal();
+                                                        b.endStoreStackValue();
                                                     b.endBlock();
                                                 b.endTryCatch();
                                             b.endBlock();
@@ -6534,36 +6490,35 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                     b.endBlock(); // handler body
                                 b.endIfThen();
 
-                                endTemporaryLocal(handlerType);
+                                b.endBlock(); // handler
                                 endSourceSection(b, newStatement);
                             } // end handler loop
 
                             b.beginBlock(); // bundle up unmatched exceptions into exceptionAcc and throw them
-                                b.beginStoreLocal(exceptionAcc);
+                                b.beginStoreStackValue(exceptionAcc);
                                     b.beginHandleExceptionsInHandler();
                                         b.emitLoadLocal(unmatchedExceptions);
-                                        b.emitLoadLocal(exceptionAcc);
-                                        b.emitLoadLocal(exceptionOrig);
+                                        b.emitLoadStackValue(exceptionAcc);
+                                        b.emitLoadStackValue(exceptionOrig);
                                         b.emitLoadConstant(PNone.NONE);
                                     b.endHandleExceptionsInHandler();
-                                b.endStoreLocal();
+                                b.endStoreStackValue();
                             b.endBlock();
 
                             b.beginIfThen();
                                 b.beginIsNotNone();
-                                    b.emitLoadLocal(exceptionAcc);
+                                    b.emitLoadStackValue(exceptionAcc);
                                 b.endIsNotNone();
                                 b.beginReraise();
                                     // exceptionAcc is a PBaseExceptionGroup and
                                     // needs to be converted into PException
                                     b.beginEncapsulateExceptionGroup();
-                                        b.emitLoadLocal(exceptionAcc);
-                                        b.emitLoadLocal(exceptionOrig);
+                                        b.emitLoadStackValue(exceptionAcc);
+                                        b.emitLoadStackValue(exceptionOrig);
                                     b.endEncapsulateExceptionGroup();
                                 b.endReraise();
                             b.endIfThen();
 
-                            endTemporaryLocal(exceptionAcc);
                             endTemporaryLocal(unmatchedExceptions);
                             endTemporaryLocal(matchedExceptions);
                         b.endBlock(); // try (all handlers)
@@ -6579,7 +6534,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                     exitSaveExceptionBlock(prevPrevEx);
                     endTemporaryLocal(savedException);
-                    endTemporaryLocal(exceptionOrig);
 
                     b.emitBranch(afterElse);
 
@@ -6809,17 +6763,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             emitTraceLineChecked(item, b);
             b.beginBlock();
 
-            BytecodeLocal contextManager = beginTemporaryLocal();
             BytecodeLocal exit = beginTemporaryLocal();
             BytecodeLocal value = beginTemporaryLocal();
-            b.beginStoreLocal(contextManager);
+            b.beginBindStackValue();
             item.contextExpr.accept(this);
-            b.endStoreLocal();
+            StackValue contextManager = b.endBindStackValue();
 
             if (async) {
                 // call __aenter__
                 b.beginAsyncContextManagerEnter(exit, value);
-                b.emitLoadLocal(contextManager);
+                b.emitLoadStackValue(contextManager);
                 b.endAsyncContextManagerEnter();
                 // await the result
                 b.beginStoreLocal(value);
@@ -6828,7 +6781,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             } else {
                 // call __enter__
                 b.beginContextManagerEnter(exit, value);
-                b.emitLoadLocal(contextManager);
+                b.emitLoadStackValue(contextManager);
                 b.endContextManagerEnter();
             }
 
@@ -6840,7 +6793,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.beginAsyncContextManagerCallExit();
                     b.emitLoadConstant(PNone.NONE);
                     b.emitLoadLocal(exit);
-                    b.emitLoadLocal(contextManager);
+                    b.emitLoadStackValue(contextManager);
                     b.endAsyncContextManagerCallExit();
                     b.endBlock();
                 });
@@ -6851,7 +6804,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.beginContextManagerExit();
                     b.emitLoadConstant(PNone.NONE);
                     b.emitLoadLocal(exit);
-                    b.emitLoadLocal(contextManager);
+                    b.emitLoadStackValue(contextManager);
                     b.endContextManagerExit();
                 };
             }
@@ -6889,19 +6842,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.beginAsyncContextManagerExit();
                     b.emitLoadException();
                     b.beginBlock();
-                        BytecodeLocal tmp = beginTemporaryLocal();
-                        b.beginStoreLocal(tmp);
+                        b.beginBindStackValue();
                         emitAwait(() -> {
                             b.beginAsyncContextManagerCallExit();
                             b.emitLoadException();
                             b.emitLoadLocal(exit);
-                            b.emitLoadLocal(contextManager);
+                            b.emitLoadStackValue(contextManager);
                             b.endAsyncContextManagerCallExit();
                         });
-                        b.endStoreLocal();
+                        StackValue tmp = b.endBindStackValue();
                         // restore the exception just before invoking the AsyncContextManagerExit operation
                         emitRestoreCurrentException(savedException);
-                        loadAndEndTemporaryLocal(tmp);
+                        b.emitLoadStackValue(tmp);
                     b.endBlock();
                 b.endAsyncContextManagerExit();
                 b.endBlock();
@@ -6915,7 +6867,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.beginContextManagerExit();
                 b.emitLoadException();
                 b.emitLoadLocal(exit);
-                b.emitLoadLocal(contextManager);
+                b.emitLoadStackValue(contextManager);
                 b.endContextManagerExit();
             }
             b.endBlock(); // catch
@@ -6924,7 +6876,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             endTemporaryLocal(value);
             endTemporaryLocal(exit);
-            endTemporaryLocal(contextManager);
             b.endBlock();
             endSourceSection(b, newStatement);
         }
@@ -7023,8 +6974,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public Void visit(TypeVar node) {
             b.beginBlock();
 
-            BytecodeLocal typeParam = beginTemporaryLocal();
-            b.beginStoreLocal(typeParam);
+            b.beginBindStackValue();
             if (node.bound != null) {
                 BytecodeDSLCompilerResult code = createRootNodeCompilerFor(node).compileBoundTypeVar(node);
                 int kind = node.bound instanceof Tuple ? MakeTypeParamKind.TYPE_VAR_WITH_CONSTRAINTS : MakeTypeParamKind.TYPE_VAR_WITH_BOUND;
@@ -7042,15 +6992,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endMakeTypeParam();
                 // @formatter:on
             }
-            b.endStoreLocal();
+            StackValue typeParam = b.endBindStackValue();
 
             beginStoreLocal(node.name, b);
-            b.emitLoadLocal(typeParam);
+            b.emitLoadStackValue(typeParam);
             endStoreLocal(node.name, b);
 
             // Keep the newly created parameter as the result. Reading the variable again could
             // resolve to the enclosing class namespace when this scope can see it.
-            loadAndEndTemporaryLocal(typeParam);
+            b.emitLoadStackValue(typeParam);
 
             b.endBlock();
             return null;
@@ -7060,21 +7010,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public Void visit(ParamSpec node) {
             b.beginBlock();
 
-            BytecodeLocal typeParam = beginTemporaryLocal();
-            b.beginStoreLocal(typeParam);
+            b.beginBindStackValue();
             // @formatter:off
             b.beginMakeTypeParam(MakeTypeParamKind.PARAM_SPEC);
                 emitPythonConstant(toTruffleStringUncached(node.name), b);
                 b.emitLoadNull();
             b.endMakeTypeParam();
-            b.endStoreLocal();
+            StackValue typeParam = b.endBindStackValue();
 
             beginStoreLocal(node.name, b);
-                b.emitLoadLocal(typeParam);
+                b.emitLoadStackValue(typeParam);
             endStoreLocal(node.name, b);
             // @formatter:on
 
-            loadAndEndTemporaryLocal(typeParam);
+            b.emitLoadStackValue(typeParam);
 
             b.endBlock();
             return null;
@@ -7084,21 +7033,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public Void visit(TypeVarTuple node) {
             b.beginBlock();
 
-            BytecodeLocal typeParam = beginTemporaryLocal();
-            b.beginStoreLocal(typeParam);
+            b.beginBindStackValue();
             // @formatter:off
             b.beginMakeTypeParam(MakeTypeParamKind.TYPE_VAR_TUPLE);
                 emitPythonConstant(toTruffleStringUncached(node.name), b);
                 b.emitLoadNull(); // boundOrConstraints
             b.endMakeTypeParam();
-            b.endStoreLocal();
+            StackValue typeParam = b.endBindStackValue();
 
             beginStoreLocal(node.name, b);
-                b.emitLoadLocal(typeParam);
+                b.emitLoadStackValue(typeParam);
             endStoreLocal(node.name, b);
             // formatter:@on
 
-            loadAndEndTemporaryLocal(typeParam);
+            b.emitLoadStackValue(typeParam);
 
             b.endBlock();
             return null;

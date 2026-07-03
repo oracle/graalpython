@@ -3422,13 +3422,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation(storeBytecodeIndex = true)
-    @ConstantOperand(type = boolean.class)
-    @ConstantOperand(type = LocalAccessor.class)
     public static final class KwargsMerge {
         @Specialization
         public static PDict doMerge(VirtualFrame frame,
-                        boolean clearCalleeLocal,
-                        LocalAccessor calleeTemporaryLocal,
+                        Object callee,
                         PDict dict,
                         Object toMerge,
                         @Bind PBytecodeDSLRootNode rootNode,
@@ -3442,15 +3439,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 dict.setDictStorage(resultStorage);
             } catch (SameDictKeyException e) {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG,
-                                PyObjectFunctionStr.execute(frame, boundaryCallData, calleeTemporaryLocal.getObject(bytecodeNode, frame)),
+                                PyObjectFunctionStr.execute(frame, boundaryCallData, callee),
                                 e.getKey());
             } catch (NonMappingException e) {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING,
-                                PyObjectFunctionStr.execute(frame, boundaryCallData, calleeTemporaryLocal.getObject(bytecodeNode, frame)),
+                                PyObjectFunctionStr.execute(frame, boundaryCallData, callee),
                                 toMerge);
-            }
-            if (clearCalleeLocal) {
-                calleeTemporaryLocal.clear(bytecodeNode, frame);
             }
             return dict;
         }
