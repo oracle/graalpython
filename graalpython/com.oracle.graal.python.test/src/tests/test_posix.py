@@ -502,6 +502,15 @@ class WithTempFilesTests(unittest.TestCase):
         with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
             self.assertEqual(inode, os.fstat(fd).st_ino)
 
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'test requires the Windows native POSIX backend')
+    def test_windows_native_stat_uses_utc_timestamps(self):
+        timestamp = 1700000000
+        os.utime(TEST_FULL_PATH1, (timestamp, timestamp))
+        self.assertEqual(timestamp, int(os.stat(TEST_FULL_PATH1).st_mtime))
+        with open(TEST_FULL_PATH1, 0) as fd:
+            self.assertEqual(timestamp, int(os.fstat(fd).st_mtime))
+
     def test_statvfs(self):
         res = os.statvfs(TEST_FULL_PATH1)
         with open(TEST_FULL_PATH1, 0) as fd:

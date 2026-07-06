@@ -579,6 +579,13 @@ static void unix_time_to_filetime(int64_t seconds, int64_t nanoseconds, FILETIME
     out->dwHighDateTime = (DWORD) (ticks >> 32);
 }
 
+static int64_t filetime_to_unix_time(FILETIME time) {
+    ULARGE_INTEGER ticks;
+    ticks.LowPart = time.dwLowDateTime;
+    ticks.HighPart = time.dwHighDateTime;
+    return (int64_t) (ticks.QuadPart / 10000000ULL) - 11644473600LL;
+}
+
 static int set_file_times(HANDLE handle, int64_t *times, int32_t nanosecond_resolution) {
     FILETIME atime;
     FILETIME mtime;
@@ -774,6 +781,9 @@ static void stat_handle_to_longs(HANDLE handle, int64_t *out) {
         out[1] = ((int64_t) info.nFileIndexHigh << 32) | info.nFileIndexLow;
         out[2] = info.dwVolumeSerialNumber;
         out[3] = info.nNumberOfLinks;
+        out[7] = filetime_to_unix_time(info.ftLastAccessTime);
+        out[8] = filetime_to_unix_time(info.ftLastWriteTime);
+        out[9] = filetime_to_unix_time(info.ftCreationTime);
     }
 }
 
