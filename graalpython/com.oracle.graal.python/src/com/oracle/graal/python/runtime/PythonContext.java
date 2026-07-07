@@ -222,6 +222,9 @@ public final class PythonContext extends Python3Core {
 
     private volatile boolean finalizing;
 
+    /* Counter used to give code compiled from interactive sources unique filenames. */
+    private long interactiveSourceCount;
+
     // Used for testing only.
     public boolean wasStackWalk;
 
@@ -1075,6 +1078,18 @@ public final class PythonContext extends Python3Core {
 
     public long getPerfCounterStart() {
         return perfCounterStart;
+    }
+
+    @TruffleBoundary
+    public TruffleString getNextInteractiveSourceFilename(TruffleString filename) {
+        String name = filename.toJavaStringUncached();
+        long count = interactiveSourceCount++;
+        if (name.length() >= 2 && name.charAt(0) == '<' && name.charAt(name.length() - 1) == '>') {
+            name = name.substring(0, name.length() - 1) + "-" + count + ">";
+        } else {
+            name = name + "-" + count;
+        }
+        return toTruffleStringUncached(name);
     }
 
     /**
