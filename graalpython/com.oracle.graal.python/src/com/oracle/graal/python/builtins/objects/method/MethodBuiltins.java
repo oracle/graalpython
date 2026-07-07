@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -79,6 +80,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -241,6 +243,17 @@ public final class MethodBuiltins extends PythonBuiltins {
             assert fun instanceof PBuiltinFunction;
             PKeyword[] kwdefaults = ((PBuiltinFunction) fun).getKwDefaults();
             return (kwdefaults.length > 0) ? PFactory.createDict(PythonLanguage.get(inliningTarget), kwdefaults) : PNone.NONE;
+        }
+    }
+
+    @Slot(SlotKind.tp_descr_get)
+    @GenerateUncached
+    @GenerateNodeFactory
+    public abstract static class GetNode extends DescrGetBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        static PMethod doGeneric(PMethod self, Object obj, Object cls) {
+            return self;
         }
     }
 }
