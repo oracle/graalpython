@@ -271,6 +271,7 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.ThreadHandleBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
@@ -634,8 +635,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
                                     If strict is true and one of the arguments is exhausted before the others,
                                     raise a ValueError.""")),
     PThreadLocal("_local", PythonObject, newBuilder().publishInModule(J__THREAD).basetype().slots(ThreadLocalBuiltins.SLOTS)),
-    PLock("LockType", PythonObject, newBuilder().publishInModule(J__THREAD).disallowInstantiation().slots(CommonLockBuiltins.SLOTS, LockTypeBuiltins.SLOTS)),
+    PLock("LockType", PythonObject, newBuilder().publishInModule(J__THREAD).slots(CommonLockBuiltins.SLOTS, LockTypeBuiltins.SLOTS)),
     PRLock("RLock", PythonObject, newBuilder().publishInModule(J__THREAD).basetype().slots(CommonLockBuiltins.SLOTS, RLockBuiltins.SLOTS)),
+    PThreadHandle("_ThreadHandle", PythonObject, newBuilder().publishInModule(J__THREAD).slots(ThreadHandleBuiltins.SLOTS)),
     PSemLock("SemLock", PythonObject, newBuilder().publishInModule("_multiprocessing").basetype().slots(SemLockBuiltins.SLOTS)),
     PGraalPySemLock("SemLock", PythonObject, newBuilder().publishInModule("_multiprocessing_graalpy").basetype().slots(GraalPySemLockBuiltins.SLOTS)),
     PSocket("socket", PythonObject, newBuilder().publishInModule(J__SOCKET).basetype().slots(SocketBuiltins.SLOTS)),

@@ -210,6 +210,7 @@ import com.oracle.graal.python.builtins.objects.struct.PStruct;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
+import com.oracle.graal.python.builtins.objects.thread.PThreadHandle;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.tokenize.PTokenizerIter;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -225,11 +226,11 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
+import com.oracle.graal.python.builtins.objects.typing.PNoDefault;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpec;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpecArgs;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
-import com.oracle.graal.python.builtins.objects.typing.PNoDefault;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -1117,6 +1118,14 @@ public final class PFactory {
 
     public static PRLock createRLock(Object cls, Shape shape) {
         return new PRLock(cls, shape);
+    }
+
+    public static PThreadHandle createThreadHandle(PythonLanguage language) {
+        return createThreadHandle(PythonBuiltinClassType.PThreadHandle, PythonBuiltinClassType.PThreadHandle.getInstanceShape(language));
+    }
+
+    public static PThreadHandle createThreadHandle(Object cls, Shape shape) {
+        return new PThreadHandle(cls, shape);
     }
 
     public static PSemLock createSemLock(Object cls, Shape shape, long handle, int kind, int maxValue, TruffleString name) {

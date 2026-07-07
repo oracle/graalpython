@@ -76,6 +76,7 @@ public abstract class ErrorMessages {
     public static final TruffleString S_BRACKETS_ARG_S_MUST_BE_S_NOT_P = tsLiteral("%s() argument %s must be %s, not %p");
     public static final TruffleString S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P = tsLiteral("%s() argument must be read-write bytes-like object, not %p");
     public static final TruffleString ARG_MUST_BE_CALLABLE = tsLiteral("argument must be callable");
+    public static final TruffleString FIRST_ARG_MUST_BE_CALLABLE = tsLiteral("first arg must be callable");
     public static final TruffleString S_ARG_MUST_BE_CALLABLE = tsLiteral("%s argument must be callable");
     public static final TruffleString S_ARG_1_MUST_BE_STR_NOT_P = tsLiteral("%s() argument 1 must be str, not %p");
     public static final TruffleString ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER = tsLiteral("%s argument must be a string, a bytes-like object or a number, not %p");
@@ -135,6 +136,11 @@ public abstract class ErrorMessages {
     public static final TruffleString BAD_OPERAND_FOR = tsLiteral("bad operand type for %s%s: '%p'");
     public static final TruffleString BAD_VALUES_IN_FDS_TO_KEEP = tsLiteral("bad value(s) in fds_to_keep");
     public static final TruffleString BAD_TYPECODE = tsLiteral("bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)");
+    public static final TruffleString HANDLE_MUST_BE_THREAD_HANDLE = tsLiteral("'handle' must be a _ThreadHandle");
+    public static final TruffleString IDENT_MUST_BE_INTEGER = tsLiteral("ident must be an integer");
+    public static final TruffleString THREAD_ALREADY_STARTED = tsLiteral("thread already started");
+    public static final TruffleString THREAD_FUNCTION_MUST_BE_CALLABLE = tsLiteral("thread function must be callable");
+    public static final TruffleString THREAD_NOT_STARTED = tsLiteral("thread not started");
     public static final TruffleString INT_BASE_MUST_BE_2_AND_36_OR_0 = tsLiteral("int() base must be >= 2 and <= 36, or 0");
     public static final TruffleString BASES_ITEM_CAUSES_INHERITANCE_CYCLE = tsLiteral("a __bases__ item causes an inheritance cycle");
     public static final TruffleString BASE_MUST_BE = tsLiteral("PyNumber_ToBase: base must be 2, 8, 10 or 16");
@@ -176,6 +182,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_CREATE_WEAK_REFERENCE_TO = tsLiteral("cannot create weak reference to '%p' object");
     public static final TruffleString CANNOT_DELETE_ATTRIBUTE = tsLiteral("can't delete %N.%s");
     public static final TruffleString CANNOT_DELETE_MEMORY = tsLiteral("cannot delete memory");
+    public static final TruffleString CANNOT_JOIN_CURRENT_THREAD = tsLiteral("Cannot join current thread");
     public static final TruffleString CANNOT_MODIFY_READONLY_MEMORY = tsLiteral("cannot modify read-only memory");
     public static final TruffleString CANNOT_EXTEND_INCOMPLETE_P = tsLiteral("Cannot extend an incomplete type '%p'");
     public static final TruffleString CANNOT_FIT_P_INTO_INDEXSIZED_INT = tsLiteral("cannot fit '%p' into an index-sized integer");
@@ -907,6 +914,7 @@ public abstract class ErrorMessages {
     public static final TruffleString N_PREPARE_MUST_RETURN_MAPPING = tsLiteral("%N.__prepare__() must return a mapping, not %p");
     public static final TruffleString INVALID_TYPE_CODE = tsLiteral("Invalid type code '%s'");
     public static final TruffleString SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS = tsLiteral("Second argument must be a string type code or a java.lang.Class object, not %p");
+    public static final TruffleString SECOND_ARG_MUST_BE_TUPLE = tsLiteral("2nd arg must be a tuple");
     public static final TruffleString CANNOT_ACCESS_JAVA_CLASS_FROM_DIFFERENT_HEAP = tsLiteral("Cannot access Java class from different heap");
     public static final TruffleString READ_RETURNED_NOT_BYTES = tsLiteral("file.read() returned not bytes but %p");
     public static final TruffleString UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES = tsLiteral("unsupported operand types(s) or combination of types: '%p' and '%p'");
@@ -1158,6 +1166,7 @@ public abstract class ErrorMessages {
     public static final TruffleString WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING = tsLiteral("write could not complete without blocking");
     public static final TruffleString THE_S_OBJECT_IS_BEING_GARBAGE_COLLECTED = tsLiteral("the %s object is being garbage-collected");
     public static final TruffleString SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS = tsLiteral("could not acquire lock for %s at interpreter shutdown, possibly due to daemon threads");
+    public static final TruffleString OPTIONAL_THIRD_ARG_MUST_BE_DICT = tsLiteral("optional 3rd arg must be a dictionary");
     public static final TruffleString REENTRANT_CALL_INSIDE_P = tsLiteral("reentrant call inside %p");
     public static final TruffleString DEQUE_MUTATED_DURING_ITERATION = tsLiteral("deque mutated during iteration");
     public static final TruffleString DEQUE_MUTATED_DURING_REMOVE = tsLiteral("deque mutated during remove().");
@@ -1304,6 +1313,7 @@ public abstract class ErrorMessages {
 
     public static final TruffleString NATIVE_EXTENSIONS_VIRTUAL_THREAD = tsLiteral("Python native extensions cannot be used from Java virtual threads. " +
                     "Run Python code that may load or call native extensions on a platform thread.");
+    public static final TruffleString IN_THREAD_STARTED_BY = tsLiteral("in thread started by");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

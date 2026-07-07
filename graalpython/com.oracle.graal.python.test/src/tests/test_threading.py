@@ -83,6 +83,25 @@ time.sleep(0.05)
     assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
 
 
+def test_thread_handle_join_and_reuse():
+    import _thread
+
+    handle = _thread.start_joinable_thread(lambda: None)
+    handle.join(5)
+    assert handle.is_done()
+    handle.join()
+
+    handle = _thread._ThreadHandle()
+    assert _thread.start_joinable_thread(lambda: None, handle=handle) is handle
+    try:
+        _thread.start_joinable_thread(lambda: None, handle=handle)
+    except RuntimeError as e:
+        assert "thread already started" in str(e)
+    else:
+        raise AssertionError("reusing a _ThreadHandle should fail")
+    handle.join(5)
+
+
 @unittest.skipIf(sys.implementation.name == "graalpy", "Blocked on Truffle API support for blocking native reads during thread-local handshakes")
 # see GR-75767 for details
 def test_blocking_os_read_thread_does_not_deadlock_import_re():

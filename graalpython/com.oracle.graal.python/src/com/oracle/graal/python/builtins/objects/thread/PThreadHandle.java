@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,29 +42,90 @@ package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
-public class PThread extends PythonBuiltinObject {
-    public static final String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
-    private final Thread thread;
+public final class PThreadHandle extends PythonBuiltinObject {
+    private static final int NOT_STARTED = 1;
+    private static final int STARTING = 2;
+    private static final int RUNNING = 3;
+    private static final int DONE = 4;
 
-    public PThread(Object cls, Shape instanceShape, Thread thread) {
+    private int state = NOT_STARTED;
+    private long ident;
+    private Thread thread;
+    private boolean exiting;
+
+    public PThreadHandle(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
+    }
+
+    public synchronized boolean markStarting() {
+        if (state != NOT_STARTED) {
+            return false;
+        }
+        state = STARTING;
+        return true;
+    }
+
+    public synchronized void setRunning(Thread thread) {
+        assert state == STARTING;
         this.thread = thread;
+        this.ident = PThread.getThreadId(thread);
+        this.state = RUNNING;
+    }
+
+    public synchronized void setRunning(long ident) {
+        assert state == NOT_STARTED;
+        this.ident = ident;
+        this.state = RUNNING;
+    }
+
+    public synchronized void notifyThreadExiting() {
+        exiting = true;
     }
 
     @TruffleBoundary
-    public void start() {
-        if (!this.thread.isAlive()) {
-            thread.start();
+    public synchronized void setDone() {
+        assert state >= RUNNING : "thread not started";
+        exiting = true;
+        state = DONE;
+    }
+
+    public synchronized boolean isStarted() {
+        return state >= RUNNING;
+    }
+
+    public synchronized boolean isDone() {
+        if (exiting) {
+            state = DONE;
         }
+        return state == DONE;
     }
 
-    public long getId() {
-        return getThreadId(thread);
+    public synchronized long getIdent() {
+        return ident;
     }
 
-    public static long getThreadId(Thread thread) {
-        return thread.threadId();
+    @TruffleBoundary
+    public void join(Node node, long timeoutMillis) {
+        assert state >= RUNNING : "thread not started";
+        assert exiting || ident != PThread.getThreadId(Thread.currentThread()) : "Cannot join current thread";
+
+        Thread threadToJoin = thread;
+        if (threadToJoin != null) {
+            if (timeoutMillis < 0) {
+                TruffleSafepoint.setBlockedThreadInterruptible(node, Thread::join, threadToJoin);
+            } else {
+                TruffleSafepoint.setBlockedThreadInterruptible(node, (t) -> t.join(timeoutMillis), threadToJoin);
+            }
+            if (!threadToJoin.isAlive()) {
+                setDone();
+            }
+            return;
+        }
+
+        setDone();
     }
 }
