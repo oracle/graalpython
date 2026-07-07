@@ -57,6 +57,7 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByte
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readIntArrayElement;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readShortArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.SURROGATE_CODE_POINT_SET;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.Charset;
@@ -147,10 +148,6 @@ public abstract class CExtCommonNodes {
     @GenerateInline(false) // footprint reduction 40 -> 22
     @GenerateUncached
     public abstract static class EncodeNativeStringNode extends PNodeWithContext {
-        private static final TruffleString.CodePointSet SURROGATES = TruffleString.CodePointSet.fromRanges(new int[]{
-                        Character.MIN_SURROGATE, Character.MAX_SURROGATE,
-        }, TS_ENCODING);
-
         public abstract TruffleString execute(TruffleString.Encoding encoding, Object unicodeObject, TruffleString errors);
 
         @Specialization
@@ -220,7 +217,7 @@ public abstract class CExtCommonNodes {
         }
 
         private static int findFirstSurrogateIndex(TruffleString str, TruffleString.ByteIndexOfCodePointSetNode byteIndexOfCodePointSetNode) {
-            int byteIndex = byteIndexOfCodePointSetNode.execute(str, 0, str.byteLength(TS_ENCODING), SURROGATES);
+            int byteIndex = byteIndexOfCodePointSetNode.execute(str, 0, str.byteLength(TS_ENCODING), SURROGATE_CODE_POINT_SET);
             return byteIndex < 0 ? 0 : byteIndexToCodepointIndex(byteIndex);
         }
 

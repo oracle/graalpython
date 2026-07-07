@@ -55,6 +55,8 @@ import posix
 import stat
 import tempfile
 import io
+import glob
+import shutil
 from contextlib import contextmanager
 
 
@@ -269,6 +271,59 @@ class PosixTests(unittest.TestCase):
                 os.unlink(TEST_FULL_PATH1)
             except Exception:
                 pass
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_lone_surrogate_paths(self):
+        root = tempfile.mkdtemp()
+        old_cwd = os.getcwd()
+        filenames = ['suffix-\udc80', 'middle-\udc80-name', 'non-bmp-\U0001f600-\udc80']
+        dirname = 'directory-\udc80'
+        try:
+            for filename in filenames:
+                path = os.path.join(root, filename)
+                fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+                os.write(fd, b'content')
+                os.close(fd)
+                self.assertTrue(os.path.isfile(path))
+                os.stat(path)
+                os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+                os.utime(path, (1, 2))
+                self.assertIn(filename, os.listdir(root))
+                self.assertIn(filename.encode('utf-8', 'surrogatepass'), os.listdir(os.fsencode(root)))
+                self.assertEqual([path], glob.glob(path))
+                with os.scandir(root) as entries:
+                    self.assertIn(filename, [entry.name for entry in entries])
+
+                copied = path + '.copy'
+                shutil.copyfile(path, copied)
+                with open(copied, 'rb') as copied_file:
+                    self.assertEqual(b'content', copied_file.read())
+                os.unlink(copied)
+
+                renamed = path + '.new'
+                os.rename(path, renamed)
+                self.assertTrue(os.path.isfile(renamed))
+                os.unlink(renamed)
+
+                encoded_path = path.encode('utf-8', 'surrogatepass')
+                fd = os.open(encoded_path, os.O_CREAT | os.O_WRONLY)
+                os.close(fd)
+                self.assertTrue(os.path.isfile(path))
+                os.unlink(encoded_path)
+
+            directory_path = os.path.join(root, dirname)
+            os.mkdir(directory_path)
+            os.chdir(directory_path)
+            self.assertEqual(dirname, os.path.basename(os.getcwd()))
+            os.chdir(old_cwd)
+            os.rmdir(directory_path)
+
+            with self.assertRaises(UnicodeDecodeError):
+                os.stat(os.fsencode(root) + b'\\malformed-\xff')
+        finally:
+            os.chdir(old_cwd)
+            os.rmdir(root)
 
     def test_failed_read_write_errno(self):
         read_fd, write_fd = os.pipe()

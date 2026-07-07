@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -202,7 +203,9 @@ public final class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             // Note: CPython also takes only Strings, not bytes, and then encodes the String
             // StringOrBytesToOpaquePathNode already checks for embedded '\0'
-            Object nameEncoded = encodeFSDefault.execute(inliningTarget, name);
+            Object pathEncoded = encodeFSDefault.execute(inliningTarget, name);
+            Buffer nameBytes = posixLib.getPathAsBytes(context.getPosixSupport(), pathEncoded);
+            Object nameEncoded = posixLib.createCStringFromBytes(context.getPosixSupport(), nameBytes.data);
             PwdResult pwd;
             try {
                 gil.release(true);

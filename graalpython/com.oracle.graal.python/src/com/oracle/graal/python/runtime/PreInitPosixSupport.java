@@ -1231,4 +1231,49 @@ public class PreInitPosixSupport extends PosixSupport {
         }
         return nativeLib.getPathAsBytes(nativePosixSupport, path);
     }
+
+    @ExportMessage
+    final Object createCStringFromString(TruffleString string,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().createCStringFromString(emulatedPosixSupport, string);
+        }
+        return nativeLib.createCStringFromString(nativePosixSupport, string);
+    }
+
+    @ExportMessage
+    final Object createCStringFromBytes(byte[] bytes,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().createCStringFromBytes(emulatedPosixSupport, bytes);
+        }
+        return nativeLib.createCStringFromBytes(nativePosixSupport, bytes);
+    }
+
+    @ExportMessage
+    final Object createWideStringFromString(TruffleString string,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().createWideStringFromString(emulatedPosixSupport, string);
+        }
+        return nativeLib.createWideStringFromString(nativePosixSupport, string);
+    }
+
+    @ExportMessage
+    final TruffleString getCStringAsString(Object string,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().getCStringAsString(emulatedPosixSupport, string);
+        }
+        return nativeLib.getCStringAsString(nativePosixSupport, string);
+    }
+
+    @ExportMessage
+    final Buffer getCStringAsBytes(Object string,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().getCStringAsBytes(emulatedPosixSupport, string);
+        }
+        return nativeLib.getCStringAsBytes(nativePosixSupport, string);
+    }
 }

@@ -533,46 +533,6 @@ static int open_osfhandle_noraise(int64_t handle, int32_t flags) {
     return fd;
 }
 
-static void set_utf8_path_errno(DWORD error) {
-    set_win_errno(error);
-}
-
-static wchar_t *utf8_to_wide_path(const char *path) {
-    int len = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
-    if (len <= 0) {
-        set_utf8_path_errno(GetLastError());
-        return NULL;
-    }
-    wchar_t *wide = (wchar_t *) malloc(len * sizeof(wchar_t));
-    if (wide == NULL) {
-        set_posix_errno(ENOMEM);
-        return NULL;
-    }
-    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, wide, len) <= 0) {
-        set_utf8_path_errno(GetLastError());
-        free(wide);
-        return NULL;
-    }
-    return wide;
-}
-
-static int wide_to_utf8_name(const wchar_t *name, char *buf, uint64_t bufSize) {
-    int needed = WideCharToMultiByte(CP_UTF8, 0, name, -1, NULL, 0, NULL, NULL);
-    if (needed <= 0) {
-        set_win_errno(GetLastError());
-        return -1;
-    }
-    if ((uint64_t) needed > bufSize) {
-        set_posix_errno(ENAMETOOLONG);
-        return -1;
-    }
-    if (WideCharToMultiByte(CP_UTF8, 0, name, -1, buf, (int) bufSize, NULL, NULL) <= 0) {
-        set_win_errno(GetLastError());
-        return -1;
-    }
-    return 0;
-}
-
 static void unix_time_to_filetime(int64_t seconds, int64_t nanoseconds, FILETIME *out) {
     int64_t ticks = (seconds + 11644473600LL) * 10000000LL + nanoseconds / 100;
     out->dwLowDateTime = (DWORD) ticks;
@@ -603,21 +563,15 @@ static int set_file_times(HANDLE handle, int64_t *times, int32_t nanosecond_reso
     return 0;
 }
 
-static int set_path_times(const char *path, int64_t *times, int32_t nanosecond_resolution, int32_t followSymlinks) {
+static int set_path_times(const wchar_t *path, int64_t *times, int32_t nanosecond_resolution, int32_t followSymlinks) {
     DWORD flags = FILE_FLAG_BACKUP_SEMANTICS;
     if (!followSymlinks) {
         flags |= FILE_FLAG_OPEN_REPARSE_POINT;
     }
-    wchar_t *wide_path = utf8_to_wide_path(path);
-    if (wide_path == NULL) {
-        return -1;
-    }
-    HANDLE handle = CreateFileW(wide_path, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+    HANDLE handle = CreateFileW(path, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                     NULL, OPEN_EXISTING, flags, NULL);
-    DWORD error = handle == INVALID_HANDLE_VALUE ? GetLastError() : ERROR_SUCCESS;
-    free(wide_path);
     if (handle == INVALID_HANDLE_VALUE) {
-        set_win_errno(error);
+        set_win_errno(GetLastError());
         return -1;
     }
     int result = set_file_times(handle, times, nanosecond_resolution);
@@ -625,21 +579,21 @@ static int set_path_times(const char *path, int64_t *times, int32_t nanosecond_r
     return result;
 }
 
-static int root_path_from_path(const char *path, char *root, DWORD root_size) {
-    char full_path[32768];
-    DWORD full_len = GetFullPathNameA(path, (DWORD) sizeof(full_path), full_path, NULL);
-    if (full_len == 0 || full_len >= sizeof(full_path)) {
+static int root_path_from_path(const wchar_t *path, wchar_t *root, DWORD root_size) {
+    wchar_t full_path[32768];
+    DWORD full_len = GetFullPathNameW(path, (DWORD) (sizeof(full_path) / sizeof(wchar_t)), full_path, NULL);
+    if (full_len == 0 || full_len >= sizeof(full_path) / sizeof(wchar_t)) {
         set_win_errno(GetLastError());
         return -1;
     }
-    if (!GetVolumePathNameA(full_path, root, root_size)) {
+    if (!GetVolumePathNameW(full_path, root, root_size)) {
         set_win_errno(GetLastError());
         return -1;
     }
     return 0;
 }
 
-static int statvfs_from_root(const char *root, int64_t *out) {
+static int statvfs_from_root(const wchar_t *root, int64_t *out) {
     ULARGE_INTEGER free_bytes_available;
     ULARGE_INTEGER total_number_of_bytes;
     ULARGE_INTEGER total_number_of_free_bytes;
@@ -647,11 +601,11 @@ static int statvfs_from_root(const char *root, int64_t *out) {
     DWORD bytes_per_sector = 0;
     DWORD number_of_free_clusters = 0;
     DWORD total_number_of_clusters = 0;
-    if (!GetDiskFreeSpaceExA(root, &free_bytes_available, &total_number_of_bytes, &total_number_of_free_bytes)) {
+    if (!GetDiskFreeSpaceExW(root, &free_bytes_available, &total_number_of_bytes, &total_number_of_free_bytes)) {
         set_win_errno(GetLastError());
         return -1;
     }
-    if (!GetDiskFreeSpaceA(root, &sectors_per_cluster, &bytes_per_sector, &number_of_free_clusters, &total_number_of_clusters)) {
+    if (!GetDiskFreeSpaceW(root, &sectors_per_cluster, &bytes_per_sector, &number_of_free_clusters, &total_number_of_clusters)) {
         sectors_per_cluster = 1;
         bytes_per_sector = 4096;
     }
@@ -673,21 +627,15 @@ static int statvfs_from_root(const char *root, int64_t *out) {
     return 0;
 }
 
-static int statvfs_from_path(const char *path, int64_t *out) {
-    wchar_t *wide_path = utf8_to_wide_path(path);
-    if (wide_path == NULL) {
-        return -1;
-    }
-    DWORD attributes = GetFileAttributesW(wide_path);
-    DWORD error = attributes == INVALID_FILE_ATTRIBUTES ? GetLastError() : ERROR_SUCCESS;
-    free(wide_path);
+static int statvfs_from_path(const wchar_t *path, int64_t *out) {
+    DWORD attributes = GetFileAttributesW(path);
     if (attributes == INVALID_FILE_ATTRIBUTES) {
-        set_win_errno(error);
+        set_win_errno(GetLastError());
         return -1;
     }
 
-    char root[MAX_PATH];
-    if (root_path_from_path(path, root, sizeof(root)) != 0) {
+    wchar_t root[MAX_PATH];
+    if (root_path_from_path(path, root, MAX_PATH) != 0) {
         return -1;
     }
     return statvfs_from_root(root, out);
@@ -890,28 +838,22 @@ GP_EXPORT int32_t set_inheritable(int32_t fd, int32_t inheritable) {
     return 0;
 }
 
-GP_EXPORT int32_t call_openat(int32_t dirFd, const char *pathname, int32_t flags, int32_t mode) {
+GP_EXPORT int32_t call_openat(int32_t dirFd, const wchar_t *pathname, int32_t flags, int32_t mode) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
-    }
-    wchar_t *wide_path = utf8_to_wide_path(pathname);
-    if (wide_path == NULL) {
-        return -1;
     }
     int open_flags = flags | _O_NOINHERIT;
     if ((open_flags & _O_TEXT) == 0) {
         open_flags |= _O_BINARY;
     }
-    int result = _wopen(wide_path, open_flags, mode);
+    int result = _wopen(pathname, open_flags, mode);
+    // The following _setmode is defensive enforcement; _wopen(..., _O_BINARY, ...) should already set this mode.
     if (result < 0) {
         capture_errno();
-    }
-    free(wide_path);
-    // The following _setmode is defensive enforcement; _wopen(..., _O_BINARY, ...) should already set this mode.
-    if (result >= 0 && (open_flags & _O_TEXT) == 0 && _setmode(result, _O_BINARY) < 0) {
+    } else if ((open_flags & _O_TEXT) == 0 && _setmode(result, _O_BINARY) < 0) {
         int error = errno;
         close_noraise(result);
-        errno = error;
+        set_posix_errno(error);
         return -1;
     }
     return result;
@@ -1060,18 +1002,12 @@ GP_EXPORT int32_t call_ftruncate(int32_t fd, int64_t length) {
     return chsize_noraise(fd, length) == 0 ? 0 : -1;
 }
 
-GP_EXPORT int32_t call_truncate(const char* path, int64_t length) {
-    wchar_t *wide_path = utf8_to_wide_path(path);
-    if (wide_path == NULL) {
-        return -1;
-    }
-    int fd = _wopen(wide_path, _O_RDWR | _O_BINARY | _O_NOINHERIT);
+GP_EXPORT int32_t call_truncate(const wchar_t *path, int64_t length) {
+    int fd = _wopen(path, _O_RDWR | _O_BINARY | _O_NOINHERIT);
     if (fd < 0) {
         capture_errno();
-        free(wide_path);
         return -1;
     }
-    free(wide_path);
     int result = call_ftruncate(fd, length);
     int error = result != 0 ? errno_capture : 0;
     close_noraise(fd);
@@ -1137,25 +1073,18 @@ GP_EXPORT int32_t get_terminal_size(int32_t fd, int32_t *size) {
     return 0;
 }
 
-GP_EXPORT int32_t call_fstatat(int32_t dirFd, const char *path, int32_t followSymlinks, int64_t *out) {
+GP_EXPORT int32_t call_fstatat(int32_t dirFd, const wchar_t *path, int32_t followSymlinks, int64_t *out) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    wchar_t *wide_path = utf8_to_wide_path(path);
-    if (wide_path == NULL) {
-        return -1;
-    }
     struct __stat64 st;
-    int result = _wstat64(wide_path, &st);
+    int result = _wstat64(path, &st);
     if (result == 0) {
         stat_struct_to_longs(&st, out);
-        stat_path_handle_to_longs(wide_path, followSymlinks, out);
-        free(wide_path);
+        stat_path_handle_to_longs(path, followSymlinks, out);
         return 0;
     }
-    result = stat_path_attributes_to_longs(wide_path, out);
-    free(wide_path);
-    return result;
+    return stat_path_attributes_to_longs(path, out);
 }
 
 GP_EXPORT int32_t call_fstat(int32_t fd, int64_t *out) {
@@ -1177,7 +1106,7 @@ GP_EXPORT int32_t call_fstat(int32_t fd, int64_t *out) {
     return result;
 }
 
-GP_EXPORT int32_t call_statvfs(const char *path, int64_t *out) {
+GP_EXPORT int32_t call_statvfs(const wchar_t *path, int64_t *out) {
     return statvfs_from_path(path, out);
 }
 
@@ -1186,32 +1115,28 @@ GP_EXPORT int32_t call_fstatvfs(int32_t fd, int64_t *out) {
     if (os_handle == -1) {
         return -1;
     }
-    char path[32768];
-    DWORD len = GetFinalPathNameByHandleA((HANDLE) os_handle, path, (DWORD) sizeof(path), FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
-    if (len == 0 || len >= sizeof(path)) {
+    wchar_t path[32768];
+    DWORD len = GetFinalPathNameByHandleW((HANDLE) os_handle, path, (DWORD) (sizeof(path) / sizeof(wchar_t)), FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    if (len == 0 || len >= sizeof(path) / sizeof(wchar_t)) {
         set_win_errno(GetLastError());
         return -1;
     }
-    const char *path_for_volume = path;
-    if (strncmp(path, "\\\\?\\", 4) == 0) {
+    const wchar_t *path_for_volume = path;
+    if (wcsncmp(path, L"\\\\?\\", 4) == 0) {
         path_for_volume = path + 4;
     }
     return statvfs_from_path(path_for_volume, out);
 }
 GP_EXPORT int32_t call_uname(char *sysname, char *nodename, char *release, char *version, char *machine, int32_t size) { return unsupported(); }
 
-GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const char *pathname, int32_t rmdir) {
+GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const wchar_t *pathname, int32_t rmdir) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    wchar_t *wide_path = utf8_to_wide_path(pathname);
-    if (wide_path == NULL) {
-        return -1;
-    }
     if (rmdir) {
-        int result = _wrmdir(wide_path);
+        int result = _wrmdir(pathname);
         if (result != 0 && errno == EINVAL) {
-            DWORD attributes = GetFileAttributesW(wide_path);
+            DWORD attributes = GetFileAttributesW(pathname);
             if (attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY)) {
                 errno = ENOTDIR;
             }
@@ -1219,81 +1144,46 @@ GP_EXPORT int32_t call_unlinkat(int32_t dirFd, const char *pathname, int32_t rmd
         if (result != 0) {
             capture_errno();
         }
-        free(wide_path);
         return result;
     }
-    int result = _wunlink(wide_path);
+    int result = _wunlink(pathname);
     if (result != 0) {
         capture_errno();
     }
-    free(wide_path);
     return result;
 }
 
-GP_EXPORT int32_t call_linkat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath, int32_t flags) { return unsupported(); }
-GP_EXPORT int32_t call_symlinkat(const char *target, int32_t dirFd, const char *linkpath) { return unsupported(); }
+GP_EXPORT int32_t call_linkat(int32_t oldDirFd, const wchar_t *oldPath, int32_t newDirFd, const wchar_t *newPath, int32_t flags) { return unsupported(); }
+GP_EXPORT int32_t call_symlinkat(const wchar_t *target, int32_t dirFd, const wchar_t *linkpath) { return unsupported(); }
 
-GP_EXPORT int32_t call_mkdirat(int32_t dirFd, const char *pathname, int32_t mode) {
+GP_EXPORT int32_t call_mkdirat(int32_t dirFd, const wchar_t *pathname, int32_t mode) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    wchar_t *wide_path = utf8_to_wide_path(pathname);
-    if (wide_path == NULL) {
-        return -1;
-    }
-    int result = _wmkdir(wide_path);
+    int result = _wmkdir(pathname);
     if (result != 0) {
         capture_errno();
     }
-    free(wide_path);
     return result;
 }
 
-GP_EXPORT int32_t call_getcwd(char *buf, uint64_t size) {
-    DWORD len = GetCurrentDirectoryW(0, NULL);
+GP_EXPORT int32_t call_getcwd(wchar_t *buf, uint64_t size) {
+    DWORD len = GetCurrentDirectoryW(size > UINT32_MAX ? UINT32_MAX : (DWORD) size, buf);
     if (len == 0) {
         set_win_errno(GetLastError());
         return -1;
     }
-    wchar_t *wide_path = (wchar_t *) malloc(len * sizeof(wchar_t));
-    if (wide_path == NULL) {
-        set_posix_errno(ENOMEM);
-        return -1;
-    }
-    if (GetCurrentDirectoryW(len, wide_path) == 0) {
-        set_win_errno(GetLastError());
-        free(wide_path);
-        return -1;
-    }
-    int needed = WideCharToMultiByte(CP_UTF8, 0, wide_path, -1, NULL, 0, NULL, NULL);
-    if (needed <= 0) {
-        set_win_errno(GetLastError());
-        free(wide_path);
-        return -1;
-    }
-    if ((uint64_t) needed > size || size > INT_MAX) {
-        free(wide_path);
+    if (len >= size) {
         set_posix_errno(ERANGE);
         return -1;
     }
-    if (WideCharToMultiByte(CP_UTF8, 0, wide_path, -1, buf, (int) size, NULL, NULL) <= 0) {
-        set_win_errno(GetLastError());
-        free(wide_path);
-        return -1;
-    }
-    free(wide_path);
     return 0;
 }
-GP_EXPORT int32_t call_chdir(const char *path) {
-    wchar_t *wide_path = utf8_to_wide_path(path);
-    if (wide_path == NULL) {
-        return -1;
-    }
-    int result = _wchdir(wide_path);
+GP_EXPORT int32_t call_chdir(const wchar_t *path) {
+    int result = _wchdir(path);
     if (result != 0) {
         capture_errno();
     }
-    free(wide_path);
     return result;
 }
 GP_EXPORT int32_t call_fchdir(int32_t fd) {
@@ -1303,29 +1193,23 @@ GP_EXPORT int32_t call_fchdir(int32_t fd) {
     return unsupported();
 }
 GP_EXPORT int32_t call_fchown(int32_t fd, int64_t owner, int64_t group) { return unsupported(); }
-GP_EXPORT int32_t call_fchownat(int32_t dirfd, const char *pathname, int64_t owner, int64_t group, int32_t followSymlinks) { return unsupported(); }
+GP_EXPORT int32_t call_fchownat(int32_t dirfd, const wchar_t *pathname, int64_t owner, int64_t group, int32_t followSymlinks) { return unsupported(); }
 GP_EXPORT int32_t call_isatty(int32_t fd) { return _isatty(fd); }
 
-GP_EXPORT intptr_t call_opendir(const char *name) {
-    if (name[0] == '\0') {
+GP_EXPORT intptr_t call_opendir(const wchar_t *name) {
+    if (name[0] == L'\0') {
         set_posix_errno(ENOENT);
         return 0;
     }
-    wchar_t *wide_name = utf8_to_wide_path(name);
-    if (wide_name == NULL) {
-        return 0;
-    }
-
-    size_t len = wcslen(wide_name);
-    int needs_separator = len > 0 && wide_name[len - 1] != L'\\' && wide_name[len - 1] != L'/' && wide_name[len - 1] != L':';
+    size_t len = wcslen(name);
+    int needs_separator = len > 0 && name[len - 1] != L'\\' && name[len - 1] != L'/' && name[len - 1] != L':';
     size_t pattern_len = len + (needs_separator ? 4 : 3) + 1;
     wchar_t *pattern = (wchar_t *) malloc(pattern_len * sizeof(wchar_t));
     if (!pattern) {
-        free(wide_name);
         set_posix_errno(ENOMEM);
         return 0;
     }
-    wcscpy(pattern, wide_name);
+    wcscpy(pattern, name);
     if (needs_separator) {
         pattern[len++] = L'\\';
     }
@@ -1334,7 +1218,6 @@ GP_EXPORT intptr_t call_opendir(const char *name) {
     win_dir_t *dir = (win_dir_t *) calloc(1, sizeof(win_dir_t));
     if (!dir) {
         free(pattern);
-        free(wide_name);
         set_posix_errno(ENOMEM);
         return 0;
     }
@@ -1344,22 +1227,19 @@ GP_EXPORT intptr_t call_opendir(const char *name) {
     if (dir->handle == INVALID_HANDLE_VALUE) {
         DWORD error = GetLastError();
         if (error == ERROR_FILE_NOT_FOUND) {
-            DWORD attributes = GetFileAttributesW(wide_name);
+            DWORD attributes = GetFileAttributesW(name);
             if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
                 dir->exhausted = 1;
-                free(wide_name);
                 return (intptr_t) dir;
             }
             if (attributes == INVALID_FILE_ATTRIBUTES) {
                 error = GetLastError();
             }
         }
-        free(wide_name);
         free(dir);
         set_win_errno(error);
         return 0;
     }
-    free(wide_name);
     return (intptr_t) dir;
 }
 
@@ -1385,7 +1265,7 @@ GP_EXPORT int32_t call_closedir(intptr_t dirp) {
     return 0;
 }
 
-GP_EXPORT int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSize, int64_t *out) {
+GP_EXPORT int32_t call_readdir(intptr_t dirp, wchar_t *nameBuf, uint64_t nameBufSize, int64_t *out) {
     win_dir_t *dir = (win_dir_t *) dirp;
     if (!dir || nameBufSize == 0) {
         set_posix_errno(EBADF);
@@ -1407,16 +1287,19 @@ GP_EXPORT int32_t call_readdir(intptr_t dirp, char *nameBuf, uint64_t nameBufSiz
     }
     dir->first = 0;
 
-    if (wide_to_utf8_name(dir->data.cFileName, nameBuf, nameBufSize) != 0) {
+    size_t name_len = wcslen(dir->data.cFileName) + 1;
+    if (name_len > nameBufSize) {
+        set_posix_errno(ENAMETOOLONG);
         return -1;
     }
+    memcpy(nameBuf, dir->data.cFileName, name_len * sizeof(wchar_t));
     out[0] = 0;
     out[1] = WIN_DT_UNKNOWN;
     return 1;
 }
 
 GP_EXPORT void call_rewinddir(intptr_t dirp) {}
-GP_EXPORT int32_t call_utimensat(int32_t dirFd, const char *path, int64_t *timespec, int32_t followSymlinks) {
+GP_EXPORT int32_t call_utimensat(int32_t dirFd, const wchar_t *path, int64_t *timespec, int32_t followSymlinks) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
@@ -1439,53 +1322,31 @@ GP_EXPORT int32_t call_futimes(int32_t fd, int64_t *timeval) {
     return set_file_times((HANDLE) os_handle, timeval, 0);
 }
 
-GP_EXPORT int32_t call_lutimes(const char *filename, int64_t *timeval) {
+GP_EXPORT int32_t call_lutimes(const wchar_t *filename, int64_t *timeval) {
     return set_path_times(filename, timeval, 0, 0);
 }
 
-GP_EXPORT int32_t call_utimes(const char *filename, int64_t *timeval) {
+GP_EXPORT int32_t call_utimes(const wchar_t *filename, int64_t *timeval) {
     return set_path_times(filename, timeval, 0, 1);
 }
 
-GP_EXPORT int32_t call_renameat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
+GP_EXPORT int32_t call_renameat(int32_t oldDirFd, const wchar_t *oldPath, int32_t newDirFd, const wchar_t *newPath) {
     if (!is_default_dir_fd(oldDirFd) || !is_default_dir_fd(newDirFd)) {
         return unsupported();
     }
-    wchar_t *wide_old_path = utf8_to_wide_path(oldPath);
-    if (wide_old_path == NULL) {
-        return -1;
-    }
-    wchar_t *wide_new_path = utf8_to_wide_path(newPath);
-    if (wide_new_path == NULL) {
-        free(wide_old_path);
-        return -1;
-    }
-    int result = _wrename(wide_old_path, wide_new_path);
+    int result = _wrename(oldPath, newPath);
     if (result != 0) {
         capture_errno();
     }
-    free(wide_new_path);
-    free(wide_old_path);
     return result;
 }
 
-GP_EXPORT int32_t call_replaceat(int32_t oldDirFd, const char *oldPath, int32_t newDirFd, const char *newPath) {
+GP_EXPORT int32_t call_replaceat(int32_t oldDirFd, const wchar_t *oldPath, int32_t newDirFd, const wchar_t *newPath) {
     if (!is_default_dir_fd(oldDirFd) || !is_default_dir_fd(newDirFd)) {
         return unsupported();
     }
-    wchar_t *wide_old_path = utf8_to_wide_path(oldPath);
-    if (wide_old_path == NULL) {
-        return -1;
-    }
-    wchar_t *wide_new_path = utf8_to_wide_path(newPath);
-    if (wide_new_path == NULL) {
-        free(wide_old_path);
-        return -1;
-    }
-    BOOL result = MoveFileExW(wide_old_path, wide_new_path, MOVEFILE_REPLACE_EXISTING);
+    BOOL result = MoveFileExW(oldPath, newPath, MOVEFILE_REPLACE_EXISTING);
     DWORD error = result ? ERROR_SUCCESS : GetLastError();
-    free(wide_new_path);
-    free(wide_old_path);
     if (!result) {
         set_win_errno(error);
         return -1;
@@ -1493,35 +1354,25 @@ GP_EXPORT int32_t call_replaceat(int32_t oldDirFd, const char *oldPath, int32_t 
     return 0;
 }
 
-GP_EXPORT int32_t call_faccessat(int32_t dirFd, const char *path, int32_t mode, int32_t effectiveIds, int32_t followSymlinks) {
+GP_EXPORT int32_t call_faccessat(int32_t dirFd, const wchar_t *path, int32_t mode, int32_t effectiveIds, int32_t followSymlinks) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    wchar_t *wide_path = utf8_to_wide_path(path);
-    if (wide_path == NULL) {
-        return -1;
-    }
-    int result = _waccess(wide_path, mode);
+    int result = _waccess(path, mode);
     if (result != 0) {
         capture_errno();
     }
-    free(wide_path);
     return result;
 }
 
-GP_EXPORT int32_t call_fchmodat(int32_t dirFd, const char *path, int32_t mode, int32_t followSymlinks) {
+GP_EXPORT int32_t call_fchmodat(int32_t dirFd, const wchar_t *path, int32_t mode, int32_t followSymlinks) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    wchar_t *wide_path = utf8_to_wide_path(path);
-    if (wide_path == NULL) {
-        return -1;
-    }
-    int result = _wchmod(wide_path, mode);
+    int result = _wchmod(path, mode);
     if (result != 0) {
         capture_errno();
     }
-    free(wide_path);
     return result;
 }
 
@@ -1532,17 +1383,12 @@ GP_EXPORT int32_t call_fchmod(int32_t fd, int32_t mode) {
     }
     return unsupported();
 }
-GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const char *path, char *buf, uint64_t size) {
+GP_EXPORT int64_t call_readlinkat(int32_t dirFd, const wchar_t *path, wchar_t *buf, uint64_t size) {
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
-    wchar_t *wide_path = utf8_to_wide_path(path);
-    if (wide_path == NULL) {
-        return -1;
-    }
-    DWORD attributes = GetFileAttributesW(wide_path);
+    DWORD attributes = GetFileAttributesW(path);
     DWORD error = attributes == INVALID_FILE_ATTRIBUTES ? GetLastError() : ERROR_SUCCESS;
-    free(wide_path);
     if (attributes == INVALID_FILE_ATTRIBUTES) {
         set_win_errno(error);
         return -1;
@@ -1607,47 +1453,48 @@ GP_EXPORT int32_t call_getgroups(int64_t size, int64_t* out) { return 0; }
 GP_EXPORT int32_t call_getrusage(int32_t who, uint64_t* out) { return unsupported(); }
 GP_EXPORT int32_t call_openpty(int32_t *outvars) { return unsupported(); }
 GP_EXPORT int32_t call_ctermid(char *buf) { return unsupported(); }
-GP_EXPORT int32_t call_setenv(char *name, char *value, int overwrite) {
-    int result = _putenv_s(name, value);
+GP_EXPORT int32_t call_setenv(wchar_t *name, wchar_t *value, int overwrite) {
+    (void) overwrite;
+    size_t name_len = wcslen(name);
+    size_t value_len = wcslen(value);
+    wchar_t *env = malloc((name_len + value_len + 2) * sizeof(wchar_t));
+    if (env == NULL) {
+        set_posix_errno(ENOMEM);
+        return -1;
+    }
+    memcpy(env, name, name_len * sizeof(wchar_t));
+    env[name_len] = L'=';
+    memcpy(env + name_len + 1, value, (value_len + 1) * sizeof(wchar_t));
+    int result = _wputenv(env);
+    free(env);
     if (result != 0) {
-        set_posix_errno(result);
+        capture_errno();
         return -1;
     }
     return 0;
 }
-GP_EXPORT int32_t call_unsetenv(char *name) {
-    int result = _putenv_s(name, "");
+GP_EXPORT int32_t call_unsetenv(wchar_t *name) {
+    size_t name_len = wcslen(name);
+    wchar_t *env = malloc((name_len + 2) * sizeof(wchar_t));
+    if (env == NULL) {
+        set_posix_errno(ENOMEM);
+        return -1;
+    }
+    memcpy(env, name, name_len * sizeof(wchar_t));
+    env[name_len] = L'=';
+    env[name_len + 1] = L'\0';
+    int result = _wputenv(env);
+    free(env);
     if (result != 0) {
-        set_posix_errno(result);
+        capture_errno();
         return -1;
     }
     return 0;
 }
 GP_EXPORT void call_execv(char *data, int64_t *offsets, int32_t offsetsLen) { set_posix_errno(ENOSYS); }
-GP_EXPORT int32_t call_system(const char *pathname) { return system(pathname); }
-static WCHAR *utf8_to_wchar(const char *input) {
-    if (input == NULL) {
-        return NULL;
-    }
-    int wchar_len = MultiByteToWideChar(CP_UTF8, 0, input, -1, NULL, 0);
-    if (wchar_len == 0) {
-        set_win_errno(GetLastError());
-        return NULL;
-    }
-    WCHAR *result = (WCHAR *) malloc((size_t) wchar_len * sizeof(WCHAR));
-    if (result == NULL) {
-        set_posix_errno(ENOMEM);
-        return NULL;
-    }
-    if (MultiByteToWideChar(CP_UTF8, 0, input, -1, result, wchar_len) == 0) {
-        set_win_errno(GetLastError());
-        free(result);
-        return NULL;
-    }
-    return result;
-}
+GP_EXPORT int32_t call_system(const wchar_t *command) { return _wsystem(command); }
 
-GP_EXPORT int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset, char *tagname) {
+GP_EXPORT int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t fd, int64_t offset, wchar_t *tagname) {
     const int32_t win_prot_read = 1;
     const int32_t win_prot_write = 2;
     const int32_t win_map_shared = 1;
@@ -1658,7 +1505,6 @@ GP_EXPORT int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t
     HANDLE mapping;
     DWORD mapping_error;
     void *view;
-    WCHAR *wide_tagname = NULL;
 
     if (length < 0 || offset < 0) {
         set_posix_errno(EINVAL);
@@ -1691,15 +1537,9 @@ GP_EXPORT int64_t call_mmap(int64_t length, int32_t prot, int32_t flags, int32_t
         desired_access = 0;
     }
 
-    wide_tagname = utf8_to_wchar(tagname);
-    if (tagname != NULL && wide_tagname == NULL) {
-        return 0;
-    }
-
     SetLastError(ERROR_SUCCESS);
-    mapping = CreateFileMappingW(file_handle, NULL, protect, (DWORD) (max_size >> 32), (DWORD) max_size, wide_tagname);
+    mapping = CreateFileMappingW(file_handle, NULL, protect, (DWORD) (max_size >> 32), (DWORD) max_size, tagname);
     mapping_error = GetLastError();
-    free(wide_tagname);
     if (mapping == NULL) {
         set_win_errno(mapping_error);
         return 0;
@@ -1819,7 +1659,7 @@ GP_EXPORT int64_t call_inet_aton(const char *src) {
 GP_EXPORT int32_t call_inet_ntoa(int32_t src, char *dst) { struct in_addr addr; addr.s_addr = htonl(src); const char *s = inet_ntop(AF_INET, &addr, dst, INET_ADDRSTRLEN); return s == NULL ? -1 : (int32_t) strlen(s); }
 GP_EXPORT int32_t call_inet_pton(int32_t family, const char *src, void *dst) { int r = inet_pton(family, src, dst); return r == SOCKET_ERROR ? set_wsa_errno() : r; }
 GP_EXPORT int32_t call_inet_ntop(int32_t family, void *src, char *dst, int32_t dstSize) { return inet_ntop(family, src, dst, dstSize) == NULL ? set_wsa_errno() : 0; }
-GP_EXPORT int32_t call_gethostname(char *buf, int64_t bufLen) {
+GP_EXPORT int32_t call_gethostname(wchar_t *buf, int64_t bufLen) {
     wchar_t stack_buf[MAX_COMPUTERNAME_LENGTH + 1];
     DWORD size = sizeof(stack_buf) / sizeof(stack_buf[0]);
     wchar_t *name = stack_buf;
@@ -1832,7 +1672,7 @@ GP_EXPORT int32_t call_gethostname(char *buf, int64_t bufLen) {
         }
         if (size == 0) {
             if (bufLen > 0) {
-                buf[0] = '\0';
+                buf[0] = L'\0';
                 return 0;
             }
             set_posix_errno(EFAULT);
@@ -1850,21 +1690,12 @@ GP_EXPORT int32_t call_gethostname(char *buf, int64_t bufLen) {
         }
     }
 
-    int needed = WideCharToMultiByte(CP_UTF8, 0, name, size, NULL, 0, NULL, NULL);
-    if (needed <= 0) {
-        set_win_errno(GetLastError());
-        result = -1;
-    } else if (needed >= bufLen) {
+    if ((int64_t) size >= bufLen) {
         set_posix_errno(ENAMETOOLONG);
         result = -1;
     } else {
-        int written = WideCharToMultiByte(CP_UTF8, 0, name, size, buf, (int) bufLen, NULL, NULL);
-        if (written <= 0) {
-            set_win_errno(GetLastError());
-            result = -1;
-        } else {
-            buf[written] = '\0';
-        }
+        memcpy(buf, name, size * sizeof(wchar_t));
+        buf[size] = L'\0';
     }
 
     if (name != stack_buf) {

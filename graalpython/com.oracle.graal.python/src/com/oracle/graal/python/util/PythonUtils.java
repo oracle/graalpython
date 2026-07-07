@@ -131,6 +131,9 @@ public final class PythonUtils {
      * Encoding of all {@link TruffleString} instances.
      */
     public static final TruffleString.Encoding TS_ENCODING = TruffleString.Encoding.UTF_32;
+    public static final TruffleString.CodePointSet SURROGATE_CODE_POINT_SET = TruffleString.CodePointSet.fromRanges(new int[]{
+                    Character.MIN_SURROGATE, Character.MAX_SURROGATE,
+    }, TS_ENCODING);
     /**
      * Encoding for {@link TruffleString}-representations of bytes-like objects.
      */

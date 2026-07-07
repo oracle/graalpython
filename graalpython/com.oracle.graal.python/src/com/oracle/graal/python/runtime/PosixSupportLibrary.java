@@ -496,6 +496,19 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract Buffer getPathAsBytes(Object receiver, Object path);
 
+    /** Converts a string to strict UTF-8 for non-filesystem APIs that use CPython's {@code s} conversion. */
+    public abstract Object createCStringFromString(Object receiver, TruffleString string);
+
+    /** Wraps already-encoded bytes for narrow native APIs without applying a filesystem conversion. */
+    public abstract Object createCStringFromBytes(Object receiver, byte[] bytes);
+
+    /** Converts a string to the UTF-16 representation used by Windows wide-character APIs. */
+    public abstract Object createWideStringFromString(Object receiver, TruffleString string);
+
+    public abstract TruffleString getCStringAsString(Object receiver, Object string);
+
+    public abstract Buffer getCStringAsBytes(Object receiver, Object string);
+
     // region Socket addresses
 
     /**
@@ -745,7 +758,8 @@ public abstract class PosixSupportLibrary extends Library {
      * information.
      *
      * @param src the IPv4 address in numbers-and-dots notation (converted to opaque object using
-     *            createPathFromBytes or createPathFromString)
+     *            {@link #createCStringFromBytes(Object, byte[])} or
+     *            {@link #createCStringFromString(Object, TruffleString)})
      * @return address in host byte order or {@link PosixConstants#INADDR_NONE} if the input is
      *         invalid
      * @see "inet(3) man pages"
@@ -758,7 +772,8 @@ public abstract class PosixSupportLibrary extends Library {
      * further conversions.
      *
      * @param src the IPv4 address in numbers-and-dots notation (converted to opaque object using
-     *            createPathFromBytes or createPathFromString)
+     *            {@link #createCStringFromBytes(Object, byte[])} or
+     *            {@link #createCStringFromString(Object, TruffleString)})
      * @return address in host byte order
      * @throws InvalidAddressException if {@code cp} is not a valid representation of an IPv4
      *             address
@@ -772,8 +787,8 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @param address tha IPv4 address in host byte order
      * @return opaque string in IPv4 dotted-decimal notation to be converted using
-     *         {@link PosixSupportLibrary#getPathAsString(Object, Object)} or
-     *         {@link PosixSupportLibrary#getPathAsBytes(Object, Object)}
+     *         {@link #getCStringAsString(Object, Object)} or
+     *         {@link #getCStringAsBytes(Object, Object)}
      * @see "inet(3) man pages"
      */
     public abstract Object inet_ntoa(Object receiver, int address);
@@ -782,7 +797,8 @@ public abstract class PosixSupportLibrary extends Library {
      * Corresponds to POSIX {@code inet_pton} function.
      *
      * @param family {@code AF_INET} or {@code AF_INET6}
-     * @param src opaque string (converted using createPathFromBytes or createPathFromString)
+     * @param src opaque string (converted using {@link #createCStringFromBytes(Object, byte[])} or
+     *            {@link #createCStringFromString(Object, TruffleString)})
      * @return the binary address in network order (4 bytes for {@code AF_INET}, 16 bytes for
      *         {@code AF_INET6})
      * @throws PosixException with {@code EAFNOSUPPORT} if the {@code family} is not supported
@@ -797,7 +813,8 @@ public abstract class PosixSupportLibrary extends Library {
      * @param family {@code AF_INET} or {@code AF_INET6}
      * @param src the address in network order, must be at least 4 (for {@code AF_INET}) or 16 (for
      *            {@code AF_INET6}) bytes long, extra bytes are ignored
-     * @return an opaque string to be converted using getPathAsString or getPathAsBytes
+     * @return an opaque string to be converted using {@link #getCStringAsString(Object, Object)} or
+     *         {@link #getCStringAsBytes(Object, Object)}
      * @throws PosixException with {@code EAFNOSUPPORT} if the {@code family} is not supported
      * @throws IllegalArgumentException if {@code src} does not satisfy the requirements stated
      *             above
@@ -805,7 +822,8 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract Object inet_ntop(Object receiver, int family, byte[] src) throws PosixException;
 
     /**
-     * @return an opaque string to be converted using getPathAsString or getPathAsBytes
+     * @return an opaque string to be converted using {@link #getCStringAsString(Object, Object)} or
+     *         {@link #getCStringAsBytes(Object, Object)}
      */
     public abstract Object gethostname(Object receiver) throws PosixException;
 
@@ -815,8 +833,9 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @param addr socket address to convert
      * @param flags a combination of {@code NI_xxx} flags
-     * @return an array of two (host, service) opaque strings to be converted using getPathAsString
-     *         or getPathAsBytes
+     * @return an array of two (host, service) opaque strings to be converted using
+     *         {@link #getCStringAsString(Object, Object)} or
+     *         {@link #getCStringAsBytes(Object, Object)}
      * @throws GetAddrInfoException when an error occurs (PosixException is not thrown because
      *             getnameinfo uses its own error codes and gai_strerror instead of the usual errno
      *             and strerror)
@@ -828,11 +847,11 @@ public abstract class PosixSupportLibrary extends Library {
      * {@code hints} parameter.
      *
      * @param node {@code null} or the host name converted using
-     *            {@link PosixSupportLibrary#createPathFromBytes(Object, byte[])} or
-     *            {@link PosixSupportLibrary#createPathFromString(Object, TruffleString)}
+     *            {@link #createCStringFromBytes(Object, byte[])} or
+     *            {@link #createCStringFromString(Object, TruffleString)}
      * @param service {@code null} or the service name converted using
-     *            {@link PosixSupportLibrary#createPathFromBytes(Object, byte[])} or
-     *            {@link PosixSupportLibrary#createPathFromString(Object, TruffleString)}
+     *            {@link #createCStringFromBytes(Object, byte[])} or
+     *            {@link #createCStringFromString(Object, TruffleString)}
      * @param family one of the {@code AF_xxx} constants, or {@link PosixConstants#AF_UNSPEC} to get
      *            addresses of any family
      * @param sockType one of the {@code SOCK_xxx} constants, or 0 to get addresses of any type

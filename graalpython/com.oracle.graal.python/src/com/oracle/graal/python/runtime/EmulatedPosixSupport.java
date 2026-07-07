@@ -4552,6 +4552,34 @@ public final class EmulatedPosixSupport extends PosixResources {
         return Buffer.wrap(utf8StringToBytes((String) path));
     }
 
+    @ExportMessage
+    public Object createCStringFromString(TruffleString string,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return checkEmbeddedNulls(toJavaStringNode.execute(string));
+    }
+
+    @ExportMessage
+    public Object createCStringFromBytes(byte[] bytes) {
+        return checkEmbeddedNulls(createUTF8String(bytes));
+    }
+
+    @ExportMessage
+    public Object createWideStringFromString(TruffleString string,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return checkEmbeddedNulls(toJavaStringNode.execute(string));
+    }
+
+    @ExportMessage
+    public TruffleString getCStringAsString(Object string,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        return fromJavaStringNode.execute((String) string, TS_ENCODING);
+    }
+
+    @ExportMessage
+    public Buffer getCStringAsBytes(Object string) {
+        return Buffer.wrap(utf8StringToBytes((String) string));
+    }
+
     @TruffleBoundary
     private static String createUTF8String(byte[] retbuf) {
         return new String(retbuf, StandardCharsets.UTF_8);

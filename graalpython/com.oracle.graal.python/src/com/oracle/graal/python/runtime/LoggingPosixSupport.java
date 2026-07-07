@@ -1687,6 +1687,36 @@ public class LoggingPosixSupport extends PosixSupport {
         return logExit(Level.FINEST, "getPathAsBytes", "%s", lib.getPathAsBytes(delegate, path));
     }
 
+    @ExportMessage
+    final Object createCStringFromString(TruffleString string,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.createCStringFromString(delegate, string);
+    }
+
+    @ExportMessage
+    final Object createCStringFromBytes(byte[] bytes,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.createCStringFromBytes(delegate, bytes);
+    }
+
+    @ExportMessage
+    final Object createWideStringFromString(TruffleString string,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.createWideStringFromString(delegate, string);
+    }
+
+    @ExportMessage
+    final TruffleString getCStringAsString(Object string,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.getCStringAsString(delegate, string);
+    }
+
+    @ExportMessage
+    final Buffer getCStringAsBytes(Object string,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.getCStringAsBytes(delegate, string);
+    }
+
     @TruffleBoundary
     private static void logEnter(Level level, String msg, String argFmt, Object... args) {
         if (LOGGER.isLoggable(level)) {
