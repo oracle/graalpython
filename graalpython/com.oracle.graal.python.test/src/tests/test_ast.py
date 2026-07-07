@@ -103,7 +103,7 @@ class AstTest(unittest.TestCase):
         class Node(_ast.AST):
             _fields = ('a', 'b')
 
-        self.assertEqual((Node, (), {'a': 41, 'b': 42}), Node(41, 42).__reduce__())
+        self.assertEqual((Node, (None, None), {'a': 41, 'b': 42}), Node(41, 42).__reduce__())
         self.assertEqual((_ast.AST, (), {}), _ast.AST().__reduce__())
 
     def test_dict_can_be_set(self):
@@ -128,11 +128,17 @@ class AstTest(unittest.TestCase):
 
     def test_non_string_fields(self):
         class Node(_ast.AST):
-            _fields = (42, [], 'a')
+            _fields = (42, 'a')
 
         self.assertEqual(1, Node(a=1).a)
         with self.assertRaisesRegex(TypeError, "must be string"):
             Node(1)
+
+        class UnhashableFieldsNode(_ast.AST):
+            _fields = ([], 'a')
+
+        with self.assertRaisesRegex(TypeError, "unhashable type: 'list'"):
+            UnhashableFieldsNode(a=1)
 
     def test_bytes_constant_kind(self):
         src = "x = u'abc'"
