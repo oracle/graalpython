@@ -102,6 +102,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     private final SourceSection sourceSection;
     private final Source source;
     private final boolean newGlobals;
+    private final boolean registerSource;
 
     @Child private GilNode gilNode = GilNode.create();
 
@@ -112,6 +113,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         this.exception = null;
         this.source = source;
         this.newGlobals = source.getOptions(language).get(PythonSourceOptions.NewGlobals);
+        this.registerSource = source.getOptions(language).get(PythonSourceOptions.RegisterSource);
     }
 
     public TopLevelExceptionHandler(PythonLanguage language, PException exception) {
@@ -121,6 +123,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         this.exception = exception;
         this.source = null;
         this.newGlobals = false;
+        this.registerSource = false;
     }
 
     private PythonLanguage getPythonLanguage() {
@@ -334,8 +337,8 @@ public final class TopLevelExceptionHandler extends RootNode {
         // IndirectCalleeContext
         Object state = IndirectCalleeContext.enter(pythonContext.getThreadState(language), arguments);
         try {
-            if (source.isInteractive()) {
-                registerInteractiveSource(code, originalFilename);
+            if (registerSource) {
+                registerSource(code, originalFilename);
             }
             Object result = innerCallTarget.call(arguments);
             if (mainModule != null && result == PNone.NONE && !source.isInteractive()) {
@@ -349,7 +352,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     }
 
     @TruffleBoundary
-    private void registerInteractiveSource(PCode code, TruffleString originalFilename) {
+    private void registerSource(PCode code, TruffleString originalFilename) {
         PythonModule linecache = AbstractImportNode.importModule(T_LINECACHE);
         TruffleString sourceText = toTruffleStringUncached(source.getCharacters().toString());
         PyObjectCallMethodObjArgs.executeUncached(linecache, T_REGISTER_CODE, code, sourceText, originalFilename);

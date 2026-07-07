@@ -68,5 +68,8 @@ public final class PythonSourceOptions {
     @Option(category = OptionCategory.INTERNAL, stability = OptionStability.STABLE, help = "Do not expose this source as a Python frame") //
     public static final OptionKey<Boolean> NoPythonFrame = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.INTERNAL, stability = OptionStability.STABLE, help = "Register this source with linecache before execution") //
+    public static final OptionKey<Boolean> RegisterSource = new OptionKey<>(false);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonSourceOptionsOptionDescriptors();
 }
