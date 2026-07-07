@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -75,11 +75,12 @@ def test_class_construction():
     Foo()
     assert global_log[0] == ["__prepare__", ("Foo", tuple()), {}]
 
-    initial_dict = {'__qualname__': 'test_class_construction.<locals>.Foo', '__module__': 'tests.test_metaclass'}
-    # if sys.implementation.name == "graalpy":
-    #     initial_dict = {
-    #         '__module__': 'test_metaclass'
-    #     }
+    initial_dict = {
+        '__qualname__': 'test_class_construction.<locals>.Foo',
+        '__module__': 'tests.test_metaclass',
+        '__firstlineno__': Foo.__firstlineno__,
+        '__static_attributes__': (),
+    }
     assert global_log[1] == ["__new__", (Meta, "Foo", tuple(), initial_dict), {}]
     assert global_log[2] == ["__init__", (Foo, "Foo", tuple(), initial_dict), {}]
     assert global_log[3] == ["__call__", (Foo,), {}]
@@ -111,13 +112,10 @@ def test_metaclass_methods():
     ns_dict = {
         '__qualname__': 'test_metaclass_methods.<locals>.MyClass',
         '__init__': MyClass.__init__,
-        '__module__': 'tests.test_metaclass'
+        '__module__': 'tests.test_metaclass',
+        '__firstlineno__': MyClass.__firstlineno__,
+        '__static_attributes__': (),
     }
-    # if sys.implementation.name == "graalpy":
-    #     ns_dict = {
-    #         '__init__': MyClass.__init__,
-    #         '__module__': 'test_metaclass',
-    #     }
     assert len(global_log) == 2
     assert global_log[0] == ["__new__", MyMeta, "MyClass", (), ns_dict]
     assert global_log[1] == ["__init__", MyClass, "MyClass", (), ns_dict]
