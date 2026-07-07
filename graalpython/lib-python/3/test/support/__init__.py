@@ -7,7 +7,11 @@ import contextlib
 import dataclasses
 import functools
 import logging
-import _opcode
+# GraalPy change
+try:
+    import _opcode
+except ImportError:
+    _opcode = None
 import os
 import re
 import stat
@@ -1356,7 +1360,7 @@ TEST_MODULES_ENABLED = (sysconfig.get_config_var('TEST_MODULES') or 'yes') == 'y
 
 def requires_specialization(test):
     return unittest.skipUnless(
-        _opcode.ENABLE_SPECIALIZATION, "requires specialization")(test)
+        _opcode and _opcode.ENABLE_SPECIALIZATION, "requires specialization")(test)
 
 
 #=======================================================================
