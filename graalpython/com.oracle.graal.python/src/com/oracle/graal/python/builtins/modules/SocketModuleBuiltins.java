@@ -70,6 +70,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -198,7 +199,8 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         PythonModule module = core.lookupBuiltinModule(T__SOCKET);
         module.setModuleState(-1L);
-        if (PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).toJavaStringUncached().equals("java")) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ||
+                        PosixSupportLibrary.getUncached().getBackend(core.getContext().getPosixSupport()).toJavaStringUncached().equals("java")) {
             module.setAttribute(toTruffleStringUncached(PosixConstants.AF_UNIX.name), PNone.NO_VALUE);
         }
     }
