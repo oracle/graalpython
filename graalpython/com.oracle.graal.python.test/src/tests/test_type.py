@@ -463,3 +463,26 @@ def test_call_not_function():
     class Callable:
         __call__ = dict
     assert Callable()(a=1) == {'a': 1}
+
+
+def test_class_firstlineno():
+    def identity(cls):
+        return cls
+
+    namespace = {"identity": identity, "__name__": "test_firstlineno"}
+    exec("""\
+
+class Plain:
+    pass
+
+@identity
+@identity
+class Decorated:
+    pass
+""", namespace)
+
+    assert namespace["Plain"].__firstlineno__ == 2
+    assert namespace["Decorated"].__firstlineno__ == 5
+
+    namespace["Plain"].__module__ = "elsewhere"
+    assert not hasattr(namespace["Plain"], "__firstlineno__")

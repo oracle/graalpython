@@ -59,6 +59,7 @@ import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerU
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.len;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BREAKPOINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FIRSTLINENO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToInternedTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
@@ -1261,6 +1262,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             beginStoreLocal("__qualname__", b);
             emitPythonConstant(toTruffleStringUncached(this.qualName), b);
             endStoreLocal("__qualname__", b);
+
+            beginStoreLocal(J___FIRSTLINENO__, b);
+            int firstLine = node.decoratorList != null && node.decoratorList.length > 0
+                            ? node.decoratorList[0].getSourceRange().startLine
+                            : node.getSourceRange().startLine;
+            emitPythonConstant(firstLine, b);
+            endStoreLocal(J___FIRSTLINENO__, b);
 
             if (node.isGeneric()) {
                 beginStoreLocal(J___TYPE_PARAMS__, b);

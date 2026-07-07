@@ -78,6 +78,9 @@ public abstract class SpecialAttributeNames {
     public static final String J___MODULE__ = "__module__";
     public static final TruffleString T___MODULE__ = tsLiteral(J___MODULE__);
 
+    public static final String J___FIRSTLINENO__ = "__firstlineno__";
+    public static final TruffleString T___FIRSTLINENO__ = tsLiteral(J___FIRSTLINENO__);
+
     public static final String J___DICT__ = "__dict__";
     public static final TruffleString T___DICT__ = tsLiteral(J___DICT__);
 
