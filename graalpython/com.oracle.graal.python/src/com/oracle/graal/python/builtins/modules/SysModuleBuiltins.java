@@ -242,6 +242,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -1501,6 +1502,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     "Handle an exception by displaying it with a traceback on sys.stderr.")
     @GenerateNodeFactory
     abstract static class ExceptHookNode extends PythonBuiltinNode {
+        static final TruffleString T_TRACEBACK = tsLiteral("traceback");
+        static final TruffleString T_PRINT_EXCEPTION_BLTIN = tsLiteral("_print_exception_bltin");
         static final TruffleString T_CAUSE_MESSAGE = tsLiteral("\nThe above exception was the direct cause of the following exception:\n\n");
         static final TruffleString T_CONTEXT_MESSAGE = tsLiteral("\nDuring handling of the above exception, another exception occurred:\n\n");
         static final TruffleString T_ATTR_PRINT_FILE_AND_LINE = tsLiteral("print_file_and_line");
@@ -1960,6 +1963,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         private void doHookWithTbImpl(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
                         PythonModule sys, Object value, PTraceback traceBack, IteratorNodes.ToArrayNode toArrayNode) {
             setExceptionTraceback(value, traceBack);
+            if (printWithTracebackModule(value)) {
+                return;
+            }
             Object stdErr = objectLookupAttr(sys, T_STDERR);
             printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet(), toArrayNode);
             fileFlush(stdErr);
@@ -1984,9 +1990,32 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private void doHookWithoutTbImpl(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
                         PythonModule sys, Object value, IteratorNodes.ToArrayNode toArrayNode) {
+            if (printWithTracebackModule(value)) {
+                return;
+            }
             Object stdErr = objectLookupAttr(sys, T_STDERR);
             printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet(), toArrayNode);
             fileFlush(stdErr);
+        }
+
+        /**
+         * Keep this in sync with CPython's _PyErr_Display: the Python traceback formatter is the
+         * primary implementation, and the code above is the fallback for failures during import or
+         * formatting.
+         */
+        @TruffleBoundary
+        private static boolean printWithTracebackModule(Object value) {
+            try {
+                PythonModule tracebackModule = AbstractImportNode.importModule(T_TRACEBACK);
+                Object printException = objectLookupAttr(tracebackModule, T_PRINT_EXCEPTION_BLTIN);
+                if (printException == PNone.NO_VALUE) {
+                    return false;
+                }
+                CallNode.executeUncached(printException, value);
+                return true;
+            } catch (PException e) {
+                return false;
+            }
         }
     }
 
