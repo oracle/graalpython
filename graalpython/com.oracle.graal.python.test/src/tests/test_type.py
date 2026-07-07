@@ -486,3 +486,32 @@ class Decorated:
 
     namespace["Plain"].__module__ = "elsewhere"
     assert not hasattr(namespace["Plain"], "__firstlineno__")
+
+
+def test_class_static_attributes():
+    class C:
+        def f(self, obj):
+            self.z = self.a = 42
+            self.a = 43
+            self.read
+            self.augmented += 1
+            del self.deleted
+            obj.self = 44
+
+            def nested(self):
+                self.nested = 45
+
+    assert C.__static_attributes__ == ("a", "nested", "z")
+
+
+def test_class_static_attributes_nested_classes():
+    class Outer:
+        def f(self):
+            self.outer = 1
+
+        class Inner:
+            def f(self):
+                self.inner = 2
+
+    assert Outer.__static_attributes__ == ("outer",)
+    assert Outer.Inner.__static_attributes__ == ("inner",)

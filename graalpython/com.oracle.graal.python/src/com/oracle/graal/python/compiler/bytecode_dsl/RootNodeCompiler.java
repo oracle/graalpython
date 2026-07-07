@@ -60,6 +60,7 @@ import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerU
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BREAKPOINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___FIRSTLINENO__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___STATIC_ATTRIBUTES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToInternedTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
@@ -218,6 +219,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private final Map<String, BytecodeLocal> freeLocals = new HashMap<>();
     private final HashMap<Object, Integer> constants = new HashMap<>();
     private final HashMap<String, Integer> names = new HashMap<>();
+    private final Set<String> staticAttributes;
 
     /**
      * Initialized lazily only for generator functions. Internal variable used to store the
@@ -278,6 +280,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         this.scope = ctx.scopeEnvironment.lookupScope(scopeKey);
         this.scopeType = getScopeType(scope, scopeKey);
         this.parent = parent;
+        this.staticAttributes = scopeType == Class ? new HashSet<>() : null;
         if (privateName != null) {
             this.privateName = privateName;
         } else if (scopeType == Class) {
@@ -1303,6 +1306,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 node.body[i].accept(statementCompiler);
             }
 
+            beginStoreLocal(J___STATIC_ATTRIBUTES__, b);
+            b.beginMakeTuple();
+            String[] attributes = staticAttributes.toArray(String[]::new);
+            Arrays.sort(attributes);
+            for (String attribute : attributes) {
+                emitPythonConstant(toTruffleStringUncached(attribute), b);
+            }
+            b.endMakeTuple();
+            endStoreLocal(J___STATIC_ATTRIBUTES__, b);
+
             if (scope.needsClassDict()) {
                 emitNameOperation("__classdictcell__", NameOperation.BeginWrite, b);
                 assert "__classdict__".equals(mangle("__classdict__"));
@@ -1565,6 +1578,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         BeginWrite,
         EndWrite,
         Delete
+    }
+
+    private void addStaticAttribute(ExprTy.Attribute node) {
+        if (node.value instanceof ExprTy.Name name && name.id.equals("self")) {
+            for (RootNodeCompiler compiler = this; compiler != null; compiler = compiler.parent) {
+                if (compiler.staticAttributes != null) {
+                    compiler.staticAttributes.add(node.attr);
+                    return;
+                }
+            }
+        }
     }
 
     private String mangle(String name) {
@@ -3516,6 +3540,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             @Override
             public Void visit(ExprTy.Attribute node) {
+                addStaticAttribute(node);
                 boolean newStatement = beginSourceSection(node, b);
                 emitTraceLineChecked(node, b);
                 checkForbiddenName(node.attr, NameOperation.BeginWrite);
