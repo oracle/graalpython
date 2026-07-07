@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,13 @@ class OperatorTest(unittest.TestCase):
         self.assertFalse(operator.eq(1, 2))
         self.assertFalse(operator.eq(1, 2.0))
 
+    def test_operator_function_stored_as_class_attribute(self):
+        class C:
+            add = operator.add
+            eq = operator.eq
+
+        self.assertEqual(C().add(1, 2), 3)
+        self.assertIs(C().eq(1, 1), True)
 
     def test_getitem(self):
         a = range(10)
