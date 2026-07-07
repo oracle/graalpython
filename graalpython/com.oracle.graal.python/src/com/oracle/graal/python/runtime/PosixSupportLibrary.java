@@ -390,6 +390,10 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void semUnlink(Object receiver, Object name) throws PosixException;
 
+    public abstract int shmOpen(Object receiver, Object name, int openFlags, int mode) throws PosixException;
+
+    public abstract void shmUnlink(Object receiver, Object name) throws PosixException;
+
     public abstract int semGetValue(Object receiver, long handle) throws PosixException;
 
     public abstract void semPost(Object receiver, long handle) throws PosixException;

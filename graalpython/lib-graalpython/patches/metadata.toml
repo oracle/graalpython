@@ -111,26 +111,31 @@ note = "Versions newer than 43 do not need a patch."
 
 [[cython.rules]]
 version = '>= 3.2.0, < 3.2.4'
+autopatch = false
 patch = 'cython-3.2.0.patch'
 license = 'Apache-2.0'
 
 [[cython.rules]]
 version = '== 3.2.4'
+autopatch = false
 patch = 'cython-3.2.4.patch'
 license = 'Apache-2.0'
 
 [[cython.rules]]
 version = '>= 3.1.7, <= 3.1.8'
+autopatch = false
 patch = 'cython-3.1.7.patch'
 license = 'Apache-2.0'
 
 [[cython.rules]]
 version = '>= 3.1, <= 3.1.6'
+autopatch = false
 patch = 'cython-3.1.2.patch'
 license = 'Apache-2.0'
 
 [[cython.rules]]
 version = '>= 3.0.10, <= 3.0.12'
+autopatch = false
 patch = 'Cython-3.0.10.patch'
 license = 'Apache-2.0'
 
@@ -151,6 +156,11 @@ version = '== 6.0.0'
 patch = 'flake8-6.0.0.patch'
 license = 'MIT'
 subdir = 'src'
+
+[[fastparquet.rules]]
+version = '== 2026.5.0'
+patch = 'fastparquet-2026.5.0.patch'
+license = 'Apache-2.0'
 
 [[greenlet.rules]]
 version = '>= 3.1.1'
@@ -298,8 +308,14 @@ patch = 'lightfm-1.15.patch'
 license = 'MIT'
 
 [[llvmlite.rules]]
-# llvmlite only supports up to LLVM 14. That's quite old and installing it in the system typically results leads
-# to dependency hell because rust requires newer LLVM. We add downloading and building LLVM 14 to the setup script.
+version = '>= 0.45'
+patch = 'llvmlite-0.47.patch'
+license = 'BSD-2-Clause'
+
+[[llvmlite.rules]]
+# Older llvmlite versions support up to LLVM 14. Installing it in the system typically leads to dependency hell
+# because rust requires newer LLVM. We add downloading and building LLVM 14 to the setup script.
+version = '< 0.45'
 patch = 'llvmlite.patch'
 license = 'BSD-2-Clause'
 
@@ -381,6 +397,13 @@ license = 'Apache-2.0'
 [[nanobind.rules]]
 patch = 'nanobind.patch'
 license = 'BSD-3-Clause'
+
+[[numba.rules]]
+# Not upstreamable, we disable the JIT
+note = "Numba JIT relies on bytecode parsing and is disabled on GraalPy."
+version = '== 0.65.1'
+patch = 'numba-0.65.1.patch'
+license = 'BSD-2-Clause'
 
 [[numba.rules]]
 # Not upstreamable, we disable the JIT
@@ -563,12 +586,6 @@ patch = 'pendulum-3.0.0.patch'
 note = "Not needed since 3.1."
 install-priority = 0
 license = 'MIT'
-
-[[pip.rules]]
-version = '== 23.2.1'
-patch = 'pip-23.2.1.patch'
-license = 'MIT'
-subdir = 'src'
 
 [[pip.rules]]
 version = '== 24.3.1'
@@ -758,6 +775,11 @@ install-priority = 0
 patch = 'pyperf-2.3.1.patch'
 license = 'MIT'
 
+[[pyperf.rules]]
+version = '== 2.10.0'
+patch = 'pyperf-2.10.0.patch'
+license = 'MIT'
+
 [[pyperformance.rules]]
 version = '== 1.0.5'
 patch = 'pyperformance-1.0.5.patch'
@@ -914,6 +936,11 @@ license = 'BSD-3-Clause'
 version = '>= 70.1.0'
 patch = 'setuptools.patch'
 license = 'MIT'
+
+[[tables.rules]]
+version = '== 3.11.1'
+patch = 'tables-3.11.1.patch'
+license = 'BSD-3-Clause'
 
 [[tensorflow.rules]]
 version = '== 2.15.0'

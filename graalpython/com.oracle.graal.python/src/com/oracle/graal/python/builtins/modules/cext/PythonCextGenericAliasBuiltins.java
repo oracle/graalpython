@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,18 +47,32 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextGenericAliasBuiltins {
+
+    private PythonCextGenericAliasBuiltins() {
+    }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
     abstract static class Py_GenericAlias extends CApiBinaryBuiltinNode {
         @Specialization
         static Object genericAlias(Object origin, Object args,
-                        @Bind PythonLanguage language) {
-            return PFactory.createGenericAlias(language, origin, args);
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached TupleNodes.EnsureManagedTupleNode ensureManagedTupleNode) {
+            PTuple argsTuple = ensureManagedTupleNode.execute(inliningTarget, args);
+            if (argsTuple == null) {
+                // in this case, 'args' is not a tuple object
+                argsTuple = PFactory.createTuple(language, new Object[]{args});
+            }
+            return PFactory.createGenericAlias(language, origin, argsTuple);
         }
     }
 }

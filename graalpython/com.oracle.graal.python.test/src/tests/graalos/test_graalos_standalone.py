@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,5 +37,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#!/usr/bin/env bash
-mx --dynamicimports /tools-enterprise python $1
+import sysconfig
+import unittest
+
+
+def skip_unless_graalos():
+    soabi = sysconfig.get_config_var("SOABI") or ""
+    if "graalos" not in soabi:
+        raise unittest.SkipTest(f"requires GraalOS SOABI, got {soabi!r}")
+
+
+class GraalOSStandaloneTests(unittest.TestCase):
+
+    def setUp(self):
+        skip_unless_graalos()
+
+    def test_sqlite3_native_extension_smoke(self):
+        import _sqlite3
+        import sqlite3
+
+        self.assertTrue(_sqlite3.sqlite_version)
+        conn = sqlite3.connect(":memory:")
+        try:
+            conn.execute("create table values_for_sum(value integer)")
+            conn.executemany("insert into values_for_sum(value) values (?)", [(1,), (2,), (3,)])
+            self.assertEqual(conn.execute("select sum(value) from values_for_sum").fetchone()[0], 6)
+        finally:
+            conn.close()

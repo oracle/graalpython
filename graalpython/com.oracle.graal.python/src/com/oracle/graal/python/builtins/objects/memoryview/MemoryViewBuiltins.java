@@ -654,9 +654,9 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile isPListProfile,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @Exclusive @Cached TupleNodes.GetTupleStorage getTupleStorage,
                         @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
@@ -667,7 +667,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             } else if (shapeObj instanceof PList) {
                 isPListProfile.enter(inliningTarget);
                 shape = shapeFromStorage(frame, inliningTarget, ((PList) shapeObj).getSequenceStorage(), getItemScalarNode, asSizeNode, raiseNode);
-            } else if (tupleCheck.execute(inliningTarget, shapeObj)) {
+            } else if (tupleCheckNode.execute(inliningTarget, shapeObj)) {
                 SequenceStorage storage = getTupleStorage.execute(inliningTarget, shapeObj);
                 shape = shapeFromStorage(frame, inliningTarget, storage, getItemScalarNode, asSizeNode, raiseNode);
             } else {

@@ -41,42 +41,64 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.PropertyGetter;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 @GenerateInline(false)       // footprint reduction 40 -> 21
+@ImportStatic({GetDictIfExistsNode.class, DynamicObjectStorage.class, PGuards.class, PythonUtils.class})
 public abstract class ReadBuiltinNode extends PNodeWithContext {
     public abstract Object execute(TruffleString attributeId);
 
-    // TODO: (tfel) Think about how we can globally catch writes to the builtin
-    // module so we can treat anything read from it as constant here.
-    @Specialization(guards = "isSingleContext(this)")
+    @NonIdempotent
+    static boolean getterAccepts(PropertyGetter getter, PythonModule mod) {
+        return getter.accepts(mod);
+    }
+
+    @NonIdempotent
+    static Object getterGet(PropertyGetter getter, PythonModule mod) {
+        assert mod.checkDictFlags();
+        return getter.get(mod);
+    }
+
+    // Fast-path: caches builtins PythonModule object (single context), checks that it's __dict__
+    // hasn't changed shape and cached property getter to reads the value directly
+    @Specialization(excludeForUncached = true, guards = {"isSingleContext(this)",
+                    "!hasMaterializedDict(cachedShape)", //
+                    "getter != null", //
+                    "getterAccepts(getter, builtins)", // shape check including the HAS_MATERIALIZED_DICT flag
+                    "!isNoValue(value)"})
     Object returnBuiltinFromConstantModule(TruffleString attributeId,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode raiseNode,
-                    @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
-                    @Shared @Cached ReadAttributeFromModuleNode readFromBuiltinsNode,
-                    @Cached(value = "getBuiltins()", allowUncached = true) PythonModule builtins) {
-        return readBuiltinFromModule(attributeId, raiseNode, inliningTarget, isBuiltinProfile, builtins, readFromBuiltinsNode);
+                    @Cached("getBuiltins()") PythonModule builtins,
+                    @Cached("builtins.getShape()") Shape cachedShape,
+                    @Cached(value = "getPropertyGetterWithFinalAssumption(cachedShape, attributeId)", neverDefault = false) PropertyGetter getter,
+                    @Bind("getterGet(getter, builtins)") Object value) {
+        return value;
     }
 
     @InliningCutoff
@@ -90,10 +112,10 @@ public abstract class ReadBuiltinNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached InlinedConditionProfile isBuiltinProfile,
-                    @Shared @Cached ReadAttributeFromModuleNode readFromBuiltinsNode,
+                    @Cached ReadAttributeFromModuleNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedConditionProfile ctxInitializedProfile) {
         PythonModule builtins = getBuiltins(inliningTarget, ctxInitializedProfile);
-        return returnBuiltinFromConstantModule(attributeId, inliningTarget, raiseNode, isBuiltinProfile, readFromBuiltinsNode, builtins);
+        return readBuiltinFromModule(attributeId, raiseNode, inliningTarget, isBuiltinProfile, builtins, readFromBuiltinsNode);
     }
 
     private static Object readBuiltinFromModule(TruffleString attributeId, PRaiseNode raiseNode, Node inliningTarget,

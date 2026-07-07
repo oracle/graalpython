@@ -168,6 +168,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSetItem;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -691,6 +692,7 @@ public class PUnpickler extends PythonBuiltinObject {
         @Child private PyObjectSetItem setItemNode;
         @Child HashingStorageCopy hashCopy;
         @Child HashingStorageAddAllToOther addAllToOther;
+        @Child private PyTupleCheckNode.CachedNode tupleCheck;
 
         public abstract Object execute(VirtualFrame frame, PUnpickler self);
 
@@ -708,6 +710,14 @@ public class PUnpickler extends PythonBuiltinObject {
                 addAllToOther = insert(HashingStorageAddAllToOther.create());
             }
             return addAllToOther;
+        }
+
+        protected boolean isTuple(Object object) {
+            if (tupleCheck == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                tupleCheck = insert(PyTupleCheckNode.CachedNode.create());
+            }
+            return tupleCheck.execute(object);
         }
 
         protected Object longFromBytes(byte[] data, boolean littleEndian) {
@@ -1761,7 +1771,7 @@ public class PUnpickler extends PythonBuiltinObject {
 
             // Since the extension registry is manipulable via Python code, confirm that pair is
             // really a 2-tuple of strings.
-            if (!(pair instanceof PTuple) || length(frame, pair) != 2) {
+            if (!isTuple(pair) || length(frame, pair) != 2) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INV_REG_NOT_2TUPLE, code);
             }
 

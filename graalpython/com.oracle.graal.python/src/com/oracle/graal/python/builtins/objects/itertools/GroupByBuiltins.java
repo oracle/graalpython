@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIter
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -79,6 +80,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -203,9 +205,10 @@ public final class GroupByBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
+        @TruffleBoundary
         static Object setState(PGroupBy self, Object state,
                         @Bind Node inliningTarget) {
-            if (!(state instanceof PTuple) || PyTupleSizeNode.executeUncached(state) != 3) {
+            if (!PyTupleCheckNode.executeUncached(state) || PyTupleSizeNode.executeUncached(state) != 3) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, IS_NOT_A, "state", "3-tuple");
             }
 

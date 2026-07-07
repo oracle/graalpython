@@ -123,7 +123,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
-            if (kind != PGraalPySemLock.RECURSIVE_MUTEX && kind != PGraalPySemLock.SEMAPHORE) {
+            if (kind != PSemLock.RECURSIVE_MUTEX && kind != PSemLock.SEMAPHORE) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNRECOGNIZED_KIND);
             }
             Object posixName = posixLib.createPathFromString(posixSupport, name);

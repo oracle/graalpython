@@ -14,11 +14,11 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
@@ -66,7 +66,7 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
     @Override
     protected boolean isMapping(Object obj) {
         // unicodeobject.c PyUnicode_Format()
-        return !(obj instanceof PTuple || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.executeUncached(obj);
+        return !(PyTupleCheckNode.executeUncached(obj) || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.executeUncached(obj);
     }
 
     private static boolean isOneCharacter(String str) {

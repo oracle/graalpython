@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,7 +61,7 @@ import org.graalvm.python.embedding.GraalPyResources;
  */
 public class Py2BinLauncher {
 
-    public static void main(String[] args) throws IOException {                       
+    public static void main(String[] args) throws IOException {
         Builder builder = GraalPyResources.contextBuilder()
             .allowExperimentalOptions(true)
             .allowAllAccess(true)
@@ -72,7 +72,7 @@ public class Py2BinLauncher {
         }
         try (var context = builder.build()) {
             try {
-                var src = Source.newBuilder("python", "__graalpython__.run_path()", "<internal>").internal(true).build();
+                var src = Source.newBuilder("python", "__graalpython__.run_path()", "<internal>").internal(true).option("python.NoPythonFrame", "true").build();
                 context.eval(src);
             } catch (PolyglotException e) {
                 if (e.isExit()) {
@@ -82,7 +82,7 @@ public class Py2BinLauncher {
                 }
             }
         }
-    }    
+    }
 
     private static String getProgramName() {
         if (ImageInfo.inImageRuntimeCode()) {

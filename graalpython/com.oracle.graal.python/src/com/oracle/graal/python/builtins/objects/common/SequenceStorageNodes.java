@@ -26,6 +26,11 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBounds;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.callocByteArray;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.callocPtrArray;
@@ -37,11 +42,6 @@ import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrA
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeByteArrayElement;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writeByteArrayElements;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtrArrayElement;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType.Boolean;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType.Byte;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType.Double;
@@ -663,7 +663,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        protected static int doNativeByte(NativeByteSequenceStorage storage, int idx) {
+        public static int doNativeByte(NativeByteSequenceStorage storage, int idx) {
             return readByteArrayElement(storage.getPtr(), idx) & 0xff;
         }
     }
@@ -3319,18 +3319,17 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
-        static SequenceStorage doNativeBytes(NativeByteSequenceStorage s,
-                        @Shared @Cached(inline = false) GetNativeItemScalarNode getItem) {
+        static SequenceStorage doNativeBytes(NativeByteSequenceStorage s) {
             byte[] bytes = new byte[s.length()];
             for (int i = 0; i < bytes.length; i++) {
-                bytes[i] = (byte) (int) getItem.execute(s, i);
+                bytes[i] = (byte) GetNativeItemScalarNode.doNativeByte(s, i);
             }
             return new ByteSequenceStorage(bytes);
         }
 
         @Specialization
         static SequenceStorage doNativeObjects(NativeObjectSequenceStorage s,
-                        @Shared @Cached(inline = false) GetNativeItemScalarNode getItem) {
+                        @Cached(inline = false) GetNativeItemScalarNode getItem) {
             Object[] objects = new Object[s.length()];
             for (int i = 0; i < objects.length; i++) {
                 objects[i] = getItem.execute(s, i);

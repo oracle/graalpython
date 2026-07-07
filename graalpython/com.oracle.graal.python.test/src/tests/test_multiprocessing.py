@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,19 +42,52 @@ import sys
 import unittest
 
 
+POSIX_BACKEND_IS_JAVA = sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java'
+
+
+@unittest.skipIf(POSIX_BACKEND_IS_JAVA, "multiprocessing doesn't work on emulated backend")
 class MultiprocessingTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import multiprocessing.resource_tracker
         multiprocessing.resource_tracker._resource_tracker._stop()
 
-    @unittest.skipIf(
-        sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java',
-        reason="TODO multiprocessing.Array doesn't work on emulated backend",
-    )
     def test_array_read(self):
         # This used to be buggy due to wrong usage of memoryview offsets when two objects were allocated in the same block
         # Don't remove the unused value on the next line
         multiprocessing.Value('d', 0.0)
         arr = multiprocessing.Array('i', range(10))
         self.assertEqual(arr[1], 1)
+
+
+@unittest.skipIf(POSIX_BACKEND_IS_JAVA, "shared memory doesn't work on emulated backend")
+@unittest.skipUnless(sys.platform != 'win32', "POSIX shared memory")
+class SharedMemoryTest(unittest.TestCase):
+    def test_create_write_read_unlink(self):
+        from multiprocessing.shared_memory import SharedMemory
+        shm = SharedMemory(create=True, size=16)
+        try:
+            shm.buf[:5] = b"hello"
+            other = SharedMemory(shm.name)
+            try:
+                self.assertEqual(bytes(other.buf[:5]), b"hello")
+            finally:
+                other.close()
+        finally:
+            shm.close()
+            shm.unlink()
+
+    def test_open_missing_raises(self):
+        from multiprocessing.shared_memory import SharedMemory
+        with self.assertRaises(FileNotFoundError):
+            SharedMemory("graalpy_nonexistent_shm")
+
+    def test_create_existing_raises(self):
+        from multiprocessing.shared_memory import SharedMemory
+        shm = SharedMemory(create=True, size=16)
+        try:
+            with self.assertRaises(FileExistsError):
+                SharedMemory(shm.name, create=True, size=16)
+        finally:
+            shm.close()
+            shm.unlink()

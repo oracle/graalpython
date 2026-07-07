@@ -363,6 +363,18 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
+    private void markFrameEscaped(Frame frame) {
+        if (frame != null) {
+            PFrame.Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
+            if (currentFrameInfo != null) {
+                currentFrameInfo.markAsEscaped();
+                if (escapedFrameThread == null) {
+                    escapedFrameThread = Thread.currentThread();
+                }
+            }
+        }
+    }
+
     public Thread getEscapedFrameThread() {
         return escapedFrameThread;
     }
@@ -401,9 +413,10 @@ public final class PException extends AbstractTruffleException {
         return tracebackFrameCount;
     }
 
-    public void notifyAddedTracebackFrame(boolean visible) {
+    public void notifyAddedTracebackFrame(Frame frame, boolean visible) {
         if (visible) {
             tracebackFrameCount++;
+            markFrameEscaped(frame);
         }
     }
 

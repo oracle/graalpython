@@ -32,8 +32,6 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
 import java.util.LinkedHashMap;
-import java.util.concurrent.Semaphore;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
@@ -69,7 +67,6 @@ import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
 import com.oracle.graal.python.builtins.modules.json.PJSONScanner;
 import com.oracle.graal.python.builtins.modules.lsprof.Profiler;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
-import com.oracle.graal.python.builtins.modules.multiprocessing.PGraalPySemLock;
 import com.oracle.graal.python.builtins.modules.multiprocessing.PSemLock;
 import com.oracle.graal.python.builtins.modules.pickle.PPickleBuffer;
 import com.oracle.graal.python.builtins.modules.pickle.PPickler;
@@ -233,6 +230,7 @@ import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
@@ -1132,14 +1130,6 @@ public final class PFactory {
         return new PSemLock(cls, shape, handle, kind, maxValue, name);
     }
 
-    public static PGraalPySemLock createGraalPySemLock(PythonLanguage language, TruffleString name, int kind, Semaphore sharedSemaphore) {
-        return createGraalPySemLock(PythonBuiltinClassType.PGraalPySemLock, PythonBuiltinClassType.PGraalPySemLock.getInstanceShape(language), name, kind, sharedSemaphore);
-    }
-
-    public static PGraalPySemLock createGraalPySemLock(Object cls, Shape shape, TruffleString name, int kind, Semaphore sharedSemaphore) {
-        return new PGraalPySemLock(cls, shape, name, kind, sharedSemaphore);
-    }
-
     public static PScandirIterator createScandirIterator(PythonLanguage language, PythonContext context, Object dirStream, PosixFileHandle path, boolean needsRewind) {
         return new PScandirIterator(PythonBuiltinClassType.PScandirIterator, PythonBuiltinClassType.PScandirIterator.getInstanceShape(language), context, dirStream, path, needsRewind);
     }
@@ -1495,22 +1485,19 @@ public final class PFactory {
         return new PContextVarsToken(var, oldValue, PythonBuiltinClassType.ContextVarsToken, PythonBuiltinClassType.ContextVarsToken.getInstanceShape(language));
     }
 
-    public static PGenericAlias createGenericAlias(PythonLanguage language, Object cls, Shape shape, Object origin, Object arguments, boolean starred) {
-        PTuple argumentsTuple;
-        if (arguments instanceof PTuple) {
-            argumentsTuple = (PTuple) arguments;
-        } else {
-            argumentsTuple = createTuple(language, new Object[]{arguments});
-        }
-        return new PGenericAlias(cls, shape, origin, argumentsTuple, starred);
+    public static PGenericAlias createGenericAlias(PythonLanguage language, Object cls, Shape shape, Object origin, PTuple arguments, boolean starred) {
+        return new PGenericAlias(cls, shape, origin, arguments, starred);
     }
 
-    public static PGenericAlias createGenericAlias(PythonLanguage language, Object origin, Object arguments, boolean starred) {
-        return createGenericAlias(language, PythonBuiltinClassType.PGenericAlias, PythonBuiltinClassType.PGenericAlias.getInstanceShape(language), origin, arguments, starred);
+    public static PGenericAlias createGenericAlias(PythonLanguage language, Object origin, PTuple argumentsTuple, boolean starred) {
+        return createGenericAlias(language, PythonBuiltinClassType.PGenericAlias, PythonBuiltinClassType.PGenericAlias.getInstanceShape(language), origin, argumentsTuple, starred);
     }
 
     public static PGenericAlias createGenericAlias(PythonLanguage language, Object origin, Object arguments) {
-        return createGenericAlias(language, origin, arguments, false);
+        // native tuples need to be converted by the caller
+        assert arguments instanceof PTuple || !PyTupleCheckNode.executeUncached(arguments);
+        PTuple argumentsTuple = arguments instanceof PTuple ? (PTuple) arguments : createTuple(language, new Object[]{arguments});
+        return createGenericAlias(language, origin, argumentsTuple, false);
     }
 
     public static PGenericAliasIterator createGenericAliasIterator(PythonLanguage language, PGenericAlias object) {

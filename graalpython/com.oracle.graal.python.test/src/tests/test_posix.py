@@ -270,6 +270,19 @@ class PosixTests(unittest.TestCase):
             except Exception:
                 pass
 
+    def test_failed_read_write_errno(self):
+        read_fd, write_fd = os.pipe()
+        os.close(read_fd)
+        os.close(write_fd)
+
+        with self.assertRaises(OSError) as read_error:
+            os.read(read_fd, 1)
+        self.assertEqual(errno.EBADF, read_error.exception.errno)
+
+        with self.assertRaises(OSError) as write_error:
+            os.write(write_fd, b'x')
+        self.assertEqual(errno.EBADF, write_error.exception.errno)
+
     def test_fd_converter(self):
         class MyInt(int):
             def fileno(self): return 0
@@ -553,6 +566,11 @@ class ScandirEmptyTests(unittest.TestCase):
     def test_scandir_empty(self):
         with os.scandir(TEST_FULL_PATH1) as dir:
             self.assertEqual(0, len([entry for entry in dir]))
+
+    def test_scandir_empty_repeated_eof(self):
+        with os.scandir(TEST_FULL_PATH1) as dir:
+            self.assertRaises(StopIteration, next, dir)
+            self.assertRaises(StopIteration, next, dir)
 
     def test_listdir_empty(self):
         self.assertEqual([], os.listdir(TEST_FULL_PATH1))
@@ -947,6 +965,17 @@ class SysconfTests(unittest.TestCase):
         self.assertGreaterEqual(sysconf_max('SC_SEM_NSEMS_MAX'), 32)
         self.assertGreaterEqual(os.sysconf('SC_PHYS_PAGES'), 1)
         self.assertGreaterEqual(os.sysconf('SC_NPROCESSORS_CONF'), 1)
+
+    def test_sysconf_valid_minus_one(self):
+        for name in os.sysconf_names:
+            try:
+                value = os.sysconf(name)
+            except OSError:
+                continue
+            if value == -1:
+                self.assertEqual(-1, os.sysconf(name))
+                return
+        raise unittest.SkipTest("platform has no sysconf name returning valid -1")
 
 
 if __name__ == '__main__':

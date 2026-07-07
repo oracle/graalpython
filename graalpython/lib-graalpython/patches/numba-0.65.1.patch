@@ -1,0 +1,83 @@
+diff --git a/numba/_dispatcher.cpp b/numba/_dispatcher.cpp
+index 0aa4aad..db6243b 100644
+--- a/numba/_dispatcher.cpp
++++ b/numba/_dispatcher.cpp
+@@ -27,7 +27,11 @@
+  *
+  */
+ 
+-#if (PY_MAJOR_VERSION >= 3) && ((PY_MINOR_VERSION == 12) || (PY_MINOR_VERSION == 13) || (PY_MINOR_VERSION == 14))
++#if defined(NUMBA_GRAALPY) && (PY_MAJOR_VERSION >= 3) && ((PY_MINOR_VERSION == 12) || (PY_MINOR_VERSION == 13) || (PY_MINOR_VERSION == 14))
++
++#define C_TRACE(x, call, frame) x = call
++
++#elif (PY_MAJOR_VERSION >= 3) && ((PY_MINOR_VERSION == 12) || (PY_MINOR_VERSION == 13) || (PY_MINOR_VERSION == 14))
+ 
+ #ifndef Py_BUILD_CORE
+     #define Py_BUILD_CORE 1
+@@ -791,6 +795,23 @@ call_cfunc(Dispatcher *self, PyObject *cfunc, PyObject *args, PyObject *kws, PyO
+     }
+ }
+ 
++#elif defined(NUMBA_GRAALPY) && (PY_MAJOR_VERSION >= 3) && ((PY_MINOR_VERSION == 12) || (PY_MINOR_VERSION == 13) || (PY_MINOR_VERSION == 14))
++
++/* GraalPy change: GraalPy does not expose CPython's private sys.monitoring
++ * structures. Since Numba JIT decorators are disabled on GraalPy, use a simple
++ * direct call path here.
++ */
++static PyObject *
++call_cfunc(Dispatcher *self, PyObject *cfunc, PyObject *args, PyObject *kws, PyObject *locals)
++{
++    PyCFunctionWithKeywords fn = NULL;
++
++    assert(PyCFunction_Check(cfunc));
++    assert(PyCFunction_GET_FLAGS(cfunc) == (METH_VARARGS | METH_KEYWORDS));
++    fn = (PyCFunctionWithKeywords) PyCFunction_GET_FUNCTION(cfunc);
++    return fn(PyCFunction_GET_SELF(cfunc), args, kws);
++}
++
+ #elif (PY_MAJOR_VERSION >= 3) && ((PY_MINOR_VERSION == 12) || (PY_MINOR_VERSION == 13) || (PY_MINOR_VERSION == 14))
+ 
+ // Python 3.12 has a completely new approach to tracing and profiling due to
+diff --git a/numba/core/decorators.py b/numba/core/decorators.py
+index d70af73..8a46999 100644
+--- a/numba/core/decorators.py
++++ b/numba/core/decorators.py
+@@ -215,6 +215,10 @@ def _jit(sigs, locals, target, cache, targetoptions, **dispatcher_args):
+                 f"{type(func)})."
+             )
+ 
++        if sys.implementation.name == 'graalpy':
++            if target == 'npyufunc':
++                raise NotImplementedError("Cannot create npyufunc under graalpy")
++            return func
+         if config.ENABLE_CUDASIM and target == 'cuda':
+             from numba import cuda
+             return cuda.jit(func)
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000..562214d
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,8 @@
++[build-system]
++requires = ["setuptools >= 40.6.0", "wheel", "llvmlite<0.48,>=0.47.0dev0", "numpy<2.5,>=2.0.0rc1", "versioneer"]
++build-backend = "setuptools.build_meta"
++
++[tool.versioneer]
++VCS = 'git'
++versionfile_source = 'numba/_version.py'
++versionfile_build ='numba/_version.py'
+diff --git a/setup.py b/setup.py
+index 282b8f4..33ea09e 100644
+--- a/setup.py
++++ b/setup.py
+@@ -167,6 +167,8 @@ def get_ext_modules():
+                                         "numba/_hashtable.h"],
+                                extra_compile_args=['-std=c++11'],
+                                **np_compile_args)
++    if sys.implementation.name == 'graalpy':
++        ext_dispatcher.define_macros.append(('NUMBA_GRAALPY', '1'))
+ 
+     ext_helperlib = Extension(name="numba._helperlib",
+                               sources=["numba/_helpermod.c",

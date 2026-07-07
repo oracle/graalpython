@@ -6,12 +6,20 @@
   },
   "working_dir": "/",
   "allow_runtime_codegen": true,
+  "memlimit": 64.0,
+  "fds": {
+    "stdin": "stdin",
+    "stdout": "stdout",
+    "stderr": "stderr"
+  },
   "testing_default_mappings": true,
   "allowed_ports": [],
   "graalhost": {
     "seccomp": null,
     "log_level": null,
-    "extra_args": []
+    "log_to": null,
+    "visorcalloutput": null,
+    "extra_args": ["--disable_core_scheduling"]
   },
   "fsmappings": []
 }

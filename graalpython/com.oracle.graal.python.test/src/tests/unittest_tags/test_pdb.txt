@@ -21,7 +21,7 @@ DocTestCase.test.test_pdb.test_pdb_issue_gh_65052 @ darwin-arm64,linux-aarch64,l
 !DocTestCase.test.test_pdb.test_pdb_issue_gh_91742 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_next_command_for_generator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_pp_repr_exc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-DocTestCase.test.test_pdb.test_pdb_return_command_for_coroutine @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_return_command_for_coroutine @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_return_command_for_generator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_return_to_different_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 DocTestCase.test.test_pdb.test_pdb_run_with_code_object @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRe
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -437,8 +438,9 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     abstract static class PrefixSuffixDispatchNode extends Node {
         abstract boolean execute(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, int len, Object substrs, int begin, int last);
 
-        @Specialization(guards = "isTuple(substrs)")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, substrs)", limit = "1")
         static boolean doTuple(VirtualFrame frame, Node inliningTarget, PrefixSuffixBaseNode parent, byte[] bytes, int len, Object substrs, int begin, int last,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached(value = "createToBytesFromTuple()", inline = false) BytesNodes.ToBytesNode tobytes,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {

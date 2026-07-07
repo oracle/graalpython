@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,18 +69,17 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -92,7 +91,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -273,10 +271,10 @@ public class PicklerBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(obj)", "!isDeleteMarker(obj)"})
         static Object set(VirtualFrame frame, PPickler self, Object obj,
                         @Bind Node inliningTarget,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached PyTupleSizeNode sizeNode,
+                        @Cached PyTupleGetItem getItemNode,
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached HashingStorageIteratorValue iterValue,
@@ -291,12 +289,11 @@ public class PicklerBuiltins extends PythonBuiltins {
                 HashingStorageIterator it = getIter.execute(inliningTarget, dictStorage);
                 while (iterNext.execute(inliningTarget, dictStorage, it)) {
                     Object value = iterValue.execute(inliningTarget, dictStorage, it);
-                    if (!(value instanceof PTuple) || sizeNode.execute(frame, inliningTarget, value) != 2) {
+                    if (!tupleCheckNode.execute(inliningTarget, value) || sizeNode.execute(inliningTarget, value) != 2) {
                         throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.VALUES_MUST_BE_2TUPLES, "memo");
                     }
-                    SequenceStorage tupleStorage = getSequenceStorageNode.execute(inliningTarget, value);
-                    int memoId = asSizeNode.executeExact(frame, inliningTarget, getItemNode.execute(frame, tupleStorage, 0));
-                    Object memoObj = getItemNode.execute(frame, tupleStorage, 1);
+                    int memoId = asSizeNode.executeExact(frame, inliningTarget, getItemNode.execute(inliningTarget, value, 0));
+                    Object memoObj = getItemNode.execute(inliningTarget, value, 1);
                     newMemo.set(memoObj, memoId);
                 }
             } else {

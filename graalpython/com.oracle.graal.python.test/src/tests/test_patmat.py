@@ -104,6 +104,47 @@ def test_long_mapping():
 
     assert star_match(d) == {33:33}
 
+def test_mapping_star_rest_missing_key_falls_through():
+    def single_key(subject):
+        match subject:
+            case {"x": x, **rest}:
+                return ("x", x, rest)
+            case {**rest}:
+                return ("rest", rest)
+
+    assert single_key({"p": 1, "q": 2}) == ("rest", {"p": 1, "q": 2})
+    assert single_key({"x": 1, "q": 2}) == ("x", 1, {"q": 2})
+
+    def two_keys(subject):
+        match subject:
+            case {"x": x, "y": y, **rest}:
+                return ("xy", x, y, rest)
+            case {**rest}:
+                return ("rest", rest)
+
+    assert two_keys({"p": 1, "q": 2}) == ("rest", {"p": 1, "q": 2})
+    assert two_keys({"x": 1, "y": 2, "q": 3}) == ("xy", 1, 2, {"q": 3})
+
+def test_mapping_pattern_get_called_once_per_key():
+    class CountingDict(dict):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.get_calls = []
+
+        def get(self, key, default=None):
+            self.get_calls.append(key)
+            return super().get(key, default)
+
+    def match_x(subject):
+        match subject:
+            case {"x": x}:
+                return x
+        return None
+
+    subject = CountingDict(x=1)
+    assert match_x(subject) == 1
+    assert subject.get_calls == ["x"]
+
 def test_mutable_dict_keys():
     class MyObj:
         pass

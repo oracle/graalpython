@@ -63,14 +63,15 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequence
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
@@ -252,6 +253,8 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached("createNotNormalized()") GetItemNode tupleGetItem,
+                        @Cached TupleNodes.GetTupleStorage getTupleStorage,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached PyObjectGetItem getItem,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
@@ -266,11 +269,11 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             if (closeFds && errPipeWrite < 3) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.S_MUST_BE_S, "errpipe_write", ">= 3");
             }
-            if (!(fdsToKeepObj instanceof PTuple)) {
+            if (!tupleCheckNode.execute(inliningTarget, fdsToKeepObj)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "fork_exec()", 4, "tuple", fdsToKeepObj);
             }
             Object[] processArgs = args;
-            int[] fdsToKeep = convertFdSequence(inliningTarget, (PTuple) fdsToKeepObj, tupleGetItem, castToIntNode, raiseNode);
+            int[] fdsToKeep = convertFdSequence(inliningTarget, getTupleStorage.execute(inliningTarget, fdsToKeepObj), tupleGetItem, castToIntNode, raiseNode);
             Object cwd = PGuards.isPNone(cwdObj) ? null : objectToOpaquePathNode.execute(frame, inliningTarget, cwdObj, false);
 
             PythonContext context = PythonContext.get(inliningTarget);
@@ -319,8 +322,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
          * Checks that the tuple contains only valid fds (positive integers fitting into an int) in
          * ascending order.
          */
-        private static int[] convertFdSequence(Node inliningTarget, PTuple fdSequence, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode, PRaiseNode raiseNode) {
-            SequenceStorage storage = fdSequence.getSequenceStorage();
+        private static int[] convertFdSequence(Node inliningTarget, SequenceStorage storage, GetItemNode getItemNode, CastToJavaIntExactNode castToIntNode, PRaiseNode raiseNode) {
             int len = storage.length();
             int[] fds = new int[len];
             int prevFd = -1;

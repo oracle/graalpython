@@ -42,6 +42,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
+import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -53,20 +54,57 @@ import com.oracle.truffle.api.TruffleLogger;
 public abstract class NativeSequenceStorage extends SequenceStorage {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeSequenceStorage.class);
+    private static final Object BORROWED_OWNER_MARKER = new Object();
 
     /* native pointer object */
     private long ptr;
     private NativeStorageReference reference;
 
     /**
-     * Replicates the native references of this native sequence storage in Java.
+     * State for the two independent lifetime obligations of a native sequence storage:
      * <p>
-     * Native sequence storages have references (if not empty) to other objects. Whenever the Python
-     * GC detects a possible reference cycle, we will replicate those native references in Java to
-     * give control to the Java GC when objects may die.
+     * Contract:
+     * <ul>
+     * <li>If {@link #reference} is set, the storage owns {@link #ptr}. The native memory is
+     * released by the {@link NativeStorageReference} when this storage dies, so the storage must not
+     * also keep a borrowed owner alive.</li>
+     * <li>If the storage only borrows {@link #ptr}, it may keep a managed owner alive here. The
+     * owner is the object whose native memory contains the storage pointer. The owner is never an
+     * {@code Object[]} so that an unmarked array can keep its old meaning of replicated native
+     * references.</li>
+     * <li>Independently of memory ownership, native sequence storages can reference other Python
+     * objects. When the Python GC detects a possible native reference cycle, those referents are
+     * replicated here as strong Java references so the Java GC controls when they may die.</li>
+     * </ul>
+     * <p>
+     * Possible encoded states:
+     * <ul>
+     * <li>{@code null}: no borrowed owner and no replicated native references. This is the initial
+     * state for ordinary storages.</li>
+     * <li>{@code Object[] refs}: replicated native references only. This is also the only encoded
+     * state left when an owning {@link NativeStorageReference} is installed.</li>
+     * <li>{@code owner}: borrowed native memory only. {@code owner} keeps the underlying native
+     * object alive for as long as this storage can access {@link #ptr}.</li>
+     * <li>{@code Object[] {BORROWED_OWNER_MARKER, owner, refs...}}: borrowed native memory plus
+     * replicated native references.</li>
+     * </ul>
+     * <p>
+     * Transitions:
+     * <ul>
+     * <li>{@link #setBorrowedMemoryOwner(Object)} transitions from no owner to borrowed ownership,
+     * preserving any already replicated references by creating the marker array state.</li>
+     * <li>{@link #setReplicatedNativeReferences(Object[])} replaces only the replicated-reference
+     * part. If a borrowed owner is present, it is preserved and the state is re-encoded around the
+     * new references.</li>
+     * <li>{@link #setReference(NativeStorageReference)} transitions the storage to owned memory and
+     * clears any borrowed owner. Replicated references, if present, are preserved because they
+     * describe object graph reachability rather than memory ownership.</li>
+     * <li>{@link #clearBorrowedMemoryOwner()} removes only the borrowed-owner part and is therefore
+     * the inverse of the owner-preserving marker-array encoding.</li>
+     * </ul>
      * </p>
      */
-    private Object[] replicatedNativeReferences;
+    private Object nativeReferenceState;
 
     NativeSequenceStorage(long ptr, int length, int capacity) {
         super(length, capacity);
@@ -95,6 +133,7 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
 
     public final void setReference(NativeStorageReference reference) {
         assert this.reference == null : "attempting to set another NativeStorageReference";
+        clearBorrowedMemoryOwner();
         this.reference = reference;
     }
 
@@ -121,14 +160,94 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
     }
 
     /**
-     * For a description, see {@link #replicatedNativeReferences}.
+     * For a description, see {@link #nativeReferenceState}.
      */
     public void setReplicatedNativeReferences(Object[] replicatedNativeReferences) {
-        this.replicatedNativeReferences = replicatedNativeReferences;
+        if (hasBorrowedMemoryOwner()) {
+            Object owner = getBorrowedMemoryOwner();
+            if (replicatedNativeReferences == null) {
+                nativeReferenceState = owner;
+            } else {
+                nativeReferenceState = createBorrowedOwnerState(owner, replicatedNativeReferences);
+            }
+        } else {
+            nativeReferenceState = replicatedNativeReferences;
+        }
     }
 
     public Object[] getReplicatedNativeReferences() {
-        return replicatedNativeReferences;
+        if (nativeReferenceState instanceof Object[] refs) {
+            if (isBorrowedOwnerState(refs)) {
+                assert validateBorrowedOwnerState(refs);
+                return Arrays.copyOfRange(refs, 2, refs.length);
+            }
+            return refs;
+        }
+        return null;
+    }
+
+    public void setBorrowedMemoryOwner(Object owner) {
+        assert isValidBorrowedMemoryOwner(owner);
+        assert !hasReference();
+        assert !hasBorrowedMemoryOwner();
+        Object[] replicatedNativeReferences = getReplicatedNativeReferences();
+        if (replicatedNativeReferences == null) {
+            nativeReferenceState = owner;
+        } else {
+            nativeReferenceState = createBorrowedOwnerState(owner, replicatedNativeReferences);
+        }
+    }
+
+    private void clearBorrowedMemoryOwner() {
+        if (nativeReferenceState instanceof Object[] refs) {
+            if (isBorrowedOwnerState(refs)) {
+                assert validateBorrowedOwnerState(refs);
+                nativeReferenceState = Arrays.copyOfRange(refs, 2, refs.length);
+            }
+        } else {
+            nativeReferenceState = null;
+        }
+    }
+
+    private boolean hasBorrowedMemoryOwner() {
+        if (nativeReferenceState instanceof Object[] refs) {
+            return isBorrowedOwnerState(refs);
+        }
+        return nativeReferenceState != null;
+    }
+
+    private Object getBorrowedMemoryOwner() {
+        if (nativeReferenceState instanceof Object[] refs) {
+            assert isBorrowedOwnerState(refs);
+            assert validateBorrowedOwnerState(refs);
+            return refs[1];
+        }
+        assert isValidBorrowedMemoryOwner(nativeReferenceState);
+        return nativeReferenceState;
+    }
+
+    private static Object[] createBorrowedOwnerState(Object owner, Object[] replicatedNativeReferences) {
+        Object[] ownerState = new Object[replicatedNativeReferences.length + 2];
+        ownerState[0] = BORROWED_OWNER_MARKER;
+        ownerState[1] = owner;
+        System.arraycopy(replicatedNativeReferences, 0, ownerState, 2, replicatedNativeReferences.length);
+        assert validateBorrowedOwnerState(ownerState);
+        return ownerState;
+    }
+
+    private static boolean isBorrowedOwnerState(Object[] state) {
+        return state.length > 0 && state[0] == BORROWED_OWNER_MARKER;
+    }
+
+    private static boolean validateBorrowedOwnerState(Object[] state) {
+        assert isBorrowedOwnerState(state);
+        assert state.length >= 2;
+        assert isValidBorrowedMemoryOwner(state[1]);
+        return true;
+    }
+
+    private static boolean isValidBorrowedMemoryOwner(Object owner) {
+        return owner != null && !(owner instanceof Object[]);
     }
 
 }

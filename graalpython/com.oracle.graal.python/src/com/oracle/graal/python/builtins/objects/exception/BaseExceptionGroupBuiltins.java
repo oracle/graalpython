@@ -89,6 +89,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -374,7 +375,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
             return tuple.getSequenceStorage();
         }
         if (value instanceof PythonAbstractNativeObject nativeTuple && PyTupleCheckExactNode.executeUncached(nativeTuple)) {
-            return TupleNodes.GetNativeTupleStorage.getUncached().execute(nativeTuple);
+            return GetTupleStorage.doNative(nativeTuple);
         }
         return null;
     }

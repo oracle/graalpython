@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -143,7 +143,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDelet
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
@@ -158,6 +157,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -926,6 +926,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Exclusive @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @CachedLibrary(limit = "2") InteropLibrary isString,
                         @Cached PRaiseNode raiseNode) {
             PTextIO.CookieType cookie = getCookie(frame, inliningTarget, self, writeFlushNode, callMethodFlush, callMethodTell, asLongNode);
@@ -945,7 +946,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 PBytes in = PFactory.createBytes(language, snapshotNextInput, skipBytes);
                 int charsDecoded = decoderDecode(frame, inliningTarget, self, in, callMethodDecode, toString, codePointLengthNode);
                 if (charsDecoded <= decodedCharsUsed) {
-                    Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState, raiseNode);
+                    Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState, tupleCheckNode, raiseNode);
                     int decFlags = asSizeNode.executeExact(frame, inliningTarget, state[1]);
                     int decBufferLen = sizeNode.execute(frame, inliningTarget, state[0]);
                     if (decBufferLen == 0) {
@@ -987,7 +988,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 /* We got n chars for 1 byte */
                 charsDecoded += n;
                 cookie.bytesToFeed += 1;
-                Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState, raiseNode);
+                Object[] state = decoderGetstate(frame, inliningTarget, self, savedState, getObjectArrayNode, callMethodGetState, callMethodSetState, tupleCheckNode, raiseNode);
                 int decFlags = asSizeNode.executeExact(frame, inliningTarget, state[1]);
                 int decBufferLen = sizeNode.execute(frame, inliningTarget, state[0]);
 
@@ -1038,9 +1039,10 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         SequenceNodes.GetObjectArrayNode getArray,
                         PyObjectCallMethodObjArgs callMethodGetState,
                         PyObjectCallMethodObjArgs callMethodSetState,
+                        PyTupleCheckNode tupleCheckNode,
                         PRaiseNode raiseNode) {
             Object state = callMethodGetState.execute(frame, inliningTarget, self.getDecoder(), T_GETSTATE);
-            if (!(state instanceof PTuple)) {
+            if (!tupleCheckNode.execute(inliningTarget, state)) {
                 fail(frame, inliningTarget, self, saved_state, callMethodSetState);
                 throw raiseNode.raise(inliningTarget, TypeError, ILLEGAL_DECODER_STATE);
             }

@@ -5,7 +5,7 @@
 (import "ci/python-gate.libsonnet") +
 (import "ci/python-bench.libsonnet") +
 {
-    overlay: "26571215e27b3c415afb8119d38a0418c14b29c9",
+    overlay: "12367561e6a2b54df8d3b1bd400e431de01eef0f",
     specVersion: "8",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
@@ -26,8 +26,6 @@
         PIP_EXTRA_INDEX_URL: "",
         WATCHDOG_GIT: "",
         COMPLIANCE_GIT: "",
-        BISECT_EMAIL_SMTP_SERVER: "",
-        BISECT_EMAIL_FROM: "",
         npm_config_registry: "",
         RODINIA_DATASET_ZIP: "",
         GRAALPY_GRAALOS_TOOLCHAIN_URL: "",
@@ -137,6 +135,12 @@
     local with_compiler = task_spec({
         dynamic_imports +:: ["/compiler"],
     }),
+    local unittest_args_gate(args) = task_spec({
+        tags:: "python-unittest",
+        environment +: {
+            GRAALPY_UNITTEST_ARGS: std.join(" ", args),
+        },
+    }),
 
     // -----------------------------------------------------------------------------------------------------------------
     //
@@ -165,6 +169,12 @@
         }),
         "python-unittest-native-debug-build": gpgate + platform_spec(no_jobs) + native_debug_build_gate("python-unittest") + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
+        }),
+        "python-unittest-cached-interpreter": gpgate + unittest_args_gate(["--python.UncachedInterpreterThreshold=0"]) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE),
+        }),
+        "python-unittest-uncached-interpreter": gpgate + unittest_args_gate(["--python.ForceUncachedInterpreter=true"]) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier3                     + require(GPY_JVM_STANDALONE),
         }),
         "python-unittest-multi-context": gpgate + require(GPY_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
@@ -291,7 +301,7 @@
         }),
         // tests with sandboxed backends for various modules (posix, sha3, compression, pyexpat, ...)
         "python-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk21"          : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
+            "linux:amd64:jdk21"          : tier2     + provide(GPY_JVM21_STANDALONE),
             "linux:aarch64:jdk21"        : daily     + t("02:00:00") + provide(GPY_JVM21_STANDALONE),
             "darwin:aarch64:jdk21"       : daily     + t("01:00:00") + provide(GPY_JVM21_STANDALONE),
             "windows:amd64:jdk21"        : daily     + t("01:30:00") + provide(GPY_JVM21_STANDALONE),
@@ -312,6 +322,8 @@
         }),
         "python-svm-graalos-standalone-build": gpgate_ee + internet_access_env + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest": tier3 + $.ol8 + task_spec({
+                capabilities+: ["mpk", "!fast", "!x82", "!x82_16_367"],
+                deploysArtifacts: true,
                 environment +: {
                     GRAALPY_GRAALOS_TOOLCHAIN_URL: $.overlay_imports.GRAALPY_GRAALOS_TOOLCHAIN_URL,
                     GRAALPY_GRAALOS_RUNTIME_URL: $.overlay_imports.GRAALPY_GRAALOS_RUNTIME_URL,

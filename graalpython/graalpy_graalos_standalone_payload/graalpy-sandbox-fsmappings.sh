@@ -75,6 +75,32 @@ emit_pseudo_mapping() {
     emit_mapping "$outfile" "$concrete" "$virt" "$extra"
 }
 
+emit_musl_interpreter_mapping() {
+    local outfile="$1"
+    local executable="$2"
+    local safe_libc="$3"
+    local interp
+
+    if ! command -v readelf >/dev/null 2>&1; then
+        return 0
+    fi
+
+    interp="$(readelf -l "$executable" 2>/dev/null | sed -n 's/.*Requesting program interpreter: \([^]]*\).*/\1/p' | head -n 1)"
+    case "$interp" in
+        /*)
+            case "${emitted_musl_interpreters:-}" in
+                *"
+${interp}
+"*) return 0 ;;
+            esac
+            emitted_musl_interpreters="${emitted_musl_interpreters:-}
+${interp}
+"
+            emit_mapping "$outfile" "$safe_libc" "$interp" '      "verif": true,'
+            ;;
+    esac
+}
+
 graalpy_sandbox_emit_fsmappings() {
     local standalone_home="$1"
     local outfile="$2"
@@ -93,6 +119,7 @@ graalpy_sandbox_emit_fsmappings() {
     fi
 
     need_comma=false
+    emitted_musl_interpreters=""
     emit_mapping "$outfile" "$standalone_home" "/" '      "using": {"handler": "host_fs"},
       "mutable": true,
       "allow_set_x_bit": true,
@@ -106,11 +133,13 @@ graalpy_sandbox_emit_fsmappings() {
         while IFS= read -r file; do
             virt="/bin/${file#"$native_bin"/}"
             emit_mapping "$outfile" "$file" "$virt" '      "verif": true,'
+            emit_musl_interpreter_mapping "$outfile" "$file" "$safe_libc"
         done < <(find "$native_bin" -maxdepth 1 -type f -perm -111 | sort)
     else
         while IFS= read -r file; do
             virt="/${file#"$standalone_home"/}"
             emit_mapping "$outfile" "$file" "$virt" '      "verif": true,'
+            emit_musl_interpreter_mapping "$outfile" "$file" "$safe_libc"
         done < <(find "${standalone_home}/bin" -maxdepth 1 -type f -perm -111 | sort)
     fi
 

@@ -1,0 +1,13 @@
+diff --git a/setup.py b/setup.py
+index 11c1228..b51b646 100644
+--- a/setup.py
++++ b/setup.py
+@@ -40,7 +40,7 @@ else:
+ 
+     import platform
+     _machine = platform.machine()
+-    _march = ['-march=x86-64-v2'] if _machine == 'x86_64' else []
++    _march = ['-march=x86-64-v2'] if _machine == 'x86_64' and sys.implementation.name != 'graalpy' else []
+     modules = [
+         Extension(mod, fix_exts(sources), extra_compile_args=['-O3'] + _march)
+         for mod, sources in modules_to_build.items()]

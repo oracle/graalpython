@@ -29,10 +29,6 @@ import json
 from . import spawn
 from . import util
 
-# Begin Truffle change
-from .context import _default_context
-# End Truffle change
-
 __all__ = ['ensure_running', 'register', 'unregister']
 
 _HAVE_SIGMASK = hasattr(signal, 'pthread_sigmask')
@@ -47,28 +43,21 @@ _CLEANUP_FUNCS = {
 }
 
 if os.name == 'posix':
-    # Begin Truffle change
-    try:
-        import _multiprocessing
-        import _posixshmem
+    import _multiprocessing
+    import _posixshmem
 
-        # Use sem_unlink() to clean up named semaphores.
-        #
-        # sem_unlink() may be missing if the Python build process detected the
-        # absence of POSIX named semaphores. In that case, no named semaphores were
-        # ever opened, so no cleanup would be necessary.
-        if hasattr(_multiprocessing, 'sem_unlink'):
-            _CLEANUP_FUNCS.update({
-                'semaphore': _multiprocessing.sem_unlink,
-            })
-        # GraalPy chagen: comment out until we get shm support
-        # _CLEANUP_FUNCS.update({
-        #    'shared_memory': _posixshmem.shm_unlink,
-        # })
-    except ImportError:
-        # We don't have _multiprocessing, so we're running graalpy mode
-        pass
-    # End Truffle change
+    # Use sem_unlink() to clean up named semaphores.
+    #
+    # sem_unlink() may be missing if the Python build process detected the
+    # absence of POSIX named semaphores. In that case, no named semaphores were
+    # ever opened, so no cleanup would be necessary.
+    if hasattr(_multiprocessing, 'sem_unlink'):
+        _CLEANUP_FUNCS.update({
+            'semaphore': _multiprocessing.sem_unlink,
+        })
+    _CLEANUP_FUNCS.update({
+        'shared_memory': _posixshmem.shm_unlink,
+    })
 
 
 class ReentrantCallError(RuntimeError):
@@ -227,11 +216,6 @@ class ResourceTracker(object):
 
         This can be run from any process.  Usually a child process will use
         the resource created by its parent.'''
-        # Begin Truffle change
-        if _default_context._is_graalpy():
-            # No resource_tracker needed in graalpy mode
-            return
-        # End Truffle change
         return self._ensure_running_and_write()
 
     def _teardown_dead_process(self):
@@ -341,11 +325,6 @@ class ResourceTracker(object):
 
     def _check_alive(self):
         '''Check that the pipe has not been closed by sending a probe.'''
-        # Begin Truffle change
-        if _default_context._is_graalpy():
-            # No resource_tracker needed in graalpy mode
-            return True
-        # End Truffle change
         try:
             # We cannot use send here as it calls ensure_running, creating
             # a cycle.
@@ -368,11 +347,6 @@ class ResourceTracker(object):
         assert nbytes == len(msg), f"{nbytes=} != {len(msg)=}"
 
     def _send(self, cmd, name, rtype):
-        # Begin Truffle change
-        if _default_context._is_graalpy():
-            # No resource_tracker needed in graalpy mode
-            return
-        # End Truffle change
         if self._use_simple_format and '\n' not in name:
             msg = f"{cmd}:{name}:{rtype}\n".encode("ascii")
             if len(msg) > 512:

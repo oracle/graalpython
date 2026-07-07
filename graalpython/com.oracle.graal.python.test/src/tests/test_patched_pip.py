@@ -152,12 +152,12 @@ if sys.implementation.name == "graalpy":
                 self.package_cache[cache_key] = {'sdist': sdist, 'wheel': wheel}
                 return self.package_cache[cache_key]
 
-        def add_package_to_index(self, name, version, dist_type):
+        def add_package_to_index(self, name, version, dist_type, destination_name=None):
             package = self.build_package(name, version)[dist_type]
             # extra careful, not using shutil.copy so we get more detailed traceback
             # on some flaky windows CI workers
             self.assertTrue(package.exists(), f"Built package disappeared: {package}")
-            destination = self.index_dir / package.name
+            destination = self.index_dir / (destination_name or package.name)
             with open(package, 'rb') as src, open(destination, 'wb') as dst:
                 shutil.copyfileobj(src, dst)
 
@@ -250,6 +250,21 @@ if sys.implementation.name == "graalpy":
                 'subdir': 'src',
             }])
             self.run_venv_pip_install('foo')
+            assert self.run_test_fun() == "Unpatched"
+
+        def test_sdist_hyphenated_name_with_patched_prefix(self):
+            self.add_package_to_index(
+                'cython-test-exception-raiser',
+                '1.0.2',
+                'sdist',
+                destination_name='cython-test-exception-raiser-1.0.2.tar.gz',
+            )
+            self.prepare_config('cython', [{
+                'patch': 'cython.patch',
+                'version': '>= 3',
+                'subdir': 'src',
+            }])
+            self.run_venv_pip_install('cython-test-exception-raiser')
             assert self.run_test_fun() == "Unpatched"
 
         def test_sdist_patched_version(self):

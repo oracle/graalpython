@@ -1523,6 +1523,28 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int shmOpen(Object name, int openFlags, int mode,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("shmOpen", "%s %d %d", name, openFlags, mode);
+        try {
+            return logExit("shmOpen", "%d", lib.shmOpen(delegate, name, openFlags, mode));
+        } catch (PosixException e) {
+            throw logException("shmOpen", e);
+        }
+    }
+
+    @ExportMessage
+    final void shmUnlink(Object name,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("shmUnlink", "%s", name);
+        try {
+            lib.shmUnlink(delegate, name);
+        } catch (PosixException e) {
+            throw logException("shmUnlink", e);
+        }
+    }
+
+    @ExportMessage
     final int semGetValue(long handle,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("semGetValue", "0x%x", handle);

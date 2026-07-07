@@ -344,35 +344,46 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isString(wName)")
         @SuppressWarnings("truffle-static-method")
-        Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
+        Object typeNew(VirtualFrame frame, Object cls, Object wName, Object bases, PDict namespaceOrig, PKeyword[] kwds,
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetCachedTpSlotsNode getSlots,
                         @Cached CallSlotTpNewNode callNew,
                         @Cached @Exclusive IsTypeNode isTypeNode,
                         @Cached PyObjectLookupAttr lookupMroEntriesNode,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached TypeNodes.CreateTypeNode createType,
-                        @Cached GetObjectArrayNode getObjectArrayNode) {
+                        @Cached GetObjectArrayNode getObjectArrayNode,
+                        @Exclusive @Cached ConstructTupleNode constructTupleNode) {
+            PTuple basesTuple;
+            if (bases instanceof PTuple) {
+                basesTuple = (PTuple) bases;
+            } else if (tupleCheckNode.execute(inliningTarget, bases)) {
+                basesTuple = constructTupleNode.execute(frame, bases);
+            } else {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 2, "tuple", bases);
+            }
+
             // Determine the proper metatype to deal with this
             TruffleString name = castStr.execute(inliningTarget, wName);
             Object metaclass = cls;
-            Object winner = calculateMetaclass(frame, inliningTarget, metaclass, bases, getClassNode, isTypeNode, lookupMroEntriesNode, getObjectArrayNode);
+            Object winner = calculateMetaclass(frame, inliningTarget, metaclass, basesTuple, getClassNode, isTypeNode, lookupMroEntriesNode, getObjectArrayNode);
             if (winner != metaclass) {
                 TpSlot winnerNew = getSlots.execute(inliningTarget, winner).tp_new();
                 if (winnerNew != SLOTS.tp_new()) {
                     // Pass it to the winner
-                    return callNew.execute(frame, inliningTarget, winnerNew, winner, new Object[]{name, bases, namespaceOrig}, kwds);
+                    return callNew.execute(frame, inliningTarget, winnerNew, winner, new Object[]{name, basesTuple, namespaceOrig}, kwds);
                 }
                 metaclass = winner;
             }
 
-            return createType.execute(frame, namespaceOrig, name, bases, metaclass, kwds);
+            return createType.execute(frame, namespaceOrig, name, basesTuple, metaclass, kwds);
         }
 
         @Fallback
         Object generic(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object name, Object bases, Object namespace, @SuppressWarnings("unused") PKeyword[] kwds) {
-            if (!(bases instanceof PTuple)) {
+            if (!PyTupleCheckNode.executeUncached(bases)) {
                 throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 2, "tuple", bases);
             } else if (!(namespace instanceof PDict)) {
                 throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "type.__new__()", 3, "dict", bases);
@@ -421,15 +432,15 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TypeNode nextTypeNode,
                         @Cached PRaiseNode raiseNode,
-                        @Cached PyTupleCheckNode tupleCheck,
-                        @Cached ConstructTupleNode constructTupleNode,
+                        @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
+                        @Exclusive @Cached ConstructTupleNode constructTupleNode,
                         @Exclusive @Cached IsTypeNode isTypeNode) {
             Object basesTuple;
             if (!(name instanceof TruffleString || name instanceof PString)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 1", name);
             } else if (bases instanceof PTuple) {
                 basesTuple = bases;
-            } else if (tupleCheck.execute(inliningTarget, bases)) {
+            } else if (tupleCheckNode.execute(inliningTarget, bases)) {
                 basesTuple = constructTupleNode.execute(frame, bases);
             } else {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STRINGS_NOT_P, "type() argument 2", bases);
@@ -686,10 +697,10 @@ public final class TypeBuiltins extends PythonBuiltins {
             return PFactory.createTuple(language, getBaseClassesNode.execute(inliningTarget, self));
         }
 
-        @Specialization(guards = "tupleCheck.execute(inliningTarget, value)", limit = "1")
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, value)", limit = "1")
         static Object setBases(VirtualFrame frame, PythonClass cls, Object value,
                         @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheck,
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached ConstructTupleNode constructTupleNode,
                         @Cached GetObjectArrayNode getArray,
                         @Cached GetBaseClassNode getBase,
@@ -759,10 +770,10 @@ public final class TypeBuiltins extends PythonBuiltins {
             return (isSameTypeNode.execute(inliningTarget, b, PythonBuiltinClassType.PythonObject));
         }
 
-        @Specialization(guards = "!tupleCheck.execute(inliningTarget, value)", limit = "1")
+        @Specialization(guards = "!tupleCheckNode.execute(inliningTarget, value)", limit = "1")
         static Object setObject(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") Object value,
                         @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheck) {
+                        @SuppressWarnings("unused") @Exclusive @Cached PyTupleCheckNode tupleCheckNode) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P, "tuple", GetNameNode.executeUncached(cls), "__bases__", value);
         }
 

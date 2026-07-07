@@ -1,0 +1,33 @@
+diff --git a/ffi/build.py b/ffi/build.py
+index ef0c262..6dc70b8 100755
+--- a/ffi/build.py
++++ b/ffi/build.py
+@@ -205,5 +205,28 @@ def main():
+         raise RuntimeError("unsupported platform: %r" % (sys.platform,))
+ 
+ 
++def build_llvm():
++    import urllib.request
++    import tarfile
++    import shutil
++    llvm_version = '20.1.8'
++    llvm_tag = f'llvmorg-{llvm_version}'
++    llvmdir = f'llvm-project-{llvm_tag}'
++    tarname = f'{llvm_tag}.tar.gz'
++    shutil.rmtree(tarname, ignore_errors=True)
++    shutil.rmtree(llvmdir, ignore_errors=True)
++    print(f"Downloading LLVM {llvm_version}")
++    urllib.request.urlretrieve(f'https://github.com/llvm/llvm-project/archive/refs/tags/{llvm_tag}.tar.gz', tarname)
++    with tarfile.open(tarname) as tar:
++        tar.extractall()
++    print(f"Building LLVM {llvm_version}")
++    subprocess.check_call(['cmake', '-S', f'{llvmdir}/llvm', '-B', 'llvm-build', '-DCMAKE_BUILD_TYPE=Release', '-DLLVM_TARGETS_TO_BUILD=host'])
++    subprocess.check_call(['cmake', '--build', 'llvm-build'])
++    os.environ['LLVM_CONFIG'] = os.path.abspath('llvm-build/bin/llvm-config')
++
++
+ if __name__ == "__main__":
++    # GraalPy change: fetch and build a supported LLVM rather than relying on
++    # whatever LLVM is available in the system image.
++    build_llvm()
+     main()

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.lib;
 
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
@@ -86,6 +87,15 @@ public abstract class PySequenceCheckNode extends PNodeWithContext {
     @Specialization
     static boolean doDict(@SuppressWarnings("unused") PDict object) {
         return false;
+    }
+
+    @Specialization(guards = "isNativeTuple(object)")
+    static boolean doNativeTuple(@SuppressWarnings("unused") PythonAbstractNativeObject object) {
+        return true;
+    }
+
+    static boolean isNativeTuple(PythonAbstractNativeObject object) {
+        return PyTupleCheckNode.checkNative(object);
     }
 
     @Fallback

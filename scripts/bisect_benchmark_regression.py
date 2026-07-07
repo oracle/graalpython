@@ -273,45 +273,6 @@ def extract_commands(log: str, benchmark_name: str) -> tuple[str, str]:
     return build_commands[-1], narrow_command(benchmark_commands[-1], benchmark_name)
 
 
-def benchmark_match_score(candidate: str, selector: str) -> int:
-    if candidate == selector:
-        return 100
-    if candidate.rsplit(".", 1)[-1] == selector:
-        return 90
-    if candidate.rsplit(":", 1)[-1] == selector:
-        return 80
-    if candidate.endswith(".{}".format(selector)):
-        return 70
-    if candidate.endswith(":{}".format(selector)):
-        return 60
-    return 0
-
-
-def resolve_results_benchmark_name(build_url: str, selector: str, metric: str) -> str | None:
-    if metric == "WORKS":
-        return None
-    data = json.loads(fetch_uploaded_log_text(build_url, "bench-results.json"))
-    candidates: list[tuple[int, int, str]] = []
-    for index, document in enumerate(data.get("queries", [])):
-        if document.get("metric.name") != metric:
-            continue
-        benchmark = document.get("benchmark")
-        if not isinstance(benchmark, str):
-            continue
-        score = benchmark_match_score(benchmark, selector)
-        if score > 0:
-            candidates.append((score, index, benchmark))
-    if not candidates:
-        return None
-    candidates.sort()
-    best_score = candidates[-1][0]
-    best_matches = [benchmark for score, _index, benchmark in candidates if score == best_score]
-    if len(set(best_matches)) != 1:
-        return None
-    best_match = best_matches[-1]
-    return best_match if best_match != selector else None
-
-
 def build_config_text(
     build_command: str,
     benchmark_command: str,
@@ -556,7 +517,7 @@ def generate_config(
     debug("Using reference build {} ({})".format(reference_build.build_number, reference_build.url))
     build_log = run_command(["gdev-cli", "buildbot", "get-log", str(reference_build.build_number)], cwd=repo_dir)
     build_command, benchmark_command = extract_commands(build_log, benchmark_name)
-    results_benchmark_name = resolve_results_benchmark_name(reference_build.url, benchmark_name, metric)
+    results_benchmark_name = None if metric == "WORKS" else benchmark_selector_for_command(benchmark_name)
     enterprise = "enterprise" in build_command
     return build_config_text(
         build_command=build_command,

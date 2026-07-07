@@ -32,7 +32,6 @@ It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib
 | Vendored stdlib + CPython tests | `graalpython/lib-python/3/` | Large; treat as upstream-ish unless you are explicitly changing stdlib/tests. |
 | Python-level tests | `graalpython/com.oracle.graal.python.test/src/tests/` | Includes tagged tests + C-API tests. Runner: `.../src/runner.py`. |
 | CI pipelines | `.github/workflows/`, `ci.jsonnet`, `ci/` | Workflows typically drive `mx` gates/tags. |
-| Launchers / helper scripts | `scripts/python.sh`, `scripts/*` | `python.sh` is the local launcher wrapper. |
 
 ## CONVENTIONS (DEVIATIONS)
 - `mx` is the primary build/test entrypoint; suite definition lives in `mx.graalpython/suite.py`.

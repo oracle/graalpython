@@ -355,6 +355,18 @@ assert issubclass(PythonLevel, Level)
 assert PythonLevel.parse("INFO").getName() == "INFO"
 ```
 
+Java classes that declare generic parameters can be parameterized in Python type annotations and inherited from using the same subscription syntax as Python generic classes:
+
+```python
+from java.util.function import Function
+
+class StringFunction(Function[str, str], new_style=True):
+    def apply(self, value: str) -> str:
+        return value.upper()
+```
+
+The type arguments provide Python typing information; they do not add run-time Java type checks.
+
 ## Embedding Python into Java
 
 If you were embedding Jython in Java applications, there were two main approaches that need different migration paths:

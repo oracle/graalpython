@@ -22,7 +22,7 @@ test.test_inspect.test_inspect.TestBuggyCases.test_multiple_children_classes @ d
 test.test_inspect.test_inspect.TestBuggyCases.test_nested_class @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_nested_class_definition @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_nested_class_definition_indented_string @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_inspect.test_inspect.TestBuggyCases.test_nested_class_definition_inside_async_function @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_inspect.test_inspect.TestBuggyCases.test_nested_class_definition_inside_async_function @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_nested_class_definition_inside_function @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_nested_func @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestBuggyCases.test_one_liner_dedent_non_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -68,10 +68,10 @@ test.test_inspect.test_inspect.TestDecorators.test_getsource_unwrap @ darwin-arm
 test.test_inspect.test_inspect.TestDecorators.test_replacing_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestDecorators.test_wrapped_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestFormatAnnotation.test_typing_replacement @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_inspect.test_inspect.TestGetAsyncGenState.test_easy_debugging @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
-test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
-test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals_empty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
-test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_inspect.test_inspect.TestGetAsyncGenState.test_easy_debugging @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals_empty @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetClosureVars.test_builtins_as_dict @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetClosureVars.test_builtins_as_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_inspect.test_inspect.TestGetClosureVars.test_builtins_fallback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

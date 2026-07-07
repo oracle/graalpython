@@ -50,11 +50,11 @@ The easiest way to install GraalPy on Linux is to use [Pyenv](https://github.com
 # Update pyenv to include latest GraalPy versions (if needed)
 pyenv update
 
-# Install GraalPy 25.0.3
-pyenv install graalpy-25.0.3
+# Install GraalPy 25.1.3
+pyenv install graalpy-25.1.3
 
 # Use GraalPy for the current shell session
-pyenv shell graalpy-25.0.3
+pyenv shell graalpy-25.1.3
 ```
 
 #### Manual Installation (Linux)
@@ -76,11 +76,11 @@ pyenv shell graalpy-25.0.3
 Using Pyenv (recommended):
 
 ```bash
-# Install GraalPy 25.0.3
-pyenv install graalpy-25.0.3
+# Install GraalPy 25.1.3
+pyenv install graalpy-25.1.3
 
 # Use GraalPy for the current shell session
-pyenv shell graalpy-25.0.3
+pyenv shell graalpy-25.1.3
 ```
 
 #### Manual Installation (macOS)
@@ -92,7 +92,7 @@ pyenv shell graalpy-25.0.3
    ```bash
    sudo xattr -r -d com.apple.quarantine /path/to/graalpy
    # For example:
-   sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.0.3
+   sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.1.3
    ```
 
 3. Extract and add it to your `PATH` environment variable:
@@ -129,10 +129,10 @@ The recommended way to use GraalPy is with [venv](https://docs.python.org/3/libr
 
 ```bash
 # Create a virtual environment
-graalpy -m venv ~/.virtualenvs/graalpy-25.0.3
+graalpy -m venv ~/.virtualenvs/graalpy-25.1.3
 
 # Activate the environment
-source ~/.virtualenvs/graalpy-25.0.3/bin/activate
+source ~/.virtualenvs/graalpy-25.1.3/bin/activate
 ```
 
 ### Installing Packages

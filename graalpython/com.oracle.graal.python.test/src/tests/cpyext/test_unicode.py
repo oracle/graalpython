@@ -942,6 +942,26 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test__PyUnicodeWriter_Finish_overallocated = CPyExtFunction(
+        lambda args: "abcdefghij",
+        lambda: ((),),
+        code='''PyObject* wrap__PyUnicodeWriter_Finish_overallocated() {
+            _PyUnicodeWriter writer;
+            _PyUnicodeWriter_Init(&writer);
+            writer.overallocate = 1;
+            if (_PyUnicodeWriter_WriteASCIIString(&writer, "abcdefghij", 10) < 0) {
+                _PyUnicodeWriter_Dealloc(&writer);
+                return NULL;
+            }
+            return _PyUnicodeWriter_Finish(&writer);
+        }
+        ''',
+        resultspec="O",
+        argspec='',
+        arguments=[],
+        callfunction="wrap__PyUnicodeWriter_Finish_overallocated",
+    )
+
     test_PyUnicode_ReadChar = CPyExtFunction(
         _reference_readchar,
         lambda: (

@@ -48,6 +48,9 @@ import unittest
 from tests.util import needs_capi
 
 
+POSIX_BACKEND_IS_JAVA = sys.implementation.name == "graalpy" and __graalpython__.posix_module_backend() == "java"
+
+
 @unittest.skipUnless(sys.implementation.name == "graalpy" and sys.platform.startswith("linux"), "Linux GraalPy-specific test")
 class EntropySubprocessTests(unittest.TestCase):
     HASH_SECRET_BYTES = 24
@@ -180,6 +183,7 @@ class EntropySubprocessTests(unittest.TestCase):
             "ok",
         )
 
+    @unittest.skipIf(POSIX_BACKEND_IS_JAVA, "multiprocessing doesn't work on Java POSIX backend")
     def test_multiprocessing_deliver_challenge_does_not_use_additional_initrandom(self):
         self.assert_initrandom_bytes_used(
             self.RANDOM_MODULE_BYTES,

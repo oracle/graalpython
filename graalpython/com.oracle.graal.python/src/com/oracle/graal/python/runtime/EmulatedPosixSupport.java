@@ -3067,6 +3067,18 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("unused")
+    int shmOpen(Object name, int openFlags, int mode) throws PosixException {
+        throw createUnsupportedFeature("shm_open");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
+    void shmUnlink(Object name) throws PosixException {
+        throw createUnsupportedFeature("shm_unlink");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("unused")
     int semGetValue(long handle) throws PosixException {
         throw posixException(OSErrorEnum.EINVAL);
     }

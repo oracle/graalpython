@@ -16,7 +16,7 @@ The fastest way to get started is with GraalPy's Maven archetype, which generate
    mvn archetype:generate \
      -DarchetypeGroupId=org.graalvm.python \
      -DarchetypeArtifactId=graalpy-archetype-polyglot-app \
-     -DarchetypeVersion=25.0.3
+     -DarchetypeVersion=25.1.3
    ```
 
    This generates the following project structure:
@@ -87,8 +87,8 @@ If you prefer Gradle, here is how to set up a new project with GraalPy embedding
     - Include the GraalPy support and the [GraalVM Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
 
         ```gradle
-        implementation("org.graalvm.polyglot:polyglot:25.0.3")
-        implementation("org.graalvm.python:python-embedding:25.0.3")
+        implementation("org.graalvm.polyglot:polyglot:25.1.3")
+        implementation("org.graalvm.python:python-embedding:25.1.3")
         ```
 
 3. Replace the _App.java_ content with this simple Python embedding example:
@@ -134,7 +134,7 @@ Add the Python embedding dependency and GraalPy Maven plugin configuration to yo
     <dependency>
         <groupId>org.graalvm.python</groupId>
         <artifactId>python-embedding</artifactId>
-        <version>25.0.3</version>
+        <version>25.1.3</version>
     </dependency>
 </dependencies>
 
@@ -143,7 +143,7 @@ Add the Python embedding dependency and GraalPy Maven plugin configuration to yo
         <plugin>
             <groupId>org.graalvm.python</groupId>
             <artifactId>graalpy-maven-plugin</artifactId>
-            <version>25.0.3</version>
+            <version>25.1.3</version>
             <executions>
                 <execution>
                     <configuration>
@@ -169,11 +169,11 @@ Add the GraalPy Gradle plugin and configure dependencies in _app/build.gradle_:
 plugins {
     id "java"
     id "application"
-    id "org.graalvm.python" version "25.0.3"
+    id "org.graalvm.python" version "25.1.3"
 }
 
 dependencies {
-    implementation("org.graalvm.python:python-embedding:25.0.3")
+    implementation("org.graalvm.python:python-embedding:25.1.3")
 }
 
 graalPy {
@@ -204,6 +204,24 @@ class App {
 ```
 
 For complete plugin configuration options, deployment strategies, and dependency management, see [Embedding Build Tools](Embedding-Build-Tools.md).
+
+### Supporting Legacy Private Keys
+
+BouncyCastle is optional for GraalPy embeddings. Add the following dependency only if the application must load legacy version 0 or 1 RSA, DSA, or EC private keys:
+
+```xml
+<dependency>
+    <groupId>org.graalvm.python</groupId>
+    <artifactId>python-bouncycastle-support</artifactId>
+    <version>25.1.3</version>
+</dependency>
+```
+
+For Gradle, use `implementation("org.graalvm.python:python-bouncycastle-support:25.1.3")`.
+
+### Configuring Individual Sources
+
+Embeddings can set options on an individual `Source` without changing the entire context. Set `python.Optimize` to `0`, `1`, or `2` to select the optimization level for a source. Set `python.NewGlobals=true` to execute a source with a fresh globals dictionary instead of the main module globals.
 
 ## Other Build Systems (Ant, CMake, Makefile)
 

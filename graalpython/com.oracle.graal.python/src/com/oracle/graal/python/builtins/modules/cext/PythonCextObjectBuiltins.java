@@ -304,8 +304,8 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached ExpandKeywordStarargsNode castKwargsNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CallNode callNode,
-                        @Cached PyTupleCheckNode tupleCheck,
                         @Cached GetTupleStorage getTupleStorage,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
             try {
 
@@ -315,7 +315,7 @@ public abstract class PythonCextObjectBuiltins {
                     keywords = PKeyword.EMPTY_KEYWORDS;
                 } else if (kwargs instanceof PDict) {
                     keywords = castKwargsNode.execute(inliningTarget, kwargs);
-                } else if (tupleCheck.execute(inliningTarget, kwargs)) {
+                } else if (tupleCheckNode.execute(inliningTarget, kwargs)) {
                     // We have a tuple with kw names and an array with kw values
                     SequenceStorage storage = getTupleStorage.execute(inliningTarget, kwargs);
                     int kwcount = storage.length();

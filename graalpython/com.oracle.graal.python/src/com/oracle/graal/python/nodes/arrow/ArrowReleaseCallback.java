@@ -40,15 +40,16 @@
  */
 package com.oracle.graal.python.nodes.arrow;
 
+import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
+import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
+
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 
 import com.oracle.graal.python.runtime.nativeaccess.NativeAccessSupport;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class ArrowReleaseCallback {
-    private static final MethodHandle HANDLE = NativeAccessSupport.createDowncallHandle(
-                    MethodType.methodType(void.class, long.class, long.class), false);
+    private static final MethodHandle HANDLE = NativeAccessSupport.createDowncallHandle(false, false, VOID, POINTER);
 
     private ArrowReleaseCallback() {
     }

@@ -877,7 +877,38 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-def get_path_with_patchelf(graalpy=None):
+DELVEEWHEEL_GRAALPY_ARTIFACT = "graal/python-native-standalone-svm-svmee-java25-windows-amd64-25.1.3.zip"
+DELVEEWHEEL_GRAALPY_HOME = "graalpy3.12-25.1.3-windows-amd64"
+
+
+def _downloaded_graalpy_for_delvewheel():
+    download_script = os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT")
+    if not download_script:
+        mx.abort("Cannot build delvewheel venv: need CPython >= 3.12 or ARTIFACT_DOWNLOAD_SCRIPT")
+
+    cache_dir = Path(SUITE.get_output_root()).absolute() / "delvewheel-graalpy"
+    archive = cache_dir / Path(DELVEEWHEEL_GRAALPY_ARTIFACT).name
+    extracted = cache_dir / "extracted"
+    graalpy = extracted / DELVEEWHEEL_GRAALPY_HOME / "bin" / "graalpy.exe"
+    if graalpy.exists():
+        return str(graalpy)
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    if not archive.exists():
+        mx.log(
+            f"{time.strftime('[%H:%M:%S] ')} Downloading GraalPy for delvewheel venv: "
+            f"{DELVEEWHEEL_GRAALPY_ARTIFACT}"
+        )
+        subprocess.check_call([sys.executable, download_script, DELVEEWHEEL_GRAALPY_ARTIFACT, str(archive)])
+
+    extracted.mkdir(parents=True, exist_ok=True)
+    mx.Extractor.create(str(archive)).extract(str(extracted))
+    if not graalpy.exists():
+        mx.abort(f"Could not find bin/graalpy.exe in downloaded artifact {archive}")
+    return str(graalpy)
+
+
+def get_path_with_patchelf():
     path = os.environ.get("PATH", "")
     if mx.is_linux() and not shutil.which("patchelf"):
         venv = Path(SUITE.get_output_root()).absolute() / "patchelf-venv"
@@ -892,17 +923,29 @@ def get_path_with_patchelf(graalpy=None):
         venv = Path(SUITE.get_output_root()).absolute() / "delvewheel-venv"
         path += os.pathsep + str(venv / "Scripts")
         if not shutil.which("delvewheel", path=path):
-            if sys.version_info < (3, 12):
-                if graalpy is None:
-                    graalpy = graalpy_standalone_jvm()
-                venv_python = [graalpy, "-X", "jit=0"]
-            else:
+            if sys.implementation.name == "cpython" and sys.version_info >= (3, 12):
                 venv_python = [sys.executable]
-            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {shlex.join(venv_python)}... [delvewheel not found on PATH]")
+            else:
+                venv_python = [_downloaded_graalpy_for_delvewheel(), "-X", "jit=0"]
+            mx.log(
+                f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {shlex.join(venv_python)}... "
+                "[delvewheel not found on PATH]"
+            )
             t0 = time.time()
             subprocess.check_call(venv_python + ["-m", "venv", str(venv)])
-            subprocess.check_call([str(venv / "Scripts" / "pip.exe"), "install", "delvewheel>=1.13.0"])
-            mx.log(f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {shlex.join(venv_python)}... [duration: {time.time() - t0}]")
+            subprocess.check_call(
+                [
+                    str(venv / "Scripts" / "python.exe"),
+                    "-m",
+                    "pip",
+                    "install",
+                    "delvewheel>=1.13.0",
+                ]
+            )
+            mx.log(
+                f"{time.strftime('[%H:%M:%S] ')} Building delvewheel-venv with {shlex.join(venv_python)}... "
+                f"[duration: {time.time() - t0}]"
+            )
     return path
 
 
@@ -1572,7 +1615,8 @@ def graalpytest(args):
 
 def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env=None,
                          cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None,
-                         report: Union[Task, bool, None] = False, parallel=None, runner_args=None):
+                         report: Union[Task, bool, None] = False, parallel=None, runner_args=None, test_runner=None,
+                         reportfile=None, runner_reportfile=None):
     if lock:
         lock.acquire()
 
@@ -1589,11 +1633,15 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     parallelism = str(min(os.cpu_count() or 1, parallel))
 
     args = args or []
+    extra_args = shlex.split(os.environ.get("GRAALPY_UNITTEST_ARGS", ""))
+    if extra_args:
+        mx.log("Adding GraalPy unittest args from GRAALPY_UNITTEST_ARGS: " + shlex.join(extra_args))
     args = [
         "--vm.ea",
         "--experimental-options=true",
         "--python.EnableDebuggingBuiltins",
         *args,
+        *extra_args,
     ]
 
     if env is None:
@@ -1609,7 +1657,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         # index in in that case
         env["PIP_EXTRA_INDEX_URL"] = pip_index
 
-    args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
+    args += [test_runner or _python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
         args += runner_args
@@ -1623,12 +1671,14 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         # at once it generates so much data we run out of heap space
         args.append('--separate-workers')
 
-    reportfile = None
     t0 = time.time()
     if report:
-        with tempfile.NamedTemporaryFile(prefix="test-report-", suffix=".json", delete=False) as report_tmp:
-            reportfile = os.path.abspath(report_tmp.name)
-        args += ["--mx-report", reportfile]
+        if reportfile is None:
+            with tempfile.NamedTemporaryFile(prefix="test-report-", suffix=".json", delete=False) as report_tmp:
+                reportfile = os.path.abspath(report_tmp.name)
+        else:
+            reportfile = os.path.abspath(reportfile)
+        args += ["--mx-report", runner_reportfile or reportfile]
 
     if paths is not None:
         args += paths
@@ -1896,7 +1946,7 @@ def graalpython_gate_runner(_, tasks):
         if task:
             env = os.environ.copy()
             graalpy = graalpy_standalone_native()
-            env['PATH'] = get_path_with_patchelf(graalpy)
+            env['PATH'] = get_path_with_patchelf()
             mx.log("1. Running twice without shared engine")
             run_python_unittests(
                 graalpy,

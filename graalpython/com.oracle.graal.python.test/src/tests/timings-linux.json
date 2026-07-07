@@ -169,7 +169,6 @@
   "graalpython/com.oracle.graal.python.test/src/tests/test_module_property.py": 0.07999999999999999,
   "graalpython/com.oracle.graal.python.test/src/tests/test_mro.py": 0.0,
   "graalpython/com.oracle.graal.python.test/src/tests/test_multiprocessing.py": 0.36,
-  "graalpython/com.oracle.graal.python.test/src/tests/test_multiprocessing_graalpy.py": 9.059999999999999,
   "graalpython/com.oracle.graal.python.test/src/tests/test_nonlocal.py": 0.0,
   "graalpython/com.oracle.graal.python.test/src/tests/test_object.py": 0.0,
   "graalpython/com.oracle.graal.python.test/src/tests/test_operator.py": 0.0,

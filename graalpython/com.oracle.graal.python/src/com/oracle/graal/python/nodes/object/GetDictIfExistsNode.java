@@ -61,13 +61,13 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.HiddenAttr.ReadNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.nativeaccess.NativeFunctionPointer;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -80,6 +80,8 @@ import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.PropertyGetter;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
@@ -93,7 +95,17 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
 
     public abstract PDict execute(Object object);
 
+    public abstract PDict execute(PythonAbstractNativeObject object);
+
     public abstract PDict execute(PythonObject object);
+
+    /**
+     * Use this node when the shape is already cached. Use
+     * {@link PropertyGetter#accepts(DynamicObject)} to check the cached shape in a guard. Note that this does not initialize the final property assumption!
+     */
+    public static PropertyGetter createDictPropertyGetter(Shape shape) {
+        return HiddenAttr.DICT.createPropertyGetter(shape);
+    }
 
     @Specialization(guards = {"object.getShape() == cachedShape", "hasNoDict(cachedShape)"}, limit = "1")
     static PDict getNoDictCachedShape(@SuppressWarnings("unused") PythonObject object,

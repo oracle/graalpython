@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
-import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -109,7 +108,7 @@ import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
@@ -127,6 +126,7 @@ public abstract class PGuards {
         return value == PNone.NONE;
     }
 
+    @Idempotent
     public static boolean isNoValue(Object object) {
         return object == PNone.NO_VALUE;
     }
@@ -325,10 +325,6 @@ public abstract class PGuards {
 
     public static boolean isPTuple(Object obj) {
         return obj instanceof PTuple;
-    }
-
-    public static boolean isTuple(Object obj) {
-        return PyTupleCheckNode.doGeneric(null, obj, InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached());
     }
 
     public static boolean isPSequence(Object obj) {
@@ -531,4 +527,8 @@ public abstract class PGuards {
         return isBuiltinDict(dict) || getSlots.execute(inliningTarget, getClassNode.execute(inliningTarget, dict)).tp_iter() == DictBuiltins.SLOTS.tp_iter();
     }
 
+    @Idempotent
+    public static boolean hasMaterializedDict(Shape s) {
+        return (s.getFlags() & PythonObject.HAS_MATERIALIZED_DICT) != 0;
+    }
 }

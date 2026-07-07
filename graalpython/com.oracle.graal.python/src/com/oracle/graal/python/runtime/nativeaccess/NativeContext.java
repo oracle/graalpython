@@ -40,11 +40,14 @@
  */
 package com.oracle.graal.python.runtime.nativeaccess;
 
+import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
+import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
+
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -67,6 +70,7 @@ public final class NativeContext {
 
     private final ConcurrentLinkedQueue<NativeLibrary> libraries = new ConcurrentLinkedQueue<>();
     private final NativeLibrary defaultLibrary;
+    private final ThreadLocal<Object> callState;
     final Object arena;
 
     public static NativeContext create() {
@@ -77,6 +81,7 @@ public final class NativeContext {
     NativeContext() {
         arena = NativeAccessSupport.createArena();
         defaultLibrary = isWindows() ? null : new NativeLibrary(this, getPosixDefaultLibraryHandle());
+        callState = ThreadLocal.withInitial(() -> NativeAccessSupport.createCapturedCallState(arena));
     }
 
     public void close() {
@@ -106,7 +111,8 @@ public final class NativeContext {
         try {
             if (isWindows()) {
                 int callFlags = sanitizeWindowsLoadLibraryFlags(flags) | WINDOWS_DEFAULT_LOAD_LIBRARY_FLAGS;
-                lib = (long) LOAD_LIBRARY_EX.invokeExact(loadLibraryExPtr, nativeName, 0L, callFlags);
+                Object callStateBuffer = callState.get();
+                lib = (long) LOAD_LIBRARY_EX_CAPTURED.invoke(loadLibraryExPtr, callStateBuffer, nativeName, 0L, callFlags);
             } else {
                 int callFlags = flags;
                 if ((callFlags & (RTLD_LAZY | RTLD_NOW)) == 0) {
@@ -120,7 +126,7 @@ public final class NativeContext {
             NativeMemory.free(nativeName);
         }
         if (lib == 0) {
-            throw createLoadLibraryException();
+            throw createLoadLibraryException(isWindows() ? getLastError() : 0);
         }
         NativeLibrary library = new NativeLibrary(this, lib);
         libraries.add(library);
@@ -163,17 +169,14 @@ public final class NativeContext {
     private static final long RTLD_DEFAULT_LINUX = 0L;
     private static final long RTLD_DEFAULT_DARWIN = -2L;
 
-    private static final MethodHandle DLOPEN = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.POINTER, NativeSimpleType.SINT32);
-    private static final MethodHandle DLCLOSE = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT64);
-    private static final MethodHandle DLSYM = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.SINT64, NativeSimpleType.POINTER);
-    private static final MethodHandle LOAD_LIBRARY_EX = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.POINTER, NativeSimpleType.POINTER,
-                    NativeSimpleType.SINT32);
-    private static final MethodHandle FREE_LIBRARY = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT64);
-    private static final MethodHandle GET_PROC_ADDRESS = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64, NativeSimpleType.SINT64, NativeSimpleType.POINTER);
-    private static final MethodHandle GET_LAST_ERROR = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32);
-    private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT32, NativeSimpleType.SINT32, NativeSimpleType.POINTER, NativeSimpleType.SINT32,
-                    NativeSimpleType.SINT32, NativeSimpleType.POINTER, NativeSimpleType.SINT32, NativeSimpleType.POINTER);
-    private static final MethodHandle DLERROR = NativeAccessSupport.createDowncallHandle(NativeSimpleType.SINT64);
+    private static final MethodHandle DLOPEN = NativeAccessSupport.createDowncallHandle(false, false, SINT64, POINTER, SINT32);
+    private static final MethodHandle DLCLOSE = NativeAccessSupport.createDowncallHandle(false, false, SINT32, SINT64);
+    private static final MethodHandle DLSYM = NativeAccessSupport.createDowncallHandle(false, false, SINT64, SINT64, POINTER);
+    private static final MethodHandle FREE_LIBRARY = NativeAccessSupport.createDowncallHandle(false, false, SINT32, SINT64);
+    private static final MethodHandle GET_PROC_ADDRESS = NativeAccessSupport.createDowncallHandle(false, false, SINT64, SINT64, POINTER);
+    private static final MethodHandle FORMAT_MESSAGE = NativeAccessSupport.createDowncallHandle(false, false, SINT32, SINT32, POINTER, SINT32, SINT32, POINTER, SINT32, POINTER);
+    private static final MethodHandle DLERROR = NativeAccessSupport.createDowncallHandle(false, false, SINT64);
+    private static final MethodHandle LOAD_LIBRARY_EX_CAPTURED = isWindows() ? NativeAccessSupport.createDowncallHandle(false, true, SINT64, POINTER, POINTER, SINT32) : null;
 
     private static long dlopenPtr;
     private static long dlclosePtr;
@@ -182,7 +185,6 @@ public final class NativeContext {
     private static long loadLibraryExPtr;
     private static long freeLibraryPtr;
     private static long getProcAddressPtr;
-    private static long getLastErrorPtr;
     private static long formatMessagePtr;
     private static Object windowsLookupArena;
     private static NativeLibraryLookup windowsLookup;
@@ -192,8 +194,8 @@ public final class NativeContext {
             if (loadLibraryExPtr != 0) {
                 assert freeLibraryPtr != 0;
                 assert getProcAddressPtr != 0;
-                assert getLastErrorPtr != 0;
                 assert formatMessagePtr != 0;
+                assert LOAD_LIBRARY_EX_CAPTURED != null;
                 return;
             }
             if (windowsLookup == null) {
@@ -203,7 +205,6 @@ public final class NativeContext {
             loadLibraryExPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "LoadLibraryExW");
             freeLibraryPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "FreeLibrary");
             getProcAddressPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "GetProcAddress");
-            getLastErrorPtr = NativeAccessSupport.lookupSymbol(windowsLookup, "GetLastError");
             formatMessagePtr = NativeAccessSupport.lookupSymbol(windowsLookup, "FormatMessageW");
             return;
         }
@@ -218,28 +219,19 @@ public final class NativeContext {
     }
 
     @TruffleBoundary
-    private static NativeLibraryLoadException createLoadLibraryException() {
+    private static NativeLibraryLoadException createLoadLibraryException(int windowsErrorCode) {
         if (isWindows()) {
-            int errorCode = getLastError();
-            String detail = formatWindowsError(errorCode);
+            String detail = formatWindowsError(windowsErrorCode);
             if (detail == null || detail.isBlank()) {
-                return new NativeLibraryLoadException("Windows error " + errorCode);
+                return new NativeLibraryLoadException("Windows error " + windowsErrorCode);
             }
-            return new NativeLibraryLoadException("Windows error " + errorCode + ": " + detail);
+            return new NativeLibraryLoadException("Windows error " + windowsErrorCode + ": " + detail);
         }
         String detail = getDlError();
         if (detail == null || detail.isBlank()) {
             return new NativeLibraryLoadException("dlopen failed");
         }
         return new NativeLibraryLoadException(detail);
-    }
-
-    private static int getLastError() {
-        try {
-            return (int) GET_LAST_ERROR.invokeExact(getLastErrorPtr);
-        } catch (Throwable e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
     }
 
     private static String getDlError() {
@@ -279,5 +271,21 @@ public final class NativeContext {
             case PLATFORM_DARWIN -> RTLD_DEFAULT_DARWIN;
             default -> throw new UnsupportedOperationException("Default library is only available on POSIX platforms.");
         };
+    }
+
+    public ThreadLocal<Object> getCapturedCallStateTL() {
+        return callState;
+    }
+
+    /** Get the value of {@code errno} captured by the last downcall which captures it. The capture buffer is thread-local, so no races can happen. */
+    @TruffleBoundary(allowInlining = true)
+    public int getErrno() {
+        return NativeAccessSupport.readCapturedErrno(callState.get());
+    }
+
+    /** Get the value of WinAPI's {@code GetLastError} captured by the last downcall which captures it. The capture buffer is thread-local, so no races can happen. */
+    @TruffleBoundary(allowInlining = true)
+    public int getLastError() {
+        return NativeAccessSupport.readCapturedGetLastError(callState.get());
     }
 }

@@ -20,9 +20,7 @@ import errno
 
 from queue import Empty, Full
 
-# Begin Truffle change
-# import _multiprocessing
-# End Truffle change
+import _multiprocessing
 
 from . import connection
 from . import context

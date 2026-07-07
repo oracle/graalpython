@@ -134,9 +134,6 @@
             MX_OUTPUT_ROOT_INCLUDES_CONFIG: "false", // this is important so we can build things on JDK-latest and run them on older JDKs
             CI: "true",
             BISECT_BENCHMARK_CONFIG: "bisect-benchmark.ini",
-            BISECT_EMAIL_FROM: $.overlay_imports.BISECT_EMAIL_FROM,
-            BISECT_EMAIL_SMTP_SERVER: $.overlay_imports.BISECT_EMAIL_SMTP_SERVER,
-            BISECT_EMAIL_TO_PATTERN: ".*@oracle.com",
             TRUFFLE_STRICT_OPTION_DEPRECATION: "true",
             npm_config_registry: $.overlay_imports.npm_config_registry,
             CFLAGS: "-ggdb",

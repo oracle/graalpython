@@ -73,7 +73,7 @@ import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -125,12 +125,11 @@ public final class PythonCextTupleBuiltins {
         static Object doNative(PythonAbstractNativeObject tuple, long key,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Exclusive @Cached GetNativeTupleStorage asNativeStorage,
                         @Exclusive @Cached EnsurePythonObjectNode ensureNode,
                         @Exclusive @Cached SetItemScalarNode setItemNode,
                         @Exclusive @Cached GetItemScalarNode getItemNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            SequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
+            SequenceStorage sequenceStorage = GetTupleStorage.doNative(tuple);
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
             if (result == null) {
@@ -185,9 +184,8 @@ public final class PythonCextTupleBuiltins {
         static Object doNative(PythonAbstractNativeObject tuple, Object iLow, Object iHigh,
                         @Bind Node inliningTarget,
                         @Shared("getItem") @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Shared("newSlice") @Cached PySliceNew sliceNode,
-                        @Cached GetNativeTupleStorage asNativeStorage) {
-            return doGetSlice(asNativeStorage.execute(tuple), inliningTarget, iLow, iHigh, getItemNode, sliceNode);
+                        @Shared("newSlice") @Cached PySliceNew sliceNode) {
+            return doGetSlice(GetTupleStorage.doNative(tuple), inliningTarget, iLow, iHigh, getItemNode, sliceNode);
         }
 
         @SuppressWarnings("unused")

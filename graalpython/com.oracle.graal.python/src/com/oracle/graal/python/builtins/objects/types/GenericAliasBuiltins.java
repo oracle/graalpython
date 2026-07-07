@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,6 +105,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -165,9 +166,16 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     public abstract static class GenericAliasNode extends PythonTernaryBuiltinNode {
         @Specialization
         static PGenericAlias doit(Object cls, Object origin, Object arguments,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createGenericAlias(language, cls, getInstanceShape.execute(cls), origin, arguments, false);
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached TupleNodes.EnsureManagedTupleNode ensureManagedTupleNode) {
+            PTuple argumentsTuple = ensureManagedTupleNode.execute(inliningTarget, arguments);
+            if (argumentsTuple == null) {
+                // in this case, 'args' is not a tuple object
+                argumentsTuple = PFactory.createTuple(language, new Object[]{arguments});
+            }
+            return PFactory.createGenericAlias(language, cls, getInstanceShape.execute(cls), origin, argumentsTuple, false);
         }
     }
 

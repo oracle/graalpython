@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "2143cd9f4e3c06b5518d1cbd23c09a918bc9cb58",
+                "version": "b8a290a5d5e364074ab03ed0f29987ca773b9c9f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "2143cd9f4e3c06b5518d1cbd23c09a918bc9cb58",
+                "version": "b8a290a5d5e364074ab03ed0f29987ca773b9c9f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -834,7 +834,7 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
-                        "ldlibs": ["-lutil"],
+                        "ldlibs": ["-lutil", "-lrt"],
                         "defaultBuild": True,
                         "multitarget": [
                             {"libc": ["glibc", "default"]},

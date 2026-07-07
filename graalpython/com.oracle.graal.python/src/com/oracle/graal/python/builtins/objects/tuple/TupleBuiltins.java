@@ -81,7 +81,6 @@ import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
-import com.oracle.graal.python.nodes.builtins.TupleNodes.GetNativeTupleStorage;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -468,9 +467,8 @@ public final class TupleBuiltins extends PythonBuiltins {
         long computeHash(VirtualFrame frame, PythonAbstractNativeObject self,
                         @Bind Node inliningTarget,
                         @Shared("getItem") @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Shared("hash") @Cached PyObjectHashNode hashNode,
-                        @Cached GetNativeTupleStorage getStorage) {
-            return doComputeHash(frame, inliningTarget, getItemNode, hashNode, getStorage.execute(self));
+                        @Shared("hash") @Cached PyObjectHashNode hashNode) {
+            return doComputeHash(frame, inliningTarget, getItemNode, hashNode, GetTupleStorage.doNative(self));
         }
 
         private static long doComputeHash(VirtualFrame frame, Node inliningTarget, SequenceStorageNodes.GetItemNode getItemNode, PyObjectHashNode hashNode, SequenceStorage tupleStore) {

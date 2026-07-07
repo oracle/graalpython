@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,8 +74,10 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Binary
 import com.oracle.graal.python.builtins.objects.types.GenericTypeNodes.UnionTypeOrNode;
 import com.oracle.graal.python.builtins.objects.typing.TypeAliasTypeBuiltinsClinicProviders.TypeAliasTypeNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.EnsureManagedTupleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -140,9 +142,12 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
                 return null;
             }
 
-            @Specialization
-            static PTuple doTuple(PTuple o) {
-                return o.getSequenceStorage().length() == 0 ? null : o;
+            @Specialization(guards = "tupleCheckNode.execute(inliningTarget, o)", limit = "1")
+            static PTuple doTuple(Node inliningTarget, Object o,
+                            @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
+                            @Cached EnsureManagedTupleNode ensureManagedTupleNode) {
+                PTuple tuple = ensureManagedTupleNode.execute(inliningTarget, o);
+                return tuple.getSequenceStorage().length() == 0 ? null : tuple;
             }
 
             @Fallback

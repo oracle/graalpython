@@ -67,20 +67,24 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.EnsureManagedTupleNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -94,6 +98,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -111,6 +116,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = "function", minNumOfPositionalArgs = 3, parameterNames = {"$cls", "code", "globals", "name", "argdefs", "closure"})
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class FunctionNode extends PythonBuiltinNode {
 
         @Specialization
@@ -120,13 +126,16 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return PFactory.createFunction(language, name, code, globals, null);
         }
 
-        @Specialization
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, closure)")
         static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs,
-                        PTuple closure,
+                        Object closure,
                         @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
+                        @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
-            return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
+            Object[] closureArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, closure));
+            return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, PCell.toCellArray(closureArray));
         }
 
         @Specialization
@@ -137,41 +146,53 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return PFactory.createFunction(language, T_LAMBDA_NAME, code, globals, null);
         }
 
-        @Specialization
-        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, closure)")
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, @SuppressWarnings("unused") PNone defaultArgs, Object closure,
                         @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
+                        @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
-            return PFactory.createFunction(language, name, code, globals, PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
+            Object[] closureArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, closure));
+            return PFactory.createFunction(language, name, code, globals, PCell.toCellArray(closureArray));
         }
 
-        @Specialization
-        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, PTuple defaultArgs,
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, defaultArgs)")
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, Object defaultArgs,
                         @SuppressWarnings("unused") PNone closure,
                         @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
+                        @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
             // TODO split defaults of positional args from kwDefaults
-            return PFactory.createFunction(language, code.getName(), code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null, null);
+            Object[] defaultArgsArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaultArgs));
+            return PFactory.createFunction(language, code.getName(), code, globals, defaultArgsArray, null, null);
         }
 
-        @Specialization
-        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure,
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, defaultArgs)")
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, Object defaultArgs, @SuppressWarnings("unused") PNone closure,
                         @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
+                        @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
             // TODO split defaults of positional args from kwDefaults
-            return PFactory.createFunction(language, name, code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null, null);
+            Object[] defaultArgsArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaultArgs));
+            return PFactory.createFunction(language, name, code, globals, defaultArgsArray, null, null);
         }
 
-        @Specialization
-        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, PTuple defaultArgs, PTuple closure,
+        @Specialization(guards = {"tupleCheckNode.execute(inliningTarget, defaultArgs)", "tupleCheckNode.execute(inliningTarget, closure)"})
+        static PFunction function(@SuppressWarnings("unused") Object cls, PCode code, PDict globals, TruffleString name, Object defaultArgs, Object closure,
                         @Bind Node inliningTarget,
-                        @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode,
+                        @SuppressWarnings("unused") @Shared("tupleCheck") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Shared("getTupleStorage") @Cached GetTupleStorage getTupleStorage,
+                        @Shared("toArray") @Cached ToArrayNode toArray,
                         @Bind PythonLanguage language) {
             // TODO split defaults of positional args from kwDefaults
-            return PFactory.createFunction(language, name, code, globals, getObjectArrayNode.execute(inliningTarget, defaultArgs), null,
-                            PCell.toCellArray(getObjectArrayNode.execute(inliningTarget, closure)));
+            Object[] closureArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, closure));
+            Object[] defaultArgsArray = toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaultArgs));
+            return PFactory.createFunction(language, name, code, globals, defaultArgsArray, null, PCell.toCellArray(closureArray));
         }
 
         @Fallback
@@ -254,6 +275,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___DEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class GetDefaultsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(defaults)")
         static Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults,
@@ -263,11 +285,13 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return (argDefaults.length == 0) ? PNone.NONE : PFactory.createTuple(language, argDefaults);
         }
 
-        @Specialization
-        static Object setDefaults(PFunction self, PTuple defaults,
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, defaults)", limit = "1")
+        static Object setDefaults(PFunction self, Object defaults,
                         @Bind Node inliningTarget,
-                        @Cached GetObjectArrayNode getObjectArrayNode) {
-            self.setDefaults(getObjectArrayNode.execute(inliningTarget, defaults));
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached GetTupleStorage getTupleStorage,
+                        @Cached ToArrayNode toArray) {
+            self.setDefaults(toArray.execute(inliningTarget, getTupleStorage.execute(inliningTarget, defaults)));
             return PNone.NONE;
         }
 
@@ -412,6 +436,7 @@ public final class FunctionBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___TYPE_PARAMS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
+    @ImportStatic(PGuards.class)
     public abstract static class GetTypeParamsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
         static Object get(PFunction self, @SuppressWarnings("unused") PNone value,
@@ -424,10 +449,13 @@ public final class FunctionBuiltins extends PythonBuiltins {
             return typeParams;
         }
 
-        @Specialization
-        static Object set(PFunction self, PTuple typeParams,
+        @Specialization(guards = "tupleCheckNode.execute(inliningTarget, typeParams)", limit = "1")
+        static Object set(PFunction self, Object typeParams,
+                        @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Cached PyTupleCheckNode tupleCheckNode,
+                        @Cached EnsureManagedTupleNode ensureManagedTupleNode,
                         @Cached WriteAttributeToObjectNode writeObject) {
-            writeObject.execute(self, T___TYPE_PARAMS__, typeParams);
+            writeObject.execute(self, T___TYPE_PARAMS__, ensureManagedTupleNode.execute(inliningTarget, typeParams));
             return PNone.NONE;
         }
 

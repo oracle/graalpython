@@ -335,7 +335,8 @@ public abstract class PyObjectLookupAttr extends Node {
                 PythonAbstractClass base = bases[0];
                 if (base instanceof PythonBuiltinClass &&
                                 ((PythonBuiltinClass) base).getType() == PythonBuiltinClassType.PythonObject) {
-                    if (!(codePointAtIndexNode.execute(stringName, 0) == '_' && codePointAtIndexNode.execute(stringName, 1) == '_')) {
+                    int length = codePointLengthNode.execute(stringName, TS_ENCODING);
+                    if (!(length >= 2 && codePointAtIndexNode.execute(stringName, 0) == '_' && codePointAtIndexNode.execute(stringName, 1) == '_')) {
                         // not a special name, so this attribute cannot be inherited, and can
                         // only be on the type or the object. If it's on the type, return to
                         // the generic code.

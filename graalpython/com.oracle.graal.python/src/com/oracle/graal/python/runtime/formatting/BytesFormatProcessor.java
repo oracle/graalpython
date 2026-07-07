@@ -60,9 +60,9 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -122,7 +122,8 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     @Override
     protected boolean isMapping(Object obj) {
         // bytesobject.c _PyBytes_FormatEx()
-        return !(obj instanceof PTuple || obj instanceof PBytesLike || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) && PyMappingCheckNode.executeUncached(obj);
+        return !(PyTupleCheckNode.executeUncached(obj) || obj instanceof PBytesLike || obj instanceof PString || obj instanceof TruffleString || isJavaString(obj)) &&
+                        PyMappingCheckNode.executeUncached(obj);
     }
 
     @Override

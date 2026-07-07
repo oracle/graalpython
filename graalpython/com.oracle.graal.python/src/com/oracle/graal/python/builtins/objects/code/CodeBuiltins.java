@@ -140,15 +140,15 @@ public final class CodeBuiltins extends PythonBuiltins {
             byte[] linetableBytes = getBytes(inliningTarget, linetable, bytesCheckNode, getBytesStorage, bufferLib);
             checkBytes(inliningTarget, exceptiontable, bytesCheckNode);
 
-            Object[] constantsArr = getTupleArray(inliningTarget, constants, tupleCheckNode, getTupleStorage, toArrayNode);
+            Object[] constantsArr = getTupleArray(inliningTarget, constants, getTupleStorage, toArrayNode, tupleCheckNode);
             TruffleString[] namesArr = objectArrayToTruffleStringArray(inliningTarget,
-                            getTupleArray(inliningTarget, names, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+                            getTupleArray(inliningTarget, names, getTupleStorage, toArrayNode, tupleCheckNode), castToTruffleStringNode);
             TruffleString[] varnamesArr = objectArrayToTruffleStringArray(inliningTarget,
-                            getTupleArray(inliningTarget, varnames, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+                            getTupleArray(inliningTarget, varnames, getTupleStorage, toArrayNode, tupleCheckNode), castToTruffleStringNode);
             TruffleString[] freevarsArr = objectArrayToTruffleStringArray(inliningTarget,
-                            getTupleArray(inliningTarget, freevars, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+                            getTupleArray(inliningTarget, freevars, getTupleStorage, toArrayNode, tupleCheckNode), castToTruffleStringNode);
             TruffleString[] cellcarsArr = objectArrayToTruffleStringArray(inliningTarget,
-                            getTupleArray(inliningTarget, cellvars, tupleCheckNode, getTupleStorage, toArrayNode), castToTruffleStringNode);
+                            getTupleArray(inliningTarget, cellvars, getTupleStorage, toArrayNode, tupleCheckNode), castToTruffleStringNode);
 
             return createCodeNode.execute(frame, argcount, posonlyargcount, kwonlyargcount,
                             nlocals, stacksize, flags,
@@ -170,8 +170,8 @@ public final class CodeBuiltins extends PythonBuiltins {
             }
         }
 
-        private static Object[] getTupleArray(Node inliningTarget, Object object, PyTupleCheckNode tupleCheckNode,
-                        GetTupleStorage getTupleStorage, SequenceStorageNodes.ToArrayNode toArrayNode) {
+        private static Object[] getTupleArray(Node inliningTarget, Object object,
+                        GetTupleStorage getTupleStorage, SequenceStorageNodes.ToArrayNode toArrayNode, PyTupleCheckNode tupleCheckNode) {
             if (!tupleCheckNode.execute(inliningTarget, object)) {
                 throw invalidArgs(inliningTarget);
             }

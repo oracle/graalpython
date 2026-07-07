@@ -261,9 +261,6 @@
         },
         environment +: environment(self.os, self.arch) + {
             BISECT_BENCHMARK_CONFIG: "bisect-benchmark.ini",
-            BISECT_EMAIL_SMTP_SERVER: $.overlay_imports.BISECT_EMAIL_SMTP_SERVER,
-            BISECT_EMAIL_TO_PATTERN: ".*@oracle.com",
-            BISECT_EMAIL_FROM: $.overlay_imports.BISECT_EMAIL_FROM,
             ENABLE_POLYBENCH_HPC: "yes",
             POLYBENCH_HPC_EXTRA_HEADERS: "/cm/shared/apps/papi/papi-5.5.1/include",
             POLYBENCH_HPC_PAPI_LIB_DIR: "/cm/shared/apps/papi/papi-5.5.1/lib",

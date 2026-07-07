@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -100,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNode;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
@@ -109,8 +108,10 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -662,8 +663,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!self.isClosed()"})
-        static Object doit(VirtualFrame frame, PStringIO self, PTuple state,
+        static Object doit(VirtualFrame frame, PStringIO self, Object state,
                         @Bind Node inliningTarget,
+                        @Cached GetTupleStorage getTupleStorage,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached InitNode initNode,
                         @Cached CastToTruffleStringNode toString,
@@ -673,11 +675,15 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
+                        @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached PRaiseNode raiseNode) {
-            SequenceStorage storage = state.getSequenceStorage();
+            if (!tupleCheckNode.execute(inliningTarget, state)) {
+                throw raiseNode.raise(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 4, state);
+            }
+            SequenceStorage storage = getTupleStorage.execute(inliningTarget, state);
             Object[] array = getArray.execute(inliningTarget, storage);
             if (storage.length() < 4) {
-                return notTuple(self, state, inliningTarget);
+                throw raiseNode.raise(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 4, state);
             }
             initNode.execute(frame, self, array[0], array[1]);
             /*
@@ -724,12 +730,6 @@ public final class StringIOBuiltins extends PythonBuiltins {
             }
 
             return PNone.NONE;
-        }
-
-        @Specialization(guards = {"!self.isClosed()", "!isPTuple(state)"})
-        static Object notTuple(PStringIO self, Object state,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P, self, 4, state);
         }
 
         @Specialization(guards = "self.isClosed()")

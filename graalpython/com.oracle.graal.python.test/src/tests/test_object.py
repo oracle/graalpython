@@ -87,6 +87,13 @@ def test_get_dict_attr():
     assert_raises(AttributeError, set_dict_attr)
 
 
+def test_lookup_single_underscore_attr():
+    class MyClass:
+        pass
+
+    assert_raises(AttributeError, lambda: MyClass()._)
+
+
 def test_set_dict_attr():
     class MyClass(object):
         def __init__(self):

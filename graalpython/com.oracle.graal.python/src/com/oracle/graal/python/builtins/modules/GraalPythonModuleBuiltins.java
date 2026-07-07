@@ -119,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -141,6 +142,7 @@ import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -178,8 +180,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -193,7 +193,6 @@ import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -1021,8 +1020,14 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     public abstract static class GetStorageStrategyNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        TruffleString doSet(PSequence seq) {
-            return PythonUtils.toTruffleStringUncached(seq.getSequenceStorage().getClass().getSimpleName());
+        static TruffleString doSet(Object object,
+                        @Bind Node inliningTarget,
+                        @Cached PyTupleCheckNode tupleCheckNode) {
+            if (tupleCheckNode.isTupleOrList(inliningTarget, object)) {
+                SequenceStorage sequenceStorage = GetSequenceStorageNode.executeUncached(object);
+                return PythonUtils.toTruffleStringUncached(sequenceStorage.getClass().getSimpleName());
+            }
+            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
 
@@ -1030,22 +1035,40 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StorageToNative extends PythonUnaryBuiltinNode {
 
-        @Specialization
         @TruffleBoundary
-        Object toNative(PArray array) {
-            CApiContext.ensureCapiWasLoaded("internal API");
-            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(array.getSequenceStorage(), true);
-            array.setSequenceStorage(newStorage);
-            return array;
+        @Specialization
+        static Object doGeneric(Object object,
+                        @Bind Node inliningTarget,
+                        @Cached PyTupleCheckNode tupleCheckNode) {
+            if (object instanceof PArray array) {
+                array.setSequenceStorage(ToNativeStorageNode.executeUncached(array.getSequenceStorage(), true));
+            } else if (object instanceof PSequence sequence) {
+                sequence.setSequenceStorage(ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), sequence instanceof PBytesLike));
+            } else if (!tupleCheckNode.isTupleOrList(inliningTarget, object)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+            }
+            return object;
         }
+    }
 
-        @Specialization
+    @Builtin(name = "storage_to_native_primitive", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class StorageToNativePrimitive extends PythonUnaryBuiltinNode {
+
         @TruffleBoundary
-        Object toNative(PSequence sequence) {
+        @Specialization
+        static Object doGeneric(Object object,
+                        @Bind Node inliningTarget,
+                        @Cached PyTupleCheckNode tupleCheckNode) {
             CApiContext.ensureCapiWasLoaded("internal API");
-            NativeSequenceStorage newStorage = ToNativeStorageNode.executeUncached(sequence.getSequenceStorage(), sequence instanceof PBytesLike);
-            sequence.setSequenceStorage(newStorage);
-            return sequence;
+            if (object instanceof PArray array) {
+                array.setSequenceStorage(ToNativePrimitiveStorageNode.executeUncached(array.getSequenceStorage()));
+            } else if (object instanceof PSequence sequence) {
+                sequence.setSequenceStorage(ToNativePrimitiveStorageNode.executeUncached(sequence.getSequenceStorage()));
+            } else if (!tupleCheckNode.isTupleOrList(inliningTarget, object)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+            }
+            return object;
         }
     }
 
@@ -1337,29 +1360,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             TruffleString sep = TruffleString.fromJavaStringUncached(context.getEnv().getPathSeparator(), TS_ENCODING);
             return context.getStdlibHome().concatUncached(sep, TS_ENCODING, false).concatUncached(context.getCoreHome(), TS_ENCODING, false);
-        }
-    }
-
-    @Builtin(name = "storage_to_native_primitive", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class StorageToNativePrimitive extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        static Object doArray(PArray array,
-                        @Shared @Cached ToNativePrimitiveStorageNode toNativePrimitiveNode,
-                        @Bind Node inliningTarget) {
-            NativePrimitiveSequenceStorage newStorage = toNativePrimitiveNode.execute(inliningTarget, array.getSequenceStorage());
-            array.setSequenceStorage(newStorage);
-            return array;
-        }
-
-        @Specialization
-        static Object doSequence(PSequence sequence,
-                        @Shared @Cached ToNativePrimitiveStorageNode toNativePrimitiveNode,
-                        @Bind Node inliningTarget) {
-            NativePrimitiveSequenceStorage newStorage = toNativePrimitiveNode.execute(inliningTarget, sequence.getSequenceStorage());
-            sequence.setSequenceStorage(newStorage);
-            return sequence;
         }
     }
 

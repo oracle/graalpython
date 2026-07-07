@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import io
 
 class MyIndexable(object):
     def __init__(self, value):
@@ -120,6 +121,53 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(getattr(builtins, 'None'), None)
         self.assertEqual(getattr(builtins, 'False'), False)
         self.assertEqual(getattr(builtins, 'True'), True)
+
+    def test_missing_builtin_lookup_after_warmup(self):
+        def read_missing_builtin():
+            return definitely_missing_builtin_for_review
+
+        for _ in range(20):
+            with self.assertRaises(NameError):
+                read_missing_builtin()
+
+    def test_instance_attr_state_machine_after_warmup(self):
+        class PaddedFile:
+            def __init__(self, fileobj, prepend=b""):
+                self._buffer = prepend
+                self._length = len(prepend)
+                self.file = fileobj
+                self._read = 0
+
+            def read(self, size):
+                if self._read is None:
+                    return self.file.read(size)
+                if self._read + size <= self._length:
+                    read = self._read
+                    self._read += size
+                    return self._buffer[read:self._read]
+                read = self._read
+                self._read = None
+                return self._buffer[read:] + self.file.read(size - self._length + read)
+
+            def prepend(self, prepend=b""):
+                if self._read is None:
+                    self._buffer = prepend
+                else:
+                    self._read -= len(prepend)
+                    return
+                self._length = len(self._buffer)
+                self._read = 0
+
+        def exercise():
+            padded = PaddedFile(io.BytesIO(b"cdef"), b"ab")
+            self.assertEqual(padded.read(1), b"a")
+            self.assertEqual(padded.read(3), b"bcd")
+            padded.prepend(b"Z")
+            self.assertEqual(padded.read(2), b"Ze")
+            self.assertEqual(padded.read(2), b"f")
+
+        for _ in range(20):
+            exercise()
 
     def test_min(self):
         self.assertEqual(min((), default=1, key="adsf"), 1)
