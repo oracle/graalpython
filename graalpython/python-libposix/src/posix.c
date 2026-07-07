@@ -799,6 +799,41 @@ static void stat_path_handle_to_longs(const wchar_t *path, int32_t followSymlink
     }
 }
 
+static void stat_attributes_to_longs(DWORD attributes, DWORD sizeHigh, DWORD sizeLow, FILETIME accessTime, FILETIME writeTime, FILETIME creationTime, int64_t *out) {
+    memset(out, 0, 13 * sizeof(*out));
+    if (attributes & FILE_ATTRIBUTE_DIRECTORY) {
+        out[0] = _S_IFDIR | 0111;
+    } else {
+        out[0] = _S_IFREG;
+    }
+    out[0] |= attributes & FILE_ATTRIBUTE_READONLY ? 0444 : 0666;
+    out[3] = 1;
+    out[6] = ((int64_t) sizeHigh << 32) | sizeLow;
+    out[7] = filetime_to_unix_time(accessTime);
+    out[8] = filetime_to_unix_time(writeTime);
+    out[9] = filetime_to_unix_time(creationTime);
+}
+
+static int stat_path_attributes_to_longs(const wchar_t *path, int64_t *out) {
+    WIN32_FILE_ATTRIBUTE_DATA info;
+    if (GetFileAttributesExW(path, GetFileExInfoStandard, &info)) {
+        stat_attributes_to_longs(info.dwFileAttributes, info.nFileSizeHigh, info.nFileSizeLow,
+                        info.ftLastAccessTime, info.ftLastWriteTime, info.ftCreationTime, out);
+        return 0;
+    }
+
+    WIN32_FIND_DATAW findInfo;
+    HANDLE findHandle = FindFirstFileW(path, &findInfo);
+    if (findHandle == INVALID_HANDLE_VALUE) {
+        set_win_errno(GetLastError());
+        return -1;
+    }
+    stat_attributes_to_longs(findInfo.dwFileAttributes, findInfo.nFileSizeHigh, findInfo.nFileSizeLow,
+                    findInfo.ftLastAccessTime, findInfo.ftLastWriteTime, findInfo.ftCreationTime, out);
+    FindClose(findHandle);
+    return 0;
+}
+
 GP_EXPORT int64_t call_getpid(void) {
     return _getpid();
 }
@@ -1103,7 +1138,6 @@ GP_EXPORT int32_t get_terminal_size(int32_t fd, int32_t *size) {
 }
 
 GP_EXPORT int32_t call_fstatat(int32_t dirFd, const char *path, int32_t followSymlinks, int64_t *out) {
-    (void) followSymlinks;
     if (!is_default_dir_fd(dirFd)) {
         return unsupported();
     }
@@ -1116,9 +1150,10 @@ GP_EXPORT int32_t call_fstatat(int32_t dirFd, const char *path, int32_t followSy
     if (result == 0) {
         stat_struct_to_longs(&st, out);
         stat_path_handle_to_longs(wide_path, followSymlinks, out);
-    } else {
-        capture_errno();
+        free(wide_path);
+        return 0;
     }
+    result = stat_path_attributes_to_longs(wide_path, out);
     free(wide_path);
     return result;
 }
