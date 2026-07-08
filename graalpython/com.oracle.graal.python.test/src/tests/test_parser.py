@@ -153,7 +153,7 @@ def assert_raise_syntax_error(source, msg):
 
 def test_cannot_assign():
     if sys.implementation.version.minor >= 8:
-        def check(s, label1, label2=None):
+        def check(s, label1, label2=None, comprehension_msg=None):
             if label1:
                 msg1 = f'cannot assign to {label1}'
                 msg2 = f"'{label2 or label1}' is an illegal expression for augmented assignment"
@@ -169,7 +169,7 @@ def test_cannot_assign():
             # test for statement
             assert_raise_syntax_error("for %s in range(1,10):\n pass" % s, msg1)
             # test for comprehension statement
-            assert_raise_syntax_error("[1 for %s in range(1,10)]" % s, msg1)
+            assert_raise_syntax_error("[1 for %s in range(1,10)]" % s, comprehension_msg or msg1)
         check("1", "literal")
         check("1.1", "literal")
         check("{1}", "set display")
@@ -193,7 +193,7 @@ def test_cannot_assign():
         check("{letter for letter in 'ahoj'}", "set comprehension")
         check("[letter for letter in 'ahoj']", "list comprehension")
         check("(letter for letter in 'ahoj')", "generator expression")
-        check("obj.True", None)
+        check("obj.True", None, comprehension_msg="'in' expected after for-loop variables")
         check("(a, *True, b)", "True", "tuple")
         check("(a, *False, b)", "False", "tuple")
         check("(a, *None, b)", "None", "tuple")
@@ -872,4 +872,3 @@ def test_ComprehensionListExpr():
 
 def test_BYTE_ORDER_MARK():
     assert eval('u"\N{BYTE ORDER MARK}"') == '\ufeff'
-
