@@ -769,11 +769,25 @@ static int stat_path_attributes_to_longs(const wchar_t *path, int64_t *out) {
                         info.ftLastAccessTime, info.ftLastWriteTime, info.ftCreationTime, out);
         return 0;
     }
+    DWORD error = GetLastError();
+    if (error != ERROR_ACCESS_DENIED && error != ERROR_SHARING_VIOLATION) {
+        set_win_errno(error);
+        return -1;
+    }
 
     WIN32_FIND_DATAW findInfo;
     HANDLE findHandle = FindFirstFileW(path, &findInfo);
     if (findHandle == INVALID_HANDLE_VALUE) {
-        set_win_errno(GetLastError());
+        DWORD findError = GetLastError();
+        switch (findError) {
+            case ERROR_FILE_NOT_FOUND:
+            case ERROR_PATH_NOT_FOUND:
+            case ERROR_NOT_READY:
+            case ERROR_BAD_NET_NAME:
+                error = findError;
+                break;
+        }
+        set_win_errno(error);
         return -1;
     }
     stat_attributes_to_longs(findInfo.dwFileAttributes, findInfo.nFileSizeHigh, findInfo.nFileSizeLow,
