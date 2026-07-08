@@ -358,12 +358,22 @@ def _init_posix(vars):
         _temp = module_from_spec(spec)
         spec.loader.exec_module(_temp)
     else:
-        _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
-    build_time_vars = _temp.build_time_vars
+        # GraalPy change: ignore missing _sysconfigdata, it can happen on an unsupported platform
+        try:
+            _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
+        except ModuleNotFoundError:
+            _temp = None
+    build_time_vars = _temp.build_time_vars if _temp else {}
     vars.update(build_time_vars)
+    # GraalPy change: merge our runtime vars
+    import _sysconfig
+    _sysconfig._update_posix_vars(vars)
+
 
 def _init_non_posix(vars):
     """Initialize the module as appropriate for NT"""
+    # GraalPy change: init first with posix vars, because of the toolchain we use
+    _init_posix(vars)
     # set basic install directories
     import _winapi
     import _sysconfig
