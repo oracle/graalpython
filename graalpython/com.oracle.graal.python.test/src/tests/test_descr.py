@@ -92,8 +92,9 @@ def test_attribute_error_message():
     try:
         obj.foo = 1
     except AttributeError as e:
-        # Note: as of 3.12, CPython doesn't set obj and name
-        assert str(e) == "'object' object has no attribute 'foo'"
+        assert e.obj == obj
+        assert e.name == "foo"
+        assert str(e) == "'object' object has no attribute 'foo' and no __dict__ for setting new attributes"
 
     class MyClass:
         pass
