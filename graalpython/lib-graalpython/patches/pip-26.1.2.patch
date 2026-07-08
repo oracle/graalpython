@@ -1,8 +1,8 @@
 diff --git a/pip/__init__.py b/pip/__init__.py
-index efefccf..5f5c952 100644
+index 349d57f..b6d836e 100644
 --- a/pip/__init__.py
 +++ b/pip/__init__.py
-@@ -11,3 +11,6 @@ def main(args: Optional[List[str]] = None) -> int:
+@@ -11,3 +11,6 @@ def main(args: list[str] | None = None) -> int:
      from pip._internal.utils.entrypoints import _wrapper
  
      return _wrapper(args)
@@ -10,10 +10,10 @@ index efefccf..5f5c952 100644
 +
 +__GRAALPY_PATCHED = True
 diff --git a/pip/_internal/cli/cmdoptions.py b/pip/_internal/cli/cmdoptions.py
-index 0b7cff7..07c86bf 100644
+index 8d0d8cf..8c40294 100644
 --- a/pip/_internal/cli/cmdoptions.py
 +++ b/pip/_internal/cli/cmdoptions.py
-@@ -357,7 +357,9 @@ def extra_index_url() -> Option:
+@@ -406,7 +406,9 @@ def extra_index_url() -> Option:
          dest="extra_index_urls",
          metavar="URL",
          action="append",
@@ -24,7 +24,7 @@ index 0b7cff7..07c86bf 100644
          help="Extra URLs of package indexes to use in addition to "
          "--index-url. Should follow the same rules as "
          "--index-url.",
-@@ -892,7 +894,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
+@@ -1100,7 +1102,7 @@ disable_pip_version_check: Callable[..., Option] = partial(
      "--disable-pip-version-check",
      dest="disable_pip_version_check",
      action="store_true",
@@ -34,10 +34,10 @@ index 0b7cff7..07c86bf 100644
      "of pip is available for download. Implied with --no-index.",
  )
 diff --git a/pip/_internal/cli/index_command.py b/pip/_internal/cli/index_command.py
-index db105d0..2514133 100644
+index 7962b15..d587f94 100644
 --- a/pip/_internal/cli/index_command.py
 +++ b/pip/_internal/cli/index_command.py
-@@ -24,6 +24,9 @@ if TYPE_CHECKING:
+@@ -31,6 +31,9 @@ if TYPE_CHECKING:
  
  logger = logging.getLogger(__name__)
  
@@ -45,9 +45,9 @@ index db105d0..2514133 100644
 +# the possible code paths
 +_GRAALPY_SESSION = None
  
- def _create_truststore_ssl_context() -> Optional["SSLContext"]:
-     if sys.version_info < (3, 10):
-@@ -78,6 +81,10 @@ class SessionCommandMixin(CommandContextMixIn):
+ @lru_cache
+ def _create_truststore_ssl_context() -> SSLContext | None:
+@@ -82,6 +85,10 @@ class SessionCommandMixin(CommandContextMixIn):
              # automatically ContextManager[Any] and self._session becomes Any,
              # then https://github.com/python/mypy/issues/7696 kicks in
              assert self._session is not None
@@ -59,18 +59,18 @@ index db105d0..2514133 100644
  
      def _build_session(
 diff --git a/pip/_internal/index/package_finder.py b/pip/_internal/index/package_finder.py
-index 0d65ce3..63aa513 100644
+index 6cd2cad..f8d3387 100644
 --- a/pip/_internal/index/package_finder.py
 +++ b/pip/_internal/index/package_finder.py
-@@ -36,6 +36,7 @@ from pip._internal.utils.logging import indent_log
+@@ -47,6 +47,7 @@ from pip._internal.utils.logging import indent_log
  from pip._internal.utils.misc import build_netloc
  from pip._internal.utils.packaging import check_requires_python
  from pip._internal.utils.unpacking import SUPPORTED_EXTENSIONS
 +from graalpy_pip_extensions import apply_graalpy_sort_order, get_graalpy_candidates
  
  if TYPE_CHECKING:
-     from pip._vendor.typing_extensions import TypeGuard
-@@ -477,6 +478,7 @@ class CandidateEvaluator:
+     from typing_extensions import TypeGuard
+@@ -515,6 +516,7 @@ class CandidateEvaluator:
  
          return sorted(filtered_applicable_candidates, key=self._sort_key)
  
@@ -78,7 +78,7 @@ index 0d65ce3..63aa513 100644
      def _sort_key(self, candidate: InstallationCandidate) -> CandidateSortingKey:
          """
          Function to pass as the `key` argument to a call to sorted() to sort
-@@ -845,8 +847,11 @@ class PackageFinder:
+@@ -917,8 +919,13 @@ class PackageFinder:
  
              logger.debug("Local files found: %s", ", ".join(paths))
  
@@ -86,37 +86,39 @@ index 0d65ce3..63aa513 100644
 +        graalpy_candidates = get_graalpy_candidates(project_name)
 +
          # This is an intentional priority ordering
--        return file_candidates + page_candidates
-+        return file_candidates + page_candidates + graalpy_candidates
+-        self._all_candidates[project_name] = file_candidates + page_candidates
++        self._all_candidates[project_name] = (
++            file_candidates + page_candidates + graalpy_candidates
++        )
  
-     def make_candidate_evaluator(
-         self,
+         return self._all_candidates[project_name]
+ 
 diff --git a/pip/_internal/network/download.py b/pip/_internal/network/download.py
-index 5c3bce3..f3057d0 100644
+index 867452d..b927e22 100644
 --- a/pip/_internal/network/download.py
 +++ b/pip/_internal/network/download.py
-@@ -7,6 +7,7 @@ import mimetypes
- import os
- from typing import Iterable, Optional, Tuple
+@@ -11,6 +11,7 @@ from dataclasses import dataclass
+ from http import HTTPStatus
+ from typing import BinaryIO
  
 +from graalpy_pip_extensions import AddedSourceLink
+ from pip._vendor.requests import PreparedRequest
  from pip._vendor.requests.models import Response
- 
- from pip._internal.cli.progress_bars import get_download_progress_renderer
-@@ -99,7 +100,7 @@ def _get_http_response_filename(resp: Response, link: Link) -> str:
+ from pip._vendor.urllib3 import HTTPResponse as URLlib3Response
+@@ -123,7 +124,7 @@ def _get_http_response_filename(resp: Response, link: Link) -> str:
      filename = link.filename  # fallback
      # Have a look at the Content-Disposition header for a better guess
      content_disposition = resp.headers.get("content-disposition")
 -    if content_disposition:
 +    if content_disposition and not isinstance(link, AddedSourceLink):
          filename = parse_content_disposition(content_disposition, filename)
-     ext: Optional[str] = splitext(filename)[1]
+     ext: str | None = splitext(filename)[1]
      if not ext:
 diff --git a/pip/_internal/operations/install/wheel.py b/pip/_internal/operations/install/wheel.py
-index aef42aa..0dcc357 100644
+index 6f9a983..d41450a 100644
 --- a/pip/_internal/operations/install/wheel.py
 +++ b/pip/_internal/operations/install/wheel.py
-@@ -590,6 +590,9 @@ def _install_wheel(  # noqa: C901, PLR0915 function is too long
+@@ -608,6 +608,9 @@ def _install_wheel(  # noqa: C901, PLR0915 function is too long
          file.save()
          record_installed(file.src_record_path, file.dest_path, file.changed)
  
@@ -127,10 +129,10 @@ index aef42aa..0dcc357 100644
          # We de-duplicate installation paths, since there can be overlap (e.g.
          # file in .data maps to same location as file in wheel root).
 diff --git a/pip/_internal/resolution/resolvelib/candidates.py b/pip/_internal/resolution/resolvelib/candidates.py
-index 6617644..ad52082 100644
+index 4bfd829..c2a41c3 100644
 --- a/pip/_internal/resolution/resolvelib/candidates.py
 +++ b/pip/_internal/resolution/resolvelib/candidates.py
-@@ -23,6 +23,7 @@ from pip._internal.req.constructors import (
+@@ -27,6 +27,7 @@ from pip._internal.req.constructors import (
  from pip._internal.req.req_install import InstallRequirement
  from pip._internal.utils.direct_url_helpers import direct_url_from_link
  from pip._internal.utils.misc import normalize_version_info
@@ -138,38 +140,53 @@ index 6617644..ad52082 100644
  
  from .base import Candidate, Requirement, format_name
  
-@@ -253,6 +254,8 @@ class _InstallRequirementBackedCandidate(Candidate):
+@@ -275,6 +276,10 @@ class _InstallRequirementBackedCandidate(Candidate):
+         requires = self.dist.iter_dependencies() if with_requires else ()
          for r in requires:
              yield from self._factory.make_requirements_from_spec(str(r), self._ireq)
-         yield self._factory.make_requires_python_requirement(self.dist.requires_python)
-+        if self.name == 'virtualenv' and not graalpy.DISABLE_PATCHING:
-+            yield from self._factory.make_requirements_from_spec('graalpy-virtualenv-seeder', self._ireq)
++        if self.name == "virtualenv" and not graalpy.DISABLE_PATCHING:
++            yield from self._factory.make_requirements_from_spec(
++                "graalpy-virtualenv-seeder", self._ireq
++            )
  
-     def get_install_requirement(self) -> Optional[InstallRequirement]:
+     def get_install_requirement(self) -> InstallRequirement | None:
          return self._ireq
 diff --git a/pip/_internal/utils/unpacking.py b/pip/_internal/utils/unpacking.py
-index 875e30e..f6562cf 100644
+index 8a9b205..6915d31 100644
 --- a/pip/_internal/utils/unpacking.py
 +++ b/pip/_internal/utils/unpacking.py
-@@ -335,3 +335,5 @@ def unpack_file(
-             content_type,
-         )
-         raise InstallationError(f"Cannot determine archive format of {location}")
-+    from graalpy_pip_extensions import apply_graalpy_patches
-+    apply_graalpy_patches(filename, location)
+@@ -345,11 +345,18 @@ def unpack_file(
+     filename = os.path.realpath(filename)
+     zip_flatten = not filename.endswith(".whl")
+ 
++    def _apply_graalpy_patches() -> None:
++        from graalpy_pip_extensions import apply_graalpy_patches
++
++        apply_graalpy_patches(filename, location)
++
+     def _unzip() -> None:
+         unzip_file(filename, location, flatten=zip_flatten)
++        _apply_graalpy_patches()
+ 
+     def _untar() -> None:
+         untar_file(filename, location)
++        _apply_graalpy_patches()
+ 
+     if content_type == "application/zip":
+         return _unzip()
 diff --git a/pip/_internal/wheel_builder.py b/pip/_internal/wheel_builder.py
-index 93f8e1f..32fd4ab 100644
+index 4dbf767..8ccb53e 100644
 --- a/pip/_internal/wheel_builder.py
 +++ b/pip/_internal/wheel_builder.py
-@@ -7,6 +7,7 @@ import re
- import shutil
- from typing import Iterable, List, Optional, Tuple
+@@ -8,6 +8,7 @@ import re
+ from collections.abc import Iterable
+ from tempfile import TemporaryDirectory
  
 +import graalpy_pip_extensions as graalpy
  from pip._vendor.packaging.utils import canonicalize_name, canonicalize_version
  from pip._vendor.packaging.version import InvalidVersion, Version
  
-@@ -115,6 +116,10 @@ def _should_cache(
+@@ -66,6 +67,10 @@ def _should_cache(
      if _contains_egg_info(base):
          return True
  
@@ -180,7 +197,7 @@ index 93f8e1f..32fd4ab 100644
      # Otherwise, do not cache.
      return False
  
-@@ -247,6 +252,11 @@ def _build_one_inside_env(
+@@ -174,6 +179,11 @@ def _build_one_inside_env(
              )
  
          if wheel_path is not None:
@@ -193,10 +210,10 @@ index 93f8e1f..32fd4ab 100644
              dest_path = os.path.join(output_dir, wheel_name)
              try:
 diff --git a/pip/_vendor/platformdirs/api.py b/pip/_vendor/platformdirs/api.py
-index c50caa6..a46cac7 100644
+index 251600e..2c1b1a7 100644
 --- a/pip/_vendor/platformdirs/api.py
 +++ b/pip/_vendor/platformdirs/api.py
-@@ -80,7 +80,7 @@ class PlatformDirsABC(ABC):  # noqa: PLR0904
+@@ -81,7 +81,7 @@ class PlatformDirsABC(ABC):  # noqa: PLR0904
      def _append_app_name_and_version(self, *base: str) -> str:
          params = list(base[1:])
          if self.appname:
