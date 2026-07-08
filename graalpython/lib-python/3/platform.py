@@ -1196,8 +1196,14 @@ def _sys_version(sys_version=None):
 
     elif "Graal" in sys_version:
         # GraalVM
+        graalpy_sys_version_parser = re.compile(
+            r'([\w.+]+)\s*'  # "version<space>"
+            r'\(#?([^,]+)'  # "(#buildno"
+            r'(?:,\s*([\w ]*)'  # ", builddate"
+            r'(?:,\s*([\w :]*))?)?\)\s*'  # ", buildtime)<space>"
+            r'\[([^\]]+)\]?', re.ASCII)  # "[compiler]"
         name = "GraalVM"
-        match = sys_version_parser.match(sys_version)
+        match = graalpy_sys_version_parser.match(sys_version)
         if match is None:
             raise ValueError("failed to parse GraalVM sys.version: %s" %
                              repr(sys_version))
