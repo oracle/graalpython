@@ -58,22 +58,27 @@ def _reference_realasdouble(args):
     n = args[0]
     if isinstance(n, complex):
         return n.real
-    try:
-        return n.__float__()
-    except:
+    complex_method = getattr(type(n), "__complex__", None)
+    if complex_method is not None:
+        result = complex_method(n)
+        if not isinstance(result, complex):
+            raise TypeError
+        return result.real
+    float_method = getattr(type(n), "__float__", None)
+    if float_method is None:
         raise TypeError
+    return float_method(n)
 
 
 def _reference_imagasdouble(args):
     n = args[0]
     if isinstance(n, complex):
         return n.imag
-    try:
-        complex_method = n.__complex__
-    except AttributeError:
+    complex_method = getattr(type(n), "__complex__", None)
+    if complex_method is None:
         _reference_realasdouble(args)
         return 0.0
-    result = complex_method()
+    result = complex_method(n)
     if not isinstance(result, complex):
         raise TypeError
     return result.imag
@@ -93,6 +98,26 @@ class DummyComplexable():
         self.i = i
     def __complex__(self):
         return complex(self.r, self.i)
+
+
+class DummyBadComplexable():
+    def __complex__(self):
+        return 42
+
+
+class DummyComplexError():
+    def __complex__(self):
+        raise RuntimeError
+
+
+class DummyFloatable():
+    def __float__(self):
+        return 4.25
+
+
+class DummyFloatError():
+    def __float__(self):
+        raise RuntimeError
 
 
 class DummyComplexSubclass(complex):
@@ -123,6 +148,8 @@ class TestPyComplex(CPyExtTestCase):
             (DummyComplexSubclass(2.0, 3.0), 2.0, 3.0),
             (NativeComplexSubclass(1.0, 2.0), 1.0, 2.0),
             (ManagedNativeComplexSubclass(1.0, 2.0), 1.0, 2.0),
+            (DummyComplexable(4.0, 2.5), 4.0, 2.5),
+            (DummyFloatable(), 4.25, 0.0),
         ),
         code='''int isNaN(double d) {
             return d != d;
@@ -179,6 +206,11 @@ class TestPyComplex(CPyExtTestCase):
             (DummyComplexSubclass(2.0, 3.0), ),
             (NativeComplexSubclass(1.0, 2.0),),
             (ManagedNativeComplexSubclass(1.0, 2.0),),
+            (DummyComplexable(4.0, 2.5),),
+            (DummyBadComplexable(),),
+            (DummyComplexError(),),
+            (DummyFloatable(),),
+            (DummyFloatError(),),
             ("10.0", ),
         ),
         resultspec="f",
@@ -195,6 +227,11 @@ class TestPyComplex(CPyExtTestCase):
             (DummyComplexSubclass(2.0, 3.0), ),
             (NativeComplexSubclass(1.0, 2.0),),
             (ManagedNativeComplexSubclass(1.0, 2.0),),
+            (DummyComplexable(4.0, 2.5),),
+            (DummyBadComplexable(),),
+            (DummyComplexError(),),
+            (DummyFloatable(),),
+            (DummyFloatError(),),
             ("10.0", ),
         ),
         resultspec="f",

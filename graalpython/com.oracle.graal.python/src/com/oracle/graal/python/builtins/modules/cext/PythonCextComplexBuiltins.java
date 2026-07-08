@@ -40,90 +40,78 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeDoubleField;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
-import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins.ComplexValue;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins.ToComplexValueNode;
+import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins.TryComplexSpecialMethodNode;
+import com.oracle.graal.python.lib.PyComplexCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextComplexBuiltins {
 
-    // TODO(CAPI STATIC): uses nodes without @GenerateUncached
-    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_Complex_AsCComplex extends CApiBinaryBuiltinNode {
-        @Specialization
-        static int asComplex(PComplex c, long out) {
-            writeDoubleField(out, CFields.Py_complex__real, c.getReal());
-            writeDoubleField(out, CFields.Py_complex__imag, c.getImag());
-            return 0;
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Pointer}, call = Ignored)
+    static int GraalPyPrivate_Complex_AsCComplex(long objPtr, long out) {
+        Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
+        double real, imag;
+        if (PyComplexCheckNode.executeUncached(obj)) {
+            ComplexValue value = ToComplexValueNode.executeUncached(obj);
+            real = value.getReal();
+            imag = value.getImag();
+        } else {
+            Object converted = TryComplexSpecialMethodNode.executeUncached(obj);
+            if (converted != PNone.NO_VALUE) {
+                ComplexValue value = ToComplexValueNode.executeUncached(converted);
+                real = value.getReal();
+                imag = value.getImag();
+            } else {
+                real = PyFloatAsDoubleNode.executeUncached(obj);
+                imag = 0.0;
+            }
         }
-
-        @Specialization(guards = "!isPComplex(obj)")
-        static int doGeneric(Object obj, long out,
-                        @Cached ComplexBuiltins.ComplexNewNode complexNode) {
-            PComplex c = (PComplex) complexNode.execute(null, PythonBuiltinClassType.PComplex, obj, PNone.NO_VALUE);
-            writeDoubleField(out, CFields.Py_complex__real, c.getReal());
-            writeDoubleField(out, CFields.Py_complex__imag, c.getImag());
-            return 0;
-        }
+        writeDoubleField(out, CFields.Py_complex__real, real);
+        writeDoubleField(out, CFields.Py_complex__imag, imag);
+        return 0;
     }
-
-    public static final TruffleString T_REAL = tsLiteral("real");
 
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObjectRawPointer}, call = Ignored)
     static double GraalPyPrivate_Complex_RealAsDouble(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
-        if (obj instanceof PComplex complex) {
-            return complex.getReal();
+        if (PyComplexCheckNode.executeUncached(obj)) {
+            return ToComplexValueNode.executeUncached(obj).getReal();
         }
-        TruffleString name = BuiltinClassProfiles.IsBuiltinObjectProfile.getUncached().profileObject(null, obj, PythonBuiltinClassType.PComplex) ? T_REAL : T___FLOAT__;
-        try {
-            return PyFloatAsDoubleNode.executeUncached(CallNode.executeUncached(PyObjectGetAttr.executeUncached(obj, name)));
-        } catch (PException e) {
-            throw PRaiseNode.raiseStatic(null, TypeError);
+        Object converted = TryComplexSpecialMethodNode.executeUncached(obj);
+        if (converted != PNone.NO_VALUE) {
+            return ToComplexValueNode.executeUncached(converted).getReal();
+        } else {
+            return PyFloatAsDoubleNode.executeUncached(obj);
         }
     }
-
-    public static final TruffleString T_IMAG = tsLiteral("imag");
 
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObjectRawPointer}, call = Ignored)
     static double GraalPyPrivate_Complex_ImagAsDouble(long objPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
-        if (obj instanceof PComplex complex) {
-            return complex.getImag();
+        if (PyComplexCheckNode.executeUncached(obj)) {
+            return ToComplexValueNode.executeUncached(obj).getImag();
         }
-        if (IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(obj), PythonBuiltinClassType.PComplex)) {
-            return PyFloatAsDoubleNode.executeUncached(CallNode.executeUncached(PyObjectGetAttr.executeUncached(obj, T_IMAG)));
+        Object converted = TryComplexSpecialMethodNode.executeUncached(obj);
+        if (converted != PNone.NO_VALUE) {
+            return ToComplexValueNode.executeUncached(converted).getImag();
         }
+        PyFloatAsDoubleNode.executeUncached(obj);
         return 0.0;
     }
 

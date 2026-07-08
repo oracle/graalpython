@@ -1253,6 +1253,9 @@ public abstract class ErrorMessages {
     public static final TruffleString WARN_P_RETURNED_NON_P = tsLiteral("%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
                     "is deprecated, and may be removed in a future version of Python.");
+    public static final TruffleString WARN_COMPLEX_RETURNED_NON_COMPLEX = tsLiteral("__complex__ returned non-complex (type %p).  " +
+                    "The ability to return an instance of a strict subclass of complex " +
+                    "is deprecated, and may be removed in a future version of Python.");
     public static final TruffleString WARN_IGNORE_UNIMPORTABLE_BREAKPOINT_S = tsLiteral("Ignoring unimportable $PYTHONBREAKPOINT: \"%s\"");
     public static final TruffleString WARN_DEPRECTATED_SYS_CHECKINTERVAL = tsLiteral("sys.getcheckinterval() and sys.setcheckinterval() " +
                     "are deprecated.  Use sys.getswitchinterval() instead.");

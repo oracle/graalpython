@@ -106,8 +106,7 @@ import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -156,11 +155,11 @@ public final class ComplexBuiltins extends PythonBuiltins {
     }
 
     @ValueType
-    static final class ComplexValue {
+    public static final class ComplexValue {
         private final double real;
         private final double imag;
 
-        ComplexValue(double real, double imag) {
+        public ComplexValue(double real, double imag) {
             this.real = real;
             this.imag = imag;
         }
@@ -177,8 +176,12 @@ public final class ComplexBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    abstract static class ToComplexValueNode extends Node {
+    public abstract static class ToComplexValueNode extends Node {
         public abstract ComplexValue execute(Node inliningTarget, Object v);
+
+        public static ComplexValue executeUncached(Object v) {
+            return ComplexBuiltinsFactory.ToComplexValueNodeGen.getUncached().execute(null, v);
+        }
 
         @Specialization
         static ComplexValue doComplex(PComplex v) {
@@ -227,14 +230,43 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
+    /** Equivalent of CPython's {@code try_complex_special_method}. */
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    public abstract static class TryComplexSpecialMethodNode extends Node {
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object object);
+
+        public static Object executeUncached(Object object) {
+            return ComplexBuiltinsFactory.TryComplexSpecialMethodNodeGen.getUncached().execute(null, null, object);
+        }
+
+        @Specialization
+        static Object doObject(VirtualFrame frame, Node inliningTarget, Object object,
+                        @Cached(inline = false) LookupAndCallUnaryDynamicNode callComplex,
+                        @Cached PyComplexCheckExactNode checkExact,
+                        @Cached PyComplexCheckNode check,
+                        @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
+                        @Cached PRaiseNode raiseNode) {
+            Object result = callComplex.executeObject(object, T___COMPLEX__);
+            if (result == PNone.NO_VALUE || checkExact.execute(inliningTarget, result)) {
+                return result;
+            }
+            if (!check.execute(inliningTarget, result)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, result);
+            }
+            warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                            ErrorMessages.WARN_COMPLEX_RETURNED_NON_COMPLEX, result);
+            return result;
+        }
+    }
+
     // complex([real[, imag]])
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = J_COMPLEX, minNumOfPositionalArgs = 1, parameterNames = {"$cls", "real", "imag"})
     @GenerateNodeFactory
     public abstract static class ComplexNewNode extends PythonTernaryBuiltinNode {
         @Child private PyObjectReprAsObjectNode reprNode;
-        @Child private LookupAndCallUnaryNode callComplexNode;
-        @Child private WarningsModuleBuiltins.WarnNode warnNode;
 
         @GenerateInline
         @GenerateCached(false)
@@ -335,11 +367,11 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared("isPrimitive") @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Cached.Shared("isBuiltinObj") @Cached PyComplexCheckExactNode isBuiltinObjectProfile,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile,
+            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, tryComplexNode, isPrimitiveProfile,
                             isBuiltinObjectProfile,
                             raiseNode);
         }
@@ -351,12 +383,10 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared("isPrimitive") @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Cached.Shared("isBuiltinObj") @Cached PyComplexCheckExactNode isBuiltinObjectProfile,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile,
-                            isBuiltinObjectProfile,
+            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, tryComplexNode, isPrimitiveProfile,
                             raiseNode);
         }
 
@@ -395,11 +425,11 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared("isPrimitive") @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Cached.Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, complexCheck,
+            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, tryComplexNode, isPrimitiveProfile, complexCheck,
                             raiseNode);
         }
 
@@ -410,11 +440,10 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared("isPrimitive") @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Cached.Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, isResultComplexType, isPrimitiveProfile, complexCheck,
+            return complexFromObject(frame, cls, real, imag, inliningTarget, createComplexNode, canBeDoubleNode, asDoubleNode, isComplexType, tryComplexNode, isPrimitiveProfile,
                             raiseNode);
         }
 
@@ -425,11 +454,11 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared("isPrimitive") @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Cached.Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            PComplex value = getComplexNumberFromObject(frame, number, inliningTarget, isComplexType, isResultComplexType, raiseNode);
+            PComplex value = getComplexNumberFromObject(frame, number, inliningTarget, isComplexType, tryComplexNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, number)) {
                     return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, number), 0.0);
@@ -453,11 +482,10 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared("isPrimitive") @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile isPrimitiveProfile,
-                        @Cached.Shared("isBuiltinObj") @Cached PyComplexCheckExactNode complexCheck,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            PComplex value = getComplexNumberFromObject(frame, imag, inliningTarget, isComplexType, isResultComplexType, raiseNode);
+            PComplex value = getComplexNumberFromObject(frame, imag, inliningTarget, isComplexType, tryComplexNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, imag)) {
                     return createComplexNode.execute(inliningTarget, cls, 0.0, asDoubleNode.execute(frame, inliningTarget, imag));
@@ -499,9 +527,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, tryComplexNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
                     return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one), two);
@@ -519,9 +547,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, tryComplexNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
                     return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one), two);
@@ -539,9 +567,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, tryComplexNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
                     return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one), two.doubleValueWithOverflow(this));
@@ -559,9 +587,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
+            PComplex value = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, tryComplexNode);
             if (value == null) {
                 if (canBeDoubleNode.execute(inliningTarget, one)) {
                     return createComplexNode.execute(inliningTarget, cls, asDoubleNode.execute(frame, inliningTarget, one) - two.getImag(), two.getReal());
@@ -587,9 +615,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached.Shared("floatAsDouble") @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached.Shared("isComplex") @Cached PyComplexCheckExactNode isComplexType,
-                        @Cached.Shared("isComplexResult") @Cached PyComplexCheckExactNode isResultComplexType,
+                        @Cached.Shared("tryComplex") @Cached TryComplexSpecialMethodNode tryComplexNode,
                         @Cached.Shared @Cached PRaiseNode raiseNode) {
-            PComplex oneValue = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, isResultComplexType, raiseNode);
+            PComplex oneValue = getComplexNumberFromObject(frame, one, inliningTarget, isComplexType, tryComplexNode);
             if (canBeDoubleNode.execute(inliningTarget, two)) {
                 double twoValue = asDoubleNode.execute(frame, inliningTarget, two);
                 if (oneValue == null) {
@@ -629,26 +657,6 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return convertStringToComplex(frame, inliningTarget, castToStringNode.execute(real), cls, real, raiseNode);
         }
 
-        private Object callComplex(VirtualFrame frame, Object object) {
-            if (callComplexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callComplexNode = insert(LookupAndCallUnaryNode.create(T___COMPLEX__));
-            }
-            try {
-                return callComplexNode.executeObject(frame, object);
-            } catch (SpecialMethodNotFound e) {
-                return null;
-            }
-        }
-
-        private WarningsModuleBuiltins.WarnNode getWarnNode() {
-            if (warnNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                warnNode = insert(WarningsModuleBuiltins.WarnNode.create());
-            }
-            return warnNode;
-        }
-
         private static PException raiseFirstArgError(Object x, Node inliningTarget, PRaiseNode raiseNode) {
             throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "complex() first", x);
         }
@@ -658,27 +666,15 @@ public final class ComplexBuiltins extends PythonBuiltins {
         }
 
         private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object, Node inliningTarget,
-                        PyComplexCheckExactNode isComplexType, PyComplexCheckExactNode isResultComplexType, PRaiseNode raiseNode) {
+                        PyComplexCheckExactNode isComplexType, TryComplexSpecialMethodNode tryComplexNode) {
             if (isComplexType.execute(inliningTarget, object)) {
                 return (PComplex) object;
-            } else {
-                Object result = callComplex(frame, object);
-                if (result instanceof PComplex) {
-                    if (!isResultComplexType.execute(inliningTarget, result)) {
-                        getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                                        ErrorMessages.WARN_P_RETURNED_NON_P,
-                                        object, "__complex__", "complex", result, "complex");
-                    }
-                    return (PComplex) result;
-                } else if (result != null) {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, result);
-                }
-                if (object instanceof PComplex) {
-                    // the class extending PComplex but doesn't have __complex__ method
-                    return (PComplex) object;
-                }
-                return null;
             }
+            Object result = tryComplexNode.execute(frame, inliningTarget, object);
+            if (result != PNone.NO_VALUE) {
+                return (PComplex) result;
+            }
+            return null;
         }
 
         @Fallback
