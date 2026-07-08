@@ -39,6 +39,7 @@
 
 import sys
 import os
+import re
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -171,7 +172,11 @@ def test_circular_import():
         try:
             import circularimport.source
         except AttributeError as ae:
-            assert str(ae) == "partially initialized module 'circularimport.source' has no attribute 'spam' (most likely due to a circular import)"
+            assert re.match(
+                r"partially initialized module 'circularimport\.source' from '.*' has no attribute 'spam' "
+                r"\(most likely due to a circular import\)",
+                str(ae),
+            )
         else:
             assert False
 
@@ -191,6 +196,3 @@ def test_local_property_25274():
 
     mytest()
     assert hasattr(package25274, 'tzname')
-
-
-
