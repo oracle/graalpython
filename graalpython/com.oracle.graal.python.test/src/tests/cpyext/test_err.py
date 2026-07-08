@@ -512,22 +512,20 @@ class TestPyErr(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PyErr_WriteUnraisableMsg = CPyExtFunctionVoid(
+    test_PyErr_FormatUnraisable = CPyExtFunctionVoid(
         lambda args: None,
         lambda: (
             (None,),
             ("hello",),
         ),
-        code="""void wrap_PyErr_WriteUnraisableMsg(PyObject* object) {
+        code="""void wrap_PyErr_FormatUnraisable(PyObject* object) {
                 PyErr_SetString(PyExc_RuntimeError, "unraisable_exception");
-                if (object == Py_None)
-                    object = NULL;
-                _PyErr_WriteUnraisableMsg("in my function", object);
+                PyErr_FormatUnraisable("Exception ignored in my function: %R", object);
              }
              """,
         argspec='O',
         arguments=["PyObject* obj"],
-        callfunction="wrap_PyErr_WriteUnraisableMsg",
+        callfunction="wrap_PyErr_FormatUnraisable",
         stderr_validator=lambda args,
                                 stderr: "RuntimeError: unraisable_exception" in stderr and "Exception ignored in my function:" in stderr,
         cmpfunc=unhandled_error_compare
@@ -671,7 +669,14 @@ class TestCaughtException(unittest.TestCase):
                 PyObject* val;
                 PyObject* tb;
                 PyErr_GetExcInfo(&typ, &val, &tb);
-                return Py_BuildValue("OOO", typ, val, tb);
+                PyObject* result = PyTuple_Pack(3,
+                    typ != NULL ? typ : Py_None,
+                    val != NULL ? val : Py_None,
+                    tb != NULL ? tb : Py_None);
+                Py_XDECREF(typ);
+                Py_XDECREF(val);
+                Py_XDECREF(tb);
+                return result;
             }
             PyObject* TestPyErr_SetHandledException(PyObject* self, PyObject* arg) {
                 PyErr_SetHandledException(arg != Py_None? arg : NULL);

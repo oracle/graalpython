@@ -1500,13 +1500,9 @@ def test_tp_iternext_not_implemented():
         PyObject* iter_check(PyObject* unused, PyObject* obj) {
             return PyBool_FromLong(PyIter_Check(obj));
         }
-        PyObject* not_impl_check(PyObject* unused, PyObject* obj) {
-            return PyBool_FromLong(Py_TYPE(obj)->tp_iternext == _PyObject_NextNotImplemented);
-        }
         ''',
         tp_methods='''
-        {"PyIter_Check", iter_check, METH_O | METH_STATIC, ""},
-        {"has_not_implemented_iternext", not_impl_check, METH_O | METH_STATIC, ""}
+        {"PyIter_Check", iter_check, METH_O | METH_STATIC, ""}
         ''',
     )
 
@@ -1535,19 +1531,6 @@ def test_tp_iternext_not_implemented():
             assert str(e).endswith("is not an iterator")
 
         assert not tester.PyIter_Check(i)
-        assert tester.has_not_implemented_iternext(i)
-
-    NativeTypeWithNotImplementedNext = CPyExtHeapType(
-        name='TypeWithNotImplNext',
-        slots=['{Py_tp_iternext, _PyObject_NextNotImplemented}'],
-    )
-    i = NativeTypeWithNotImplementedNext()
-    assert not tester.PyIter_Check(i)
-    assert tester.has_not_implemented_iternext(i)
-    try:
-        next(i)
-    except TypeError as e:
-        assert str(e).endswith("is not an iterator")
 
 
 def test_tp_str_repr_calls():

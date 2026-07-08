@@ -575,7 +575,7 @@ class TestPyLong(CPyExtTestCase):
             memset(buf, 0x33, n + 1);
             PyObject* result;
             Py_INCREF(object);
-            if (_PyLong_AsByteArray((PyLongObject*) object, buf, n, little_endian, is_signed)) {
+            if (_PyLong_AsByteArray((PyLongObject*) object, buf, n, little_endian, is_signed, 1)) {
                 Py_DECREF(object);
                 return NULL;
             }

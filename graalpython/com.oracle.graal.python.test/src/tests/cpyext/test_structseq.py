@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -52,7 +52,7 @@ class TestPyStructSequenceTypes(unittest.TestCase):
                                    {NULL, NULL,}
                                };
 
-                               static PyStructSequence_Desc typeinfo_desc = { 
+                               static PyStructSequence_Desc typeinfo_desc = {
                                    "TestPyStructSequenceTypes.TestPyStructSequence",
                                    "Information about some custom struct type",
                                    typeinfo_fields,
@@ -60,8 +60,8 @@ class TestPyStructSequenceTypes(unittest.TestCase):
                                };
                                 """,
                                           ready_code="""
-                               /* our template initializes refcnt to 1; so reset */
-                               Py_SET_REFCNT(&TestPyStructSequenceType, 0);
+                               /* PyStructSequence_InitType2 requires a zero-initialized type. */
+                               TestPyStructSequenceType = (PyTypeObject){0};
                                if(PyStructSequence_InitType2(&TestPyStructSequenceType, &typeinfo_desc) < 0) {
                                  return NULL;
                                }
@@ -132,7 +132,7 @@ class TestPyStructSequence(CPyExtTestCase):
             {NULL, NULL,}
         };
 
-        static PyStructSequence_Desc typeinfo_desc = { 
+        static PyStructSequence_Desc typeinfo_desc = {
             "custom.named.tuple",
             "Information about some custom struct type",
             typeinfo_fields,

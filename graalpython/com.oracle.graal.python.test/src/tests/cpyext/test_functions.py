@@ -616,9 +616,9 @@ class TestPyCFunction(unittest.TestCase):
         assert module.with_signature.__doc__ == "Return module function metadata."
         assert module.with_signature.__text_signature__ == "($module, value, /)"
         assert module.without_signature.__doc__ == "Return a plain docstring."
-        assert module.without_signature.__text_signature__ is None
+        assert module.without_signature.__text_signature__ == "($self, object, /)"
         assert module.without_doc.__doc__ is None
-        assert module.without_doc.__text_signature__ is None
+        assert module.without_doc.__text_signature__ == "($self, /)"
 
         TypeWithTextSignature = CPyExtType(
             "TypeWithTextSignature",

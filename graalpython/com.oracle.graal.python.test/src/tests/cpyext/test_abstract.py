@@ -1082,6 +1082,10 @@ class TestAbstract(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* v"],
         code='''
+        #define Py_BUILD_CORE
+        #include "internal/pycore_abstract.h"
+        #undef Py_BUILD_CORE
+
         PyObject* wrap__PyNumber_Index(PyObject* v) {
             PyObject* result = _PyNumber_Index(v);
             if (result == NULL) {

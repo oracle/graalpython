@@ -255,7 +255,12 @@ class TestPySet(CPyExtTestCase):
             (frozenset([None]),1),
             (FrozenSetSubclass(),1),
             (SetSubclass([None]),1),),
-        code='''int wrap_PySet_NextEntry(PyObject* set, Py_ssize_t* ppos, PyObject **key, Py_hash_t* hash) {
+        code='''
+        #define Py_BUILD_CORE
+        #include "internal/pycore_setobject.h"
+        #undef Py_BUILD_CORE
+
+        int wrap_PySet_NextEntry(PyObject* set, Py_ssize_t* ppos, PyObject **key, Py_hash_t* hash) {
             int res = 0;
             Py_ssize_t iterations = *ppos;
             Py_ssize_t i;

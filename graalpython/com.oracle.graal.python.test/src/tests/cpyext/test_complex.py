@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -62,7 +62,22 @@ def _reference_realasdouble(args):
         return n.__float__()
     except:
         raise TypeError
-        
+
+
+def _reference_imagasdouble(args):
+    n = args[0]
+    if isinstance(n, complex):
+        return n.imag
+    try:
+        complex_method = n.__complex__
+    except AttributeError:
+        _reference_realasdouble(args)
+        return 0.0
+    result = complex_method()
+    if not isinstance(result, complex):
+        raise TypeError
+    return result.imag
+
 def _reference_fromdoubles(args):
     if isinstance(args[0], float) and isinstance(args[1], float):
         return complex(args[0], args[1])
@@ -173,7 +188,7 @@ class TestPyComplex(CPyExtTestCase):
     )
 
     test_PyComplex_ImagAsDouble = CPyExtFunction(
-        lambda args: args[0].imag if isinstance(args[0], complex) else 0.0,
+        _reference_imagasdouble,
         lambda: (
             (complex(0.0, 2.0), ),
             (complex(1.0, 2.0), ),
@@ -187,7 +202,7 @@ class TestPyComplex(CPyExtTestCase):
         arguments=["PyObject* obj"],
         cmpfunc=unhandled_error_compare
     )
-    
+
     test_PyComplex_FromDoubles = CPyExtFunction(
         _reference_fromdoubles,
         lambda: (

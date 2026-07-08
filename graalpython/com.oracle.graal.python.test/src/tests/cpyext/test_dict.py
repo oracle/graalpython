@@ -344,24 +344,32 @@ class TestPyDict(CPyExtTestCase):
 
     # _PyDict_SetItem_KnownHash
     test__PyDict_SetItem_KnownHash = CPyExtFunction(
-        lambda args: {'a': "hello"},
-        lambda: (({'a': "hello"}, ),),
-        code='''PyObject* wrap__PyDict_SetItem_KnownHash(PyObject* dict) {
+        lambda args: {args[0]: args[1]},
+        lambda: (('a', "hello"),),
+        code='''#define Py_BUILD_CORE
+        #include "internal/pycore_dict.h"
+        #undef Py_BUILD_CORE
+
+        PyObject* wrap__PyDict_SetItem_KnownHash(PyObject* key, PyObject* value) {
             PyObject* result = PyDict_New();
-
-            Py_ssize_t ppos = 0;
-            PyObject* key;
-            PyObject* value;
-            Py_hash_t phash;
-
-            _PyDict_Next(dict, &ppos, &key, &value, &phash);
-            _PyDict_SetItem_KnownHash(result, key, value, phash);
+            if (result == NULL) {
+                return NULL;
+            }
+            Py_hash_t phash = PyObject_Hash(key);
+            if (phash == -1) {
+                Py_DECREF(result);
+                return NULL;
+            }
+            if (_PyDict_SetItem_KnownHash(result, key, value, phash) < 0) {
+                Py_DECREF(result);
+                return NULL;
+            }
             return result;
         }
         ''',
         resultspec="O",
-        argspec='O',
-        arguments=["PyObject* dict"],
+        argspec='OO',
+        arguments=["PyObject* key", "PyObject* value"],
         callfunction="wrap__PyDict_SetItem_KnownHash",
     )
 
