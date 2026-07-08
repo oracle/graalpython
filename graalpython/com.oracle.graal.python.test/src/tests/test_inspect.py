@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -54,9 +54,10 @@ TEST_CASES = [
     (list.append, '($self, object, /)',
               [('self', Parameter.POSITIONAL_ONLY),
               ('object', Parameter.POSITIONAL_ONLY)]),
-    (hashlib.md5, '($module, /, string=b\'\', *, usedforsecurity=True)',
-              [('string', Parameter.POSITIONAL_OR_KEYWORD),
-              ('usedforsecurity', Parameter.KEYWORD_ONLY)]),
+    (hashlib.md5, '($module, /, data=b\'\', *, usedforsecurity=True, string=None)',
+              [('data', Parameter.POSITIONAL_OR_KEYWORD),
+              ('usedforsecurity', Parameter.KEYWORD_ONLY),
+              ('string', Parameter.KEYWORD_ONLY)]),
     (abs, '($module, x, /)',
               [('x', Parameter.POSITIONAL_ONLY)]),
     (pow, '($module, /, base, exp, mod=None)',
@@ -106,4 +107,3 @@ def test_inspect_signature():
 #     'abs',
 #     'list',
 #     'pow'])
-
