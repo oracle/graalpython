@@ -82,14 +82,18 @@ def doctest_pdb_locals():
     >>> with PdbTestInput([
     ...     'p a',
     ...     'next',
+    ...     'next',
     ...     'p a',
     ...     'continue',
     ... ]):
     ...     test_function()
-    > <doctest tests.test_pdb.doctest_pdb_locals[0]>(4)test_function()
-    -> a = 2
+    > <doctest tests.test_pdb.doctest_pdb_locals[0]>(3)test_function()
+    -> import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     (Pdb) p a
     1
+    (Pdb) next
+    > <doctest tests.test_pdb.doctest_pdb_locals[0]>(4)test_function()
+    -> a = 2
     (Pdb) next
     --Return--
     > <doctest tests.test_pdb.doctest_pdb_locals[0]>(4)test_function()->None
@@ -123,14 +127,14 @@ def doctest_pdb_args_for_kwonly_and_posonly():
     ... ]):
     ...     kwonly_func('value', kwonly=True)
     ...     posonly_func(1, 2, c=3)
-    > <doctest tests.test_pdb.doctest_pdb_args_for_kwonly_and_posonly[0]>(3)kwonly_func()
-    -> pass
+    > <doctest tests.test_pdb.doctest_pdb_args_for_kwonly_and_posonly[0]>(2)kwonly_func()
+    -> import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     (Pdb) args
     arg = 'value'
     kwonly = True
     (Pdb) continue
-    > <doctest tests.test_pdb.doctest_pdb_args_for_kwonly_and_posonly[1]>(3)posonly_func()
-    -> pass
+    > <doctest tests.test_pdb.doctest_pdb_args_for_kwonly_and_posonly[1]>(2)posonly_func()
+    -> import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
     (Pdb) args
     a = 1
     b = 2
@@ -157,12 +161,16 @@ def doctest_pdb_multiline_call_line_tracing():
     ...     about()
 
     >>> with PdbTestInput([  # doctest: +NORMALIZE_WHITESPACE
+    ...     'next',
     ...     'step',
     ...     'next',
     ...     'next',
     ...     'continue',
     ... ]):
     ...     test_function()
+    > <doctest tests.test_pdb.doctest_pdb_multiline_call_line_tracing[0]>(11)test_function()
+    -> import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+    (Pdb) next
     > <doctest tests.test_pdb.doctest_pdb_multiline_call_line_tracing[0]>(12)test_function()
     -> about()
     (Pdb) step
@@ -194,14 +202,18 @@ if not util.IS_BYTECODE_DSL:
         >>> with PdbTestInput([
         ...     'p a',
         ...     'next',
+        ...     'next',
         ...     'p a',
         ...     'continue',
         ... ]):
         ...     next(test_function())
-        > <doctest tests.test_pdb.doctest_pdb_locals_generator[0]>(4)test_function()
-        -> a = 2
+        > <doctest tests.test_pdb.doctest_pdb_locals_generator[0]>(3)test_function()
+        -> import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
         (Pdb) p a
         1
+        (Pdb) next
+        > <doctest tests.test_pdb.doctest_pdb_locals_generator[0]>(4)test_function()
+        -> a = 2
         (Pdb) next
         > <doctest tests.test_pdb.doctest_pdb_locals_generator[0]>(5)test_function()
         -> yield
@@ -226,8 +238,8 @@ if not util.IS_BYTECODE_DSL:
         ...     'continue',
         ... ]):
         ...     print(test_function())
-        > <doctest tests.test_pdb.doctest_pdb_locals_sync_back[0]>(4)test_function()
-        -> return foo
+        > <doctest tests.test_pdb.doctest_pdb_locals_sync_back[0]>(3)test_function()
+        -> import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
         (Pdb) p foo
         1
         (Pdb) foo = 5
