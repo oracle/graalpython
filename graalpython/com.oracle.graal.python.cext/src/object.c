@@ -1200,7 +1200,6 @@ PyObject_GetAttrString(PyObject *v, const char *name)
     return res;
 }
 
-#if 0 // GraalPy change
 int
 PyObject_HasAttrStringWithError(PyObject *obj, const char *name)
 {
@@ -1210,7 +1209,7 @@ PyObject_HasAttrStringWithError(PyObject *obj, const char *name)
     return rc;
 }
 
-
+#if 0 // GraalPy change
 int
 PyObject_HasAttrString(PyObject *obj, const char *name)
 {
@@ -1452,7 +1451,6 @@ PyObject_GetOptionalAttrString(PyObject *obj, const char *name, PyObject **resul
     return 0;
 }
 
-#if 0 // GraalPy change
 int
 PyObject_HasAttrWithError(PyObject *obj, PyObject *name)
 {
@@ -1462,6 +1460,7 @@ PyObject_HasAttrWithError(PyObject *obj, PyObject *name)
     return rc;
 }
 
+#if 0 // GraalPy change
 int
 PyObject_HasAttr(PyObject *obj, PyObject *name)
 {
@@ -1578,18 +1577,14 @@ _PyObject_GetDictPtr(PyObject *obj)
     if ((Py_TYPE(obj)->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0) {
         return _PyObject_ComputedDictPointer(obj);
     }
-    PyDictObject *dict = _PyObject_GetManagedDict(obj);
 #if 0 // GraalPy change: we don't have inlined managed dict values, so just use the common path [GR-61995]
+    PyDictObject *dict = _PyObject_GetManagedDict(obj);
     if (dict == NULL && Py_TYPE(obj)->tp_flags & Py_TPFLAGS_INLINE_VALUES) {
         dict = _PyObject_MaterializeManagedDict(obj);
         if (dict == NULL) {
             PyErr_Clear();
             return NULL;
         }
-    }
-#else // GraalPy change
-    if (dict == NULL) {
-        return NULL;
     }
 #endif // GraalPy change
     return (PyObject **)&_PyObject_ManagedDictPointer(obj)->dict;

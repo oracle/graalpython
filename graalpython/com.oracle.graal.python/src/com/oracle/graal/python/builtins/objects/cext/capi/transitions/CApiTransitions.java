@@ -1330,10 +1330,8 @@ public abstract class CApiTransitions {
             long size = CStructs.PyTypeObject.size();
             if (heaptype) {
                 size = CStructs.PyHeapTypeObject.size();
-                if (GetClassNode.executeUncached(clazz) instanceof PythonAbstractNativeObject nativeMetatype) {
-                    // TODO should call the metatype's tp_alloc
-                    size = TypeNodes.GetBasicSizeNode.executeUncached(nativeMetatype);
-                }
+                Object metatype = GetClassNode.executeUncached(clazz);
+                size = Math.max(size, TypeNodes.GetBasicSizeNode.executeUncached(metatype));
             }
             /*
              * For built-in classes, we can always create a strong reference. Those classes are
@@ -1342,7 +1340,7 @@ public abstract class CApiTransitions {
              */
             boolean isBuiltinClass = clazz instanceof PythonBuiltinClass;
 
-            long ptr = NativeMemory.malloc(size);
+            long ptr = NativeMemory.calloc(size);
             int typeReference = CApiTransitions.createPythonManagedClassReference(clazz, ptr, true);
             ToNativeTypeNode.initializeType(clazz, ptr, heaptype, typeReference);
             assert !isBuiltinClass || clazz.getRefCount() == IMMORTAL_REFCNT;

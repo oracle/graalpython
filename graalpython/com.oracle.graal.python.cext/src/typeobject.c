@@ -8472,7 +8472,7 @@ PyType_Ready(PyTypeObject *type)
         GraalPyPrivate_Trace_Type(type);
     }
 
-    return type_ready(type, 0);
+    return type_ready(type, 1);
 }
 
 #if 0 // GraalPy change
