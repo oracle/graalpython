@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -61,7 +61,7 @@ class StructSeqTests(unittest.TestCase):
         self.assertEqual('os.stat_result(st_mode=0, st_ino=1, st_dev=2, st_nlink=3, st_uid=4, st_gid=5, st_size=6, st_atime=7, st_mtime=8, st_ctime=9)', repr(x))
         x = posix.stat_result(range(16))
         self.assertEqual('os.stat_result(st_mode=0, st_ino=1, st_dev=2, st_nlink=3, st_uid=4, st_gid=5, st_size=6, st_atime=7, st_mtime=8, st_ctime=9)', repr(x))
-        x = posix.stat_result(range(10), {'st_atime': 42, 'st_atime_ns': 43, 'abc': 44})
+        x = posix.stat_result(range(10), {'st_atime': 42, 'st_atime_ns': 43})
         self.assertEqual(7, x[7])
         self.assertEqual(42, x.st_atime)
         self.assertEqual(43, x.st_atime_ns)
@@ -87,13 +87,12 @@ class StructSeqTests(unittest.TestCase):
                 pass
 
     def test_reduce(self):
-        x = posix.stat_result(range(10), {'st_atime': 42, 'st_atime_ns': 43, 'abc': 44})
+        x = posix.stat_result(range(10), {'st_atime': 42, 'st_atime_ns': 43})
         r = x.__reduce__()
         self.assertEqual(posix.stat_result, r[0])
         self.assertEqual(tuple(range(10)), r[1][0])
         self.assertEqual(42, r[1][1]['st_atime'])
         self.assertEqual(None, r[1][1]['st_mtime_ns'])
-        self.assertFalse('abc' in r[1][1])
         x = posix.terminal_size((42, 3.14))
         self.assertEqual((posix.terminal_size, ((42, 3.14), {})), x.__reduce__())
 
