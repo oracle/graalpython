@@ -2341,9 +2341,6 @@ _PyDict_GetItem_KnownHash(PyObject *op, PyObject *key, Py_hash_t hash)
     return PyDict_GetItemWithError(op, key);
 }
 
-int
-_PyDict_GetItemRef_KnownHash(PyDictObject *op, PyObject *key, Py_hash_t hash, PyObject **result);
-
 /* Gets an item and provides a new reference if the value is present.
  * Returns 1 if the key is present, 0 if the key is missing, and -1 if an
  * exception occurred.
@@ -2352,7 +2349,8 @@ int
 _PyDict_GetItemRef_KnownHash_LockHeld(PyDictObject *op, PyObject *key,
                                       Py_hash_t hash, PyObject **result)
 {
-    return _PyDict_GetItemRef_KnownHash(op, key, hash, result);
+    // GraalPy change: different implementation
+    return PyDict_GetItemRef((PyObject *)op, key, result);
 }
 
 /* Gets an item and provides a new reference if the value is present.
@@ -2362,42 +2360,15 @@ _PyDict_GetItemRef_KnownHash_LockHeld(PyDictObject *op, PyObject *key,
 int
 _PyDict_GetItemRef_KnownHash(PyDictObject *op, PyObject *key, Py_hash_t hash, PyObject **result)
 {
-    if (!PyDict_Check((PyObject *)op)) {
-        PyErr_BadInternalCall();
-        *result = NULL;
-        return -1;
-    }
-    PyObject *value = _PyDict_GetItem_KnownHash((PyObject *)op, key, hash);
-    if (value == NULL) {
-        *result = NULL;
-        return PyErr_Occurred() ? -1 : 0;
-    }
-    *result = Py_NewRef(value);
-    return 1;
-}
-
-int
-PyDict_GetItemRef(PyObject *op, PyObject *key, PyObject **result)
-{
-    if (!PyDict_Check(op)) {
-        PyErr_BadInternalCall();
-        *result = NULL;
-        return -1;
-    }
-
-    Py_hash_t hash = PyObject_Hash(key);
-    if (hash == -1) {
-        *result = NULL;
-        return -1;
-    }
-
-    return _PyDict_GetItemRef_KnownHash((PyDictObject *)op, key, hash, result);
+    // GraalPy change: different implementation
+    return PyDict_GetItemRef((PyObject *)op, key, result);
 }
 
 int
 _PyDict_GetItemRef_Unicode_LockHeld(PyDictObject *op, PyObject *key, PyObject **result)
 {
     assert(PyUnicode_CheckExact(key));
+    // GraalPy change: different implementation
     return PyDict_GetItemRef((PyObject *)op, key, result);
 }
 
@@ -4033,7 +4004,25 @@ copy_lock_held(PyObject *o)
     Py_DECREF(copy);
     return NULL;
 }
+
+PyObject *
+PyDict_Copy(PyObject *o)
+{
+    if (o == NULL || !PyDict_Check(o)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+    PyObject *res;
+    Py_BEGIN_CRITICAL_SECTION(o);
+
+    res = copy_lock_held(o);
+
+    Py_END_CRITICAL_SECTION();
+    return res;
+}
 #endif // GraalPy change
+
 Py_ssize_t
 PyDict_Size(PyObject *mp)
 {
@@ -4046,28 +4035,8 @@ PyDict_Size(PyObject *mp)
     }
     return ((PyDictObject *)mp)->ma_used;
 }
+
 #if 0 // GraalPy change
-
-PyObject *
-PyDict_Values(PyObject *mp)
-{
-    if (mp == NULL || !PyDict_Check(mp)) {
-        PyErr_BadInternalCall();
-        return NULL;
-    }
-    return dict_values((PyDictObject *)mp);
-}
-
-PyObject *
-PyDict_Items(PyObject *mp)
-{
-    if (mp == NULL || !PyDict_Check(mp)) {
-        PyErr_BadInternalCall();
-        return NULL;
-    }
-    return dict_items((PyDictObject *)mp);
-}
-
 /* Return 1 if dicts equal, 0 if not, -1 if error.
  * Gets out as soon as any difference is detected.
  * Uses only Py_EQ comparison.
@@ -4896,7 +4865,14 @@ PyDict_GetItemString(PyObject *v, const char *key)
             "PyDict_GetItemRefString()");
         return NULL;
     }
+    // GraalPy change
     rv = PyDict_GetItemWithError(v, kv);
+    if (rv == NULL && PyErr_Occurred()) {
+        PyErr_FormatUnraisable(
+            "Exception ignored in PyDict_GetItemString(); consider using "
+            "PyDict_GetItemRefString()");
+        return NULL;
+    }
     Py_DECREF(kv);
     return rv;  // borrowed reference
 }
@@ -7088,28 +7064,9 @@ _PyObject_IsInstanceDictEmpty(PyObject *obj)
     if (dict == NULL) {
         return 1;
     }
-    return ((PyDictObject *)dict)->ma_used == 0;
+    return FT_ATOMIC_LOAD_SSIZE_RELAXED(((PyDictObject *)dict)->ma_used) == 0;
 }
 #endif // GraalPy change
-
-void
-_PyObject_FreeInstanceAttributes(PyObject *self)
-{
-#if 0 // GraalPy change
-    PyTypeObject *tp = Py_TYPE(self);
-    assert(Py_TYPE(self)->tp_flags & Py_TPFLAGS_MANAGED_DICT);
-    PyDictOrValues dorv = *_PyObject_DictOrValuesPointer(self);
-    if (!_PyDictOrValues_IsValues(dorv)) {
-        return;
-    }
-    PyDictValues *values = _PyDictOrValues_GetValues(dorv);
-    PyDictKeysObject *keys = CACHED_KEYS(tp);
-    for (Py_ssize_t i = 0; i < keys->dk_nentries; i++) {
-        Py_XDECREF(values->values[i]);
-    }
-    free_values(values);
-#endif // GraalPy change
-}
 
 int
 PyObject_VisitManagedDict(PyObject *obj, visitproc visit, void *arg)
@@ -7126,51 +7083,30 @@ PyObject_VisitManagedDict(PyObject *obj, visitproc visit, void *arg)
         // inline values if it points to them.
         Py_VISIT(dict);
     }
+    else if (tp->tp_flags & Py_TPFLAGS_INLINE_VALUES) {
+        PyDictValues *values = _PyObject_InlineValues(obj);
+        if (values->valid) {
+            for (Py_ssize_t i = 0; i < values->capacity; i++) {
+                Py_VISIT(values->values[i]);
+            }
 #endif // GraalPy change
     return 0;
 }
 
-void
-PyObject_ClearManagedDict(PyObject *obj)
-{
 #if 0 // GraalPy change
-    PyTypeObject *tp = Py_TYPE(obj);
-    if((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0) {
-        return;
-    }
-    PyDictOrValues *dorv_ptr = _PyObject_DictOrValuesPointer(obj);
-    if (_PyDictOrValues_IsValues(*dorv_ptr)) {
-        PyDictValues *values = _PyDictOrValues_GetValues(*dorv_ptr);
-        PyDictKeysObject *keys = CACHED_KEYS(tp);
-        for (Py_ssize_t i = 0; i < keys->dk_nentries; i++) {
-            Py_CLEAR(values->values[i]);
-        }
-        dorv_ptr->dict = NULL;
-        free_values(values);
-    }
-    else {
-        PyObject *dict = dorv_ptr->dict;
-        if (dict) {
-            dorv_ptr->dict = NULL;
-            Py_DECREF(dict);
-        }
-    }
-#endif // GraalPy change
-}
-
 static void
 set_dict_inline_values(PyObject *obj, PyDictObject *new_dict)
 {
-#if 0 // GraalPy change
-    PyTypeObject *tp = Py_TYPE(obj);
-    if((tp->tp_flags & Py_TPFLAGS_MANAGED_DICT) == 0) {
-        return;
-    }
-    PyDictOrValues *dorv_ptr = _PyObject_DictOrValuesPointer(obj);
-    if (_PyDictOrValues_IsValues(*dorv_ptr)) {
-        PyDictValues *values = _PyDictOrValues_GetValues(*dorv_ptr);
-        PyDictKeysObject *keys = CACHED_KEYS(tp);
-        for (Py_ssize_t i = 0; i < keys->dk_nentries; i++) {
+    _Py_CRITICAL_SECTION_ASSERT_OBJECT_LOCKED(obj);
+
+    PyDictValues *values = _PyObject_InlineValues(obj);
+
+    Py_XINCREF(new_dict);
+    FT_ATOMIC_STORE_PTR(_PyObject_ManagedDictPointer(obj)->dict, new_dict);
+
+    if (values->valid) {
+        FT_ATOMIC_STORE_UINT8(values->valid, 0);
+        for (Py_ssize_t i = 0; i < values->capacity; i++) {
             Py_CLEAR(values->values[i]);
         }
     }
@@ -7221,8 +7157,140 @@ _PyObject_SetManagedDict(PyObject *obj, PyObject *new_dict)
             Py_XDECREF(dict);
         }
     }
+    else {
+        PyDictObject *dict;
+
+        Py_BEGIN_CRITICAL_SECTION(obj);
+
+        dict = _PyObject_ManagedDictPointer(obj)->dict;
+
+        FT_ATOMIC_STORE_PTR(_PyObject_ManagedDictPointer(obj)->dict,
+                            (PyDictObject *)Py_XNewRef(new_dict));
+
+        Py_END_CRITICAL_SECTION();
+
+        Py_XDECREF(dict);
+    }
+    assert(_PyObject_InlineValuesConsistencyCheck(obj));
+    return err;
+}
+#endif // GraalPy change
+
+void
+PyObject_ClearManagedDict(PyObject *obj)
+{
+#if 0 // GraalPy change
+    if (_PyObject_SetManagedDict(obj, NULL) < 0) {
+        PyErr_WriteUnraisable(NULL);
+    }
 #endif // GraalPy change
 }
+
+#if 0 // GraalPy change
+int
+_PyDict_DetachFromObject(PyDictObject *mp, PyObject *obj)
+{
+    ASSERT_WORLD_STOPPED_OR_OBJ_LOCKED(obj);
+    assert(_PyObject_ManagedDictPointer(obj)->dict == mp);
+    assert(_PyObject_InlineValuesConsistencyCheck(obj));
+
+    if (FT_ATOMIC_LOAD_PTR_RELAXED(mp->ma_values) != _PyObject_InlineValues(obj)) {
+        return 0;
+    }
+
+    // We could be called with an unlocked dict when the caller knows the
+    // values are already detached, so we assert after inline values check.
+    ASSERT_WORLD_STOPPED_OR_OBJ_LOCKED(mp);
+    assert(mp->ma_values->embedded == 1);
+    assert(mp->ma_values->valid == 1);
+    assert(Py_TYPE(obj)->tp_flags & Py_TPFLAGS_INLINE_VALUES);
+
+    PyDictValues *values = copy_values(mp->ma_values);
+
+    if (values == NULL) {
+        /* Out of memory. Clear the dict */
+        PyInterpreterState *interp = _PyInterpreterState_GET();
+        PyDictKeysObject *oldkeys = mp->ma_keys;
+        set_keys(mp, Py_EMPTY_KEYS);
+        dictkeys_decref(interp, oldkeys, IS_DICT_SHARED(mp));
+        STORE_USED(mp, 0);
+        PyErr_NoMemory();
+        return -1;
+    }
+    mp->ma_values = values;
+
+    FT_ATOMIC_STORE_UINT8(_PyObject_InlineValues(obj)->valid, 0);
+
+    assert(_PyObject_InlineValuesConsistencyCheck(obj));
+    ASSERT_CONSISTENT(mp);
+    return 0;
+}
+
+static inline PyObject *
+ensure_managed_dict(PyObject *obj)
+{
+    PyDictObject *dict = _PyObject_GetManagedDict(obj);
+    if (dict == NULL) {
+        PyTypeObject *tp = Py_TYPE(obj);
+        if ((tp->tp_flags & Py_TPFLAGS_INLINE_VALUES) &&
+            FT_ATOMIC_LOAD_UINT8(_PyObject_InlineValues(obj)->valid)) {
+            dict = _PyObject_MaterializeManagedDict(obj);
+        }
+        else {
+#ifdef Py_GIL_DISABLED
+            // Check again that we're not racing with someone else creating the dict
+            Py_BEGIN_CRITICAL_SECTION(obj);
+            dict = _PyObject_GetManagedDict(obj);
+            if (dict != NULL) {
+                goto done;
+            }
+#endif
+            dict = (PyDictObject *)new_dict_with_shared_keys(_PyInterpreterState_GET(),
+                                                             CACHED_KEYS(tp));
+            FT_ATOMIC_STORE_PTR_RELEASE(_PyObject_ManagedDictPointer(obj)->dict,
+                                        (PyDictObject *)dict);
+
+#ifdef Py_GIL_DISABLED
+done:
+            Py_END_CRITICAL_SECTION();
+#endif
+        }
+    }
+    return (PyObject *)dict;
+}
+
+static inline PyObject *
+ensure_nonmanaged_dict(PyObject *obj, PyObject **dictptr)
+{
+    PyDictKeysObject *cached;
+
+    PyObject *dict = FT_ATOMIC_LOAD_PTR_ACQUIRE(*dictptr);
+    if (dict == NULL) {
+#ifdef Py_GIL_DISABLED
+        Py_BEGIN_CRITICAL_SECTION(obj);
+        dict = *dictptr;
+        if (dict != NULL) {
+            goto done;
+        }
+#endif
+        PyTypeObject *tp = Py_TYPE(obj);
+        if (_PyType_HasFeature(tp, Py_TPFLAGS_HEAPTYPE) && (cached = CACHED_KEYS(tp))) {
+            PyInterpreterState *interp = _PyInterpreterState_GET();
+            assert(!_PyType_HasFeature(tp, Py_TPFLAGS_INLINE_VALUES));
+            dict = new_dict_with_shared_keys(interp, cached);
+        }
+        else {
+            dict = PyDict_New();
+        }
+        FT_ATOMIC_STORE_PTR_RELEASE(*dictptr, dict);
+#ifdef Py_GIL_DISABLED
+done:
+        Py_END_CRITICAL_SECTION();
+#endif
+    }
+    return dict;
+}
+#endif // GraalPy change
 
 PyObject *
 PyObject_GenericGetDict(PyObject *obj, void *context)
@@ -7398,4 +7466,24 @@ _PyDict_SendEvent(int watcher_bits,
     }
 }
 
+#ifndef NDEBUG
+static int
+_PyObject_InlineValuesConsistencyCheck(PyObject *obj)
+{
+    if ((Py_TYPE(obj)->tp_flags & Py_TPFLAGS_INLINE_VALUES) == 0) {
+        return 1;
+    }
+    assert(Py_TYPE(obj)->tp_flags & Py_TPFLAGS_MANAGED_DICT);
+    PyDictObject *dict = _PyObject_GetManagedDict(obj);
+    if (dict == NULL) {
+        return 1;
+    }
+    if (dict->ma_values == _PyObject_InlineValues(obj) ||
+        _PyObject_InlineValues(obj)->valid == 0) {
+        return 1;
+    }
+    assert(0);
+    return 0;
+}
+#endif
 #endif // GraalPy change

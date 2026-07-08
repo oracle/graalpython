@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.CImpl;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.NotImplemented;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR;
@@ -231,7 +230,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyDescr_NewClassMethod", ret = PyObject, args = {PyTypeObject, PyMethodDef}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_NewGetSet", ret = PyObject, args = {PyTypeObject, PyGetSetDef}, call = CImpl)
     @CApiBuiltin(name = "PyDict_DelItemString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
-    @CApiBuiltin(name = "PyDict_GetItemRef", ret = PrimitiveResult32, args = {PyObjectReturn, PyObjectReturn, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyDict_GetItemString", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyDict_GetItemStringRef", ret = PrimitiveResult32, args = {PyObjectReturn, ConstCharPtr, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyDict_Next", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr}, call = CImpl)
@@ -699,7 +697,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyDict_MergeFromSeq2", ret = Int, args = {PyObject, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyDict_Pop", ret = PrimitiveResult32, args = {PyObjectReturn, PyObjectReturn, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "PyDict_PopString", ret = PrimitiveResult32, args = {PyObjectReturn, ConstCharPtr, PyObjectPtr}, call = NotImplemented)
-    @CApiBuiltin(name = "PyDict_SetDefaultRef", ret = PrimitiveResult32, args = {PyObjectReturn, PyObjectReturn, PyObjectReturn, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_FormatUnraisable", ret = Void, args = {ConstCharPtr, VARARGS}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_ProgramText", ret = PyObject, args = {ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_ProgramTextObject", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
@@ -778,7 +775,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyInterpreterState_ThreadHead", ret = PyThreadState, args = {PyInterpreterState}, call = CImpl)
     @CApiBuiltin(name = "PyList_Clear", ret = PrimitiveResult32, args = {PyObjectReturn}, call = NotImplemented)
     @CApiBuiltin(name = "PyList_Extend", ret = PrimitiveResult32, args = {PyObjectReturn, PyObjectReturn}, call = NotImplemented)
-    @CApiBuiltin(name = "PyList_GetItemRef", ret = PyObjectReturn, args = {PyObjectReturn, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "PyLong_AsNativeBytes", ret = Py_ssize_t, args = {PyObjectReturn, Pointer, Py_ssize_t, PrimitiveResult32}, call = NotImplemented)
     @CApiBuiltin(name = "PyLong_FromNativeBytes", ret = PyObjectReturn, args = {CONST_VOID_PTR, SIZE_T, PrimitiveResult32}, call = NotImplemented)
     @CApiBuiltin(name = "PyLong_FromUnsignedNativeBytes", ret = PyObjectReturn, args = {CONST_VOID_PTR, SIZE_T, PrimitiveResult32}, call = NotImplemented)
@@ -1038,9 +1034,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PyUnicodeWriter_WriteLatin1String", ret = Int, args = {_PYUNICODEWRITER_PTR, ConstCharPtrAsTruffleString, Py_ssize_t}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicodeWriter_WriteStr", ret = Int, args = {_PYUNICODEWRITER_PTR, PyObject}, call = CImpl)
     @CApiBuiltin(name = "_PyUnicodeWriter_WriteSubstring", ret = Int, args = {_PYUNICODEWRITER_PTR, PyObject, Py_ssize_t, Py_ssize_t}, call = CImpl)
-    @CApiBuiltin(name = "_PyUnicode_FormatLong", ret = PyObject, args = {PyObject, Int, Int, Int}, call = Direct)
     @CApiBuiltin(name = "PyUnicode_Format", ret = PyObject, args = {PyObject, PyObject}, call = CImpl)
-    @CApiBuiltin(name = "_PyUnicode_JoinArray", ret = PyObject, args = {PyObject, PyObjectConstPtr, Py_ssize_t}, call = Direct)
     @CApiBuiltin(name = "_Py_InitializeMain", ret = PYSTATUS, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "_Py_fopen_obj", ret = FILE_PTR, args = {PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnstable_AtExit", ret = PrimitiveResult32, args = {PyInterpreterState, atexit_datacallbackfunc, Pointer}, call = NotImplemented)

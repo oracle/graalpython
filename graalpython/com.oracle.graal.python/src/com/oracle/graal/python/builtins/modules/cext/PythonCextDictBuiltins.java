@@ -376,6 +376,35 @@ public final class PythonCextDictBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = Direct)
+    abstract static class PyDict_GetItemRef extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int getItem(PDict dict, Object key, long resultPtr,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached PythonToNativeInternalNode toNativeNode) {
+            long result = NULLPTR;
+            try {
+                Object value = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
+                if (value != null) {
+                    result = toNativeNode.executeNewRef(inliningTarget, ensureNode.execute(context, value, false));
+                    return 1;
+                }
+                return 0;
+            } finally {
+                NativeMemory.writePtr(resultPtr, result);
+            }
+        }
+
+        @Fallback
+        int fallback(Object dict, @SuppressWarnings("unused") Object key, Object resultPtr) {
+            NativeMemory.writePtr((long) resultPtr, NULLPTR);
+            throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        }
+    }
+
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject}, call = Direct)
     abstract static class PyDict_SetItem extends CApiTernaryBuiltinNode {
         @Specialization
@@ -438,6 +467,48 @@ public final class PythonCextDictBuiltins {
 
         @Fallback
         public Object fallback(Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value) {
+            throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject, PyObjectPtr}, call = Direct)
+    abstract static class PyDict_SetDefaultRef extends CApiQuaternaryBuiltinNode {
+        @Specialization
+        static int setDefault(PDict dict, Object key, Object defaultValue, long resultPtr,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached HashingStorageGetItemWithHash getItemNode,
+                        @Cached HashingStorageSetItemWithHash setItemNode,
+                        @Cached DictNodes.UpdateDictStorageNode updateStorageNode,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached PythonToNativeInternalNode toNativeNode) {
+            long result = NULLPTR;
+            try {
+                HashingStorage storage = dict.getDictStorage();
+                long hash = hashNode.execute(null, inliningTarget, key);
+                Object value = getItemNode.execute(null, inliningTarget, storage, key, hash);
+                if (value != null) {
+                    result = toNativeNode.executeNewRef(inliningTarget, ensureNode.execute(context, value, false));
+                    return 1;
+                }
+                HashingStorage newStorage = setItemNode.execute(null, inliningTarget, storage, key, hash, defaultValue);
+                updateStorageNode.execute(inliningTarget, dict, storage, newStorage);
+                result = toNativeNode.executeNewRef(inliningTarget, ensureNode.execute(context, defaultValue, false));
+                return 0;
+            } finally {
+                if (resultPtr != NULLPTR) {
+                    NativeMemory.writePtr(resultPtr, result);
+                }
+            }
+        }
+
+        @Fallback
+        int fallback(Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object defaultValue, Object resultPtr) {
+            long pointer = (long) resultPtr;
+            if (pointer != NULLPTR) {
+                NativeMemory.writePtr(pointer, NULLPTR);
+            }
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
