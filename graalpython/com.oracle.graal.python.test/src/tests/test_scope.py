@@ -542,11 +542,11 @@ def test_modify_locals():
     ll['b'] = 3
     assert 'x' in locals()
     assert 'll' in locals()
-    assert locals()['a'] == 2
-    assert locals()['b'] == 3
-    assert set(locals().keys()) == {'x', 'll', 'a', 'b'}
+    assert 'a' not in locals()
+    assert 'b' not in locals()
+    assert set(locals().keys()) == {'x', 'll'}
     y = 4
-    assert set(locals().keys()) == {'x', 'll', 'a', 'b', 'y'}
+    assert set(locals().keys()) == {'x', 'll', 'y'}
 
 
 def test_locals_function():

@@ -244,9 +244,9 @@ def test_locals_sync():
     # Forces caller frame materialization, this used to erroneously cause the locals dict to update
     globals()
     assert l == {'a': 1}
-    # Now this should really cause the locals dict to update
+    # Since Python 3.13, locals() returns an independent snapshot in optimized scopes
     locals()
-    assert l == {'a': 1, 'b': 2, 'l': l}
+    assert l == {'a': 1}
 
 
 def test_locals_cells():
