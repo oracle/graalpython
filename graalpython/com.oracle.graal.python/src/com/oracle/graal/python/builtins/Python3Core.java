@@ -352,6 +352,7 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.MemoryBIOBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLCertificateBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLSocketBuiltins;
@@ -685,6 +686,7 @@ public abstract class Python3Core {
                         new SuperBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLContextBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLCertificateBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLErrorBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLSocketBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new MemoryBIOBuiltins(),

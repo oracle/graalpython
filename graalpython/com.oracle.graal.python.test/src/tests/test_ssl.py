@@ -47,6 +47,10 @@ def data_file(name):
     return os.path.join(os.path.dirname(__file__), "ssldata", name)
 
 
+def cpython_cert_data(name):
+    return os.path.join(os.path.dirname(__file__), "..", "..", "..", "lib-python", "3", "test", "certdata", name)
+
+
 class StringWrapper(str):
     pass
 
@@ -87,6 +91,37 @@ def check_handshake(server_context, client_context, err = None):
 class CertTests(unittest.TestCase):
 
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+    def test_create_default_context(self):
+        context = ssl.create_default_context()
+        self.assertTrue(context.verify_flags & ssl.VERIFY_X509_PARTIAL_CHAIN)
+        self.assertTrue(context.verify_flags & ssl.VERIFY_X509_STRICT)
+
+    def test_verify_x509_partial_chain(self):
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(data_file("signed_cert.pem"))
+
+        client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client_context.check_hostname = False
+        client_context.load_verify_locations(data_file("signed_cert.pem"))
+        client_context.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+        check_handshake(server_context, client_context)
+
+        client_context.verify_flags &= ~ssl.VERIFY_X509_PARTIAL_CHAIN
+        check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+
+    def test_verify_x509_strict(self):
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(cpython_cert_data("leaf-missing-aki.keycert.pem"))
+
+        client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client_context.check_hostname = False
+        client_context.load_verify_locations(cpython_cert_data("leaf-missing-aki.ca.pem"))
+        client_context.verify_flags |= ssl.VERIFY_X509_STRICT
+        check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
+
+        client_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+        check_handshake(server_context, client_context)
 
     def check_load_cert_chain_error(self, certfile, keyfile=None, errno=-1, strerror=None, err=ssl.SSLError):
         try:
@@ -404,6 +439,23 @@ class CertTests(unittest.TestCase):
         client_context.set_alpn_protocols(["http/1.1"])
         server, client = check_handshake(server_context, client_context)
         self.assertEqual(client.selected_alpn_protocol(), "http/1.1")
+
+    def test_peer_certificate_chain(self):
+        server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        server_context.load_cert_chain(data_file("signed_cert.pem"))
+        client_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        client_context.check_hostname = False
+        client_context.verify_mode = ssl.CERT_NONE
+        _, client = check_handshake(server_context, client_context)
+
+        peer_cert = client.getpeercert(binary_form=True)
+        self.assertEqual(client.get_unverified_chain()[0], peer_cert)
+        cert = client._sslobj.get_unverified_chain()[0]
+        same_cert = client._sslobj.get_unverified_chain()[0]
+        self.assertEqual(cert, same_cert)
+        self.assertEqual(hash(cert), hash(same_cert))
+        self.assertNotEqual(cert, object())
+        self.assertTrue(repr(cert).startswith("<_ssl.Certificate '"))
 
 
 class ProtocolSelectionTests(unittest.TestCase):

@@ -3464,9 +3464,11 @@ class ThreadedTests(unittest.TestCase):
                                         server_hostname=hostname,
                                         suppress_ragged_eofs=False) as s:
             s.connect((HOST, server.port))
+            # GraalPy change: add our message expectation
             with self.assertRaisesRegex(
                 OSError,
                 'alert unknown ca|EOF occurred|TLSV1_ALERT_UNKNOWN_CA|'
+                'certificate_required|'
                 'closed by the remote host|Connection reset by peer|'
                 'Broken pipe'
             ):

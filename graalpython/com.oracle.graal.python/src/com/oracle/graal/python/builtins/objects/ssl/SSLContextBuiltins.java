@@ -693,19 +693,15 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                int x509 = 0, crl = 0, ca = 0;
+                int x509 = 0, ca = 0;
                 for (X509Certificate cert : self.getCACerts()) {
                     boolean[] keyUsage = CertUtils.getKeyUsage(cert);
-                    if (CertUtils.isCrl(keyUsage)) {
-                        crl++;
-                    } else {
-                        x509++;
-                        if (CertUtils.isCA(cert, keyUsage)) {
-                            ca++;
-                        }
+                    x509++;
+                    if (CertUtils.isCA(cert, keyUsage)) {
+                        ca++;
                     }
                 }
-                return PFactory.createDict(language, new PKeyword[]{new PKeyword(T_X509, x509), new PKeyword(T_CRL, crl), new PKeyword(T_X509_CA, ca)});
+                return PFactory.createDict(language, new PKeyword[]{new PKeyword(T_X509, x509), new PKeyword(T_CRL, self.getCRLCount()), new PKeyword(T_X509_CA, ca)});
             } catch (Exception ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }

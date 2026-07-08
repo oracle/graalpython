@@ -261,6 +261,7 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.MemoryBIOBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLCertificateBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
@@ -1008,6 +1009,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                                     Type used to pass arguments to _thread._excepthook.""")),
     PSSLSession("SSLSession", PythonObject, newBuilder().publishInModule(J__SSL).disallowInstantiation()),
+    PSSLCertificate("Certificate", PythonObject, newBuilder().publishInModule(J__SSL).disallowInstantiation().slots(SSLCertificateBuiltins.SLOTS)),
     PSSLContext("_SSLContext", PythonObject, newBuilder().publishInModule(J__SSL).basetype().slots(SSLContextBuiltins.SLOTS)),
     PSSLSocket("_SSLSocket", PythonObject, newBuilder().publishInModule(J__SSL).basetype()),
     PMemoryBIO("MemoryBIO", PythonObject, newBuilder().publishInModule(J__SSL).basetype().slots(MemoryBIOBuiltins.SLOTS)),

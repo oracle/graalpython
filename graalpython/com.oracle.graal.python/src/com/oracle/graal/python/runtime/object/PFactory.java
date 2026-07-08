@@ -31,6 +31,7 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
+import java.security.cert.X509Certificate;
 import java.util.LinkedHashMap;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -199,6 +200,7 @@ import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.PMemoryBIO;
+import com.oracle.graal.python.builtins.objects.ssl.PSSLCertificate;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLSocket;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
@@ -1391,6 +1393,10 @@ public final class PFactory {
 
     public static PSSLContext createSSLContext(Object cls, Shape shape, SSLMethod method, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {
         return new PSSLContext(cls, shape, method, verifyFlags, checkHostname, verifyMode, context);
+    }
+
+    public static PSSLCertificate createSSLCertificate(PythonLanguage language, X509Certificate certificate) {
+        return new PSSLCertificate(PythonBuiltinClassType.PSSLCertificate, PythonBuiltinClassType.PSSLCertificate.getInstanceShape(language), certificate);
     }
 
     public static PSSLSocket createSSLSocket(PythonLanguage language, PSSLContext context, SSLEngine engine, PSocket socket) {

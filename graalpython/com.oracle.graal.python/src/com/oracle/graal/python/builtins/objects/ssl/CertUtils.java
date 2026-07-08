@@ -69,8 +69,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
-import java.security.Security;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.CRLException;
@@ -188,11 +188,6 @@ public final class CertUtils {
             return false;
         }
         return true;
-    }
-
-    @TruffleBoundary
-    static boolean isCrl(boolean[] keyUsage) {
-        return keyUsage != null && keyUsage.length > 6 && keyUsage[6];
     }
 
     // No BoundaryCallContext: constructs and raises only builtin errors
