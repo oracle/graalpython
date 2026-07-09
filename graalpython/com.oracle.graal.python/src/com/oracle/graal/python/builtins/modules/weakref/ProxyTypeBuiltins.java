@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr;
@@ -129,7 +128,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -263,28 +261,31 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object repr(PProxyType self,
+        static Object repr(VirtualFrame frame, PProxyType self,
                         @Bind Node inliningTarget,
                         @Cached ObjectNodes.GetIdNode getIdNode,
-                        @Cached TypeNodes.GetQualNameNode getQualNameNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Cached ObjectNodes.GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode) {
             Object object = self.weakReference.getPyObject();
 
             long selfId = (long) getIdNode.execute(self);
             if (object == PNone.NONE) {
-                long noneId = (long) getIdNode.execute(PNone.NONE);
-                return reprBoundary(selfId, noneId, "NoneType");
+                return deadReprBoundary(selfId);
             }
             long objectId = (long) getIdNode.execute(object);
-            TruffleString objectTypeNameTS = getQualNameNode.execute(inliningTarget, ((PythonObject) object).getPythonClass());
-            String objectTypeName = castToJavaStringNode.execute(objectTypeNameTS);
+            TruffleString objectTypeName = getFullyQualifiedClassNameNode.execute(frame, inliningTarget, object);
 
             return reprBoundary(selfId, objectId, objectTypeName);
         }
 
         @TruffleBoundary
-        private static TruffleString reprBoundary(long selfId, long objectId, String typeName) {
-            String string = String.format("<weakproxy at %d to %s at %d>", selfId, typeName, objectId);
+        private static TruffleString deadReprBoundary(long selfId) {
+            String string = String.format("<weakproxy at %d; dead>", selfId);
+            return TruffleString.FromJavaStringNode.getUncached().execute(string, TS_ENCODING);
+        }
+
+        @TruffleBoundary
+        private static TruffleString reprBoundary(long selfId, long objectId, TruffleString typeName) {
+            String string = String.format("<weakproxy at %d; to '%s' at %d>", selfId, typeName.toJavaStringUncached(), objectId);
             return TruffleString.FromJavaStringNode.getUncached().execute(string, TS_ENCODING);
         }
     }
