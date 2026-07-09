@@ -944,12 +944,14 @@ class Bytecode:
         self.show_offsets = show_offsets
 
     def __iter__(self):
+        # GraalPy change
+        return iter(())
         co = self.codeobj
         original_code = co.co_code
         labels_map = _make_labels_map(original_code, self.exception_entries)
         arg_resolver = ArgResolver(co_consts=co.co_consts,
                                    names=co.co_names,
-                                   varname_from_oparg=None,  # GraalPy change: replaced co._varname_from_oparg
+                                   varname_from_oparg=co._varname_from_oparg,
                                    labels_map=labels_map)
         return _get_instructions_bytes(_get_code_array(co, self.adaptive),
                                        linestarts=self._linestarts,
