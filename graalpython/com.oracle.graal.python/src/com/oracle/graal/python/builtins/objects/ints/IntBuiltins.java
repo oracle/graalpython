@@ -2348,8 +2348,11 @@ public final class IntBuiltins extends PythonBuiltins {
             }
 
             boolean overflow = number != signByte;
-            if (signed && byteCount > 0) {
-                int mostSignificantByte = isBigEndian ? bytes[0] : bytes[byteCount - 1];
+            if (signed) {
+                int mostSignificantByte = 0;
+                if (byteCount > 0) {
+                    mostSignificantByte = isBigEndian ? bytes[0] : bytes[byteCount - 1];
+                }
                 if ((mostSignificantByte < 0) != (self < 0)) {
                     overflow = true;
                 }
