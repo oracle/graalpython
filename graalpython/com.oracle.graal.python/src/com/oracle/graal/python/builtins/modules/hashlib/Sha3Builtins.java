@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -80,11 +80,11 @@ public class Sha3Builtins extends PythonBuiltins {
     }
 
     @Slot(value = Slot.SlotKind.tp_new, isComplex = true)
-    @Slot.SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$cls", "string"}, keywordOnlyNames = {"usedforsecurity"})
+    @Slot.SlotSignature(minNumOfPositionalArgs = 1, parameterNames = {"$cls", "data"}, keywordOnlyNames = {"usedforsecurity", "string"})
     @GenerateNodeFactory
     abstract static class ShaNode extends PythonBuiltinNode {
         @Specialization
-        static Object newDigest(VirtualFrame frame, Object type, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+        static Object newDigest(VirtualFrame frame, Object type, Object data, @SuppressWarnings("unused") Object usedForSecurity, Object string,
                         @Bind Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
                         @Cached PRaiseNode raiseNode) {
@@ -96,6 +96,7 @@ public class Sha3Builtins extends PythonBuiltins {
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.WRONG_TYPE);
             }
+            Object buffer = HashlibModuleBuiltins.resolveDataArgument(inliningTarget, data, string, raiseNode);
             return createNode.execute(frame, inliningTarget, resultType, pythonNameFromType(resultType), javaNameFromType(resultType), buffer);
         }
 

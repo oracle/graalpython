@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -65,13 +66,15 @@ public final class Sha1ModuleBuiltins extends PythonBuiltins {
         return Sha1ModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "sha1", minNumOfPositionalArgs = 0, parameterNames = {"string"}, keywordOnlyNames = {"usedforsecurity"})
+    @Builtin(name = "sha1", minNumOfPositionalArgs = 0, parameterNames = {"data"}, keywordOnlyNames = {"usedforsecurity", "string"})
     @GenerateNodeFactory
     abstract static class Sha1FunctionNode extends PythonBuiltinNode {
         @Specialization
-        static Object newDigest(VirtualFrame frame, Object buffer, @SuppressWarnings("unused") Object usedForSecurity,
+        static Object newDigest(VirtualFrame frame, Object data, @SuppressWarnings("unused") Object usedForSecurity, Object string,
                         @Bind Node inliningTarget,
-                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode) {
+                        @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
+                        @Cached PRaiseNode raiseNode) {
+            Object buffer = HashlibModuleBuiltins.resolveDataArgument(inliningTarget, data, string, raiseNode);
             return createNode.execute(frame, inliningTarget, PythonBuiltinClassType.SHA1Type, "sha1", "sha1", buffer);
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -96,7 +96,7 @@ public final class Blake2bObjectBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = "blake2b", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "data"}, keywordOnlyNames = {"digest_size", "key", "salt", "person", "fanout",
-                    "depth", "leaf_size", "node_offset", "node_depth", "inner_size", "last_node", "usedforsecurity"})
+                    "depth", "leaf_size", "node_offset", "node_depth", "inner_size", "last_node", "usedforsecurity", "string"})
     @ArgumentClinic(name = "digest_size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @ArgumentClinic(name = "key", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = "PNone.NONE")
     @ArgumentClinic(name = "salt", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer, defaultValue = "PNone.NONE")
@@ -119,11 +119,13 @@ public final class Blake2bObjectBuiltins extends PythonBuiltins {
         @Specialization
         static Object newDigest(VirtualFrame frame, Object type, Object data, int digestSize,
                         PNone key, PNone salt, PNone person, int fanout, int depth, int leafSize, int nodeOffset, int nodeDepth, int innerSize, boolean lastNode, boolean usedforsecurity,
+                        Object string,
                         @Bind Node inliningTarget,
                         @Cached HashlibModuleBuiltins.CreateDigestNode createNode,
                         @Cached PRaiseNode raiseNode) {
+            Object buffer = HashlibModuleBuiltins.resolveDataArgument(inliningTarget, data, string, raiseNode);
             if (fanout != 1 || depth != 1 || leafSize != 0 || nodeOffset != 0 || nodeDepth != 0 || innerSize != 0 || lastNode) {
-                throw fail(frame, type, data, digestSize, key, salt, person, fanout, depth, leafSize, nodeOffset, nodeDepth, innerSize, lastNode, usedforsecurity, raiseNode);
+                throw fail(frame, type, data, digestSize, key, salt, person, fanout, depth, leafSize, nodeOffset, nodeDepth, innerSize, lastNode, usedforsecurity, string, raiseNode);
             }
             PythonBuiltinClassType resultType = null;
             if (type instanceof PythonBuiltinClass builtinType) {
@@ -148,14 +150,14 @@ public final class Blake2bObjectBuiltins extends PythonBuiltins {
                 throw CompilerDirectives.shouldNotReachHere();
             }
             javaName = PythonUtils.formatJString(javaName, javaDigestSize);
-            return createNode.execute(frame, inliningTarget, resultType, pythonName, javaName, data);
+            return createNode.execute(frame, inliningTarget, resultType, pythonName, javaName, buffer);
         }
 
         @SuppressWarnings("unused")
         @Fallback
         static PException fail(VirtualFrame frame, Object type, Object data, Object digestSize,
                         Object key, Object salt, Object person, Object fanout, Object depth, Object leafSize, Object nodeOffset, Object nodeDepth, Object innerSize, Object lastNode,
-                        Object usedforsecurity,
+                        Object usedforsecurity, Object string,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.ONLY_DIGEST_SIZE_BLAKE_ARGUMENT);
         }
