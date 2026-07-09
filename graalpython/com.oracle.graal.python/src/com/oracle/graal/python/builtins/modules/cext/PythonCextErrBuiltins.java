@@ -340,8 +340,8 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
-    abstract static class _PyErr_WriteUnraisableMsg extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_WriteUnraisable extends CApiBinaryBuiltinNode {
         @Specialization
         static Object write(Object msg, Object obj,
                         @Bind Node inliningTarget,

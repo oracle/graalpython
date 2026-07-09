@@ -512,6 +512,24 @@ class TestPyErr(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    def test_PyErr_WriteUnraisable_hook_args(self):
+        import _testcapi
+
+        captured = []
+        old_hook = sys.unraisablehook
+        try:
+            sys.unraisablehook = captured.append
+            exception = ValueError("oops")
+            obj = object()
+            _testcapi.err_writeunraisable(exception, obj)
+        finally:
+            sys.unraisablehook = old_hook
+
+        self.assertEqual(len(captured), 1)
+        self.assertIs(captured[0].exc_value, exception)
+        self.assertIsNone(captured[0].err_msg)
+        self.assertIs(captured[0].object, obj)
+
     test_PyErr_FormatUnraisable = CPyExtFunctionVoid(
         lambda args: None,
         lambda: (
@@ -530,6 +548,23 @@ class TestPyErr(CPyExtTestCase):
                                 stderr: "RuntimeError: unraisable_exception" in stderr and "Exception ignored in my function:" in stderr,
         cmpfunc=unhandled_error_compare
     )
+
+    def test_PyErr_FormatUnraisable_hook_args(self):
+        import _testcapi
+
+        captured = []
+        old_hook = sys.unraisablehook
+        try:
+            sys.unraisablehook = captured.append
+            exception = ValueError("oops")
+            _testcapi.err_formatunraisable(exception, b"Error in %R", [])
+        finally:
+            sys.unraisablehook = old_hook
+
+        self.assertEqual(len(captured), 1)
+        self.assertIs(captured[0].exc_value, exception)
+        self.assertEqual(captured[0].err_msg, "Error in []")
+        self.assertIsNone(captured[0].object)
 
     test_PyErr_Restore = CPyExtFunctionVoid(
         _reference_restore,

@@ -700,7 +700,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyDict_MergeFromSeq2", ret = Int, args = {PyObject, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyDict_Pop", ret = PrimitiveResult32, args = {PyObjectReturn, PyObjectReturn, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "PyDict_PopString", ret = PrimitiveResult32, args = {PyObjectReturn, ConstCharPtr, PyObjectPtr}, call = NotImplemented)
-    @CApiBuiltin(name = "PyErr_FormatUnraisable", ret = Void, args = {ConstCharPtr, VARARGS}, call = NotImplemented)
+    @CApiBuiltin(name = "PyErr_FormatUnraisable", ret = Void, args = {ConstCharPtr, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyErr_ProgramText", ret = PyObject, args = {ConstCharPtrAsTruffleString, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_ProgramTextObject", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_RangedSyntaxLocationObject", ret = Void, args = {PyObject, Int, Int, Int, Int}, call = NotImplemented)

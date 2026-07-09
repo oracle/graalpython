@@ -1319,7 +1319,7 @@ public abstract class ErrorMessages {
 
     public static final TruffleString NATIVE_EXTENSIONS_VIRTUAL_THREAD = tsLiteral("Python native extensions cannot be used from Java virtual threads. " +
                     "Run Python code that may load or call native extensions on a platform thread.");
-    public static final TruffleString IN_THREAD_STARTED_BY = tsLiteral("in thread started by");
+    public static final TruffleString IN_THREAD_STARTED_BY = tsLiteral("Exception ignored in thread started by");
 
     // AST Validator
     public static final TruffleString ANN_ASSIGN_WITH_SIMPLE_NON_NAME_TARGET = tsLiteral("AnnAssign with simple non-Name target");

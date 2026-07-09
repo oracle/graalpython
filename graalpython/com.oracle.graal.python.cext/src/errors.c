@@ -1685,17 +1685,38 @@ done:
     Py_XDECREF(hook);
     _PyErr_Clear(tstate); /* Just in case */
 }
+#endif // GraalPy change
 
 void
 PyErr_FormatUnraisable(const char *format, ...)
 {
-    va_list va;
+    // GraalPy change: different implementation
+    PyObject *exc_type, *exc_value, *exc_tb;
+    PyObject *err_msg = NULL;
+    const char *err_msg_str = NULL;
 
-    va_start(va, format);
-    format_unraisable_v(format, va, NULL);
-    va_end(va);
+    /* Formatting may raise, so preserve the exception to be reported. */
+    PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+
+    if (format != NULL) {
+        va_list vargs;
+        va_start(vargs, format);
+        err_msg = PyUnicode_FromFormatV(format, vargs);
+        va_end(vargs);
+        if (err_msg != NULL) {
+            err_msg_str = PyUnicode_AsUTF8(err_msg);
+        }
+        if (err_msg_str == NULL) {
+            PyErr_Clear();
+        }
+    }
+
+    PyErr_Restore(exc_type, exc_value, exc_tb);
+    GraalPyPrivate_WriteUnraisable(err_msg_str, NULL);
+    Py_XDECREF(err_msg);
 }
 
+#if 0 // GraalPy change
 static void
 format_unraisable(PyObject *obj, const char *format, ...)
 {
