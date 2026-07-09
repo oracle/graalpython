@@ -110,14 +110,14 @@ PyStructSequence_New(PyTypeObject *type)
 void
 PyStructSequence_SetItem(PyObject *op, Py_ssize_t index, PyObject *value)
 {
-    PyTupleObject *tuple = _PyTuple_CAST(op);
     assert(0 <= index);
 #ifndef NDEBUG
     Py_ssize_t n_fields = REAL_SIZE(op);
     assert(n_fields >= 0);
     assert(index < n_fields);
 #endif
-    tuple->ob_item[index] = value;
+    // GraalPy change: avoid direct struct access
+    GraalPyTuple_SET_ITEM(op, index, value);
 }
 
 PyObject*
