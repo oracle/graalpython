@@ -877,7 +877,7 @@ public abstract class ObjectNodes {
             if (descr != PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             } else {
-                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
+                throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
             }
         }
 

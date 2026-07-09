@@ -594,6 +594,7 @@ public abstract class ErrorMessages {
     public static final TruffleString OBJ_NOT_SUBSCRIPTABLE = tsLiteral("'%p' object is not subscriptable");
     public static final TruffleString TYPE_NOT_SUBSCRIPTABLE = tsLiteral("type '%N' is not subscriptable");
     public static final TruffleString OBJ_P_HAS_NO_ATTR_S = tsLiteral("'%p' object has no attribute '%s'");
+    public static final TruffleString OBJ_P_HAS_NO_ATTR_S_AND_NO_DICT = tsLiteral("'%p' object has no attribute '%s' and no __dict__ for setting new attributes");
     public static final TruffleString OBJ_S_HAS_NO_ATTR_S = tsLiteral("'%s' object has no attribute '%s'");
     public static final TruffleString OBJ_N_HAS_NO_ATTR_S = tsLiteral("'%N' object has no attribute '%s'");
     public static final TruffleString OBJ_IS_NOT_WRITABLE = tsLiteral("Object is not writable.");
