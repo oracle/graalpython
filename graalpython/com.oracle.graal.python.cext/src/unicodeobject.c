@@ -3974,9 +3974,11 @@ PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize)
     if (PyUnicode_UTF8(unicode) == NULL) {
         // GraalPy change: upcall
         if (GraalPyPrivate_Unicode_FillUtf8(unicode) == -1) {
+            if (psize) {
+                *psize = -1;
+            }
             return NULL;
         }
-        return NULL;
     }
 
     if (psize) {
