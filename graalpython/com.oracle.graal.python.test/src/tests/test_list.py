@@ -762,6 +762,14 @@ class ListTest(list_tests.CommonTest):
         l.extend(l)
         self.assertEqual([1,2,3,4,1,2,3,4], l)
 
+        l = LyingList([1,2,3,4])
+        l += l
+        self.assertEqual([1,2,3,4,1,2,3,4], l)
+
+        l = LyingList([1,2,3,4])
+        l.__init__(l)
+        self.assertEqual([], l)
+
 class ListCompareTest(CompareTest):
 
     def test_compare(self):
