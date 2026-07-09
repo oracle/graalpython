@@ -351,6 +351,11 @@ license = "BSD-3-Clause"
 install-priority = 0  # Don't make pip install prefer this version
 dist-type = "sdist"
 
+[[meson.rules]]
+version = '>= 1.11.0, <= 1.11.1'
+patch = 'meson-1.11.patch'
+license = 'Apache-2.0'
+
 [[meson-python.rules]]
 note = "GraalPy patch is upstreamed."
 version = '<= 0.16.0'
