@@ -33,18 +33,6 @@ static inline PyObject* bytes_new_character(unsigned char ch)
     return Py_NewRef(PyThreadState_Get()->singletons.bytes_characters[ch]);
 }
 
-// GraalPy-specific
-static inline int bytes_is_character_singleton(PyObject *op)
-{
-    PyObject **characters = PyThreadState_Get()->singletons.bytes_characters;
-    for (int i = 0; i < 256; i++) {
-        if (op == characters[i]) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 /*[clinic input]
 class bytes "PyBytesObject *" "&PyBytes_Type"
 [clinic start generated code]*/
@@ -3083,32 +3071,42 @@ PyBytes_ConcatAndDel(PyObject **pv, PyObject *w)
 int
 _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
 {
-    // GraalPy change: different implementation
-    PyObject *v = *pv;
+    PyObject *v;
+    PyBytesObject *sv;
+    v = *pv;
     if (!PyBytes_Check(v) || newsize < 0) {
-        *pv = NULL;
+        *pv = 0;
         Py_DECREF(v);
         PyErr_BadInternalCall();
         return -1;
     }
-    if (Py_SIZE(v) == newsize) {
+    Py_ssize_t oldsize = PyBytes_GET_SIZE(v);
+    if (oldsize == newsize) {
+        /* return early if newsize equals to v->ob_size */
         return 0;
     }
-    if (Py_SIZE(v) == 0) {
+    if (oldsize == 0) {
         *pv = GraalPyPrivate_Bytes_EmptyWithCapacity(newsize);
         Py_DECREF(v);
-        return *pv == NULL ? -1 : 0;
-    }
-    if (bytes_is_character_singleton(v)) {
-        *pv = NULL;
-        Py_DECREF(v);
-        PyErr_BadInternalCall();
-        return -1;
+        return (*pv == NULL) ? -1 : 0;
     }
     if (newsize == 0) {
         *pv = bytes_get_empty();
         Py_DECREF(v);
         return 0;
+    }
+    if (Py_REFCNT(v) != 1) {
+        if (oldsize < newsize) {
+            *pv = GraalPyPrivate_Bytes_EmptyWithCapacity(newsize);
+            if (*pv) {
+                memcpy(PyBytes_AS_STRING(*pv), PyBytes_AS_STRING(v), oldsize);
+            }
+        }
+        else {
+            *pv = PyBytes_FromStringAndSize(PyBytes_AS_STRING(v), newsize);
+        }
+        Py_DECREF(v);
+        return (*pv == NULL) ? -1 : 0;
     }
     return GraalPyPrivate_Bytes_Resize(*pv, newsize);
 }

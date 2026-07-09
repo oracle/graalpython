@@ -195,11 +195,16 @@ class TestPyBytes(CPyExtTestCase):
             PyObject *from_size = PyBytes_FromStringAndSize("x", 1);
             PyObject *from_null = PyBytes_FromStringAndSize(NULL, 1);
             PyObject *resize_cached = PyBytes_FromString("x");
+            PyObject *resize_cached_larger = PyBytes_FromString("x");
 
             int from_string_uses_cache = from_string != NULL && from_string == from_size;
             int from_null_is_fresh = from_null != NULL && from_null != from_size;
             int resize_cached_ok = _PyBytes_Resize(&resize_cached, 0) == 0;
             if (!resize_cached_ok) {
+                PyErr_Clear();
+            }
+            int resize_cached_larger_ok = _PyBytes_Resize(&resize_cached_larger, 2) == 0;
+            if (!resize_cached_larger_ok) {
                 PyErr_Clear();
             }
             int resize_fresh_ok = _PyBytes_Resize(&from_null, 0) == 0;
@@ -213,6 +218,10 @@ class TestPyBytes(CPyExtTestCase):
                          resize_cached_ok &&
                          resize_cached != NULL &&
                          PyBytes_GET_SIZE(resize_cached) == 0 &&
+                         resize_cached_larger_ok &&
+                         resize_cached_larger != NULL &&
+                         PyBytes_GET_SIZE(resize_cached_larger) == 2 &&
+                         PyBytes_AS_STRING(resize_cached_larger)[0] == 'x' &&
                          resize_fresh_ok &&
                          from_null != NULL &&
                          PyBytes_GET_SIZE(from_null) == 0;
@@ -221,6 +230,7 @@ class TestPyBytes(CPyExtTestCase):
             Py_XDECREF(from_size);
             Py_XDECREF(from_null);
             Py_XDECREF(resize_cached);
+            Py_XDECREF(resize_cached_larger);
             return result;
         }
         """,
