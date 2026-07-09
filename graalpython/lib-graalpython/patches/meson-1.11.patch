@@ -1,0 +1,17 @@
+diff --git a/mesonbuild/compilers/cython.py b/mesonbuild/compilers/cython.py
+index e3e5a3e..948f7b5 100644
+--- a/mesonbuild/compilers/cython.py
++++ b/mesonbuild/compilers/cython.py
+@@ -73,9 +73,11 @@ class CythonCompiler(Compiler):
+         assert isinstance(version, str)
+ 
+         from ..dependencies import find_external_dependency
++        from ..dependencies.base import DependencyMethods
+         with mlog.no_logging():
+             dep = find_external_dependency(
+-                f'python{version}', self.environment, {'required': False, 'native': self.for_machine})
++                f'python{version}', self.environment,
++                {'required': False, 'native': self.for_machine, 'method': DependencyMethods.SYSTEM})
+         if not dep.found():
+             raise EnvironmentException(
+                 'Cython requires python3 dependency for link testing, but it could not be found')
