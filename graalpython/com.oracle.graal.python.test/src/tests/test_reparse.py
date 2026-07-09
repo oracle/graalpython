@@ -192,9 +192,15 @@ def foo():
     a = 42
     return a
 
-assert foo() == 42
-foo.__code__ = foo.__code__.replace(co_code=foo.__code__.co_code)
-assert foo() == 42
+try:
+    assert foo() == 42
+    foo.__code__ = foo.__code__.replace(co_code=foo.__code__.co_code)
+    assert foo() == 42
+except SystemError as e:
+    # Traceback rendering may itself need the deleted bytecode file and stop before printing the
+    # exception. Emit it first so that the parent can verify the expected reparse failure.
+    print(f"SystemError: {e}", flush=True)
+    raise
 '''
 
 
