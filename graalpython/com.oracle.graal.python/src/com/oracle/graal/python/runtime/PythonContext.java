@@ -1804,6 +1804,7 @@ public final class PythonContext extends Python3Core {
 
     private static final String SHUTDOWN_LOCK_ERROR_PREFIX = "could not acquire lock for ";
     private static final String SHUTDOWN_LOCK_ERROR_SUFFIX = " at interpreter shutdown, possibly due to daemon threads";
+    private static final TruffleString T_EXCEPTION_IGNORED_ON_FLUSHING_SYS_STDOUT = tsLiteral("Exception ignored on flushing sys.stdout");
 
     private static boolean flushFile(Object file, Object originalStdout, boolean useWriteUnraisable) {
         if (!(file instanceof PNone)) {
@@ -1819,7 +1820,8 @@ public final class PythonContext extends Python3Core {
                 } catch (PException e) {
                     if (useWriteUnraisable) {
                         if (!isDaemonThreadShutdownLockError(file, originalStdout, e)) {
-                            WriteUnraisableNode.getUncached().execute(e.getEscapedException(), null, file);
+                            WriteUnraisableNode.getUncached().execute(e.getEscapedException(), T_EXCEPTION_IGNORED_ON_FLUSHING_SYS_STDOUT,
+                                            PNone.NONE);
                             return true;
                         }
                     }
