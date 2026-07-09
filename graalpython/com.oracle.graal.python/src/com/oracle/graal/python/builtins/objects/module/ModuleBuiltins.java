@@ -126,6 +126,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = ModuleBuiltinsSlotsGen.SLOTS;
 
     public static final TruffleString T__INITIALIZING = tsLiteral("_initializing");
+    private static final TruffleString T_ORIGIN = tsLiteral("origin");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -281,6 +282,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
                         @Cached ReadAttributeFromModuleNode readName,
                         @Cached ReadAttributeFromModuleNode readSpec,
                         @Cached ReadAttributeFromObjectNode readInitializing,
+                        @Cached ReadAttributeFromObjectNode readOrigin,
                         @Cached InlinedConditionProfile customGetAttr,
                         @Cached CallNode callNode,
                         @Cached PyObjectIsTrueNode castToBooleanNode,
@@ -303,6 +305,13 @@ public final class ModuleBuiltins extends PythonBuiltins {
                     if (moduleSpec != PNone.NO_VALUE) {
                         Object isInitializing = readInitializing.execute(moduleSpec, T__INITIALIZING);
                         if (isInitializing != PNone.NO_VALUE && castToBooleanNode.execute(frame, isInitializing)) {
+                            Object origin = readOrigin.execute(moduleSpec, T_ORIGIN);
+                            try {
+                                TruffleString originString = castNameToStringNode.execute(inliningTarget, origin);
+                                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_FROM_S_HAS_NO_ATTR_S, moduleName, originString, key);
+                            } catch (CannotCastException ce) {
+                                // CPython only includes the origin when spec.origin is a string.
+                            }
                             throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S, moduleName, key);
                         }
                     }

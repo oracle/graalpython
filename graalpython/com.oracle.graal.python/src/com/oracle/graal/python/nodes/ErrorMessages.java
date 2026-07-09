@@ -511,6 +511,8 @@ public abstract class ErrorMessages {
     public static final TruffleString MMAP_INDEX_OUT_OF_RANGE = tsLiteral("mmap index out of range");
     public static final TruffleString MODULE_FILENAME_MISSING = tsLiteral("module filename missing");
     public static final TruffleString MODULE_HAS_NO_ATTR_S = tsLiteral("module has no attribute '%s'");
+    public static final TruffleString MODULE_PARTIALLY_INITIALIZED_S_FROM_S_HAS_NO_ATTR_S = tsLiteral(
+                    "partially initialized module '%s' from '%s' has no attribute '%s' (most likely due to a circular import)");
     public static final TruffleString MODULE_PARTIALLY_INITIALIZED_S_HAS_NO_ATTR_S = tsLiteral("partially initialized module '%s' has no attribute '%s' (most likely due to a circular import)");
     public static final TruffleString MODULE_S_HAS_NO_ATTR_S = tsLiteral("module '%s' has no attribute '%s'");
     public static final TruffleString MULTI_DIMENSIONAL_SUB_VIEWS_NOT_IMPLEMENTED = tsLiteral("multi-dimensional sub-views are not implemented");
