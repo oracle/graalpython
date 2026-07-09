@@ -305,6 +305,7 @@ PyObject_DelItem(PyObject *o, PyObject *key)
     return -1;
 }
 
+#endif // GraalPy change
 int
 PyObject_DelItemString(PyObject *o, const char *key)
 {
@@ -322,7 +323,6 @@ PyObject_DelItemString(PyObject *o, const char *key)
     Py_DECREF(okey);
     return ret;
 }
-#endif // GraalPy change
 
 
 /* Return 1 if the getbuffer function is available, otherwise return 0. */

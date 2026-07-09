@@ -100,6 +100,27 @@ NativeTypeWithAttr = CPyExtHeapType("NativeTypeWithAttr")
 NativeTypeWithAttr.attr = "str"
 
 
+class DelAttrObject:
+    def __init__(self):
+        self.a = 1
+        setattr(self, "🐍", 2)
+
+    def __delattr__(self, name):
+        if name == "evil":
+            raise RuntimeError(name)
+        object.__delattr__(self, name)
+
+
+class DelItemMapping:
+    def __init__(self):
+        self.items = {"a": 1, "🐍": 2}
+
+    def __delitem__(self, key):
+        if key == "evil":
+            raise RuntimeError(key)
+        del self.items[key]
+
+
 class TestPyObject(CPyExtTestCase):
 
     test_Py_TYPE = CPyExtFunction(
@@ -277,6 +298,26 @@ class TestPyObject(CPyExtTestCase):
         resultspec="i",
         cmpfunc=unhandled_error_compare
     )
+
+    def delitemstring(args):
+        del args[0][args[1].decode()]
+        return 0
+
+    test_PyObject_DelItemString = CPyExtFunction(
+        delitemstring,
+        lambda: (
+            (DelItemMapping(), b"a"),
+            (DelItemMapping(), "🐍".encode()),
+            (DelItemMapping(), b"missing"),
+            (DelItemMapping(), b"evil"),
+            ([], b"item"),
+        ),
+        arguments=["PyObject* object", "const char* key"],
+        argspec="Oy",
+        resultspec="i",
+        cmpfunc=unhandled_error_compare
+    )
+
     # PyObject_AsReadBuffer
     # PyObject_AsWriteBuffer
     # PyObject_GetBuffer
@@ -445,6 +486,26 @@ class TestPyObject(CPyExtTestCase):
         resultspec="i",
         cmpfunc=unhandled_error_compare
     )
+
+    def delattrstring(args):
+        delattr(args[0], args[1].decode())
+        return 0
+
+    test_PyObject_DelAttrString = CPyExtFunction(
+        delattrstring,
+        lambda: (
+            (DelAttrObject(), b"a"),
+            (DelAttrObject(), "🐍".encode()),
+            (DelAttrObject(), b"missing"),
+            (DelAttrObject(), b"evil"),
+            (42, b"numerator"),
+        ),
+        arguments=["PyObject* object", "const char* attr"],
+        argspec="Oy",
+        resultspec="i",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyObject_HasAttr = CPyExtFunction(
         lambda args: 1 if hasattr(*args) else 0,
         lambda: (

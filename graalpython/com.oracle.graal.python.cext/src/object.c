@@ -1244,13 +1244,13 @@ PyObject_SetAttrString(PyObject *v, const char *name, PyObject *w)
     return res;
 }
 
-#if 0 // GraalPy change
 int
 PyObject_DelAttrString(PyObject *v, const char *name)
 {
     return PyObject_SetAttrString(v, name, NULL);
 }
 
+#if 0 // GraalPy change
 int
 _PyObject_IsAbstract(PyObject *obj)
 {
