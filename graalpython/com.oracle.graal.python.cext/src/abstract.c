@@ -216,6 +216,7 @@ PyObject_GetItem(PyObject *o, PyObject *key)
     return type_error("'%.200s' object is not subscriptable", o);
 }
 
+#endif // GraalPy change
 int
 PyMapping_GetOptionalItem(PyObject *obj, PyObject *key, PyObject **result)
 {
@@ -234,6 +235,7 @@ PyMapping_GetOptionalItem(PyObject *obj, PyObject *key, PyObject **result)
     PyErr_Clear();
     return 0;
 }
+#if 0 // GraalPy change
 
 int
 PyObject_SetItem(PyObject *o, PyObject *key, PyObject *value)
