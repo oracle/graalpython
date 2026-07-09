@@ -137,7 +137,7 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 set(CAPI_SRC "${SRC_DIR}/src")
 
 # using glob patterns is not recommended: https://cmake.org/cmake/help/latest/command/file.html#glob
-set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c ${CAPI_SRC}/thread.c
+set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/compile.c ${CAPI_SRC}/thread.c
               ${CAPI_SRC}/moduleobject.c ${CAPI_SRC}/preconfig.c ${CAPI_SRC}/getbuildinfo.c ${CAPI_SRC}/object.c
               ${CAPI_SRC}/dtoa.c ${CAPI_SRC}/pystrhex.c ${CAPI_SRC}/capi.c ${CAPI_SRC}/complexobject.c
               ${CAPI_SRC}/capsule.c ${CAPI_SRC}/typeobject.c ${CAPI_SRC}/obmalloc.c ${CAPI_SRC}/descrobject.c
