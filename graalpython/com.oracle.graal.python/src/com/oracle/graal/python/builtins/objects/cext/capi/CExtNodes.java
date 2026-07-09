@@ -1195,7 +1195,7 @@ public abstract class CExtNodes {
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, rootNode);
         HiddenAttr.WriteLongNode.executeUncached(function, METHOD_DEF_PTR, methodDefPtr);
 
-        CFunctionDocUtils.writeDocAndTextSignature(function, methodName, methodDoc);
+        CFunctionDocUtils.writeDocAndTextSignature(function, methodName, methodDoc, flags);
 
         return function;
     }

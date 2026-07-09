@@ -794,12 +794,12 @@ public final class PythonCextAbstractBuiltins {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         Object value = CharPtrToPythonNode.executeUncached(valuePtr);
         if (obj instanceof PBuiltinFunction builtinFunction) {
-            CFunctionDocUtils.writeDocAndTextSignature(builtinFunction, builtinFunction.getName(), value);
+            CFunctionDocUtils.writeDocAndTextSignature(builtinFunction, builtinFunction.getName(), value, builtinFunction.getFlags());
             return 1;
         }
         if (obj instanceof PBuiltinMethod builtinMethod) {
             PBuiltinFunction builtinFunction = builtinMethod.getBuiltinFunction();
-            CFunctionDocUtils.writeDocAndTextSignature(builtinFunction, builtinFunction.getName(), value);
+            CFunctionDocUtils.writeDocAndTextSignature(builtinFunction, builtinFunction.getName(), value, builtinFunction.getFlags());
             return 1;
         }
         if (obj instanceof GetSetDescriptor descriptor) {

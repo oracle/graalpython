@@ -294,7 +294,7 @@ public final class PythonCextTypeBuiltins {
         PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, type, flags);
         if (func != null) {
             WriteAttributeToPythonObjectNode.executeUncached(func, T___NAME__, name);
-            CFunctionDocUtils.writeDocAndTextSignature(func, name, doc);
+            CFunctionDocUtils.writeDocAndTextSignature(func, name, doc, flags);
         }
         if (CExtContext.isMethClass(flags)) {
             if (CExtContext.isMethStatic(flags)) {

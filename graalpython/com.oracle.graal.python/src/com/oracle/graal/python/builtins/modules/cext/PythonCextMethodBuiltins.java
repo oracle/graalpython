@@ -83,7 +83,7 @@ public final class PythonCextMethodBuiltins {
         PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, PNone.NO_VALUE, flags);
         HiddenAttr.WriteLongNode.executeUncached(func, METHOD_DEF_PTR, methodDefPtr);
         WriteAttributeToPythonObjectNode.executeUncached(func, T___NAME__, name);
-        CFunctionDocUtils.writeDocAndTextSignature(func, name, doc);
+        CFunctionDocUtils.writeDocAndTextSignature(func, name, doc, flags);
         PBuiltinMethod method;
         if (cls != PNone.NO_VALUE) {
             method = PFactory.createBuiltinMethod(language, self, func, cls);
