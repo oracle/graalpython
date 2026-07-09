@@ -67,9 +67,6 @@ It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib
       `mx graalpytest TEST-SELECTOR`
     * Run JUnit tests
       `mx python-gate --tags python-junit`
-* Style / formatting
-  `mx python-style --fix`
-  `mx python-gate --tags style`
 * Building standalones for benchmarking
   - use `mx --env native-ee sforceimports && mx --env native-ee checkout-downstream compiler graal-enterprise` to get the right revisions
   - use `mx --env jvm-ee-libgraal` and `mx --env native-ee` to build the JAVA and NATIVE standalone distributions
