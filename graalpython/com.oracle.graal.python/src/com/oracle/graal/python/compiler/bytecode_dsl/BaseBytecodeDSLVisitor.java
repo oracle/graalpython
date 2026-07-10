@@ -54,12 +54,12 @@ import com.oracle.graal.python.pegparser.sst.SSTNode;
 import com.oracle.graal.python.pegparser.sst.SSTreeVisitor;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.TypeIgnoreTy.TypeIgnore;
+import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 
 /**
- * This interface provides default implementations of all {@code SSTreeVisitor} methods, which makes
- * it easier to incrementally add support to the Bytecode DSL compiler. Once the compiler is stable,
- * this interface should be removed.
+ * This interface provides default throwing implementations of all {@code SSTreeVisitor} methods.
+ * It is useful for visitors that only support a subset of {@code SSTNode}s.
  */
 public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
 
@@ -508,6 +508,22 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(TypeIgnore node) {
+        return defaultValue(node);
+    }
+
+    default T visit(StmtTy.TypeAlias node) {
+        return defaultValue(node);
+    }
+
+    default T visit(TypeParamTy.TypeVar node) {
+        return defaultValue(node);
+    }
+
+    default T visit(TypeParamTy.ParamSpec node) {
+        return defaultValue(node);
+    }
+
+    default T visit(TypeParamTy.TypeVarTuple node) {
         return defaultValue(node);
     }
 }
