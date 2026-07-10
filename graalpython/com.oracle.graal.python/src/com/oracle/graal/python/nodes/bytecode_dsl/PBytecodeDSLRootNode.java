@@ -769,7 +769,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         threadState.profilingStart();
         PFrame pyFrame = ensurePyFrame(virtualFrame, location);
         try {
-            pyFrame.setLocalsAccessed(false);
             Object result = getTracingNodes(location).profilingCallNode.execute(virtualFrame, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
@@ -851,7 +850,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 pyFrame.setLineLock(line);
             }
 
-            pyFrame.setLocalsAccessed(false);
             Object result = getTracingNodes(location).tracingCallNode.execute(virtualFrame, traceFn, pyFrame, event.pythonName, nonNullArg);
             // https://github.com/python/cpython/issues/104232
             if (useLocalFn) {

@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -55,7 +54,6 @@ import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -67,7 +65,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 /**
  * This node makes sure that the current frame has a filled-in PFrame object with a backref
@@ -102,15 +99,6 @@ public abstract class MaterializeFrameNode extends Node {
      * is passed as argument to avoid its lookup. Can be used if this node is uncached.
      */
     public final PFrame executeOnStack(Frame frameToMaterialize, BytecodeNode location, boolean markAsEscaped, boolean forceSync) {
-        return execute(location, markAsEscaped, forceSync, frameToMaterialize);
-    }
-
-    /**
-     * Like {@link #executeOnStack(boolean, boolean, Frame)}, but the current root node is passed as
-     * argument to avoid its lookup. Can be used if this node is uncached.
-     */
-    public final PFrame executeOnStack(Frame frameToMaterialize, PRootNode location, boolean markAsEscaped, boolean forceSync) {
-        assert !(location instanceof PBytecodeDSLRootNode);
         return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 
@@ -200,7 +188,7 @@ public abstract class MaterializeFrameNode extends Node {
         PFrame escapedFrame = PFactory.createPFrame(language, frameRef, location, generatorFunction, null);
         BytecodeNode bytecodeNode = BytecodeNode.get(location);
         assert bytecodeNode != null : location;
-        escapedFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, generatorFrame));
+        escapedFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, generatorFrame), true);
         escapedFrame.setGlobals(globals);
         frameRef.setPyFrame(escapedFrame);
         return escapedFrame;
@@ -273,32 +261,27 @@ public abstract class MaterializeFrameNode extends Node {
 
         public abstract void execute(PFrame pyFrame, Frame frameToSync, Node location);
 
-        @Specialization(guards = {"pyFrame.getCustomLocals() == null", "!isGeneratorFrame(frameToSync)"})
+        @Specialization(guards = {"pyFrame.syncsLocals()", "!isGeneratorFrame(frameToSync)"})
         static void doSync(PFrame pyFrame, Frame frameToSync, Node location) {
             BytecodeNode bytecodeNode = BytecodeNode.get(location);
             if (bytecodeNode != null) {
                 // TODO: avoid always making a copy, if a BytecodeFrame is set, just update it
                 BytecodeFrame copiedFrame = bytecodeNode.createCopiedFrame(0, frameToSync);
-                pyFrame.setBytecodeFrame(copiedFrame);
+                pyFrame.setBytecodeFrame(copiedFrame, false);
             }
         }
 
-        @Specialization(guards = "pyFrame.getCustomLocals() != null")
-        @SuppressWarnings("unused")
-        static void doCustomLocals(PFrame pyFrame, Frame frameToSync, Node location) {
-            // nothing to do
-        }
-
-        @Specialization(guards = "isGeneratorFrame(frameToSync)")
-        static void doGenerator(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached InlinedBranchProfile createLocalsProfile) {
+        @Specialization(guards = {"pyFrame.syncsLocals()", "isGeneratorFrame(frameToSync)"})
+        static void doGenerator(PFrame pyFrame, Frame frameToSync, Node location) {
             BytecodeNode bytecodeNode = BytecodeNode.get(location);
             assert bytecodeNode != null : location;
-            if (pyFrame.getBytecodeFrame() == null) {
-                createLocalsProfile.enter(inliningTarget);
-                pyFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frameToSync.materialize()));
-            }
+            pyFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, (MaterializedFrame) frameToSync), true);
+        }
+
+        @Specialization(guards = "!pyFrame.syncsLocals()")
+        @SuppressWarnings("unused")
+        static void doNothing(PFrame pyFrame, Frame frameToSync, Node location) {
+            // nothing to do
         }
     }
 }

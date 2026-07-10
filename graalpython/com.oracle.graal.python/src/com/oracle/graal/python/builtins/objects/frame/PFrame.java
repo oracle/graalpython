@@ -62,6 +62,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 public final class PFrame extends PythonBuiltinObject {
     private static final int UNINITIALIZED_LINE = -2;
 
+    private boolean materializedFrame;
     private BytecodeFrame bytecodeFrame;
 
     private final Object customLocals;
@@ -90,7 +91,6 @@ public final class PFrame extends PythonBuiltinObject {
     public static final int NO_JUMP = -2;
     private int jumpDestLine = DISALLOW_JUMPS;
     private Object localTraceFun = null;
-    private boolean localsAccessed;
 
     private boolean traceLine = true;
 
@@ -126,14 +126,6 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void setJumpDestLine(int jumpDestLine) {
         this.jumpDestLine = jumpDestLine;
-    }
-
-    public boolean localsAccessed() {
-        return localsAccessed;
-    }
-
-    public void setLocalsAccessed(boolean localsAccessed) {
-        this.localsAccessed = localsAccessed;
     }
 
     // TODO: frames: this is a large object, think about how to make this
@@ -228,8 +220,9 @@ public final class PFrame extends PythonBuiltinObject {
         return bytecodeFrame;
     }
 
-    public void setBytecodeFrame(BytecodeFrame bytecodeFrame) {
+    public void setBytecodeFrame(BytecodeFrame bytecodeFrame, boolean materialized) {
         this.bytecodeFrame = bytecodeFrame;
+        this.materializedFrame = materialized;
     }
 
     /**
@@ -249,7 +242,7 @@ public final class PFrame extends PythonBuiltinObject {
         if (outdatedCallerFlags(callerFlags)) {
             return true;
         }
-        if (CallerFlags.needsLocals(callerFlags) || CallerFlags.needsLasti(callerFlags)) {
+        if ((CallerFlags.needsLocals(callerFlags) && syncsLocals()) || CallerFlags.needsLasti(callerFlags)) {
             if (frame != null && PArguments.getCurrentFrameInfo(frame) == getRef()) {
                 return true;
             }
@@ -260,12 +253,8 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public boolean outdatedCallerFlags(int callerFlags) {
-        if (customLocals != null) {
-            // Custom locals don't need locals sync
-            callerFlags &= ~CallerFlags.NEEDS_LOCALS;
-        }
-        if (CallerFlags.needsLocals(callerFlags) && bytecodeFrame == null) {
-            return true;
+        if (CallerFlags.needsLocals(callerFlags) && !syncsLocals()) {
+            callerFlags &= ~(CallerFlags.NEEDS_LOCALS | CallerFlags.NEEDS_MATERIALIZED_LOCALS);
         }
         return (callerFlags & lastCallerFlags) != callerFlags;
     }
@@ -279,6 +268,10 @@ public final class PFrame extends PythonBuiltinObject {
      */
     public Object getCustomLocals() {
         return customLocals;
+    }
+
+    public boolean syncsLocals() {
+        return customLocals == null && !materializedFrame;
     }
 
     public PFrame.Reference getRef() {
