@@ -155,7 +155,7 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame freshPFrameCachedFD(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Bind PythonLanguage language,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
-        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getFunctionOrCodeObject(frameToMaterialize), false);
+        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getFunctionOrCodeObject(frameToMaterialize), null);
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, location, syncValuesNode);
     }
 
@@ -163,8 +163,8 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame freshPFrameCustomLocals(Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync,
                     Frame frameToMaterialize,
                     @Bind PythonLanguage language) {
-        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getFunctionOrCodeObject(frameToMaterialize), true);
-        escapedFrame.setLocalsDict(PArguments.getSpecialArgument(frameToMaterialize));
+        Object customLocals = PArguments.getSpecialArgument(frameToMaterialize);
+        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getFunctionOrCodeObject(frameToMaterialize), customLocals);
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
     }
 
@@ -197,7 +197,7 @@ public abstract class MaterializeFrameNode extends Node {
 
     public static PFrame materializeGeneratorFrame(PythonLanguage language, Node location, MaterializedFrame generatorFrame, PFunction generatorFunction, PythonObject globals,
                     PFrame.Reference frameRef) {
-        PFrame escapedFrame = PFactory.createPFrame(language, frameRef, location, generatorFunction, false);
+        PFrame escapedFrame = PFactory.createPFrame(language, frameRef, location, generatorFunction, null);
         BytecodeNode bytecodeNode = BytecodeNode.get(location);
         assert bytecodeNode != null : location;
         escapedFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, generatorFrame));
@@ -273,7 +273,7 @@ public abstract class MaterializeFrameNode extends Node {
 
         public abstract void execute(PFrame pyFrame, Frame frameToSync, Node location);
 
-        @Specialization(guards = {"!pyFrame.hasCustomLocals()", "!isGeneratorFrame(frameToSync)"})
+        @Specialization(guards = {"pyFrame.getCustomLocals() == null", "!isGeneratorFrame(frameToSync)"})
         static void doSync(PFrame pyFrame, Frame frameToSync, Node location) {
             BytecodeNode bytecodeNode = BytecodeNode.get(location);
             if (bytecodeNode != null) {
@@ -283,7 +283,7 @@ public abstract class MaterializeFrameNode extends Node {
             }
         }
 
-        @Specialization(guards = "pyFrame.hasCustomLocals()")
+        @Specialization(guards = "pyFrame.getCustomLocals() != null")
         @SuppressWarnings("unused")
         static void doCustomLocals(PFrame pyFrame, Frame frameToSync, Node location) {
             // nothing to do

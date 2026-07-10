@@ -839,12 +839,12 @@ public final class PFactory {
      * Frames, traces and exceptions
      */
 
-    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, Object functionOrCode, boolean hasCustomLocals) {
-        return new PFrame(language, frameInfo, location, functionOrCode, hasCustomLocals);
+    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, Object functionOrCode, Object customLocals) {
+        return new PFrame(language, frameInfo, location, functionOrCode, customLocals);
     }
 
-    public static PFrame createPFrame(PythonLanguage language, long threadState, PCode code, PythonObject globals, Object localsDict) {
-        return new PFrame(language, threadState, code, globals, localsDict);
+    public static PFrame createPFrame(PythonLanguage language, long threadState, PCode code, PythonObject globals, Object customLocals) {
+        return new PFrame(language, threadState, code, globals, customLocals);
     }
 
     public static PTraceback createTraceback(PythonLanguage language, PFrame frame, int lineno, PTraceback next) {

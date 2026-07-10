@@ -64,19 +64,13 @@ public final class PFrame extends PythonBuiltinObject {
 
     private BytecodeFrame bytecodeFrame;
 
-    /**
-     * Whether the frame has dict locals passed from the caller (happens in eval/exec and class
-     * bodies). Then locals is null and localsDict contains the dict locals. Otherwise both locals
-     * and localsDict might contain a copy of the frame locals.
-     */
-    private final boolean hasCustomLocals;
-    private Object localsDict;
+    private final Object customLocals;
     private PythonObject globals;
     private final Reference virtualFrameInfo;
     private final Thread thread;
     /**
-     * The location must be an AST node connected to the
-     * {@link BytecodeNode} that was executed at the time when the BCI was captured.
+     * The location must be an AST node connected to the {@link BytecodeNode} that was executed at
+     * the time when the BCI was captured.
      */
     private Node location;
     private PFunction function;
@@ -194,7 +188,7 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object functionOrCode, boolean hasCustomLocals) {
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object functionOrCode, Object customLocals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
         this.location = location;
@@ -203,14 +197,14 @@ public final class PFrame extends PythonBuiltinObject {
         } else if (functionOrCode instanceof PCode code) {
             this.code = code;
         }
-        this.hasCustomLocals = hasCustomLocals;
+        this.customLocals = customLocals;
         // Mark everything as current for now. MaterializeFrameNode will set lastCallerFlags to a
         // narrower value if needed
         this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
         this.thread = Thread.currentThread();
     }
 
-    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") long threadState, PCode code, PythonObject globals, Object localsDict) {
+    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") long threadState, PCode code, PythonObject globals, Object customLocals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         // TODO: frames: extract the information from the threadState object
         this.globals = globals;
@@ -220,18 +214,15 @@ public final class PFrame extends PythonBuiltinObject {
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
         this.line = this.location == null ? code.getFirstLineNo() : UNINITIALIZED_LINE;
-        this.hasCustomLocals = true;
-        this.localsDict = localsDict;
+        this.customLocals = customLocals;
         // This is a synthetic frame, there will be no sync, mark everything as current
         this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
         this.thread = null;
     }
 
     /**
-     * Get the locals synced by {@link BytecodeFrame}. May be null when using custom locals, but
-     * null may also indicate that the locals were just not synced yet. Use
-     * {@link #hasCustomLocals()} to check if this {@code PFrame} has custom locals. In most cases,
-     * you should use {@link GetFrameLocalsNode} instead of this method.
+     * Get the locals synced by {@link BytecodeFrame}. May be null when using custom locals. In most
+     * cases, you should use {@link GetFrameLocalsNode} instead of this method.
      */
     public BytecodeFrame getBytecodeFrame() {
         return bytecodeFrame;
@@ -269,7 +260,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public boolean outdatedCallerFlags(int callerFlags) {
-        if (hasCustomLocals) {
+        if (customLocals != null) {
             // Custom locals don't need locals sync
             callerFlags &= ~CallerFlags.NEEDS_LOCALS;
         }
@@ -286,16 +277,8 @@ public final class PFrame extends PythonBuiltinObject {
     /**
      * Use {@link GetFrameLocalsNode} instead of accessing this directly.
      */
-    public Object getLocalsDict() {
-        return localsDict;
-    }
-
-    public boolean hasCustomLocals() {
-        return hasCustomLocals;
-    }
-
-    public void setLocalsDict(Object dict) {
-        localsDict = dict;
+    public Object getCustomLocals() {
+        return customLocals;
     }
 
     public PFrame.Reference getRef() {
