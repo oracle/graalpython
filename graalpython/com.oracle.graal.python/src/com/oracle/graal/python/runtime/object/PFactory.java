@@ -171,6 +171,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.frame.PFrameLocalsProxy;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewIterator;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -845,6 +846,10 @@ public final class PFactory {
 
     public static PFrame createPFrame(PythonLanguage language, long threadState, PCode code, PythonObject globals, Object customLocals) {
         return new PFrame(language, threadState, code, globals, customLocals);
+    }
+
+    public static PFrameLocalsProxy createFrameLocalsProxy(PythonLanguage language, PFrame frame) {
+        return new PFrameLocalsProxy(PythonBuiltinClassType.PFrameLocalsProxy, PythonBuiltinClassType.PFrameLocalsProxy.getInstanceShape(language), frame);
     }
 
     public static PTraceback createTraceback(PythonLanguage language, PFrame frame, int lineno, PTraceback next) {

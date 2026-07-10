@@ -271,6 +271,7 @@ import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignTimeZoneBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
+import com.oracle.graal.python.builtins.objects.frame.FrameLocalsProxyBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
@@ -547,6 +548,7 @@ public abstract class Python3Core {
                         new BuiltinClassmethodBuiltins(),
                         new CodeBuiltins(),
                         new FrameBuiltins(),
+                        new FrameLocalsProxyBuiltins(),
                         new MappingproxyBuiltins(),
                         new DescriptorBuiltins(),
                         new GetSetDescriptorTypeBuiltins(),

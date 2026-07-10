@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.frame;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -91,6 +92,7 @@ public final class PFrame extends PythonBuiltinObject {
     public static final int NO_JUMP = -2;
     private int jumpDestLine = DISALLOW_JUMPS;
     private Object localTraceFun = null;
+    private PDict extraLocals;
 
     private boolean traceLine = true;
 
@@ -126,6 +128,14 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void setJumpDestLine(int jumpDestLine) {
         this.jumpDestLine = jumpDestLine;
+    }
+
+    public PDict getExtraLocals() {
+        return extraLocals;
+    }
+
+    public void setExtraLocals(PDict extraLocals) {
+        this.extraLocals = extraLocals;
     }
 
     // TODO: frames: this is a large object, think about how to make this

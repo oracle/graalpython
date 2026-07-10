@@ -53,6 +53,7 @@ public abstract class ErrorMessages {
     public static final TruffleString A_SINGLE_CONSTRAINT_IS_NOT_ALLOWED = tsLiteral("A single constraint is not allowed");
     public static final TruffleString ABC_FLAGS_CANNOT_BE_SEQUENCE_AND_MAPPING = tsLiteral("\"__abc_tpflags__ cannot be both Py_TPFLAGS_SEQUENCE and Py_TPFLAGS_MAPPING\"");
     public static final TruffleString ABSOLUTE_VALUE_TOO_LARGE = tsLiteral("absolute value too large");
+    public static final TruffleString CANNOT_REMOVE_LOCAL_VARIABLES_FROM_FRAME_LOCALS_PROXY = tsLiteral("cannot remove local variables from FrameLocalsProxy");
     public static final TruffleString P_ACCEPTS_D_POS_SUBARG_S_D_GIVEN = tsLiteral("%p() accepts %d positional sub-pattern%s (%d given)");
     public static final TruffleString AF_UNIX_NOT_SUPPORTED = tsLiteral("%s(): AF_UNIX is not supported");
     public static final TruffleString AF_UNIX_PATH_TOO_LONG = tsLiteral("%s(): AF_UNIX path too long");

@@ -190,6 +190,7 @@ import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignTimeZoneBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
+import com.oracle.graal.python.builtins.objects.frame.FrameLocalsProxyBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.MethodDescriptorBuiltins;
@@ -456,6 +457,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     newBuilder().publishInModule(J_BUILTINS).basetype().slots(FloatBuiltins.SLOTS).doc("""
                                     Convert a string or number to a floating point number, if possible.""")),
     PFrame("frame", PythonObject, newBuilder().disallowInstantiation().slots(FrameBuiltins.SLOTS)),
+    PFrameLocalsProxy("FrameLocalsProxy", PythonObject, newBuilder().disallowInstantiation().slots(FrameLocalsProxyBuiltins.SLOTS)),
     PFrozenSet(
                     "frozenset",
                     PythonObject,

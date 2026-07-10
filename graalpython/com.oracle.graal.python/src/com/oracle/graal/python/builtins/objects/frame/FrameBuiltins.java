@@ -49,7 +49,6 @@ import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -263,16 +262,18 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_locals", minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = "f_locals", minNumOfPositionalArgs = 1, isGetter = true, callerFlags = CallerFlags.NEEDS_MATERIALIZED_LOCALS)
     @GenerateNodeFactory
     public abstract static class GetLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getUpdating(VirtualFrame frame, PFrame self,
+        Object getLocals(VirtualFrame frame, PFrame self,
                         @Bind Node inliningTarget,
-                        @Cached GetFrameLocalsNode getFrameLocalsNode) {
-            Object locals = getFrameLocalsNode.execute(frame, inliningTarget, self, false);
-            self.setLocalsAccessed(true);
-            return locals;
+                        @Cached ReadFrameNode readFrameNode) {
+            self = readFrameNode.ensureFresh(frame, self, CallerFlags.NEEDS_MATERIALIZED_LOCALS);
+            if (self.getCustomLocals() != null) {
+                return self.getCustomLocals();
+            }
+            return PFactory.createFrameLocalsProxy(PythonLanguage.get(inliningTarget), self);
         }
     }
 
