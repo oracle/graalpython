@@ -59,7 +59,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -310,7 +309,19 @@ public abstract class ReadFrameNode extends Node {
         }
         StackWalkResult result = ReadFrameNode.getFrame(location, startFrameInfo, frameAccess, selector, level, callerFlags);
         if (forceEscape && result != null) {
-            CalleeContext.forceEscapeFrame(result.frame, getMaterializationLocation(result), PArguments.getCurrentFrameInfo(result.frame), materializeFrameNode);
+            Reference info = PArguments.getCurrentFrameInfo(result.frame);
+            info.markAsEscaped();
+            Reference callerInfo = info.getCallerInfo();
+            if (callerInfo == null) {
+                Frame callerFrame = getCallerFrame(info, FrameAccess.READ_ONLY, AllFramesSelector.INSTANCE, 1, CallerFlags.NEEDS_FRAME_REFERENCE);
+                if (callerFrame != null) {
+                    callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                } else {
+                    callerInfo = Reference.EMPTY;
+                }
+            }
+            callerInfo.markAsEscaped();
+            info.setCallerInfo(callerInfo);
         }
         return processStackWalkResult(materializeFrameNode, callerFlags, result);
     }

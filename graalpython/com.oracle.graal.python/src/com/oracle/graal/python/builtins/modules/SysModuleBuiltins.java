@@ -242,10 +242,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
@@ -989,7 +989,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                          * without exitEscaped filling in callerInfo, and f_back would be unable to
                          * recover the caller by stack-walking from the already-unwound frame.
                          */
-                        PFrame pyFrame = ReadFrameNode.readFrameInThreadLocal(access, null, FrameAccess.READ_ONLY, AllPythonFramesSelector.INSTANCE, 0, CallerFlags.NEEDS_PFRAME,
+                        PFrame pyFrame = ReadFrameNode.readFrameInThreadLocal(access, null, FrameAccess.MATERIALIZE, AllPythonFramesSelector.INSTANCE, 0, CallerFlags.ALL_FRAME_FLAGS,
                                         MaterializeFrameNode.getUncached(), true);
                         frames.put(access.getThread(), escapedFrameOrPlaceholder(pyFrame));
                     }
