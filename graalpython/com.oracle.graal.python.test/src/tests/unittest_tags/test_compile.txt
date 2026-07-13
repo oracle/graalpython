@@ -41,7 +41,7 @@ test.test_compile.TestSpecifics.test_literals_with_leading_zeroes @ darwin-arm64
 test.test_compile.TestSpecifics.test_mangling @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_multi_line_lambda_as_argument @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_no_ending_newline @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_compile.TestSpecifics.test_no_wraparound_jump @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_compile.TestSpecifics.test_no_wraparound_jump @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_none_assignment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_none_keyword_arg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_compile.TestSpecifics.test_null_terminated @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
