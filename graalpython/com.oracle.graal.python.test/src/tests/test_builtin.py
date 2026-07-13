@@ -73,6 +73,39 @@ class BuiltinTest(unittest.TestCase):
             consume().send(None)
         self.assertIsNone(caught.exception.value)
 
+    def test_anext_with_default_awaitable_protocol(self):
+        class Awaitable:
+            def __await__(self):
+                return self
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                raise StopAsyncIteration
+
+            def send(self, *args):
+                return "send", args
+
+            def throw(self, *args):
+                return "throw", args
+
+            def close(self, *args):
+                return "close", args
+
+        class AsyncIterator:
+            def __anext__(self):
+                return Awaitable()
+
+        awaitable = anext(AsyncIterator(), 42)
+        self.assertIs(awaitable.__await__(), awaitable)
+        self.assertIs(iter(awaitable), awaitable)
+        self.assertEqual(awaitable.send("value"), ("send", ("value",)))
+        self.assertEqual(awaitable.throw(ValueError), ("throw", (ValueError,)))
+        self.assertEqual(awaitable.throw(ValueError, "error"), ("throw", (ValueError, "error")))
+        self.assertEqual(awaitable.throw(ValueError, "error", None), ("throw", (ValueError, "error", None)))
+        self.assertEqual(awaitable.close(), ("close", ()))
+
     def test_getitem_typeerror(self):
         a = object()
         try:

@@ -219,6 +219,7 @@ import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenSendBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.AsyncGenThrowBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.AsyncGeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.asyncio.ANextAwaitableBuiltins;
 import com.oracle.graal.python.builtins.objects.asyncio.CoroutineWrapperBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
@@ -530,6 +531,7 @@ public abstract class Python3Core {
                         new GeneratorBuiltins(),
                         new CoroutineBuiltins(),
                         new CoroutineWrapperBuiltins(),
+                        new ANextAwaitableBuiltins(),
                         new CommonGeneratorBuiltins(),
                         new AbstractFunctionBuiltins(),
                         new FunctionBuiltins(),
