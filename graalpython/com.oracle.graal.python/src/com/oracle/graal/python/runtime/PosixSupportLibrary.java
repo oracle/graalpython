@@ -1080,6 +1080,11 @@ public abstract class PosixSupportLibrary extends Library {
 
         private final int errorCode;
         private final transient TruffleString msg;
+        /*
+         * Windows APIs expose both POSIX errno and a native Win32/Winsock error code. Store the
+         * native code as java.lang.Integer rather than int because most PosixErrnoException
+         * instances are not backed by a Windows error, so this field can be null.
+         */
         private final Integer winerror;
 
         public PosixErrnoException(int errorCode, TruffleString message) {

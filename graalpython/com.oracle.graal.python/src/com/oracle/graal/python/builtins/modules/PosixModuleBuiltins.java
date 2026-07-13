@@ -480,6 +480,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         private static void checkWindowsEnvName(Node inliningTarget, TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode,
                         TruffleString.IndexOfCodePointNode indexOfCodePointNode, PRaiseNode raiseNode) {
             int length = codePointLengthNode.execute(name, TS_ENCODING);
+            // Match CPython's Windows-specific name validation in posixmodule.c:win32_putenv:
+            // the name must not be empty, but an initial '=' is allowed for hidden drive-current
+            // directory environment variables such as "=C:".
             if (length == 0 || (length > 1 && indexOfCodePointNode.execute(name, '=', 1, length, TS_ENCODING) >= 0)) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ILLEGAL_ENVIRONMENT_VARIABLE_NAME);
             }
