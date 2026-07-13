@@ -397,12 +397,21 @@ class Bdb:
             while frame:
                 frame.f_trace = self.trace_dispatch
                 self.botframe = frame
-                self.frame_trace_lines_opcodes[frame] = (frame.f_trace_lines, frame.f_trace_opcodes)
+                # GraalPy change: opcode tracing would expose implementation bytecode.
+                self.frame_trace_lines_opcodes[frame] = (frame.f_trace_lines, False)
                 # We need f_trace_lines == True for the debugger to work
                 frame.f_trace_lines = True
                 frame = frame.f_back
-            self.set_stepinstr()
-        sys.settrace(self.trace_dispatch)
+            # GraalPy change: enter pdb synchronously on the set_trace() line instead
+            # of relying on an opcode event, which GraalPy intentionally does not expose.
+            self.set_step()
+            # Keep debugger internals from being traced while entering synchronously.
+            sys.settrace(None)
+            self.user_line(self.enterframe)
+            if self.quitting:
+                raise BdbQuit
+            if self.stoplineno != -1 or self.breaks:
+                sys.settrace(self.trace_dispatch)
 
     def set_continue(self):
         """Stop only at breakpoints or when finished.
@@ -418,8 +427,9 @@ class Bdb:
             while frame and frame is not self.botframe:
                 del frame.f_trace
                 frame = frame.f_back
-            for frame, (trace_lines, trace_opcodes) in self.frame_trace_lines_opcodes.items():
-                frame.f_trace_lines, frame.f_trace_opcodes = trace_lines, trace_opcodes
+            # GraalPy change: opcode tracing is unsupported, so only restore line tracing.
+            for frame, (trace_lines, _trace_opcodes) in self.frame_trace_lines_opcodes.items():
+                frame.f_trace_lines = trace_lines
             self.frame_trace_lines_opcodes = {}
 
     def set_quit(self):
