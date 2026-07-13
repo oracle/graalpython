@@ -109,13 +109,10 @@ def find_first_executable_line(code):
 
     Return code.co_firstlineno if no executable line is found.
     """
-    prev = None
-    for instr in dis.get_instructions(code):
-        if prev is not None and prev.opname == 'RESUME':
-            if instr.positions.lineno is not None:
-                return instr.positions.lineno
-            return code.co_firstlineno
-        prev = instr
+    # GraalPy change: avoid dis, infer the first body line from source-line metadata
+    for _, _, lineno in code.co_lines():
+        if lineno is not None and lineno != code.co_firstlineno:
+            return lineno
     return code.co_firstlineno
 
 def find_function(funcname, filename):
