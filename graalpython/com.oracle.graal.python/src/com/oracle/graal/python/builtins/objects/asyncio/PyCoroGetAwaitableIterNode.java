@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,62 +38,59 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.bytecode;
-
-import static com.oracle.graal.python.nodes.ErrorMessages.ANEXT_INVALID_OBJECT;
-import static com.oracle.graal.python.nodes.ErrorMessages.ASYNC_FOR_NO_ANEXT_ITERATION;
+package com.oracle.graal.python.builtins.objects.asyncio;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.asyncio.PyCoroGetAwaitableIterNode;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.lib.PyIterCheckNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.bytecode.OperationProxy.Proxyable;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@Proxyable(storeBytecodeIndex = true, allowUncached = true)
+/** Equivalent to CPython's {@code _PyCoro_GetAwaitableIter}. */
 @GenerateUncached
-@GenerateInline(false) // used in bytecode root node
-public abstract class GetANextNode extends PNodeWithContext {
-    public abstract Object execute(VirtualFrame frame, Object receiver);
+@GenerateInline
+@GenerateCached(false)
+public abstract class PyCoroGetAwaitableIterNode extends Node {
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object object);
 
-    public static GetANextNode getUncached() {
-        return GetANextNodeGen.getUncached();
+    @Specialization(guards = "generator.isCoroutine()")
+    static Object doCoroutine(PGenerator generator) {
+        return generator;
     }
 
-    public static GetANextNode create() {
-        return GetANextNodeGen.create();
-    }
-
-    @Specialization
-    public static Object doGeneric(VirtualFrame frame, Object receiver,
-                    @Bind Node inliningTarget,
-                    @Cached GetClassNode getAsyncIterType,
+    @Fallback
+    static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object object,
+                    @Cached GetClassNode getObjectType,
                     @Cached GetCachedTpSlotsNode getSlots,
                     @Cached CallSlotUnaryNode callSlot,
-                    @Cached PRaiseNode raiseNoANext,
-                    @Cached PRaiseNode raiseInvalidObject,
-                    @Cached PyCoroGetAwaitableIterNode getAwaitableIter) {
-        Object type = getAsyncIterType.execute(inliningTarget, receiver);
+                    @Cached PyIterCheckNode iterCheck,
+                    @Cached PRaiseNode raiseNoAwait,
+                    @Cached PRaiseNode raiseNotIter) {
+        Object type = getObjectType.execute(inliningTarget, object);
         TpSlots slots = getSlots.execute(inliningTarget, type);
-        if (slots.am_anext() == null) {
-            throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.TypeError, ASYNC_FOR_NO_ANEXT_ITERATION, receiver);
+        if (slots.am_await() == null) {
+            throw raiseNoAwait.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, type);
         }
-        Object anext = callSlot.execute(frame, inliningTarget, slots.am_anext(), receiver);
-        try {
-            return getAwaitableIter.execute(frame, inliningTarget, anext);
-        } catch (PException e) {
-            throw raiseInvalidObject.raiseWithCause(inliningTarget, PythonBuiltinClassType.TypeError, e, ANEXT_INVALID_OBJECT, anext);
+        Object iterator = callSlot.execute(frame, inliningTarget, slots.am_await(), object);
+        if (iterator instanceof PGenerator generator && generator.isCoroutine()) {
+            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
         }
+        if (!iterCheck.execute(inliningTarget, iterator)) {
+            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, iterator);
+        }
+        return iterator;
     }
+
 }

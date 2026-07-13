@@ -2,12 +2,14 @@
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+import io
 import os
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
-import io
+
 
 class MyIndexable(object):
     def __init__(self, value):
@@ -74,6 +76,7 @@ class BuiltinTest(unittest.TestCase):
         self.assertIsNone(caught.exception.value)
 
     def test_anext_with_default_awaitable_protocol(self):
+
         class Awaitable:
             def __await__(self):
                 return self
@@ -105,6 +108,75 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(awaitable.throw(ValueError, "error"), ("throw", (ValueError, "error")))
         self.assertEqual(awaitable.throw(ValueError, "error", None), ("throw", (ValueError, "error", None)))
         self.assertEqual(awaitable.close(), ("close", ()))
+
+        class CoroutineAsyncIterator:
+            async def __anext__(self):
+                return 24
+
+        @types.coroutine
+        def generator_based_coroutine():
+            if False:
+                yield
+            return 25
+
+        class GeneratorBasedCoroutineAsyncIterator:
+            def __anext__(self):
+                return generator_based_coroutine()
+
+        async def consume(iterator):
+            return await anext(iterator, 42)
+
+        for iterator, expected in ((CoroutineAsyncIterator(), 24), (GeneratorBasedCoroutineAsyncIterator(), 25)):
+            with self.assertRaises(StopIteration) as caught:
+                consume(iterator).send(None)
+            self.assertEqual(caught.exception.value, expected)
+
+        @types.coroutine
+        def suspend():
+            yield 1
+
+        async def suspended_coroutine():
+            await suspend()
+            return 26
+
+        coroutine = suspended_coroutine()
+        self.assertEqual(coroutine.send(None), 1)
+
+        class SuspendedCoroutineAsyncIterator:
+            def __anext__(self):
+                return coroutine
+
+        awaitable = anext(SuspendedCoroutineAsyncIterator(), 42)
+        with self.assertRaises(StopIteration) as caught:
+            awaitable.send(None)
+        self.assertEqual(caught.exception.value, 26)
+
+        class BadAwaitable:
+            def __await__(self):
+                return generator_based_coroutine()
+
+        class BadAsyncIterator:
+            def __aiter__(self):
+                return self
+
+            def __anext__(self):
+                return BadAwaitable()
+
+        async def await_bad():
+            await BadAwaitable()
+
+        async def iterate_bad():
+            async for _ in BadAsyncIterator():
+                pass
+
+        async def anext_bad():
+            await anext(BadAsyncIterator(), 42)
+
+        for coroutine in (await_bad(), anext_bad()):
+            with self.assertRaisesRegex(TypeError, "__await__.*coroutine"):
+                coroutine.send(None)
+        with self.assertRaisesRegex(TypeError, "async for.*invalid object"):
+            iterate_bad().send(None)
 
     def test_getitem_typeerror(self):
         a = object()
