@@ -67,6 +67,24 @@ def test_named_mmap_clears_windows_last_error():
         ctypes.set_last_error(0)
 
 
+def test_windows_tagname_as_third_positional_argument():
+    if sys.platform != "win32":
+        return
+
+    data = b"named mmap"
+    tagname = f"graalpy-mmap-test-{os.getpid()}-{time.time_ns()}"
+    m1 = mmap.mmap(-1, len(data), tagname)
+    try:
+        m1[:] = data
+        m2 = mmap.mmap(-1, len(data), tagname=tagname)
+        try:
+            assert m2[:] == data
+        finally:
+            m2.close()
+    finally:
+        m1.close()
+
+
 def test_map_private_constant_matches_platform():
     assert hasattr(mmap, "MAP_PRIVATE") == (sys.platform != "win32")
 

@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqIt
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -187,7 +188,6 @@ public final class MMapBuiltins extends PythonBuiltins {
     // Note: it really should not call fileno on fd as per Python spec
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "length", conversion = ClinicConversion.LongIndex)
-    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int, defaultValue = "FLAGS_DEFAULT")
     @ArgumentClinic(name = "prot", conversion = ClinicConversion.Int, defaultValue = "PROT_DEFAULT")
     @ArgumentClinic(name = "access", conversion = ClinicConversion.Int, defaultValue = "ACCESS_ARG_DEFAULT")
     @ArgumentClinic(name = "offset", conversion = ClinicConversion.Long, defaultValue = "0")
@@ -198,6 +198,9 @@ public final class MMapBuiltins extends PythonBuiltins {
 
         private static final int ANONYMOUS_FD = -1;
 
+        private record MMapArgs(int flags, Object tagname) {
+        }
+
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return MMapNodeClinicProviderGen.INSTANCE;
@@ -205,24 +208,23 @@ public final class MMapBuiltins extends PythonBuiltins {
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset=0])
         @Specialization(guards = "!isIllegal(fd)")
-        static PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, int flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
+        static PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, Object flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
                         Object tagname,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached CastToTruffleStringNode castTagnameNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (tagname != PNone.NO_VALUE && PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, "mmap", "tagname");
-            }
+                        @Exclusive @Cached CastToTruffleStringNode castTagnameNode,
+                        @Exclusive @Cached PyLongAsIntNode flagsAsIntNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            MMapArgs mmapArgs = parseFlagsAndTagname(frame, inliningTarget, flagsIn, tagname, castTagnameNode, flagsAsIntNode, raiseNode);
             Object mmapTagname = PNone.NONE;
-            if (tagname != PNone.NO_VALUE && !isPNone(tagname)) {
+            if (mmapArgs.tagname() != PNone.NO_VALUE && !isPNone(mmapArgs.tagname())) {
                 try {
-                    mmapTagname = castTagnameNode.execute(inliningTarget, tagname);
+                    mmapTagname = castTagnameNode.execute(inliningTarget, mmapArgs.tagname());
                 } catch (CannotCastException e) {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, tagname);
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, mmapArgs.tagname());
                 }
             }
             if (lengthIn < 0) {
@@ -231,7 +233,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             if (offset < 0) {
                 throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MEM_MAPPED_OFFSET_MUST_BE_POSITIVE);
             }
-            int flags = flagsIn;
+            int flags = mmapArgs.flags();
             int prot = protIn;
             int access = accessIn;
             switch (access) {
@@ -318,13 +320,34 @@ public final class MMapBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isIllegal(fd)")
         @SuppressWarnings("unused")
-        static PMMap doIllegal(Object clazz, int fd, long lengthIn, int flagsIn, int protIn, int accessIn, long offset,
+        static PMMap doIllegal(VirtualFrame frame, Object clazz, int fd, long lengthIn, Object flagsIn, int protIn, int accessIn, long offset,
                         Object tagname,
-                        @Bind Node inliningTarget) {
-            if (tagname != PNone.NO_VALUE && PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32) {
-                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, "mmap", "tagname");
-            }
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached CastToTruffleStringNode castTagnameNode,
+                        @Exclusive @Cached PyLongAsIntNode flagsAsIntNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            parseFlagsAndTagname(frame, inliningTarget, flagsIn, tagname, castTagnameNode, flagsAsIntNode, raiseNode);
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.OSError);
+        }
+
+        private static MMapArgs parseFlagsAndTagname(VirtualFrame frame, Node inliningTarget, Object flagsArg, Object tagnameArg,
+                        CastToTruffleStringNode castTagnameNode, PyLongAsIntNode flagsAsIntNode, PRaiseNode raiseNode) {
+            Object flags = flagsArg;
+            Object tagname = tagnameArg;
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && tagname == PNone.NO_VALUE && flags != PNone.NO_VALUE) {
+                try {
+                    if (!isPNone(flags)) {
+                        castTagnameNode.execute(inliningTarget, flags);
+                    }
+                    tagname = flags;
+                    flags = PNone.NO_VALUE;
+                } catch (CannotCastException ignored) {
+                }
+            }
+            if (tagname != PNone.NO_VALUE && PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, "mmap", "tagname");
+            }
+            return new MMapArgs(flags == PNone.NO_VALUE ? FLAGS_DEFAULT : flagsAsIntNode.execute(frame, inliningTarget, flags), tagname);
         }
 
         protected static boolean isIllegal(int fd) {
