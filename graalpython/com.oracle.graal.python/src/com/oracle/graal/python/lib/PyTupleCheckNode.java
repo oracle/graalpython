@@ -53,13 +53,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 /** Equivalent of CPython's {@code PyTuple_Check}. */
 @GenerateInline
@@ -77,41 +77,33 @@ public abstract class PyTupleCheckNode extends Node {
     }
 
     @Specialization
-    public static boolean doGeneric(Node inliningTarget, Object object,
-                    @Cached InlinedBranchProfile isPTupleProfile,
-                    @Cached InlinedBranchProfile isNativeProfile) {
-        if (object instanceof PTuple) {
-            isPTupleProfile.enter(inliningTarget);
-            return true;
-        }
-        if (object instanceof PythonAbstractNativeObject nativeObject) {
-            isNativeProfile.enter(inliningTarget);
-            return checkNative(nativeObject);
-        }
-        return false;
+    static boolean doPTuple(@SuppressWarnings("unused") PTuple object) {
+        return true;
     }
 
-    public static boolean checkNative(PythonAbstractNativeObject nativeObject) {
+    @Specialization
+    public static boolean doNative(PythonAbstractNativeObject nativeObject) {
         long obType = readPtrField(nativeObject.pointer, PyObject__ob_type);
         boolean isTupleSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.TUPLE_SUBCLASS) != 0L;
         assert IsBuiltinObjectProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PTuple) == isTupleSubclass;
         return isTupleSubclass;
     }
 
+    @Fallback
+    static boolean doOther(@SuppressWarnings("unused") Object object) {
+        assert !(object instanceof PTuple || object instanceof PythonAbstractNativeObject);
+        return false;
+    }
+
     @GenerateInline(false)
     public abstract static class CachedNode extends Node {
         public abstract boolean execute(Object object);
 
-        public final boolean isTupleOrList(Object object) {
-            return object instanceof PList || execute(object);
-        }
-
         @Specialization
         static boolean doGeneric(Object object,
                         @Bind Node inliningTarget,
-                        @Cached InlinedBranchProfile isPTupleProfile,
-                        @Cached InlinedBranchProfile isNativeProfile) {
-            return PyTupleCheckNode.doGeneric(inliningTarget, object, isPTupleProfile, isNativeProfile);
+                        @Cached PyTupleCheckNode tupleCheckNode) {
+            return tupleCheckNode.execute(inliningTarget, object);
         }
 
         @NeverDefault

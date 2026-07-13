@@ -110,7 +110,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 
 @CApiFields
 public enum CFields {
@@ -438,7 +437,6 @@ public enum CFields {
         return struct;
     }
 
-    @InliningCutoff
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
         long offsetsPointer = CApiContext.getNativeCAPIMetadataPointer(null) + (CConstants.VALUES.length + 1L) * Long.BYTES;

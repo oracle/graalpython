@@ -78,7 +78,7 @@ public abstract class TupleNodes {
 
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 40 -> 21
-    @ImportStatic({PGuards.class, PyTupleCheckNode.class})
+    @ImportStatic(PGuards.class)
     public abstract static class ConstructTupleNode extends PNodeWithContext {
         public abstract PTuple execute(Frame frame, Object value);
 
@@ -101,7 +101,7 @@ public abstract class TupleNodes {
             return PFactory.createTuple(language, copyNode.execute(inliningTarget, iterable.getSequenceStorage()));
         }
 
-        @Specialization(guards = "checkNative(iterable)")
+        @Specialization(guards = "isNativeTuple(iterable)")
         static PTuple nativeTuple(PythonAbstractNativeObject iterable,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
@@ -172,7 +172,7 @@ public abstract class TupleNodes {
             if (object instanceof PTuple managedTuple) {
                 return managedTuple;
             }
-            if (object instanceof PythonAbstractNativeObject nativeTuple && PyTupleCheckNode.checkNative(nativeTuple)) {
+            if (object instanceof PythonAbstractNativeObject nativeTuple && PyTupleCheckNode.doNative(nativeTuple)) {
                 // 'GetTupleStorageNode.doNative' will just "wrap" the 'ob_item' pointer. The memory is then still
                 // owned by the native tuple object. Therefore, we need to copy the storage to a managed storage.
                 NativeObjectSequenceStorage nativeObjectSequenceStorage = GetTupleStorage.doNative(nativeTuple);
