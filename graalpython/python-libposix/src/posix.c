@@ -48,6 +48,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <afunix.h>
+#include <assert.h>
 #include <windows.h>
 #include <direct.h>
 #include <errno.h>
@@ -440,6 +441,20 @@ static SOCKET win_socket_from_fd(int32_t fd) {
     return result;
 }
 
+static int win_socket_blocking_from_fd(int32_t fd) {
+    int result = 1;
+    ensure_socket_table();
+    EnterCriticalSection(&win_socket_table_lock);
+    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+        if (win_socket_table[i].fd == fd) {
+            result = win_socket_table[i].blocking;
+            break;
+        }
+    }
+    LeaveCriticalSection(&win_socket_table_lock);
+    return result;
+}
+
 static int win_socket_entry_index(int32_t fd) {
     int result = -1;
     ensure_socket_table();
@@ -454,7 +469,7 @@ static int win_socket_entry_index(int32_t fd) {
     return result;
 }
 
-static int win_alloc_socket_fd(SOCKET s) {
+static int win_alloc_socket_fd(SOCKET s, int blocking) {
     int fd = _open("NUL", _O_RDONLY | _O_BINARY | _O_NOINHERIT);
     if (fd < 0) {
         capture_errno();
@@ -468,7 +483,7 @@ static int win_alloc_socket_fd(SOCKET s) {
         if (win_socket_table[i].fd < 0) {
             win_socket_table[i].fd = fd;
             win_socket_table[i].socket = s;
-            win_socket_table[i].blocking = 1;
+            win_socket_table[i].blocking = blocking;
             LeaveCriticalSection(&win_socket_table_lock);
             return fd;
         }
@@ -498,17 +513,106 @@ static SOCKET win_remove_socket_fd(int32_t fd) {
     return result;
 }
 
-static int win_socket_dup(int32_t fd) {
-    SOCKET s = win_socket_from_fd(fd);
+GP_EXPORT int32_t set_inheritable(int32_t fd, int32_t inheritable);
+
+/* The caller must hold win_socket_table_lock. */
+static int win_replace_socket_fd_locked(int32_t fd, SOCKET s, int blocking, SOCKET *replaced) {
+    assert(win_socket_table_lock.OwningThread == (HANDLE) (uintptr_t) GetCurrentThreadId());
+    int free_index = -1;
+    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+        if (win_socket_table[i].fd == fd) {
+            *replaced = win_socket_table[i].socket;
+            win_socket_table[i].socket = s;
+            win_socket_table[i].blocking = blocking;
+            return 0;
+        }
+        if (free_index < 0 && win_socket_table[i].fd < 0) {
+            free_index = i;
+        }
+    }
+    if (free_index < 0) {
+        set_posix_errno(EMFILE);
+        return -1;
+    }
+    win_socket_table[free_index].fd = fd;
+    win_socket_table[free_index].socket = s;
+    win_socket_table[free_index].blocking = blocking;
+    *replaced = INVALID_SOCKET;
+    return 0;
+}
+
+static SOCKET win_duplicate_socket(SOCKET s) {
     WSAPROTOCOL_INFOA protocol_info;
     if (WSADuplicateSocketA(s, GetCurrentProcessId(), &protocol_info) == SOCKET_ERROR) {
-        return set_wsa_errno();
+        set_wsa_errno();
+        return INVALID_SOCKET;
     }
     SOCKET dup = WSASocketA(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocol_info, 0, WSA_FLAG_NO_HANDLE_INHERIT);
     if (dup == INVALID_SOCKET) {
-        return set_wsa_errno();
+        set_wsa_errno();
+        return INVALID_SOCKET;
     }
-    return win_alloc_socket_fd(dup);
+    return dup;
+}
+
+static int win_socket_dup(int32_t fd) {
+    SOCKET s = win_socket_from_fd(fd);
+    int blocking = win_socket_blocking_from_fd(fd);
+    SOCKET dup = win_duplicate_socket(s);
+    if (dup == INVALID_SOCKET) {
+        return -1;
+    }
+    return win_alloc_socket_fd(dup, blocking);
+}
+
+static int win_socket_dup2(int32_t oldfd, int32_t newfd, int32_t inheritable) {
+    SOCKET dup = win_duplicate_socket(win_socket_from_fd(oldfd));
+    if (dup == INVALID_SOCKET) {
+        return -1;
+    }
+    int blocking = win_socket_blocking_from_fd(oldfd);
+
+    /*
+     * Keep the table locked while replacing the dummy CRT fd. This ensures that
+     * a full table is reported before _dup2 changes newfd and that the table
+     * entry is updated atomically with respect to other table users.
+     */
+    ensure_socket_table();
+    EnterCriticalSection(&win_socket_table_lock);
+    int table_has_slot = 0;
+    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
+        if (win_socket_table[i].fd == newfd || win_socket_table[i].fd < 0) {
+            table_has_slot = 1;
+            break;
+        }
+    }
+    if (!table_has_slot) {
+        LeaveCriticalSection(&win_socket_table_lock);
+        closesocket(dup);
+        set_posix_errno(EMFILE);
+        return -1;
+    }
+
+    if (dup2_noraise(oldfd, newfd) != 0) {
+        LeaveCriticalSection(&win_socket_table_lock);
+        closesocket(dup);
+        return -1;
+    }
+
+    SOCKET replaced = INVALID_SOCKET;
+    int replaced_result = win_replace_socket_fd_locked(newfd, dup, blocking, &replaced);
+    LeaveCriticalSection(&win_socket_table_lock);
+    if (replaced_result < 0) {
+        closesocket(dup);
+        return -1;
+    }
+    if (replaced != INVALID_SOCKET) {
+        closesocket(replaced);
+    }
+    if (!inheritable) {
+        return set_inheritable(newfd, 0);
+    }
+    return 0;
 }
 
 static intptr_t get_osfhandle_noraise(int32_t fd) {
@@ -915,8 +1019,25 @@ GP_EXPORT int32_t call_dup(int32_t fd) {
 }
 
 GP_EXPORT int32_t call_dup2(int32_t oldfd, int32_t newfd, int32_t inheritable) {
+    if (oldfd == newfd) {
+        int result = dup2_noraise(oldfd, newfd);
+        if (result == 0 && !inheritable) {
+            result = set_inheritable(newfd, 0);
+        }
+        return result == 0 ? newfd : -1;
+    }
+    if (win_socket_entry_index(oldfd) >= 0) {
+        return win_socket_dup2(oldfd, newfd, inheritable) == 0 ? newfd : -1;
+    }
     int result = dup2_noraise(oldfd, newfd);
-    if (result == 0 && !inheritable) {
+    if (result != 0) {
+        return -1;
+    }
+    SOCKET stale_socket = win_remove_socket_fd(newfd);
+    if (stale_socket != INVALID_SOCKET) {
+        closesocket(stale_socket);
+    }
+    if (!inheritable) {
         result = set_inheritable(newfd, 0);
     }
     return result == 0 ? newfd : -1;
@@ -1038,17 +1159,7 @@ GP_EXPORT int32_t call_fsync(int32_t fd) {
 GP_EXPORT int32_t call_flock(int32_t fd, int32_t operation) { return unsupported(); }
 GP_EXPORT int32_t call_fcntl_lock(int32_t fd, int32_t blocking, int32_t lockType, int32_t whence, int64_t start, int64_t length) { return unsupported(); }
 GP_EXPORT int32_t get_blocking(int32_t fd) {
-    int result = 1;
-    ensure_socket_table();
-    EnterCriticalSection(&win_socket_table_lock);
-    for (int i = 0; i < WIN_SOCKET_TABLE_SIZE; i++) {
-        if (win_socket_table[i].fd == fd) {
-            result = win_socket_table[i].blocking;
-            break;
-        }
-    }
-    LeaveCriticalSection(&win_socket_table_lock);
-    return result;
+    return win_socket_blocking_from_fd(fd);
 }
 
 GP_EXPORT int32_t set_blocking(int32_t fd, int32_t blocking) {
@@ -1607,7 +1718,7 @@ GP_EXPORT int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
     if (s == INVALID_SOCKET) {
         return set_wsa_errno();
     }
-    return win_alloc_socket_fd(s);
+    return win_alloc_socket_fd(s, 1);
 }
 
 GP_EXPORT int32_t call_accept(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
@@ -1617,7 +1728,7 @@ GP_EXPORT int32_t call_accept(int32_t sockfd, int8_t *addr, int32_t *addr_len) {
         return set_wsa_errno();
     }
     *addr_len = len;
-    return win_alloc_socket_fd(s);
+    return win_alloc_socket_fd(s, 1);
 }
 
 GP_EXPORT int32_t call_bind(int32_t sockfd, int8_t *addr, int32_t addr_len) { int r = bind(win_socket_from_fd(sockfd), (struct sockaddr *) addr, addr_len); return r == SOCKET_ERROR ? set_wsa_errno() : r; }

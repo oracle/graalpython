@@ -57,6 +57,7 @@ import tempfile
 import io
 import glob
 import shutil
+import socket
 from contextlib import contextmanager
 
 
@@ -400,6 +401,81 @@ class PosixTests(unittest.TestCase):
                 accepted.close()
         finally:
             server.close()
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup2_socket(self):
+        source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        target = os.open(os.devnull, os.O_RDONLY)
+        try:
+            source.bind(('127.0.0.1', 0))
+            self.assertEqual(target, os.dup2(source.fileno(), target))
+            duplicate = socket.socket(fileno=target)
+            target = -1
+            with duplicate:
+                self.assertEqual(source.getsockname(), duplicate.getsockname())
+        finally:
+            source.close()
+            if target >= 0:
+                os.close(target)
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup2_file_over_socket(self):
+        read_fd, write_fd = os.pipe()
+        target = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        target_fd = target.detach()
+        try:
+            self.assertEqual(target_fd, os.dup2(read_fd, target_fd))
+            os.close(read_fd)
+            read_fd = -1
+            os.write(write_fd, b'x')
+            self.assertEqual(b'x', os.read(target_fd, 1))
+        finally:
+            if read_fd >= 0:
+                os.close(read_fd)
+            os.close(write_fd)
+            os.close(target_fd)
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup2_socket_over_socket(self):
+        source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        target = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        target.bind(('127.0.0.1', 0))
+        target_fd = target.detach()
+        try:
+            source.bind(('127.0.0.1', 0))
+            self.assertEqual(target_fd, os.dup2(source.fileno(), target_fd))
+            duplicate = socket.socket(fileno=target_fd)
+            target_fd = -1
+            with duplicate:
+                self.assertEqual(source.getsockname(), duplicate.getsockname())
+        finally:
+            source.close()
+            if target_fd >= 0:
+                os.close(target_fd)
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup2_socket_to_self_non_inheritable(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            fd = sock.fileno()
+            os.set_inheritable(fd, True)
+            self.assertEqual(fd, os.dup2(fd, fd, inheritable=False))
+            self.assertFalse(os.get_inheritable(fd))
+            sock.getsockname()
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup_nonblocking_socket(self):
+        source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        source.setblocking(False)
+        try:
+            with socket.socket(fileno=os.dup(source.fileno())) as duplicate:
+                self.assertFalse(duplicate.getblocking())
+        finally:
+            source.close()
 
     def test_fd_converter(self):
         class MyInt(int):
