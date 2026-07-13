@@ -3,7 +3,8 @@ import dis
 import io
 import itertools
 import math
-import opcode
+# GraalPy change
+# import opcode
 import os
 import unittest
 import sys
@@ -13,12 +14,14 @@ import tempfile
 import types
 import textwrap
 import warnings
-import _testinternalcapi
+# GraalPy change
+# import _testinternalcapi
 
 from test import support
 from test.support import (script_helper, requires_debug_ranges, run_code,
                           requires_specialization, get_c_recursion_limit)
-from test.support.bytecode_helper import instructions_with_positions
+# GraalPy change
+# from test.support.bytecode_helper import instructions_with_positions
 from test.support.os_helper import FakePath
 
 from test.support import impl_detail # GraalPy change

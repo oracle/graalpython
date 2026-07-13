@@ -588,7 +588,7 @@ def skip_if_suppress_immortalization():
     try:
         import _testinternalcapi
     except ImportError:
-        return
+        return unittest.skip("requires _testinternalcapi")
     return unittest.skipUnless(_testinternalcapi.get_immortalize_deferred(),
                                 "requires immortalization of deferred objects")
 

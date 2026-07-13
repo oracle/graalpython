@@ -841,7 +841,8 @@ class ClassTests(unittest.TestCase):
         self.assertEqual(calls, 100)
 
 
-from _testinternalcapi import has_inline_values
+# GraalPy change
+#from _testinternalcapi import has_inline_values
 
 Py_TPFLAGS_INLINE_VALUES = (1 << 2)
 Py_TPFLAGS_MANAGED_DICT = (1 << 4)
@@ -867,6 +868,7 @@ class VarSizedSubclass(tuple):
     pass
 
 
+@support.impl_detail("inlined dict", graalpy=False)
 class TestInlineValues(unittest.TestCase):
 
     def test_no_flags_for_slots_class(self):

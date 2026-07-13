@@ -147,9 +147,10 @@ from test.support import (cpython_only,
                           impl_detail)
 from test.support.script_helper import assert_python_ok
 from test.support import threading_helper, import_helper
-from test.support.bytecode_helper import instructions_with_positions
-from opcode import opmap, opname
-COPY_FREE_VARS = opmap['COPY_FREE_VARS']
+# GraalPy change
+#from test.support.bytecode_helper import instructions_with_positions
+#from opcode import opmap, opname
+#COPY_FREE_VARS = opmap['COPY_FREE_VARS']
 
 
 def consts(t):
@@ -371,6 +372,7 @@ class CodeTest(unittest.TestCase):
         with self.assertRaisesRegex(SystemError, msg):
             foo()
 
+    @impl_detail("dis", graalpy=False)
     @requires_debug_ranges()
     def test_co_positions_artificial_instructions(self):
         import dis
