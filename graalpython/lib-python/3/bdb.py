@@ -393,6 +393,7 @@ class Bdb:
         if frame is None:
             frame = sys._getframe().f_back
         self.reset()
+        enable_trace = False  # GraalPy change: defer tracing past synchronous setup.
         with self.set_enterframe(frame):
             while frame:
                 frame.f_trace = self.trace_dispatch
@@ -410,8 +411,11 @@ class Bdb:
             self.user_line(self.enterframe)
             if self.quitting:
                 raise BdbQuit
-            if self.stoplineno != -1 or self.breaks:
-                sys.settrace(self.trace_dispatch)
+            enable_trace = self.stoplineno != -1 or bool(self.breaks)
+        # GraalPy change: do not enable tracing until the set_enterframe()
+        # context has exited, otherwise the next step enters contextlib internals.
+        if enable_trace:
+            sys.settrace(self.trace_dispatch)
 
     def set_continue(self):
         """Stop only at breakpoints or when finished.
