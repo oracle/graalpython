@@ -5,7 +5,8 @@ import unittest
 import gc
 import os
 
-import _opcode
+# GraalPy change
+#import _opcode
 
 from test.support import script_helper, requires_specialization, import_helper
 

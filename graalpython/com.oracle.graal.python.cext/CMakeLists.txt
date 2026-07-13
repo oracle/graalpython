@@ -323,6 +323,33 @@ target_include_directories("_testcapi" PRIVATE "${SRC_DIR}/include/internal")
 if(WIN32)
     target_compile_options("_testcapi" PRIVATE /wd4296 /wd4130)
 endif()
+
+set(TESTLIMITEDCAPI_SRC
+    "${SRC_DIR}/modules/_testlimitedcapi/abstract.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/bytearray.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/bytes.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/complex.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/dict.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/eval.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/file.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/float.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/heaptype_relative.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/import.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/list.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/long.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/object.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/pyos.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/set.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/sys.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/tuple.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/unicode.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/vectorcall_limited.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/weakref.c"
+    "${SRC_DIR}/modules/_testlimitedcapi.c"
+)
+
+native_module("_testlimitedcapi" FALSE "${TESTLIMITEDCAPI_SRC}" NO_CORE_DEFINES)
+
 simple_native_module("_testbuffer")
 if(WIN32)
     target_compile_options("_testbuffer" PRIVATE /wd4090)

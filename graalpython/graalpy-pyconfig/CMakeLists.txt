@@ -63,6 +63,7 @@ check_include_file("wchar.h" HAVE_WCHAR_H)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 check_include_file("pthread.h" HAVE_PTHREAD_H)
 check_include_file("sys/stat.h" HAVE_SYS_STAT_H)
+check_include_file("sys/types.h" HAVE_SYS_TYPES_H)
 check_include_file("sys/wait.h" HAVE_SYS_WAIT_H)
 check_include_file("sys/time.h" HAVE_SYS_TIME_H)
 
