@@ -60,6 +60,19 @@ class BuiltinTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "'async for' requires an object with __aiter__ method, got NoneType"):
             async_for_none().send(None)
 
+    def test_anext_with_default(self):
+        async def async_generator():
+            yield 42
+
+        async def consume():
+            iterator = async_generator()
+            self.assertEqual(await anext(iterator, 100), 42)
+            self.assertEqual(await anext(iterator, 100), 100)
+
+        with self.assertRaises(StopIteration) as caught:
+            consume().send(None)
+        self.assertIsNone(caught.exception.value)
+
     def test_getitem_typeerror(self):
         a = object()
         try:

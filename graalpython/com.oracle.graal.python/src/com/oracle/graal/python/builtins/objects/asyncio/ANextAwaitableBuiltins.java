@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -119,13 +119,13 @@ public class ANextAwaitableBuiltins extends PythonBuiltins {
                 return callMethod.execute(frame, inliningTarget, awaitable, method);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.StopAsyncIteration, stopIterationProfile);
-                throw raiseNode.raiseStopAsyncIteration(inliningTarget, self.getDefaultValue());
+                throw raiseNode.raiseStopIteration(inliningTarget, self.getDefaultValue());
             }
         }
     }
 
     @Slot(value = SlotKind.tp_iter, isComplex = true)
-    @Slot(value = SlotKind.am_aiter, isComplex = true)
+    @Slot(value = SlotKind.am_await, isComplex = true)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -151,7 +151,7 @@ public class ANextAwaitableBuiltins extends PythonBuiltins {
                 return callIternext.execute(frame, inliningTarget, slots.tp_iternext(), awaitable);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.StopAsyncIteration, stopIterationProfile);
-                throw raiseNode.raiseStopAsyncIteration(inliningTarget, self.getDefaultValue());
+                throw raiseNode.raiseStopIteration(inliningTarget, self.getDefaultValue());
             }
         }
     }
