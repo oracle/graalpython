@@ -647,6 +647,22 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, ConstCharPtr, Py_ssize_t}, call = Direct)
+    public static int PyUnicode_EqualToUTF8AndSize(long unicodePtr, long str, long size) {
+        if (size < 0) {
+            return 0;
+        }
+        try {
+            int intSize = PInt.intValueExact(size);
+            Object unicodeObj = NativeToPythonInternalNode.executeUncached(unicodePtr, false);
+            TruffleString unicode = CastToTruffleStringNode.castKnownStringUncached(unicodeObj);
+            TruffleString utf8 = TruffleString.fromNativePointerUncached(str, 0, intSize, UTF_8, true);
+            return unicode.equalsUncached(utf8.switchEncodingUncached(TS_ENCODING), TS_ENCODING) ? 1 : 0;
+        } catch (OverflowException e) {
+            return 0;
+        }
+    }
+
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Compare extends CApiBinaryBuiltinNode {

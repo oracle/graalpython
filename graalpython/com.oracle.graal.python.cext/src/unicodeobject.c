@@ -10550,6 +10550,7 @@ PyUnicode_CompareWithASCIIString(PyObject* uni, const char* str)
         return 0;
     }
 }
+#endif // GraalPy change
 
 int
 PyUnicode_EqualToUTF8(PyObject *unicode, const char *str)
@@ -10557,6 +10558,7 @@ PyUnicode_EqualToUTF8(PyObject *unicode, const char *str)
     return PyUnicode_EqualToUTF8AndSize(unicode, str, strlen(str));
 }
 
+#if 0 // GraalPy change
 int
 PyUnicode_EqualToUTF8AndSize(PyObject *unicode, const char *str, Py_ssize_t size)
 {

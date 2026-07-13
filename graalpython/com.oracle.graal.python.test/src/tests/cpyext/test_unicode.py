@@ -122,6 +122,23 @@ def _reference_compare(args):
         return 1
 
 
+def _reference_equal_to_utf8(args):
+    left, right = args
+    right = right.split(b'\0', 1)[0]
+    try:
+        return int(left.encode() == right)
+    except UnicodeEncodeError:
+        return 0
+
+
+def _reference_equal_to_utf8_and_size(args):
+    left, right = args
+    try:
+        return int(left.encode() == right)
+    except UnicodeEncodeError:
+        return 0
+
+
 def _reference_as_encoded_string(args):
     if not isinstance(args[0], str):
         raise TypeError
@@ -782,6 +799,50 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="i",
         argspec='Os',
         arguments=["PyObject* left", "const char* right"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_EqualToUTF8 = CPyExtFunction(
+        _reference_equal_to_utf8,
+        lambda: (
+            ("abc", b"abc"),
+            ("abc", b"abd"),
+            ("abc", b"abc\0def"),
+            ("a\0bc", b"a\0bc"),
+            ("你好世", "你好世".encode()),
+            ("😀😁😂", "😀😁😂".encode()),
+            ("\udcfe", "\udcfe".encode("utf-8", "surrogatepass")),
+            (UnicodeSubclass("asdf"), b"asdf"),
+        ),
+        code="""int wrap_PyUnicode_EqualToUTF8(PyObject* left, const char* right, Py_ssize_t right_size) {
+            return PyUnicode_EqualToUTF8(left, right);
+        }
+        """,
+        resultspec="i",
+        argspec='Oy#',
+        arguments=["PyObject* left", "const char* right", "Py_ssize_t right_size"],
+        callfunction="wrap_PyUnicode_EqualToUTF8",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_EqualToUTF8AndSize = CPyExtFunction(
+        _reference_equal_to_utf8_and_size,
+        lambda: (
+            ("", b""),
+            ("abc", b"abc"),
+            ("abc", b"abd"),
+            ("abc", b"abc\0def"),
+            ("a\0bc", b"a\0bc"),
+            ("¡¢£", "¡¢£".encode()),
+            ("你好世", "你好世".encode()),
+            ("😀😁😂", "😀😁😂".encode()),
+            ("\U0010ffff", "\U0010ffff".encode()),
+            ("\udcfe", "\udcfe".encode("utf-8", "surrogatepass")),
+            (UnicodeSubclass("asdf"), b"asdf"),
+        ),
+        resultspec="i",
+        argspec='Oy#',
+        arguments=["PyObject* left", "const char* right", "Py_ssize_t right_size"],
         cmpfunc=unhandled_error_compare
     )
 
