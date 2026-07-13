@@ -1081,6 +1081,27 @@ GP_EXPORT int32_t call_pipe2(int32_t *pipefd) {
     return result;
 }
 
+static int win_fill_fd_set(fd_set *set, int32_t *fds, int32_t len) {
+    FD_ZERO(set);
+    for (int32_t i = 0; i < len; i++) {
+        SOCKET s = win_socket_from_fd(fds[i]);
+        int found = 0;
+        for (unsigned int j = 0; j < set->fd_count; j++) {
+            if (set->fd_array[j] == s) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            if (set->fd_count >= (unsigned int) FD_SETSIZE) {
+                return set_wsa_errno_from_error(WSAEINVAL);
+            }
+            set->fd_array[set->fd_count++] = s;
+        }
+    }
+    return 0;
+}
+
 GP_EXPORT int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen,
     int32_t* writefds, int32_t writefdsLen, int32_t* errfds, int32_t errfdsLen,
     int64_t timeoutSec, int64_t timeoutUsec, int8_t* selected) {
@@ -1092,17 +1113,14 @@ GP_EXPORT int32_t call_select(int32_t nfds, int32_t* readfds, int32_t readfdsLen
     if (ensure_winsock() < 0) {
         return -1;
     }
-    FD_ZERO(&read_set);
-    FD_ZERO(&write_set);
-    FD_ZERO(&err_set);
-    for (int32_t i = 0; i < readfdsLen; i++) {
-        FD_SET(win_socket_from_fd(readfds[i]), &read_set);
+    if (win_fill_fd_set(&read_set, readfds, readfdsLen) < 0) {
+        return -1;
     }
-    for (int32_t i = 0; i < writefdsLen; i++) {
-        FD_SET(win_socket_from_fd(writefds[i]), &write_set);
+    if (win_fill_fd_set(&write_set, writefds, writefdsLen) < 0) {
+        return -1;
     }
-    for (int32_t i = 0; i < errfdsLen; i++) {
-        FD_SET(win_socket_from_fd(errfds[i]), &err_set);
+    if (win_fill_fd_set(&err_set, errfds, errfdsLen) < 0) {
+        return -1;
     }
     if (selectedLen > 0) {
         memset(selected, 0, selectedLen * sizeof(*selected));
