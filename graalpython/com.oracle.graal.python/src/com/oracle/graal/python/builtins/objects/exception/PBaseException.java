@@ -321,7 +321,8 @@ public class PBaseException extends PythonObject {
             }
             // these are the only ones we'll raise, we don't want to report user subtypes of
             // SyntaxError as Truffle syntax errors
-            if (clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IndentationError || clazz == PythonBuiltinClassType.TabError) {
+            if (clazz == PythonBuiltinClassType.SyntaxError || clazz == PythonBuiltinClassType.IncompleteInputError || clazz == PythonBuiltinClassType.IndentationError ||
+                            clazz == PythonBuiltinClassType.TabError) {
                 return ExceptionType.PARSE_ERROR;
             }
             if (clazz == PythonBuiltinClassType.SystemExit) {

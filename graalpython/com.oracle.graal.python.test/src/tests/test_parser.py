@@ -40,6 +40,29 @@
 
 import types
 
+
+def test_incomplete_input_error():
+    flags = 0x4000 | 0x200  # PyCF_ALLOW_INCOMPLETE_INPUT | PyCF_DONT_IMPLY_DEDENT
+
+    assert issubclass(_IncompleteInputError, SyntaxError)
+    assert _IncompleteInputError.__module__ == "builtins"
+    for source in ("if True:", "(", "x ="):
+        try:
+            compile(source, "<input>", "single", flags)
+        except _IncompleteInputError as e:
+            assert e.msg == "incomplete input"
+        else:
+            assert False, "_IncompleteInputError was not raised"
+
+    for source in ("$ invalid", "(]"):
+        try:
+            compile(source, "<input>", "single", flags)
+        except SyntaxError as e:
+            assert type(e) is SyntaxError
+        else:
+            assert False, "SyntaxError was not raised"
+
+
 def test_lambdas_as_function_default_argument_values():
     globs = {}
     exec("""
