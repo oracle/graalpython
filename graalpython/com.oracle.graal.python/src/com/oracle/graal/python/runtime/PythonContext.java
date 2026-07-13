@@ -784,8 +784,6 @@ public final class PythonContext extends Python3Core {
     @CompilationFinal private boolean nativeAccessAllowed;
     @CompilationFinal private NativeContext nativeContext;
 
-    private TruffleString extensionSuffix;
-
     private static final class GlobalInterpreterLock extends ReentrantLock {
         private static final long serialVersionUID = 1L;
 
@@ -2508,12 +2506,8 @@ public final class PythonContext extends Python3Core {
         return finalizing;
     }
 
-    @TruffleBoundary
     public TruffleString getExtensionSuffix() {
-        if (extensionSuffix == null) {
-            extensionSuffix = toTruffleStringUncached(PythonLanguage.GRAALPY_EXT_SUFFIX);
-        }
-        return extensionSuffix;
+        return PythonLanguage.getPlatformInfo().extensionSuffix();
     }
 
     public Thread getMainThread() {

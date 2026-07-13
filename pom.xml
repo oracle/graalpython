@@ -98,6 +98,16 @@ SOFTWARE.
         <version>${project.version}</version>
       </dependency>
       <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>com.oracle.graal.python</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.graalvm.sdk</groupId>
+        <artifactId>nativeimage</artifactId>
+        <version>${graalvm.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.graalvm.truffle</groupId>
         <artifactId>truffle-api</artifactId>
         <version>${graalvm.version}</version>
@@ -106,11 +116,6 @@ SOFTWARE.
         <groupId>org.graalvm.truffle</groupId>
         <artifactId>truffle-dsl-processor</artifactId>
         <version>${graalvm.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>${project.groupId}</groupId>
-        <artifactId>com.oracle.graal.python</artifactId>
-        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.graalvm.tools</groupId>
@@ -156,11 +161,6 @@ SOFTWARE.
         <groupId>${project.groupId}</groupId>
         <artifactId>com.oracle.graal.python.bouncycastle</artifactId>
         <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.graalvm.sdk</groupId>
-        <artifactId>nativeimage</artifactId>
-        <version>${graalvm.version}</version>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>

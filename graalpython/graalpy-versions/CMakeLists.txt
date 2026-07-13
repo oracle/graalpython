@@ -41,11 +41,8 @@ endif()
 if (NOT DEFINED GRAALPY_MULTIARCH)
     message(FATAL_ERROR "GRAALPY_MULTIARCH needs to be set")
 endif()
-if (NOT DEFINED GRAALPY_SOABI)
-    message(FATAL_ERROR "GRAALPY_SOABI needs to be set")
-endif()
 
 # Generates file 'graalpy_versions' with the given content.
 # The file will be created if it does not exist and will only be updated if the
 # content changes.
-file(GENERATE OUTPUT "graalpy_versions" CONTENT "${GRAALPY_VER}\n${GRAALPY_ABIFLAGS}\n${GRAALPY_SOABI}\n${GRAALPY_EXT_SUFFIX}\n${GRAALPY_MULTIARCH}\n")
+file(GENERATE OUTPUT "graalpy_versions" CONTENT "${GRAALPY_VER}\n${GRAALPY_ABIFLAGS}\n${GRAALPY_EXT_SUFFIX}\n${GRAALPY_MULTIARCH}\n")

@@ -562,7 +562,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         if (os == PLATFORM_DARWIN) {
             addBuiltinConstant("_framework", FRAMEWORK);
         }
-        final TruffleString gmultiarch = toTruffleStringUncached(PythonLanguage.GRAALPY_MULTIARCH);
+        final TruffleString gmultiarch = PythonLanguage.getPlatformInfo().multiarch();
         addBuiltinConstant("__gmultiarch", gmultiarch);
 
         // Initialized later in postInitialize
