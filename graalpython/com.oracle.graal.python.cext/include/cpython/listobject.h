@@ -50,9 +50,6 @@ PyAPI_FUNC(void) GraalPyList_SET_ITEM(PyObject* a, Py_ssize_t b, PyObject* c);
 
 static inline void
 PyList_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
-    PyListObject *list = _PyList_CAST(op);
-    assert(0 <= index);
-    assert(index < list->allocated);
     GraalPyList_SET_ITEM(op, index, value);
 }
 #define PyList_SET_ITEM(op, index, value) \

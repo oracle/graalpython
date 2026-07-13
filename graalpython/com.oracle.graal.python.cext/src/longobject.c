@@ -478,20 +478,18 @@ long
 PyLong_AsLongAndOverflow(PyObject *vv, int *overflow)
 {
     // GraalPy change: different implementation
+    *overflow = 0;
     if (vv == NULL) {
         PyErr_BadInternalCall();
         return -1;
     }
     if (points_to_py_int_handle(vv)) {
-        *overflow = 0;
         return pointer_to_int64(vv);
     }
     long result = (long) GraalPyPrivate_Long_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long));
     if (result == -1L && PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_OverflowError)) {
         PyErr_Clear();
         *overflow = _PyLong_Sign(vv);
-    } else {
-        *overflow = 0;
     }
     return result;
 }
