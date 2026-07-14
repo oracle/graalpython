@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -164,6 +164,7 @@ class AstStateGenerator(Generator):
             emitter.println('import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;')
             emitter.println('import static com.oracle.graal.python.util.PythonUtils.tsLiteral;')
             emitter.println()
+            emitter.println('import com.oracle.graal.python.builtins.PythonBuiltinClassType;')
             emitter.println('import com.oracle.graal.python.builtins.objects.object.PythonObject;')
             emitter.println('import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;')
             emitter.println('import com.oracle.graal.python.builtins.objects.type.PythonClass;')
@@ -197,6 +198,38 @@ class AstStateGenerator(Generator):
             emitter.println('this.clsAst = clsAst;')
             for t in module.types:
                 self.visit(t, emitter)
+            emitter.println()
+            emitter.println('// Field types')
+            for t in module.types:
+                self.emit_field_types(t, emitter)
+
+    @classmethod
+    def emit_field_types(cls, node: model.Type, emitter: java_file.Emitter):
+        if isinstance(node, model.AbstractClass):
+            for inner_class in node.inner_classes:
+                cls.emit_field_types(inner_class, emitter)
+        elif isinstance(node, model.Enum):
+            for member in node.members:
+                emitter.println(f'factory.setFieldTypes({member.cls_field}, tsa());')
+        else:
+            fields = ', '.join(field.name.ts_literal for field in node.fields)
+            types = ', '.join(cls.field_type_expression(field) for field in node.fields)
+            suffix = f', {types}' if types else ''
+            emitter.println(f'factory.setFieldTypes({node.name.cls_field}, tsa({fields}){suffix});')
+
+    @staticmethod
+    def field_type_expression(field: model.Field):
+        builtin_types = {
+            'identifier': 'PString',
+            'string': 'PString',
+            'int': 'PInt',
+            'constant': 'PythonObject',
+        }
+        if field.type.python in builtin_types:
+            type_expression = f'PythonBuiltinClassType.{builtin_types[field.type.python]}'
+        else:
+            type_expression = model.Name(field.type.python, model.convert_type_name(field.type.python), 'T').cls_field
+        return f'factory.makeFieldType({type_expression}, {str(field.is_sequence).lower()}, {str(field.is_optional).lower()})'
 
     @staticmethod
     def emit_helpers(emitter: java_file.Emitter):

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,6 +77,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     static final TruffleString T__AST = tsLiteral(J__AST);
     static final TruffleString T_AST = tsLiteral("ast");
     static final TruffleString T__FIELDS = tsLiteral("_fields");
+    static final TruffleString T__FIELD_TYPES = tsLiteral("_field_types");
     static final TruffleString T__ATTRIBUTES = tsLiteral("_attributes");
 
     @Override

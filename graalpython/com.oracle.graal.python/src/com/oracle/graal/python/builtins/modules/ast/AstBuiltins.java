@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.ast;
 
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELDS;
+import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELD_TYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
@@ -82,6 +84,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -128,6 +131,9 @@ public final class AstBuiltins extends PythonBuiltins {
                         @Cached SetNodes.DiscardNode discardNode,
                         @Cached PySequenceContainsNode containsNode,
                         @Cached PyObjectSetAttrO setAttrNode,
+                        @Cached HashingStorageGetItem getDictItemNode,
+                        @Cached IsBuiltinClassProfile isListProfile,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode) {
             Object fieldsObj = lookupAttrNode.execute(frame, inliningTarget, self, T__FIELDS);
             int numFields = sequenceSizeNode.execute(frame, inliningTarget, fieldsObj);
@@ -147,6 +153,18 @@ public final class AstBuiltins extends PythonBuiltins {
                     }
                 }
                 setAttrNode.execute(frame, inliningTarget, self, kwArg.getName(), kwArg.getValue());
+            }
+            Object fieldTypesObj = lookupAttrNode.execute(frame, inliningTarget, self, T__FIELD_TYPES);
+            if (fieldTypesObj instanceof PDict fieldTypes) {
+                for (int i = 0; i < numFields; i++) {
+                    Object field = getItemNode.execute(frame, fieldsObj, i);
+                    if (containsNode.execute(frame, inliningTarget, remainingFields, field)) {
+                        Object fieldType = getDictItemNode.execute(frame, inliningTarget, fieldTypes.getDictStorage(), field);
+                        if (fieldType instanceof PGenericAlias alias && isListProfile.profileClass(inliningTarget, alias.getOrigin(), PythonBuiltinClassType.PList)) {
+                            setAttrNode.execute(frame, inliningTarget, self, field, PFactory.createList(language));
+                        }
+                    }
+                }
             }
             return PNone.NONE;
         }
