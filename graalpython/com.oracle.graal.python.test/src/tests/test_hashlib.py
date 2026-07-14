@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -79,6 +79,11 @@ class HashlibTest(unittest.TestCase):
     def test_mac_key_length(self):
         hm = hmac.new(self._get_buffer(), b'data', digestmod=hashlib.sha256)
         self.assertEqual('c449f6626bf7f997cda786d07895f086c2fa18eab25b1c08c4de66a5d46a2a08', hm.hexdigest())
+
+    def test_mac_empty_key(self):
+        expected = bytes.fromhex('b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad')
+        self.assertEqual(expected, hmac.new(b'', b'', digestmod=hashlib.sha256).digest())
+        self.assertEqual(expected, hmac.digest(b'', b'', 'sha256'))
 
     @staticmethod
     def _get_buffer():

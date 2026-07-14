@@ -348,7 +348,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     static Mac createMac(TruffleString digest, byte[] key, int keyLen, byte[] msg, int msgLen) throws NoSuchAlgorithmException, InvalidKeyException {
         String inputName = digest.toJavaStringUncached().toLowerCase();
         String algorithm = "hmac" + NAME_MAPPINGS.getOrDefault(inputName, inputName);
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key, 0, keyLen, algorithm);
+        // SecretKeySpec rejects empty keys, but HMAC permits them. A single zero byte is equivalent to
+        // an empty HMAC key because the key is zero-padded to the digest block size.
+        SecretKeySpec secretKeySpec = keyLen == 0 ? new SecretKeySpec(new byte[1], algorithm) : new SecretKeySpec(key, 0, keyLen, algorithm);
         Mac mac = Mac.getInstance(algorithm);
         mac.init(secretKeySpec);
         if (msg != null) {
