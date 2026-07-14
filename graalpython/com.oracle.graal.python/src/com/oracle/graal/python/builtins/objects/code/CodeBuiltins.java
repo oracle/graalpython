@@ -605,10 +605,14 @@ public final class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"$self",
+    @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {
                     "co_argcount", "co_posonlyargcount", "co_kwonlyargcount", "co_nlocals", "co_stacksize", "co_flags", "co_firstlineno",
                     "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars",
                     "co_filename", "co_name", "co_qualname", "co_linetable", "co_exceptiontable"})
+    @Builtin(name = "__replace__", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {
+                    "co_argcount", "co_posonlyargcount", "co_kwonlyargcount", "co_nlocals", "co_stacksize", "co_flags", "co_firstlineno",
+                    "co_code", "co_consts", "co_names", "co_varnames", "co_freevars", "co_cellvars",
+                    "co_filename", "co_name", "co_qualname", "co_linetable", "co_exceptiontable"}, doc = "The same as replace().")
     @ArgumentClinic(name = "co_argcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @ArgumentClinic(name = "co_kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)

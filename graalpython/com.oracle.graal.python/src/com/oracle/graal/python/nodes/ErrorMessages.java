@@ -719,6 +719,11 @@ public abstract class ErrorMessages {
     public static final TruffleString TAKES_AN_AT_LEAST_D_SEQUENCE = tsLiteral("%s() takes an at least %d-sequence (%d-sequence given)");
     public static final TruffleString TAKES_AN_AT_MOST_D_SEQUENCE = tsLiteral("%s() takes an at most %d-sequence (%d-sequence given)");
     public static final TruffleString UNSUPPORTED_ACCESS_OF_STRUCT_SEQUENCE_NATIVE_STORAGE = tsLiteral("Unsupported access of struct sequence native storage");
+    public static final TruffleString STRUCTSEQ_REPLACE_NO_POSITIONAL = tsLiteral("__replace__() takes no positional arguments");
+    public static final TruffleString STRUCTSEQ_REPLACE_UNNAMED = tsLiteral("__replace__() is not supported for %s because it has unnamed field(s)");
+    public static final TruffleString STRUCTSEQ_REPLACE_UNEXPECTED = tsLiteral("Got unexpected field name(s): %p");
+    public static final TruffleString SIMPLE_NAMESPACE_REPLACE_NO_POSITIONAL = tsLiteral("__replace__() takes no positional arguments");
+    public static final TruffleString SIMPLE_NAMESPACE_REPLACE_WRONG_TYPE = tsLiteral("expect types.SimpleNamespace type, but %s() returned '%p' object");
     public static final TruffleString TAKES_D_OR_D_ARGS = tsLiteral("%s takes %d or %d arguments");
     public static final TruffleString TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S = tsLiteral("%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s");
     public static final TruffleString TAKES_D_POS_ARG_S_BUT_GIVEN_S = tsLiteral("%s() takes %d positional argument%s but %d %s given%s");

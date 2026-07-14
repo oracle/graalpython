@@ -81,9 +81,12 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -93,6 +96,7 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -104,6 +108,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
@@ -188,6 +193,42 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
             PTuple args = PFactory.createEmptyTuple(language);
             final PDict dict = getDict.execute(inliningTarget, self);
             return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, self), args, dict});
+        }
+    }
+
+    @Builtin(name = "__replace__", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, doc = "Return a copy of the namespace object with new values for the specified attributes.")
+    @GenerateNodeFactory
+    public abstract static class SimpleNamespaceReplaceNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        static Object replace(VirtualFrame frame, PSimpleNamespace self, @SuppressWarnings("unused") Object[] args, PKeyword[] changes,
+                        @Bind Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached TypeNodes.GetNameNode getNameNode,
+                        @Cached CallNode callNode,
+                        @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode,
+                        @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttrNode,
+                        @Cached WriteAttributeToPythonObjectNode writeAttrNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (args.length > 0) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.SIMPLE_NAMESPACE_REPLACE_NO_POSITIONAL);
+            }
+            Object cls = getClassNode.execute(inliningTarget, self);
+            Object resultObject = callNode.execute(frame, cls, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+            if (!(resultObject instanceof PSimpleNamespace result)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.SIMPLE_NAMESPACE_REPLACE_WRONG_TYPE, getNameNode.execute(inliningTarget, cls), resultObject);
+            }
+            for (Object key : getKeyArrayNode.execute(self)) {
+                if (key instanceof TruffleString name) {
+                    Object value = readAttrNode.execute(inliningTarget, self, name, PNone.NO_VALUE);
+                    if (value != PNone.NO_VALUE) {
+                        writeAttrNode.execute(result, name, value);
+                    }
+                }
+            }
+            for (PKeyword change : changes) {
+                writeAttrNode.execute(result, change.getName(), change.getValue());
+            }
+            return result;
         }
     }
 

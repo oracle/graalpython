@@ -760,6 +760,7 @@ public final class DateBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"self", "year", "month", "day"})
+    @Builtin(name = "__replace__", minNumOfPositionalArgs = 1, parameterNames = {"self", "year", "month", "day"}, doc = "The same as replace().")
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends PythonBuiltinNode {
 

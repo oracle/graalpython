@@ -984,6 +984,8 @@ public final class TimeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"self", "hour", "minute", "second", "microsecond", "tzinfo"}, keywordOnlyNames = {"fold"})
+    @Builtin(name = "__replace__", minNumOfPositionalArgs = 1, parameterNames = {"self", "hour", "minute", "second", "microsecond", "tzinfo"}, keywordOnlyNames = {
+                    "fold"}, doc = "The same as replace().")
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends PythonBuiltinNode {
 
