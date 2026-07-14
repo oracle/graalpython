@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ public final class IDUtils {
         none,
         notImplemented,
         ellipsis,
+        noDefault,
         emptyBytes,
         emptyUnicode,
         emptyTuple,
@@ -81,6 +82,7 @@ public final class IDUtils {
     public static final long ID_NONE = getId(ReservedID.none);
     public static final long ID_NOTIMPLEMENTED = getId(ReservedID.notImplemented);
     public static final long ID_ELLIPSIS = getId(ReservedID.ellipsis);
+    public static final long ID_NO_DEFAULT = getId(ReservedID.noDefault);
     public static final long ID_EMPTY_BYTES = getId(ReservedID.emptyBytes);
     public static final long ID_EMPTY_UNICODE = getId(ReservedID.emptyUnicode);
     public static final long ID_EMPTY_TUPLE = getId(ReservedID.emptyTuple);

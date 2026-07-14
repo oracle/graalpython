@@ -67,6 +67,7 @@ import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_TUPLE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_UNICODE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NONE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NOTIMPLEMENTED;
+import static com.oracle.graal.python.runtime.object.IDUtils.ID_NO_DEFAULT;
 import static com.oracle.graal.python.runtime.object.IDUtils.getId;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -112,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSlotDescrSet;
+import com.oracle.graal.python.builtins.objects.typing.PNoDefault;
 import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -302,6 +304,11 @@ public abstract class ObjectNodes {
         @Specialization
         static Object id(@SuppressWarnings("unused") PNotImplemented self) {
             return ID_NOTIMPLEMENTED;
+        }
+
+        @Specialization
+        static Object id(@SuppressWarnings("unused") PNoDefault self) {
+            return ID_NO_DEFAULT;
         }
 
         @Specialization
