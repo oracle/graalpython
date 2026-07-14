@@ -145,6 +145,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.RichCmpOp;
@@ -1253,18 +1254,11 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Unicode_IsMaterialized extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static int pstring(PString s) {
-            return s.isMaterialized() ? 1 : 0;
-        }
-
-        @Fallback
-        static Object other(@SuppressWarnings("unused") Object s) {
-            return 1;
-        }
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored, acquireGil = false, canRaise = false)
+    static int GraalPyPrivate_Unicode_IsMaterialized(long objPtr) {
+        Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
+        assert PyUnicodeCheckNode.executeUncached(obj);
+        return (!(obj instanceof PString s) || s.isMaterialized()) ? 1 : 0;
     }
 
     // TODO(native-access) Remove or fix and add test for GraalPyPrivate_Unicode_FillUnicode
