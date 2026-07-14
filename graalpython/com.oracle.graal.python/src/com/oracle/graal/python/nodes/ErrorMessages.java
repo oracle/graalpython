@@ -856,7 +856,9 @@ public abstract class ErrorMessages {
     public static final TruffleString OBJ_DOES_NOT_PROVIDE_DIR = tsLiteral("object does not provide __dir__");
     public static final TruffleString ARRAY_ARG_1_MUST_BE_UNICODE = tsLiteral("array() argument 1 must be a unicode character, not str");
     public static final TruffleString FOURTH_ARG_SHOULD_BE_BYTES = tsLiteral("fourth argument should be bytes, not %p");
+    public static final TruffleString FROMUNICODE_MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS = tsLiteral("fromunicode() may only be called on unicode type arrays ('u' or 'w')");
     public static final TruffleString CANNOT_USE_STR_TO_INITIALIZE_ARRAY = tsLiteral("cannot use a str to initialize an array with typecode '%s'");
+    public static final TruffleString CANNOT_USE_UNICODE_ARRAY_TO_INITIALIZE_ARRAY = tsLiteral("cannot use a unicode array to initialize an array with typecode '%s'");
     public static final TruffleString MRO_ENTRIES_MUST_RETURN_TUPLE = tsLiteral("__mro_entries__ must return a tuple");
     public static final TruffleString BUILD_CLS_NOT_ENOUGH_ARGS = tsLiteral("__build_class__: not enough arguments");
     public static final TruffleString BUILD_CLS_FUNC_MUST_BE_FUNC = tsLiteral("__build_class__: func must be a function");
@@ -891,7 +893,8 @@ public abstract class ErrorMessages {
     public static final TruffleString READ_DIDNT_RETURN_ENOUGH_BYTES = tsLiteral("read() didn't return enough bytes");
     public static final TruffleString READ_DIDNT_RETURN_BYTES = tsLiteral("read() didn't return bytes");
     public static final TruffleString ARG_MUST_BE_LIST = tsLiteral("arg must be list");
-    public static final TruffleString MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS = tsLiteral("tounicode() may only be called on unicode type arrays");
+    public static final TruffleString MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS = tsLiteral("tounicode() may only be called on unicode type arrays ('u' or 'w')");
+    public static final TruffleString WARN_ARRAY_U_TYPE_CODE_DEPRECATED = tsLiteral("The 'u' type code is deprecated and will be removed in Python 3.16");
     public static final TruffleString ARRAY_INDEX_X_NOT_IN_ARRAY = tsLiteral("array.index(x): x not in array");
     public static final TruffleString RESULT_TOO_LONG = tsLiteral("result too long");
     public static final TruffleString CHARACTERS_WRITTEN = tsLiteral("characters_written");

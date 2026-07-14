@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -80,7 +80,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         PythonModule arrayModule = core.lookupBuiltinModule(T_ARRAY);
         arrayModule.setAttribute(tsLiteral("ArrayType"), core.lookupType(PythonBuiltinClassType.PArray));
-        arrayModule.setAttribute(tsLiteral("typecodes"), tsLiteral("bBuhHiIlLqQfd"));
+        arrayModule.setAttribute(tsLiteral("typecodes"), tsLiteral("bBuwhHiIlLqQfd"));
     }
 
     @Builtin(name = "_array_reconstructor", minNumOfPositionalArgs = 4, numOfPositionalOnlyArgs = 4, parameterNames = {"arrayType", "typeCode", "mformatCode", "items"})
@@ -103,6 +103,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Exclusive @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
+                        @Exclusive @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
@@ -111,7 +112,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
             return doReconstruct(frame, inliningTarget, arrayType, typeCode, cachedCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isTypeNode, isSubtypeNode, byteSwapNode,
                             formatProfile.profile(format),
-                            getInstanceShape, raiseNode);
+                            getInstanceShape, warnNode, raiseNode);
         }
 
         @Specialization(replaces = "reconstructCached")
@@ -125,6 +126,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
                         @Exclusive @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
+                        @Exclusive @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
@@ -132,14 +134,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_TYPECODE);
             }
             return doReconstruct(frame, inliningTarget, arrayType, typeCode, mformatCode, bytes, callDecode, fromBytesNode, fromUnicodeNode, isTypeNode, isSubtypeNode, byteSwapNode, format,
-                            getInstanceShape,
-                            raiseNode);
+                            getInstanceShape, warnNode, raiseNode);
         }
 
         private static Object doReconstruct(VirtualFrame frame, Node inliningTarget, Object arrayType, TruffleString typeCode, int mformatCode, PBytes bytes, PyObjectCallMethodObjArgs callDecode,
                         ArrayBuiltins.FromBytesNode fromBytesNode, ArrayBuiltins.FromUnicodeNode fromUnicodeNode, TypeNodes.IsTypeNode isTypeNode, IsSubtypeNode isSubtypeNode,
                         ArrayBuiltins.ByteSwapNode byteSwapNode, BufferFormat format,
-                        TypeNodes.GetInstanceShape getInstanceShape, PRaiseNode raiseNode) {
+                        TypeNodes.GetInstanceShape getInstanceShape, WarningsModuleBuiltins.WarnNode warnNode, PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, arrayType)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FIRST_ARGUMENT_MUST_BE_A_TYPE_OBJECT_NOT_P, arrayType);
             }
@@ -148,13 +149,16 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
             MachineFormat machineFormat = MachineFormat.fromCode(mformatCode);
             if (machineFormat != null) {
+                ArrayBuiltins.warnDeprecatedTypeCode(frame, format, warnNode);
                 PArray array;
                 if (machineFormat == MachineFormat.forFormat(format)) {
-                    array = PFactory.createArray(arrayType, getInstanceShape.execute(arrayType), typeCode, machineFormat.format);
+                    array = PFactory.createArray(arrayType, getInstanceShape.execute(arrayType), typeCode, format);
                     fromBytesNode.executeWithoutClinic(frame, array, bytes);
                 } else {
-                    TruffleString newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
-                    array = PFactory.createArray(arrayType, getInstanceShape.execute(arrayType), newTypeCode, machineFormat.format);
+                    boolean compatibleFormat = machineFormat.format == format || BufferFormat.isUnicode(machineFormat.format) && BufferFormat.isUnicode(format);
+                    BufferFormat newFormat = compatibleFormat ? format : machineFormat.format;
+                    TruffleString newTypeCode = compatibleFormat ? typeCode : newFormat.baseTypeCode;
+                    array = PFactory.createArray(arrayType, getInstanceShape.execute(arrayType), newTypeCode, newFormat);
                     if (machineFormat.unicodeEncoding != null) {
                         Object decoded = callDecode.execute(frame, inliningTarget, bytes, T_DECODE, machineFormat.unicodeEncoding);
                         fromUnicodeNode.execute(frame, array, decoded);
