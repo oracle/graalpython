@@ -1,4 +1,3 @@
-test.test_concurrent_futures.test_as_completed.ProcessPoolForkAsCompletedTest.test_correct_timeout_exception_msg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_as_completed.ProcessPoolSpawnAsCompletedTest.test_correct_timeout_exception_msg @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_as_completed.ProcessPoolSpawnAsCompletedTest.test_duplicate_futures @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_as_completed.ProcessPoolSpawnAsCompletedTest.test_future_times_out @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -48,9 +47,6 @@ test.test_concurrent_futures.test_init.ProcessPoolSpawnFailingInitializerTest.te
 test.test_concurrent_futures.test_init.ProcessPoolSpawnInitializerTest.test_initializer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_init.ThreadPoolFailingInitializerTest.test_initializer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_init.ThreadPoolInitializerTest.test_initializer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_concurrent_futures.test_process_pool.ProcessPoolForkProcessPoolExecutorTest.test_max_tasks_per_child @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_concurrent_futures.test_process_pool.ProcessPoolForkProcessPoolExecutorTest.test_max_tasks_per_child_defaults_to_spawn_context @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_concurrent_futures.test_process_pool.ProcessPoolForkProcessPoolExecutorTest.test_max_workers_negative @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_multiple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 # Transiently ends up with 2 processes
 !test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_idle_process_reuse_one
@@ -69,7 +65,6 @@ test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecut
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_submit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_submit_keyword @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_process_pool.ProcessPoolSpawnProcessPoolExecutorTest.test_traceback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_concurrent_futures.test_shutdown.ProcessPoolForkProcessPoolShutdownTest.test_run_after_shutdown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_cancel_futures @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_concurrent_futures.test_shutdown.ProcessPoolSpawnProcessPoolShutdownTest.test_context_manager_shutdown @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 # Transiently times out GR-52666
