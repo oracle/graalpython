@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -102,18 +102,16 @@ public class Token {
         public static final int COLONEQUAL = 53;
         public static final int EXCLAMATION = 54;
         public static final int OP = 55;
-        public static final int AWAIT = 56;
-        public static final int ASYNC = 57;
-        public static final int TYPE_IGNORE = 58;
-        public static final int TYPE_COMMENT = 59;
-        public static final int SOFT_KEYWORD = 60;
-        public static final int FSTRING_START = 61;
-        public static final int FSTRING_MIDDLE = 62;
-        public static final int FSTRING_END = 63;
-        public static final int COMMENT = 64;
-        public static final int NL = 65;
-        public static final int ERRORTOKEN = 66;
-        public static final int N_TOKENS = 68;
+        public static final int TYPE_IGNORE = 56;
+        public static final int TYPE_COMMENT = 57;
+        public static final int SOFT_KEYWORD = 58;
+        public static final int FSTRING_START = 59;
+        public static final int FSTRING_MIDDLE = 60;
+        public static final int FSTRING_END = 61;
+        public static final int COMMENT = 62;
+        public static final int NL = 63;
+        public static final int ERRORTOKEN = 64;
+        public static final int N_TOKENS = 66;
 
         public static final String[] TOKEN_NAMES = new String[]{
                         "ENDMARKER",
@@ -172,8 +170,6 @@ public class Token {
                         "COLONEQUAL",
                         "EXCLAMATION",
                         "OP",
-                        "AWAIT",
-                        "ASYNC",
                         "TYPE_IGNORE",
                         "TYPE_COMMENT",
                         "SOFT_KEYWORD",

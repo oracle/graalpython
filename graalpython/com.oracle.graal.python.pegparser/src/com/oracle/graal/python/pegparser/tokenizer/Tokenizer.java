@@ -108,6 +108,8 @@ public class Tokenizer {
     private int tokenStart = 0;
     /** {@code tok_state->done} */
     private StatusCode done = StatusCode.OK;
+    private String errorMessage;
+    private SourceRange errorSourceRange;
     /** {@code tok_state->tabsize} */
     private final int tabSize = TABSIZE;
     /** {@code tok_state->indent} */
@@ -201,6 +203,8 @@ public class Tokenizer {
         interactive = t.interactive;
         tokenStart = t.tokenStart;
         done = t.done;
+        errorMessage = t.errorMessage;
+        errorSourceRange = t.errorSourceRange;
         currentIndentIndex = t.currentIndentIndex;
         System.arraycopy(t.indentationStack, 0, indentationStack, 0, indentationStack.length);
         atBeginningOfLine = t.atBeginningOfLine;
@@ -489,8 +493,14 @@ public class Tokenizer {
                 }
                 return c;
             } else {
+                if (done != StatusCode.OK) {
+                    return EOF;
+                }
                 if (fillInput()) {
                     continue;
+                }
+                if (done != StatusCode.OK) {
+                    return EOF;
                 }
                 if (nextCharIndex == codePointsInputLength && execInput) {
                     // check if we need to report a missing newline before eof
@@ -533,6 +543,20 @@ public class Tokenizer {
         codePointsInputLength += line.length;
         lineStartIndex = nextCharIndex;
 
+        for (int c : line) {
+            if (c == 0) {
+                if (oldSize > 0) {
+                    currentLineNumber++;
+                    readNewline = false;
+                }
+                done = StatusCode.SYNTAX_ERROR;
+                errorMessage = "source code cannot contain null bytes";
+                errorSourceRange = new SourceRange(currentLineNumber, -1, currentLineNumber, -1);
+                nextCharIndex = codePointsInputLength;
+                return false;
+            }
+        }
+
         implicitNewline = false;
         if (codePointsInput[codePointsInputLength - 1] != '\n') {
             /* Last line does not end in \n, fake one */
@@ -549,7 +573,7 @@ public class Tokenizer {
      * tok_backup
      */
     void oneBack() {
-        if (nextCharIndex > 0 && done != StatusCode.EOF) {
+        if (nextCharIndex > 0 && done == StatusCode.OK) {
             nextCharIndex--;
             readNewline = false;
         }
@@ -558,9 +582,12 @@ public class Tokenizer {
     /**
      * syntaxerror_known_range, _syntaxerror_range
      */
-    @SuppressWarnings("unused")     // TODO use column offsets
     Token syntaxError(int colOffset, int endColOffset, String message) {
         done = StatusCode.SYNTAX_ERROR;
+        errorMessage = message;
+        int startColumn = colOffset >= 0 ? colOffset - 1 : nextCharIndex - lineStartIndex - 1;
+        int endColumn = endColOffset >= 0 ? endColOffset - 1 : startColumn;
+        errorSourceRange = new SourceRange(currentLineNumber, startColumn, currentLineNumber, endColumn);
         return createToken(Token.Kind.ERRORTOKEN, message);
     }
 
@@ -1623,10 +1650,7 @@ public class Tokenizer {
             boolean inFormatSpec = currentMode.inFormatSpec && currentMode.insideFstringExpr();
             if (c == EOF || (currentMode.quoteSize == 1 && c == '\n')) {
                 if (inFormatSpec && c == '\n') {
-                    oneBack();
-                    modeStack.getFirst().kind = Mode.Kind.REGULAR;
-                    currentMode.inFormatSpec = false;
-                    return createToken(Kind.FSTRING_MIDDLE, tokenStart, nextCharIndex);
+                    return syntaxError("f-string: newlines are not allowed in format specifiers for single quoted f-strings");
                 }
                 nextCharIndex = currentMode.tokenStart;
                 nextCharIndex++;
@@ -1875,6 +1899,14 @@ public class Tokenizer {
 
     public StatusCode getDone() {
         return done;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public SourceRange getErrorSourceRange() {
+        return errorSourceRange;
     }
 
     public int getParensNestingLevel() {
