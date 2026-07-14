@@ -747,6 +747,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     An interpreter was not found""")),
     ReferenceError("ReferenceError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     RuntimeError("RuntimeError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
+    PythonFinalizationError("PythonFinalizationError", RuntimeError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().doc("""
+                    Operation blocked during Python finalization.""")),
     NotImplementedError("NotImplementedError", RuntimeError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     SyntaxError("SyntaxError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(SyntaxErrorBuiltins.SLOTS)),
     IncompleteInputError("_IncompleteInputError", SyntaxError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(SyntaxErrorBuiltins.SLOTS).doc("incomplete input.")),

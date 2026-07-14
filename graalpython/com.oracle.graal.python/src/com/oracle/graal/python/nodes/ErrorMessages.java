@@ -140,6 +140,7 @@ public abstract class ErrorMessages {
     public static final TruffleString HANDLE_MUST_BE_THREAD_HANDLE = tsLiteral("'handle' must be a _ThreadHandle");
     public static final TruffleString IDENT_MUST_BE_INTEGER = tsLiteral("ident must be an integer");
     public static final TruffleString THREAD_ALREADY_STARTED = tsLiteral("thread already started");
+    public static final TruffleString CANT_CREATE_NEW_THREAD_AT_INTERPRETER_SHUTDOWN = tsLiteral("can't create new thread at interpreter shutdown");
     public static final TruffleString THREAD_FUNCTION_MUST_BE_CALLABLE = tsLiteral("thread function must be callable");
     public static final TruffleString THREAD_NOT_STARTED = tsLiteral("thread not started");
     public static final TruffleString INT_BASE_MUST_BE_2_AND_36_OR_0 = tsLiteral("int() base must be >= 2 and <= 36, or 0");

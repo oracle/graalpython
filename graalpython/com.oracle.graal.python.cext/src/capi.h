@@ -475,6 +475,7 @@ EXCEPTION(OverflowError) \
 EXCEPTION(PendingDeprecationWarning) \
 EXCEPTION(PermissionError) \
 EXCEPTION(ProcessLookupError) \
+EXCEPTION(PythonFinalizationError) \
 EXCEPTION(RecursionError) \
 EXCEPTION(ReferenceError) \
 EXCEPTION(ResourceWarning) \

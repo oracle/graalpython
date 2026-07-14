@@ -368,6 +368,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @SuppressWarnings("try")
     private static void startThread(PythonContext context, PThreadHandle handle, Object callable, Object[] arguments, PKeyword[] keywords, boolean daemon, CallNode callNode, PRaiseNode raiseNode,
                     Node inliningTarget) {
+        if (context.isFinalizing()) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.PythonFinalizationError, ErrorMessages.CANT_CREATE_NEW_THREAD_AT_INTERPRETER_SHUTDOWN);
+        }
         TruffleLanguage.Env env = context.getEnv();
         PythonModule threadModule = context.lookupBuiltinModule(T__THREAD);
         ModuleState state = threadModule.getModuleState(ModuleState.class);

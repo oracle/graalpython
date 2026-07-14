@@ -39,6 +39,7 @@
 
 import sys
 import unittest
+from textwrap import dedent
 
 
 def test_stuck_thread():
@@ -81,6 +82,45 @@ time.sleep(0.05)
 """
     result = subprocess.run([sys.executable, "-c", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
+
+
+def test_python_finalization_error():
+    assert PythonFinalizationError.__base__ is RuntimeError
+    assert PythonFinalizationError.__module__ == "builtins"
+    assert PythonFinalizationError.__doc__ == "Operation blocked during Python finalization."
+
+
+def test_start_new_thread_at_finalization():
+    import subprocess
+
+    script = dedent(r"""
+        import _thread
+        import os
+        import sys
+
+        original_flush = sys.stderr.flush
+
+        def flush_at_finalization():
+            original_flush()
+            if not sys.is_finalizing():
+                return
+            sys.stderr.flush = original_flush
+            try:
+                _thread.start_new_thread(lambda: None, ())
+            except PythonFinalizationError as exc:
+                if str(exc) == "can't create new thread at interpreter shutdown":
+                    os.write(1, b"OK")
+
+        sys.stderr.flush = flush_at_finalization
+    """)
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=10,
+    )
+    assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
+    assert result.stdout == b"OK"
 
 
 def test_thread_handle_join_and_reuse():
