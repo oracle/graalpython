@@ -305,6 +305,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY = tsLiteral("execv() arg 2 first element cannot be empty");
     public static final TruffleString EXPECTED_ARG_TYPES_S_S_BUT_NOT_P_P = tsLiteral("expected argument types (%s) or (%s) but not (%p, %p)");
     public static final TruffleString EXPECTED_A_LIST = tsLiteral("expected a list");
+    public static final TruffleString EXPECTED_A_WEAKREF = tsLiteral("expected a weakref");
     public static final TruffleString EXPECTED_AT_MOST_D_ARGS_GOT_D = tsLiteral("%s expected at most %d arguments, got %d");
     public static final TruffleString EXPECTED_BYTESLIKE_GOT_P = tsLiteral("expected a bytes-like object, %p found");
     public static final TruffleString EXPECTED_BYTES_P_FOUND = tsLiteral("expected bytes, %p found");
