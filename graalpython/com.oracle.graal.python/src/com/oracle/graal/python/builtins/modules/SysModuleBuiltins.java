@@ -44,7 +44,6 @@ import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_SERIAL;
 import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
 import static com.oracle.graal.python.PythonLanguage.getPythonOS;
-import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
@@ -291,7 +290,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_LICENSE = tsLiteral(
                     "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.");
     private static final String COMPILE_TIME;
-    public static final PNone FRAMEWORK = PNone.NONE;
     public static final int MAXSIZE = Integer.MAX_VALUE;
     public static final long HASH_MULTIPLIER = 1000003L;
     public static final int HASH_BITS = 61;
@@ -560,9 +558,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         PythonOS os = getPythonOS();
         TruffleString osName = toTruffleStringUncached(os.getName());
         addBuiltinConstant("platform", osName);
-        if (os == PLATFORM_DARWIN) {
-            addBuiltinConstant("_framework", FRAMEWORK);
-        }
+        addBuiltinConstant("_framework", T_EMPTY_STRING);
         final TruffleString gmultiarch = toTruffleStringUncached(PythonLanguage.GRAALPY_MULTIARCH);
         addBuiltinConstant("__gmultiarch", gmultiarch);
 
