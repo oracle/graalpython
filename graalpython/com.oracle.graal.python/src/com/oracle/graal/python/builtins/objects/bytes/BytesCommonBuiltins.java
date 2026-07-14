@@ -620,13 +620,13 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     second = createBytesNode.execute(inliningTarget, self, sepBytes);
                     if (idx == 0) {
                         first = createBytesNode.execute(inliningTarget, self, PythonUtils.EMPTY_BYTE_ARRAY);
-                        third = createBytesNode.execute(inliningTarget, self, Arrays.copyOfRange(bytes, lenSep, len));
+                        third = createBytesNode.execute(inliningTarget, self, PythonUtils.arrayCopyOfRange(bytes, lenSep, len));
                     } else if (idx == len - 1) {
-                        first = createBytesNode.execute(inliningTarget, self, Arrays.copyOfRange(bytes, 0, len - lenSep));
+                        first = createBytesNode.execute(inliningTarget, self, PythonUtils.arrayCopyOfRange(bytes, 0, len - lenSep));
                         third = createBytesNode.execute(inliningTarget, self, PythonUtils.EMPTY_BYTE_ARRAY);
                     } else {
-                        first = createBytesNode.execute(inliningTarget, self, Arrays.copyOfRange(bytes, 0, idx));
-                        third = createBytesNode.execute(inliningTarget, self, Arrays.copyOfRange(bytes, idx + lenSep, len));
+                        first = createBytesNode.execute(inliningTarget, self, PythonUtils.arrayCopyOfRange(bytes, 0, idx));
+                        third = createBytesNode.execute(inliningTarget, self, PythonUtils.arrayCopyOfRange(bytes, idx + lenSep, len));
                     }
                 }
                 return PFactory.createTuple(language, new Object[]{first, second, third});
@@ -2278,7 +2278,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     static byte[] copyOfRange(byte[] bytes, int from, int to) {
-        return Arrays.copyOfRange(bytes, from, to);
+        return PythonUtils.arrayCopyOfRange(bytes, from, to);
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -2334,7 +2334,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     for (int i = 0; i < selfBsLen; i++) {
                         if (i < prefixBsLen) {
                             if (selfBs[i] != prefixBs[i]) {
-                                return create.execute(node, self, selfBs);
+                                return create.execute(node, self, PythonUtils.arrayCopyOf(selfBs, selfBsLen));
                             }
                         } else {
                             result[j++] = selfBs[i];
@@ -2342,7 +2342,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     }
                     return create.execute(node, self, result);
                 }
-                return create.execute(node, self, selfBs);
+                return create.execute(node, self, PythonUtils.arrayCopyOf(selfBs, selfBsLen));
             } finally {
                 bufferLib.release(selfBuffer, frame, callData);
                 bufferLib.release(prefixBuffer, frame, callData);
@@ -2375,7 +2375,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     for (int i = selfBsLen - 1, j = 1; i >= 0; i--, j++) {
                         if (i >= selfBsLen - suffixBsLen) {
                             if (selfBs[i] != suffixBs[suffixBsLen - j]) {
-                                return create.execute(node, self, selfBs);
+                                return create.execute(node, self, PythonUtils.arrayCopyOf(selfBs, selfBsLen));
                             }
                         } else {
                             result[result.length - k++] = selfBs[i];
@@ -2383,7 +2383,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                     }
                     return create.execute(node, self, result);
                 }
-                return create.execute(node, self, selfBs);
+                return create.execute(node, self, PythonUtils.arrayCopyOf(selfBs, selfBsLen));
             } finally {
                 bufferLib.release(selfBuffer, frame, callData);
                 bufferLib.release(suffixBuffer, frame, callData);
