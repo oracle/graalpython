@@ -175,15 +175,17 @@ if sys.implementation.name == "graalpy":
                     '--find-links', str(self.index_dir),
                     '--no-index',
                     '--no-cache-dir',
+                    '--no-build-isolation',
                     package,
                 ],
-                check=True,
+                check=False,
                 capture_output=True,
                 env=env,
                 universal_newlines=True,
             )
             print(proc.stdout)
             print(proc.stderr)
+            proc.check_returncode()
             assert 'Applying GraalPy patch failed for' not in proc.stderr
             if assert_stderr_matches:
                 assert re.search(assert_stderr_matches, proc.stderr), \
@@ -206,15 +208,17 @@ if sys.implementation.name == "graalpy":
                     '--find-links', str(self.index_dir),
                     '--no-index',
                     '--no-cache-dir',
+                    '--no-build-isolation',
                     package,
                 ],
-                check=True,
+                check=False,
                 capture_output=True,
                 env=self.pip_env,
                 universal_newlines=True,
             )
             print(proc.stdout)
             print(proc.stderr)
+            proc.check_returncode()
             assert 'Applying GraalPy patch failed for' not in proc.stderr
             return re.findall(r'Successfully installed (\S+)', proc.stdout)
 
