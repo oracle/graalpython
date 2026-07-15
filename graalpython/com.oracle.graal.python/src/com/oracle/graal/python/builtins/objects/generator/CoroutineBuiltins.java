@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.generator;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
+
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -54,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -138,6 +141,16 @@ public final class CoroutineBuiltins extends PythonBuiltins {
         static TruffleString repr(PGenerator self,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             return simpleTruffleStringFormatNode.format("<coroutine object %s at 0x%d>", self.getQualname(), PythonAbstractObject.objectHashCode(self));
+        }
+    }
+
+    @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object classGetItem(Object cls, Object key,
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }
