@@ -47,8 +47,11 @@ struct _PyWeakReference {
 
 PyAPI_FUNC(void) _PyWeakref_ClearRef(PyWeakReference *self);
 
+_Py_COMP_DIAG_PUSH
+_Py_COMP_DIAG_IGNORE_DEPR_DECLS
 Py_DEPRECATED(3.13) static inline PyObject* PyWeakref_GET_OBJECT(PyObject *ref_obj)
 {
     return PyWeakref_GetObject(ref_obj);
 }
+_Py_COMP_DIAG_POP
 #define PyWeakref_GET_OBJECT(ref) PyWeakref_GET_OBJECT(_PyObject_CAST(ref))
