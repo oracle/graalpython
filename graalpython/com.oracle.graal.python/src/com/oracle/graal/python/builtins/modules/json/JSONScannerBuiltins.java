@@ -456,6 +456,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
             EconomicMapStorage currentDictStorage = null;
             ScannerState state = ScannerState.initial;
             boolean commaSeen = false;
+            int commaIndex = -1;
             while (true) {
                 idx = skipWhitespace(string, idx, length, codePointAtIndexNode);
                 final TruffleString propertyKey;
@@ -468,7 +469,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                         throw decodeError(frame, boundaryCallData, inliningTarget, errorProfile, this, string, idx, ErrorMessages.EXPECTING_PROP_NAME_ECLOSED_IN_DBL_QUOTES);
                     } else if (c == '}') {
                         if (commaSeen) {
-                            throw decodeError(frame, boundaryCallData, inliningTarget, errorProfile, this, string, idx, ErrorMessages.EXPECTING_PROP_NAME_ECLOSED_IN_DBL_QUOTES);
+                            throw decodeError(frame, boundaryCallData, inliningTarget, errorProfile, this, string, commaIndex, ErrorMessages.ILLEGAL_TRAILING_COMMA_BEFORE_END_OF_OBJECT);
                         }
                         nextIdx.value = ++idx;
                         // pop current dict
@@ -573,7 +574,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                     }
                     if (codePointAtIndexNode.execute(string, idx) == ']') {
                         if (commaSeen) {
-                            throw decodeError(frame, boundaryCallData, inliningTarget, errorProfile, this, string, idx, ErrorMessages.EXPECTING_VALUE);
+                            throw decodeError(frame, boundaryCallData, inliningTarget, errorProfile, this, string, commaIndex, ErrorMessages.ILLEGAL_TRAILING_COMMA_BEFORE_END_OF_ARRAY);
                         }
                         nextIdx.value = ++idx;
                         Object topOfStack = stack.pop();
@@ -694,6 +695,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                     throw decodeError(frame, boundaryCallData, inliningTarget, errorProfile, this, string, idx, ErrorMessages.EXPECTING_COMMA_DELIMITER);
                 }
                 commaSeen = true;
+                commaIndex = idx;
                 idx++;
             }
         }

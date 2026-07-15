@@ -981,6 +981,7 @@ public abstract class ErrorMessages {
     public static final TruffleString MEM_USAGE_LIMIT_EXCEEDED = tsLiteral("Memory usage limit exceeded");
     public static final TruffleString INPUT_FMT_NOT_SUPPORTED_BY_DECODER = tsLiteral("Input format not supported by decoder");
     public static final TruffleString INVALID_UNSUPPORTED_OPTIONS = tsLiteral("Invalid or unsupported options");
+    public static final TruffleString INDENT_MUST_BE_STR_OR_NONE_NOT_P = tsLiteral("indent must be str or None, not %p");
     public static final TruffleString CORRUPT_INPUT_DATA = tsLiteral("Corrupt input data");
     public static final TruffleString INSUFFICIENT_BUFFER_SPACE = tsLiteral("Insufficient buffer space");
     public static final TruffleString INTERNAL_ERROR = tsLiteral("Internal error");
@@ -996,6 +997,8 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTING_COLON_DELIMITER = tsLiteral("Expecting ':' delimiter");
     public static final TruffleString EXPECTING_COMMA_DELIMITER = tsLiteral("Expecting ',' delimiter");
     public static final TruffleString EXPECTING_VALUE = tsLiteral("Expecting value");
+    public static final TruffleString ILLEGAL_TRAILING_COMMA_BEFORE_END_OF_OBJECT = tsLiteral("Illegal trailing comma before end of object");
+    public static final TruffleString ILLEGAL_TRAILING_COMMA_BEFORE_END_OF_ARRAY = tsLiteral("Illegal trailing comma before end of array");
     public static final TruffleString IOR_IS_NOT_SUPPORTED_BY_P_USE_INSTEAD = tsLiteral("'|=' is not supported by %p; use '|' instead");
     public static final TruffleString ZIP_ARG_D_IS_LONGER_THEN_ARG_SD = tsLiteral("zip() argument %d is longer than argument%s%d");
     public static final TruffleString ZIP_ARG_D_IS_SHORTER_THEN_ARG_SD = tsLiteral("zip() argument %d is shorter than argument%s%d");

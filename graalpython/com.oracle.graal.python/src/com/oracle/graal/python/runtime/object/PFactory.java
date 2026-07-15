@@ -1446,7 +1446,7 @@ public final class PFactory {
     }
 
     @TruffleBoundary
-    public static PJSONEncoder createJSONEncoder(Object cls, Shape shape, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator,
+    public static PJSONEncoder createJSONEncoder(Object cls, Shape shape, Object markers, Object defaultFn, Object encoder, TruffleString indent, TruffleString keySeparator,
                     TruffleString itemSeparator,
                     boolean sortKeys, boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
         return new PJSONEncoder(cls, shape, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
