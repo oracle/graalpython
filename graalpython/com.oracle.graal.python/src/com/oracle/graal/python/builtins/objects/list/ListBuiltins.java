@@ -647,7 +647,7 @@ public final class ListBuiltins extends PythonBuiltins {
     }
 
     // list.count(x)
-    @Builtin(name = "count", minNumOfPositionalArgs = 2)
+    @Builtin(name = "count", minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
     @GenerateNodeFactory
     public abstract static class ListCountNode extends PythonBuiltinNode {
 
