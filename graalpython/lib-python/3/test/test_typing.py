@@ -586,7 +586,8 @@ class TypeVarTests(BaseTestCase):
         self.assertEqual(T.__name__, "T")
         self.assertEqual(T.__constraints__, ())
         self.assertIs(T.__bound__, None)
-        self.assertIs(T.__default__, ())
+        # GraalPy change: don't compare with is
+        self.assertEqual(T.__default__, ())
         self.assertIs(T.__covariant__, False)
         self.assertIs(T.__contravariant__, False)
         self.assertIs(T.__infer_variance__, False)
