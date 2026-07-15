@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
@@ -62,6 +63,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtr;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.PrintWriter;
@@ -83,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
@@ -450,19 +453,25 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @CApiBuiltin(name = "PyObject_HasAttrString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    abstract static class PyObject_HasAttr extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = Ignored)
+    abstract static class GraalPyPrivate_Object_GetOptionalAttr extends CApiTernaryBuiltinNode {
         @Specialization
-        static int hasAttr(Object obj, Object attr,
+        static int getOptionalAttr(Object obj, Object attr, long resultPointer,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached PyObjectLookupAttrO lookupAttrNode,
-                        @Cached InlinedBranchProfile exceptioBranchProfile) {
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached PythonToNativeInternalNode toNativeNode) {
+            long result = 0;
             try {
-                return lookupAttrNode.execute(null, inliningTarget, obj, attr) != PNone.NO_VALUE ? 1 : 0;
-            } catch (PException e) {
-                exceptioBranchProfile.enter(inliningTarget);
-                return 0;
+                Object value = lookupAttrNode.execute(null, inliningTarget, obj, attr);
+                if (value == PNone.NO_VALUE) {
+                    return 0;
+                }
+                result = toNativeNode.executeNewRef(inliningTarget, ensureNode.execute(context, value, false));
+                return 1;
+            } finally {
+                writePtr(resultPointer, result);
             }
         }
     }

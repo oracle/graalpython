@@ -1209,7 +1209,6 @@ PyObject_HasAttrStringWithError(PyObject *obj, const char *name)
     return rc;
 }
 
-#if 0 // GraalPy change
 int
 PyObject_HasAttrString(PyObject *obj, const char *name)
 {
@@ -1223,7 +1222,6 @@ PyObject_HasAttrString(PyObject *obj, const char *name)
     }
     return rc;
 }
-#endif // GraalPy change
 
 int
 PyObject_SetAttrString(PyObject *v, const char *name, PyObject *w)
@@ -1358,6 +1356,11 @@ PyObject_GetAttr(PyObject *v, PyObject *name)
 int
 PyObject_GetOptionalAttr(PyObject *v, PyObject *name, PyObject **result)
 {
+    // GraalPy change: upcall for managed objects
+    if (points_to_py_handle_space(v)) {
+        return GraalPyPrivate_Object_GetOptionalAttr(v, name, result);
+    }
+
     PyTypeObject *tp = Py_TYPE(v);
 
     if (!PyUnicode_Check(name)) {
@@ -1460,7 +1463,6 @@ PyObject_HasAttrWithError(PyObject *obj, PyObject *name)
     return rc;
 }
 
-#if 0 // GraalPy change
 int
 PyObject_HasAttr(PyObject *obj, PyObject *name)
 {
@@ -1474,7 +1476,6 @@ PyObject_HasAttr(PyObject *obj, PyObject *name)
     }
     return rc;
 }
-#endif // GraalPy change
 
 int
 PyObject_SetAttr(PyObject *v, PyObject *name, PyObject *value)
