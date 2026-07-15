@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_THREADING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___EXCEPTHOOK__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -85,6 +87,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -119,6 +122,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__THREAD)
 public final class ThreadModuleBuiltins extends PythonBuiltins {
+
+    private static final TruffleString T_GRAALPY_THREAD_EXIT = tsLiteral("_graalpy_thread_exit");
 
     public static final StructSequence.BuiltinTypeDescriptor EXCEPTHOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PExceptHookArgs,
@@ -404,6 +409,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         // SystemExit is silently ignored (see _threadmodule.c: thread_run)
                     } finally {
                         state.count--;
+                        removeDummyThread(context, callNode);
                     }
                 } finally {
                     if (!daemon) {
@@ -422,6 +428,16 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
             }
             handle.notifyThreadExiting();
             throw t;
+        }
+    }
+
+    private static void removeDummyThread(PythonContext context, CallNode callNode) {
+        Object threadingModule = HashingStorageGetItem.executeUncached(context.getSysModules().getDictStorage(), T_THREADING);
+        if (threadingModule != null) {
+            Object callback = ReadAttributeFromObjectNode.getUncached().execute(threadingModule, T_GRAALPY_THREAD_EXIT);
+            if (callback != PNone.NO_VALUE) {
+                callNode.execute(null, callback);
+            }
         }
     }
 

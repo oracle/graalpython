@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleSafepoint;
@@ -56,6 +59,8 @@ public final class PThreadHandle extends PythonBuiltinObject {
     private long ident;
     private Thread thread;
     private boolean exiting;
+    // Used to signal joining for ident-only threads (like the main thread)
+    private final CountDownLatch done = new CountDownLatch(1);
 
     public PThreadHandle(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
@@ -91,6 +96,7 @@ public final class PThreadHandle extends PythonBuiltinObject {
         assert state >= RUNNING : "thread not started";
         exiting = true;
         state = DONE;
+        done.countDown();
     }
 
     public synchronized boolean isStarted() {
@@ -123,9 +129,12 @@ public final class PThreadHandle extends PythonBuiltinObject {
             if (!threadToJoin.isAlive()) {
                 setDone();
             }
-            return;
+        } else {
+            if (timeoutMillis < 0) {
+                TruffleSafepoint.setBlockedThreadInterruptible(node, CountDownLatch::await, done);
+            } else {
+                TruffleSafepoint.setBlockedThreadInterruptible(node, (latch) -> latch.await(timeoutMillis, TimeUnit.MILLISECONDS), done);
+            }
         }
-
-        setDone();
     }
 }

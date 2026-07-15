@@ -1425,6 +1425,16 @@ class _DummyThread(Thread):
         Thread._after_fork(self, new_ident=new_ident)
 
 
+def _graalpy_thread_exit():
+    # CPython gets this cleanup from _DeleteDummyThreadOnDel when it clears the
+    # thread-local storage. GraalPy calls this explicitly at low-level thread exit.
+    ident = get_ident()
+    with _active_limbo_lock:
+        thread = _active.get(ident)
+        if isinstance(thread, _DummyThread):
+            _active.pop(ident, None)
+
+
 # Global API functions
 
 def current_thread():
