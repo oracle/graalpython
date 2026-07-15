@@ -1233,6 +1233,9 @@ public abstract class ErrorMessages {
     public static final TruffleString REDUCE_EMPTY_SEQ = tsLiteral("reduce() of empty sequence with no initial value");
     public static final TruffleString OTHER_ARG_MUST_BE_KEY = tsLiteral("other argument must be K instance");
     public static final TruffleString INVALID_PARTIAL_STATE = tsLiteral("invalid partial state");
+    public static final TruffleString WARN_PARTIAL_WILL_BE_METHOD_DESCRIPTOR = tsLiteral(
+                    "functools.partial will be a method descriptor in future Python versions; wrap it in staticmethod() " +
+                                    "if you want to preserve the old behavior");
     public static final TruffleString LOST_S = tsLiteral("lost %s");
     public static final TruffleString UNABLE_TO_LOAD_LIBCRYPT = tsLiteral(
                     "Unable to load libcrypt library. Please install libxcrypt-compat (RPM-based distributions) package or libcrypt1 (DEB-based distributions).");

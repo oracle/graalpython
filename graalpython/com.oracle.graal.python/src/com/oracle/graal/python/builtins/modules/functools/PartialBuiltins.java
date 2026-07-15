@@ -40,10 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules.functools;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.FutureWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_PARTIAL_STATE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_CALLABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_PARTIAL_WILL_BE_METHOD_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -64,6 +66,7 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
@@ -82,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -149,6 +153,19 @@ public final class PartialBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PartialBuiltinsFactory.getFactories();
+    }
+
+    @Slot(value = SlotKind.tp_descr_get, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class PartialDescrGetNode extends DescrGetBuiltinNode {
+        @Specialization
+        static Object get(VirtualFrame frame, PPartial self, Object obj, @SuppressWarnings("unused") Object type,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            if (!(obj instanceof PNone)) {
+                warnNode.warnEx(frame, FutureWarning, WARN_PARTIAL_WILL_BE_METHOD_DESCRIPTOR, 1);
+            }
+            return self;
+        }
     }
 
     // functools.partial(func, /, *args, **keywords)
