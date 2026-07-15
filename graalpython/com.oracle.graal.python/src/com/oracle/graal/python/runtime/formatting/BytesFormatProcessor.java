@@ -89,6 +89,11 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     }
 
     @Override
+    protected char normalizeIntegerFormatType(char type) {
+        return type == 'i' ? 'd' : type;
+    }
+
+    @Override
     <F extends Formatter> F setupFormat(F f) {
         f.setBytes(true);
         return f;

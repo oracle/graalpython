@@ -318,6 +318,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_BYTES_P_FOUND = tsLiteral("expected bytes, %p found");
     public static final TruffleString EXPECTED_CHARACTER_BUT_STRING_FOUND = tsLiteral("%s expected a character, but string of length %d found");
     public static final TruffleString EXPECTED_CONVERSION = tsLiteral("expected conversion");
+    public static final TruffleString EXPECTED_ITERABLE_OF_INTEGERS_GOT_STR = tsLiteral("expected iterable of integers; got: 'str'");
     public static final TruffleString EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = tsLiteral("expected %p.__fspath__() to return str or bytes, not %P");
     public static final TruffleString EXPECTED_OBJ_TYPE_S_GOT_P = tsLiteral("expected object of type %s, got %p");
     public static final TruffleString EXPECTED_S_NOT_P = tsLiteral("expected %s, not %p");

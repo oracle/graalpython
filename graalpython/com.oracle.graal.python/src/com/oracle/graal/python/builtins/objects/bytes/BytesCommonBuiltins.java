@@ -822,9 +822,9 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "hex", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "bytes_per_sep_group"})
+    @Builtin(name = "hex", minNumOfPositionalArgs = 1, parameterNames = {"$self", "sep", "bytes_per_sep"})
     @ArgumentClinic(name = "sep", conversionClass = SepExpectByteNode.class, defaultValue = "PNone.NO_VALUE")
-    @ArgumentClinic(name = "bytes_per_sep_group", conversionClass = ExpectIntNode.class, defaultValue = "1")
+    @ArgumentClinic(name = "bytes_per_sep", conversionClass = ExpectIntNode.class, defaultValue = "1")
     @GenerateNodeFactory
     abstract static class HexNode extends PythonTernaryClinicBuiltinNode {
 
