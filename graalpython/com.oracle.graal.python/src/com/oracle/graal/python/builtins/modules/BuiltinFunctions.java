@@ -2391,10 +2391,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (slots.am_anext() == null) {
                 throw raiseNoANext.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJECT_NOT_ASYNCGEN, asyncIter);
             }
+            Object awaitable = callSlot.execute(frame, inliningTarget, slots.am_anext(), asyncIter);
             if (hasDefault.profile(inliningTarget, defaultValue == NO_VALUE)) {
-                return callSlot.execute(frame, inliningTarget, slots.am_anext(), asyncIter);
+                return awaitable;
             } else {
-                return PFactory.createANextAwaitable(PythonLanguage.get(inliningTarget), asyncIter, defaultValue);
+                return PFactory.createANextAwaitable(PythonLanguage.get(inliningTarget), awaitable, defaultValue);
             }
         }
     }
