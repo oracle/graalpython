@@ -155,6 +155,7 @@ public abstract class ErrorMessages {
     public static final TruffleString BASE_MUST_BE = tsLiteral("PyNumber_ToBase: base must be 2, 8, 10 or 16");
     public static final TruffleString BIVARIANT_TYPES_ARE_NOT_SUPPORTED = tsLiteral("Bivariant types are not supported.");
     public static final TruffleString BOOL_SHOULD_RETURN_BOOL = tsLiteral("__bool__ should return bool, returned %p");
+    public static final TruffleString BOOL_USED_AS_FILE_DESCRIPTOR = tsLiteral("bool is used as a file descriptor");
     public static final TruffleString BOTH_POINTS_MUST_HAVE_THE_SAME_NUMBER_OF_DIMENSIONS = tsLiteral("both points must have the same number of dimensions");
     public static final TruffleString BOUND_MUST_BE_A_TYPE = tsLiteral("Bound must be a type.");
     public static final TruffleString BYTECODE_VERSION_MISMATCH = tsLiteral("Bytecode version mismatch, expected %d actual %d");

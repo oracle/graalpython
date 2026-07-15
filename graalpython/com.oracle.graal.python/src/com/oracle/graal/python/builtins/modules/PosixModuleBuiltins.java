@@ -36,6 +36,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeWarning;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -3353,7 +3354,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int doFdBool(boolean value) {
+        static int doFdBool(VirtualFrame frame, boolean value,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            warnNode.warnEx(frame, RuntimeWarning, ErrorMessages.BOOL_USED_AS_FILE_DESCRIPTOR, 1);
             return PInt.intValue(value);
         }
 
@@ -3440,7 +3443,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "allowFd")
-        static PosixFileHandle doFdBool(boolean value) {
+        static PosixFileHandle doFdBool(VirtualFrame frame, boolean value,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            warnNode.warnEx(frame, RuntimeWarning, ErrorMessages.BOOL_USED_AS_FILE_DESCRIPTOR, 1);
             return new PosixFd(value, PInt.intValue(value));
         }
 

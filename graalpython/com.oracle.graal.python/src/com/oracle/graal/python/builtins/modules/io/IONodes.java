@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.EMBEDDED_NULL_CHARACTE
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_MODE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.OPENER_RETURNED_D;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeWarning;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -419,12 +420,19 @@ public class IONodes {
             return fd;
         }
 
+        @Specialization
+        static int bool(VirtualFrame frame, boolean fd,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            warnNode.warnEx(frame, RuntimeWarning, ErrorMessages.BOOL_USED_AS_FILE_DESCRIPTOR, 1);
+            return fd ? 1 : 0;
+        }
+
         @Specialization(guards = {"fd >= 0", "fd <= MAX"})
         static int fast(long fd) {
             return (int) fd;
         }
 
-        @Specialization(guards = "!isInteger(nameobj)")
+        @Specialization(guards = {"!isBoolean(nameobj)", "!isInteger(nameobj)"})
         static Object generic(VirtualFrame frame, Object nameobj,
                         @Bind Node inliningTarget,
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,
