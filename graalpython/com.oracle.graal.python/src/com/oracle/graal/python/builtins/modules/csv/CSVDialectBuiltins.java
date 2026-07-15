@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_CRLF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DOUBLE_QUOTE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -337,9 +338,32 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
             int quoteCharCodePoint = TruffleString.EqualNode.getUncached().execute(quoteChar, T_NOT_SET, TS_ENCODING) ? NOT_SET_CODEPOINT
                             : TruffleString.CodePointAtIndexUTF32Node.getUncached().execute(quoteChar, 0);
 
+            checkChar(raisingNode, T_ATTR_DELIMITER, delimiterCodePoint, lineTerminator, true);
+            checkChar(raisingNode, T_ATTR_ESCAPECHAR, escapeCharCodePoint, lineTerminator, !skipInitialSpace);
+            checkChar(raisingNode, T_ATTR_QUOTECHAR, quoteCharCodePoint, lineTerminator, !skipInitialSpace);
+            checkChars(raisingNode, T_ATTR_DELIMITER, T_ATTR_ESCAPECHAR, delimiterCodePoint, escapeCharCodePoint);
+            checkChars(raisingNode, T_ATTR_DELIMITER, T_ATTR_QUOTECHAR, delimiterCodePoint, quoteCharCodePoint);
+            checkChars(raisingNode, T_ATTR_ESCAPECHAR, T_ATTR_QUOTECHAR, escapeCharCodePoint, quoteCharCodePoint);
+
             return PFactory.createCSVDialect(cls, TypeNodes.GetInstanceShape.executeUncached(cls), delimiter, delimiterCodePoint, doubleQuote,
                             escapeChar, escapeCharCodePoint, lineTerminator, quoteChar, quoteCharCodePoint, quoting,
                             skipInitialSpace, strict);
+        }
+
+        private static void checkChar(Node raisingNode, TruffleString name, int codePoint, TruffleString lineTerminator, boolean allowSpace) {
+            if (codePoint == '\r' || codePoint == '\n' || (codePoint == ' ' && !allowSpace)) {
+                throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.BAD_S_VALUE, name);
+            }
+            int length = TruffleString.CodePointLengthNode.getUncached().execute(lineTerminator, TS_ENCODING);
+            if (TruffleString.IndexOfCodePointNode.getUncached().execute(lineTerminator, codePoint, 0, length, TS_ENCODING) >= 0) {
+                throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.BAD_S_OR_S_VALUE, name, T_ATTR_LINETERMINATOR);
+            }
+        }
+
+        private static void checkChars(Node raisingNode, TruffleString name1, TruffleString name2, int codePoint1, int codePoint2) {
+            if (codePoint1 == codePoint2 && codePoint1 != NOT_SET_CODEPOINT) {
+                throw PRaiseNode.raiseStatic(raisingNode, ValueError, ErrorMessages.BAD_S_OR_S_VALUE, name1, name2);
+            }
         }
 
         private static Object getAttributeValue(VirtualFrame frame, Node inliningTarget, Object dialect, Object inputValue, TruffleString attributeName, PyObjectLookupAttr getAttributeNode) {

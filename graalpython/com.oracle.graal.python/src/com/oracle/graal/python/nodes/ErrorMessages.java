@@ -1251,6 +1251,8 @@ public abstract class ErrorMessages {
     public static final TruffleString QUOTECHAR_MUST_BE_SET_IF_QUOTING_ENABLED = tsLiteral("quotechar must be set if quoting enabled");
     public static final TruffleString LINETERMINATOR_MUST_BE_SET = tsLiteral("lineterminator must be set");
     public static final TruffleString BAD_QUOTING_VALUE = tsLiteral("bad \"quoting\" value");
+    public static final TruffleString BAD_S_VALUE = tsLiteral("bad %s value");
+    public static final TruffleString BAD_S_OR_S_VALUE = tsLiteral("bad %s or %s value");
     public static final TruffleString S_EXPECTED_AFTER_S = tsLiteral("'%s' expected after '%s'");
     public static final TruffleString NEWLINE_IN_UNQOUTED_FIELD = tsLiteral("new-line character seen in unquoted field - do you need to open the file with newline=''?");
     public static final TruffleString LARGER_THAN_FIELD_SIZE_LIMIT = tsLiteral("field larger than field limit (%d)");
@@ -1495,7 +1497,8 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_NEST_BASE_EXCEPTIONS_IN_AN_EXCEPTION_GROUP = tsLiteral("Cannot nest BaseExceptions in an ExceptionGroup");
     public static final TruffleString CANNOT_NEST_BASE_EXCEPTIONS_IN_N = tsLiteral("Cannot nest BaseExceptions in '%N'");
     public static final TruffleString DERIVE_MUST_RETURN_AN_INSTANCE_OF_BASE_EXCEPTION_GROUP = tsLiteral("derive must return an instance of BaseExceptionGroup");
-    public static final TruffleString EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES = tsLiteral("expected a function, exception type or tuple of exception types");
+    public static final TruffleString EXPECTED_AN_EXCEPTION_TYPE_TUPLE_OR_CALLABLE_OTHER_THAN_CLASS = tsLiteral(
+                    "expected an exception type, a tuple of exception types, or a callable (other than a class)");
     public static final TruffleString NOTE_MUST_BE_A_STR_NOT_P = tsLiteral("note must be a str, not '%p'");
     public static final TruffleString CANNOT_ADD_NOTE_NOTES_IS_NOT_A_LIST = tsLiteral("Cannot add note: __notes__ is not a list");
     public static final TruffleString CANT_GET_ATTRIBUTE_S_ON_S = tsLiteral("Can't get attribute %s on %s");

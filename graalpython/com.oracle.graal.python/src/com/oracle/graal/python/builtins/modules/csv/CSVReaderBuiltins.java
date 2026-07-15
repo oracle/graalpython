@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,8 @@ import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_RECORD;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONE;
 import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NONNUMERIC;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_NOTNULL;
+import static com.oracle.graal.python.builtins.modules.csv.QuoteStyle.QUOTE_STRINGS;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
@@ -63,6 +65,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
@@ -198,6 +201,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
 
                 case START_FIELD:
                     /* expecting field */
+                    self.unquotedField = true;
                     if (codePoint == NEWLINE_CODEPOINT || codePoint == CARRIAGE_RETURN_CODEPOINT || codePoint == EOL) {
                         /* save empty field - return [fields] */
                         parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
@@ -205,12 +209,10 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                     } else if (codePoint == dialect.quoteCharCodePoint &&
                                     dialect.quoting != QUOTE_NONE) {
                         /* start quoted field */
+                        self.unquotedField = false;
                         self.state = IN_QUOTED_FIELD;
                     } else if (codePoint == dialect.escapeCharCodePoint) {
                         /* possible escaped character */
-                        if (dialect.quoting == QUOTE_NONNUMERIC) {
-                            self.numericField = true;
-                        }
                         self.state = ESCAPED_CHAR;
                     } else if (codePoint == SPACE_CODEPOINT && dialect.skipInitialSpace) {
                         /* ignore space at start of field */
@@ -219,9 +221,6 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
                         parseSaveField(inliningTarget, self, fields, toStringNode, pyNumberFloatNode, appendNode);
                     } else {
                         /* begin new unquoted field */
-                        if (dialect.quoting == QUOTE_NONNUMERIC) {
-                            self.numericField = true;
-                        }
                         parseAddCodePoint(inliningTarget, self, codePoint, appendCodePointNode, raiseNode);
                         self.state = IN_FIELD;
                     }
@@ -336,8 +335,10 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
         private static void parseSaveField(Node inliningTarget, CSVReader self, PList fields, ToStringNode toStringNode, PyNumberFloatNode pyNumberFloatNode, AppendNode appendNode) {
             TruffleString field = toStringNode.execute(self.field);
             self.field = TruffleStringBuilder.createUTF32();
-            if (self.numericField) {
-                self.numericField = false;
+            QuoteStyle quoting = self.dialect.quoting;
+            if (self.unquotedField && field.isEmpty() && (quoting == QUOTE_NOTNULL || quoting == QUOTE_STRINGS)) {
+                appendNode.execute(fields, PNone.NONE);
+            } else if (self.unquotedField && !field.isEmpty() && (quoting == QUOTE_NONNUMERIC || quoting == QUOTE_STRINGS)) {
                 appendNode.execute(fields, pyNumberFloatNode.execute(inliningTarget, field));
             } else {
                 appendNode.execute(fields, field);
