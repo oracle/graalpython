@@ -19,7 +19,7 @@ test.test_sys.SysModuleTest.test_exit @ darwin-arm64,linux-aarch64,linux-aarch64
 test.test_sys.SysModuleTest.test_getdefaultencoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys.SysModuleTest.test_getfilesystemencoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys.SysModuleTest.test_getframe @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_sys.SysModuleTest.test_getframemodulename @ linux-x86_64
+test.test_sys.SysModuleTest.test_getframemodulename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_sys.SysModuleTest.test_getrecursionlimit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys.SysModuleTest.test_getwindowsversion @ win32-AMD64,win32-AMD64-github
 test.test_sys.SysModuleTest.test_implementation @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

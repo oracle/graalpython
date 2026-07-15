@@ -35,7 +35,7 @@ Also, review the [Code of Conduct](https://www.graalvm.org/community/conduct/) f
 * Support for native extension modules is considered experimental, but you can already install [packages](docs/user/Python-Runtime.md#installing-packages) like *NumPy*, *PyTorch*, or *Tensorflow*; run [Hugging Face](https://huggingface.co/) models like *Stable Diffusion* or *GPT*
 ![](docs/user/assets/mcd.svg#gh-light-mode-only)![](docs/user/assets/mcd-dark.svg#gh-dark-mode-only)<sup>
 We run the tests of the [most depended on PyPI packages](https://libraries.io/pypi) every day.
-For 97% of those packages a recent version can be installed on GraalPy and GraalPy passes over 60% of all tests of all packages combined.
+For 93% of those 600 packages a recent version can be installed on GraalPy and GraalPy passes over 65% of all tests of all packages combined.
 We assume that CPython not passing 100% of all tests is due to problems in our infrastructure that may also affect GraalPy.
 Packages where CPython fails all tests are marked as "not tested" for both CPython and GraalPy.
 </sup>
@@ -44,12 +44,10 @@ Packages where CPython fails all tests are marked as "not tested" for both CPyth
 
 * Pure Python code is often faster than on CPython after JIT compilation
 * C extension performance is near CPython, but varies depending on the specific interactions of native and Python code
-* GraalPy is ~4x faster than CPython on the official [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/)
+* GraalPy is geomean ~4x faster than CPython on the official [Python Performance Benchmark Suite](https://pyperformance.readthedocs.io/)
 ![](docs/user/assets/performance.svg#gh-light-mode-only)![](docs/user/assets/performance-dark.svg#gh-dark-mode-only)<sup>
 Benchmarks run via `pip install pyperformance && pyperformance run` on each of CPython and GraalPy.
-Harness and benchmarks were adapted by hand for Jython due to missing Python 3 support.
 Each interpreter was installed via <tt>[pyenv](https://github.com/pyenv/pyenv)</tt>.
-Geomean speedup was calculated against CPython on the intersection of benchmarks that run on all interpreters.
 </sup>
 
 ## Getting Started

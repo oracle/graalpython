@@ -201,7 +201,7 @@ launchEnvironment(wchar_t *env, wchar_t *exe)
  ***                           PROCESS CONTROLLER                           ***
 \******************************************************************************/
 
-#define GRAAL_PYTHON_ARGS L"GRAAL_PYTHON_ARGS="
+#define GRAAL_PYTHON_VM_ARGS L"GRAAL_PYTHON_VM_ARGS="
 #define GRAAL_PYTHON_EXE_ARG L"--python.Executable="
 #define GRAAL_PYTHON_BASE_EXECUTABLE_ARG L"--python.BaseExecutable="
 #define GRAAL_PYTHON_VENVLAUNCHER_COMMAND_ARG L"--python.VenvlauncherCommand="
@@ -376,7 +376,7 @@ wmain(int argc, wchar_t ** argv)
     debug(L"base executable: %s\n", baseExecutable);
 
     // calculate the size of the new environment, that is, the size of the previous environment
-    // plus the size of the GRAAL_PYTHON_ARGS variable with the arguments to pass on
+    // plus the size of the GRAAL_PYTHON_VM_ARGS variable with the arguments to pass on
     env = GetEnvironmentStringsW();
     if (env == NULL) {
         winerror(0, L"Failed to get current environment");
@@ -389,7 +389,7 @@ wmain(int argc, wchar_t ** argv)
         envCur = envCur + i + 1;
     }
     // env needs room for key=, no \0
-    envSize += wcslen(GRAAL_PYTHON_ARGS);
+    envSize += wcslen(GRAAL_PYTHON_VM_ARGS);
     // need room to specify original launcher path
     envSize += 1 + wcslen(GRAAL_PYTHON_EXE_ARG) + wcslen(currentExecutable);
     // need room to specify base executable path
@@ -400,9 +400,9 @@ wmain(int argc, wchar_t ** argv)
         // env needs room for \v and arg, no \0
         envSize = envSize + 1 + wcslen(argv[i]);
     }
-    // final \v at the end of GRAAL_PYTHON_ARGS, so it gets purged
+    // final \v at the end of GRAAL_PYTHON_VM_ARGS, so it gets purged
     ++envSize;
-    // \0 at the end of the GRAAL_PYTHON_ARGS variable
+    // \0 at the end of the GRAAL_PYTHON_VM_ARGS variable
     ++envSize;
     // env needs room for \0 at the end
     ++envSize;
@@ -427,15 +427,15 @@ wmain(int argc, wchar_t ** argv)
         envCur = envCur + i + 1;
         envSize = envSize - i - 1;
     }
-    exitCode = wcscpy_s(newEnvCur, envSize, GRAAL_PYTHON_ARGS);
+    exitCode = wcscpy_s(newEnvCur, envSize, GRAAL_PYTHON_VM_ARGS);
     if (exitCode) {
-        winerror(exitCode, L"Failed to copy GRAAL_PYTHON_ARGS=");
+        winerror(exitCode, L"Failed to copy GRAAL_PYTHON_VM_ARGS=");
         goto abort;
     }
     debug(L"\t%s", newEnvCur);
     // move past key=
-    envSize = envSize - wcslen(GRAAL_PYTHON_ARGS);
-    newEnvCur = newEnvCur + wcslen(GRAAL_PYTHON_ARGS);
+    envSize = envSize - wcslen(GRAAL_PYTHON_VM_ARGS);
+    newEnvCur = newEnvCur + wcslen(GRAAL_PYTHON_VM_ARGS);
     // specify launcher executable
     newEnvCur[0] = L'\v';
     --envSize;
@@ -512,11 +512,11 @@ wmain(int argc, wchar_t ** argv)
         envSize = envSize - wcslen(argv[i]);
         newEnvCur = newEnvCur + wcslen(argv[i]);
     }
-    // insert terminating \v for GRAAL_PYTHON_ARGS
+    // insert terminating \v for GRAAL_PYTHON_VM_ARGS
     newEnvCur[0] = L'\v';
     --envSize;
     ++newEnvCur;
-    // insert terminating \0 for GRAAL_PYTHON_ARGS
+    // insert terminating \0 for GRAAL_PYTHON_VM_ARGS
     newEnvCur[0] = L'\0';
     --envSize;
     ++newEnvCur;
