@@ -69,7 +69,7 @@ int Py_IsInitialized(void) {
 }
 
 int
-_Py_IsFinalizing(void)
+Py_IsFinalizing(void)
 {
     return graalpy_finalizing;
 }

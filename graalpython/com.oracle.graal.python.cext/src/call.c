@@ -368,14 +368,6 @@ PyObject_Vectorcall(PyObject *callable, PyObject *const *args,
 }
 
 
-PyObject *
-_PyObject_FastCall(PyObject *func, PyObject *const *args, Py_ssize_t nargs)
-{
-    PyThreadState *tstate = _PyThreadState_GET();
-    return _PyObject_VectorcallTstate(tstate, func, args, (size_t)nargs, NULL);
-}
-
-
 #if 0 // GraalPy change
 PyObject *
 _PyObject_Call(PyThreadState *tstate, PyObject *callable,
@@ -810,32 +802,6 @@ _PyObject_CallMethod_SizeT(PyObject *obj, const char *name,
 }
 
 
-#if 0 // GraalPy change
-PyObject *
-_PyObject_CallMethodId_SizeT(PyObject *obj, _Py_Identifier *name,
-                             const char *format, ...)
-{
-    PyThreadState *tstate = _PyThreadState_GET();
-    if (obj == NULL || name == NULL) {
-        return null_error(tstate);
-    }
-
-    PyObject *callable = _PyObject_GetAttrId(obj, name);
-    if (callable == NULL) {
-        return NULL;
-    }
-
-    va_list va;
-    va_start(va, format);
-    PyObject *retval = callmethod(tstate, callable, format, va, 1);
-    va_end(va);
-
-    Py_DECREF(callable);
-    return retval;
-}
-#endif // GraalPy change
-
-
 /* --- Call with "..." arguments ---------------------------------- */
 
 static PyObject *
@@ -900,6 +866,7 @@ object_vacall(PyThreadState *tstate, PyObject *base,
     return result;
 }
 
+// GraalPy addition
 static PyObject *
 method_vacall(PyObject *receiver, PyObject *method_name, va_list vargs)
 {

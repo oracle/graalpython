@@ -196,17 +196,6 @@ PyImport_GetModuleDict(void)
 }
 #endif // GraalPy change
 
-// This is only kept around for extensions that use _Py_IDENTIFIER.
-PyObject *
-_PyImport_GetModuleId(_Py_Identifier *nameid)
-{
-    PyObject *name = _PyUnicode_FromId(nameid); /* borrowed */
-    if (name == NULL) {
-        return NULL;
-    }
-    return PyImport_GetModule(name);
-}
-
 int
 _PyImport_SetModule(PyObject *name, PyObject *m)
 {
