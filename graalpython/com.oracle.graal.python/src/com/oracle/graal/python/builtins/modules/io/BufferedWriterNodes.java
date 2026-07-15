@@ -346,12 +346,12 @@ public class BufferedWriterNodes {
             /*-
                This ensures that after return from this function,
                VALID_WRITE_BUFFER(self) returns false.
-
+            
                This is a required condition because when a tell() is called
                after flushing and if VALID_READ_BUFFER(self) is false, we need
                VALID_WRITE_BUFFER(self) to be false to have
                RAW_OFFSET(self) == 0.
-
+            
                Issue: https://bugs.python.org/issue32228
             */
             self.resetWrite(); // _bufferedwriter_reset_buf

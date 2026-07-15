@@ -2391,10 +2391,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 storage = new ObjectSequenceStorage(array, array.length);
             } else {
                 /*
-                * In multi-context mode, even if we started with context-independent objects, they can get replaced with
-                * context-dependent ones when using the C API (i.e. TruffleString gets "inflated" to PString).
-                * So we need to copy.
-                */
+                 * In multi-context mode, even if we started with context-independent objects, they can get replaced with
+                 * context-dependent ones when using the C API (i.e. TruffleString gets "inflated" to PString).
+                 * So we need to copy.
+                 */
                 storage = new ObjectSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
             }
             return PFactory.createTuple(rootNode.getLanguage(), storage);
