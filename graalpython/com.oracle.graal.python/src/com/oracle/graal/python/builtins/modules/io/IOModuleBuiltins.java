@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,6 +81,8 @@ import com.oracle.graal.python.builtins.modules.io.IONodes.IOMode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.lib.PyNumberCheckNode;
+import com.oracle.graal.python.lib.PyOSFSPathNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -149,6 +151,14 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         return fileIO;
     }
 
+    private static PFileIO createFileIOFromOpen(VirtualFrame frame, Node inliningTarget, Object file, IONodes.IOMode mode, boolean closefd, Object opener,
+                    FileIOBuiltins.FileIOInit initFileIO, PyNumberCheckNode numberCheckNode, PyOSFSPathNode fsPathNode) {
+        // CPython's _io.open applies PyOS_FSPath before passing the name to FileIO. Direct
+        // construction of FileIO, on the other hand, preserves the original PathLike as .name.
+        Object pathOrFd = numberCheckNode.execute(inliningTarget, file) ? file : fsPathNode.execute(frame, inliningTarget, file);
+        return createFileIO(frame, inliningTarget, pathOrFd, mode, closefd, opener, initFileIO);
+    }
+
     // PEP 578 stub
     @Builtin(name = "open_code", minNumOfPositionalArgs = 1, parameterNames = {"path"})
     @ArgumentClinic(name = "path", conversion = ArgumentClinic.ClinicConversion.TString)
@@ -191,6 +201,8 @@ public final class IOModuleBuiltins extends PythonBuiltins {
         protected static Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Exclusive @Cached PyNumberCheckNode numberCheckNode,
+                        @Exclusive @Cached PyOSFSPathNode fsPathNode,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
                         @Cached PyObjectSetAttr setAttrNode,
@@ -198,7 +210,7 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, initFileIO);
+            PFileIO fileIO = createFileIOFromOpen(frame, inliningTarget, file, mode, closefd, opener, initFileIO, numberCheckNode, fsPathNode);
             Object result = fileIO;
             try {
                 /* buffering */
@@ -262,8 +274,10 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO) {
-            return createFileIO(frame, inliningTarget, file, mode, closefd, opener, initFileIO);
+                        @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Exclusive @Cached PyNumberCheckNode numberCheckNode,
+                        @Exclusive @Cached PyOSFSPathNode fsPathNode) {
+            return createFileIOFromOpen(frame, inliningTarget, file, mode, closefd, opener, initFileIO, numberCheckNode, fsPathNode);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 1"})
@@ -275,12 +289,15 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Exclusive @Cached PyNumberCheckNode numberCheckNode,
+                        @Exclusive @Cached PyOSFSPathNode fsPathNode,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             warnNode.warnEx(frame, RuntimeWarning, LINE_BUFFERING_ISNT_SUPPORTED, 1);
-            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, createBufferedIO, posixLib, callClose, raiseNode);
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, inliningTarget, initFileIO, numberCheckNode, fsPathNode, createBufferedIO, posixLib,
+                            callClose, raiseNode);
         }
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
@@ -291,11 +308,13 @@ public final class IOModuleBuiltins extends PythonBuiltins {
                         boolean closefd, Object opener,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached FileIOBuiltins.FileIOInit initFileIO,
+                        @Exclusive @Cached PyNumberCheckNode numberCheckNode,
+                        @Exclusive @Cached PyOSFSPathNode fsPathNode,
                         @Exclusive @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PyObjectCallMethodObjArgs callClose,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            PFileIO fileIO = createFileIO(frame, inliningTarget, file, mode, closefd, opener, initFileIO);
+            PFileIO fileIO = createFileIOFromOpen(frame, inliningTarget, file, mode, closefd, opener, initFileIO, numberCheckNode, fsPathNode);
             try {
                 /* buffering */
                 boolean isatty = false;
