@@ -643,7 +643,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSemLock("SemLock", PythonObject, newBuilder().publishInModule("_multiprocessing").basetype().slots(SemLockBuiltins.SLOTS)),
     PSocket("socket", PythonObject, newBuilder().publishInModule(J__SOCKET).basetype().slots(SocketBuiltins.SLOTS)),
     PStaticmethod("staticmethod", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().addDict(24).slots(StaticmethodBuiltins.SLOTS).doc("""
-                    staticmethod(function) -> method
+                    staticmethod(function, /)
+                    --
 
                     Convert a function to be a static method.
 
@@ -662,7 +663,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     Static methods in Python are similar to those found in Java or C++.
                     For a more advanced concept, see the classmethod builtin.""")),
     PClassmethod("classmethod", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().addDict(24).slots(ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS).doc("""
-                    classmethod(function) -> method
+                    classmethod(function, /)
+                    --
 
                     Convert a function to be a class method.
 
