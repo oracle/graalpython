@@ -7065,8 +7065,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public Void visit(TypeVar node) {
             b.beginBlock();
 
-            // store the value to the variable
-            beginStoreLocal(node.name, b);
+            BytecodeLocal typeParam = beginTemporaryLocal();
+            b.beginStoreLocal(typeParam);
             if (node.bound != null) {
                 BytecodeDSLCompilerResult code = createRootNodeCompilerFor(node).compileBoundTypeVar(node);
                 int kind = node.bound instanceof Tuple ? MakeTypeParamKind.TYPE_VAR_WITH_CONSTRAINTS : MakeTypeParamKind.TYPE_VAR_WITH_BOUND;
@@ -7084,10 +7084,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endMakeTypeParam();
                 // @formatter:on
             }
+            b.endStoreLocal();
+
+            beginStoreLocal(node.name, b);
+            b.emitLoadLocal(typeParam);
             endStoreLocal(node.name, b);
 
-            // produce the value stored to the variable as the result of this block
-            emitReadLocal(node.name, b);
+            // Keep the newly created parameter as the result. Reading the variable again could
+            // resolve to the enclosing class namespace when this scope can see it.
+            loadAndEndTemporaryLocal(typeParam);
 
             b.endBlock();
             return null;
@@ -7097,18 +7102,21 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public Void visit(ParamSpec node) {
             b.beginBlock();
 
-            // store the value to the variable
+            BytecodeLocal typeParam = beginTemporaryLocal();
+            b.beginStoreLocal(typeParam);
             // @formatter:off
+            b.beginMakeTypeParam(MakeTypeParamKind.PARAM_SPEC);
+                emitPythonConstant(toTruffleStringUncached(node.name), b);
+                b.emitLoadNull();
+            b.endMakeTypeParam();
+            b.endStoreLocal();
+
             beginStoreLocal(node.name, b);
-                b.beginMakeTypeParam(MakeTypeParamKind.PARAM_SPEC);
-                    emitPythonConstant(toTruffleStringUncached(node.name), b);
-                    b.emitLoadNull();
-                b.endMakeTypeParam();
+                b.emitLoadLocal(typeParam);
             endStoreLocal(node.name, b);
             // @formatter:on
 
-            // produce the value stored to the variable as the result of this block
-            emitReadLocal(node.name, b);
+            loadAndEndTemporaryLocal(typeParam);
 
             b.endBlock();
             return null;
@@ -7118,18 +7126,21 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public Void visit(TypeVarTuple node) {
             b.beginBlock();
 
-            // store the value to the variable
+            BytecodeLocal typeParam = beginTemporaryLocal();
+            b.beginStoreLocal(typeParam);
             // @formatter:off
+            b.beginMakeTypeParam(MakeTypeParamKind.TYPE_VAR_TUPLE);
+                emitPythonConstant(toTruffleStringUncached(node.name), b);
+                b.emitLoadNull(); // boundOrConstraints
+            b.endMakeTypeParam();
+            b.endStoreLocal();
+
             beginStoreLocal(node.name, b);
-                b.beginMakeTypeParam(MakeTypeParamKind.TYPE_VAR_TUPLE);
-                    emitPythonConstant(toTruffleStringUncached(node.name), b);
-                    b.emitLoadNull(); // boundOrConstraints
-                b.endMakeTypeParam();
+                b.emitLoadLocal(typeParam);
             endStoreLocal(node.name, b);
             // formatter:@on
 
-            // produce the value stored to the variable as the result of this block
-            emitReadLocal(node.name, b);
+            loadAndEndTemporaryLocal(typeParam);
 
             b.endBlock();
             return null;
