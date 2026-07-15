@@ -245,7 +245,10 @@ def import_python_sources(args):
     copy_inlined_files(CPYTHON_SOURCES_MAPPING, args.cpython, cpython_files)
 
     # Commit and fetch changes back into the main repository
-    SUITE.vc.git_command(import_dir, ["add", "."])
+    # Some CPython test fixtures match GraalPy's ignore rules (for example
+    # Lib/test/archivetestdata/zipdir.zip). Also, do not let a developer's
+    # global Git ignore configuration affect which imported files are staged.
+    SUITE.vc.git_command(import_dir, ["add", "--force", "."])
     SUITE.vc.commit(import_dir, f"Update Python inlined files: {args.python_version}")
     SUITE.vc.git_command(SUITE.dir, ['fetch', 'python-import', '+python-import:python-import'])
     print(dedent("""\
