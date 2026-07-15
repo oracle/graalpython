@@ -1191,6 +1191,34 @@ class TestUnicodeObject(unittest.TestCase):
         assert tester.check_is_same_str_ptr(s2)
 
 
+    def test_intern_state_preserved_during_lazy_initialization(self):
+        TestLazyIntern = CPyExtType(
+            "TestLazyIntern",
+            '''
+            static PyObject* check_intern_state_after_data(PyObject* Py_UNUSED(self), PyObject* str) {
+                Py_INCREF(str);
+                PyUnicode_InternInPlace(&str);
+                if (str == NULL) {
+                    return NULL;
+                }
+
+                unsigned int before = PyUnicode_CHECK_INTERNED(str);
+                void *data = PyUnicode_DATA(str);
+                unsigned int after = PyUnicode_CHECK_INTERNED(str);
+                int preserved = data != NULL && before != SSTATE_NOT_INTERNED && after == before;
+                Py_DECREF(str);
+                return PyBool_FromLong(preserved);
+            }
+            ''',
+            tp_methods='''
+            {"check_intern_state_after_data", (PyCFunction)check_intern_state_after_data, METH_O, ""}
+            ''',
+        )
+        tester = TestLazyIntern()
+        string = b'lazy intern state'.decode('ascii')
+        assert tester.check_intern_state_after_data(string)
+
+
     def test_unicode_data(self):
         TestUnicodeData = CPyExtType(
             "TestUnicodeData",
