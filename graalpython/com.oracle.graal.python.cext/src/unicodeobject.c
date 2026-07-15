@@ -1221,12 +1221,9 @@ resize_compact(PyObject *unicode, Py_ssize_t length)
 }
 
 /*
- * A managed GraalPyUnicodeObject is physically compact: a single native
- * allocation contains its header and the character data immediately after it.
- * PyUnicode_IS_COMPACT nevertheless reports false because it denotes
- * CPython's PyASCIIObject/PyCompactUnicodeObject layout, which a handle-space
- * GraalPyUnicodeObject does not use. Its tagged handle and NativeMemory
- * allocation therefore cannot be passed to PyObject_Realloc.
+ * The unicode objects used by the writer are created using PyUnicode_New. Those
+ * objects are unmaterialized strings backed by a compact (i.e. over-allocated)
+ * GraalPyUnicodeObject. Therefore, it cannot be passed to PyObject_Realloc.
  *
  * A unicode writer owns an unmaterialized string and only needs to shrink its
  * logical size when it finishes. This function does not resize the allocation:
@@ -1241,7 +1238,7 @@ graalpy_resize_compact(PyObject *unicode, Py_ssize_t length)
     int kind;
 
     assert(unicode_modifiable(unicode));
-    assert(!PyUnicode_IS_COMPACT(unicode));
+    assert(PyUnicode_IS_COMPACT(unicode));
     assert(points_to_py_handle_space(unicode));
 
     native_unicode = (GraalPyUnicodeObject *)pointer_to_stub(unicode);
@@ -1421,27 +1418,35 @@ PyObject *
 PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar)
 {
     // GraalPy change: different implementation
-    if (size < 0) {
-        PyErr_SetString(PyExc_SystemError,
-                        "Negative size passed to PyUnicode_New");
-        return NULL;
-    }
+    int kind;
+    int is_ascii;
     if (maxchar < 128) {
-        return GraalPyPrivate_Unicode_New(size, PyUnicode_1BYTE_KIND, 1);
+        kind = PyUnicode_1BYTE_KIND;
+        is_ascii = 1;
     } else if (maxchar < 256) {
-        return GraalPyPrivate_Unicode_New(size, PyUnicode_1BYTE_KIND, 0);
+        kind = PyUnicode_1BYTE_KIND;
+        is_ascii = 0;
     } else if (maxchar < 65536) {
-        return GraalPyPrivate_Unicode_New(size, PyUnicode_2BYTE_KIND, 0);
+        kind = PyUnicode_2BYTE_KIND;
+        is_ascii = 0;
     } else {
         if (maxchar > MAX_UNICODE) {
             PyErr_SetString(PyExc_SystemError,
                             "invalid maximum character passed to PyUnicode_New");
             return NULL;
         }
-        return GraalPyPrivate_Unicode_New(size, PyUnicode_4BYTE_KIND, 0);
+        kind = PyUnicode_4BYTE_KIND;
+        is_ascii = 0;
     }
-    /* should never be reached */
-    return NULL;
+
+    /* Ensure we won't overflow the size. */
+    if (size < 0) {
+        PyErr_SetString(PyExc_SystemError,
+                        "Negative size passed to PyUnicode_New");
+        return NULL;
+    }
+
+    return GraalPyPrivate_Unicode_New(size, kind, is_ascii);
 }
 
 #if SIZEOF_WCHAR_T == 2
@@ -15384,6 +15389,32 @@ GraalPyUnicodeObject_GetKind(GraalPyUnicodeObject *unicode)
     return GraalPyUnicodeObject_GetKindFromState(unicode->state);
 }
 
+/* Keep in sync with CApiTransitions.isGraalPyUnicodeObjectCompactFromState. */
+static inline unsigned int
+GraalPyUnicodeObject_IsCompactFromState(uint64_t state)
+{
+    return (state & GRAALPY_UNICODE_IS_COMPACT_FLAG) != 0;
+}
+
+/* Keep in sync with CApiTransitions.isGraalPyUnicodeObjectCompactFromState. */
+static inline unsigned int
+GraalPyUnicodeObject_IsCompact(GraalPyUnicodeObject *unicode)
+{
+    return GraalPyUnicodeObject_IsCompactFromState(unicode->state);
+}
+
+static inline GraalPyUnicodeObject *
+GraalpyUnicodeObject_EnsureNativeData(PyObject *op) {
+    GraalPyUnicodeObject *raw = (GraalPyUnicodeObject *) pointer_to_stub(op);
+    /* 'kind == 0' is not a valid kind for any unicode object. We use it to indicate that
+     * the native data was not yet initialized. */
+    if (GraalPyUnicodeObject_GetKind(raw) == 0) {
+        GraalPyPrivate_Unicode_FillNativeData(op);
+    }
+    return raw;
+}
+
+
 unsigned int GraalPyUnicode_CHECK_INTERNED(PyObject *op) {
     if (points_to_py_handle_space(op)) {
         GraalPyUnicodeObject *unicode = (GraalPyUnicodeObject *) pointer_to_stub(op);
@@ -15399,37 +15430,47 @@ unsigned int GraalPyUnicode_CHECK_INTERNED(PyObject *op) {
 
 Py_ssize_t GraalPyUnicode_GET_LENGTH(PyObject* op) {
     if (points_to_py_handle_space(op)) {
-        return ((GraalPyUnicodeObject *) pointer_to_stub(op))->length;
+        return GraalpyUnicodeObject_EnsureNativeData(op)->length;
     }
     return _PyASCIIObject_CAST(op)->length;
 }
 
 unsigned int GraalPyUnicode_IS_ASCII(PyObject* op) {
     if (points_to_py_handle_space(op)) {
-        return GraalPyUnicodeObject_IsAscii((GraalPyUnicodeObject *) pointer_to_stub(op));
+        return GraalPyUnicodeObject_IsAscii(GraalpyUnicodeObject_EnsureNativeData(op));
     }
     return _PyASCIIObject_CAST(op)->state.ascii;
 }
 
 unsigned int GraalPyUnicode_IS_COMPACT(PyObject* op) {
     if (points_to_py_handle_space(op)) {
-        return 0;
+        return GraalPyUnicodeObject_IsCompact(GraalpyUnicodeObject_EnsureNativeData(op));
     }
     return _PyASCIIObject_CAST(op)->state.compact;
 }
 
 int GraalPyUnicode_KIND(PyObject* op) {
     if (points_to_py_handle_space(op)) {
-        return GraalPyUnicodeObject_GetKind((GraalPyUnicodeObject *) pointer_to_stub(op));
+        return GraalPyUnicodeObject_GetKind(GraalpyUnicodeObject_EnsureNativeData(op));
     }
     return _PyASCIIObject_CAST(op)->state.kind;
 }
 
 void* GraalPyUnicode_NONCOMPACT_DATA(PyObject* op) {
     if (points_to_py_handle_space(op)) {
-        return ((GraalPyUnicodeObject *) pointer_to_stub(op))->data;
+        return GraalpyUnicodeObject_EnsureNativeData(op)->data;
     }
     return _PyUnicodeObject_CAST(op)->data.any;
+}
+
+void* GraalPyUnicode_COMPACT_DATA(PyObject* op) {
+    if (points_to_py_handle_space(op)) {
+        return _Py_STATIC_CAST(void*, GraalpyUnicodeObject_EnsureNativeData(op) + 1);
+    }
+    if (PyUnicode_IS_ASCII(op)) {
+        return _Py_STATIC_CAST(void*, (_PyASCIIObject_CAST(op) + 1));
+    }
+    return _Py_STATIC_CAST(void*, (_PyCompactUnicodeObject_CAST(op) + 1));
 }
 
 #ifdef __cplusplus
