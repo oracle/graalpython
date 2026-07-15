@@ -1191,6 +1191,59 @@ class TestUnicodeObject(unittest.TestCase):
         assert tester.check_is_same_str_ptr(s2)
 
 
+    def test_unicode_data(self):
+        TestUnicodeData = CPyExtType(
+            "TestUnicodeData",
+            '''
+            #define NCHARS ((Py_ssize_t) 5)
+            static PyObject* create_compact(void) {
+                PyObject* obj = PyUnicode_New(NCHARS, (Py_UCS4) 128);
+                if (obj == NULL) {
+                    return NULL;
+                }
+                void* data = PyUnicode_DATA(obj);
+                memcpy(data, "hello", NCHARS);
+                PyUnicode_READY(obj);
+                return obj;
+            }
+
+            static PyObject* compact_unicode_as_bytes(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(arg)) {
+                // PyUnicode_New always returns a compact string (on GraalPy and CPython)
+                PyObject *compact = create_compact();
+                if (!PyUnicode_IS_COMPACT(compact)) {
+                    PyErr_SetString(PyExc_TypeError, "expected compact unicode object");
+                    return NULL;
+                }
+                void *data = PyUnicode_DATA(compact);
+                Py_ssize_t n = PyUnicode_GET_LENGTH(compact);
+                return PyBytes_FromStringAndSize(data, n);
+            }
+
+            static PyObject* noncompact_unicode_as_bytes(PyObject *Py_UNUSED(self), PyObject *arg) {
+                if (PyUnicode_IS_COMPACT(arg)) {
+                    PyErr_SetString(PyExc_TypeError, "expected non-compact unicode object");
+                    return NULL;
+                }
+                void *data = PyUnicode_DATA(arg);
+                Py_ssize_t n = PyUnicode_GET_LENGTH(arg);
+                return PyBytes_FromStringAndSize(data, n);
+            }
+            ''',
+            tp_methods='''
+            {"compact_unicode_as_bytes", (PyCFunction)compact_unicode_as_bytes, METH_NOARGS, ""},
+            {"noncompact_unicode_as_bytes", (PyCFunction)noncompact_unicode_as_bytes, METH_O, ""}
+            ''',
+        )
+        tester = TestUnicodeData()
+
+        # on CPython: unicode subclasses are always non-compact
+        # on GraalPy: managed unicode objects are always non-compact
+        noncompact_unicode = CustomString("hello")
+
+        assert tester.compact_unicode_as_bytes() == b'hello'
+        assert tester.noncompact_unicode_as_bytes(noncompact_unicode) == b'hello'
+
+
 class TestNativeUnicodeSubclass(unittest.TestCase):
     def test_builtins(self):
         s = UnicodeSubclass("asdf")
