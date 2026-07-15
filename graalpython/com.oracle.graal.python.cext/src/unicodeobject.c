@@ -2145,7 +2145,6 @@ PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size)
     return GraalPyPrivate_Unicode_FromUTF((void*) u, size, 1);
 }
 
-#if 0 // GraalPy change
 PyObject *
 PyUnicode_FromString(const char *u)
 {
@@ -2156,7 +2155,6 @@ PyUnicode_FromString(const char *u)
     }
     return PyUnicode_DecodeUTF8Stateful(u, (Py_ssize_t)size, NULL, NULL);
 }
-#endif // GraalPy change
 
 
 PyObject *

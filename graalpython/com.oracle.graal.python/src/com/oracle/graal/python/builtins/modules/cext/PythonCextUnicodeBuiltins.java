@@ -995,20 +995,6 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    abstract static class PyUnicode_FromString extends CApiUnaryBuiltinNode {
-        @Specialization
-        static PString run(TruffleString str,
-                        @Bind PythonLanguage language) {
-            return PFactory.createString(language, str);
-        }
-
-        @Specialization
-        static PString run(PString str) {
-            return str;
-        }
-    }
-
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyUnicode_Contains extends CApiBinaryBuiltinNode {
         @Specialization
