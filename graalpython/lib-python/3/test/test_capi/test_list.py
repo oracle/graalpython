@@ -1,6 +1,7 @@
 import gc
 import weakref
 import unittest
+from test import support  # GraalPy change
 from test.support import import_helper
 from collections import UserList
 _testcapi = import_helper.import_module('_testcapi')
@@ -251,18 +252,20 @@ class CAPITest(unittest.TestCase):
         self.assertRaises(SystemError, list_setslice, (), 0, 0, [])
         self.assertRaises(SystemError, list_setslice, 42, 0, 0, [])
 
-        # Item finalizer modify the list (clear the list)
-        lst = []
-        lst.append(DelAppend(lst, 'zombie'))
-        self.assertEqual(list_setslice(lst, 0, len(lst), NULL), 0)
-        self.assertEqual(lst, ['zombie'])
+        # GraalPy change: these assertions depend on immediate refcount-based finalization.
+        if support.check_impl_detail(graalpy=False):
+            # Item finalizer modify the list (clear the list)
+            lst = []
+            lst.append(DelAppend(lst, 'zombie'))
+            self.assertEqual(list_setslice(lst, 0, len(lst), NULL), 0)
+            self.assertEqual(lst, ['zombie'])
 
-        # Item finalizer modify the list (remove an list item)
-        lst = []
-        lst.append(DelAppend(lst, 'zombie'))
-        lst.extend("abc")
-        self.assertEqual(list_setslice(lst, 0, 1, NULL), 0)
-        self.assertEqual(lst, ['a', 'b', 'c', 'zombie'])
+            # Item finalizer modify the list (remove an list item)
+            lst = []
+            lst.append(DelAppend(lst, 'zombie'))
+            lst.extend("abc")
+            self.assertEqual(list_setslice(lst, 0, 1, NULL), 0)
+            self.assertEqual(lst, ['a', 'b', 'c', 'zombie'])
 
         # CRASHES setslice(NULL, 0, 0, [])
 
