@@ -179,11 +179,17 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/pyctype.c": CopyFrom("Python/pyctype.c"),
     "graalpython/com.oracle.graal.python.cext/src/pyhash.c": CopyFrom("Python/pyhash.c"),
     "graalpython/com.oracle.graal.python.cext/src/thread.c": CopyFrom("Python/thread.c"),
+    "graalpython/com.oracle.graal.python.cext/src/thread_nt.h": CopyFrom("Python/thread_nt.h"),
+    "graalpython/com.oracle.graal.python.cext/src/thread_pthread.h": CopyFrom("Python/thread_pthread.h"),
+    "graalpython/com.oracle.graal.python.cext/src/thread_pthread_stubs.h": CopyFrom("Python/thread_pthread_stubs.h"),
     "graalpython/com.oracle.graal.python.cext/src/_warnings.c": CopyFrom("Python/_warnings.c"),
     "graalpython/com.oracle.graal.python.cext/src/typeslots.inc": CopyFrom("Objects/typeslots.inc"),
     "graalpython/com.oracle.graal.python.cext/src/fileutils.c": CopyFrom("Python/fileutils.c"),
     "graalpython/com.oracle.graal.python.cext/src/ceval.c": CopyFrom("Python/ceval.c"),
     "graalpython/com.oracle.graal.python.cext/src/pystate.c": CopyFrom("Python/pystate.c"),
+    "graalpython/com.oracle.graal.python.cext/src/lock.c": CopyFrom("Python/lock.c"),
+    "graalpython/com.oracle.graal.python.cext/src/parking_lot.c": CopyFrom("Python/parking_lot.c"),
+    "graalpython/com.oracle.graal.python.cext/src/pytime.c": CopyFrom("Python/pytime.c"),
 
     "graalpython/com.oracle.graal.python.cext/src": CopyFromWithOverrides("Objects"),
 
