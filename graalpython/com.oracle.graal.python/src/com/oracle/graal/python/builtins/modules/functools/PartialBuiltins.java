@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -373,6 +374,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached PyTupleCheckNode tupleCheckNode,
                         @Cached PyTupleCheckExactNode tupleCheckExactNode,
+                        @Cached PyDictCheckNode dictCheckNode,
                         @Cached PyDictCheckExactNode dictCheckExactNode,
                         @Cached PyTupleGetItem getItemNode,
                         @Cached TupleNodes.ConstructTupleNode constructTupleNode,
@@ -391,7 +393,8 @@ public final class PartialBuiltins extends PythonBuiltins {
 
             if (!callableCheckNode.execute(inliningTarget, function) ||
                             !tupleCheckNode.execute(inliningTarget, fnArgs) ||
-                            (fnKwargs != PNone.NONE && !PGuards.isDict(fnKwargs))) {
+                            (fnKwargs != PNone.NONE && !PGuards.isDict(fnKwargs)) ||
+                            (dict != PNone.NONE && !dictCheckNode.execute(inliningTarget, dict))) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, INVALID_PARTIAL_STATE);
             }
 
@@ -534,8 +537,6 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
-                        @Cached GetClassNode classNode,
-                        @Cached TypeNodes.GetNameNode nameNode,
                         @Cached ObjectNodes.GetFullyQualifiedClassNameNode classNameNode,
                         @Cached HashingStorageGetIterator getHashingStorageIterator,
                         @Cached HashingStorageIteratorNext hashingStorageIteratorNext,
@@ -543,8 +544,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Cached HashingStorageGetItem getItem,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            final Object cls = classNode.execute(inliningTarget, partial);
-            final TruffleString name = (cls == PythonBuiltinClassType.PPartial) ? classNameNode.execute(frame, inliningTarget, partial) : nameNode.execute(inliningTarget, cls);
+            final TruffleString name = classNameNode.execute(frame, inliningTarget, partial);
             PythonContext ctxt = PythonContext.get(classNameNode);
             if (!ctxt.reprEnter(partial)) {
                 return T_ELLIPSIS;
