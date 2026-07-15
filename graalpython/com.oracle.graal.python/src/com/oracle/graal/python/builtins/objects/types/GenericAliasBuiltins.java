@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ORIGIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___PARAMETERS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___UNPACKED__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ARGS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIG_CLASS__;
@@ -151,6 +152,10 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                     T___MRO_ENTRIES__,
                     T___REDUCE_EX__,
                     T___REDUCE__,
+    };
+
+    private static final TruffleString[] ATTR_BLOCKED = {
+                    T___BASES__,
                     T___COPY__,
                     T___DEEPCOPY__,
     };
@@ -355,6 +360,11 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
                 name = cast.execute(inliningTarget, nameObj);
             } catch (CannotCastException e) {
                 return genericGetAttribute.execute(frame, self, nameObj);
+            }
+            for (int i = 0; i < ATTR_BLOCKED.length; i++) {
+                if (equalNode.execute(name, ATTR_BLOCKED[i], TS_ENCODING)) {
+                    return genericGetAttribute.execute(frame, self, nameObj);
+                }
             }
             for (int i = 0; i < ATTR_EXCEPTIONS.length; i++) {
                 if (equalNode.execute(name, ATTR_EXCEPTIONS[i], TS_ENCODING)) {
