@@ -51,6 +51,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_QUESTIONMARK;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEPASS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_XMLCHARREFREPLACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -181,7 +182,7 @@ public final class ErrorHandlers {
             if (strictProfile.profile(inliningTarget, equalNode.execute(T_STRICT, errors, TS_ENCODING))) {
                 return ErrorHandler.STRICT;
             }
-            if (surrogateEscapeProfile.profile(inliningTarget, equalNode.execute(T_SURROGATEPASS, errors, TS_ENCODING))) {
+            if (surrogateEscapeProfile.profile(inliningTarget, equalNode.execute(T_SURROGATEESCAPE, errors, TS_ENCODING))) {
                 return ErrorHandler.SURROGATEESCAPE;
             }
             if (replaceProfile.profile(inliningTarget, equalNode.execute(T_REPLACE, errors, TS_ENCODING))) {
