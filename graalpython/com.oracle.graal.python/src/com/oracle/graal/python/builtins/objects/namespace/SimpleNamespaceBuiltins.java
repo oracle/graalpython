@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.namespace;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.NO_POSITIONAL_ARGUMENTS_EXPECTED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
@@ -69,8 +68,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEach;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorValue;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -138,12 +140,36 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     protected abstract static class SimpleNamespaceInitNode extends PythonVarargsBuiltinNode {
         @Specialization
-        static Object init(PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
+        static Object init(VirtualFrame frame, PSimpleNamespace self, Object[] args, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
+                        @Cached HashingStorage.InitNode initNode,
+                        @Cached HashingStorageGetIterator getIterator,
+                        @Cached HashingStorageIteratorNext iteratorNext,
+                        @Cached HashingStorageIteratorKey iteratorKey,
+                        @Cached HashingStorageIteratorValue iteratorValue,
+                        @Cached CastToTruffleStringNode castString,
                         @Cached WriteAttributeToPythonObjectNode writeAttrNode,
                         @Cached PRaiseNode raiseNode) {
-            if (args.length > 0) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, NO_POSITIONAL_ARGUMENTS_EXPECTED);
+            if (args.length > 1) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_AT_MOST_ONE_ARG_GOT_D,
+                                self, args.length);
+            }
+            if (args.length == 1) {
+                // CPython first creates a temporary dict so that conversion and key validation
+                // finish before the namespace is modified.
+                HashingStorage storage = initNode.execute(frame, args[0], PKeyword.EMPTY_KEYWORDS);
+                HashingStorageIterator iterator = getIterator.execute(inliningTarget, storage);
+                while (iteratorNext.execute(inliningTarget, storage, iterator)) {
+                    Object key = iteratorKey.execute(inliningTarget, storage, iterator);
+                    if (!PGuards.isString(key)) {
+                        throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.KEYWORDS_S_MUST_BE_STRINGS);
+                    }
+                }
+                iterator = getIterator.execute(inliningTarget, storage);
+                while (iteratorNext.execute(inliningTarget, storage, iterator)) {
+                    Object key = iteratorKey.execute(inliningTarget, storage, iterator);
+                    writeAttrNode.execute(self, castString.execute(inliningTarget, key), iteratorValue.execute(inliningTarget, storage, iterator));
+                }
             }
             for (PKeyword keyword : kwargs) {
                 writeAttrNode.execute(self, keyword.getName(), keyword.getValue());

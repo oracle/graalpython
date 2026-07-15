@@ -314,6 +314,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_A_LIST = tsLiteral("expected a list");
     public static final TruffleString EXPECTED_A_WEAKREF = tsLiteral("expected a weakref");
     public static final TruffleString EXPECTED_AT_MOST_D_ARGS_GOT_D = tsLiteral("%s expected at most %d arguments, got %d");
+    public static final TruffleString EXPECTED_AT_MOST_ONE_ARG_GOT_D = tsLiteral("%p expected at most 1 argument, got %d");
     public static final TruffleString EXPECTED_BYTESLIKE_GOT_P = tsLiteral("expected a bytes-like object, %p found");
     public static final TruffleString EXPECTED_BYTES_P_FOUND = tsLiteral("expected bytes, %p found");
     public static final TruffleString EXPECTED_CHARACTER_BUT_STRING_FOUND = tsLiteral("%s expected a character, but string of length %d found");

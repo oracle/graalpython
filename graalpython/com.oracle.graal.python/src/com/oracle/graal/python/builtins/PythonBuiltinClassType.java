@@ -373,7 +373,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSimpleNamespace("SimpleNamespace", PythonObject, newBuilder().publishInModule("types").basetype().addDict(16).slots(SimpleNamespaceBuiltins.SLOTS).doc("""
                     A simple attribute-based namespace.
 
-                    SimpleNamespace(**kwargs)""")),
+                    SimpleNamespace(mapping_or_iterable=(), /, **kwargs)""")),
     PKeyWrapper("KeyWrapper", PythonObject, newBuilder().moduleName("functools").publishInModule("_functools").disallowInstantiation().slots(KeyWrapperBuiltins.SLOTS)),
     PPartial(J_PARTIAL, PythonObject, newBuilder().moduleName("functools").publishInModule("_functools").basetype().addDict().slots(PartialBuiltins.SLOTS).doc("""
                     partial(func, *args, **keywords) - new function with partial application
