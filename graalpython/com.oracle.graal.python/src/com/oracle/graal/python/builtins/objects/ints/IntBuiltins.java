@@ -2583,7 +2583,7 @@ public final class IntBuiltins extends PythonBuiltins {
             if (intMaxStrDigits > 0) {
                 int digits = self.isNegative() ? value.length() - 1 : value.length();
                 if (digits > intMaxStrDigits) {
-                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION, intMaxStrDigits);
                 }
             }
             return fromJavaStringNode.execute(value, TS_ENCODING);

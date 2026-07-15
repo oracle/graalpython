@@ -302,8 +302,10 @@ public abstract class ErrorMessages {
     public static final TruffleString ERROR_CALLING_SET_NAME = tsLiteral("Error calling __set_name__ on '%p' instance '%s' in '%N'");
     public static final TruffleString ERRORS_WITHOUT_STR_ARG = tsLiteral("errors without a string argument");
     public static final TruffleString EXPORTS_CANNOT_RESIZE = tsLiteral("Existing exports of data: object cannot be re-sized");
-    public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D = tsLiteral("Exceeds the limit (%d) for integer string conversion: value has %d digits");
-    public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION = tsLiteral("Exceeds the limit (%d) for integer string conversion");
+    public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION_D = tsLiteral(
+                    "Exceeds the limit (%d digits) for integer string conversion: value has %d digits; use sys.set_int_max_str_digits() to increase the limit");
+    public static final TruffleString EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION = tsLiteral(
+                    "Exceeds the limit (%d digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit");
     public static final TruffleString EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = tsLiteral("exception cause must be None or derive from BaseException");
     public static final TruffleString EXCEPTION_CONTEXT_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX = tsLiteral("exception context must be None or derive from BaseException");
     public static final TruffleString EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX = tsLiteral("exception causes must derive from BaseException");
