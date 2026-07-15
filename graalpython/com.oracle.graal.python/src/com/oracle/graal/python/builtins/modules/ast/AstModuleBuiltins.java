@@ -108,7 +108,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
         astModule.setModuleState(state);
     }
 
-    private static AstState getAstState(PythonContext context) {
+    static AstState getAstState(PythonContext context) {
         return context.lookupBuiltinModule(T__AST).getModuleState(AstState.class);
     }
 

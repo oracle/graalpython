@@ -98,6 +98,12 @@ public abstract class ErrorMessages {
     public static final TruffleString AST_STRING_MUST_BE_OF_TYPE_STR = tsLiteral("AST string must be of type str");
     public static final TruffleString AST_NODE_COLUMN_RANGE_FOR_LINE_RANGE_IS_NOT_VALID = tsLiteral("AST node column range (%d, %d) for line range (%d, %d) is not valid");
     public static final TruffleString AST_NODE_LINE_RANGE_IS_NOT_VALID = tsLiteral("AST node line range (%d, %d) is not valid");
+    public static final TruffleString WARN_AST_FIELD_S_MISSING_FROM_P_FIELD_TYPES = tsLiteral(
+                    "Field %s is missing from %p._field_types. This will become an error in Python 3.15.");
+    public static final TruffleString WARN_P_INIT_GOT_UNEXPECTED_KEYWORD_S = tsLiteral(
+                    "%p.__init__ got an unexpected keyword argument '%s'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.");
+    public static final TruffleString WARN_P_INIT_MISSING_REQUIRED_POSITIONAL_ARGUMENT_S = tsLiteral(
+                    "%p.__init__ missing 1 required positional argument: %s. This will become an error in Python 3.15.");
     public static final TruffleString ATTEMP_TO_RELEASE_RECURSIVE_LOCK = tsLiteral("attempt to release recursive lock not owned by thread");
     public static final TruffleString ATTEMPT_TO_ASSIGN_SEQ_OF_SIZE_TO_SLICE_OF_SIZE = tsLiteral("attempt to assign sequence of size %d to extended slice of size %d");
     public static final TruffleString ATTEMPTED_RELATIVE_IMPORT_BEYOND_TOPLEVEL = tsLiteral("attempted relative import beyond top-level package");

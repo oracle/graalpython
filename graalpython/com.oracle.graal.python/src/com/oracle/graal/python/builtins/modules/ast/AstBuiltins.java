@@ -40,13 +40,18 @@
  */
 package com.oracle.graal.python.builtins.modules.ast;
 
+import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__ATTRIBUTES;
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELDS;
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELD_TYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_AST_FIELD_S_MISSING_FROM_P_FIELD_TYPES;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_P_INIT_GOT_UNEXPECTED_KEYWORD_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_P_INIT_MISSING_REQUIRED_POSITIONAL_ARGUMENT_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.DeprecationWarning;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.Arrays;
@@ -60,8 +65,10 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -70,7 +77,9 @@ import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
+import com.oracle.graal.python.builtins.objects.types.PUnionType;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.PySequenceGetItemNode;
@@ -84,7 +93,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -124,6 +133,7 @@ public final class AstBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIt(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwArgs,
                         @Bind Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached PySequenceSizeNode sequenceSizeNode,
                         @Cached PySequenceGetItemNode getItemNode,
@@ -132,8 +142,11 @@ public final class AstBuiltins extends PythonBuiltins {
                         @Cached PySequenceContainsNode containsNode,
                         @Cached PyObjectSetAttrO setAttrNode,
                         @Cached HashingStorageGetItem getDictItemNode,
-                        @Cached IsBuiltinClassProfile isListProfile,
+                        @Cached HashingStorageLen storageLenNode,
                         @Bind PythonLanguage language,
+                        @Bind PythonContext context,
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
             Object fieldsObj = lookupAttrNode.execute(frame, inliningTarget, self, T__FIELDS);
             int numFields = sequenceSizeNode.execute(frame, inliningTarget, fieldsObj);
@@ -146,22 +159,39 @@ public final class AstBuiltins extends PythonBuiltins {
                 setAttrNode.execute(frame, inliningTarget, self, field, args[i]);
                 discardNode.execute(frame, remainingFields, field);
             }
+            Object selfType = getClassNode.execute(inliningTarget, self);
             for (PKeyword kwArg : kwArgs) {
                 if (containsNode.execute(frame, inliningTarget, fieldsObj, kwArg.getName())) {
                     if (!discardNode.execute(frame, remainingFields, kwArg.getName())) {
                         throw raiseNode.raise(inliningTarget, TypeError, P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S, self, kwArg.getName());
                     }
+                } else {
+                    Object attributesObj = lookupAttrNode.execute(frame, inliningTarget, selfType, T__ATTRIBUTES);
+                    if (!containsNode.execute(frame, inliningTarget, attributesObj, kwArg.getName())) {
+                        warnNode.warnFormat(frame, DeprecationWarning, WARN_P_INIT_GOT_UNEXPECTED_KEYWORD_S, self, kwArg.getName());
+                    }
                 }
                 setAttrNode.execute(frame, inliningTarget, self, kwArg.getName(), kwArg.getValue());
             }
-            Object fieldTypesObj = lookupAttrNode.execute(frame, inliningTarget, self, T__FIELD_TYPES);
-            if (fieldTypesObj instanceof PDict fieldTypes) {
+            if (storageLenNode.execute(inliningTarget, remainingFields.getDictStorage()) > 0) {
+                Object fieldTypesObj = lookupAttrNode.execute(frame, inliningTarget, selfType, T__FIELD_TYPES);
+                if (!(fieldTypesObj instanceof PDict fieldTypes)) {
+                    return PNone.NONE;
+                }
                 for (int i = 0; i < numFields; i++) {
                     Object field = getItemNode.execute(frame, fieldsObj, i);
                     if (containsNode.execute(frame, inliningTarget, remainingFields, field)) {
                         Object fieldType = getDictItemNode.execute(frame, inliningTarget, fieldTypes.getDictStorage(), field);
-                        if (fieldType instanceof PGenericAlias alias && isListProfile.profileClass(inliningTarget, alias.getOrigin(), PythonBuiltinClassType.PList)) {
+                        if (fieldType == null) {
+                            warnNode.warnFormat(frame, DeprecationWarning, WARN_AST_FIELD_S_MISSING_FROM_P_FIELD_TYPES, reprNode.execute(frame, inliningTarget, field), self);
+                        } else if (fieldType instanceof PUnionType) {
+                            // Optional fields have a None default on the class.
+                        } else if (fieldType instanceof PGenericAlias) {
                             setAttrNode.execute(frame, inliningTarget, self, field, PFactory.createList(language));
+                        } else if (fieldType == AstModuleBuiltins.getAstState(context).clsExprContextTy) {
+                            setAttrNode.execute(frame, inliningTarget, self, field, AstModuleBuiltins.getAstState(context).singletonLoad);
+                        } else {
+                            warnNode.warnFormat(frame, DeprecationWarning, WARN_P_INIT_MISSING_REQUIRED_POSITIONAL_ARGUMENT_S, self, reprNode.execute(frame, inliningTarget, field));
                         }
                     }
                 }

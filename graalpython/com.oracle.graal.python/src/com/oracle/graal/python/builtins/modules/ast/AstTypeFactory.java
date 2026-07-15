@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T_A
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__ATTRIBUTES;
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELDS;
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELD_TYPES;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MATCH_ARGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -97,7 +99,9 @@ final class AstTypeFactory {
         for (int i = 0; i < fields.length; i++) {
             storage = HashingStorageSetItem.executeUncached(storage, fields[i], types[i]);
         }
-        cls.setAttribute(T__FIELD_TYPES, PFactory.createDict(language, storage));
+        PDict fieldTypes = PFactory.createDict(language, storage);
+        cls.setAttribute(T__FIELD_TYPES, fieldTypes);
+        cls.setAttribute(T___ANNOTATIONS__, fieldTypes);
     }
 
     Object makeFieldType(Object type, boolean sequence, boolean optional) {
