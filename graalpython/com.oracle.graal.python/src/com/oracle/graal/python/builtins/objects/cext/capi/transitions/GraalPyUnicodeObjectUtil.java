@@ -89,7 +89,7 @@ public final class GraalPyUnicodeObjectUtil {
         writeLongField(rawPointer, CFields.GraalPyUnicodeObject__length, length);
         writeLongField(rawPointer, CFields.GraalPyUnicodeObject__byte_length, byteLength);
         writeLongField(rawPointer, CFields.GraalPyUnicodeObject__hash, -1);
-        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__state, createGraalPyUnicodeObjectState(charSize, isAscii, interned, compact));
+        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__state, createState(charSize, isAscii, interned, compact));
         writePtrField(rawPointer, CFields.GraalPyUnicodeObject__data, data);
         assert isStateInitialized(rawPointer);
         // Unicode data must be followed by one kind-sized NUL code unit.
@@ -97,66 +97,61 @@ public final class GraalPyUnicodeObjectUtil {
     }
 
     // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_CreateState.
-    private static long createGraalPyUnicodeObjectState(int charSize, boolean isAscii, int interned, boolean compact) {
+    private static long createState(int charSize, boolean isAscii, int interned, boolean compact) {
         assert (charSize & ~GRAALPY_UNICODE_KIND_MASK) == 0;
-        return charSize | encodeGraalPyUnicodeObjectAscii(isAscii) | encodeGraalPyUnicodeObjectInterned(interned) | encodeGraalPyUnicodeObjectCompact(compact);
+        return charSize | encodeAscii(isAscii) | encodeInterned(interned) | encodeCompact(compact);
     }
 
     // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_EncodeAscii.
-    private static long encodeGraalPyUnicodeObjectAscii(boolean isAscii) {
+    private static long encodeAscii(boolean isAscii) {
         return isAscii ? GRAALPY_UNICODE_IS_ASCII_FLAG : 0;
     }
 
     // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_EncodeInterned.
-    private static long encodeGraalPyUnicodeObjectInterned(int interned) {
+    private static long encodeInterned(int interned) {
         return (long) interned << GRAALPY_UNICODE_INTERN_STATE_SHIFT;
     }
 
     // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_EncodeCompact.
-    private static long encodeGraalPyUnicodeObjectCompact(boolean compact) {
+    private static long encodeCompact(boolean compact) {
         return compact ? GRAALPY_UNICODE_IS_COMPACT_FLAG : 0;
     }
 
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetInternedFromState.
-    public static int getGraalPyUnicodeObjectInterned(long rawPointer) {
+    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetInterned.
+    public static int getInterned(long rawPointer) {
         long state = readLongField(rawPointer, CFields.GraalPyUnicodeObject__state);
         return (int) ((state & GRAALPY_UNICODE_INTERN_STATE_MASK) >> GRAALPY_UNICODE_INTERN_STATE_SHIFT);
     }
 
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_IsAsciiFromState.
-    private static boolean isGraalPyUnicodeObjectAsciiFromState(long state) {
-        return (state & GRAALPY_UNICODE_IS_ASCII_FLAG) != 0;
-    }
-
     // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetKindFromState.
-    private static int getGraalPyUnicodeObjectKindFromState(long state) {
+    private static int getKindFromState(long state) {
         return (int) (state & GRAALPY_UNICODE_KIND_MASK);
     }
 
     // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_UpdateInterned.
-    private static long updateGraalPyUnicodeObjectInterned(long state, int interned) {
-        return (state & ~GRAALPY_UNICODE_INTERN_STATE_MASK) | encodeGraalPyUnicodeObjectInterned(interned);
+    private static long updateInterned(long state, int interned) {
+        return (state & ~GRAALPY_UNICODE_INTERN_STATE_MASK) | encodeInterned(interned);
     }
 
     // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetKind.
-    public static int getGraalPyUnicodeObjectKind(long rawPointer) {
-        return getGraalPyUnicodeObjectKindFromState(readLongField(rawPointer, CFields.GraalPyUnicodeObject__state));
+    public static int getKind(long rawPointer) {
+        return getKindFromState(readLongField(rawPointer, CFields.GraalPyUnicodeObject__state));
     }
 
-    public static void setGraalPyUnicodeObjectInterned(long rawPointer, int interned) {
+    public static void setInterned(long rawPointer, int interned) {
         assert interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED || interned == GRAALPY_UNICODE_INTERN_STATE_INTERNED || interned == GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
         long state = readLongField(rawPointer, CFields.GraalPyUnicodeObject__state);
-        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__state, updateGraalPyUnicodeObjectInterned(state, interned));
+        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__state, updateInterned(state, interned));
     }
 
     // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_IsCompact.
-    public static boolean isGraalPyUnicodeObjectCompact(long rawPointer) {
+    public static boolean isCompact(long rawPointer) {
         assert !HandlePointerConverter.pointsToPyHandleSpace(rawPointer);
         return (readLongField(rawPointer, CFields.GraalPyUnicodeObject__state) & GRAALPY_UNICODE_IS_COMPACT_FLAG) != 0;
     }
 
     public static boolean isStateInitialized(long rawPointer) {
-        return getGraalPyUnicodeObjectKind(rawPointer) != 0;
+        return getKind(rawPointer) != 0;
     }
 
     /**
@@ -168,7 +163,7 @@ public final class GraalPyUnicodeObjectUtil {
         boolean isUnicodeSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.UNICODE_SUBCLASS) != 0L;
         assert !HandlePointerConverter.pointsToPyHandleSpace(obType);
         assert IsBuiltinClassProfile.profileClassSlowPath(NativeToPythonClassInternalNode.executeUncached(obType), PythonBuiltinClassType.PString) == isUnicodeSubclass;
-        return isUnicodeSubclass && !GraalPyUnicodeObjectUtil.isGraalPyUnicodeObjectCompact(rawPointer);
+        return isUnicodeSubclass && !GraalPyUnicodeObjectUtil.isCompact(rawPointer);
     }
 
     /** Similar to {@code unicodeobject.h:_PyUnicode_NONCOMPACT_DATA} */

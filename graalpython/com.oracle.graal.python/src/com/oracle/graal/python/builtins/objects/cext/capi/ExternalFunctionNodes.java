@@ -2340,7 +2340,7 @@ public abstract class ExternalFunctionNodes {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(promoted);
                 args[i] = promoted;
                 long nativeString = pythonToNativeNode.executeNewRef(inliningTarget, promoted);
-                GraalPyUnicodeObjectUtil.setGraalPyUnicodeObjectInterned(HandlePointerConverter.pointerToStub(nativeString), GraalPyUnicodeObjectUtil.GRAALPY_UNICODE_INTERN_STATE_INTERNED);
+                GraalPyUnicodeObjectUtil.setInterned(HandlePointerConverter.pointerToStub(nativeString), GraalPyUnicodeObjectUtil.GRAALPY_UNICODE_INTERN_STATE_INTERNED);
                 writePtrArrayElement(obItem, i, nativeString);
             }
 

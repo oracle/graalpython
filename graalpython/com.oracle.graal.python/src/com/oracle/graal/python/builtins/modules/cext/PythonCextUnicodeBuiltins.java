@@ -339,7 +339,7 @@ public final class PythonCextUnicodeBuiltins {
                 str.intern();
                 if (str.isNative()) {
                     long ptr = HandlePointerConverter.pointerToStub(str.getNativePointer());
-                    GraalPyUnicodeObjectUtil.setGraalPyUnicodeObjectInterned(ptr, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
+                    GraalPyUnicodeObjectUtil.setInterned(ptr, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
                 }
                 /*
                  * TODO this is not integrated with str.intern, pointer comparisons of two
@@ -1415,12 +1415,12 @@ public final class PythonCextUnicodeBuiltins {
             long data = NativeMemory.malloc(dataSize);
 
             // unicode object may have been interned already
-            int interned = GraalPyUnicodeObjectUtil.getGraalPyUnicodeObjectInterned(rawPointer);
+            int interned = GraalPyUnicodeObjectUtil.getInterned(rawPointer);
             if (interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED) {
                 interned = GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
             }
 
-            assert !GraalPyUnicodeObjectUtil.isGraalPyUnicodeObjectCompact(rawPointer);
+            assert !GraalPyUnicodeObjectUtil.isCompact(rawPointer);
             GraalPyUnicodeObjectUtil.initializeGraalPyUnicodeObject(rawPointer, data, unicodeByteLength / unicodeCharSize, unicodeByteLength, unicodeCharSize, unicodeIsAscii, interned, false);
             writeTruffleStringNode.write(data, unicodeString, unicodeEncoding);
             return PNone.NO_VALUE;

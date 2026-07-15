@@ -149,7 +149,7 @@ public abstract class StringNodes {
             } catch (OverflowException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
-            int kind = GraalPyUnicodeObjectUtil.getGraalPyUnicodeObjectKind(ptr);
+            int kind = GraalPyUnicodeObjectUtil.getKind(ptr);
             TruffleString.CompactionLevel compactionLevel = switch (kind) {
                 case 1 -> TruffleString.CompactionLevel.S1;
                 case 2 -> TruffleString.CompactionLevel.S2;
