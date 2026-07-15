@@ -79,9 +79,11 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
+import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.RootCallTarget;
@@ -117,6 +119,13 @@ public final class PythonCextCEvalBuiltins {
     static long PyEval_GetBuiltins() {
         PythonModule cext = PythonContext.get(null).getBuiltins();
         return ToNativeBorrowedNode.executeUncached(GetDictIfExistsNode.getUncached().execute(cext));
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct)
+    static long PyEval_GetFrameBuiltins() {
+        PythonModule builtins = PythonContext.get(null).getBuiltins();
+        Object dict = GetDictIfExistsNode.getUncached().execute(builtins);
+        return PythonToNativeInternalNode.executeNewRefUncached(dict);
     }
 
     @CApiBuiltin(ret = PyFrameObjectBorrowed, args = {}, call = Direct)
@@ -174,5 +183,21 @@ public final class PythonCextCEvalBuiltins {
     static long PyEval_GetGlobals() {
         PythonObject globals = PyEvalGetGlobals.executeUncached(null);
         return globals != null ? ToNativeBorrowedNode.executeUncached(globals) : NULLPTR;
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct)
+    static long PyEval_GetFrameGlobals() {
+        PythonObject globals = PyEvalGetGlobals.executeUncached(null);
+        return globals != null ? PythonToNativeInternalNode.executeNewRefUncached(globals) : NULLPTR;
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct)
+    static long PyEval_GetFrameLocals() {
+        PFrame frame = ReadFrameNode.getUncached().getCurrentPythonFrame(null, CallerFlags.NEEDS_LOCALS);
+        if (frame == null) {
+            throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.FRAME_DOES_NOT_EXIST);
+        }
+        Object locals = GetFrameLocalsNode.executeUncached(frame, true);
+        return PythonToNativeInternalNode.executeNewRefUncached(locals);
     }
 }

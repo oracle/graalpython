@@ -86,6 +86,10 @@ def _reference_get_item_ref(args):
         return 0, None
 
 
+def _reference_get_item_string_ref(args):
+    return _reference_get_item_ref(args)
+
+
 def _reference_set_item(args):
     try:
         d = args[0]
@@ -279,6 +283,32 @@ class TestPyDict(CPyExtTestCase):
         argspec='OO',
         arguments=("PyObject* dict", "PyObject* key"),
         callfunction="wrap_PyDict_GetItemRef",
+        cmpfunc=unhandled_error_compare
+    )
+
+    # PyDict_GetItemStringRef
+    test_PyDict_GetItemStringRef = CPyExtFunction(
+        _reference_get_item_string_ref,
+        lambda: (
+            ({}, "missing"),
+            ({"key": "present"}, "key"),
+            ([], "key"),
+        ),
+        code='''PyObject* wrap_PyDict_GetItemStringRef(PyObject* dict, const char* key) {
+            PyObject* result = (PyObject*)0xdeadbeef;
+            int status = PyDict_GetItemStringRef(dict, key, &result);
+            if (status < 0) {
+                assert(result == NULL);
+                return NULL;
+            }
+            assert((status == 0) == (result == NULL));
+            PyObject* value = result == NULL ? Py_NewRef(Py_None) : result;
+            return Py_BuildValue("iN", status, value);
+        }''',
+        resultspec="N",
+        argspec='Os',
+        arguments=("PyObject* dict", "const char* key"),
+        callfunction="wrap_PyDict_GetItemStringRef",
         cmpfunc=unhandled_error_compare
     )
 
