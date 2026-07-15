@@ -183,11 +183,11 @@ public final class FrameLocalsProxyBuiltins extends PythonBuiltins {
                     HashingStorageIteratorValue iteratorValue) {
         PDict snapshot = snapshot(self, language, inliningTarget, setItem);
         HashingStorage storage = snapshot.getDictStorage();
-        HashingStorageIterator iterator = getIterator.executeCached(storage);
+        HashingStorageIterator iterator = getIterator.execute(inliningTarget, storage);
         List<Object> result = new ArrayList<>();
-        while (iteratorNext.executeCached(storage, iterator)) {
-            Object key = iteratorKey.executeCached(storage, iterator);
-            Object value = iteratorValue.executeCached(storage, iterator);
+        while (iteratorNext.execute(inliningTarget, storage, iterator)) {
+            Object key = iteratorKey.execute(inliningTarget, storage, iterator);
+            Object value = iteratorValue.execute(inliningTarget, storage, iterator);
             result.add(switch (kind) {
                 case KEYS -> key;
                 case VALUES -> value;
