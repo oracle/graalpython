@@ -5394,11 +5394,11 @@ Pointer_subscript(PyObject *myself, PyObject *item)
         /* Since pointers have no length, and we want to apply
            different semantics to negative indices than normal
            slicing, we have to dissect the slice object ourselves.*/
-        if (slice->step == Py_None) {
+        if (GraalPySlice_Step((PyObject *)slice) == Py_None) { // GraalPy change
             step = 1;
         }
         else {
-            step = PyNumber_AsSsize_t(slice->step,
+            step = PyNumber_AsSsize_t(GraalPySlice_Step((PyObject *)slice), // GraalPy change
                                       PyExc_ValueError);
             if (step == -1 && PyErr_Occurred())
                 return NULL;
@@ -5408,7 +5408,7 @@ Pointer_subscript(PyObject *myself, PyObject *item)
                 return NULL;
             }
         }
-        if (slice->start == Py_None) {
+        if (GraalPySlice_Start((PyObject *)slice) == Py_None) { // GraalPy change
             if (step < 0) {
                 PyErr_SetString(PyExc_ValueError,
                                 "slice start is required "
@@ -5418,17 +5418,17 @@ Pointer_subscript(PyObject *myself, PyObject *item)
             start = 0;
         }
         else {
-            start = PyNumber_AsSsize_t(slice->start,
+            start = PyNumber_AsSsize_t(GraalPySlice_Start((PyObject *)slice), // GraalPy change
                                        PyExc_ValueError);
             if (start == -1 && PyErr_Occurred())
                 return NULL;
         }
-        if (slice->stop == Py_None) {
+        if (GraalPySlice_Stop((PyObject *)slice) == Py_None) { // GraalPy change
             PyErr_SetString(PyExc_ValueError,
                             "slice stop is required");
             return NULL;
         }
-        stop = PyNumber_AsSsize_t(slice->stop,
+        stop = PyNumber_AsSsize_t(GraalPySlice_Stop((PyObject *)slice), // GraalPy change
                                   PyExc_ValueError);
         if (stop == -1 && PyErr_Occurred())
             return NULL;
