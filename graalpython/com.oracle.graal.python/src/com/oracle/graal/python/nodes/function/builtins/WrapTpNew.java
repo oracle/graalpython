@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -113,6 +113,9 @@ public final class WrapTpNew extends SlotWrapper {
                 }
             }
             if (staticBaseNew != owner.getSlots().tp_new()) {
+                if (staticBaseNew == null) {
+                    throw raiseNotSafe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_CREATE_N_INSTANCES, cls);
+                }
                 throw raiseNotSafe.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.NEW_IS_NOT_SAFE_USE_ELSE, owner.getName(), cls, cls);
             }
         }
