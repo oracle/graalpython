@@ -315,6 +315,24 @@ When a managed object is passed to a native extension code:
   We then clear the `PythonObjectReference.strongReference` field, and the
   memory management is then again left solely to the Java tracing GC.
 
+##### Unicode Objects
+
+Managed strings exposed to native code use `GraalPyUnicodeObject` as their
+native companion. Like CPython, GraalPy supports two allocation layouts:
+
+* **Compact:** The native allocation is over-allocated, and the character data
+  follows the structure at `sizeof(GraalPyUnicodeObject)`.
+* **Non-compact:** The structure's `data` field points to a separately allocated
+  buffer.
+
+Native character data is stored only in this companion, not duplicated in
+hidden managed attributes. `PyUnicode_New` delegates to
+`GraalPyPrivate_Unicode_New` and eagerly creates a compact companion because a
+native-created string is expected to need native data. In contrast, when an
+existing managed `PString` is passed to native code, its character data remains
+uninitialized until requested through the C API. GraalPy then allocates and
+initializes a non-compact buffer lazily.
+
 #### Native Objects
 
 Native objects allocated using `PyObject_GC_New` in the native code are backed
