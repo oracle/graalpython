@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -500,9 +500,6 @@ public class ScopeEnvironment {
         }
 
         private void handleComprehension(ExprTy e, String scopeName, ComprehensionTy[] generators, ExprTy element, ExprTy value, Scope.ComprehensionType comprehensionType) {
-            if (currentScope.canSeeClassScope()) {
-                throw env.parserCallbacks.onError(ParserCallbacks.ErrorType.Syntax, e.getSourceRange(), "Cannot use comprehension in annotation scope within class scope");
-            }
             boolean isGenerator = e instanceof ExprTy.GeneratorExp;
             ComprehensionTy outermost = generators[0];
             currentScope.comprehensionIterExpression++;
