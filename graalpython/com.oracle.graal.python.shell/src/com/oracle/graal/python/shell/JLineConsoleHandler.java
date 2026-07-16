@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -94,7 +94,7 @@ public class JLineConsoleHandler extends ConsoleHandler {
     public void initializeReadline(Value readlineModule) {
         Terminal terminal;
         try {
-            terminal = TerminalBuilder.builder().jna(false).streams(inputStream, outputStream).system(true).signalHandler(Terminal.SignalHandler.SIG_IGN).build();
+            terminal = TerminalBuilder.builder().jna(false).streams(inputStream, outputStream).system(true).nativeSignals(false).signalHandler(Terminal.SignalHandler.SIG_IGN).build();
         } catch (IOException ex) {
             throw new RuntimeException("unexpected error opening console reader", ex);
         }
