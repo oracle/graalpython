@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,60 +38,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib.fastpath;
+package com.oracle.graal.python.nodes.truffle;
 
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.truffle.PythonIntToLongTypes;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.dsl.ImplicitCast;
+import com.oracle.truffle.api.dsl.TypeSystem;
 
 /**
- * Helper class with shared fast-paths. Must be public so that it is accessible by the Bytecode DSL
- * generated code.
+ * This type system is supposed to be used by arithmetic operations where the boolean case is
+ * uncommon and can be handled by the generic fallback. Compared to {@link PythonIntegerTypes} this
+ * type system saves few bits in the state bitset and some complexity in the
+ * {@code @Specialization}/{@code @Fallback} guards.
  */
-@GenerateCached(false)
-@TypeSystemReference(PythonIntToLongTypes.class)
-public abstract class PyNumberFloorDivideFastPathsBase extends BinaryOpNode {
+@TypeSystem
+public abstract class PythonIntToLongTypes {
 
-    /*
-     * All the following fast paths need to be kept in sync with the corresponding builtin functions
-     * in IntBuiltins, FloatBuiltins, ...
-     */
-    @Specialization(guards = "!specialCase(left, right)")
-    public static int doII(int left, int right) {
-        return Math.floorDiv(left, right);
-    }
-
-    @Specialization(guards = "!specialCase(left, right)")
-    public static long doLL(long left, long right) {
-        return Math.floorDiv(left, right);
-    }
-
-    @Specialization(guards = "!isZero(right)")
-    public static double doLD(long left, double right) {
-        return doDD(left, right);
-    }
-
-    @Specialization(guards = "right != 0")
-    public static double doDL(double left, long right) {
-        return doDD(left, right);
-    }
-
-    @Specialization(guards = "!isZero(right)")
-    public static double doDD(double left, double right) {
-        return Math.floor(left / right);
-    }
-
-    public static boolean specialCase(int left, int right) {
-        return right == 0 || left == Integer.MIN_VALUE && right == -1;
-    }
-
-    public static boolean specialCase(long left, long right) {
-        return right == 0 || left == Long.MIN_VALUE && right == -1;
-    }
-
-    public static boolean isZero(double right) {
-        return right == 0.0;
+    @ImplicitCast
+    public static long intToLong(int value) {
+        return value;
     }
 }
