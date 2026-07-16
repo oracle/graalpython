@@ -91,6 +91,44 @@ The patches are regular POSIX `patch` command compatible diffs located in
 `lib-graalpython/patches`. The directory has a `README.md` file describing
 how the patches are applied.
 
+## Operating System Backends
+
+GraalPy exposes operating system functionality through a common POSIX-support abstraction with native and Java implementations.
+The native implementation is provided by the `python-libposix` shim.
+On Windows, the shim translates between CRT file descriptors, Win32 handles, and Winsock sockets, and implements or emulates Windows equivalents for operations such as `stat`, `rename`, `replace`, pipes, `select`, `mmap`, process handling, and semaphores.
+Windows modules and platform-specific builtins include `nt`, `msvcrt`, `_winapi`, and `_overlapped`.
+
+### Native Strings and Filesystem Paths
+
+Filesystem paths are kept separate from ordinary native C strings because they have different encoding contracts on Windows.
+Paths are passed to Windows as UTF-16 wide strings, while interfaces such as networking, environment handling on non-Windows platforms, and command or argument APIs may require narrow, NUL-terminated byte strings.
+
+### Windows Error Handling
+
+Windows has three relevant thread-local error channels:
+
+- `errno` for CRT and POSIX-style APIs
+- `GetLastError()` for Win32 APIs
+- `WSAGetLastError()` for Winsock APIs
+
+Native wrappers capture all three immediately after a failing call and record which channel is authoritative.
+When GraalPy turns a native failure into a Python `OSError`, the Java POSIX error bridge checks the captured source.
+CRT failures retain `errno`; Win32 and Winsock failures are mapped to their closest POSIX error numbers, while the original Windows value is retained as `OSError.winerror`.
+This follows CPython's general `winerror`-to-`errno` model and includes compatibility-specific mappings, such as treating `WSAEWOULDBLOCK` from a non-blocking Winsock connect as `EINPROGRESS`, and the "too many posts" error from `ReleaseSemaphore` as `EOVERFLOW`.
+
+Unlike CPython, which performs much of this flow directly within its C runtime and exception helpers, GraalPy must explicitly preserve error state across a C-to-Java boundary before constructing the Python exception.
+The mapping is intentionally explicit and currently covers the Windows errors used by the backend; unknown Win32 errors retain their numeric value rather than receiving a broader fallback mapping.
+
+### Windows Descriptor Model
+
+Windows sockets are not CRT file descriptors.
+The backend maps GraalPy-visible integer file descriptors to native `SOCKET` values backed by placeholder CRT descriptors.
+Python code therefore retains a unified file-descriptor model while native operations dispatch to either CRT file APIs or Winsock APIs.
+The mapping also centralizes socket closing, blocking mode, inheritance, and handle lookup.
+
+The backend provides a Windows-compatible `mmap` implementation and keeps `os.replace` separate from `os.rename`, since Windows distinguishes their behavior more strictly.
+CRT descriptors are opened or normalized in binary mode where Python expects byte-exact I/O, preventing CRT newline translation from changing data written to pipes, files, or standard streams.
+
 ## The GIL
 
 We always run with a GIL, because C extensions in CPython expect to do so and
