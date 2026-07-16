@@ -2047,7 +2047,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @ForceQuickening
-        @StoreBytecodeIndex // looking up attribute in MRO may have side effects
         @Specialization(guards = {
                         "!hasMaterializedDict(cachedShape)", "managedClass != null || isBuiltinWithObjectOrModuleGetattro(cachedShape)", //
                         "getter != null", "getter.accepts(receiver)", //
