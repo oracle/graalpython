@@ -1015,8 +1015,8 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     run_leak_launcher(["--code", "pass", ])
     run_leak_launcher(["--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
     c_api_leak_test = (
-        'import _testcapi; '
-        't = _testcapi.tuple_pack(2, "a", "b"); '
+        'import _testcapi, _testlimitedcapi; '
+        't = _testlimitedcapi.tuple_pack(2, "a", "b"); '
         'assert _testcapi.tuple_get_item(t, 1) == "b"'
     )
     # test leaks when some C module code is involved
