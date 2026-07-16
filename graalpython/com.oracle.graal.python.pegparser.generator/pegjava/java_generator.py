@@ -1204,7 +1204,10 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         )
 
     def emit_default_action(self, is_gather: bool, node: Alt, rulename: Optional[str]) -> None:
-        if rulename and rulename.startswith("invalid_"):
+        # Invalid rules with multiple values only use the default action as a success marker. Returning a dummy
+        # value here can hide an error raised by a nested invalid rule. A sole value, however, is the actual result
+        # of helper rules such as invalid_ann_assign_target and must be propagated, as in CPython's generator.
+        if rulename and rulename.startswith("invalid_") and len(self.local_variable_names) > 1:
             self.print("_res = null;")
             return
         if len(self.local_variable_names) > 1:
