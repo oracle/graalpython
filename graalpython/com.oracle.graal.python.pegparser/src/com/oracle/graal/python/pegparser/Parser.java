@@ -11303,7 +11303,7 @@ public final class Parser extends AbstractParser {
                 (list_var = list_rule()) != null  // list
             )
             {
-                _res = null;
+                _res = list_var;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11314,7 +11314,7 @@ public final class Parser extends AbstractParser {
                 (tuple_var = tuple_rule()) != null  // tuple
             )
             {
-                _res = null;
+                _res = tuple_var;
                 return (ExprTy)_res;
             }
             reset(_mark);
@@ -11815,7 +11815,7 @@ public final class Parser extends AbstractParser {
                 (_loop1_256_var = (NameDefaultPair[])_loop1_256_rule()) != null  // param_with_default+
             )
             {
-                _res = null;
+                _res = _loop1_256_var;
                 return (Object)_res;
             }
             reset(_mark);
@@ -11980,7 +11980,7 @@ public final class Parser extends AbstractParser {
                 (_loop1_268_var = (NameDefaultPair[])_loop1_268_rule()) != null  // lambda_param_with_default+
             )
             {
-                _res = null;
+                _res = _loop1_268_var;
                 return (Object)_res;
             }
             reset(_mark);
