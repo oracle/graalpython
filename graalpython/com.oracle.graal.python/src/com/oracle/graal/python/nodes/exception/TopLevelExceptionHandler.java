@@ -116,12 +116,12 @@ public final class TopLevelExceptionHandler extends RootNode {
         this.registerSource = source.getOptions(language).get(PythonSourceOptions.RegisterSource);
     }
 
-    public TopLevelExceptionHandler(PythonLanguage language, PException exception) {
+    public TopLevelExceptionHandler(PythonLanguage language, PException exception, Source source) {
         super(language);
         this.sourceSection = exception.getLocation().getEncapsulatingSourceSection();
         this.innerCallTarget = null;
         this.exception = exception;
-        this.source = null;
+        this.source = source;
         this.newGlobals = false;
         this.registerSource = false;
     }
