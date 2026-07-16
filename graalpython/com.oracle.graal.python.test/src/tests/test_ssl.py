@@ -97,6 +97,15 @@ class CertTests(unittest.TestCase):
         self.assertTrue(context.verify_flags & ssl.VERIFY_X509_PARTIAL_CHAIN)
         self.assertTrue(context.verify_flags & ssl.VERIFY_X509_STRICT)
 
+    def test_hostname_checks_common_name(self):
+        self.assertTrue(ssl.HAS_NEVER_CHECK_COMMON_NAME)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        self.assertTrue(context.hostname_checks_common_name)
+        context.hostname_checks_common_name = False
+        self.assertFalse(context.hostname_checks_common_name)
+        context.hostname_checks_common_name = True
+        self.assertTrue(context.hostname_checks_common_name)
+
     def test_verify_x509_partial_chain(self):
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         server_context.load_cert_chain(data_file("signed_cert.pem"))

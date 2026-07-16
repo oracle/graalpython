@@ -134,6 +134,12 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
     public static final int X509_V_FLAG_TRUSTED_FIRST = 0x8000;
     public static final int X509_V_FLAG_PARTIAL_CHAIN = 0x80000;
 
+    /*
+     * This flag is there for compatiblity with urllib3, but we can't implement it.
+     * Given that it only relaxes existing checks, it shouldn't be a problem for security.
+     */
+    public static final int HOSTFLAG_NEVER_CHECK_SUBJECT = 0x20;
+
     public static List<SSLProtocol> getSupportedProtocols() {
         assert supportedProtocols != null : "Uninitialized protocols";
         return supportedProtocols;
@@ -237,7 +243,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute(tsLiteral("HAS_ECDH"), false);
         module.setAttribute(tsLiteral("HAS_NPN"), false);
         module.setAttribute(tsLiteral("HAS_ALPN"), true);
-        module.setAttribute(tsLiteral("HAS_NEVER_CHECK_COMMON_NAME"), false);
+        module.setAttribute(tsLiteral("HAS_NEVER_CHECK_COMMON_NAME"), true);
+        module.setAttribute(tsLiteral("HOSTFLAG_NEVER_CHECK_SUBJECT"), HOSTFLAG_NEVER_CHECK_SUBJECT);
         module.setAttribute(tsLiteral("HAS_SSLv2"), false);
         boolean hasSSLv3 = supportedProtocols.contains(SSLProtocol.SSLv3);
         module.setAttribute(tsLiteral("HAS_SSLv3"), hasSSLv3);

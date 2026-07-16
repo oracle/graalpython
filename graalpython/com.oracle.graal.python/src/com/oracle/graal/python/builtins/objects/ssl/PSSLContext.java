@@ -98,6 +98,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     private final SSLContext context;
     private boolean checkHostname;
     private int verifyMode;
+    private int hostFlags;
     private SSLCipher[] ciphers;
     private long options;
     private SSLProtocol minimumVersion;
@@ -323,6 +324,14 @@ public final class PSSLContext extends PythonBuiltinObject {
     public void setCheckHostname(boolean checkHostname) {
         LOGGER.fine(() -> String.format("PSSLContext.setCheckHostname: %b", checkHostname));
         this.checkHostname = checkHostname;
+    }
+
+    int getHostFlags() {
+        return hostFlags;
+    }
+
+    void setHostFlags(int hostFlags) {
+        this.hostFlags = hostFlags;
     }
 
     int getVerifyMode() {

@@ -390,6 +390,23 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_host_flags", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class HostFlagsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static long get(PSSLContext self, @SuppressWarnings("unused") PNone value) {
+            return Integer.toUnsignedLong(self.getHostFlags());
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(VirtualFrame frame, PSSLContext self, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            self.setHostFlags(asSizeNode.executeLossy(frame, inliningTarget, value));
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "verify_flags", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class VerifyFlagsNode extends PythonBinaryBuiltinNode {
