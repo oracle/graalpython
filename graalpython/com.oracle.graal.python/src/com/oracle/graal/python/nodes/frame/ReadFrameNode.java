@@ -182,9 +182,7 @@ public abstract class ReadFrameNode extends Node {
     }
 
     public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags, Thread frameThread) {
-        PFrame pFrame = execute(frame, startFrameInfo, selector, level, callerFlags | CallerFlags.NEEDS_PFRAME, frameThread);
-        assert pFrame != null || level > 0 : "Didn't find current frame on stack";
-        return pFrame;
+        return execute(frame, startFrameInfo, selector, level, callerFlags | CallerFlags.NEEDS_PFRAME, frameThread);
     }
 
     protected abstract PFrame execute(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags, Thread frameThread);
