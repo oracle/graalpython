@@ -153,6 +153,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
 
@@ -1322,6 +1323,7 @@ public abstract class CApiTransitions {
                         @Exclusive @Cached InlinedConditionProfile isStringObjectProfile,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Exclusive @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
 
             // for types, we always need to allocate the full PyTypeObject
@@ -1366,8 +1368,11 @@ public abstract class CApiTransitions {
                 writeDoubleField(realPointer, CFields.GraalPyFloatObject__ob_fval, ((PFloat) pythonObject).getValue());
             } else if (ctype == CStructs.GraalPyUnicodeObject) {
                 assert pythonObject instanceof PString;
+                long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+                PString string = (PString) pythonObject;
+                writeLongField(realPointer, CFields.GraalPyUnicodeObject__length, codePointLengthNode.execute(string.getMaterialized(), PythonUtils.TS_ENCODING));
                 // AllocateNativeObjectStubNode zeroes the whole allocated struct. We therefore expect the state field to be uninitialized.
-                assert !GraalPyUnicodeObjectUtil.isStateInitialized(HandlePointerConverter.pointerToStub(taggedPointer));
+                assert !GraalPyUnicodeObjectUtil.isStateInitialized(realPointer);
             }
 
             return taggedPointer;

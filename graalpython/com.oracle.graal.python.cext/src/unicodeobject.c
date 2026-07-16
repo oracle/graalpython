@@ -15430,7 +15430,8 @@ unsigned int GraalPyUnicode_CHECK_INTERNED(PyObject *op) {
 
 Py_ssize_t GraalPyUnicode_GET_LENGTH(PyObject* op) {
     if (points_to_py_handle_space(op)) {
-        return GraalpyUnicodeObject_EnsureNativeData(op)->length;
+        /* The length is initialized eagerly when the managed object gets its native stub. */
+        return ((GraalPyUnicodeObject *) pointer_to_stub(op))->length;
     }
     return _PyASCIIObject_CAST(op)->length;
 }
