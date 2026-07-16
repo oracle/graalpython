@@ -598,7 +598,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return compileModule(context, mod, source, topLevel, optimize, argumentNames, errorCb, futureFeatures);
         } catch (PException e) {
             if (topLevel) {
-                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
+                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e, source)).call();
             }
             throw e;
         }
@@ -646,7 +646,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             return PythonUtils.getOrCreateCallTarget(rootNode);
         } catch (PException e) {
             if (topLevel) {
-                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e)).call();
+                PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, e, source)).call();
             }
             throw e;
         }

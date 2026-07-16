@@ -227,6 +227,18 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         """))
 
 
+    def test_syntax_error_does_not_exit_repl():
+        validate_repl(dedent("""\
+            >>> if
+              File "<stdin>", line 1
+                if
+                  ^
+            SyntaxError: invalid syntax
+            >>> 6 * 7
+            42
+        """))
+
+
     def test_inspect_flag():
         with tempfile.NamedTemporaryFile('w') as f:
             f.write('a = 1\n')
