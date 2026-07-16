@@ -201,6 +201,7 @@ launchEnvironment(wchar_t *env, wchar_t *exe)
  ***                           PROCESS CONTROLLER                           ***
 \******************************************************************************/
 
+#define GRAAL_PYTHON_ARGS L"GRAAL_PYTHON_ARGS="
 #define GRAAL_PYTHON_VM_ARGS L"GRAAL_PYTHON_VM_ARGS="
 #define GRAAL_PYTHON_EXE_ARG L"--python.Executable="
 #define GRAAL_PYTHON_BASE_EXECUTABLE_ARG L"--python.BaseExecutable="
