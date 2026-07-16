@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,9 +78,10 @@ public class DirFdConversionNodeTests extends ConversionNodeTests {
     }
 
     @Test
-    public void fdBool() {
-        Assert.assertEquals(0, call(false));
-        Assert.assertEquals(1, call(true));
+    public void fdBoolWarns() {
+        Context.getCurrent().eval("python", "import warnings; warnings.simplefilter('error', RuntimeWarning)");
+        expectPythonMessage("RuntimeWarning: bool is used as a file descriptor", () -> call(false));
+        expectPythonMessage("RuntimeWarning: bool is used as a file descriptor", () -> call(true));
     }
 
     @Test
