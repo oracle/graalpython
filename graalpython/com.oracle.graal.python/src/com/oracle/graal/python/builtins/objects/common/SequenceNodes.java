@@ -146,7 +146,7 @@ public abstract class SequenceNodes {
         }
 
         static boolean isNativeTuple(PythonAbstractNativeObject seq) {
-            return PyTupleCheckNode.checkNative(seq);
+            return PyTupleCheckNode.doNative(seq);
         }
 
         // Note: this does not seem currently used but is good to accept foreign lists in more

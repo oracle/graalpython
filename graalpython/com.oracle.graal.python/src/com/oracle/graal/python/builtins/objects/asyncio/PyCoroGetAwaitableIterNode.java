@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,71 +38,59 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.builtins.objects.asyncio;
 
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
+import com.oracle.graal.python.lib.PyIterCheckNode;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
-/**
- * Equivalent of CPython's {@code PySequence_Check}.
- */
+/** Equivalent to CPython's {@code _PyCoro_GetAwaitableIter}. */
 @GenerateUncached
-@GenerateCached(false)
 @GenerateInline
-public abstract class PySequenceCheckNode extends PNodeWithContext {
-    public abstract boolean execute(Node inliningTarget, Object object);
+@GenerateCached(false)
+public abstract class PyCoroGetAwaitableIterNode extends Node {
+    public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object object);
 
-    public static boolean executeUncached(Object object) {
-        return PySequenceCheckNodeGen.getUncached().execute(null, object);
-    }
-
-    @Specialization
-    static boolean doSequence(@SuppressWarnings("unused") PSequence object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doString(@SuppressWarnings("unused") TruffleString object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doString(@SuppressWarnings("unused") PString object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doDict(@SuppressWarnings("unused") PDict object) {
-        return false;
-    }
-
-    @Specialization(guards = "isNativeTuple(object)")
-    static boolean doNativeTuple(@SuppressWarnings("unused") PythonAbstractNativeObject object) {
-        return true;
+    @Specialization(guards = "generator.isCoroutine()")
+    static Object doCoroutine(PGenerator generator) {
+        return generator;
     }
 
     @Fallback
-    static boolean doGeneric(Node inliningTarget, Object object,
-                    @Cached PyDictCheckNode dictCheckNode,
-                    @Cached GetClassNode getClassNode,
-                    @Cached GetCachedTpSlotsNode getSlotsNode) {
-        if (dictCheckNode.execute(inliningTarget, object)) {
-            return false;
+    static Object doGeneric(VirtualFrame frame, Node inliningTarget, Object object,
+                    @Cached GetClassNode getObjectType,
+                    @Cached GetCachedTpSlotsNode getSlots,
+                    @Cached CallSlotUnaryNode callSlot,
+                    @Cached PyIterCheckNode iterCheck,
+                    @Cached PRaiseNode raiseNoAwait,
+                    @Cached PRaiseNode raiseNotIter) {
+        Object type = getObjectType.execute(inliningTarget, object);
+        TpSlots slots = getSlots.execute(inliningTarget, type);
+        if (slots.am_await() == null) {
+            throw raiseNoAwait.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, type);
         }
-        Object type = getClassNode.execute(inliningTarget, object);
-        return getSlotsNode.execute(inliningTarget, type).sq_item() != null;
+        Object iterator = callSlot.execute(frame, inliningTarget, slots.am_await(), object);
+        if (iterator instanceof PGenerator generator && generator.isCoroutine()) {
+            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
+        }
+        if (!iterCheck.execute(inliningTarget, iterator)) {
+            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, iterator);
+        }
+        return iterator;
     }
+
 }

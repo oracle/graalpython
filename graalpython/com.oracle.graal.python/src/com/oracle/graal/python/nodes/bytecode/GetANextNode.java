@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ANEXT_INVALID_OBJECT;
 import static com.oracle.graal.python.nodes.ErrorMessages.ASYNC_FOR_NO_ANEXT_ITERATION;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
+import com.oracle.graal.python.builtins.objects.asyncio.PyCoroGetAwaitableIterNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
@@ -83,7 +83,7 @@ public abstract class GetANextNode extends PNodeWithContext {
                     @Cached CallSlotUnaryNode callSlot,
                     @Cached PRaiseNode raiseNoANext,
                     @Cached PRaiseNode raiseInvalidObject,
-                    @Cached GetAwaitableNode getAwaitable) {
+                    @Cached PyCoroGetAwaitableIterNode getAwaitableIter) {
         Object type = getAsyncIterType.execute(inliningTarget, receiver);
         TpSlots slots = getSlots.execute(inliningTarget, type);
         if (slots.am_anext() == null) {
@@ -91,7 +91,7 @@ public abstract class GetANextNode extends PNodeWithContext {
         }
         Object anext = callSlot.execute(frame, inliningTarget, slots.am_anext(), receiver);
         try {
-            return getAwaitable.execute(frame, anext);
+            return getAwaitableIter.execute(frame, inliningTarget, anext);
         } catch (PException e) {
             throw raiseInvalidObject.raiseWithCause(inliningTarget, PythonBuiltinClassType.TypeError, e, ANEXT_INVALID_OBJECT, anext);
         }

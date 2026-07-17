@@ -82,7 +82,7 @@ class TestWheelBuildAndRun(unittest.TestCase):
             else:
                 python = venv_dir / "Scripts" / "python.exe"
 
-            cmd = [str(python), "-m", "pip", "install", "build"]
+            cmd = [str(python), "-m", "pip", "install", "build==1.0.3"]
             print("Running:", shlex.join(cmd))
             subprocess.check_call(cmd)
 

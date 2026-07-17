@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,18 +42,11 @@ package com.oracle.graal.python.builtins.objects.asyncio;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
-import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -68,46 +61,15 @@ public abstract class GetAwaitableNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object arg);
 
     @Specialization
-    public static Object doGenerator(PGenerator generator,
+    public static Object doGeneric(VirtualFrame frame, Object object,
                     @Bind Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode raise,
-                    @Exclusive @Cached PRaiseNode raiseReusedCoro) {
-        if (generator.isCoroutine()) {
-            if (generator.getYieldFrom() != null) {
-                throw raiseReusedCoro.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CORO_ALREADY_AWAITED);
-            } else {
-                return generator;
-            }
-        } else {
-            throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, "generator");
+                    @Cached PyCoroGetAwaitableIterNode getAwaitableIter,
+                    @Cached PRaiseNode raiseReusedCoro) {
+        Object iterator = getAwaitableIter.execute(frame, inliningTarget, object);
+        if (iterator instanceof PGenerator generator && generator.getPythonClass() == PythonBuiltinClassType.PCoroutine && generator.getYieldFrom() != null) {
+            throw raiseReusedCoro.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CORO_ALREADY_AWAITED);
         }
-    }
-
-    @Fallback
-    public static Object doGeneric(VirtualFrame frame, Object awaitable,
-                    @Bind Node inliningTarget,
-                    @Exclusive @Cached PRaiseNode raiseNoAwait,
-                    @Exclusive @Cached PRaiseNode raiseNotIter,
-                    @Cached GetCachedTpSlotsNode getSlots,
-                    @Cached CallSlotUnaryNode callSlot,
-                    @Cached GetClassNode getAwaitableType,
-                    @Cached GetClassNode getIteratorType,
-                    @Cached PyIterCheckNode iterCheck) {
-        Object type = getAwaitableType.execute(inliningTarget, awaitable);
-        TpSlots slots = getSlots.execute(inliningTarget, type);
-        if (slots.am_await() == null) {
-            throw raiseNoAwait.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CANNOT_BE_USED_AWAIT, type);
-        }
-        Object iterator = callSlot.execute(frame, inliningTarget, slots.am_await(), awaitable);
-        if (iterCheck.execute(inliningTarget, iterator)) {
-            return iterator;
-        }
-        Object itType = getIteratorType.execute(inliningTarget, iterator);
-        if (itType == PythonBuiltinClassType.PCoroutine) {
-            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_COROUTINE);
-        } else {
-            throw raiseNotIter.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.AWAIT_RETURN_NON_ITER, itType);
-        }
+        return iterator;
     }
 
     @NeverDefault

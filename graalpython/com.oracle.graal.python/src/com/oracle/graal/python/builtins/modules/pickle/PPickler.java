@@ -595,6 +595,7 @@ public class PPickler extends PythonBuiltinObject {
         @Child private PyObjectReprAsTruffleStringNode reprNode;
         @Child private PyObjectGetIter getIterNode;
         @Child private HashingStorageLen hashingStorageLenNode;
+        @Child private PyTupleCheckNode.CachedNode tupleCheckNode;
 
         private int getHashingStorageLength(HashingStorage storage) {
             if (hashingStorageLenNode == null) {
@@ -605,7 +606,11 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         private boolean isTuple(Object object) {
-            return PyTupleCheckNode.executeUncached(object);
+            if (tupleCheckNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                tupleCheckNode = insert(PyTupleCheckNode.CachedNode.create());
+            }
+            return tupleCheckNode.execute(object);
         }
 
         private void save(VirtualFrame frame, PPickler pickler, Object obj, int persSave) {

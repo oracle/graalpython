@@ -1,3 +1,5 @@
 org.eclipse.jdt.core.compiler.problem.unusedParameter=ignore
 org.eclipse.jdt.core.compiler.problem.missingOverrideAnnotation=ignore
 org.eclipse.jdt.core.compiler.problem.invalidJavadoc=warning
+org.eclipse.jdt.core.formatter.comment.format_block_comments=true
+org.eclipse.jdt.core.formatter.comment.new_lines_at_block_boundaries=true

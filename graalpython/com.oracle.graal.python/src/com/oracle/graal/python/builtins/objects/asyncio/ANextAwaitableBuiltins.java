@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,6 +53,7 @@ import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
@@ -60,6 +61,8 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIter
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -93,10 +96,10 @@ public class ANextAwaitableBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getIter(VirtualFrame frame, Node inliningTarget, PANextAwaitable self,
-                        @Cached GetAwaitableNode getAwaitableNode) {
-            Object awaitable = getAwaitableNode.execute(frame, self.getWrapped());
-            if (awaitable instanceof PGenerator coroutine && coroutine.getPythonClass() == PythonBuiltinClassType.PCoroutine) {
-                return PFactory.createCoroutineWrapper(PythonLanguage.get(inliningTarget), coroutine);
+                        @Cached PyCoroGetAwaitableIterNode getAwaitableIter) {
+            Object awaitable = getAwaitableIter.execute(frame, inliningTarget, self.getWrapped());
+            if (awaitable instanceof PGenerator generator && generator.isCoroutine()) {
+                return PFactory.createCoroutineWrapper(PythonLanguage.get(inliningTarget), generator);
             }
             return awaitable;
         }
@@ -106,26 +109,26 @@ public class ANextAwaitableBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class ProxyNode extends Node {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, PANextAwaitable self, TruffleString method);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, PANextAwaitable self, TruffleString method, Object[] arguments);
 
         @Specialization
-        static Object getIter(VirtualFrame frame, Node inliningTarget, PANextAwaitable self, TruffleString method,
+        static Object getIter(VirtualFrame frame, Node inliningTarget, PANextAwaitable self, TruffleString method, Object[] arguments,
                         @Cached GetIterNode getIterNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Cached PRaiseNode raiseNode) {
             Object awaitable = getIterNode.execute(frame, inliningTarget, self);
             try {
-                return callMethod.execute(frame, inliningTarget, awaitable, method);
+                return callMethod.execute(frame, inliningTarget, awaitable, method, arguments);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.StopAsyncIteration, stopIterationProfile);
-                throw raiseNode.raiseStopAsyncIteration(inliningTarget, self.getDefaultValue());
+                throw raiseNode.raiseStopIteration(inliningTarget, self.getDefaultValue());
             }
         }
     }
 
     @Slot(value = SlotKind.tp_iter, isComplex = true)
-    @Slot(value = SlotKind.am_aiter, isComplex = true)
+    @Slot(value = SlotKind.am_await, isComplex = true)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -151,30 +154,38 @@ public class ANextAwaitableBuiltins extends PythonBuiltins {
                 return callIternext.execute(frame, inliningTarget, slots.tp_iternext(), awaitable);
             } catch (PException e) {
                 e.expect(inliningTarget, PythonBuiltinClassType.StopAsyncIteration, stopIterationProfile);
-                throw raiseNode.raiseStopAsyncIteration(inliningTarget, self.getDefaultValue());
+                throw raiseNode.raiseStopIteration(inliningTarget, self.getDefaultValue());
             }
         }
     }
 
-    @Builtin(name = "send", minNumOfPositionalArgs = 1)
+    @Builtin(name = "send", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class SendNode extends PythonUnaryBuiltinNode {
+    abstract static class SendNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object doSend(VirtualFrame frame, PANextAwaitable self,
+        static Object doSend(VirtualFrame frame, PANextAwaitable self, Object arg,
                         @Bind Node inliningTarget,
                         @Cached ProxyNode proxyNode) {
-            return proxyNode.execute(frame, inliningTarget, self, T_SEND);
+            return proxyNode.execute(frame, inliningTarget, self, T_SEND, new Object[]{arg});
         }
     }
 
-    @Builtin(name = "throw", minNumOfPositionalArgs = 1)
+    @Builtin(name = "throw", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    abstract static class ThrowNode extends PythonUnaryBuiltinNode {
+    abstract static class ThrowNode extends PythonBuiltinNode {
         @Specialization
-        static Object doThrow(VirtualFrame frame, PANextAwaitable self,
+        static Object doThrow(VirtualFrame frame, PANextAwaitable self, Object typ, Object val, Object tb,
                         @Bind Node inliningTarget,
                         @Cached ProxyNode proxyNode) {
-            return proxyNode.execute(frame, inliningTarget, self, T_THROW);
+            Object[] args;
+            if (tb != PNone.NO_VALUE) {
+                args = new Object[]{typ, val, tb};
+            } else if (val != PNone.NO_VALUE) {
+                args = new Object[]{typ, val};
+            } else {
+                args = new Object[]{typ};
+            }
+            return proxyNode.execute(frame, inliningTarget, self, T_THROW, args);
         }
     }
 
@@ -185,7 +196,7 @@ public class ANextAwaitableBuiltins extends PythonBuiltins {
         static Object doClose(VirtualFrame frame, PANextAwaitable self,
                         @Bind Node inliningTarget,
                         @Cached ProxyNode proxyNode) {
-            return proxyNode.execute(frame, inliningTarget, self, T_CLOSE);
+            return proxyNode.execute(frame, inliningTarget, self, T_CLOSE, new Object[0]);
         }
     }
 }
