@@ -195,6 +195,24 @@ def test_floor_div():
     assert_exception(lambda: 5.4 // 0.0, ZeroDivisionError)
 
 
+def test_large_int_floor_div():
+    divisor = 2**130 + 5
+    quotient = 2**80 + 3
+    remainder = 2**70 + 7
+    dividend = quotient * divisor + remainder
+
+    assert dividend // divisor == quotient
+    assert -dividend // divisor == -quotient - 1
+    assert dividend // -divisor == -quotient - 1
+    assert -dividend // -divisor == quotient
+
+    exact_dividend = quotient * divisor
+    assert exact_dividend // divisor == quotient
+    assert -exact_dividend // divisor == -quotient
+    assert exact_dividend // -divisor == -quotient
+    assert -exact_dividend // -divisor == quotient
+
+
 def test_true_div():
     assert 1 / 2 == 0.5
     assert 108086391056891904 / 30023997515803307 == 3.6

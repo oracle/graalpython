@@ -891,12 +891,14 @@ public final class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static BigInteger op(BigInteger left, BigInteger right) {
             // Math.floorDiv for BigInteger
-            BigInteger r = left.divide(right);
-            // if the signs are different and modulo not zero, round down
-            if ((left.xor(right)).signum() < 0 && (r.multiply(right).compareTo(left)) != 0) {
-                r = r.subtract(BigInteger.ONE);
+            int leftSign = left.signum();
+            if (leftSign == 0 || leftSign == right.signum()) {
+                return left.divide(right);
             }
-            return r;
+            BigInteger[] quotientAndRemainder = left.divideAndRemainder(right);
+            return quotientAndRemainder[1].signum() == 0
+                            ? quotientAndRemainder[0]
+                            : quotientAndRemainder[0].subtract(BigInteger.ONE);
         }
 
         @SuppressWarnings("unused")
