@@ -43,18 +43,22 @@ package com.oracle.graal.python.builtins.modules.multiprocessing;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -107,21 +111,30 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "send", minNumOfPositionalArgs = 2, parameterNames = {"handle", "data"}, os = PythonOS.PLATFORM_WIN32)
-    abstract static class Send extends PythonBinaryBuiltinNode {
-        @Specialization
-        int doit(VirtualFrame frame, Object handle, Object data,
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    abstract static class Send extends PythonBinaryClinicBuiltinNode {
+        @Specialization(limit = "3")
+        int doit(VirtualFrame frame, Object handle, Object buffer,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
-                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached("createFor($node)") InteropCallData callData,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            byte[] bytes = toBytesNode.execute(frame, data);
             try {
-                return posixLib.send(context.getPosixSupport(), castToJavaIntNode.execute(inliningTarget, handle), bytes, 0, bytes.length, 0);
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                return posixLib.send(context.getPosixSupport(), castToJavaIntNode.execute(inliningTarget, handle), bytes, 0, bufferLib.getBufferLength(buffer), 0);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                bufferLib.release(buffer, frame, callData);
             }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MultiprocessingModuleBuiltinsClinicProviders.SendClinicProviderGen.INSTANCE;
         }
     }
 
