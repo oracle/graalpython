@@ -409,8 +409,9 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         // SystemExit is silently ignored (see _threadmodule.c: thread_run)
                     } finally {
                         state.count--;
-                        removeDummyThread(context, callNode);
                     }
+                    // Do not call back into Python after PythonThreadKillException during shutdown.
+                    removeDummyThread(context, callNode);
                 } finally {
                     if (!daemon) {
                         removeShutdownHandle(state, handle);
