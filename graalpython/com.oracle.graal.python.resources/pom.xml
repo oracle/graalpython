@@ -56,6 +56,14 @@ SOFTWARE.
 
   <dependencies>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>com.oracle.graal.python</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.graalvm.sdk</groupId>
+      <artifactId>nativeimage</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.graalvm.truffle</groupId>
       <artifactId>truffle-api</artifactId>
     </dependency>
@@ -66,4 +74,28 @@ SOFTWARE.
       <optional>true</optional>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-mx-generated-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>../../mxbuild/graalpython/com.oracle.graal.python.resources/src_gen</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

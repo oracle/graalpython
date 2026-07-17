@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -105,6 +106,8 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonSourceOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.platform.GraalPyPlatformInfoProvider;
+import com.oracle.graal.python.runtime.platform.GraalPyPlatformInfoProvider.PlatformInfo;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -197,9 +200,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     /** See {@code mx_graalpython.py:abi_version} */
     public static final String GRAALPY_ABI_VERSION;
     public static final String GRAALPY_ABIFLAGS;
-    public static final String GRAALPY_SOABI;
-    public static final String GRAALPY_EXT_SUFFIX;
-    public static final String GRAALPY_MULTIARCH;
+    private static final String BUILD_PLATFORM_GRAALPY_EXT_SUFFIX;
+    private static final String BUILD_PLATFORM_GRAALPY_MULTIARCH;
 
     /* Magic number used to mark pyc files */
     public static final int MAGIC_NUMBER = 21000 + BytecodeDSLCompiler.BYTECODE_VERSION * 10;
@@ -252,13 +254,34 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             String[] abiParts = new String(is.readAllBytes(), StandardCharsets.US_ASCII).split("\\R", 5);
             GRAALPY_ABI_VERSION = abiParts[0].strip();
             GRAALPY_ABIFLAGS = abiParts.length > 1 ? abiParts[1].strip() : "";
-            GRAALPY_SOABI = abiParts.length > 2 ? abiParts[2].strip() : "";
-            GRAALPY_EXT_SUFFIX = abiParts.length > 3 ? abiParts[3].strip() : "";
-            GRAALPY_MULTIARCH = abiParts.length > 4 ? abiParts[4].strip() : "";
+            BUILD_PLATFORM_GRAALPY_EXT_SUFFIX = abiParts.length > 2 ? abiParts[2].strip() : "";
+            BUILD_PLATFORM_GRAALPY_MULTIARCH = abiParts.length > 3 ? abiParts[3].strip() : "";
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        if (ImageInfo.inImageBuildtimeCode()) {
+            PLATFORM_INFO = getPlatformInfo();
+        }
     }
+
+    private static PlatformInfo PLATFORM_INFO;
+
+    @TruffleBoundary
+    public static PlatformInfo getPlatformInfo() {
+        if (PLATFORM_INFO == null) {
+            if (ImageInfo.inImageRuntimeCode()) {
+                throw new IllegalStateException("GraalPy platform metadata must be initialized while building a native image");
+            }
+            ModuleLayer layer = PythonLanguage.class.getModule().getLayer();
+            ServiceLoader<GraalPyPlatformInfoProvider> providers = layer != null
+                            ? ServiceLoader.load(layer, GraalPyPlatformInfoProvider.class)
+                            : ServiceLoader.load(GraalPyPlatformInfoProvider.class, PythonLanguage.class.getClassLoader());
+            PLATFORM_INFO = providers.findFirst().map(GraalPyPlatformInfoProvider::getPlatformInfo).orElseGet(
+                            () -> new PlatformInfo(BUILD_PLATFORM_GRAALPY_EXT_SUFFIX, BUILD_PLATFORM_GRAALPY_MULTIARCH));
+        }
+        return PLATFORM_INFO;
+    }
+
     public static final int RELEASE_SERIAL = 0;
     public static final int VERSION_HEX = MAJOR << 24 |
                     MINOR << 16 |
@@ -427,6 +450,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected PythonContext createContext(Env env) {
+        getPlatformInfo();
         final PythonContext context = new PythonContext(this, env);
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;

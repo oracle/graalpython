@@ -363,6 +363,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
+                "GRAALPYTHON",
                 "truffle:TRUFFLE_API",
             ],
             "jacoco": "include",
@@ -658,7 +659,6 @@ suite = {
                 "GRAALPY_ABIFLAGS": "<graalpy_abiflags>",
                 "GRAALPY_EXT_SUFFIX": "<graalpy_ext>",
                 "GRAALPY_MULTIARCH": "<graalpy_multiarch>",
-                "GRAALPY_SOABI": "<graalpy_soabi>",
             },
             "results": [
                 "graalpy_versions"
@@ -994,10 +994,20 @@ suite = {
         # otherwise they will not get included in both the resources jar and
         # the language jar.
         "GRAALPYTHON_VERSIONS_RES": {
+            "platformDependent": True,
+            "hashEntry": "META-INF/resources/<os>/<arch>/versions.sha256",
+            "fileListEntry": "META-INF/resources/<os>/<arch>/versions.files",
             "type": "dir",
             "layout": {
-                "./": "dependency:graalpy-versions/<os>-<arch>/<multitarget_libc_selection>/graalpy_versions",
+                "./META-INF/resources/<os>/<arch>/graalpy_versions": "dependency:graalpy-versions/<os>-<arch>/<multitarget_libc_selection>/graalpy_versions",
             },
+            "platforms": [
+                "linux-amd64",
+                "linux-aarch64",
+                "darwin-amd64",
+                "darwin-aarch64",
+                "windows-amd64",
+            ],
         },
         "GRAALPYTHON_VERSIONS_MAIN": {
             "type": "dir",
@@ -1090,6 +1100,7 @@ suite = {
                 "GRAALPYTHON_NATIVE_RESOURCES",
             ],
             "distDependencies": [
+                "GRAALPYTHON",
                 "truffle:TRUFFLE_API",
             ],
             "requires": [
@@ -1143,10 +1154,12 @@ suite = {
                 "exports": [
                     "com.oracle.graal.python.* to org.graalvm.py.enterprise",
                     "com.oracle.graal.python.builtins.objects.ssl to graalpython.bouncycastle",
+                    "com.oracle.graal.python.runtime.platform to org.graalvm.py.resources",
                     "com.oracle.graal.python.runtime.crypto",
                 ],
                 "uses": [
                     "com.oracle.graal.python.runtime.crypto.BouncyCastleSupport",
+                    "com.oracle.graal.python.runtime.platform.GraalPyPlatformInfoProvider",
                 ],
             },
             "useModulePath": True,
