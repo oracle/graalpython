@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2016 Jython Developers
  *
  * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -234,6 +234,10 @@ public class FloatFormatter extends InternalFormat.Formatter {
                 throw unknownFormat(spec.type, "float", raisingNode);
         }
 
+        if (spec.noNegativeZero) {
+            coerceNegativeZero(positivePrefix);
+        }
+
         // If the format type is an upper-case letter, convert the result to upper case.
         if (Character.isUpperCase(spec.type)) {
             uppercase();
@@ -243,6 +247,30 @@ public class FloatFormatter extends InternalFormat.Formatter {
         groupWholePartIfRequired();
 
         return this;
+    }
+
+    /** Remove the negative sign if conversion and rounding produced zero. */
+    private void coerceNegativeZero(String positivePrefix) {
+        if (lenSign != 1 || result.charAt(start) != '-' || lenWhole == 0 || lenMarker > 1) {
+            return;
+        }
+        int numericStart = start + lenSign;
+        int wholeEnd = numericStart + lenWhole;
+        for (int i = numericStart; i < wholeEnd; i++) {
+            if (result.charAt(i) != '0') {
+                return;
+            }
+        }
+        int fractionStart = wholeEnd + lenPoint;
+        int fractionEnd = fractionStart + lenFraction;
+        for (int i = fractionStart; i < fractionEnd; i++) {
+            if (result.charAt(i) != '0') {
+                return;
+            }
+        }
+        String replacement = positivePrefix == null ? "" : positivePrefix;
+        result.replace(start, start + 1, replacement);
+        lenSign = replacement.length();
     }
 
     /**

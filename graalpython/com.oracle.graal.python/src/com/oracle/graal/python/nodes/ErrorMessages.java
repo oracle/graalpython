@@ -799,6 +799,8 @@ public abstract class ErrorMessages {
     public static final TruffleString ZERO_PADDING_NOT_ALLOWED_FOR_COMPLEX_FMT = tsLiteral("Zero padding is not allowed in complex format specifier");
     public static final TruffleString POW_THIRD_ARG_CANNOT_BE_ZERO = tsLiteral("pow() 3rd argument cannot be 0");
     public static final TruffleString PRECISION_NOT_ALLOWED_FOR_INT = tsLiteral("Precision not allowed in integer format specifier");
+    public static final TruffleString NEGATIVE_ZERO_COERCION_NOT_ALLOWED_IN_INT_FMT = tsLiteral("Negative zero coercion (z) not allowed in integer format specifier");
+    public static final TruffleString NEGATIVE_ZERO_COERCION_NOT_ALLOWED_IN_STRING_FMT = tsLiteral("Negative zero coercion (z) not allowed in string format specifier");
     public static final TruffleString SIGN_NOT_ALLOWED_WITH_C_FOR_INT = tsLiteral("Sign not allowed with integer format specifier 'c'");
     public static final TruffleString ALTERNATE_NOT_ALLOWED_WITH_C_FOR_INT = tsLiteral("Alternate form (#) not allowed with integer format specifier 'c'");
     public static final TruffleString ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT = tsLiteral("Alternate form (#) not allowed in string format specifier");

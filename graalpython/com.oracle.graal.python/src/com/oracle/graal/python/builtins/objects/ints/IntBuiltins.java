@@ -2748,6 +2748,9 @@ public final class IntBuiltins extends PythonBuiltins {
             if (Spec.specified(spec.precision)) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
             }
+            if (spec.noNegativeZero && (spec.type == 'b' || spec.type == 'c' || spec.type == 'd' || spec.type == 'o' || spec.type == 'x' || spec.type == 'X' || spec.type == 'n')) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEGATIVE_ZERO_COERCION_NOT_ALLOWED_IN_INT_FMT);
+            }
             if (spec.type == 'c') {
                 if (Spec.specified(spec.sign)) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SIGN_NOT_ALLOWED_WITH_C_FOR_INT);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -75,6 +75,7 @@ public class ComplexFormatter extends InternalFormat.Formatter {
                         '\0', // (fill)
                         '<', // (align)
                         sign, //
+                        spec.noNegativeZero, //
                         spec.alternate, //
                         -1, // (width)
                         spec.grouping, //
@@ -92,7 +93,7 @@ public class ComplexFormatter extends InternalFormat.Formatter {
         } else {
             type = 'g';
         }
-        return new InternalFormat.Spec(' ', '>', sign, false, InternalFormat.Spec.UNSPECIFIED, Spec.NONE, precision, type);
+        return new InternalFormat.Spec(' ', '>', sign, spec.noNegativeZero, false, InternalFormat.Spec.UNSPECIFIED, Spec.NONE, precision, type);
     }
 
     private boolean hasNoSpecType() {

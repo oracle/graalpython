@@ -328,7 +328,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     public abstract static class StrNode extends AbstractNumericUnaryBuiltin {
-        public static final Spec spec = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
+        public static final Spec spec = new Spec(' ', '>', Spec.NONE, false, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
 
         @Override
         protected TruffleString op(double self) {
