@@ -76,6 +76,9 @@ class BasicTests(unittest.TestCase):
         assert round(1.123, 2) == 1.12
         assert round(1.123, 3) == 1.123
         assert round(1.123, 100) == 1.123
+        assert round(1e23) == 99999999999999991611392
+        assert round(-1e23) == -99999999999999991611392
+        assert round(8.98846567431158e307) == 2**1023
         import sys
         if sys.version_info.minor >= 6:
             assert 1.123.__round__(None) == 1
