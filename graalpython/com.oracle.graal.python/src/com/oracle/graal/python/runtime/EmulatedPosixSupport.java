@@ -589,14 +589,14 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public long getOsfHandle(int fd) throws PosixException {
-        throw posixException(OSErrorEnum.ENOSYS);
+    public long getOsfHandle(int fd) throws UnsupportedPosixFeatureException {
+        throw createUnsupportedFeature("get_osfhandle");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public int openOsfHandle(long handle, int flags) throws PosixException {
-        throw posixException(OSErrorEnum.ENOSYS);
+    public int openOsfHandle(long handle, int flags) throws UnsupportedPosixFeatureException {
+        throw createUnsupportedFeature("open_osfhandle");
     }
 
     @ExportMessage(name = "pipe")
