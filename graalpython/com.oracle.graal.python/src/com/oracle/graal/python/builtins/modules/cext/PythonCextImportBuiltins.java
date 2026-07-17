@@ -58,12 +58,14 @@ import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -156,6 +158,17 @@ public final class PythonCextImportBuiltins {
         @TruffleBoundary
         private static void waitForInitialization(Object name, PythonContext context) {
             PyObjectCallMethodObjArgs.executeUncached(context.getImportlib(), T__LOCK_UNLOCK_MODULE, name);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = Direct)
+    abstract static class _PyImport_GetModuleAttrString extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object doTruffleString(TruffleString modname, TruffleString attrname,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectGetAttr getAttr) {
+            PythonModule mod = AbstractImportNode.importModuleBoundary(modname);
+            return getAttr.execute(inliningTarget, mod, attrname);
         }
     }
 }

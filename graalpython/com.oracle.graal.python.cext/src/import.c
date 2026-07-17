@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -3330,6 +3330,7 @@ _PyImport_GetModuleAttr(PyObject *modname, PyObject *attrname)
     return result;
 }
 
+#if 0 // GraalPy change
 PyObject *
 _PyImport_GetModuleAttrString(const char *modname, const char *attrname)
 {
@@ -3349,7 +3350,6 @@ _PyImport_GetModuleAttrString(const char *modname, const char *attrname)
 }
 
 
-#if 0 // GraalPy change
 /**************/
 /* the module */
 /**************/
