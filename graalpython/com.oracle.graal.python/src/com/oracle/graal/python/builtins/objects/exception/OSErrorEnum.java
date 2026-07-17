@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,8 @@ public enum OSErrorEnum {
      * Manually are changed EWOULDBLOCK and EDEADLOCK and move before appropriate errors with the
      * same number, because ErrnoModuleBuiltins and PosixModuleBuiltins built a dictionary from this
      * enum.
+     *
+     * Manually added ENOTSUP as alias of EOPNOTSUPP
      */
     EPERM(1, tsLiteral("Operation not permitted")),
     ENOENT(2, tsLiteral("No such file or directory")),
@@ -178,6 +180,7 @@ public enum OSErrorEnum {
     EPROTONOSUPPORT(platformSpecific(93, 43), tsLiteral("Protocol not supported")),
     ESOCKTNOSUPPORT(platformSpecific(94, 44), tsLiteral("Socket type not supported")),
     EOPNOTSUPP(platformSpecific(95, 102), tsLiteral("Operation not supported on transport endpoint")),
+    ENOTSUP(platformSpecific(95, 102), tsLiteral("Operation not supported")),
     EPFNOSUPPORT(platformSpecific(96, 46), tsLiteral("Protocol family not supported")),
     EAFNOSUPPORT(platformSpecific(97, 47), tsLiteral("Address family not supported by protocol")),
     EADDRINUSE(platformSpecific(98, 48), tsLiteral("Address already in use")),
