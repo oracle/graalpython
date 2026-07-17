@@ -40,6 +40,4 @@
  */
 
 #include "capi.h"
-#if 0 // GraalPy change
 #include "pycore_frame.h"
-#endif // GraalPy change
