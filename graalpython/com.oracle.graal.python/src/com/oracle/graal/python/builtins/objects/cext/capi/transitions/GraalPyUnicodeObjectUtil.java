@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 
 public final class GraalPyUnicodeObjectUtil {
@@ -162,7 +163,9 @@ public final class GraalPyUnicodeObjectUtil {
         long obType = readPtrField(rawPointer, PyObject__ob_type);
         boolean isUnicodeSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.UNICODE_SUBCLASS) != 0L;
         assert !HandlePointerConverter.pointsToPyHandleSpace(obType);
-        assert IsBuiltinClassProfile.profileClassSlowPath(NativeToPythonClassInternalNode.executeUncached(obType), PythonBuiltinClassType.PString) == isUnicodeSubclass;
+        // During finalization, the native reference for obType may already have been freed, so it cannot be converted back to a managed class.
+        assert PythonContext.get(null).isFinalizing() || IsBuiltinClassProfile.profileClassSlowPath(NativeToPythonClassInternalNode.executeUncached(obType),
+                        PythonBuiltinClassType.PString) == isUnicodeSubclass;
         return isUnicodeSubclass && !GraalPyUnicodeObjectUtil.isCompact(rawPointer);
     }
 
