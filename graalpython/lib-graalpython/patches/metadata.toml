@@ -8,20 +8,10 @@ patch = 'autopep8.patch'
 license = 'MIT'
 
 [[bcrypt.rules]]
-note = "With pyo3 changes upstreamed, this patch is not needed in recent versions. This old version is still used in ray's tests."
+note = "With pyo3 changes upstreamed, this patch is not needed in recent versions"
 install-priority = 0
 version = '== 4.0.1'
 patch = 'bcrypt-4.0.1.patch'
-license = 'Apache-2.0'
-
-[[catboost.rules]]
-version = '== 1.2.3'
-patch = 'catboost-1.2.3.patch'
-license = 'Apache-2.0'
-
-[[catboost.rules]]
-version = '== 1.2.2'
-patch = 'catboost-1.2.2.patch'
 license = 'Apache-2.0'
 
 [[category-encoders.rules]]
@@ -459,14 +449,6 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 install-priority = 0
 
-[[protobuf.rules]]
-# msimacek: This version doesn't exist, but the patch file is referenced from the tensorflow patch which I'm afraid to touch
-version = '== 3.21.9'
-patch = 'protobuf-3.21.9.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-install-priority = 0
-
 [[psycopg2.rules]]
 version = '>= 2.9.10'
 patch = "psycopg2-2.9.10.patch"
@@ -519,7 +501,6 @@ license = 'BSD-3-Clause'
 [[pybind11.rules]]
 install-priority = 0
 # Note: This patch file is also used directly outside of pip during onnxruntime build
-# Note: This patch file is also used directly outside of pip during tensorflow build
 # Note: This patch is also inlined in torch
 version = '>= 2.10.1, < 2.11.0'
 patch = 'pybind11-2.10.1.patch'
@@ -654,24 +635,6 @@ url = 'https://github.com/rapidfuzz/Levenshtein/archive/refs/tags/v0.26.1.zip'
 version = '0.27.1'
 url = 'https://github.com/rapidfuzz/Levenshtein/archive/refs/tags/v0.27.1.zip'
 
-[[ray.rules]]
-version = '== 2.3.0'
-patch = 'ray-2.3.0.patch'
-license = 'Apache-2.0'
-
-[[ray.add-sources]]
-version = '2.3.0'
-url = 'https://github.com/ray-project/ray/releases/download/ray-2.3.0/ray-2.3.0.tar.gz'
-
-[[ray.rules]]
-version = '== 2.9.1'
-patch = 'ray-2.9.1.patch'
-license = 'Apache-2.0'
-
-[[ray.add-sources]]
-version = '2.9.1'
-url = 'https://github.com/ray-project/ray/archive/refs/tags/ray-2.9.1.tar.gz'
-
 [[rasterio.rules]]
 install-priority = 0
 version = '<= 1.4.3'
@@ -727,42 +690,6 @@ license = 'MIT'
 version = '== 3.11.1'
 patch = 'tables-3.11.1.patch'
 license = 'BSD-3-Clause'
-
-[[tensorflow.rules]]
-version = '== 2.15.0'
-patch = 'tensorflow-2.15.0.patch'
-license = 'Apache-2.0'
-
-[[tensorflow.add-sources]]
-version = '2.15.0'
-url = 'https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.15.0.tar.gz'
-
-[[tensorflow.rules]]
-version = '== 2.14.0'
-patch = 'tensorflow-2.14.0.patch'
-license = 'Apache-2.0'
-
-[[tensorflow.add-sources]]
-version = '2.14.0'
-url = 'https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.14.0.tar.gz'
-
-[[tensorflow-io.rules]]
-version = '== 0.34.0'
-patch = 'tensorflow-io-0.34.0.patch'
-license = 'Apache-2.0'
-
-[[tensorflow-io.add-sources]]
-version = '0.34.0'
-url = 'https://github.com/tensorflow/io/archive/refs/tags/v0.34.0.tar.gz'
-
-[[tensorflow-io-gcs-filesystem.rules]]
-version = '== 0.34.0'
-patch = 'tensorflow-io-gcs-filesystem-0.34.0.patch'
-license = 'Apache-2.0'
-
-[[tensorflow-io-gcs-filesystem.add-sources]]
-version = '0.34.0'
-url = 'https://github.com/tensorflow/io/archive/refs/tags/v0.34.0.tar.gz'
 
 [[torch.rules]]
 version = '== 2.7.0'
