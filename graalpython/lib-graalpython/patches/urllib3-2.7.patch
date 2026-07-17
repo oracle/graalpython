@@ -1,0 +1,33 @@
+diff --git a/urllib3/util/ssl_.py b/urllib3/util/ssl_.py
+index e66549a..e840c0b 100644
+--- a/urllib3/util/ssl_.py
++++ b/urllib3/util/ssl_.py
+@@ -62,7 +62,6 @@ try:  # Do we have ssl at all?
+         OPENSSL_VERSION,
+         PROTOCOL_TLS,
+         PROTOCOL_TLS_CLIENT,
+-        VERIFY_X509_PARTIAL_CHAIN,
+         VERIFY_X509_STRICT,
+         OP_NO_SSLv2,
+         OP_NO_SSLv3,
+@@ -70,6 +69,8 @@ try:  # Do we have ssl at all?
+         TLSVersion,
+     )
+ 
++    VERIFY_X509_PARTIAL_CHAIN = getattr(ssl, "VERIFY_X509_PARTIAL_CHAIN", 0x80000)
++
+     PROTOCOL_SSLv23 = PROTOCOL_TLS
+ 
+     # Setting SSLContext.hostname_checks_common_name = False didn't work with
+@@ -312,7 +313,10 @@ def create_urllib3_context(
+         context.check_hostname = False
+         context.verify_mode = cert_reqs
+ 
+-    context.hostname_checks_common_name = False
++    try:
++        context.hostname_checks_common_name = False
++    except AttributeError:  # Defensive: not all implementations provide a setter
++        pass
+ 
+     if "SSLKEYLOGFILE" in os.environ:
+         sslkeylogfile = os.path.expandvars(os.environ.get("SSLKEYLOGFILE"))
