@@ -39,6 +39,8 @@ public class FloatFormatter extends InternalFormat.Formatter {
     private int lenExponent;
     /** if >=0, minimum digits to follow decimal point (where consulted) */
     private int minFracDigits;
+    /** Preserve a decimal point in alternate repr-like formats without padding to full precision. */
+    private boolean forceDecimalPoint;
 
     /**
      * Construct the formatter from a client-supplied buffer, to which the result will be appended,
@@ -51,7 +53,14 @@ public class FloatFormatter extends InternalFormat.Formatter {
      */
     public FloatFormatter(FormattingBuffer result, Spec spec, boolean addDot0, Node raisingNode) {
         super(result, spec, raisingNode);
-        if (!addDot0 && spec.type == 'r') {
+        boolean reprLike = spec.type == 'r' || spec.type == Spec.NONE && !specified(spec.precision);
+        if (spec.alternate && reprLike) {
+            // In repr-like formats, alternate form only preserves the decimal point. A regular
+            // float still gets the fractional zero requested by Py_DTSF_ADD_DOT_0, while a
+            // complex component does not.
+            minFracDigits = addDot0 ? 1 : 0;
+            forceDecimalPoint = true;
+        } else if (!addDot0 && spec.type == 'r') {
             minFracDigits = 0;
         } else if (spec.alternate) {
             // Alternate form means do not trim the zero fractional digits.
@@ -555,7 +564,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
             } else {
                 // Finish the job as e-format.
-                appendExponential(pointlessDigits, exp);
+                appendExponential(pointlessDigits, exp, prec);
             }
         }
     }
@@ -594,7 +603,7 @@ public class FloatFormatter extends InternalFormat.Formatter {
 
             } else {
                 // Finish the job as e-format.
-                appendExponential(pointlessBuffer, exp);
+                appendExponential(pointlessBuffer, exp, precision);
             }
         }
     }
@@ -614,9 +623,12 @@ public class FloatFormatter extends InternalFormat.Formatter {
             if (minFracDigits < 0) {
                 // In "alternate format", we won't economise trailing zeros.
                 appendPointAndTrailingZeros(precision - 1);
-            } else if (lenFraction < minFracDigits) {
+            } else if (expThreshold > 0 && lenFraction < minFracDigits) {
                 // Otherwise, it should be at least the stated minimum length.
                 appendTrailingZeros(minFracDigits);
+            }
+            if (forceDecimalPoint && lenPoint == 0) {
+                appendPointAndTrailingZeros(minFracDigits);
             }
 
             // And just occasionally (in none-format) we go exponential even when exp = 0...
@@ -694,6 +706,9 @@ public class FloatFormatter extends InternalFormat.Formatter {
                 removeTrailingZeros(minFracDigits);
             }
         }
+        if (forceDecimalPoint && lenPoint == 0) {
+            appendPointAndTrailingZeros(minFracDigits);
+        }
     }
 
     /**
@@ -706,8 +721,9 @@ public class FloatFormatter extends InternalFormat.Formatter {
      *
      * @param digits from converting the value at a given precision.
      * @param exp would be the exponent (in e-format), used to position the decimal point.
+     * @param precision total number of significant digits.
      */
-    private void appendExponential(CharSequence digits, int exp) {
+    private void appendExponential(CharSequence digits, int exp, int precision) {
 
         // The whole-part is the first digit.
         result.append(digits.charAt(0));
@@ -723,6 +739,13 @@ public class FloatFormatter extends InternalFormat.Formatter {
         if (minFracDigits >= 0) {
             // Note positive minFracDigits only applies to fixed formats.
             removeTrailingZeros(0);
+        } else {
+            // BigDecimal does not retain a trailing zero produced by rounding, but alternate
+            // g-format requires exactly the requested number of significant digits.
+            appendPointAndTrailingZeros(precision - 1);
+        }
+        if (forceDecimalPoint && lenPoint == 0) {
+            appendPointAndTrailingZeros(0);
         }
 
         // Finally, append the exponent as e+nn.

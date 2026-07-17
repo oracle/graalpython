@@ -931,6 +931,9 @@ class FormatTests(unittest.TestCase):
         self.assertEqual(format(NAN, 'F'), 'NAN')
         self.assertEqual(format(INF, 'f'), 'inf')
         self.assertEqual(format(INF, 'F'), 'INF')
+        self.assertEqual(format(INF, '07,f'), '0000inf')
+        self.assertEqual(format(NAN, '07,f'), '0000nan')
+        self.assertEqual(format(-INF, '07_f'), '-000inf')
 
     def test_negative_zero_format(self):
         self.assertEqual(format(0.0, 'zf'), '0.000000')

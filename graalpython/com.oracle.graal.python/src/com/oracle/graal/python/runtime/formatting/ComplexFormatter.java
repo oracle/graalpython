@@ -53,7 +53,7 @@ public class ComplexFormatter extends InternalFormat.Formatter {
         Spec imSpec;
         if (hasNoSpecType()) {
             // no type spec: should be like the default __str__
-            reSpec = getComponentSpecForNoSpecType(spec, InternalFormat.Spec.NONE);
+            reSpec = getComponentSpecForNoSpecType(spec, spec.sign);
             imSpec = getComponentSpecForNoSpecType(spec, '+');
         } else {
             // Turn off any flags that should apply to the result as a whole and not to the
@@ -88,12 +88,10 @@ public class ComplexFormatter extends InternalFormat.Formatter {
         // are printed without the decimal part, which is mostly what "g" does
         int precision = spec.precision;
         char type = 'r';
-        if (precision < 0) {
-            precision = 0;
-        } else {
+        if (precision >= 0) {
             type = 'g';
         }
-        return new InternalFormat.Spec(' ', '>', sign, spec.noNegativeZero, false, InternalFormat.Spec.UNSPECIFIED, Spec.NONE, precision, type);
+        return new InternalFormat.Spec(' ', '>', sign, spec.noNegativeZero, spec.alternate, InternalFormat.Spec.UNSPECIFIED, spec.grouping, precision, type);
     }
 
     private boolean hasNoSpecType() {
