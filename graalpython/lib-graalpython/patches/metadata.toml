@@ -1066,6 +1066,12 @@ license = 'PSF-2.0'
 subdir = 'src'
 
 [[urllib3.rules]]
+patch = 'urllib3-2.7.patch'
+license = 'MIT'
+subdir = 'src'
+version = '>= 2.7.0'
+
+[[urllib3.rules]]
 note = "urllib3 in this version range has a check that requires that the ssl implementation's name starts with 'OpenSSL', we need to patch it out. Older versions worked fine before the check was added. Newer versions turned it into a warning."
 patch = 'urllib3-2.patch'
 license = 'MIT'
