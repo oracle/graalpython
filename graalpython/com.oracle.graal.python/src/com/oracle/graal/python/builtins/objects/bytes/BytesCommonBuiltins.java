@@ -1922,7 +1922,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static boolean isWhitespace(byte b) {
-            return Character.isWhitespace(b);
+            return BytesUtils.isSpace(b);
         }
 
         protected int findIndex(byte[] bs, byte[] stripBs, int stripBsLen) {

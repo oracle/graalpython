@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import base64
 import sys
 import unittest
 
@@ -628,6 +629,22 @@ def test_strip_bytes():
     assert b'abc'.strip(b'ac') == b'b'
     assert b'abc'.lstrip(b'ac') == b'bc'
     assert b'abc'.rstrip(b'ac') == b'ab'
+
+
+def test_strip_default_whitespace():
+    whitespace = b'\x09\x0a\x0b\x0c\x0d '
+    non_whitespace = b'\x1c\x1d\x1e\x1f'
+    for type2test in (bytes, bytearray):
+        value = type2test(whitespace + non_whitespace + whitespace)
+        assert value.strip() == non_whitespace
+        assert value.lstrip() == non_whitespace + whitespace
+        assert value.rstrip() == whitespace + non_whitespace
+
+
+def test_strip_base32_result_with_control_bytes():
+    value = base64.b32decode(b'INFAO2ZW7APB2===')
+    assert value == b'CJ\x07k6\xf8\x1e\x1d'
+    assert value.strip() == value
 
 class BaseTestSplit:
 
