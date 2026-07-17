@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
@@ -54,7 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
@@ -109,12 +110,12 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.lib.PyDictDelItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -125,6 +126,7 @@ import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -133,6 +135,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -141,6 +144,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextDictBuiltins {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextDictBuiltins.class);
@@ -306,12 +310,14 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct)
-    public abstract static class PyDict_GetItem extends CApiBinaryBuiltinNode {
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
+    abstract static class DictGetAndPromoteItem extends Node {
+        abstract Object execute(Node inliningTarget, Object dict, Object key);
 
         @Specialization
-        static Object getItem(PDict dict, Object key,
-                        @Bind Node inliningTarget,
+        static Object doPDict(Node inliningTarget, PDict dict, Object key,
                         @Bind PythonContext context,
                         @Cached HashingStorageGetItem getItem,
                         @Cached EnsurePythonObjectNode ensureNode,
@@ -336,22 +342,42 @@ public final class PythonCextDictBuiltins {
         }
 
         @Specialization(guards = "!isDict(obj)")
-        static Object getItem(Object obj, @SuppressWarnings("unused") Object key,
-                        @Bind Node inliningTarget,
-                        @Cached StringBuiltins.StrNewNode strNode) {
-            return PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
+        @TruffleBoundary
+        static Object doOther(Node inliningTarget, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object key) {
+            return PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
+    }
 
-        protected boolean isDict(Object obj) {
-            return obj instanceof PDict;
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    public abstract static class PyDict_GetItemString extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doGeneric(Object dict, Object key,
+                        @Bind Node inliningTarget,
+                        @Cached DictGetAndPromoteItem getAndPromoteItem) {
+            return getAndPromoteItem.execute(inliningTarget, dict, key);
         }
     }
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PyDict_GetItemWithError extends CApiBinaryBuiltinNode {
+    public abstract static class PyDict_GetItem extends CApiBinaryBuiltinNode {
+
         @Specialization
-        static Object getItem(PDict dict, Object key,
+        static Object doGeneric(Object dict, Object key,
                         @Bind Node inliningTarget,
+                        @Cached DictGetAndPromoteItem getAndPromoteItem) {
+            return getAndPromoteItem.execute(inliningTarget, dict, key);
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @ImportStatic(PGuards.class)
+    abstract static class DictGetAndPromoteItemWithError extends Node {
+        abstract Object execute(Node inliningTarget, Object dict, Object key);
+
+        @Specialization
+        static Object doPDict(Node inliningTarget, PDict dict, Object key,
                         @Bind PythonContext context,
                         @Cached HashingStorageGetItem getItem,
                         @Cached EnsurePythonObjectNode ensureNode,
@@ -370,26 +396,70 @@ public final class PythonCextDictBuiltins {
             return res;
         }
 
-        @Fallback
-        Object fallback(Object dict, @SuppressWarnings("unused") Object key) {
-            throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        @Specialization(guards = "!isDict(obj)")
+        @TruffleBoundary
+        static Object doOther(Node inliningTarget, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object key) {
+            return PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject}, call = Direct)
-    abstract static class PyDict_SetItem extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PyDict_GetItemWithError extends CApiBinaryBuiltinNode {
         @Specialization
-        static int setItem(PDict dict, Object key, Object value,
+        static Object doGeneric(Object dict, Object key,
+                        @Bind Node inliningTarget,
+                        @Cached DictGetAndPromoteItemWithError getAndPromoteItem) {
+            return getAndPromoteItem.execute(inliningTarget, dict, key);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    abstract static class _PyDict_GetItemStringWithError extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(Object dict, Object key,
+                        @Bind Node inliningTarget,
+                        @Cached DictGetAndPromoteItemWithError getAndPromoteItem) {
+            return getAndPromoteItem.execute(inliningTarget, dict, key);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Direct)
+    @ImportStatic(PGuards.class)
+    abstract static class PyDict_SetItemString extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int doPDict(PDict dict, TruffleString key, Object value,
                         @Bind Node inliningTarget,
                         @Cached SetItemNode setItemNode) {
             setItemNode.execute(null, inliningTarget, dict, key, value);
             return 0;
         }
 
+        @Specialization(guards = "!isDict(dict)")
+        @TruffleBoundary
         @SuppressWarnings("unused")
-        @Fallback
-        int fallback(Object dict, Object key, Object value) {
-            throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        static int doOther(Object dict, Object key, Object value,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObject}, call = Direct)
+    @ImportStatic(PGuards.class)
+    abstract static class PyDict_SetItem extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int doPDict(PDict dict, Object key, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached SetItemNode setItemNode) {
+            setItemNode.execute(null, inliningTarget, dict, key, value);
+            return 0;
+        }
+
+        @Specialization(guards = "!isDict(dict)")
+        @TruffleBoundary
+        @SuppressWarnings("unused")
+        static int doOther(Object dict, Object key, Object value,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
 
@@ -439,6 +509,26 @@ public final class PythonCextDictBuiltins {
         @Fallback
         public Object fallback(Object dict, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    @ImportStatic(PGuards.class)
+    abstract static class PyDict_DelItemString extends CApiBinaryBuiltinNode {
+        @Specialization
+        static int doPDict(PDict dict, TruffleString key,
+                        @Bind Node inliningTarget,
+                        @Cached PyDictDelItem delItemNode) {
+            delItemNode.execute(null, inliningTarget, dict, key);
+            return 0;
+        }
+
+        @Specialization(guards = "!isDict(dict)")
+        @TruffleBoundary
+        @SuppressWarnings("unused")
+        static int doOther(Object dict, Object key,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
     }
 
