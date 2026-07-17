@@ -86,6 +86,34 @@ def test_repr_type_error_includes_returned_value():
         assert str(e) == "__repr__ returned non-string (type int)"
 
 
+def test_numeric_str_uses_overridden_repr():
+    class IntSubclass(int):
+        def __repr__(self):
+            return "IntSubclass"
+
+    class FloatSubclass(float):
+        def __repr__(self):
+            return "FloatSubclass"
+
+    class ComplexSubclass(complex):
+        def __repr__(self):
+            return "ComplexSubclass"
+
+    for numeric_type in (int, float, bool, complex):
+        assert numeric_type.__str__ is object.__str__
+
+    for value, expected in (
+        (IntSubclass(), "IntSubclass"),
+        (FloatSubclass(), "FloatSubclass"),
+        (ComplexSubclass(), "ComplexSubclass"),
+    ):
+        assert repr(value) == expected
+        assert str(value) == expected
+
+    assert str(True) == "True"
+    assert repr(True) == "True"
+
+
 def test_repr_deep_userlist_raises_recursion_error():
     a = UserList([])
     for _ in range(REPR_RECURSION_LIMIT + 10):
