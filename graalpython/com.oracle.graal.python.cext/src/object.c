@@ -993,6 +993,10 @@ PyObject_GetAttrString(PyObject *v, const char *name)
 {
     PyObject *w, *res;
 
+    // GraalPy change: avoid temp name object if receiver is managed
+    if (points_to_py_handle_space(v)) {
+        return GraalPyPrivate_Object_GetAttrString(v, name);
+    }
     if (Py_TYPE(v)->tp_getattr != NULL)
         return (*Py_TYPE(v)->tp_getattr)(v, (char*)name);
     w = PyUnicode_FromString(name);
@@ -1034,12 +1038,13 @@ PyObject_SetAttrString(PyObject *v, const char *name, PyObject *w)
     PyObject *s;
     int res;
 
+    // GraalPy change: avoid temp name object if receiver is managed
+    if (points_to_py_handle_space(v)) {
+        return GraalPyPrivate_Object_SetAttrString(v, name, w);
+    }
     if (Py_TYPE(v)->tp_setattr != NULL)
         return (*Py_TYPE(v)->tp_setattr)(v, (char*)name, w);
-    // GraalPy change
-    // TODO(fa): CPython interns strings; verify if that makes sense for us as well
-    // s = PyUnicode_InternFromString(name);
-    s = PyUnicode_FromString(name);
+    s = PyUnicode_InternFromString(name);
     if (s == NULL)
         return -1;
     res = PyObject_SetAttr(v, s, w);
