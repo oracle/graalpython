@@ -1426,4 +1426,18 @@ public final class PythonCextUnicodeBuiltins {
             return PNone.NO_VALUE;
         }
     }
+
+    // intentionally a node because of the indirectly used TruffleString.FromZeroTerminatedNativePointerNode
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
+    abstract static class PyUnicode_InternFromString extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        static PString doString(TruffleString value,
+                        @Bind PythonContext context) {
+            TruffleString internedValue = PythonUtils.internString(value);
+            PString candidate = PFactory.createString(context.getLanguage(), internedValue);
+            return context.getCApiContext().getPstringInterningCache().intern(candidate, s -> s);
+        }
+    }
 }

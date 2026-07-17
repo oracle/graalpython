@@ -560,7 +560,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_FromKindAndData", ret = PyObject, args = {Int, CONST_VOID_PTR, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_FromStringAndSize", ret = PyObject, args = {ConstCharPtrAsTruffleString, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_GetLength", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyUnicode_InternFromString", ret = PyObject, args = {ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_InternInPlace", ret = Void, args = {PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyUnicode_New", ret = PyObject, args = {Py_ssize_t, PY_UCS4}, call = CImpl)
     @CApiBuiltin(name = "PyVectorcall_Call", ret = PyObject, args = {PyObject, PyObject, PyObject}, call = CImpl)
