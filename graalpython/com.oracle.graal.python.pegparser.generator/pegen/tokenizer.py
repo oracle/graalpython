@@ -2,6 +2,9 @@
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+# GraalPy change: restore 3.8 compatibility for CI
+from __future__ import annotations
+
 import token
 import tokenize
 from collections.abc import Iterator

@@ -3,6 +3,8 @@
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 # Adapted from mypy (mypy/build.py) under the MIT license.
+# GraalPy change: restore 3.8 compatibility for CI
+from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Set
 

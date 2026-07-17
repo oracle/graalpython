@@ -2,6 +2,9 @@
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+# GraalPy change: restore 3.8 compatibility for CI
+from __future__ import annotations
+
 import itertools
 import logging
 import os
@@ -22,7 +25,8 @@ from pegen.tokenizer import Tokenizer
 
 MOD_DIR = pathlib.Path(__file__).resolve().parent
 
-TokenDefinitions = tuple[dict[int, str], dict[str, int], set[str]]
+# GraalPy change: restore 3.8 compatibility for CI
+TokenDefinitions = Any
 Incomplete = Any  # TODO: install `types-setuptools` and remove this alias
 
 

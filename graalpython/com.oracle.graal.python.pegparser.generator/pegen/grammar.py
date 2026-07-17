@@ -347,11 +347,12 @@ class Cut:
         return set()
 
 
-Plain = Leaf | Group
-Item = Plain | Opt | Repeat | Forced | Lookahead | Rhs | Cut
-RuleName = tuple[str, str | None]
-MetaTuple = tuple[str, str | None]
-MetaList = list[MetaTuple]
-RuleList = list[Rule]
-NamedItemList = list[NamedItem]
-LookaheadOrCut = Lookahead | Cut
+# GraalPy change: restore 3.8 compatibility for CI
+Plain = Any
+Item = Any
+RuleName = Any
+MetaTuple = Any
+MetaList = Any
+RuleList = Any
+NamedItemList = Any
+LookaheadOrCut = Any

@@ -2,6 +2,9 @@
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+# GraalPy change: restore 3.8 compatibility for CI
+from __future__ import annotations
+
 import argparse
 import sys
 import time
@@ -20,7 +23,8 @@ from typing import (
 from pegen.tokenizer import Mark, Tokenizer, exact_token_types
 
 T = TypeVar("T")
-F = TypeVar("F", bound=Callable[..., Any])
+# GraalPy change: restore 3.8 compatibility for CI
+F = TypeVar("F")
 
 
 def logger(method: F) -> F:
