@@ -52,11 +52,10 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -83,21 +82,20 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "recv", minNumOfPositionalArgs = 2, parameterNames = {"handle", "size"}, os = PythonOS.PLATFORM_WIN32)
-    abstract static class Recv extends PythonBinaryBuiltinNode {
+    @ArgumentClinic(name = "handle", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "size", conversion = ArgumentClinic.ClinicConversion.Int)
+    abstract static class Recv extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        PBytes doit(VirtualFrame frame, Object handle, Object size,
+        PBytes doit(VirtualFrame frame, int handle, int size,
                         @Bind PythonContext context,
                         @Bind PythonLanguage language,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
-                        @Cached CastToJavaIntExactNode castHandleToJavaIntNode,
-                        @Cached CastToJavaIntExactNode castSizeToJavaIntNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            int len = castSizeToJavaIntNode.execute(inliningTarget, size);
-            byte[] buffer = new byte[len];
+            byte[] buffer = new byte[size];
             try {
-                int received = posixLib.recv(context.getPosixSupport(), castHandleToJavaIntNode.execute(inliningTarget, handle), buffer, 0, len, 0);
-                if (received == len) {
+                int received = posixLib.recv(context.getPosixSupport(), handle, buffer, 0, size, 0);
+                if (received == size) {
                     return PFactory.createBytes(language, buffer);
                 }
                 byte[] result = new byte[received];
@@ -107,24 +105,29 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
         }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MultiprocessingModuleBuiltinsClinicProviders.RecvClinicProviderGen.INSTANCE;
+        }
     }
 
     @GenerateNodeFactory
     @Builtin(name = "send", minNumOfPositionalArgs = 2, parameterNames = {"handle", "data"}, os = PythonOS.PLATFORM_WIN32)
+    @ArgumentClinic(name = "handle", conversion = ArgumentClinic.ClinicConversion.Int)
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     abstract static class Send extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
-        int doit(VirtualFrame frame, Object handle, Object buffer,
+        static int doit(VirtualFrame frame, int handle, Object buffer,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                return posixLib.send(context.getPosixSupport(), castToJavaIntNode.execute(inliningTarget, handle), bytes, 0, bufferLib.getBufferLength(buffer), 0);
+                return posixLib.send(context.getPosixSupport(), handle, bytes, 0, bufferLib.getBufferLength(buffer), 0);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
@@ -140,20 +143,25 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "closesocket", minNumOfPositionalArgs = 1, parameterNames = {"handle"}, os = PythonOS.PLATFORM_WIN32)
-    abstract static class CloseSocket extends PythonUnaryBuiltinNode {
+    @ArgumentClinic(name = "handle", conversion = ArgumentClinic.ClinicConversion.Int)
+    abstract static class CloseSocket extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        PNone doit(VirtualFrame frame, Object handle,
+        PNone doit(VirtualFrame frame, int handle,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Bind Node inliningTarget,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.close(context.getPosixSupport(), castToJavaIntNode.execute(inliningTarget, handle));
+                posixLib.close(context.getPosixSupport(), handle);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MultiprocessingModuleBuiltinsClinicProviders.CloseSocketClinicProviderGen.INSTANCE;
         }
     }
 
