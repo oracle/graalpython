@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "7f0cb575a3f77f695185b16cb5e6ed355cc68a03",
+                "version": "79522be5e0ec46330a960d5517a6a91d7dadd96f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "7f0cb575a3f77f695185b16cb5e6ed355cc68a03",
+                "version": "79522be5e0ec46330a960d5517a6a91d7dadd96f",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
