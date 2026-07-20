@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.frame.FrameBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
@@ -108,6 +109,15 @@ public abstract class PRootNode extends RootNode {
     }
 
     public void updateCallerFlags(int flags) {
+        if (this instanceof BuiltinFunctionRootNode functionRootNode && !(functionRootNode.getFactory() instanceof FrameBuiltinsFactory.GetLocalsNodeFactory)) {
+            /*
+             * Our callee-side tracking of the caller flags is too broad and causes "poisoning" of common builtins that
+             * are calling many other things, like object.__getattribute__ or type.__new__. For materialized frames this
+             * is really bad for performance, so we just don't add this flag to builtin roots at all. They should
+             * normally get AST-inlined anyway after their caller transitions to cached.
+             */
+            flags &= ~CallerFlags.NEEDS_MATERIALIZED_LOCALS;
+        }
         callerFlagsAssumptionSet.updateCallerFlags(flags);
     }
 
