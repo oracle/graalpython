@@ -325,7 +325,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_str, isComplex = true)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     public abstract static class StrNode extends AbstractNumericUnaryBuiltin {
         public static final Spec spec = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
@@ -341,11 +341,6 @@ public final class FloatBuiltins extends PythonBuiltins {
         public static TruffleString doFormat(double d, FloatFormatter f) {
             return f.format(d).getResult();
         }
-    }
-
-    @Slot(value = SlotKind.tp_repr, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends StrNode {
     }
 
     @Builtin(name = J___FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})

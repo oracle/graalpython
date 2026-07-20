@@ -1191,7 +1191,7 @@ public final class PatternBuiltins extends PythonBuiltins {
             int n = 0;
             int pos = 0;
             boolean mustAdvance = false;
-            while ((count == 0 || n < count) && pos < stringLength) {
+            while ((count == 0 || n < count) && pos <= stringLength) {
                 final Object searchResult;
                 if (mustAdvance) {
                     searchResult = invokeExecMethodNodeMustAdvance.execute(inliningTarget, compiledRegexMustAdvance, input, pos);
