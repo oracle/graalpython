@@ -13,7 +13,9 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
+#if 0 // GraalPy change
 #include "pycore_freelist.h"             // _PyFreeListState
+#endif // GraalPy change
 #include "pycore_identifier.h"           // _Py_Identifier
 #include "pycore_dict_state.h"           // DICT_MAX_WATCHERS
 #include "pycore_object.h"               // PyManagedDictPointer

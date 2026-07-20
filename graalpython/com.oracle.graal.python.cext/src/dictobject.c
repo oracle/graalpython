@@ -131,7 +131,9 @@ As a consequence of this, split keys have a maximum size of 16.
 #endif // GraalPy change
 #include "pycore_critical_section.h"     // Py_BEGIN_CRITICAL_SECTION, Py_END_CRITICAL_SECTION
 #include "pycore_dict.h"                 // export _PyDict_SizeOf()
+#if 0 // GraalPy change
 #include "pycore_freelist.h"             // _PyFreeListState_GET()
+#endif // GraalPy change
 #include "pycore_gc.h"                   // _PyObject_GC_IS_TRACKED()
 #include "pycore_object.h"               // _PyObject_GC_TRACK(), _PyDebugAllocatorStats()
 #include "pycore_pyatomic_ft_wrappers.h" // FT_ATOMIC_LOAD_SSIZE_RELAXED

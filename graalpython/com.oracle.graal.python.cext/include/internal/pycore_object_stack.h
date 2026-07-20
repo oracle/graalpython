@@ -6,7 +6,9 @@
 #ifndef Py_INTERNAL_OBJECT_STACK_H
 #define Py_INTERNAL_OBJECT_STACK_H
 
+#if 0 // GraalPy change
 #include "pycore_freelist.h"        // _PyFreeListState
+#endif // GraalPy change
 
 #ifdef __cplusplus
 extern "C" {

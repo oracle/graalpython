@@ -13,7 +13,9 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
+#if 0 // GraalPy change
 #include "pycore_freelist.h"   // _PyFreeListState
+#endif // GraalPy change
 
 // GraalPy change
 #include "graalpy/handles.h"
