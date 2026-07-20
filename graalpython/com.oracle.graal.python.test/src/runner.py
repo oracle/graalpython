@@ -82,7 +82,7 @@ CURRENT_PLATFORM = f'{sys.platform}-{platform.machine()}'
 CURRENT_PLATFORM_KEYS = frozenset({CURRENT_PLATFORM})
 
 RUNNER_ENV = {}
-DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '--experimental-options --engine.Compilation=false'}
+DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '-X jit=0'}
 # The worker transport sends pickled data, so keep it on loopback only.
 WORKER_SERVER_HOST = '127.0.0.1'
 
@@ -93,12 +93,8 @@ if GITHUB_CI:
 
 # We leave the JIT enabled for the tests themselves, but disable it for subprocesses
 # noinspection PyUnresolvedReferences
-if IS_GRAALPY and __graalpython__.is_native and 'GRAAL_PYTHON_VM_ARGS' not in os.environ:
-    try:
-        subprocess.check_output([sys.executable, '--version'], env={**os.environ, **DISABLE_JIT_ENV})
-        RUNNER_ENV = DISABLE_JIT_ENV
-    except subprocess.CalledProcessError:
-        pass
+if IS_GRAALPY and 'GRAAL_PYTHON_VM_ARGS' not in os.environ:
+    RUNNER_ENV = DISABLE_JIT_ENV
 
 
 class Logger:
