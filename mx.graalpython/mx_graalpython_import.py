@@ -180,6 +180,7 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/pyhash.c": CopyFrom("Python/pyhash.c"),
     "graalpython/com.oracle.graal.python.cext/src/thread.c": CopyFrom("Python/thread.c"),
     "graalpython/com.oracle.graal.python.cext/src/thread_nt.h": CopyFrom("Python/thread_nt.h"),
+    "graalpython/com.oracle.graal.python.cext/src/condvar.h": CopyFrom("Python/condvar.h"),
     "graalpython/com.oracle.graal.python.cext/src/thread_pthread.h": CopyFrom("Python/thread_pthread.h"),
     "graalpython/com.oracle.graal.python.cext/src/thread_pthread_stubs.h": CopyFrom("Python/thread_pthread_stubs.h"),
     "graalpython/com.oracle.graal.python.cext/src/_warnings.c": CopyFrom("Python/_warnings.c"),
