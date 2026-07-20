@@ -3,6 +3,7 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
+ // GraalPy note: we don't need anything from this file ourselves, but cython unconditionally includes it
 #ifndef Py_INTERNAL_FRAME_H
 #define Py_INTERNAL_FRAME_H
 #ifdef __cplusplus
