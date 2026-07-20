@@ -83,7 +83,7 @@ def repair_wheels(wheelhouse):
         elif sys.platform == "linux":
             ensure_installed("auditwheel")
             if shutil.which("patchelf") is None:
-                ensure_installed("patchelf")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "patchelf"])
             p = subprocess.run(
                 [
                     join(dirname(sys.executable), "auditwheel"),
