@@ -16,6 +16,7 @@
 #endif
 
 #ifdef MS_WINDOWS
+#  include <io.h>                 // _get_osfhandle()
 #  include <malloc.h>
 #  include <windows.h>
 #  include <winioctl.h>             // FILE_DEVICE_* constants

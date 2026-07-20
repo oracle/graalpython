@@ -57,7 +57,7 @@
 // relevant for code that is compiled without bitcode and will run only
 // natively. Since the pythonjni library contains all the trampolines to call
 // into the python-native.dll in this case, we must only depend on that.
-#  pragma comment(lib, "python312.lib")
+#  pragma comment(lib, "python313.lib")
 # endif
 #endif
 
@@ -167,6 +167,8 @@
 #cmakedefine HAVE_UTIME_H 1
 #cmakedefine HAVE_SIGNAL_H 1
 #cmakedefine HAVE_FCNTL_H 1
+#cmakedefine HAVE_IO_H 1
+#cmakedefine HAVE_PROCESS_H 1
 #cmakedefine HAVE_WCHAR_H 1
 #cmakedefine HAVE_UNISTD_H 1
 #cmakedefine HAVE_PTHREAD_H 1
@@ -189,4 +191,3 @@
 
 
 #endif /*Py_PYCONFIG_H*/
-

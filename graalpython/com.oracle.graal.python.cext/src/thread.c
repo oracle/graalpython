@@ -19,6 +19,7 @@
 #include "pycore_structseq.h"     // _PyStructSequence_FiniBuiltin()
 #endif // GraalPy change
 #include "pycore_pythread.h"      // _POSIX_THREADS
+#include "pycore_condvar.h"       // PyMUTEX_T, PyCOND_T
 
 #ifndef DONT_HAVE_STDIO_H
 #  include <stdio.h>

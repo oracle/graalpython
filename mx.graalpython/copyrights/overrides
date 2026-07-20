@@ -447,6 +447,7 @@ graalpython/com.oracle.graal.python.cext/src/getcompiler.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getversion.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/import.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/initconfig.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/invalid_parameter_handler.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/lock.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/longobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/memoryobject.c,python.copyright

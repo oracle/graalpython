@@ -196,7 +196,7 @@ PyImport_GetModuleDict(void)
 }
 #endif // GraalPy change
 
-int
+PyAPI_FUNC(int)
 _PyImport_SetModule(PyObject *name, PyObject *m)
 {
     // GraalPy change: different implementation
@@ -4298,7 +4298,7 @@ _PyImport_FiniExternal(PyInterpreterState *interp)
 /* module helpers */
 /******************/
 
-PyObject *
+PyAPI_FUNC(PyObject *)
 _PyImport_GetModuleAttr(PyObject *modname, PyObject *attrname)
 {
     PyObject *mod = PyImport_Import(modname);
@@ -4310,7 +4310,7 @@ _PyImport_GetModuleAttr(PyObject *modname, PyObject *attrname)
     return result;
 }
 
-PyObject *
+PyAPI_FUNC(PyObject *)
 _PyImport_GetModuleAttrString(const char *modname, const char *attrname)
 {
     PyObject *pmodname = PyUnicode_FromString(modname);

@@ -74,6 +74,7 @@ if (MSVC)
     /wd4820 # padding added after data member
     /wd4100 # unreferenced formal parameter
     /wd4200 # nonstandard extension used: zero-sized array in struct/union
+    /wd4210 # nonstandard extension used: function given file scope
     /wd4996 # This function or variable may be unsafe ... see _CRT_SECURE_NO_WARNINGS
     /wd4668 # ... is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
     /wd4115 # named type definition in parentheses
@@ -82,10 +83,13 @@ if (MSVC)
     /wd4047 # 'int64_t' differs in levels of indirection from 'char []' / 'void *'
     /wd4242 # conversion from 'int' to 'char', possible loss of data
     /wd4244 # conversion from 'long' to 'char', possible loss of data
+    /wd4245 # conversion from signed to unsigned type
     /wd4267 # conversion from 'size_t' to 'int', possible loss of data
     /wd4127 # conditional expression is constant
+    /wd4130 # logical operation on address of string constant
     /wd4702 # unreachable code
     /wd4101 # unreferenced local variable
+    /wd4189 # local variable is initialized but not referenced
     /wd4456 # declaration hides previous local declaration
     /wd4459 # declaration hides global declaration
     /wd4061 # enumerator X in switch of enum Y is not explicitly handled by a case label
@@ -148,7 +152,7 @@ set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/compile.c ${CAPI_SRC}/thread.c
               ${CAPI_SRC}/pystrtod.c ${CAPI_SRC}/tupleobject.c ${CAPI_SRC}/iterobject.c ${CAPI_SRC}/sliceobject.c
               ${CAPI_SRC}/classobject.c ${CAPI_SRC}/floatobject.c ${CAPI_SRC}/namespaceobject.c ${CAPI_SRC}/_warnings.c
               ${CAPI_SRC}/dictobject.c ${CAPI_SRC}/pystate.c ${CAPI_SRC}/mysnprintf.c ${CAPI_SRC}/ceval.c
-              ${CAPI_SRC}/getcompiler.c ${CAPI_SRC}/pyhash.c ${CAPI_SRC}/fileutils.c
+              ${CAPI_SRC}/getcompiler.c ${CAPI_SRC}/pyhash.c ${CAPI_SRC}/fileutils.c ${CAPI_SRC}/invalid_parameter_handler.c
               ${CAPI_SRC}/modsupport.c ${CAPI_SRC}/context.c ${CAPI_SRC}/abstract.c ${CAPI_SRC}/frameobject.c
               ${CAPI_SRC}/posixmodule.c ${CAPI_SRC}/exceptions.c ${CAPI_SRC}/pyctype.c
               ${CAPI_SRC}/mystrtoul.c ${CAPI_SRC}/weakrefobject.c ${CAPI_SRC}/gcmodule.c
