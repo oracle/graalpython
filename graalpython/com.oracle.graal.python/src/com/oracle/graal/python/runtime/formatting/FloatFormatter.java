@@ -252,8 +252,14 @@ public class FloatFormatter extends InternalFormat.Formatter {
             uppercase();
         }
 
-        // If required to, group the whole-part digits.
-        groupWholePartIfRequired();
+        if (!Double.isFinite(value)) {
+            // Infinity and NaN have no integral part. In particular, sign-aware zero padding must
+            // not apply grouping to the padding inserted before the marker.
+            actualGrouping = Spec.NONE;
+        } else {
+            // If required to, group the whole-part digits.
+            groupWholePartIfRequired();
+        }
 
         return this;
     }

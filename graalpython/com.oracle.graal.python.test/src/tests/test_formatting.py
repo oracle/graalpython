@@ -123,6 +123,8 @@ def test_complex_formatting():
     assert format(MyComplex(3j), "") == "42"
     assert format(MyComplex(3j), " <5") == "3j   "
     assert format(complex(2**53 + 1, 0)) == '(9007199254740992+0j)'
+    assert format(1j, "+.1") == "+1j"
+    assert format(1j, " .2") == " 1j"
     assert format(1000j, ",.4") == "1,000j"
     assert format(1000+2000j, ",") == "(1,000+2,000j)"
     assert format(1000j, "#") == "1000.j"
