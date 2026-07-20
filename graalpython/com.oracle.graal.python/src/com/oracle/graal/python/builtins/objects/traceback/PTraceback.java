@@ -61,7 +61,7 @@ public final class PTraceback extends PythonBuiltinObject {
     /**
      * Only for Bytecode DSL. The traceback may represent the catch BCI, in which case we need the
      * {@link BytecodeNode} that executed the catch BCI, which may not necessarily be the one
-     * accessible from in {@link PFrame#getLocation()}.
+     * accessible from in {@link PFrame#getBytecodeNode()}.
      */
     private BytecodeNode bytecodeNode = null;
     private int lasti = -1;

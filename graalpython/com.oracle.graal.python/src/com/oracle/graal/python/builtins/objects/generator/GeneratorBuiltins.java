@@ -207,7 +207,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 BytecodeLocation location = self.getCurrentLocation();
                 if (location != null) {
                     pyFrame.setBci(location.getBytecodeIndex());
-                    pyFrame.setLocation(location.getBytecodeNode());
+                    pyFrame.setBytecodeNode(location.getBytecodeNode());
                     pyFrame.resetLine();
                 } else {
                     pyFrame.setBci(0);

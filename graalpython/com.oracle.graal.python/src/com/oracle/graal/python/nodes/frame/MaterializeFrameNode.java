@@ -98,8 +98,8 @@ public abstract class MaterializeFrameNode extends Node {
      * Like {@link #executeOnStack(boolean, boolean, Frame)}, but the current {@link BytecodeNode}
      * is passed as argument to avoid its lookup. Can be used if this node is uncached.
      */
-    public final PFrame executeOnStack(Frame frameToMaterialize, BytecodeNode location, boolean markAsEscaped, boolean forceSync) {
-        return execute(location, markAsEscaped, forceSync, frameToMaterialize);
+    public final PFrame executeOnStack(Frame frameToMaterialize, BytecodeNode bytecodeNode, boolean markAsEscaped, boolean forceSync) {
+        return execute(bytecodeNode, markAsEscaped, forceSync, frameToMaterialize);
     }
 
     /**
@@ -109,15 +109,13 @@ public abstract class MaterializeFrameNode extends Node {
      * root nodes, we fetch the root node from the frame descriptor.
      */
     public final PFrame executeOnStack(boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
-        Node location = this;
+        BytecodeNode bytecodeNode = BytecodeNode.get(this);
         if (!this.isAdoptable()) {
             // This can happen in the uncached interpreter, but there the UncachedBytecodeNode
             // should set itself as encapsulating node before it starts executing its bytecode
-            location = EncapsulatingNodeReference.getCurrent().get();
-            assert location != null;
-            assert BytecodeNode.get(location) != null;
+            bytecodeNode = BytecodeNode.get(EncapsulatingNodeReference.getCurrent().get());
         }
-        return execute(location, markAsEscaped, forceSync, frameToMaterialize);
+        return execute(bytecodeNode, markAsEscaped, forceSync, frameToMaterialize);
     }
 
     /**
@@ -134,92 +132,83 @@ public abstract class MaterializeFrameNode extends Node {
         assert frameToMaterialize.getArguments().length != 2 : "caller forgot to unwrap continuation frame";
         assert !(location instanceof PBytecodeDSLRootNode) : String.format("Materialized frame: location must not be PBytecodeDSLRootNode, was: %s",
                         location);
-        return executeImpl(location, markAsEscaped, forceSync, frameToMaterialize);
+        BytecodeNode bytecodeNode = BytecodeNode.get(location);
+        return executeImpl(bytecodeNode, markAsEscaped, forceSync, frameToMaterialize);
     }
 
-    abstract PFrame executeImpl(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
+    abstract PFrame executeImpl(BytecodeNode bytecodeNode, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!isGeneratorFrame(frameToMaterialize)", "!hasCustomLocals(frameToMaterialize)"})
-    static PFrame freshPFrameCachedFD(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
+    static PFrame freshPFrameCachedFD(BytecodeNode bytecodeNode, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Bind PythonLanguage language,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
-        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getFunctionOrCodeObject(frameToMaterialize), null);
-        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, location, syncValuesNode);
+        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), bytecodeNode, PArguments.getFunctionOrCodeObject(frameToMaterialize), null);
+        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, bytecodeNode, syncValuesNode);
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!isGeneratorFrame(frameToMaterialize)", "hasCustomLocals(frameToMaterialize)"})
-    static PFrame freshPFrameCustomLocals(Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync,
+    static PFrame freshPFrameCustomLocals(BytecodeNode bytecodeNode, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync,
                     Frame frameToMaterialize,
                     @Bind PythonLanguage language) {
         Object customLocals = PArguments.getSpecialArgument(frameToMaterialize);
-        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getFunctionOrCodeObject(frameToMaterialize), customLocals);
-        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
+        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), bytecodeNode, PArguments.getFunctionOrCodeObject(frameToMaterialize), customLocals);
+        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, bytecodeNode, null);
     }
 
     @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "isGeneratorFrame(frameToMaterialize)"})
-    static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize) {
+    static PFrame freshPFrameForGenerator(BytecodeNode bytecodeNode, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize) {
         MaterializedFrame generatorFrame = PGenerator.getGeneratorFrame(frameToMaterialize);
         PFrame.Reference frameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
-        PFrame escapedFrame = materializeGeneratorFrame(location, generatorFrame, PArguments.getFunctionObject(frameToMaterialize), PArguments.getGlobals(frameToMaterialize), frameRef);
-        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
+        PFrame escapedFrame = materializeGeneratorFrame(bytecodeNode, generatorFrame, PArguments.getFunctionObject(frameToMaterialize), PArguments.getGlobals(frameToMaterialize), frameRef);
+        return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, bytecodeNode, null);
     }
 
     @Specialization(guards = "getPFrame(frameToMaterialize) != null")
-    static PFrame alreadyEscapedFrame(@SuppressWarnings("unused") Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
+    static PFrame alreadyEscapedFrame(BytecodeNode bytecodeNode, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
         pyFrame.setLastCallerFlags(getCallerFlags(forceSync));
         if (forceSync) {
-            syncValuesNode.execute(pyFrame, frameToMaterialize, location);
+            syncValuesNode.execute(pyFrame, frameToMaterialize, bytecodeNode);
         }
         if (markAsEscaped) {
             pyFrame.getRef().markAsEscaped();
         }
-        processBytecodeFrame(frameToMaterialize, pyFrame, location);
+        processBytecodeFrame(frameToMaterialize, pyFrame, bytecodeNode);
         return pyFrame;
     }
 
-    public static PFrame materializeGeneratorFrame(Node location, MaterializedFrame generatorFrame, PFunction generatorFunction, PythonObject globals, PFrame.Reference frameRef) {
-        return materializeGeneratorFrame(PythonLanguage.get(location), location, generatorFrame, generatorFunction, globals, frameRef);
+    public static PFrame materializeGeneratorFrame(BytecodeNode bytecodeNode, MaterializedFrame generatorFrame, PFunction generatorFunction, PythonObject globals, PFrame.Reference frameRef) {
+        return materializeGeneratorFrame(PythonLanguage.get(bytecodeNode), bytecodeNode, generatorFrame, generatorFunction, globals, frameRef);
     }
 
-    public static PFrame materializeGeneratorFrame(PythonLanguage language, Node location, MaterializedFrame generatorFrame, PFunction generatorFunction, PythonObject globals,
+    public static PFrame materializeGeneratorFrame(PythonLanguage language, BytecodeNode bytecodeNode, MaterializedFrame generatorFrame, PFunction generatorFunction, PythonObject globals,
                     PFrame.Reference frameRef) {
-        PFrame escapedFrame = PFactory.createPFrame(language, frameRef, location, generatorFunction, null);
-        BytecodeNode bytecodeNode = BytecodeNode.get(location);
-        assert bytecodeNode != null : location;
+        PFrame escapedFrame = PFactory.createPFrame(language, frameRef, bytecodeNode, generatorFunction, null);
         escapedFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, generatorFrame), true);
         escapedFrame.setGlobals(globals);
         frameRef.setPyFrame(escapedFrame);
         return escapedFrame;
     }
 
-    private static void processBytecodeFrame(Frame frameToMaterialize, PFrame pyFrame, Node location) {
+    private static void processBytecodeFrame(Frame frameToMaterialize, PFrame pyFrame, BytecodeNode bytecodeNode) {
         Object info = frameToMaterialize.getFrameDescriptor().getInfo();
+        pyFrame.setBytecodeNode(bytecodeNode);
         if (info == null) {
-            pyFrame.setLocation(location);
             return;
         }
-        BytecodeNode bytecodeNode;
-        assert !(location instanceof PBytecodeDSLRootNode); // we need BytecodeNode or its child
-        CompilerAsserts.partialEvaluationConstant(location);
-        bytecodeNode = BytecodeNode.get(location);
+        CompilerAsserts.partialEvaluationConstant(bytecodeNode);
         if (bytecodeNode != null) {
             pyFrame.setBci(bytecodeNode.getBytecodeIndex(frameToMaterialize));
-            pyFrame.setLocation(bytecodeNode);
             pyFrame.resetLine();
         } else {
-            assert location == PythonLanguage.get(null).unavailableSafepointLocation : String.format("(%s) %s, root: %s",
-                            location != null ? location.getClass().getSimpleName() : "null",
-                            location, location != null ? location.getRootNode() : "null");
             pyFrame.setBci(-1);
-            pyFrame.setLocation(location);
             pyFrame.resetLine();
         }
     }
 
     private static PFrame doEscapeFrame(Frame frameToMaterialize, PFrame escapedFrame, boolean markAsEscaped, boolean forceSync,
-                    Node location, SyncFrameValuesNode syncValuesNode) {
+                    BytecodeNode bytecodeNode, SyncFrameValuesNode syncValuesNode) {
         PFrame.Reference topFrameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
         topFrameRef.setPyFrame(escapedFrame);
 
@@ -227,12 +216,12 @@ public abstract class MaterializeFrameNode extends Node {
         escapedFrame.setGlobals(PArguments.getGlobals(frameToMaterialize));
         escapedFrame.setLastCallerFlags(getCallerFlags(forceSync || syncValuesNode == null));
         if (forceSync) {
-            syncValuesNode.execute(escapedFrame, frameToMaterialize, location);
+            syncValuesNode.execute(escapedFrame, frameToMaterialize, bytecodeNode);
         }
         if (markAsEscaped) {
             topFrameRef.markAsEscaped();
         }
-        processBytecodeFrame(frameToMaterialize, escapedFrame, location);
+        processBytecodeFrame(frameToMaterialize, escapedFrame, bytecodeNode);
         return escapedFrame;
     }
 
@@ -259,11 +248,10 @@ public abstract class MaterializeFrameNode extends Node {
     @ImportStatic(PGenerator.class)
     public abstract static class SyncFrameValuesNode extends Node {
 
-        public abstract void execute(PFrame pyFrame, Frame frameToSync, Node location);
+        public abstract void execute(PFrame pyFrame, Frame frameToSync, BytecodeNode location);
 
         @Specialization(guards = {"pyFrame.syncsLocals()", "!isGeneratorFrame(frameToSync)"})
-        static void doSync(PFrame pyFrame, Frame frameToSync, Node location) {
-            BytecodeNode bytecodeNode = BytecodeNode.get(location);
+        static void doSync(PFrame pyFrame, Frame frameToSync, BytecodeNode bytecodeNode) {
             if (bytecodeNode != null) {
                 // TODO: avoid always making a copy, if a BytecodeFrame is set, just update it
                 BytecodeFrame copiedFrame = bytecodeNode.createCopiedFrame(0, frameToSync);
@@ -272,15 +260,13 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         @Specialization(guards = {"pyFrame.syncsLocals()", "isGeneratorFrame(frameToSync)"})
-        static void doGenerator(PFrame pyFrame, Frame frameToSync, Node location) {
-            BytecodeNode bytecodeNode = BytecodeNode.get(location);
-            assert bytecodeNode != null : location;
+        static void doGenerator(PFrame pyFrame, Frame frameToSync, BytecodeNode bytecodeNode) {
             pyFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, (MaterializedFrame) frameToSync), true);
         }
 
         @Specialization(guards = "!pyFrame.syncsLocals()")
         @SuppressWarnings("unused")
-        static void doNothing(PFrame pyFrame, Frame frameToSync, Node location) {
+        static void doNothing(PFrame pyFrame, Frame frameToSync, BytecodeNode bytecodeNode) {
             // nothing to do
         }
     }

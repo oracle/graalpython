@@ -70,11 +70,7 @@ public final class PFrame extends PythonBuiltinObject {
     private PythonObject globals;
     private final Reference virtualFrameInfo;
     private final Thread thread;
-    /**
-     * The location must be an AST node connected to the {@link BytecodeNode} that was executed at
-     * the time when the BCI was captured.
-     */
-    private Node location;
+    private BytecodeNode bytecodeNode;
     private PFunction function;
     private PCode code;
     private int line = UNINITIALIZED_LINE;
@@ -190,10 +186,10 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object functionOrCode, Object customLocals) {
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, BytecodeNode bytecodeNode, Object functionOrCode, Object customLocals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
-        this.location = location;
+        this.bytecodeNode = bytecodeNode;
         if (functionOrCode instanceof PFunction function) {
             this.function = function;
         } else if (functionOrCode instanceof PCode code) {
@@ -211,11 +207,10 @@ public final class PFrame extends PythonBuiltinObject {
         // TODO: frames: extract the information from the threadState object
         this.globals = globals;
         this.code = code;
-        this.location = code.getRootNode();
-        Reference curFrameInfo = new Reference(location != null ? location.getRootNode() : null, null);
+        Reference curFrameInfo = new Reference(bytecodeNode != null ? bytecodeNode.getRootNode() : null, null);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
-        this.line = this.location == null ? code.getFirstLineNo() : UNINITIALIZED_LINE;
+        this.line = this.bytecodeNode == null ? code.getFirstLineNo() : UNINITIALIZED_LINE;
         this.customLocals = customLocals;
         // This is a synthetic frame, there will be no sync, mark everything as current
         this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
@@ -322,13 +317,11 @@ public final class PFrame extends PythonBuiltinObject {
     @TruffleBoundary
     public int getLine() {
         if (line == UNINITIALIZED_LINE) {
-            if (location == null) {
+            if (bytecodeNode == null) {
                 line = -1;
             } else {
-                if (location instanceof BytecodeNode bytecodeNode) {
-                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) bytecodeNode.getRootNode();
-                    return rootNode.bciToLine(getBci(), bytecodeNode);
-                }
+                PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) bytecodeNode.getRootNode();
+                return rootNode.bciToLine(getBci(), bytecodeNode);
             }
         }
         return line;
@@ -360,16 +353,12 @@ public final class PFrame extends PythonBuiltinObject {
         this.globals = globals;
     }
 
-    public void setLocation(Node location) {
-        this.location = location;
-    }
-
-    public Node getLocation() {
-        return location;
+    public void setBytecodeNode(BytecodeNode bytecodeNode) {
+        this.bytecodeNode = bytecodeNode;
     }
 
     public BytecodeNode getBytecodeNode() {
-        return BytecodeNode.get(location);
+        return bytecodeNode;
     }
 
     public int getBci() {
@@ -383,7 +372,7 @@ public final class PFrame extends PythonBuiltinObject {
 
     public int getLasti() {
         assert CallerFlags.needsLasti(lastCallerFlags) : "Missing frame location sync";
-        return bciToLasti(bci, location);
+        return bciToLasti(bci, bytecodeNode);
     }
 
     @TruffleBoundary

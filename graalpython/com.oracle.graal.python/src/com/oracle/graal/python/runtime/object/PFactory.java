@@ -255,6 +255,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -840,7 +841,7 @@ public final class PFactory {
      * Frames, traces and exceptions
      */
 
-    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, Object functionOrCode, Object customLocals) {
+    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, BytecodeNode location, Object functionOrCode, Object customLocals) {
         return new PFrame(language, frameInfo, location, functionOrCode, customLocals);
     }
 

@@ -419,12 +419,12 @@ public abstract class ExecutionContext {
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             CompilerAsserts.partialEvaluationConstant(node);
             if (node.getFrameEscapedProfile().profile(info.isEscaped())) {
-                exitEscaped(frame, node, location, info);
+                exitEscaped(frame, location, info);
             }
         }
 
         @InliningCutoff
-        private void exitEscaped(VirtualFrame frame, PRootNode node, Node location, Reference info) {
+        private void exitEscaped(VirtualFrame frame, Node location, Reference info) {
             if (!everEscaped) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 everEscaped = true;
