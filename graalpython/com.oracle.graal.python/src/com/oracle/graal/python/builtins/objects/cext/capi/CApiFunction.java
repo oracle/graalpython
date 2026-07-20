@@ -1018,7 +1018,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "_PySlice_GetLongIndices", ret = Int, args = {PySliceObject, PyObject, PyObjectPtr, PyObjectPtr, PyObjectPtr}, call = NotImplemented)
     @CApiBuiltin(name = "_PyStack_AsDict", ret = PyObject, args = {PyObjectConstPtr, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "_PyThread_CurrentFrames", ret = PyObject, args = {}, call = NotImplemented)
-    @CApiBuiltin(name = "_PyType_LookupRef", ret = PyObjectReturn, args = {PyTypeObjectRawPointer, PyObjectReturn}, call = NotImplemented)
     @CApiBuiltin(name = "_PyUnicodeWriter_Dealloc", ret = Void, args = {_PYUNICODEWRITER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyUnicodeWriter_Finish", ret = PyObject, args = {_PYUNICODEWRITER_PTR}, call = CImpl)
     @CApiBuiltin(name = "_PyUnicodeWriter_Init", ret = Void, args = {_PYUNICODEWRITER_PTR}, call = CImpl)

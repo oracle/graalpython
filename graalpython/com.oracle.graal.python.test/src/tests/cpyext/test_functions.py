@@ -471,6 +471,32 @@ class TestPyObject(CPyExtTestCase):
         argspec="OO",
     )
 
+    test__PyType_LookupRef = CPyExtFunction(
+        lambda args: getattr(*args, None),
+        lambda: (
+            (TypeWithAttr, "attr"),
+            (SubtypeWithAttr, "attr"),
+            (NativeTypeWithAttr, "attr"),
+            (TypeWithAttr, "missing"),
+        ),
+        arguments=["PyTypeObject* type", "PyObject* name"],
+        argspec="OO",
+        resultspec="N",
+        callfunction="test_lookup_ref",
+        code="""
+        static PyObject *
+        test_lookup_ref(PyTypeObject *type, PyObject *name)
+        {
+#if PY_VERSION_HEX >= 0x030D0000
+            PyObject *result = _PyType_LookupRef(type, name);
+#else
+            PyObject *result = Py_XNewRef(_PyType_Lookup(type, name));
+#endif
+            return result != NULL ? result : Py_NewRef(Py_None);
+        }
+        """,
+    )
+
     def setattrstring(args):
         setattr(*args)
         return 0
