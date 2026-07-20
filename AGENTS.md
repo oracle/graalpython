@@ -35,6 +35,7 @@ It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib
 
 ## CONVENTIONS (DEVIATIONS)
 - `mx` is the primary build/test entrypoint; suite definition lives in `mx.graalpython/suite.py`.
+- By default always pass `--java-home=lookup:default` to `mx` to select the default JDK.
 - `black` is configured but intentionally **disabled** for this repo (root `pyproject.toml`); line length is 120 and version locked to `23` for consistency.
 - Formatting/linting is enforced via **pre-commit** with repo-specific hooks (Eclipse formatter, checkstyle, copyright), and pylint only on `mx.graalpython/*.py`.
 - Large generated/build outputs exist in-tree (`mxbuild/`, `*.dist/`); do not use them as the source of truth when navigating code.
@@ -71,7 +72,6 @@ It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib
   `mx python-gate --tags style`
 * Building standalones for benchmarking
   - use `mx --env native-ee sforceimports && mx --env native-ee checkout-downstream compiler graal-enterprise` to get the right revisions
-  - use `mx -p ../graal/vm fetch-jdk -jdk-id labsjdk-ce-latest` and set JAVA_HOME as per that command's output
   - use `mx --env jvm-ee-libgraal` and `mx --env native-ee` to build the JAVA and NATIVE standalone distributions
 
 ## NOTES

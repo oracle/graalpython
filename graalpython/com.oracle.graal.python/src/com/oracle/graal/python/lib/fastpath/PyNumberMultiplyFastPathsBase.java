@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.objects.ints.IntBuiltins.MulNode.
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
-import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
+import com.oracle.graal.python.nodes.truffle.PythonIntToLongTypes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -58,7 +58,7 @@ import com.oracle.truffle.api.nodes.Node;
  * generated code.
  */
 @GenerateCached(false)
-@TypeSystemReference(PythonIntegerTypes.class)
+@TypeSystemReference(PythonIntToLongTypes.class)
 public abstract class PyNumberMultiplyFastPathsBase extends BinaryOpNode {
 
     /*
