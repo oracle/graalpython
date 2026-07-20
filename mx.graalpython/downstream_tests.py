@@ -230,10 +230,8 @@ def downstream_test_cython(graalpy, testdir):
     run([graalpy, '-m', 'venv', str(venv)])
     if not CI:
         replace_in_file(src / 'Tools/ci-run.sh', r'^\s*sudo', '# sudo', flags=re.MULTILINE)
-        try:
-            run([graalpy, '--version', '--experimental-options', '--engine.Compilation=false'])
-        except subprocess.CalledProcessError:
-            replace_in_file(src / 'Tools/ci-run.sh', r'--engine\.Compilation=false', '')
+        replace_in_file(src / 'Tools/ci-run.sh', r'--engine.Compilation=false', '-X jit=0')
+        replace_in_file(src / 'Tools/ci-run.sh', r'--no-cache-dir', '')
     run_in_venv(venv, ["bash", "./Tools/ci-run.sh"], cwd=src, env=env)
 
 
