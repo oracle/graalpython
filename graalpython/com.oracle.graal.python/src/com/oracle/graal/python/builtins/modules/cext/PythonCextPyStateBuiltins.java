@@ -93,6 +93,22 @@ public final class PythonCextPyStateBuiltins {
         return PythonContext.get(null).ownsGil() ? 1 : 0;
     }
 
+    /*
+     * GraalPy associates one native thread state with each Java thread and considers it current
+     * exactly while that thread owns the GIL. Therefore, within GraalPy's thread-state model,
+     * swapping out the current state is equivalent to PyEval_SaveThread() and swapping a non-null
+     * state back in is equivalent to PyEval_RestoreThread(). Unlike CPython, GraalPy cannot install
+     * an arbitrary native thread-state pointer independently of the Java thread state.
+     */
+    @CApiBuiltin(ret = PyThreadState, args = {PyThreadState}, acquireGil = false, call = Direct)
+    static long PyThreadState_Swap(long newThreadState) {
+        long oldThreadState = PythonContext.get(null).ownsGil() ? PythonCextCEvalBuiltins.PyEval_SaveThread() : NULLPTR;
+        if (newThreadState != NULLPTR) {
+            PythonCextCEvalBuiltins.PyEval_RestoreThread(newThreadState);
+        }
+        return oldThreadState;
+    }
+
     @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
     static int GraalPyPrivate_GILState_Ensure() {
         boolean acquired = GilNode.getUncached().acquire();

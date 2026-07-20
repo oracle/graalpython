@@ -42,6 +42,26 @@ from . import CPyExtTestCase, CPyExtFunction, CPyExtType
 
 
 class TestPystate(CPyExtTestCase):
+    test_PyThreadState_Swap = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            tuple(),
+        ),
+        code='''PyObject* wrap_PyThreadState_Swap(PyObject* ignored) {
+            PyThreadState *before = PyThreadState_GetUnchecked();
+            PyThreadState *old = PyThreadState_Swap(NULL);
+            int released = !PyGILState_Check();
+            PyThreadState *without_gil = PyThreadState_Swap(before);
+            int restored = PyGILState_Check();
+            return PyBool_FromLong(old == before && released && without_gil == NULL && restored);
+        }
+        ''',
+        resultspec="O",
+        argspec="",
+        arguments=["PyObject* ignored"],
+        callfunction="wrap_PyThreadState_Swap",
+    )
+
     test_PyThreadState_GetDict = CPyExtFunction(
         lambda args: type({}),
         lambda: (
