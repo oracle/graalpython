@@ -361,12 +361,13 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
             # with a patch intended for a binary distribution, because in the source
             # distribution the actual deployed sources may be in a subdirectory (typically "src")
             location = os.path.join(location, subdir)
-    if not rule or rule.get('autopatch', True):
-        import autopatch_capi
-        import autopatch_cargo
+        if not rule or rule.get('autopatch', True):
+            import autopatch_capi
+            import autopatch_cargo
 
-        autopatch_capi.auto_patch_tree(location)
-        autopatch_cargo.auto_patch_tree(cargo_location, get_cargo_patch_repository())
+            autopatch_capi.auto_patch_tree(location)
+            autopatch_cargo.auto_patch_tree(cargo_location, get_cargo_patch_repository())
+
     if rule:
         if patch := rule.get('patch'):
             with repository.resolve_patch(patch) as patch_path:
