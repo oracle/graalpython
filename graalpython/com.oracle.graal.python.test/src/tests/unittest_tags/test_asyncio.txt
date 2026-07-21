@@ -156,7 +156,7 @@ test.test_asyncio.test_events.ProactorEventLoopTests.test_connect_accepted_socke
 test.test_asyncio.test_events.ProactorEventLoopTests.test_create_datagram_endpoint_sock @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_events.ProactorEventLoopTests.test_create_server_multiple_hosts_ipv4 @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_events.ProactorEventLoopTests.test_create_server_multiple_hosts_ipv6 @ win32-AMD64,win32-AMD64-github
-test.test_asyncio.test_events.ProactorEventLoopTests.test_run_in_executor @ win32-AMD64-github
+test.test_asyncio.test_events.ProactorEventLoopTests.test_run_in_executor @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_events.ProactorEventLoopTests.test_run_until_complete @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_events.ProactorEventLoopTests.test_run_until_complete_stopped @ win32-AMD64,win32-AMD64-github
 test.test_asyncio.test_events.ProactorEventLoopTests.test_subprocess_exec_invalid_args @ win32-AMD64,win32-AMD64-github
