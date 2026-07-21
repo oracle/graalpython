@@ -95,7 +95,7 @@ def get_boolean_env(name, default=False):
 SUITE = cast(mx.SourceSuite, mx.suite('graalpython'))
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 
-GRAALPY_ABI_VERSION = 'graalpy252'
+GRAALPY_ABI_VERSION = 'graalpy253'
 GRAALPY_ABIFLAGS = os.environ.get('GRAALPY_ABIFLAGS', '')
 if not re.fullmatch(r'[A-Za-z0-9_]*', GRAALPY_ABIFLAGS):
     mx.abort('GRAALPY_ABIFLAGS may only contain ASCII letters, digits, and underscores')
