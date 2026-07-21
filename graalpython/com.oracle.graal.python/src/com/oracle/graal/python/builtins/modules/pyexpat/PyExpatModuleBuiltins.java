@@ -104,6 +104,7 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
         PythonBuiltinClass expatErrorType = core.lookupType(PythonBuiltinClassType.PyExpatError);
         addBuiltinConstant("error", expatErrorType);
         addBuiltinConstant("ExpatError", expatErrorType);
+        addBuiltinConstant("XMLParserType", core.lookupType(PythonBuiltinClassType.XMLParser));
 
         PythonModule errors = PFactory.createPythonModule(toTruffleStringUncached("pyexpat.errors"));
         PDict codes = PFactory.createDict(language);
