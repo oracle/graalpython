@@ -92,12 +92,17 @@ public final class WinapiModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    /*
+     * Managed fallback for contexts without native access. With native access, Python3Core loads
+     * modules/_winapi.py into this module and its CloseHandle definition replaces this builtin.
+     */
     @Builtin(name = "CloseHandle", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseHandleNode extends PythonBuiltinNode {
         @Specialization
-        static Object closeHandle(@SuppressWarnings("unused") Object handle) {
+        static PNone closeHandle(@SuppressWarnings("unused") Object handle) {
             return PNone.NONE;
         }
     }
+
 }

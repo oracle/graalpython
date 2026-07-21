@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_POSIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -78,7 +77,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "nt", isEager = true)
+@CoreFunctions(defineModule = "nt", isEager = true, os = PythonOS.PLATFORM_WIN32)
 public final class NtModuleBuiltins extends PythonBuiltins {
 
     @Override
@@ -89,11 +88,7 @@ public final class NtModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            core.removeBuiltinModule(T_POSIX);
-        } else {
-            core.removeBuiltinModule(T_NT);
-        }
+        core.removeBuiltinModule(T_POSIX);
     }
 
     @Builtin(name = "_getfullpathname", minNumOfPositionalArgs = 1, parameterNames = {"path"})

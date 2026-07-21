@@ -56,6 +56,7 @@ import java.util.concurrent.Semaphore;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -129,6 +130,10 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("ITIMER_VIRTUAL", ITIMER_VIRTUAL);
         addBuiltinConstant("ITIMER_PROF", ITIMER_PROF);
         addBuiltinConstant("NSIG", Signals.SIGMAX + 1);
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            addBuiltinConstant("CTRL_C_EVENT", 0);
+            addBuiltinConstant("CTRL_BREAK_EVENT", 1);
+        }
     }
 
     /*

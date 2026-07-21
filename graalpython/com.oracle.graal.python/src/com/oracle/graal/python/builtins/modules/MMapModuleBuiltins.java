@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.modules;
 import java.util.Collections;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -86,7 +88,8 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
         // 'MADV_DONTNEED': 4,
         // 'MADV_FREE': 5
 
-        addBuiltinConstant("ALLOCATIONGRANULARITY", 4096);
+        addBuiltinConstant("ALLOCATIONGRANULARITY",
+                        PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? 65536 : 4096);
         addBuiltinConstant("PAGESIZE", 4096);
 
         for (PosixConstants.IntConstant c : PosixConstants.mmapFlags) {

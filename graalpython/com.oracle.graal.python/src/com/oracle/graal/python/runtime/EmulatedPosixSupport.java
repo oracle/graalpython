@@ -587,6 +587,18 @@ public final class EmulatedPosixSupport extends PosixResources {
         compatibilityIgnored("setting inheritable '%b' for file descriptor %d in POSIX emulation layer (not supported)", inheritable, fd);
     }
 
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public long getOsfHandle(int fd) throws UnsupportedPosixFeatureException {
+        throw createUnsupportedFeature("get_osfhandle");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int openOsfHandle(long handle, int flags) throws UnsupportedPosixFeatureException {
+        throw createUnsupportedFeature("open_osfhandle");
+    }
+
     @ExportMessage(name = "pipe")
     public int[] pipeMessage(@Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
         // TODO: will merge with super.pipe once the super class is merged with this class
@@ -1888,6 +1900,25 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    public void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
+                    @Bind Node inliningTarget,
+                    @Shared("defaultDirProfile") @Cached InlinedConditionProfile defaultDirFdPofile,
+                    @Shared("eq") @Cached TruffleString.EqualNode eqNode,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) throws PosixException {
+        try {
+            TruffleFile newFile = resolvePath(inliningTarget, newDirFd, pathToTruffleString(newPath, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
+            if (newFile.isDirectory()) {
+                throw posixException(OSErrorEnum.EISDIR);
+            }
+            TruffleFile oldFile = resolvePath(inliningTarget, oldDirFd, pathToTruffleString(oldPath, fromJavaStringNode), defaultDirFdPofile, eqNode, toJavaStringNode);
+            oldFile.move(newFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (Exception e) {
+            throw posixException(OSErrorEnum.fromException(e, eqNode));
+        }
+    }
+
+    @ExportMessage
     public boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @Bind Node inliningTarget,
                     @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
@@ -2828,7 +2859,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    final MMapHandle mmap(long length, int prot, int flags, int fd, long offset,
+    final MMapHandle mmap(long length, int prot, int flags, int fd, long offset, @SuppressWarnings("unused") Object tagname,
                     @Bind Node inliningTarget,
                     @Shared("defaultDirProfile") @Cached InlinedConditionProfile isAnonymousProfile,
                     @Shared("eq") @Cached TruffleString.EqualNode eqNode,
@@ -4519,6 +4550,34 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public Buffer getPathAsBytes(Object path) {
         return Buffer.wrap(utf8StringToBytes((String) path));
+    }
+
+    @ExportMessage
+    public Object createCStringFromString(TruffleString string,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return checkEmbeddedNulls(toJavaStringNode.execute(string));
+    }
+
+    @ExportMessage
+    public Object createCStringFromBytes(byte[] bytes) {
+        return checkEmbeddedNulls(createUTF8String(bytes));
+    }
+
+    @ExportMessage
+    public Object createWideStringFromString(TruffleString string,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        return checkEmbeddedNulls(toJavaStringNode.execute(string));
+    }
+
+    @ExportMessage
+    public TruffleString getCStringAsString(Object string,
+                    @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
+        return fromJavaStringNode.execute((String) string, TS_ENCODING);
+    }
+
+    @ExportMessage
+    public Buffer getCStringAsBytes(Object string) {
+        return Buffer.wrap(utf8StringToBytes((String) string));
     }
 
     @TruffleBoundary

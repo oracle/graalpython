@@ -201,6 +201,7 @@ launchEnvironment(wchar_t *env, wchar_t *exe)
  ***                           PROCESS CONTROLLER                           ***
 \******************************************************************************/
 
+#define GRAAL_PYTHON_ARGS L"GRAAL_PYTHON_ARGS="
 #define GRAAL_PYTHON_VM_ARGS L"GRAAL_PYTHON_VM_ARGS="
 #define GRAAL_PYTHON_EXE_ARG L"--python.Executable="
 #define GRAAL_PYTHON_BASE_EXECUTABLE_ARG L"--python.BaseExecutable="
@@ -384,6 +385,10 @@ wmain(int argc, wchar_t ** argv)
     }
     envCur = env;
     for (int i = 0; i = wcslen(envCur); i) {
+        if (wcsncmp(envCur, GRAAL_PYTHON_ARGS, wcslen(GRAAL_PYTHON_ARGS)) == 0) {
+            envCur = envCur + i + 1;
+            continue;
+        }
         // env needs room for key=value and \0
         envSize = envSize + i + 1;
         envCur = envCur + i + 1;
@@ -416,6 +421,10 @@ wmain(int argc, wchar_t ** argv)
     envCur = env;
     newEnvCur = newEnv;
     for (int i = 0; i = wcslen(envCur); i) {
+        if (wcsncmp(envCur, GRAAL_PYTHON_ARGS, wcslen(GRAAL_PYTHON_ARGS)) == 0) {
+            envCur = envCur + i + 1;
+            continue;
+        }
         exitCode = wcscpy_s(newEnvCur, envSize, envCur);
         if (exitCode) {
             winerror(exitCode, L"Failed to copy envvar");

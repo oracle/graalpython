@@ -46,19 +46,28 @@
 #include <string.h>
 #include <stdio.h>
 
-/*
-  There are two versions of strerror_r and we need the POSIX one. The following lines double-check
-  that we got it. First, we check that _GNU_SOURCE has not been defined by any of the included headers.
-  Then we explicitly declare the function with POSIX signature which should force the compiler to
-  report an error in case we got the GNU version somehow.
-*/
+#ifdef _WIN32
+#define GP_EXPORT __declspec(dllexport)
+#else
+#define GP_EXPORT
+#endif
+
+GP_EXPORT void call_strerror(int32_t error, char *buf, int32_t buflen) {
+#ifdef _WIN32
+    int err = strerror_s(buf, buflen, error);
+#else
+    /*
+      There are two versions of strerror_r and we need the POSIX one. The following lines double-check
+      that we got it. First, we check that _GNU_SOURCE has not been defined by any of the included headers.
+      Then we explicitly declare the function with POSIX signature which should force the compiler to
+      report an error in case we got the GNU version somehow.
+    */
 #ifdef _GNU_SOURCE
 #error "Someone defined _GNU_SOURCE"
 #endif
-int strerror_r(int errnum, char *buf, size_t buflen);
-
-void call_strerror(int32_t error, char *buf, int32_t buflen) {
+    int strerror_r(int errnum, char *buf, size_t buflen);
     int err = strerror_r(error, buf, buflen);
+#endif
     if (err) {
         snprintf(buf, buflen, "Unknown error %d", error);
     }

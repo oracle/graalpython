@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,7 @@
 
 import os
 import select
+import sys
 import tempfile
 import unittest
 
@@ -68,7 +69,11 @@ class SelectTests(unittest.TestCase):
                 return 1
 
         v = MyVal()
-        select.select([], [], [], v)
+        if sys.platform == 'win32':
+            with self.assertRaises(OSError):
+                select.select([], [], [], v)
+        else:
+            select.select([], [], [], v)
         assert v.called_index == 1
 
     def test_select_timeout_arg_validation(self):
@@ -79,6 +84,7 @@ class SelectTests(unittest.TestCase):
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java',
                          'The java backend does not support select for ordinary files, only sockets.')
+    @unittest.skipUnless(sys.platform != 'win32', 'Windows select only supports sockets.')
     def test_select_result_duplicate_fds_preserve_objs_order(self):
         class F:
             def __init__(self, fd):

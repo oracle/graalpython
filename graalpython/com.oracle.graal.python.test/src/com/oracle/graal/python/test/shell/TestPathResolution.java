@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -53,17 +53,28 @@ import com.oracle.graal.python.shell.GraalPythonMain;
 
 public class TestPathResolution {
     private Method calculateProgramFullPathMethod;
+    private Method toAbsolutePathMethod;
 
     @Before
     public void setup() throws NoSuchMethodException {
         // Use reflection to avoid exposing the method in public API
         calculateProgramFullPathMethod = GraalPythonMain.class.getDeclaredMethod("calculateProgramFullPath", String.class, Predicate.class, String.class);
         calculateProgramFullPathMethod.setAccessible(true);
+        toAbsolutePathMethod = GraalPythonMain.class.getDeclaredMethod("toAbsolutePath", String.class);
+        toAbsolutePathMethod.setAccessible(true);
     }
 
     public String calculateProgramFullPath(String executable, Predicate<Path> isExecutable, String path) {
         try {
             return (String) calculateProgramFullPathMethod.invoke(new GraalPythonMain(), executable, isExecutable, path);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String toAbsolutePath(String executable) {
+        try {
+            return (String) toAbsolutePathMethod.invoke(null, executable);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
@@ -76,6 +87,11 @@ public class TestPathResolution {
 
         Assert.assertEquals(Paths.get("./blah/graalpy").toAbsolutePath().normalize().toString(),
                         calculateProgramFullPath("./blah/graalpy", path -> true, null));
+    }
+
+    @Test
+    public void testEmptyExecutableStaysEmpty() {
+        Assert.assertEquals("", toAbsolutePath(""));
     }
 
     @Test

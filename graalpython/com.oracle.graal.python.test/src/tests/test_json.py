@@ -83,8 +83,10 @@ class JsonTest(unittest.TestCase):
     def test_dump(self):
         cwd = os.getcwd()
         new_file_path = os.path.join(cwd, 'myFile.json')
-        json.dump(['a', 'b', 'c'], open(new_file_path, 'w'))
-        assert json.load(open(new_file_path)) == ['a', 'b', 'c']
+        with open(new_file_path, 'w') as f:
+            json.dump(['a', 'b', 'c'], f)
+        with open(new_file_path) as f:
+            assert json.load(f) == ['a', 'b', 'c']
         os.remove(new_file_path)
 
     def test_load_bigint(self):

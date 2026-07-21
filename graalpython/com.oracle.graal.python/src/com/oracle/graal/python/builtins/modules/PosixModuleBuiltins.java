@@ -33,11 +33,13 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_SYMLINK_FOLLOW;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
+import static com.oracle.graal.python.lib.PyUnicodeFSDecoderNode.SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -145,6 +147,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -350,8 +353,15 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 // overwrite it with our executable to ensure that subprocesses will use us.
                 TruffleString value = core.getContext().getOption(PythonOptions.Executable);
                 try {
-                    Object k = posixLib.createPathFromString(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
-                    Object v = posixLib.createPathFromString(posixSupport, value);
+                    Object k;
+                    Object v;
+                    if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                        k = posixLib.createWideStringFromString(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
+                        v = posixLib.createWideStringFromString(posixSupport, value);
+                    } else {
+                        k = posixLib.createPathFromString(posixSupport, toTruffleStringUncached(pyenvLauncherKey));
+                        v = posixLib.createPathFromString(posixSupport, value);
+                    }
                     posixLib.setenv(posixSupport, k, v, true);
                 } catch (PosixException ignored) {
                 }
@@ -414,9 +424,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PNone putenv(VirtualFrame frame, PBytes nameBytes, PBytes valueBytes,
+        static PNone putenv(VirtualFrame frame, Object nameObject, Object valueObject,
                         @Bind Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
@@ -425,13 +437,23 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             // Unlike in other posix builtins, we go through str -> bytes -> byte[] -> String
             // conversions for emulated backend because the bytes version after fsencode conversion
             // is subject to sys.audit.
-            byte[] name = toBytesNode.execute(nameBytes);
-            byte[] value = toBytesNode.execute(valueBytes);
             PosixSupport posixSupport = context.getPosixSupport();
-            Object nameOpaque = checkNull(inliningTarget, posixLib.createPathFromBytes(posixSupport, name), raiseNode);
-            Object valueOpaque = checkNull(inliningTarget, posixLib.createPathFromBytes(posixSupport, value), raiseNode);
-            checkEqualSign(inliningTarget, name, raiseNode);
-            auditNode.audit(frame, inliningTarget, T_OS_PUTENV, nameBytes, valueBytes);
+            Object nameOpaque;
+            Object valueOpaque;
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                TruffleString name = (TruffleString) nameObject;
+                TruffleString value = (TruffleString) valueObject;
+                nameOpaque = checkNull(inliningTarget, posixLib.createWideStringFromString(posixSupport, name), raiseNode);
+                valueOpaque = checkNull(inliningTarget, posixLib.createWideStringFromString(posixSupport, value), raiseNode);
+                checkWindowsEnvName(inliningTarget, name, codePointLengthNode, indexOfCodePointNode, raiseNode);
+            } else {
+                byte[] name = toBytesNode.execute((PBytes) nameObject);
+                byte[] value = toBytesNode.execute((PBytes) valueObject);
+                nameOpaque = checkNull(inliningTarget, posixLib.createCStringFromBytes(posixSupport, name), raiseNode);
+                valueOpaque = checkNull(inliningTarget, posixLib.createCStringFromBytes(posixSupport, value), raiseNode);
+                checkEqualSign(inliningTarget, name, raiseNode);
+            }
+            auditNode.audit(frame, inliningTarget, T_OS_PUTENV, nameObject, valueObject);
             try {
                 posixLib.setenv(posixSupport, nameOpaque, valueOpaque, true);
             } catch (PosixException e) {
@@ -454,6 +476,17 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
         }
+
+        private static void checkWindowsEnvName(Node inliningTarget, TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode,
+                        TruffleString.IndexOfCodePointNode indexOfCodePointNode, PRaiseNode raiseNode) {
+            int length = codePointLengthNode.execute(name, TS_ENCODING);
+            // Match CPython's Windows-specific name validation in posixmodule.c:win32_putenv:
+            // the name must not be empty, but an initial '=' is allowed for hidden drive-current
+            // directory environment variables such as "=C:".
+            if (length == 0 || (length > 1 && indexOfCodePointNode.execute(name, '=', 1, length, TS_ENCODING) >= 0)) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ILLEGAL_ENVIRONMENT_VARIABLE_NAME);
+            }
+        }
     }
 
     @Builtin(name = "unsetenv", minNumOfPositionalArgs = 1, parameterNames = {"name"})
@@ -467,17 +500,26 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PNone putenv(VirtualFrame frame, PBytes nameBytes,
+        static PNone putenv(VirtualFrame frame, Object nameObject,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
-            byte[] name = toBytesNode.execute(nameBytes);
-            Object nameOpaque = checkNull(inliningTarget, posixLib.createPathFromBytes(context.getPosixSupport(), name), raiseNode);
-            auditNode.audit(frame, inliningTarget, T_OS_UNSETENV, nameBytes);
+            Object nameOpaque;
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                TruffleString name = (TruffleString) nameObject;
+                nameOpaque = checkNull(inliningTarget, posixLib.createWideStringFromString(context.getPosixSupport(), name), raiseNode);
+                PutenvNode.checkWindowsEnvName(inliningTarget, name, codePointLengthNode, indexOfCodePointNode, raiseNode);
+            } else {
+                byte[] name = toBytesNode.execute((PBytes) nameObject);
+                nameOpaque = checkNull(inliningTarget, posixLib.createCStringFromBytes(context.getPosixSupport(), name), raiseNode);
+            }
+            auditNode.audit(frame, inliningTarget, T_OS_UNSETENV, nameObject);
             try {
                 posixLib.unsetenv(context.getPosixSupport(), nameOpaque);
             } catch (PosixException e) {
@@ -534,7 +576,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             Object[] opaqueArgs = new Object[args.length];
             for (int i = 0; i < args.length; ++i) {
-                opaqueArgs[i] = toOpaquePathNode.execute(frame, inliningTarget, args[i], i == 0);
+                Object opaquePath = toOpaquePathNode.execute(frame, inliningTarget, args[i], i == 0);
+                Buffer bytes = posixLib.getPathAsBytes(context.getPosixSupport(), opaquePath);
+                opaqueArgs[i] = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes.data);
             }
             // TODO ValueError "execv() arg 2 first element cannot be empty"
 
@@ -2280,14 +2324,27 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "src_dir_fd", conversionClass = DirFdConversionNode.class)
     @ArgumentClinic(name = "dst_dir_fd", conversionClass = DirFdConversionNode.class)
     @GenerateNodeFactory
-    abstract static class ReplaceNode extends RenameNode {
-
-        // although this built-in is the same as rename(), we need to provide our own
-        // ArgumentClinicProvider because the error messages contain the name of the built-in
+    abstract static class ReplaceNode extends PythonClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return PosixModuleBuiltinsClinicProviders.ReplaceNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static PNone replace(VirtualFrame frame, PosixPath src, PosixPath dst, int srcDirFd, int dstDirFd,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Bind Node inliningTarget,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            auditNode.audit(frame, inliningTarget, T_OS_RENAME, src.originalObject, dst.originalObject, dirFdForAudit(srcDirFd), dirFdForAudit(dstDirFd));
+            try {
+                posixLib.replaceat(context.getPosixSupport(), srcDirFd, src.value, dstDirFd, dst.value);
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, src.originalObject, dst.originalObject);
+            }
+            return PNone.NONE;
         }
     }
 
@@ -2852,7 +2909,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int system(VirtualFrame frame, PBytes command,
+        static int system(VirtualFrame frame, Object command,
                         @Bind Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
@@ -2863,10 +2920,14 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             // conversions for emulated backend because the bytes version after fsencode conversion
             // is subject to sys.audit.
             auditNode.audit(frame, inliningTarget, T_OS_SYSTEM, command);
-            byte[] bytes = toBytesNode.execute(command);
             gil.release(true);
             try {
-                Object cmdOpaque = posixLib.createPathFromBytes(context.getPosixSupport(), bytes);
+                Object cmdOpaque;
+                if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                    cmdOpaque = posixLib.createWideStringFromString(context.getPosixSupport(), (TruffleString) command);
+                } else {
+                    cmdOpaque = posixLib.createCStringFromBytes(context.getPosixSupport(), toBytesNode.execute((PBytes) command));
+                }
                 return posixLib.system(context.getPosixSupport(), cmdOpaque);
             } finally {
                 gil.acquire();
@@ -3091,7 +3152,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
             TruffleString str = castToStringNode.execute(inliningTarget, strObj);
-            TruffleString utf8 = switchEncodingNode.execute(str, Encoding.UTF_8);
+            TruffleString utf8 = switchEncodingNode.execute(str, Encoding.UTF_8, SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER);
             byte[] bytes = new byte[utf8.byteLength(Encoding.UTF_8)];
             copyToByteArrayNode.execute(utf8, 0, bytes, 0, bytes.length, Encoding.UTF_8);
             return PFactory.createBytes(language, bytes);
@@ -3326,12 +3387,31 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     // Converters
 
     public abstract static class FsConverterNode extends ArgumentCastNode {
-        @Specialization
-        static PBytes convert(VirtualFrame frame, Object value,
+        @Specialization(guards = "!isWindows()")
+        static PBytes convertPosix(VirtualFrame frame, Object value,
                         @Bind Node inliningTarget,
                         @Cached PyOSFSPathNode fspathNode,
                         @Cached StringOrBytesToBytesNode stringOrBytesToBytesNode) {
             return stringOrBytesToBytesNode.execute(inliningTarget, fspathNode.execute(frame, inliningTarget, value));
+        }
+
+        @Specialization(guards = {"isWindows()", "isString(value)"})
+        static TruffleString convertWindows(Object value,
+                        @Bind Node inliningTarget,
+                        @Cached CastToTruffleStringNode castToStringNode) {
+            return castToStringNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(guards = {"isWindows()", "!isString(value)"})
+        static Object rejectWindows(Object value,
+                        @Bind Node inliningTarget,
+                        @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, value);
+        }
+
+        @Idempotent
+        protected static boolean isWindows() {
+            return PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32;
         }
 
         @ClinicConverterFactory

@@ -75,6 +75,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -110,6 +111,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqIt
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem.SqAssItemBuiltinNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -126,12 +128,15 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.LongIndexConverterNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -178,12 +183,11 @@ public final class MMapBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "flags", "prot", "access",
-                    "offset"})
+                    "offset"}, keywordOnlyNames = {"tagname"})
     @GenerateNodeFactory
     // Note: it really should not call fileno on fd as per Python spec
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "length", conversion = ClinicConversion.LongIndex)
-    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int, defaultValue = "FLAGS_DEFAULT")
     @ArgumentClinic(name = "prot", conversion = ClinicConversion.Int, defaultValue = "PROT_DEFAULT")
     @ArgumentClinic(name = "access", conversion = ClinicConversion.Int, defaultValue = "ACCESS_ARG_DEFAULT")
     @ArgumentClinic(name = "offset", conversion = ClinicConversion.Long, defaultValue = "0")
@@ -194,6 +198,9 @@ public final class MMapBuiltins extends PythonBuiltins {
 
         private static final int ANONYMOUS_FD = -1;
 
+        private record MMapArgs(int flags, Object tagname) {
+        }
+
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return MMapNodeClinicProviderGen.INSTANCE;
@@ -201,20 +208,32 @@ public final class MMapBuiltins extends PythonBuiltins {
 
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset=0])
         @Specialization(guards = "!isIllegal(fd)")
-        static PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, int flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
+        static PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, Object flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
+                        Object tagname,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached CastToTruffleStringNode castTagnameNode,
+                        @Exclusive @Cached PyLongAsIntNode flagsAsIntNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            MMapArgs mmapArgs = parseFlagsAndTagname(frame, inliningTarget, flagsIn, tagname, castTagnameNode, flagsAsIntNode, raiseNode);
+            Object mmapTagname = PNone.NONE;
+            if (mmapArgs.tagname() != PNone.NO_VALUE && !isPNone(mmapArgs.tagname())) {
+                try {
+                    mmapTagname = castTagnameNode.execute(inliningTarget, mmapArgs.tagname());
+                } catch (CannotCastException e) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_STR_NOT_P, mmapArgs.tagname());
+                }
+            }
             if (lengthIn < 0) {
                 throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MEM_MAPPED_LENGTH_MUST_BE_POSITIVE);
             }
             if (offset < 0) {
                 throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MEM_MAPPED_OFFSET_MUST_BE_POSITIVE);
             }
-            int flags = flagsIn;
+            int flags = mmapArgs.flags();
             int prot = protIn;
             int access = accessIn;
             switch (access) {
@@ -287,19 +306,48 @@ public final class MMapBuiltins extends PythonBuiltins {
 
             Object mmapHandle;
             try {
-                mmapHandle = posixSupport.mmap(posixSupport1, length, prot, flags, dupFd, offset);
+                mmapHandle = posixSupport.mmap(posixSupport1, length, prot, flags, dupFd, offset, mmapTagname);
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             PythonContext context = PythonContext.get(inliningTarget);
-            return PFactory.createMMap(context, clazz, getInstanceShape.execute(clazz), mmapHandle, dupFd, length, access);
+            PMMap mmap = PFactory.createMMap(context, clazz, getInstanceShape.execute(clazz), mmapHandle, dupFd, length, access);
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                NativeContext.setLastError(0);
+            }
+            return mmap;
         }
 
         @Specialization(guards = "isIllegal(fd)")
         @SuppressWarnings("unused")
-        static PMMap doIllegal(Object clazz, int fd, long lengthIn, int flagsIn, int protIn, int accessIn, long offset,
-                        @Bind Node inliningTarget) {
+        static PMMap doIllegal(VirtualFrame frame, Object clazz, int fd, long lengthIn, Object flagsIn, int protIn, int accessIn, long offset,
+                        Object tagname,
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached CastToTruffleStringNode castTagnameNode,
+                        @Exclusive @Cached PyLongAsIntNode flagsAsIntNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
+            parseFlagsAndTagname(frame, inliningTarget, flagsIn, tagname, castTagnameNode, flagsAsIntNode, raiseNode);
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.OSError);
+        }
+
+        private static MMapArgs parseFlagsAndTagname(VirtualFrame frame, Node inliningTarget, Object flagsArg, Object tagnameArg,
+                        CastToTruffleStringNode castTagnameNode, PyLongAsIntNode flagsAsIntNode, PRaiseNode raiseNode) {
+            Object flags = flagsArg;
+            Object tagname = tagnameArg;
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && tagname == PNone.NO_VALUE && flags != PNone.NO_VALUE) {
+                try {
+                    if (!isPNone(flags)) {
+                        castTagnameNode.execute(inliningTarget, flags);
+                    }
+                    tagname = flags;
+                    flags = PNone.NO_VALUE;
+                } catch (CannotCastException ignored) {
+                }
+            }
+            if (tagname != PNone.NO_VALUE && PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, "mmap", "tagname");
+            }
+            return new MMapArgs(flags == PNone.NO_VALUE ? FLAGS_DEFAULT : flagsAsIntNode.execute(frame, inliningTarget, flags), tagname);
         }
 
         protected static boolean isIllegal(int fd) {

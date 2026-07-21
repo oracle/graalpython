@@ -778,17 +778,17 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         FileIOBuiltins.FileIOInit.internalInit(stdinFileIO, toTruffleStringUncached("<stdin>"), 0, IOMode.RB);
         PBuffered stdinBuffer = PFactory.createBufferedReader(language);
         BufferedReaderBuiltins.BufferedReaderInit.internalInit(stdinBuffer, stdinFileIO, BufferedReaderBuiltins.DEFAULT_BUFFER_SIZE, language, posixSupport, posixLib);
-        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, stdinBuffer, sysModule, language, true);
+        setWrapper(T_STDIN, T___STDIN__, T_R, stdioEncoding, stdioError, PNone.NONE, stdinBuffer, sysModule, language, true);
 
         PFileIO stdoutFileIO = PFactory.createFileIO(language);
         FileIOBuiltins.FileIOInit.internalInit(stdoutFileIO, toTruffleStringUncached("<stdout>"), 1, IOMode.WB);
         Object stdoutBuffer = createBufferedIO(buffering, language, stdoutFileIO, posixSupport, posixLib);
-        setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, stdoutBuffer, sysModule, language, buffering);
+        setWrapper(T_STDOUT, T___STDOUT__, T_W, stdioEncoding, stdioError, PNone.NONE, stdoutBuffer, sysModule, language, buffering);
 
         PFileIO stderr = PFactory.createFileIO(language);
         FileIOBuiltins.FileIOInit.internalInit(stderr, toTruffleStringUncached("<stderr>"), 2, IOMode.WB);
         Object stderrBuffer = createBufferedIO(buffering, language, stderr, posixSupport, posixLib);
-        setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, stderrBuffer, sysModule, language, buffering);
+        setWrapper(T_STDERR, T___STDERR__, T_W, stdioEncoding, T_BACKSLASHREPLACE, PNone.NONE, stderrBuffer, sysModule, language, buffering);
     }
 
     private static Object createBufferedIO(boolean buffering, PythonLanguage language, PFileIO fileIo, Object posixSupport, PosixSupportLibrary posixLib) {
@@ -800,10 +800,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         return writer;
     }
 
-    private static PTextIO setWrapper(TruffleString name, TruffleString specialName, TruffleString mode, TruffleString encoding, TruffleString error, Object buffer, PythonModule sysModule,
-                    PythonLanguage language, boolean buffering) {
+    private static PTextIO setWrapper(TruffleString name, TruffleString specialName, TruffleString mode, TruffleString encoding, TruffleString error, Object newline, Object buffer,
+                    PythonModule sysModule, PythonLanguage language, boolean buffering) {
         PTextIO textIOWrapper = PFactory.createTextIO(language);
-        TextIOWrapperInitNodeGen.getUncached().execute(null, null, textIOWrapper, buffer, encoding, error, PNone.NONE,
+        TextIOWrapperInitNodeGen.getUncached().execute(null, null, textIOWrapper, buffer, encoding, error, newline,
                         /* line_buffering */ buffering, /* write_through */ !buffering);
 
         setAttribute(textIOWrapper, T_MODE, mode);

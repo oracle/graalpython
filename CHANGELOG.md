@@ -3,6 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 25.2.4
+* Windows standalone builds now use a native OS backend by default, improving compatibility for files, sockets, subprocesses, `mmap`, and Windows-specific modules compared to the Java-based backend.
+
 ## Version 25.1.3
 * The standalone artifacts now include the Python version name before the Graal version. The new artifacts now start with `graalpy<PYTHON_VERSION>-<GRAAL_VERSION>-<OPERATING_SYSTEM>-<ARCHITECTURE>`.
 * Standalone JVM artifacts are no longer released as separate distributions. For standalone deployments, use the GraalPy native artifacts. If you require Java interoperability, use our jbang launcher (`jbang graalpy@oracle/graalpython -c "print('hello from GraalPy')"`) or a custom embedding.

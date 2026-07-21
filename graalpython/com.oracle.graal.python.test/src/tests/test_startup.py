@@ -48,16 +48,7 @@ IS_WINDOWS = platform.system() == 'Windows'
 
 if IS_WINDOWS and sys.implementation.name == 'graalpy' and __graalpython__.native_access_is_available():
     WINDOWS_CORE_MODULES = ['_nt', '_winapi', '_overlapped', 'winreg', '_winreg']
-    WINDOWS_FULL_STARTUP_MODULES = [
-        '_datetime',
-        'datetime',
-        '_ctypes',
-        '_struct',
-        'struct',
-        'ctypes._endian',
-        'ctypes',
-        'ctypes.wintypes',
-    ]
+    WINDOWS_FULL_STARTUP_MODULES = []
 else:
     WINDOWS_CORE_MODULES = []
     WINDOWS_FULL_STARTUP_MODULES = ['_winapi'] if IS_WINDOWS else []
