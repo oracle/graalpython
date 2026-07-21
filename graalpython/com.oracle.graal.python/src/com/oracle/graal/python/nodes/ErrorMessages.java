@@ -459,6 +459,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_VALUE_NAN = tsLiteral("Invalid value NaN (not a number)");
     public static final TruffleString IS_NOT_SUBTYPE_OF = tsLiteral("%s.__new__(%N): %N is not a subtype of %s");
     public static final TruffleString IS_NOT_TYPE_OBJ = tsLiteral("%s is not a type object (%p)");
+    public static final TruffleString MAX_FACTOR_MUST_BE_AT_LEAST_ONE = tsLiteral("'max_factor' must be at least 1.0");
     public static final TruffleString N_MUST_BE_AT_LEAST_ONE = tsLiteral("n must be at least one");
     public static final TruffleString ISINSTANCE_ARG_2_MUST_BE_TYPE_OR_TUPLE_OF_TYPE = tsLiteral("isinstance() arg 2 must be a type or tuple of types (was: %s)");
     public static final TruffleString ISSUBCLASS_MUST_BE_CLASS_OR_TUPLE = tsLiteral("issubclass() arg 2 must be a class or tuple of classes");
@@ -623,6 +624,7 @@ public abstract class ErrorMessages {
     public static final TruffleString PATTERNS_MAY_ONLY_MATCH_LITERALS_AND_ATTRIBUTE_LOOKUPS = tsLiteral("patterns may only match literals and attribute lookups");
     public static final TruffleString POLYGLOT_ACCESS_NOT_ALLOWED = tsLiteral("polyglot access is not allowed");
     public static final TruffleString POLYGLOT_ACCESS_NOT_ALLOWED_FOR_LANGUAGE_S = tsLiteral("polyglot access is not allowed for language '%s'");
+    public static final TruffleString PARSER_MUST_BE_ROOT_PARSER = tsLiteral("parser must be a root parser");
     public static final TruffleString POLYGLOT_EVAL_MUST_PASS_LANG_AND_STRING_OR_PATH = tsLiteral(
                     "polyglot.eval() must pass 'language' keyword argument, and either 'string' or 'path' keyword argument");
     public static final TruffleString POP_FROM_EMPTY_SET = tsLiteral("pop from an emtpy set");
@@ -1447,6 +1449,7 @@ public abstract class ErrorMessages {
     public static final TruffleString FILE_MUST_HAVE_A_AND_B_ATTRS = tsLiteral("file must have '%s' and '%s' attributes");
     public static final TruffleString INIT_CALLED_WITH = tsLiteral("%s.__init__() was not called by %p.__init__()");
     public static final TruffleString ATTR_MUST_BE_A_OR_B_NOT_C = tsLiteral("'%s' attribute must be a %s object or %s, not %p");
+    public static final TruffleString VALUE_MUST_BE_POSITIVE = tsLiteral("value must be positive");
     public static final TruffleString VALUES_MUST_BE_2TUPLES = tsLiteral("'%s' values must be 2-item tuples");
     public static final TruffleString ATTR_MUST_BE_A_CALLABLE = tsLiteral("%s must be a callable taking %s");
     public static final TruffleString PIDS_MUST_BE_ASCII_STRS = tsLiteral("persistent IDs in protocol 0 must be ASCII strings");

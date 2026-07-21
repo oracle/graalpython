@@ -88,9 +88,11 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -104,6 +106,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -828,6 +831,45 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "SetBillionLaughsAttackProtectionActivationThreshold", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "threshold"})
+    @GenerateNodeFactory
+    abstract static class SetExpansionProtectionActivationThresholdNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static PNone set(PXMLParser self, Object threshold,
+                        @Bind Node inliningTarget,
+                        @Cached PRaiseNode raiseNode) {
+            Object index = PyNumberIndexNode.executeUncached(threshold);
+            if (isNegativeInteger(index)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.VALUE_MUST_BE_POSITIVE);
+            }
+            long value = CastToJavaUnsignedLongNode.executeUncached(index);
+            ensureRootParser(self, inliningTarget);
+            self.setExpansionProtectionActivationThreshold(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "SetBillionLaughsAttackProtectionMaximumAmplification", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "max_factor"})
+    @ArgumentClinic(name = "max_factor", conversion = ArgumentClinic.ClinicConversion.Double)
+    @GenerateNodeFactory
+    abstract static class SetExpansionProtectionMaximumAmplificationNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        static PNone set(PXMLParser self, double maxFactor,
+                        @Bind Node inliningTarget) {
+            if (Double.isNaN(maxFactor) || maxFactor < 1.0) {
+                throw raiseExpatError(inliningTarget, ErrorMessages.MAX_FACTOR_MUST_BE_AT_LEAST_ONE, PXMLParser.XML_ERROR_SYNTAX, 0, 1, 0);
+            }
+            ensureRootParser(self, inliningTarget);
+            self.setExpansionProtectionMaximumAmplification(maxFactor);
+            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return XMLParserBuiltinsClinicProviders.SetExpansionProtectionMaximumAmplificationNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
     @Builtin(name = "SetBase", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "base"})
     @ArgumentClinic(name = "base", conversion = ArgumentClinic.ClinicConversion.TString)
     @GenerateNodeFactory
@@ -860,8 +902,12 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         Object create(PXMLParser self, @SuppressWarnings("unused") Object context, @SuppressWarnings("unused") Object encoding,
                         @Bind Node inliningTarget,
                         @Cached CreateParserNode createParserNode) {
-            return createParserNode.execute(inliningTarget, encoding == PNone.NO_VALUE ? PNone.NONE : encoding, self.getNamespaceSeparator() == null ? PNone.NONE : self.getNamespaceSeparator(),
-                            self.getIntern());
+            PXMLParser subparser = (PXMLParser) createParserNode.execute(inliningTarget, encoding == PNone.NO_VALUE ? PNone.NONE : encoding,
+                            self.getNamespaceSeparator() == null ? PNone.NONE : self.getNamespaceSeparator(), self.getIntern());
+            subparser.setRootParser(false);
+            subparser.setExpansionProtectionActivationThreshold(self.getExpansionProtectionActivationThreshold());
+            subparser.setExpansionProtectionMaximumAmplification(self.getExpansionProtectionMaximumAmplification());
+            return subparser;
         }
     }
 
@@ -1214,7 +1260,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             SAXParser saxParser = factory.newSAXParser();
             saxParser.setProperty(JAXP_ENTITY_EXPANSION_LIMIT, ENTITY_EXPANSION_LIMIT_VALUE);
-            saxParser.setProperty(JAXP_TOTAL_ENTITY_SIZE_LIMIT, TOTAL_ENTITY_SIZE_LIMIT_VALUE);
+            saxParser.setProperty(JAXP_TOTAL_ENTITY_SIZE_LIMIT, expansionSizeLimit(parser, byteIndexSupplier.get()));
             saxParser.setProperty(JAXP_ENTITY_REPLACEMENT_LIMIT, ENTITY_REPLACEMENT_LIMIT_VALUE);
             saxParser.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             XMLReader reader = saxParser.getXMLReader();
@@ -1284,6 +1330,29 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                                 parser.getCurrentColumnNumber());
             }
         }
+    }
+
+    private static boolean isNegativeInteger(Object value) {
+        return value instanceof Integer i && i < 0 || value instanceof Long l && l < 0 || value instanceof PInt i && i.isNegative();
+    }
+
+    private static void ensureRootParser(PXMLParser parser, Node raisingNode) {
+        if (!parser.isRootParser()) {
+            throw raiseExpatError(raisingNode, ErrorMessages.PARSER_MUST_BE_ROOT_PARSER, PXMLParser.XML_ERROR_SYNTAX, 0, 1, 0);
+        }
+    }
+
+    private static String expansionSizeLimit(PXMLParser parser, int directBytes) {
+        int processLimit = Integer.parseInt(TOTAL_ENTITY_SIZE_LIMIT_VALUE);
+        long threshold = parser.getExpansionProtectionActivationThreshold();
+        if (threshold < 0) {
+            return Integer.toString(processLimit);
+        }
+        double factorLimit = directBytes * (parser.getExpansionProtectionMaximumAmplification() - 1.0);
+        double thresholdLimit = Math.max(0.0, threshold - (double) directBytes);
+        double requestedLimit = Math.max(factorLimit, thresholdLimit);
+        int limit = requestedLimit >= processLimit ? processLimit : Math.max(1, (int) Math.ceil(requestedLimit));
+        return Integer.toString(limit);
     }
 
     private static String getParserLimit(String property, int defaultLimit) {

@@ -77,6 +77,9 @@ public final class PXMLParser extends PythonBuiltinObject {
     private int paramEntityParsing = XML_PARAM_ENTITY_PARSING_NEVER;
     private boolean reparseDeferralEnabled = true;
     private int deliveredEventCount;
+    private boolean rootParser = true;
+    private long expansionProtectionActivationThreshold = 8L * 1024 * 1024;
+    private double expansionProtectionMaximumAmplification = 100.0;
 
     private byte[] data = new byte[0];
     private TruffleString base;
@@ -249,6 +252,30 @@ public final class PXMLParser extends PythonBuiltinObject {
 
     public void setDeliveredEventCount(int deliveredEventCount) {
         this.deliveredEventCount = deliveredEventCount;
+    }
+
+    public boolean isRootParser() {
+        return rootParser;
+    }
+
+    public void setRootParser(boolean rootParser) {
+        this.rootParser = rootParser;
+    }
+
+    public long getExpansionProtectionActivationThreshold() {
+        return expansionProtectionActivationThreshold;
+    }
+
+    public void setExpansionProtectionActivationThreshold(long expansionProtectionActivationThreshold) {
+        this.expansionProtectionActivationThreshold = expansionProtectionActivationThreshold;
+    }
+
+    public double getExpansionProtectionMaximumAmplification() {
+        return expansionProtectionMaximumAmplification;
+    }
+
+    public void setExpansionProtectionMaximumAmplification(double expansionProtectionMaximumAmplification) {
+        this.expansionProtectionMaximumAmplification = expansionProtectionMaximumAmplification;
     }
 
     public byte[] getData() {
