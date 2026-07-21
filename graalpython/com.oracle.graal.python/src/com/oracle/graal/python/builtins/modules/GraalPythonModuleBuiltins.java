@@ -107,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CApiNativeStub;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
@@ -1275,9 +1276,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doGeneric(int id) {
-            Object ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).handleContext, 0, id);
-            assert ref == null || ref instanceof PythonAbstractObject || ref instanceof PythonObjectReference;
-            return ref instanceof PythonAbstractObject || ref != null && ((PythonObjectReference) ref).isStrongReference();
+            CApiNativeStub ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).handleContext, 0, id);
+            return ref instanceof PythonAbstractObject || ref instanceof PythonObjectReference pythonObjectReference && pythonObjectReference.isStrongReference();
         }
     }
 

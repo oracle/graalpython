@@ -42,8 +42,6 @@ package com.oracle.graal.python.resources;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -63,40 +61,6 @@ import com.oracle.truffle.api.InternalResource;
  */
 @InternalResource.Id(value = "python-home", componentId = "python", optional = true)
 public final class PythonResource implements InternalResource {
-    private static final int PYTHON_MAJOR;
-    private static final int PYTHON_MINOR;
-    private static final int GRAALVM_MAJOR;
-    private static final int GRAALVM_MINOR;
-    private static final String PYTHON_ABIFLAGS;
-
-    /**
-     * The version generated at build time is stored in an ASCII-compatible way. Add build time, we
-     * added the ordinal value of some base character (in this case {@code '!'}) to ensure that we
-     * have a printable character.
-     */
-    private static final int VERSION_BASE = '!';
-
-    static {
-        // See static ctor of PythonLanguage
-        try (InputStream is = PythonResource.class.getResourceAsStream("/graalpy_versions")) {
-            PYTHON_MAJOR = is.read() - VERSION_BASE;
-            PYTHON_MINOR = is.read() - VERSION_BASE;
-            is.read(); // skip python micro version
-            GRAALVM_MAJOR = is.read() - VERSION_BASE;
-            GRAALVM_MINOR = is.read() - VERSION_BASE;
-            is.read(); // skip GraalVM micro version
-            is.read(); // skip release level
-            int ch;
-            while ((ch = is.read()) != '\n' && ch != -1) {
-                // skip ABI version
-            }
-            String[] abiParts = ch == -1 ? new String[0] : new String(is.readAllBytes(), StandardCharsets.US_ASCII).split("\\R", 4);
-            PYTHON_ABIFLAGS = abiParts.length > 0 ? abiParts[0].strip() : "";
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private static final Path BASE_PATH = Path.of("META-INF", "resources");
     private static final String LIBGRAALPY = "libgraalpy";
     private static final String LIBPYTHON = "libpython";
@@ -110,6 +74,7 @@ public final class PythonResource implements InternalResource {
     private static final Path LIBPYTHON_SHA256 = Path.of(LIBPYTHON + ".sha256");
     private static final Path INCLUDE_SHA256 = Path.of("include.sha256");
     private static final Path NI_SHA256 = Path.of("ni.sha256");
+    private static final Path VERSIONS_SHA256 = Path.of("versions.sha256");
     private static final Path NATIVE_SHA256 = Path.of("native.sha256");
 
     @Override
@@ -117,17 +82,19 @@ public final class PythonResource implements InternalResource {
         OS os = env.getOS();
         CPUArchitecture cpuArchitecture = env.getCPUArchitecture();
         Path osArch = Path.of(os.toString()).resolve(cpuArchitecture.toString());
+        GraalPyPlatformInfoProviderImpl.VersionsInfo versionsInfo = GraalPyPlatformInfoProviderImpl.getVersionsInfo();
         ResourcesFilter filter = new ResourcesFilter();
         if (os.equals(OS.WINDOWS)) {
             env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("Lib"), BASE_PATH.resolve(LIBPYTHON), filter);
             env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib-graalpython"), BASE_PATH.resolve(LIBGRAALPY), filter);
             env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory.resolve("Include"), BASE_PATH.resolve(INCLUDE), filter);
         } else {
-            String pythonMajMin = "python" + PYTHON_MAJOR + "." + PYTHON_MINOR;
+            String pythonMajMin = "python" + versionsInfo.pythonMajor() + "." + versionsInfo.pythonMinor();
             env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("lib").resolve(pythonMajMin), BASE_PATH.resolve(LIBPYTHON), filter);
-            env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES), targetDirectory.resolve("lib").resolve("graalpy" + GRAALVM_MAJOR + "." + GRAALVM_MINOR), BASE_PATH.resolve(LIBGRAALPY),
+            env.unpackResourceFiles(BASE_PATH.resolve(LIBGRAALPY_FILES),
+                            targetDirectory.resolve("lib").resolve("graalpy" + versionsInfo.graalVMajor() + "." + versionsInfo.graalVMinor()), BASE_PATH.resolve(LIBGRAALPY),
                             filter);
-            env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory.resolve("include").resolve(pythonMajMin + PYTHON_ABIFLAGS), BASE_PATH.resolve(INCLUDE), filter);
+            env.unpackResourceFiles(BASE_PATH.resolve(INCLUDE_FILES), targetDirectory.resolve("include").resolve(pythonMajMin + versionsInfo.pythonAbiFlags()), BASE_PATH.resolve(INCLUDE), filter);
         }
         // ni files are in the same place on all platforms
         env.unpackResourceFiles(BASE_PATH.resolve(NI_FILES), targetDirectory, BASE_PATH, filter);
@@ -242,6 +209,7 @@ public final class PythonResource implements InternalResource {
         CPUArchitecture cpuArchitecture = env.getCPUArchitecture();
         if (!os.equals(OS.UNSUPPORTED) && !cpuArchitecture.equals(CPUArchitecture.UNSUPPORTED)) {
             al = new ArrayList<>(al);
+            al.add(Path.of(os.toString()).resolve(cpuArchitecture.toString()).resolve(VERSIONS_SHA256));
             al.add(Path.of(os.toString()).resolve(cpuArchitecture.toString()).resolve(NATIVE_SHA256));
         }
         for (var s : al) {

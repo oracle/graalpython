@@ -317,6 +317,15 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.subn("b*", "x", "xyz", 2), ('xxxyz', 2))
         self.assertEqual(re.subn("b*", "x", "xyz", count=2), ('xxxyz', 2))
 
+    def test_terminal_empty_match_after_consuming_match(self):
+        cases = [
+            (r"(?:(?P<g0>\*)){0,2}", "*"),
+            (r"(?:(?:\s){0,2}){0,2}", "    "),
+        ]
+        for pattern, string in cases:
+            self.assertEqual(re.sub(pattern, "X", string), "XX")
+            self.assertEqual(re.subn(pattern, "X", string), ("XX", 2))
+
     def test_re_split(self):
         for string in ":a:b::c", S(":a:b::c"):
             self.assertTypedEqual(re.split(":", string),

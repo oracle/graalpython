@@ -6,6 +6,7 @@ test.test_timeout.CreationTestCase.testReturnType @ darwin-arm64,linux-aarch64,l
 test.test_timeout.CreationTestCase.testTimeoutThenBlocking @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_timeout.CreationTestCase.testTypeCheck @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_timeout.TCPTimeoutTestCase.testAcceptTimeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_timeout.TCPTimeoutTestCase.testConnectTimeout @ linux-aarch64
 test.test_timeout.TCPTimeoutTestCase.testRecvTimeout @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_timeout.TCPTimeoutTestCase.testSend @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_timeout.TCPTimeoutTestCase.testSendall @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

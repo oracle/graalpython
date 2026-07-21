@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,11 +68,12 @@ public class ThreadPoolTests {
                         "pool = ThreadPool(2)\n" +
                         "res = list(pool.imap(fun, items))\n" +
                         "pool.close()\n" +
+                        "pool.join()\n" +
                         "\n" +
                         "print(res)\n";
         final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         final PrintStream printStream = new PrintStream(byteArray);
-        PythonTests.runScript(new HashMap<>(), new String[0], source, printStream, System.err, () -> PythonTests.closeContext());
+        PythonTests.runScript(new HashMap<>(), new String[0], source, printStream, System.err, () -> PythonTests.closeContext(true));
         String result = byteArray.toString().replaceAll("\r\n", "\n");
         assertEquals("[True, True, True, True, True, True, True, True, True, True]\n", result);
     }

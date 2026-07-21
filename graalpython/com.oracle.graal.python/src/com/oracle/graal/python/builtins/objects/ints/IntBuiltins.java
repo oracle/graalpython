@@ -2537,7 +2537,7 @@ public final class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_str, isComplex = true)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     @TypeSystemReference(PythonIntegerTypes.class)
     abstract static class StrNode extends PythonUnaryBuiltinNode {
@@ -2593,11 +2593,6 @@ public final class IntBuiltins extends PythonBuiltins {
         private static int positiveBitLength(PInt self) {
             return self.abs().bitLength();
         }
-    }
-
-    @Slot(value = SlotKind.tp_repr, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class ReprNode extends StrNode {
     }
 
     @Builtin(name = J___FORMAT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "format_spec"})

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -76,7 +76,7 @@ public final class BoolBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = SlotKind.tp_str, isComplex = true)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
@@ -94,11 +94,6 @@ public final class BoolBuiltins extends PythonBuiltins {
         public static TruffleString doPInt(PInt self) {
             return self.isZero() ? T_FALSE : T_TRUE;
         }
-    }
-
-    @Slot(value = SlotKind.tp_repr, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class RepNode extends StrNode {
     }
 
     @Slot(value = SlotKind.nb_and, isComplex = true)

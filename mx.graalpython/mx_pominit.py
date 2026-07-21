@@ -228,6 +228,12 @@ def common_source_dir(projects: dict) -> str:
     return source_dir[0]
 
 
+def additional_source_dirs(project) -> list[str]:
+    if not hasattr(project, "source_gen_dir"):
+        return []
+    return [project.source_gen_dir(relative=True)]
+
+
 def expand_processor(processor: str) -> list[str]:
     return ANNOTATION_PROCESSOR_ALIASES.get(processor, [processor])
 
@@ -329,6 +335,7 @@ def root_pom(suite: dict, projects: dict, graalvm_version: str) -> str:
     <maven.compiler.target>{java_version}</maven.compiler.target>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.compiler-plugin.version>3.14.1</maven.compiler-plugin.version>
+    <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
     <maven.enforcer-plugin.version>3.6.1</maven.enforcer-plugin.version>
     <graalvm.version>{graalvm_version}</graalvm.version>
   </properties>
@@ -361,6 +368,11 @@ def root_pom(suite: dict, projects: dict, graalvm_version: str) -> str:
           </configuration>
         </plugin>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${{build-helper-maven-plugin.version}}</version>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>${{maven.enforcer-plugin.version}}</version>
@@ -389,6 +401,7 @@ def root_pom(suite: dict, projects: dict, graalvm_version: str) -> str:
 
 def leaf_pom(project_name: str, project, suite: dict) -> str:
     deps = project_dependencies(project, suite)
+    extra_source_dirs = additional_source_dirs(project)
     deps_xml = ""
     if deps:
         dep_entries = "\n".join(dependency_xml(dep, indent="    ") for dep in deps)
@@ -398,12 +411,30 @@ def leaf_pom(project_name: str, project, suite: dict) -> str:
 {dep_entries}
   </dependencies>'''
 
-    build_xml = ""
+    plugins = []
+    if extra_source_dirs:
+        sources_xml = "\n".join(f"                <source>{source_dir}</source>" for source_dir in extra_source_dirs)
+        plugins.append(f'''
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-mx-generated-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+{sources_xml}
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>''')
     if getattr(project, "jniHeaders", None):
-        build_xml = '''
-
-  <build>
-    <plugins>
+        plugins.append('''
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -415,7 +446,16 @@ def leaf_pom(project_name: str, project, suite: dict) -> str:
             <arg>${project.build.directory}/jni_gen</arg>
           </compilerArgs>
         </configuration>
-      </plugin>
+      </plugin>''')
+
+    build_xml = ""
+    if plugins:
+        plugins_xml = "\n".join(plugins)
+        build_xml = f'''
+
+  <build>
+    <plugins>
+{plugins_xml}
     </plugins>
   </build>'''
 

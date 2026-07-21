@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -76,17 +76,21 @@ public class PythonTests {
         return context;
     }
 
-    private static void closeContext(Context ctxt) {
+    private static void closeContext(Context ctxt, boolean cancelIfExecuting) {
         try {
             ctxt.leave();
         } catch (RuntimeException e) {
         }
-        ctxt.close();
+        ctxt.close(cancelIfExecuting);
     }
 
     public static void closeContext() {
+        closeContext(false);
+    }
+
+    public static void closeContext(boolean cancelIfExecuting) {
         if (context != null) {
-            closeContext(context);
+            closeContext(context, cancelIfExecuting);
             context = null;
         }
     }

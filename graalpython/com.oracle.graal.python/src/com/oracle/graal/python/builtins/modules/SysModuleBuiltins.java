@@ -559,7 +559,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         TruffleString osName = toTruffleStringUncached(os.getName());
         addBuiltinConstant("platform", osName);
         addBuiltinConstant("_framework", T_EMPTY_STRING);
-        final TruffleString gmultiarch = toTruffleStringUncached(PythonLanguage.GRAALPY_MULTIARCH);
+        final TruffleString gmultiarch = PythonLanguage.getPlatformInfo().multiarch();
         addBuiltinConstant("__gmultiarch", gmultiarch);
 
         // Initialized later in postInitialize

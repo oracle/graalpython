@@ -272,16 +272,17 @@ class PosixTests(unittest.TestCase):
 
     def test_failed_read_write_errno(self):
         read_fd, write_fd = os.pipe()
-        os.close(read_fd)
-        os.close(write_fd)
+        try:
+            with self.assertRaises(OSError) as read_error:
+                os.read(write_fd, 1)
+            self.assertEqual(errno.EBADF, read_error.exception.errno)
 
-        with self.assertRaises(OSError) as read_error:
-            os.read(read_fd, 1)
-        self.assertEqual(errno.EBADF, read_error.exception.errno)
-
-        with self.assertRaises(OSError) as write_error:
-            os.write(write_fd, b'x')
-        self.assertEqual(errno.EBADF, write_error.exception.errno)
+            with self.assertRaises(OSError) as write_error:
+                os.write(read_fd, b'x')
+            self.assertEqual(errno.EBADF, write_error.exception.errno)
+        finally:
+            os.close(read_fd)
+            os.close(write_fd)
 
     def test_fd_converter(self):
         class MyInt(int):

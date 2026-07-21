@@ -19,7 +19,7 @@
     "log_level": null,
     "log_to": null,
     "visorcalloutput": null,
-    "extra_args": ["--disable_core_scheduling"]
+    "extra_args": ["--disable_core_scheduling", "--host_fs=enable"]
   },
   "fsmappings": []
 }
