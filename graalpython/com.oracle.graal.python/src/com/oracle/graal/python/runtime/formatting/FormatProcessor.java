@@ -416,7 +416,7 @@ abstract class FormatProcessor<T> {
              * Encode as an InternalFormat.Spec. The values in the constructor always have specified
              * values, except for sign, width and precision.
              */
-            InternalFormat.Spec spec = new InternalFormat.Spec(fill, align, sign, altFlag, width, Spec.NONE, precision, c);
+            InternalFormat.Spec spec = new InternalFormat.Spec(fill, align, sign, false, altFlag, width, Spec.NONE, precision, c);
 
             /*
              * Process argument according to format specification decoded from the string. It is
@@ -446,7 +446,7 @@ abstract class FormatProcessor<T> {
                     char integerFormatType = normalizeIntegerFormatType(spec.type);
                     InternalFormat.Spec integerSpec = spec;
                     if (integerFormatType != spec.type) {
-                        integerSpec = new Spec(spec.fill, spec.align, spec.sign, spec.alternate, spec.width,
+                        integerSpec = new Spec(spec.fill, spec.align, spec.sign, spec.noNegativeZero, spec.alternate, spec.width,
                                         spec.grouping, spec.precision, integerFormatType);
                     }
                     f = formatInteger(asNumber(arg, integerFormatType), integerSpec);

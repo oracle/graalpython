@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -195,6 +195,24 @@ def test_floor_div():
     assert_exception(lambda: 5.4 // 0.0, ZeroDivisionError)
 
 
+def test_large_int_floor_div():
+    divisor = 2**130 + 5
+    quotient = 2**80 + 3
+    remainder = 2**70 + 7
+    dividend = quotient * divisor + remainder
+
+    assert dividend // divisor == quotient
+    assert -dividend // divisor == -quotient - 1
+    assert dividend // -divisor == -quotient - 1
+    assert -dividend // -divisor == quotient
+
+    exact_dividend = quotient * divisor
+    assert exact_dividend // divisor == quotient
+    assert -exact_dividend // divisor == -quotient
+    assert exact_dividend // -divisor == -quotient
+    assert -exact_dividend // -divisor == quotient
+
+
 def test_true_div():
     assert 1 / 2 == 0.5
     assert 108086391056891904 / 30023997515803307 == 3.6
@@ -211,6 +229,10 @@ def test_int_rfloor_div():
 
 
 def test_divmod():
+    assert divmod(7, 3) == (2, 1)
+    assert divmod(True, True) == (1, 0)
+    assert int.__divmod__(1, 2.0) is NotImplemented
+
     class Floatable:
         def __init__(self, val):
             self.val = val
@@ -224,6 +246,38 @@ def test_divmod():
     argList = [(Floatable(3), Floatable(4)), (complex(1, 2), complex(3, 4))]
     for args in argList:
         assert_exception(lambda: doDivmod(*args), TypeError)
+
+
+def test_large_int_divmod():
+    divisor = 2**130 + 5
+    quotient = 2**80 + 3
+    remainder = 2**70 + 7
+    dividend = quotient * divisor + remainder
+
+    assert divmod(dividend, divisor) == (quotient, remainder)
+    assert divmod(-dividend, divisor) == (-quotient - 1, divisor - remainder)
+    assert divmod(dividend, -divisor) == (-quotient - 1, remainder - divisor)
+    assert divmod(-dividend, -divisor) == (quotient, -remainder)
+
+    exact_dividend = quotient * divisor
+    assert divmod(exact_dividend, divisor) == (quotient, 0)
+    assert divmod(-exact_dividend, divisor) == (-quotient, 0)
+    assert divmod(exact_dividend, -divisor) == (-quotient, 0)
+    assert divmod(-exact_dividend, -divisor) == (quotient, 0)
+
+    assert divmod(3 * divisor + 7, divisor) == (3, 7)
+
+    long_divisor = 2**40 + 3
+    large_quotient = 2**100 + 3
+    assert divmod(large_quotient * long_divisor + 7, long_divisor) == (large_quotient, 7)
+
+    long_dividend = 2**40 + 3
+    assert divmod(long_dividend, divisor) == (0, long_dividend)
+
+    long_quotient = 2**31 + 3
+    long_divisor = 2**31 + 5
+    assert divmod(long_quotient * long_divisor + 7, long_divisor) == (long_quotient, 7)
+    assert divmod(-(2**63), -1) == (2**63, 0)
 
 
 def test_subclass_ordered_binop():

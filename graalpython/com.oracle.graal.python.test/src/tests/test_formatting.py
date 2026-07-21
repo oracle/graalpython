@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -123,6 +123,23 @@ def test_complex_formatting():
     assert format(MyComplex(3j), "") == "42"
     assert format(MyComplex(3j), " <5") == "3j   "
     assert format(complex(2**53 + 1, 0)) == '(9007199254740992+0j)'
+    assert format(1j, "+.1") == "+1j"
+    assert format(1j, " .2") == " 1j"
+    assert format(1000j, ",.4") == "1,000j"
+    assert format(1000+2000j, ",") == "(1,000+2,000j)"
+    assert format(1000j, "#") == "1000.j"
+    assert format(1+2j, "#") == "(1.+2.j)"
+    assert format(0j, "+.0") == "+0j"
+    assert format(1+2j, "+") == "(+1+2j)"
+
+
+def test_alternate_float_formatting():
+    assert format(0.0, ".0") == "0e+00"
+    assert format(1000.0, "#") == "1000.0"
+    assert format(6.103515625e-05, "#.11g") == "6.1035156250e-05"
+    assert format(2.220446049250313e-16, "#.038g") == "2.2204460492503130808472633361816406250e-16"
+    assert format(2.220446049250313e-16j, "#.038g") == (
+        "0.0000000000000000000000000000000000000+2.2204460492503130808472633361816406250e-16j")
 
 
 class AnyRepr:

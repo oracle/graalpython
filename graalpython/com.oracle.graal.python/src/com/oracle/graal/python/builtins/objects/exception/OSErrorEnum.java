@@ -180,7 +180,7 @@ public enum OSErrorEnum {
     EPROTONOSUPPORT(platformSpecific(93, 43), tsLiteral("Protocol not supported")),
     ESOCKTNOSUPPORT(platformSpecific(94, 44), tsLiteral("Socket type not supported")),
     EOPNOTSUPP(platformSpecific(95, 102), tsLiteral("Operation not supported on transport endpoint")),
-    ENOTSUP(platformSpecific(95, 102), tsLiteral("Operation not supported")),
+    ENOTSUP(platformSpecific(95, 45), tsLiteral("Operation not supported")),
     EPFNOSUPPORT(platformSpecific(96, 46), tsLiteral("Protocol family not supported")),
     EAFNOSUPPORT(platformSpecific(97, 47), tsLiteral("Address family not supported by protocol")),
     EADDRINUSE(platformSpecific(98, 48), tsLiteral("Address already in use")),

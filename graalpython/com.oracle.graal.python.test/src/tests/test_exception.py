@@ -34,6 +34,9 @@ def fun4(test_obj):
 
 class ExceptionTests(unittest.TestCase):
 
+    def test_errno_enotsup(self):
+        self.assertEqual(errno.errorcode[errno.ENOTSUP], "ENOTSUP")
+
     def test_exc_info(self):
         typ, val, tb = (None,) * 3
         try:
