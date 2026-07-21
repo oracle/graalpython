@@ -76,6 +76,18 @@ if sys.implementation.name == "graalpy":
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(textwrap.dedent(contents).lstrip())
 
+        def test_version_specifiers(self):
+            contains = autopatch_cargo._specifier_contains
+            assert contains(">=0.28,<0.29", "0.28.0")
+            assert contains(">=0.28,<0.29", "0.28.3")
+            assert not contains(">=0.28,<0.29", "0.27.2")
+            assert not contains(">=0.28,<0.29", "0.29.0")
+            assert contains("==0.29.0", "0.29")
+            assert contains(">0.28.1,!=0.28.2,<=0.28.3", "0.28.3")
+            assert not contains(">=0.28", "0.29.0-alpha.1")
+            with self.assertRaises(ValueError):
+                contains("~=0.28", "0.28.3")
+
         def prepare_cached_crate(self, name="made-up-crate", version="1.2.3"):
             crate = self.cargo_home / "registry" / "src" / "made-up-index" / f"{name}-{version}"
             self.write(
