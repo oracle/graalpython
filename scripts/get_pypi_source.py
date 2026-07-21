@@ -136,8 +136,10 @@ def get_matching_rule(name, version, dist_type):
 
 
 def should_autopatch(name, version, artifact_type):
+    if artifact_type != "sdist":
+        return False
     rule = get_matching_rule(name, version, artifact_type)
-    if artifact_type == "sdist" and not rule:
+    if not rule:
         rule = get_matching_rule(name, version, "wheel")
     return not rule or rule.get("autopatch", True)
 
