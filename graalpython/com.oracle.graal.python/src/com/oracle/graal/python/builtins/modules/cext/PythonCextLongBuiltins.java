@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
@@ -60,6 +61,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
+import java.math.BigInteger;
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -78,21 +80,26 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
+import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -342,6 +349,102 @@ public final class PythonCextLongBuiltins {
             }
             byte[] bytes = readByteArrayElements(charPtr, 0, (int) size);
             return fromByteArray.execute(inliningTarget, bytes, littleEndian != 0, signed != 0);
+        }
+    }
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, Pointer, Py_ssize_t, Int}, call = Direct)
+    abstract static class PyLong_AsNativeBytes extends CApiQuaternaryBuiltinNode {
+        private static final int LITTLE_ENDIAN = 1;
+        private static final int NATIVE_ENDIAN = 2;
+        private static final int UNSIGNED_BUFFER = 4;
+        private static final int REJECT_NEGATIVE = 8;
+        private static final int ALLOW_INDEX = 16;
+        private static final int PYLONG_BITS_IN_DIGIT = 30;
+
+        @Specialization
+        long convert(Object object, long buffer, long size, int flags,
+                        @Bind Node inliningTarget,
+                        @Cached PyLongCheckNode longCheckNode,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaBigIntegerNode castToBigIntegerNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (object == PNone.NO_VALUE || size < 0) {
+                throw badInternalCall(object == PNone.NO_VALUE ? "object" : "size");
+            }
+
+            Object integer = object;
+            if (!longCheckNode.execute(inliningTarget, object)) {
+                if (flags != -1 && (flags & ALLOW_INDEX) != 0) {
+                    integer = indexNode.execute(null, inliningTarget, object);
+                } else {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, object);
+                }
+            }
+
+            BigInteger value = castToBigIntegerNode.execute(inliningTarget, integer);
+            if (flags != -1 && (flags & REJECT_NEGATIVE) != 0 && value.signum() < 0) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_INT);
+            }
+
+            boolean littleEndian;
+            if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
+                littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+            } else {
+                littleEndian = (flags & LITTLE_ENDIAN) != 0;
+            }
+            if (size > 0) {
+                writeValue(buffer, size, value, littleEndian);
+            }
+            return requiredSize(value, size, flags);
+        }
+
+        @TruffleBoundary
+        private static void writeValue(long buffer, long size, BigInteger value, boolean littleEndian) {
+            byte[] source = value.toByteArray();
+            byte fill = value.signum() < 0 ? (byte) 0xff : 0;
+            NativeMemory.memset(buffer, fill, size);
+            int copyLength = (int) Math.min(size, source.length);
+            int sourceOffset = source.length - copyLength;
+            if (littleEndian) {
+                byte[] reversed = new byte[copyLength];
+                for (int i = 0; i < copyLength; i++) {
+                    reversed[i] = source[source.length - i - 1];
+                }
+                NativeMemory.writeByteArrayElements(buffer, 0, reversed, 0, copyLength);
+            } else {
+                NativeMemory.writeByteArrayElements(buffer, size - copyLength, source, sourceOffset, copyLength);
+            }
+        }
+
+        @TruffleBoundary
+        private static long requiredSize(BigInteger value, long size, int flags) {
+            int magnitudeBits = value.abs().bitLength();
+            if (magnitudeBits <= PYLONG_BITS_IN_DIGIT) {
+                long result = Long.BYTES;
+                if (size > 0 && size <= Long.BYTES) {
+                    int bits = (int) size * Byte.SIZE;
+                    BigInteger signedLimit = BigInteger.ONE.shiftLeft(bits - 1);
+                    if (value.compareTo(signedLimit.negate()) >= 0 && value.compareTo(signedLimit) < 0) {
+                        result = size;
+                    } else if (value.signum() > 0 && value.compareTo(BigInteger.ONE.shiftLeft(bits)) < 0) {
+                        result = flags == -1 || (flags & UNSIGNED_BUFFER) != 0 ? size : size + 1;
+                    }
+                }
+                return result;
+            }
+
+            long result = magnitudeBits / Byte.SIZE + 1L;
+            if (size > 0 && result == size + 1 && magnitudeBits % Byte.SIZE == 0) {
+                if (value.signum() < 0) {
+                    BigInteger minimum = BigInteger.ONE.shiftLeft(magnitudeBits - 1).negate();
+                    if (value.equals(minimum)) {
+                        result = size;
+                    }
+                } else if (flags == -1 || (flags & UNSIGNED_BUFFER) != 0) {
+                    result = size;
+                }
+            }
+            return result;
         }
     }
 
