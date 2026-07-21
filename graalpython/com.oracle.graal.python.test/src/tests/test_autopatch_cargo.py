@@ -88,8 +88,8 @@ if sys.implementation.name == "graalpy":
             with self.assertRaises(ValueError):
                 contains("~=0.28", "0.28.3")
 
-        def prepare_cached_crate(self, name="made-up-crate", version="1.2.3"):
-            crate = self.cargo_home / "registry" / "src" / "made-up-index" / f"{name}-{version}"
+        def prepare_crate_archive(self, name="made-up-crate", version="1.2.3", message="unpatched", cached=True):
+            crate = self.tempdir / "archive-source" / f"{name}-{version}"
             self.write(
                 crate / "Cargo.toml",
                 f"""
@@ -99,8 +99,15 @@ if sys.implementation.name == "graalpy":
                 edition = "2021"
                 """,
             )
-            self.write(crate / "src" / "lib.rs", 'pub fn message() -> &\'static str { "unpatched" }\n')
-            return crate
+            self.write(crate / "src" / "lib.rs", f'pub fn message() -> &\'static str {{ "{message}" }}\n')
+            if cached:
+                archive = self.cargo_home / "registry" / "cache" / "made-up-index" / f"{name}-{version}.crate"
+            else:
+                archive = self.tempdir / f"{name}-{version}.crate"
+            archive.parent.mkdir(parents=True, exist_ok=True)
+            with tarfile.open(archive, "w:gz") as tar:
+                tar.add(crate, arcname=crate.name)
+            return archive, hashlib.sha256(archive.read_bytes()).hexdigest()
 
         def prepare_repository(self, version=">=1,<2"):
             self.write(
@@ -181,14 +188,21 @@ if sys.implementation.name == "graalpy":
             )
 
         def test_patches_locked_crate_and_adds_cargo_override(self):
-            cached_crate = self.prepare_cached_crate()
+            archive, checksum = self.prepare_crate_archive()
+            cached_crate = self.cargo_home / "registry" / "src" / "made-up-index" / "made-up-crate-1.2.3"
+            self.write(cached_crate / "Cargo.toml", "[package]\nname = \"made-up-crate\"\nversion = \"1.2.3\"\n")
+            self.write(cached_crate / "src" / "lib.rs", 'pub fn message() -> &\'static str { "global-cache" }\n')
+            archive_checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
             repository = self.prepare_repository()
-            self.prepare_workspace()
+            self.prepare_workspace(checksum)
 
-            assert autopatch_cargo.auto_patch_tree(self.workspace, repository) == 1
+            with patch.object(autopatch_cargo.urllib.request, "urlopen") as urlopen:
+                assert autopatch_cargo.auto_patch_tree(self.workspace, repository) == 1
+            urlopen.assert_not_called()
             patched_crate = self.workspace / ".graalpy" / "crates" / "made-up-crate-1.2.3"
             assert '"patched"' in (patched_crate / "src" / "lib.rs").read_text()
-            assert '"unpatched"' in (cached_crate / "src" / "lib.rs").read_text()
+            assert '"global-cache"' in (cached_crate / "src" / "lib.rs").read_text()
+            assert hashlib.sha256(archive.read_bytes()).hexdigest() == archive_checksum
 
             manifest = tomllib.loads((self.workspace / "Cargo.toml").read_text())
             cargo_patches = manifest["patch"]["crates-io"]
@@ -218,21 +232,7 @@ if sys.implementation.name == "graalpy":
             assert autopatch_cargo.auto_patch_tree(self.workspace, repository) == 0
 
         def test_downloads_and_verifies_uncached_crate(self):
-            crate = self.tempdir / "archive-source" / "made-up-crate-1.2.3"
-            self.write(
-                crate / "Cargo.toml",
-                """
-                [package]
-                name = "made-up-crate"
-                version = "1.2.3"
-                edition = "2021"
-                """,
-            )
-            self.write(crate / "src" / "lib.rs", 'pub fn message() -> &\'static str { "unpatched" }\n')
-            archive = self.tempdir / "made-up-crate-1.2.3.crate"
-            with tarfile.open(archive, "w:gz") as tar:
-                tar.add(crate, arcname=crate.name)
-            checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
+            archive, checksum = self.prepare_crate_archive(cached=False)
             repository = self.prepare_repository()
             self.prepare_workspace(checksum)
 
@@ -244,8 +244,16 @@ if sys.implementation.name == "graalpy":
             patched_crate = self.workspace / ".graalpy" / "crates" / "made-up-crate-1.2.3"
             assert '"patched"' in (patched_crate / "src" / "lib.rs").read_text()
 
+        def test_accepts_patch_already_applied_to_cached_archive(self):
+            _, checksum = self.prepare_crate_archive(message="patched")
+            repository = self.prepare_repository()
+            self.prepare_workspace(checksum)
+
+            assert autopatch_cargo.auto_patch_tree(self.workspace, repository) == 1
+            patched_crate = self.workspace / ".graalpy" / "crates" / "made-up-crate-1.2.3"
+            assert '"patched"' in (patched_crate / "src" / "lib.rs").read_text()
+
         def test_ignores_crate_outside_registered_version_range(self):
-            self.prepare_cached_crate()
             repository = self.prepare_repository(version=">=2")
             self.prepare_workspace()
 

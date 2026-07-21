@@ -128,14 +128,14 @@ def _cargo_home():
     return Path.home() / ".cargo"
 
 
-def _find_cached_crate(name, version):
-    registry_sources = _cargo_home() / "registry" / "src"
-    if not registry_sources.is_dir():
+def _find_cached_crate_archive(name, version):
+    registry_cache = _cargo_home() / "registry" / "cache"
+    if not registry_cache.is_dir():
         return None
-    crate_dir_name = f"{name}-{version}"
-    for registry in registry_sources.iterdir():
-        candidate = registry / crate_dir_name
-        if candidate.is_dir():
+    archive_name = f"{name}-{version}.crate"
+    for registry in registry_cache.iterdir():
+        candidate = registry / archive_name
+        if candidate.is_file():
             return candidate
     return None
 
@@ -143,6 +143,22 @@ def _find_cached_crate(name, version):
 def _safe_extract(archive, target):
     with tarfile.open(archive, "r:gz") as tar:
         tar.extractall(target, filter="data")
+
+
+def _extract_crate_archive(archive, name, version, checksum, destination):
+    actual_checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
+    if actual_checksum != checksum:
+        raise RuntimeError(
+            f"Checksum mismatch for {name} {version}: Cargo.lock has {checksum}, archive has {actual_checksum}"
+        )
+    with tempfile.TemporaryDirectory(prefix="graalpy-crate-") as tempdir:
+        extracted = Path(tempdir) / "extracted"
+        extracted.mkdir()
+        _safe_extract(archive, extracted)
+        crate_root = extracted / f"{name}-{version}"
+        if not (crate_root / "Cargo.toml").is_file():
+            raise RuntimeError(f"Archive for {name} {version} has an unexpected layout")
+        shutil.copytree(crate_root, destination)
 
 
 def _download_crate(name, version, checksum, destination):
@@ -154,38 +170,39 @@ def _download_crate(name, version, checksum, destination):
         archive = Path(tempdir) / f"{name}-{version}.crate"
         with urllib.request.urlopen(request) as response, open(archive, "wb") as output:
             shutil.copyfileobj(response, output)
-        actual_checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
-        if actual_checksum != checksum:
-            raise RuntimeError(
-                f"Checksum mismatch for {name} {version}: Cargo.lock has {checksum}, downloaded {actual_checksum}"
-            )
-        extracted = Path(tempdir) / "extracted"
-        extracted.mkdir()
-        _safe_extract(archive, extracted)
-        crate_root = extracted / f"{name}-{version}"
-        if not (crate_root / "Cargo.toml").is_file():
-            raise RuntimeError(f"Downloaded archive for {name} {version} has an unexpected layout")
-        shutil.copytree(crate_root, destination)
+        _extract_crate_archive(archive, name, version, checksum, destination)
 
 
 def _copy_crate(name, version, checksum, destination):
-    if cached := _find_cached_crate(name, version):
-        shutil.copytree(cached, destination)
-    else:
-        if not checksum:
-            raise RuntimeError(f"Cargo.lock does not contain a checksum for {name} {version}")
-        _download_crate(name, version, checksum, destination)
+    if not checksum:
+        raise RuntimeError(f"Cargo.lock does not contain a checksum for {name} {version}")
+    if cached_archive := _find_cached_crate_archive(name, version):
+        _extract_crate_archive(cached_archive, name, version, checksum, destination)
+        return
+    _download_crate(name, version, checksum, destination)
 
 
 def _apply_patch(crate_dir, patch_path):
     executable = "patch.exe" if os.name == "nt" else "patch"
-    subprocess.run(
-        [executable, "-f", "-d", str(crate_dir), "-p1", "-i", str(patch_path)],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
+    command = [executable, "-f", "-d", str(crate_dir), "-p1", "-i", str(patch_path)]
+    try:
+        subprocess.run(
+            command,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+    except subprocess.CalledProcessError:
+        already_applied = subprocess.run(
+            [executable, "--dry-run", "-f", "-R", "-d", str(crate_dir), "-p1", "-i", str(patch_path)],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        if already_applied.returncode:
+            raise
 
 
 def _find_lockfiles(location):
