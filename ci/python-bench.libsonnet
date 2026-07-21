@@ -164,7 +164,7 @@
         packages +: packages(self.os, self.arch),
         environment +: environment(self.os, self.arch),
         logs +: logs(self.os, self.arch),
-        setup: [],
+        setup: $.cpython_artifact_setup(self.os, self.arch),
         run: [
             bench_cmd(self.bench, self.mx_args, self.mx_bench_args, self.vm, self.vm_config_name, self.vm_info),
         ],

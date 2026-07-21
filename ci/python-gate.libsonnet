@@ -86,7 +86,6 @@
             },
             amd64: {
                 MUSL_TOOLCHAIN: {name: "musl-toolchain", version: "1.0", platformspecific: true},
-                PYTHON3_HOME: {name: "python3", version: "3.12.8", platformspecific: true},
             },
             aarch64: {},
         },
@@ -104,21 +103,7 @@
         },
     },
 
-    // This is the diff to 'DOWNLOADS' and meant to be used on OL8 images.
-    // Use it as diff argument to function 'downloads'.
-    local DOWNLOADS_DIFF_OL8 = {
-        linux: {
-            amd64: {
-                // Remove Python3 download because this is built for OL7 and
-                // does not work on OL8.
-                PYTHON3_HOME: null,
-            },
-        },
-    },
-
-    local DOWNLOADS_DIFF = {
-        buildslave_ol8: DOWNLOADS_DIFF_OL8,
-    },
+    local DOWNLOADS_DIFF = {},
 
     //------------------------------------------------------------------------------------------------------------------
     // environment
@@ -164,7 +149,7 @@
 
     local ENV_POSIX = {
         CPPFLAGS: "-I$LIBGMP/include",
-        LD_LIBRARY_PATH: "$LIBGMP/lib:$LLVM/lib:$LD_LIBRARY_PATH",
+        LD_LIBRARY_PATH: "$LIBGMP/lib:$LD_LIBRARY_PATH",
         FORK_COUNTS_DIRECTORY: "$BUILD_DIR/benchmarking-config/fork-counts",
         RODINIA_DATASET_ZIP: $.overlay_imports.RODINIA_DATASET_ZIP,
         PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin"),
@@ -173,12 +158,6 @@
     // This is the diff to 'ENVIRONMENT' and meant to be used on OL8 images.
     // Use it as diff argument to function 'downloads'.
     local ENVIRONMENT_DIFF_OL8 = {
-        linux: {
-            common: {
-                // On OL8, we don't use our own build of Python 3.10.8 because that is built on OL7
-                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$MUSL_TOOLCHAIN/bin"),
-            },
-        },
         darwin: {
             common: {
                 PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$MUSL_TOOLCHAIN/bin"),
@@ -378,6 +357,15 @@
 
     logs(os, arch):: LOGS,
 
+    cpython_artifact_setup(os, arch)::
+        if os == "linux" && arch == "amd64" then [
+            ["artifact_download.py", "cpython/linux-amd64-3.13.14-2.tar.gz", "cpython-linux-amd64.tar.gz"],
+            ["mkdir", "-p", "cpython"],
+            ["tar", "-xzf", "cpython-linux-amd64.tar.gz", "-C", "cpython"],
+            ["ln", "-sf", "python3", "cpython/usr/local/bin/python"],
+            ["set-export", "PYTHON3_HOME", "$PWD/cpython/usr/local/bin"],
+        ] else [],
+
     //------------------------------------------------------------------------------------------------------------------
     // graalpy gates
     //------------------------------------------------------------------------------------------------------------------
@@ -419,6 +407,7 @@
         // all gates share the same base environment
         environment+: $.environment(self.os, self.arch),
         packages+: $.packages(self.os, self.arch),
+        setup+: $.cpython_artifact_setup(self.os, self.arch),
         run+: [
             ["mx"] + self.mx_parameters + self.dy + self.primary_suite + [
                 "--strict-compliance", "--primary", "gate", "--tags", self.tags, "-B=--force-deprecation-as-warning",
@@ -435,6 +424,7 @@
                 "graalpython/com.oracle.graal.python.test/src/graalpytest.py",
                 "mx.graalpython/mx_graalpython.py",
                 "ci.jsonnet",
+                "ci/**",
             ],
         },
     }),
