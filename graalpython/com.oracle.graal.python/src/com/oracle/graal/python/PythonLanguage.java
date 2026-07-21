@@ -200,6 +200,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     /** See {@code mx_graalpython.py:abi_version} */
     public static final String GRAALPY_ABI_VERSION;
     public static final String GRAALPY_ABIFLAGS;
+    private static final String BUILD_PLATFORM_GRAALPY_SOABI;
     private static final String BUILD_PLATFORM_GRAALPY_EXT_SUFFIX;
     private static final String BUILD_PLATFORM_GRAALPY_MULTIARCH;
 
@@ -254,8 +255,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             String[] abiParts = new String(is.readAllBytes(), StandardCharsets.US_ASCII).split("\\R", 5);
             GRAALPY_ABI_VERSION = abiParts[0].strip();
             GRAALPY_ABIFLAGS = abiParts.length > 1 ? abiParts[1].strip() : "";
-            BUILD_PLATFORM_GRAALPY_EXT_SUFFIX = abiParts.length > 2 ? abiParts[2].strip() : "";
-            BUILD_PLATFORM_GRAALPY_MULTIARCH = abiParts.length > 3 ? abiParts[3].strip() : "";
+            BUILD_PLATFORM_GRAALPY_SOABI = abiParts.length > 2 ? abiParts[2].strip() : "";
+            BUILD_PLATFORM_GRAALPY_EXT_SUFFIX = abiParts.length > 3 ? abiParts[3].strip() : "";
+            BUILD_PLATFORM_GRAALPY_MULTIARCH = abiParts.length > 4 ? abiParts[4].strip() : "";
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -277,7 +279,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                             ? ServiceLoader.load(layer, GraalPyPlatformInfoProvider.class)
                             : ServiceLoader.load(GraalPyPlatformInfoProvider.class, PythonLanguage.class.getClassLoader());
             PLATFORM_INFO = providers.findFirst().map(GraalPyPlatformInfoProvider::getPlatformInfo).orElseGet(
-                            () -> new PlatformInfo(BUILD_PLATFORM_GRAALPY_EXT_SUFFIX, BUILD_PLATFORM_GRAALPY_MULTIARCH));
+                            () -> new PlatformInfo(BUILD_PLATFORM_GRAALPY_SOABI, BUILD_PLATFORM_GRAALPY_EXT_SUFFIX, BUILD_PLATFORM_GRAALPY_MULTIARCH));
         }
         return PLATFORM_INFO;
     }

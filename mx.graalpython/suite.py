@@ -657,6 +657,7 @@ suite = {
             "cmakeConfig": {
                 "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><release_level:binary><abi_version>",
                 "GRAALPY_ABIFLAGS": "<graalpy_abiflags>",
+                "GRAALPY_SOABI": "<graalpy_soabi>",
                 "GRAALPY_EXT_SUFFIX": "<graalpy_ext>",
                 "GRAALPY_MULTIARCH": "<graalpy_multiarch>",
             },

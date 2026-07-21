@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SYSCONFIG;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
@@ -67,8 +66,8 @@ public final class SysconfigModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object configVars(@Bind PythonLanguage language) {
             return PFactory.createDict(language, new PKeyword[]{
-                            new PKeyword(tsLiteral("EXT_SUFFIX"), toTruffleStringUncached(PythonLanguage.GRAALPY_EXT_SUFFIX)),
-                            new PKeyword(tsLiteral("SOABI"), toTruffleStringUncached(PythonLanguage.GRAALPY_SOABI)),
+                            new PKeyword(tsLiteral("EXT_SUFFIX"), PythonLanguage.getPlatformInfo().extensionSuffix()),
+                            new PKeyword(tsLiteral("SOABI"), PythonLanguage.getPlatformInfo().soabi()),
                             new PKeyword(tsLiteral("Py_GIL_DISABLED"), 0)
             });
         }
