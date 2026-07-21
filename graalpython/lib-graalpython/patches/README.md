@@ -29,7 +29,7 @@ subdir = 'src'
 # a number greater than 1 if you want given version to be preferred to other entries. Additionally, if you set the
 # priority to 0, the version will not be shown in the suggestion list we display when we didn't find an applicable patch
 install-priority = 1
-# Optional. Whether to run the `autopatch_capi` before applying the explicit patch. Defaults to true.
+# Optional. Whether to run `autopatch_capi` and `autopatch_cargo` before applying the explicit patch. Defaults to true.
 autopatch = true
 
 # The next entry will apply to all other versions of foo that didn't get matched by the previous rule
@@ -37,3 +37,7 @@ autopatch = true
 patch = 'foo.patch'
 license = 'MIT'
 ```
+
+Rust crate patches used by `autopatch_cargo` live in `crates/`. Its `metadata.toml` uses the same `rules`, `version`,
+`patch`, and `license` fields. The tool finds matching crates.io dependencies in `Cargo.lock`, patches local copies of
+the crates, and adds `[patch.crates-io]` path overrides to the workspace `Cargo.toml`.

@@ -76,6 +76,7 @@ def validate_metadata(patches_dir):
                 stdout=subprocess.PIPE,
                 text=True,
             ).stdout.splitlines()
+            if Path(file).parent == Path('.')
         }
     else:
         patch_files = set(patches_dir.iterdir())
@@ -127,6 +128,9 @@ def validate_metadata(patches_dir):
     for patch_file in patch_files:
         if patch_file.is_file() and patch_file.name.endswith('patch'):
             assert patch_file in patches, f"Dangling patch file: {patch_file}"
+    crates_dir = patches_dir / 'crates'
+    if crates_dir.is_dir():
+        validate_metadata(crates_dir)
 
 
 def main():
