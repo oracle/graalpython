@@ -2447,6 +2447,7 @@ def dev_tag(_=None):
     rev_list = [
         os.path.join('graalpython', 'lib-graalpython', 'patches'),
         os.path.join('graalpython', 'lib-graalpython', 'modules', 'autopatch_capi.py'),
+        os.path.join('graalpython', 'lib-graalpython', 'modules', 'autopatch_cargo.py'),
         os.path.join('graalpython', 'com.oracle.graal.python.cext', 'include'),
         os.path.join('graalpython', 'com.oracle.graal.python.cext', 'src', 'capi.h'),
     ]

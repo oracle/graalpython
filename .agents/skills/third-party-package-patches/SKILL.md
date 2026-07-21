@@ -1,6 +1,6 @@
 ---
 name: third-party-package-patches
-description: Create or update GraalPy third-party package compatibility patches under graalpython/lib-graalpython/patches, including PyPI source preparation, rebasing existing patches, metadata.toml updates, license checks, version-range validation, and verify_patches.py validation.
+description: Create or update GraalPy third-party package and Rust crate compatibility patches under graalpython/lib-graalpython/patches, including PyPI source preparation, Cargo crate autopatching, rebasing existing patches, metadata.toml updates, license checks, version-range validation, and verify_patches.py validation.
 ---
 
 # Third-Party Package Patches
@@ -11,6 +11,8 @@ Use this skill when creating or updating compatibility patches for packages inst
 - Source preparation: `scripts/get_pypi_source.py`
 - Patch metadata: `graalpython/lib-graalpython/patches/metadata.toml`
 - Patch directory: `graalpython/lib-graalpython/patches/`
+- Cargo autopatcher: `graalpython/lib-graalpython/modules/autopatch_cargo.py`
+- Crate patch metadata: `graalpython/lib-graalpython/patches/crates/metadata.toml`
 - Metadata verifier: `mx.graalpython/verify_patches.py`
 
 ## Workflow
@@ -20,7 +22,7 @@ Use this skill when creating or updating compatibility patches for packages inst
 ```bash
 python scripts/get_pypi_source.py package==version
 ```
-The script prints `Prepared source at: ...`. Use that directory as the working tree. It is already a temporary git repository with an initial commit, and it has already been processed by `graalpython/lib-graalpython/modules/autopatch_capi.py`.
+The script prints `Prepared source at: ...`. Use that directory as the working tree. It is already a temporary git repository with an initial commit, and it has already been processed by `autopatch_capi.py` and `autopatch_cargo.py`.
 
 3. Inspect `graalpython/lib-graalpython/patches/metadata.toml` for existing `[[package.rules]]` entries.
 - If a matching patch exists for the requested version, apply it first.
@@ -74,6 +76,19 @@ python mx.graalpython/verify_patches.py graalpython/lib-graalpython/patches
 
 12. If you were asked to build or test the patched package, you need to rebuild GraalPy with `mx python-jvm` to pick up the changes. Create a venv with `mx python -m venv venv_name` and use it for building and testing.
 
+## Rust Crate Patches
+
+Use `autopatch_cargo.py` when the incompatibility is in a transitive crates.io dependency rather than the Python package source. It finds matching crates in `Cargo.lock`, copies only those crates into the source tree, applies registered patches, and adds Cargo path overrides.
+
+1. Add rules to `graalpython/lib-graalpython/patches/crates/metadata.toml`. Use the crate package name as the table key and specify `version`, `patch`, and `license` for every rule.
+2. Generate crate patch files from a clean checkout of the published crate. Patch paths must be relative to the crate root. Do not hand-edit generated patch files.
+3. Run the tool directly when validating a prepared source tree:
+```bash
+python graalpython/lib-graalpython/modules/autopatch_cargo.py /path/to/source
+```
+4. Test every crate release covered by the version range, then build representative Python packages that resolve those releases.
+5. Use the Python package rule's `autopatch = false` only when both `autopatch_capi` and `autopatch_cargo` must be disabled for that package version.
+
 ## Metadata Reference
 Rule keys accepted by the verifier are:
 - `version`
@@ -83,6 +98,7 @@ Rule keys accepted by the verifier are:
 - `dist-type`
 - `install-priority`
 - `note`
+- `autopatch`
 
 Allowed `dist-type` values are `wheel` and `sdist`.
 
