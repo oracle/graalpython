@@ -135,6 +135,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
+import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -890,12 +891,14 @@ public final class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static BigInteger op(BigInteger left, BigInteger right) {
             // Math.floorDiv for BigInteger
-            BigInteger r = left.divide(right);
-            // if the signs are different and modulo not zero, round down
-            if ((left.xor(right)).signum() < 0 && (r.multiply(right).compareTo(left)) != 0) {
-                r = r.subtract(BigInteger.ONE);
+            int leftSign = left.signum();
+            if (leftSign == 0 || leftSign == right.signum()) {
+                return left.divide(right);
             }
-            return r;
+            BigInteger[] quotientAndRemainder = left.divideAndRemainder(right);
+            return quotientAndRemainder[1].signum() == 0
+                            ? quotientAndRemainder[0]
+                            : quotientAndRemainder[0].subtract(BigInteger.ONE);
         }
 
         @SuppressWarnings("unused")
@@ -911,20 +914,80 @@ public final class IntBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.nb_divmod, isComplex = true)
+    @TypeSystemReference(PythonIntegerTypes.class)
     @GenerateNodeFactory
     abstract static class DivModNode extends BinaryOpBuiltinNode {
 
+        private static final BigInteger LONG_OVERFLOW_VALUE = BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
+
         @Specialization
-        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+        static Object doLongLong(long left, long right,
                         @Bind Node inliningTarget,
-                        @Cached FloorDivNode floorDivNode,
-                        @Cached ModNode modNode) {
-            Object div = floorDivNode.execute(frame, left, right);
-            if (div == PNotImplemented.NOT_IMPLEMENTED) {
-                return PNotImplemented.NOT_IMPLEMENTED;
+                        @Shared @Cached PRaiseNode raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
+            Object quotient;
+            if (left == Long.MIN_VALUE && right == -1) {
+                quotient = PFactory.createInt(PythonLanguage.get(inliningTarget), LONG_OVERFLOW_VALUE);
+            } else {
+                quotient = Math.floorDiv(left, right);
             }
-            Object mod = modNode.execute(frame, left, right);
-            return PFactory.createTuple(PythonLanguage.get(inliningTarget), new Object[]{div, mod});
+            return PFactory.createTuple(PythonLanguage.get(inliningTarget),
+                            new Object[]{quotient, Math.floorMod(left, right)});
+        }
+
+        @Specialization
+        static Object doPIntLong(PInt left, long right,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached NarrowBigIntegerNode narrowQuotient,
+                        @Shared @Cached NarrowBigIntegerNode narrowRemainder,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            raiseDivisionByZero(inliningTarget, right == 0, raiseNode);
+            return doBigInteger(inliningTarget, left.getValue(), PInt.longToBigInteger(right),
+                            narrowQuotient, narrowRemainder);
+        }
+
+        @Specialization
+        static Object doLongPInt(long left, PInt right,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached NarrowBigIntegerNode narrowQuotient,
+                        @Shared @Cached NarrowBigIntegerNode narrowRemainder,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
+            return doBigInteger(inliningTarget, PInt.longToBigInteger(left), right.getValue(),
+                            narrowQuotient, narrowRemainder);
+        }
+
+        @Specialization
+        static Object doPIntPInt(PInt left, PInt right,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached NarrowBigIntegerNode narrowQuotient,
+                        @Shared @Cached NarrowBigIntegerNode narrowRemainder,
+                        @Shared @Cached PRaiseNode raiseNode) {
+            raiseDivisionByZero(inliningTarget, right.isZero(), raiseNode);
+            return doBigInteger(inliningTarget, left.getValue(), right.getValue(), narrowQuotient, narrowRemainder);
+        }
+
+        private static Object doBigInteger(Node inliningTarget, BigInteger left, BigInteger right,
+                        NarrowBigIntegerNode narrowQuotient, NarrowBigIntegerNode narrowRemainder) {
+            BigInteger[] quotientAndRemainder = divmod(left, right);
+            Object quotient = narrowQuotient.execute(inliningTarget, quotientAndRemainder[0]);
+            Object remainder = narrowRemainder.execute(inliningTarget, quotientAndRemainder[1]);
+            return PFactory.createTuple(PythonLanguage.get(inliningTarget), new Object[]{quotient, remainder});
+        }
+
+        @TruffleBoundary
+        private static BigInteger[] divmod(BigInteger left, BigInteger right) {
+            BigInteger[] quotientAndRemainder = left.divideAndRemainder(right);
+            if (quotientAndRemainder[1].signum() != 0 && left.signum() != right.signum()) {
+                quotientAndRemainder[0] = quotientAndRemainder[0].subtract(BigInteger.ONE);
+                quotientAndRemainder[1] = quotientAndRemainder[1].add(right);
+            }
+            return quotientAndRemainder;
+        }
+
+        @Fallback
+        static PNotImplemented doGeneric(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -1058,11 +1121,12 @@ public final class IntBuiltins extends PythonBuiltins {
             if (a.signum() == 0) {
                 return BigInteger.ZERO;
             }
-            BigInteger mod = a.mod(b.negate());
+            BigInteger positiveB = b.negate();
+            BigInteger mod = a.mod(positiveB);
             if (mod.signum() == 0) {
                 return BigInteger.ZERO;
             }
-            return a.mod(b.negate()).subtract(b.negate());
+            return mod.subtract(positiveB);
         }
 
         @SuppressWarnings("unused")
@@ -2685,6 +2749,9 @@ public final class IntBuiltins extends PythonBuiltins {
         private static void validateIntegerSpec(Node inliningTarget, PRaiseNode raiseNode, Spec spec) {
             if (Spec.specified(spec.precision)) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.PRECISION_NOT_ALLOWED_FOR_INT);
+            }
+            if (spec.noNegativeZero && (spec.type == 'b' || spec.type == 'c' || spec.type == 'd' || spec.type == 'o' || spec.type == 'x' || spec.type == 'X' || spec.type == 'n')) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEGATIVE_ZERO_COERCION_NOT_ALLOWED_IN_INT_FMT);
             }
             if (spec.type == 'c') {
                 if (Spec.specified(spec.sign)) {

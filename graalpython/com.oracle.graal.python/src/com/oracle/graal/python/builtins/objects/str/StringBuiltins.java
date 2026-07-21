@@ -443,6 +443,9 @@ public final class StringBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.SIGN_NOT_ALLOWED_FOR_STRING_FMT);
                 }
             }
+            if (spec.noNegativeZero) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEGATIVE_ZERO_COERCION_NOT_ALLOWED_IN_STRING_FMT);
+            }
             if (spec.alternate) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ALTERNATE_NOT_ALLOWED_WITH_STRING_FMT);
             }

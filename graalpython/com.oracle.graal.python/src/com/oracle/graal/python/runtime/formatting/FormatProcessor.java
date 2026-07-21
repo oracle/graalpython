@@ -412,7 +412,7 @@ abstract class FormatProcessor<T> {
              * Encode as an InternalFormat.Spec. The values in the constructor always have specified
              * values, except for sign, width and precision.
              */
-            InternalFormat.Spec spec = new InternalFormat.Spec(fill, align, sign, altFlag, width, Spec.NONE, precision, c);
+            InternalFormat.Spec spec = new InternalFormat.Spec(fill, align, sign, false, altFlag, width, Spec.NONE, precision, c);
 
             /*
              * Process argument according to format specification decoded from the string. It is

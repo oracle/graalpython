@@ -2697,27 +2697,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static BigInteger op(BigInteger x) {
             // assumes x >= 0
-            if (x.equals(BigInteger.ZERO) || x.equals(BigInteger.ONE)) {
-                return x;
-            }
-            BigInteger start = BigInteger.ONE;
-            BigInteger end = x;
-            BigInteger result = BigInteger.ZERO;
-            BigInteger two = BigInteger.valueOf(2);
-            while (start.compareTo(end) <= 0) {
-                BigInteger mid = (start.add(end).divide(two));
-                int cmp = mid.multiply(mid).compareTo(x);
-                if (cmp == 0) {
-                    return mid;
-                }
-                if (cmp < 0) {
-                    start = mid.add(BigInteger.ONE);
-                    result = mid;
-                } else {
-                    end = mid.subtract(BigInteger.ONE);
-                }
-            }
-            return result;
+            return x.sqrt();
         }
 
         private static void raiseIfNegative(Node inliningTarget, boolean condition, PRaiseNode raiseNode) {

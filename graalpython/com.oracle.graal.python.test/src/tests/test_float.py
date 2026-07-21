@@ -76,6 +76,9 @@ class BasicTests(unittest.TestCase):
         assert round(1.123, 2) == 1.12
         assert round(1.123, 3) == 1.123
         assert round(1.123, 100) == 1.123
+        assert round(1e23) == 99999999999999991611392
+        assert round(-1e23) == -99999999999999991611392
+        assert round(8.98846567431158e307) == 2**1023
         import sys
         if sys.version_info.minor >= 6:
             assert 1.123.__round__(None) == 1
@@ -928,6 +931,37 @@ class FormatTests(unittest.TestCase):
         self.assertEqual(format(NAN, 'F'), 'NAN')
         self.assertEqual(format(INF, 'f'), 'inf')
         self.assertEqual(format(INF, 'F'), 'INF')
+        self.assertEqual(format(INF, '07,f'), '0000inf')
+        self.assertEqual(format(NAN, '07,f'), '0000nan')
+        self.assertEqual(format(-INF, '07_f'), '-000inf')
+
+    def test_negative_zero_format(self):
+        self.assertEqual(format(0.0, 'zf'), '0.000000')
+        self.assertEqual(format(-0.0, 'z.1f'), '0.0')
+        self.assertEqual(format(-0.01, 'z.1f'), '0.0')
+        self.assertEqual(format(-0.09, 'z.1f'), '-0.1')
+        self.assertEqual(format(-0.001, 'z.2e'), '-1.00e-03')
+        self.assertEqual(format(-0.001, 'z.2g'), '-0.001')
+        self.assertEqual(format(-0.001, 'z.2%'), '-0.10%')
+
+        self.assertEqual(format(-0.0, ' z.0f'), ' 0')
+        self.assertEqual(format(-0.0, '+z.0f'), '+0')
+        self.assertEqual(format(-0.0, '-z.0f'), '0')
+        self.assertEqual(format(-0.0, 'z>6.1f'), 'zz-0.0')
+        self.assertEqual(format(-0.0, 'z>z6.1f'), 'zzz0.0')
+
+        self.assertEqual(format(-0, 'z.1f'), '0.0')
+        self.assertEqual(format(complex(0.0, -0.01), 'z.1f'), '0.0+0.0j')
+        self.assertEqual(format(complex(-0.0, -0.0), 'z'), '(0+0j)')
+
+        with self.assertRaisesRegex(ValueError, 'Negative zero coercion'):
+            format(0, 'zd')
+        with self.assertRaisesRegex(ValueError, 'Negative zero coercion'):
+            format('x', 'zs')
+        with self.assertRaises(ValueError):
+            format(0.0, 'z+f')
+        with self.assertRaises(ValueError):
+            format(0.0, 'fz')
 
     def test_format_testfile(self):
         with open(format_testfile) as testfile:

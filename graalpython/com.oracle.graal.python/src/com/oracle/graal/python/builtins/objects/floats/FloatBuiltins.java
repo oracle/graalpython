@@ -328,7 +328,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     public abstract static class StrNode extends AbstractNumericUnaryBuiltin {
-        public static final Spec spec = new Spec(' ', '>', Spec.NONE, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
+        public static final Spec spec = new Spec(' ', '>', Spec.NONE, false, false, Spec.UNSPECIFIED, Spec.NONE, 0, 'r');
 
         @Override
         protected TruffleString op(double self) {
@@ -823,11 +823,10 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         static Object round(Object xObj, @SuppressWarnings("unused") PNone none,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Exclusive @Cached CastToJavaDoubleNode cast,
                         @Cached InlinedConditionProfile nanProfile,
                         @Cached InlinedConditionProfile infProfile,
-                        @Cached InlinedConditionProfile isLongProfile,
+                        @Cached PyLongFromDoubleNode longFromDoubleNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             double x = castToDoubleChecked(inliningTarget, xObj, cast);
             if (nanProfile.profile(inliningTarget, Double.isNaN(x))) {
@@ -837,16 +836,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float infinity");
             }
             double result = round(x, 0, inliningTarget, raiseNode);
-            if (isLongProfile.profile(inliningTarget, result > Long.MAX_VALUE || result < Long.MIN_VALUE)) {
-                return PFactory.createInt(language, toBigInteger(result));
-            } else {
-                return (long) result;
-            }
-        }
-
-        @TruffleBoundary
-        private static BigInteger toBigInteger(double d) {
-            return BigDecimal.valueOf(d).toBigInteger();
+            return longFromDoubleNode.execute(inliningTarget, result);
         }
     }
 
