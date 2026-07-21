@@ -360,10 +360,10 @@
     cpython_artifact_setup(os, arch)::
         if os == "linux" && arch == "amd64" then [
             ["artifact_download.py", "cpython/linux-amd64-3.13.14-2.tar.gz", "cpython-linux-amd64.tar.gz"],
-            ["mkdir", "-p", "cpython"],
-            ["tar", "-xzf", "cpython-linux-amd64.tar.gz", "-C", "cpython"],
-            ["ln", "-sf", "python3", "cpython/usr/local/bin/python"],
-            ["set-export", "PYTHON3_HOME", "$PWD/cpython/usr/local/bin"],
+            ["mkdir", "-p", "../cpython"],
+            ["tar", "-xzf", "cpython-linux-amd64.tar.gz", "-C", "../cpython"],
+            ["ln", "-sf", "python3", "../cpython/usr/local/bin/python"],
+            ["set-export", "PYTHON3_HOME", "$PWD/../cpython/usr/local/bin"],
         ] else [],
 
     //------------------------------------------------------------------------------------------------------------------
