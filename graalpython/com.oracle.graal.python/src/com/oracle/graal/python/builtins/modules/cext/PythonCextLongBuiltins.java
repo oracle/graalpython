@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
@@ -58,6 +59,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+
+import java.nio.ByteOrder;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -339,6 +342,35 @@ public final class PythonCextLongBuiltins {
             }
             byte[] bytes = readByteArrayElements(charPtr, 0, (int) size);
             return fromByteArray.execute(inliningTarget, bytes, littleEndian != 0, signed != 0);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct)
+    abstract static class PyLong_FromNativeBytes extends CApiTernaryBuiltinNode {
+        private static final int LITTLE_ENDIAN = 1;
+        private static final int NATIVE_ENDIAN = 2;
+        private static final int UNSIGNED_BUFFER = 4;
+
+        @Specialization
+        Object convert(long buffer, long size, int flags,
+                        @Bind Node inliningTarget,
+                        @Cached IntNodes.PyLongFromByteArray fromByteArray,
+                        @Cached PRaiseNode raiseNode) {
+            if (buffer == 0) {
+                throw badInternalCall("buffer");
+            }
+            if (size != (int) size) {
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+            }
+            boolean littleEndian;
+            if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
+                littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+            } else {
+                littleEndian = (flags & LITTLE_ENDIAN) != 0;
+            }
+            boolean signed = flags == -1 || (flags & UNSIGNED_BUFFER) == 0;
+            byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
+            return fromByteArray.execute(inliningTarget, bytes, littleEndian, signed);
         }
     }
 

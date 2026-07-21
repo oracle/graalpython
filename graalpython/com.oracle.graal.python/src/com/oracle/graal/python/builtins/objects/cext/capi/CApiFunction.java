@@ -779,7 +779,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyList_Clear", ret = PrimitiveResult32, args = {PyObjectReturn}, call = NotImplemented)
     @CApiBuiltin(name = "PyList_Extend", ret = PrimitiveResult32, args = {PyObjectReturn, PyObjectReturn}, call = NotImplemented)
     @CApiBuiltin(name = "PyLong_AsNativeBytes", ret = Py_ssize_t, args = {PyObjectReturn, Pointer, Py_ssize_t, PrimitiveResult32}, call = NotImplemented)
-    @CApiBuiltin(name = "PyLong_FromNativeBytes", ret = PyObjectReturn, args = {CONST_VOID_PTR, SIZE_T, PrimitiveResult32}, call = NotImplemented)
     @CApiBuiltin(name = "PyLong_FromUnsignedNativeBytes", ret = PyObjectReturn, args = {CONST_VOID_PTR, SIZE_T, PrimitiveResult32}, call = NotImplemented)
     @CApiBuiltin(name = "PyLong_GetInfo", ret = PyObject, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyMarshal_ReadLastObjectFromFile", ret = PyObject, args = {FILE_PTR}, call = NotImplemented)
