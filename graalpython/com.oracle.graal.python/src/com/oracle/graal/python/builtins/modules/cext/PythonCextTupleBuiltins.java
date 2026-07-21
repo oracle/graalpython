@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
@@ -70,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySliceNew;
-import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.GetTupleStorage;
@@ -154,19 +152,6 @@ public final class PythonCextTupleBuiltins {
                 throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.TUPLE_OUT_OF_BOUNDS);
             }
             return (int) key;
-        }
-    }
-
-    /*
-     * The best attempt at moving this to pure C regressed by about 1.09x by median time.
-     */
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
-    abstract static class PyTuple_Size extends CApiUnaryBuiltinNode {
-        @Specialization
-        public static long size(Object tuple,
-                        @Bind Node inliningTarget,
-                        @Cached PyTupleSizeNode pyTupleSizeNode) {
-            return pyTupleSizeNode.execute(inliningTarget, tuple);
         }
     }
 
