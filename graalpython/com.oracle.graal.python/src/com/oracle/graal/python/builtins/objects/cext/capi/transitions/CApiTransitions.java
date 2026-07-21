@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_READY;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_UNINITIALIZED;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeDoubleField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
@@ -73,7 +72,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.CApiConstant;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -169,21 +167,6 @@ public abstract class CApiTransitions {
     private static int GCALotCounter = 0;
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CApiTransitions.class);
-
-    @CApiConstant //
-    public static final int GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED = 0;
-    @CApiConstant //
-    public static final int GRAALPY_UNICODE_INTERN_STATE_INTERNED = 1;
-    @CApiConstant //
-    public static final int GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED = 2;
-    @CApiConstant //
-    private static final int GRAALPY_UNICODE_KIND_MASK = 0x7;
-    @CApiConstant //
-    private static final long GRAALPY_UNICODE_IS_ASCII_FLAG = 1L << 3;
-    @CApiConstant //
-    private static final int GRAALPY_UNICODE_INTERN_STATE_SHIFT = 4;
-    @CApiConstant //
-    private static final long GRAALPY_UNICODE_INTERN_STATE_MASK = 0x3L << GRAALPY_UNICODE_INTERN_STATE_SHIFT;
 
     enum PollingState {
         /** startup barrier not finished yet, polling must not run */
@@ -456,68 +439,6 @@ public abstract class CApiTransitions {
         NativeStorageReference ref = new NativeStorageReference(handleContext, storage);
         storage.setReference(ref);
         handleContext.nativeStorageReferences.add(ref);
-    }
-
-    public static long initializeGraalPyUnicodeObject(long rawPointer, long elements, long byteLength, int charSize, boolean isAscii, int interned) {
-        assert charSize == 1 || charSize == 2 || charSize == 4;
-        assert byteLength == elements * charSize;
-        assert interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED || interned == GRAALPY_UNICODE_INTERN_STATE_INTERNED || interned == GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
-        long data = rawPointer + CStructs.GraalPyUnicodeObject.size();
-        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__length, elements);
-        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__byte_length, byteLength);
-        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__hash, -1);
-        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__state, createGraalPyUnicodeObjectState(charSize, isAscii, interned));
-        writePtrField(rawPointer, CFields.GraalPyUnicodeObject__data, data);
-        NativeMemory.memset(data + byteLength, (byte) 0, charSize);
-        return data;
-    }
-
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_CreateState.
-    private static long createGraalPyUnicodeObjectState(int charSize, boolean isAscii, int interned) {
-        assert (charSize & ~GRAALPY_UNICODE_KIND_MASK) == 0;
-        return charSize | encodeGraalPyUnicodeObjectAscii(isAscii) | encodeGraalPyUnicodeObjectInterned(interned);
-    }
-
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_EncodeAscii.
-    private static long encodeGraalPyUnicodeObjectAscii(boolean isAscii) {
-        return isAscii ? GRAALPY_UNICODE_IS_ASCII_FLAG : 0;
-    }
-
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_EncodeInterned.
-    private static long encodeGraalPyUnicodeObjectInterned(int interned) {
-        return (long) interned << GRAALPY_UNICODE_INTERN_STATE_SHIFT;
-    }
-
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetInternedFromState.
-    private static int getGraalPyUnicodeObjectInternedFromState(long state) {
-        return (int) ((state & GRAALPY_UNICODE_INTERN_STATE_MASK) >> GRAALPY_UNICODE_INTERN_STATE_SHIFT);
-    }
-
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_IsAsciiFromState.
-    private static boolean isGraalPyUnicodeObjectAsciiFromState(long state) {
-        return (state & GRAALPY_UNICODE_IS_ASCII_FLAG) != 0;
-    }
-
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetKindFromState.
-    private static int getGraalPyUnicodeObjectKindFromState(long state) {
-        return (int) (state & GRAALPY_UNICODE_KIND_MASK);
-    }
-
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_UpdateInterned.
-    private static long updateGraalPyUnicodeObjectInterned(long state, int interned) {
-        return (state & ~GRAALPY_UNICODE_INTERN_STATE_MASK) | encodeGraalPyUnicodeObjectInterned(interned);
-    }
-
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_GetKind.
-    public static int getGraalPyUnicodeObjectKind(long rawPointer) {
-        return getGraalPyUnicodeObjectKindFromState(readLongField(rawPointer, CFields.GraalPyUnicodeObject__state));
-    }
-
-    // Keep in sync with unicodeobject.c:GraalPyUnicodeObject_SetInterned.
-    public static void setGraalPyUnicodeObjectInterned(long rawPointer, int interned) {
-        assert interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED || interned == GRAALPY_UNICODE_INTERN_STATE_INTERNED || interned == GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
-        long state = readLongField(rawPointer, CFields.GraalPyUnicodeObject__state);
-        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__state, updateGraalPyUnicodeObjectInterned(state, interned));
     }
 
     public static final class PyCapsuleReference extends IdReference<PyCapsule> {
@@ -901,11 +822,28 @@ public abstract class CApiTransitions {
         assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
         assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
         assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
+        boolean isLoggable = LOGGER.isLoggable(Level.FINE);
+        long rawPointer = HandlePointerConverter.pointerToStub(pointer);
+        if (GraalPyUnicodeObjectUtil.isNonCompactGraalPyUnicodeObject(rawPointer)) {
+            if (isLoggable) {
+                LOGGER.fine(PythonUtils.formatJString("releasing native non-compact GraalPyUnicodeObject stub 0x%x", rawPointer));
+            }
+            long nonCompactDataPointer = GraalPyUnicodeObjectUtil.getNonCompactDataPointer(rawPointer);
+            /*
+             * If 'rawPointer + sizeof(GraalPyUnicodeObject) == nonCompactDataPointer', this indicates that the compact flag is incorrect. However, this is
+             * not guaranteed because the allocated memory of the GraalPyUnicodeObject and the data could, by accident, be consecutive. So, we cannot assert this.
+             */
+            if (isLoggable && rawPointer + CStructs.GraalPyUnicodeObject.size() == nonCompactDataPointer) {
+                LOGGER.fine(PythonUtils.formatJString("Non-compact data pointer looks like compact data (GraalPyUnicodeObject=0x%x, data=0x%x)", rawPointer, nonCompactDataPointer));
+            }
+            free(nonCompactDataPointer);
+        }
         if (gc) {
             PyObjectGCDelNode.executeUncached(pointer);
         } else {
-            long rawPointer = HandlePointerConverter.pointerToStub(pointer);
-            LOGGER.fine(() -> PythonUtils.formatJString("releasing native object stub 0x%x", rawPointer));
+            if (isLoggable) {
+                LOGGER.fine(PythonUtils.formatJString("releasing native object stub 0x%x", rawPointer));
+            }
             free(rawPointer);
         }
     }
@@ -1385,9 +1323,7 @@ public abstract class CApiTransitions {
                         @Exclusive @Cached InlinedConditionProfile isStringObjectProfile,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
-                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Exclusive @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
 
             // for types, we always need to allocate the full PyTypeObject
@@ -1399,47 +1335,21 @@ public abstract class CApiTransitions {
             Object type = getClassNode.execute(inliningTarget, pythonObject);
 
             CStructs ctype;
-            TruffleString unicodeString = null;
-            TruffleString.Encoding unicodeEncoding = null;
-            int unicodeCharSize = 0;
-            boolean unicodeIsAscii = false;
-            long unicodeByteLength = 0;
-            long extraSize = 0;
             if (isVarObjectProfile.profile(inliningTarget, pythonObject instanceof PTuple)) {
                 ctype = CStructs.GraalPyVarObject;
             } else if (isFloatObjectProfile.profile(inliningTarget, pythonObject instanceof PFloat)) {
                 ctype = CStructs.GraalPyFloatObject;
             } else if (isStringObjectProfile.profile(inliningTarget, pythonObject instanceof PString)) {
                 ctype = CStructs.GraalPyUnicodeObject;
-                PString stringObject = (PString) pythonObject;
-                if (!stringObject.isMaterialized()) {
+                if (!((PString) pythonObject).isMaterialized()) {
                     throw CompilerDirectives.shouldNotReachHere("unmaterialized PString should already have a native unicode stub");
                 }
-                unicodeString = stringObject.getMaterialized();
-                TruffleString.CodeRange range = getCodeRangeNode.execute(unicodeString, PythonUtils.TS_ENCODING);
-                if (range == TruffleString.CodeRange.ASCII) {
-                    unicodeIsAscii = true;
-                    unicodeCharSize = 1;
-                    unicodeEncoding = TruffleString.Encoding.US_ASCII;
-                } else if (range.isSubsetOf(TruffleString.CodeRange.LATIN_1)) {
-                    unicodeCharSize = 1;
-                    unicodeEncoding = TruffleString.Encoding.ISO_8859_1;
-                } else if (range.isSubsetOf(TruffleString.CodeRange.BMP)) {
-                    unicodeCharSize = 2;
-                    unicodeEncoding = TruffleString.Encoding.UTF_16;
-                } else {
-                    unicodeCharSize = 4;
-                    unicodeEncoding = TruffleString.Encoding.UTF_32;
-                }
-                unicodeString = switchEncodingNode.execute(unicodeString, unicodeEncoding);
-                unicodeByteLength = unicodeString.byteLength(unicodeEncoding);
-                extraSize = unicodeByteLength + unicodeCharSize;
             } else {
                 ctype = CStructs.GraalPyObject;
             }
 
             boolean gc = isGcProfile.profile(inliningTarget, (getTypeFlagsNode.execute(type) & TypeFlags.HAVE_GC) != 0);
-            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, pythonObject, type, ctype, initialRefCount, gc, extraSize);
+            long taggedPointer = allocateNativeObjectStubNode.execute(inliningTarget, pythonObject, type, ctype, initialRefCount, gc, 0);
 
             // allocate a native stub object (C type: GraalPy*Object)
             if (ctype == CStructs.GraalPyVarObject) {
@@ -1459,9 +1369,10 @@ public abstract class CApiTransitions {
             } else if (ctype == CStructs.GraalPyUnicodeObject) {
                 assert pythonObject instanceof PString;
                 long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
-                long data = initializeGraalPyUnicodeObject(realPointer, unicodeByteLength / unicodeCharSize, unicodeByteLength, unicodeCharSize, unicodeIsAscii,
-                                GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED);
-                writeTruffleStringNode.write(data, unicodeString, unicodeEncoding);
+                PString string = (PString) pythonObject;
+                writeLongField(realPointer, CFields.GraalPyUnicodeObject__length, codePointLengthNode.execute(string.getMaterialized(), PythonUtils.TS_ENCODING));
+                // AllocateNativeObjectStubNode zeroes the whole allocated struct. We therefore expect the state field to be uninitialized.
+                assert !GraalPyUnicodeObjectUtil.isStateInitialized(realPointer);
             }
 
             return taggedPointer;

@@ -68,9 +68,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_INTERNED;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.GraalPyUnicodeObjectUtil.GRAALPY_UNICODE_INTERN_STATE_INTERNED;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.GraalPyUnicodeObjectUtil.GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.GraalPyUnicodeObjectUtil.GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.getByteArray;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
@@ -118,12 +120,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.AllocateNativeObjectStubNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GraalPyUnicodeObjectUtil;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -145,6 +147,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.RichCmpOp;
@@ -336,7 +339,7 @@ public final class PythonCextUnicodeBuiltins {
                 str.intern();
                 if (str.isNative()) {
                     long ptr = HandlePointerConverter.pointerToStub(str.getNativePointer());
-                    CApiTransitions.setGraalPyUnicodeObjectInterned(ptr, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
+                    GraalPyUnicodeObjectUtil.setInterned(ptr, GRAALPY_UNICODE_INTERN_STATE_INTERNED);
                 }
                 /*
                  * TODO this is not integrated with str.intern, pointer comparisons of two
@@ -871,7 +874,8 @@ public final class PythonCextUnicodeBuiltins {
         long taggedPointer = AllocateNativeObjectStubNode.executeUncached(s, PythonBuiltinClassType.PString, CStructs.GraalPyUnicodeObject, initialRefCount, false, extraSize);
         s.setNativePointer(taggedPointer);
         long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
-        CApiTransitions.initializeGraalPyUnicodeObject(realPointer, nChars, size, charSize, isAscii != 0, GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED);
+        long data = realPointer + CStructs.GraalPyUnicodeObject.size();
+        GraalPyUnicodeObjectUtil.initializeGraalPyUnicodeObject(realPointer, data, nChars, size, charSize, isAscii != 0, GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED, true);
         return taggedPointer;
     }
 
@@ -1253,18 +1257,11 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Unicode_IsMaterialized extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static int pstring(PString s) {
-            return s.isMaterialized() ? 1 : 0;
-        }
-
-        @Fallback
-        static Object other(@SuppressWarnings("unused") Object s) {
-            return 1;
-        }
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored, acquireGil = false, canRaise = false)
+    static int GraalPyPrivate_Unicode_IsMaterialized(long objPtr) {
+        Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
+        assert PyUnicodeCheckNode.executeUncached(obj);
+        return (!(obj instanceof PString s) || s.isMaterialized()) ? 1 : 0;
     }
 
     // TODO(native-access) Remove or fix and add test for GraalPyPrivate_Unicode_FillUnicode
@@ -1373,6 +1370,60 @@ public final class PythonCextUnicodeBuiltins {
         long count(Object string, Object sub, long start, long end,
                         @Cached StringBuiltins.CountNode countNode) {
             return countNode.execute(string, sub, castLong(start), castLong(end));
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_Unicode_FillNativeData extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object doUnicode(PString stringObject,
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
+            assert stringObject.isNative();
+            if (!stringObject.isMaterialized()) {
+                throw CompilerDirectives.shouldNotReachHere("unmaterialized PString should already have a native unicode stub");
+            }
+            int unicodeCharSize;
+            boolean unicodeIsAscii = false;
+            long unicodeByteLength;
+            TruffleString unicodeString = stringObject.getMaterialized();
+            TruffleString.Encoding unicodeEncoding;
+
+            TruffleString.CodeRange range = getCodeRangeNode.execute(unicodeString, PythonUtils.TS_ENCODING);
+            if (range == TruffleString.CodeRange.ASCII) {
+                unicodeIsAscii = true;
+                unicodeCharSize = 1;
+                unicodeEncoding = TruffleString.Encoding.US_ASCII;
+            } else if (range.isSubsetOf(TruffleString.CodeRange.LATIN_1)) {
+                unicodeCharSize = 1;
+                unicodeEncoding = TruffleString.Encoding.ISO_8859_1;
+            } else if (range.isSubsetOf(TruffleString.CodeRange.BMP)) {
+                unicodeCharSize = 2;
+                unicodeEncoding = TruffleString.Encoding.UTF_16;
+            } else {
+                unicodeCharSize = 4;
+                unicodeEncoding = TruffleString.Encoding.UTF_32;
+            }
+            unicodeString = switchEncodingNode.execute(unicodeString, unicodeEncoding);
+            unicodeByteLength = unicodeString.byteLength(unicodeEncoding);
+            long dataSize = unicodeByteLength + unicodeCharSize;
+
+            long taggedPointer = stringObject.getNativePointer();
+            assert HandlePointerConverter.pointsToPyHandleSpace(taggedPointer);
+            long rawPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+            long data = NativeMemory.malloc(dataSize);
+
+            // unicode object may have been interned already
+            int interned = GraalPyUnicodeObjectUtil.getInterned(rawPointer);
+            if (interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED) {
+                interned = GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
+            }
+
+            assert !GraalPyUnicodeObjectUtil.isCompact(rawPointer);
+            GraalPyUnicodeObjectUtil.initializeGraalPyUnicodeObject(rawPointer, data, unicodeByteLength / unicodeCharSize, unicodeByteLength, unicodeCharSize, unicodeIsAscii, interned, false);
+            writeTruffleStringNode.write(data, unicodeString, unicodeEncoding);
+            return PNone.NO_VALUE;
         }
     }
 }
