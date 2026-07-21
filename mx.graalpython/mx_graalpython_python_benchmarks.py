@@ -134,15 +134,26 @@ SETUPTOOLS_PIN = "77.0.1"
 
 def add_cpython_build_env(env=None):
     if python3_home := os.environ.get("PYTHON3_HOME"):
-        include_dir = join(python3_home, "Include")
-        if os.path.exists(join(include_dir, "Python.h")):
+        checkout_include = join(python3_home, "Include")
+        installed_includes = sorted(glob.glob(join(python3_home, os.pardir, "include", "python*")))
+        include_dir = next(
+            (path for path in [checkout_include, *installed_includes] if os.path.exists(join(path, "Python.h"))),
+            None,
+        )
+        if include_dir:
             env = env.copy() if env is not None else os.environ.copy()
-            python_includes = os.pathsep.join([include_dir, python3_home])
+            include_dirs = [include_dir]
+            if include_dir == checkout_include:
+                include_dirs.append(python3_home)
+            python_includes = os.pathsep.join(include_dirs)
             include_flags = " ".join(f"-I{path}" for path in python_includes.split(os.pathsep))
             env["CPATH"] = python_includes + (os.pathsep + env["CPATH"] if env.get("CPATH") else "")
             for key in ["CFLAGS", "CPPFLAGS", "CXXFLAGS"]:
                 env[key] = include_flags + (" " + env[key] if env.get(key) else "")
-            env["LIBRARY_PATH"] = python3_home + (os.pathsep + env["LIBRARY_PATH"] if env.get("LIBRARY_PATH") else "")
+            lib_dir = join(python3_home, os.pardir, "lib")
+            if not os.path.isdir(lib_dir):
+                lib_dir = python3_home
+            env["LIBRARY_PATH"] = lib_dir + (os.pathsep + env["LIBRARY_PATH"] if env.get("LIBRARY_PATH") else "")
     return env
 
 
@@ -856,6 +867,10 @@ class PandasSuite(PySuite):
             pip = join(workdir, vm_venv, "bin", "pip")
             with tempfile.NamedTemporaryFile('w') as constraints:
                 constraints.write(f"setuptools=={SETUPTOOLS_PIN}\n")
+                # pandas' isolated build must use the same NumPy C ABI as the
+                # runtime. An older build-time NumPy uses different offsets
+                # for datetime dtype metadata and segfaults at runtime.
+                constraints.write(f"numpy=={NumPySuite.VERSION}\n")
                 constraints.flush()
                 env = os.environ.copy()
                 env['PIP_CONSTRAINT'] = constraints.name

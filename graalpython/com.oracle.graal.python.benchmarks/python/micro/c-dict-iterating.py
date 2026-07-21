@@ -45,28 +45,28 @@ code = """
 #include <stddef.h>
 
 static PyObject* iterate_dict(PyObject *module, PyObject *const *args, Py_ssize_t nargs) {
-    if (!_PyArg_CheckPositional("iterate_dict", nargs, 2, 2)) {
+    if (nargs != 2) {
+        PyErr_Format(PyExc_TypeError, "iterate_dict() takes exactly 2 arguments (%zd given)", nargs);
         return NULL;
     }
     long n = PyLong_AsLong(args[0]);
     PyObject *arg = args[1];
-    
+
     /* variables for dict iteration */
     PyObject *key;
     PyObject *value;
     Py_ssize_t pos;
-    Py_hash_t hash;
-    
+
     if (!PyDict_Check(arg)) {
         PyErr_SetString(PyExc_TypeError, "arg must be a dict");
         return NULL;
     }
-    
+
     long long cnt = 0;
     for (long i = 0; i < n; i++) {
         cnt = 0;
         pos = 0;
-        while (_PyDict_Next(arg, &pos, &key, &value, &hash)) {
+        while (PyDict_Next(arg, &pos, &key, &value)) {
             if (key == NULL) {
                 PyErr_SetString(PyExc_ValueError, "key must not be NULL");
                 return NULL;
