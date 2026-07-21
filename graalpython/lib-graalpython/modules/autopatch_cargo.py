@@ -63,14 +63,42 @@ PATCH_TABLE_RE = re.compile(
     r'^\s*\[(?:patch|"patch")\.(?:crates-io|"crates-io")\]\s*(?:#.*)?$',
     re.MULTILINE,
 )
+VERSION_RE = re.compile(r'^\d+(?:\.\d+)*$')
+VERSION_SPECIFIER_RE = re.compile(r'^(==|!=|<=|>=|<|>)\s*(\d+(?:\.\d+)*)$')
+
+
+def _parse_version(version):
+    if not VERSION_RE.fullmatch(version):
+        return None
+    return tuple(int(part) for part in version.split('.'))
+
+
+def _compare_versions(left, right):
+    length = max(len(left), len(right))
+    left += (0,) * (length - len(left))
+    right += (0,) * (length - len(right))
+    return (left > right) - (left < right)
 
 
 def _specifier_contains(specifier, version):
-    try:
-        from pip._vendor.packaging.specifiers import SpecifierSet
-    except ImportError:
-        from packaging.specifiers import SpecifierSet
-    return SpecifierSet(specifier).contains(version)
+    version = _parse_version(version)
+    if version is None:
+        return False
+    comparisons = {
+        '==': lambda result: result == 0,
+        '!=': lambda result: result != 0,
+        '<': lambda result: result < 0,
+        '<=': lambda result: result <= 0,
+        '>': lambda result: result > 0,
+        '>=': lambda result: result >= 0,
+    }
+    for constraint in specifier.split(','):
+        if not (match := VERSION_SPECIFIER_RE.fullmatch(constraint.strip())):
+            raise ValueError(f"Unsupported crate version constraint: {constraint!r}")
+        operator, expected = match.groups()
+        if not comparisons[operator](_compare_versions(version, _parse_version(expected))):
+            return False
+    return True
 
 
 class DirectoryPatchRepository:
