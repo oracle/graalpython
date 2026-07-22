@@ -384,12 +384,21 @@ public final class PythonCextDictBuiltins {
                         @Bind PythonContext context,
                         @Cached HashingStorageGetItem getItem,
                         @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached SetItemNode setItemNode,
                         @Cached PythonToNativeInternalNode toNativeNode) {
             long result = NULLPTR;
             try {
                 Object value = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
                 if (value != null) {
-                    result = toNativeNode.executeNewRef(inliningTarget, ensureNode.execute(context, value, false));
+                    /*
+                     * This is sad, but code out there still likes to assume that anything they get from the dictionary
+                     * is kept alive by the dictionary. CPython itself does that in getargs.c.
+                     */
+                    Object promotedValue = ensureNode.execute(context, value, false);
+                    if (promotedValue != value) {
+                        setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
+                    }
+                    result = toNativeNode.executeNewRef(inliningTarget, promotedValue);
                     return 1;
                 }
                 return 0;

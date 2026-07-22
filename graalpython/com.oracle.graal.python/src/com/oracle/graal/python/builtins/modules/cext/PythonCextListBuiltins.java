@@ -164,6 +164,10 @@ public final class PythonCextListBuiltins {
         @Specialization
         static Object doPList(PList list, long key,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached ListGeneralizationNode generalizationNode,
+                        @Cached SetItemScalarNode setItemNode,
                         @Cached GetItemScalarNode getItemNode,
                         @Cached PRaiseNode raiseNode) {
             SequenceStorage sequenceStorage = list.getSequenceStorage();
@@ -171,7 +175,16 @@ public final class PythonCextListBuiltins {
             if (key < 0 || key >= sequenceStorage.length()) {
                 throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
             }
-            return getItemNode.execute(inliningTarget, sequenceStorage, (int) key);
+            Object result = getItemNode.execute(inliningTarget, sequenceStorage, (int) key);
+            // See the note in PyDict_GetItemRef
+            Object promotedValue = ensureNode.execute(context, result, false);
+            if (promotedValue != result) {
+                sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
+                list.setSequenceStorage(sequenceStorage);
+                setItemNode.execute(inliningTarget, sequenceStorage, (int) key, promotedValue);
+                return promotedValue;
+            }
+            return result;
         }
 
         @Fallback
