@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -601,7 +602,11 @@ public final class IteratorBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object setstate(PBigRangeIterator self, Object index,
                         @Bind Node inliningTarget,
+                        @Cached PyLongCheckExactNode longCheckExactNode,
                         @Cached CastToJavaBigIntegerNode castToJavaBigIntegerNode) {
+            if (!longCheckExactNode.execute(inliningTarget, index)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.STATE_MUST_BE_AN_INT_NOT_T, index);
+            }
             BigInteger idx = castToJavaBigIntegerNode.execute(inliningTarget, index);
             if (idx.compareTo(BigInteger.ZERO) < 0) {
                 idx = BigInteger.ZERO;

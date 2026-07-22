@@ -296,6 +296,8 @@ public abstract class ErrorMessages {
     public static final TruffleString EMPTY_ATTR_IN_FORMAT_STR = tsLiteral("Empty attribute in format string");
     public static final TruffleString ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE = tsLiteral("encoding error handler must return (str/bytes, int) tuple");
     public static final TruffleString S_MUST_BE_NONE_OR_STRING = tsLiteral("%s must be None or a string, not %p");
+    public static final TruffleString STATE_MUST_BE_AN_INT_NOT_T = tsLiteral("state must be an int, not %T");
+    public static final TruffleString STR_ARG_S_MUST_BE_STR_NOT_T = tsLiteral("str() argument '%s' must be str, not %T");
     public static final TruffleString ERROR_5_WHILE_DECOMPRESSING = tsLiteral("Error -5 while decompressing data: incomplete or truncated stream");
     public static final TruffleString ERROR_D_S_S = tsLiteral("Error %d %s: %s");
     public static final TruffleString ERROR_D_S = tsLiteral("Error %d %s");
@@ -326,6 +328,7 @@ public abstract class ErrorMessages {
     public static final TruffleString EXPECTED_ITERABLE_OF_INTEGERS_GOT_STR = tsLiteral("expected iterable of integers; got: 'str'");
     public static final TruffleString EXPECTED_FSPATH_TO_RETURN_STR_OR_BYTES = tsLiteral("expected %p.__fspath__() to return str or bytes, not %P");
     public static final TruffleString EXPECTED_OBJ_TYPE_S_GOT_P = tsLiteral("expected object of type %s, got %p");
+    public static final TruffleString EXPECTED_TYPING_SUBST_OF_T_OBJECTS_TO_RETURN_TUPLE_NOT_T = tsLiteral("expected __typing_subst__ of %T objects to return a tuple, not %T");
     public static final TruffleString EXPECTED_S_NOT_P = tsLiteral("expected %s, not %p");
     public static final TruffleString EXPECTED_S_P_FOUND = tsLiteral("expected %s, %p found");
     public static final TruffleString EXPECTED_S_AFTER_FORMAT_CONVERSION = tsLiteral("expected '%s' after conversion specifier");
@@ -612,6 +615,7 @@ public abstract class ErrorMessages {
     public static final TruffleString OBJ_P_HAS_NO_ATTR_S = tsLiteral("'%p' object has no attribute '%s'");
     public static final TruffleString OBJ_P_HAS_NO_ATTR_S_AND_NO_DICT = tsLiteral("'%p' object has no attribute '%s' and no __dict__ for setting new attributes");
     public static final TruffleString OBJ_S_HAS_NO_ATTR_S = tsLiteral("'%s' object has no attribute '%s'");
+    public static final TruffleString OBJ_T_HAS_NO_ATTR_S = tsLiteral("'%T' object has no attribute '%s'");
     public static final TruffleString OBJ_N_HAS_NO_ATTR_S = tsLiteral("'%N' object has no attribute '%s'");
     public static final TruffleString OBJ_IS_NOT_WRITABLE = tsLiteral("Object is not writable.");
     public static final TruffleString ODD_LENGTH_STRING = tsLiteral("Odd-length string");
@@ -738,7 +742,7 @@ public abstract class ErrorMessages {
     public static final TruffleString STRUCTSEQ_REPLACE_UNNAMED = tsLiteral("__replace__() is not supported for %s because it has unnamed field(s)");
     public static final TruffleString STRUCTSEQ_REPLACE_UNEXPECTED = tsLiteral("Got unexpected field name(s): %p");
     public static final TruffleString SIMPLE_NAMESPACE_REPLACE_NO_POSITIONAL = tsLiteral("__replace__() takes no positional arguments");
-    public static final TruffleString SIMPLE_NAMESPACE_REPLACE_WRONG_TYPE = tsLiteral("expect types.SimpleNamespace type, but %s() returned '%p' object");
+    public static final TruffleString SIMPLE_NAMESPACE_REPLACE_WRONG_TYPE = tsLiteral("expect types.SimpleNamespace type, but %T() returned '%T' object");
     public static final TruffleString TAKES_D_OR_D_ARGS = tsLiteral("%s takes %d or %d arguments");
     public static final TruffleString TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S = tsLiteral("%s() takes %d positional argument%s but %d positional argument%s (and %d keyword-only argument%s) were given%s");
     public static final TruffleString TAKES_D_POS_ARG_S_BUT_GIVEN_S = tsLiteral("%s() takes %d positional argument%s but %d %s given%s");

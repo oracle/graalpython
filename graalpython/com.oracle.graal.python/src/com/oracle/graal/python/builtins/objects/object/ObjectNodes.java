@@ -125,6 +125,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -745,7 +746,7 @@ public abstract class ObjectNodes {
      * Returns the fully qualified name of a class.
      *
      * The fully qualified name includes the name of the module (unless it is the
-     * {@link BuiltinNames#J_BUILTINS} module).
+     * {@code builtins} or {@code __main__} module).
      */
     @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
@@ -753,10 +754,15 @@ public abstract class ObjectNodes {
     public abstract static class GetFullyQualifiedNameNode extends PNodeWithContext {
         public abstract TruffleString execute(Frame frame, Object cls);
 
+        public static TruffleString executeUncached(Object cls) {
+            return GetFullyQualifiedNameNodeGen.getUncached().execute(null, cls);
+        }
+
         @Specialization
         static TruffleString get(VirtualFrame frame, Object cls,
                         @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyUnicodeCheckNode stringCheck,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -767,11 +773,11 @@ public abstract class ObjectNodes {
                 return StringLiterals.T_VALUE_UNKNOWN;
             }
             TruffleString qualName = cast.execute(inliningTarget, qualNameObject);
-            if (moduleNameObject == PNone.NO_VALUE) {
+            if (moduleNameObject == PNone.NO_VALUE || !stringCheck.execute(inliningTarget, moduleNameObject)) {
                 return qualName;
             }
             TruffleString moduleName = cast.execute(inliningTarget, moduleNameObject);
-            if (equalNode.execute(moduleName, BuiltinNames.T_BUILTINS, TS_ENCODING)) {
+            if (equalNode.execute(moduleName, BuiltinNames.T_BUILTINS, TS_ENCODING) || equalNode.execute(moduleName, BuiltinNames.T___MAIN__, TS_ENCODING)) {
                 return qualName;
             }
             TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();

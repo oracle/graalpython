@@ -315,6 +315,7 @@ public abstract class GenericTypeNodes {
                 continue;
             }
             boolean unpack = isUnpackedTypeVarTuple(arg);
+            Object original = arg;
             Object subst = PyObjectLookupAttr.executeUncached(arg, T___TYPING_SUBST__);
             if (subst != PNone.NO_VALUE) {
                 int iparam = tupleIndex(parameters, arg);
@@ -323,7 +324,10 @@ public abstract class GenericTypeNodes {
             } else {
                 arg = subsTvars(arg, parameters, argitems);
             }
-            if (unpack && PyTupleCheckNode.executeUncached(arg) /* CPython doesn't check the cast?! */) {
+            if (unpack) {
+                if (!PyTupleCheckNode.executeUncached(arg)) {
+                    throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.EXPECTED_TYPING_SUBST_OF_T_OBJECTS_TO_RETURN_TUPLE_NOT_T, original, arg);
+                }
                 listExtend(newargs, arg);
             } else {
                 newargs.add(arg);

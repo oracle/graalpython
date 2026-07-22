@@ -229,7 +229,6 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
         static Object replace(VirtualFrame frame, PSimpleNamespace self, @SuppressWarnings("unused") Object[] args, PKeyword[] changes,
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
-                        @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached CallNode callNode,
                         @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode,
                         @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttrNode,
@@ -241,7 +240,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
             Object cls = getClassNode.execute(inliningTarget, self);
             Object resultObject = callNode.execute(frame, cls, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
             if (!(resultObject instanceof PSimpleNamespace result)) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.SIMPLE_NAMESPACE_REPLACE_WRONG_TYPE, getNameNode.execute(inliningTarget, cls), resultObject);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.SIMPLE_NAMESPACE_REPLACE_WRONG_TYPE, self, resultObject);
             }
             for (Object key : getKeyArrayNode.execute(self)) {
                 if (key instanceof TruffleString name) {
