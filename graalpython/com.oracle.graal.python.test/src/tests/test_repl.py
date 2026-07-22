@@ -111,7 +111,9 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 rlist, _, _ = select.select([pty_parent], [], [], 60)
                 assert pty_parent in rlist, f"Timed out waiting for REPL output. Output: {whole_out}{out}"
                 out += os.read(pty_parent, 1024).decode('utf-8')
-                out = re.sub(r'\x1b\[(?:\?2004[hl]|\d+[A-G])', '', out)
+                # Strip terminal control sequences, including the mode 2027 and device-attributes
+                # probes emitted by JLine 4 while detecting grapheme-cluster support.
+                out = re.sub(r'\x1b\[(?:\?2004[hl]|\?2027\$p|c|\d+[A-G])', '', out)
                 out = re.sub(r'\r+\n', '\n', out)
                 if out.endswith(('\n... ', '>>> ')):
                     prompt = out[:3]
@@ -134,7 +136,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                         os.write(pty_parent, b'\x04')  # Ctrl-D / EOF
                         proc.wait(timeout=60)
                         out = os.read(pty_parent, 1024).decode('utf-8')
-                        out = re.sub(r'\x1b\[\?2004[hl]', '', out)
+                        out = re.sub(r'\x1b\[(?:\?2004[hl]|\?2027\$p|c)', '', out)
                         assert not out.strip(), f"Garbage after EOF:\n{out!r}"
                         return
                     else:
