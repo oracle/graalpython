@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,27 +45,26 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVa
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @GenerateInline
 @GenerateCached(false)
+@ImportStatic(PGuards.class)
 public abstract class PyTupleSizeNode extends PNodeWithContext {
     public static int executeUncached(Object tuple) {
         return PyTupleSizeNodeGen.getUncached().execute(null, tuple);
@@ -78,11 +77,9 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
         return tuple.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "isTupleSubtype(tuple, inliningTarget, getClassNode, isSubtypeNode)", limit = "1")
+    @Specialization(guards = "isNativeTuple(tuple)")
     @InliningCutoff
-    static int sizeNative(Node inliningTarget, PythonAbstractNativeObject tuple,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
+    static int sizeNative(PythonAbstractNativeObject tuple) {
         return PythonUtils.toIntError(readLongField(tuple.getPtr(), PyVarObject__ob_size));
     }
 
@@ -92,9 +89,5 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
     static int size(Object obj,
                     @Bind Node inliningTarget) {
         throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_S, "PyTuple_Size");
-    }
-
-    protected boolean isTupleSubtype(Object obj, Node inliningTarget, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-        return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PTuple);
     }
 }

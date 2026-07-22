@@ -14893,6 +14893,7 @@ PyUnicode_InternImmortal(PyObject **p)
     _PyUnicode_InternImmortal(interp, p);
 }
 
+#if 0 // GraalPy change
 PyObject *
 PyUnicode_InternFromString(const char *cp)
 {
@@ -14905,8 +14906,6 @@ PyUnicode_InternFromString(const char *cp)
     return s;
 }
 
-
-#if 0 // GraalPy change
 void
 _PyUnicode_ClearInterned(PyInterpreterState *interp)
 {
