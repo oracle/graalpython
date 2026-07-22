@@ -1,0 +1,93 @@
+diff --git a/coverage/bytecode.py b/coverage/bytecode.py
+index bea039c..772689b 100644
+--- a/coverage/bytecode.py
++++ b/coverage/bytecode.py
+@@ -5,8 +5,6 @@
+ 
+ from __future__ import annotations
+ 
+-import dis
+-
+ from types import CodeType
+ from typing import Iterable, Optional
+ from collections.abc import Iterator
+@@ -32,7 +30,7 @@ def op_set(*op_names: str) -> set[int]:
+ 
+     The names might not exist in this version of Python, skip those if not.
+     """
+-    return {op for name in op_names if (op := dis.opmap.get(name))}
++    return set()
+ 
+ 
+ # Opcodes that are unconditional jumps elsewhere.
+@@ -108,6 +106,7 @@ def branch_trails(code: CodeType) -> TBranchTrails:
+     arc from the original instruction's line to the new source line.
+ 
+     """
++    return {}
+     the_trails: TBranchTrails = {}
+     iwalker = InstructionWalker(code)
+     for inst in iwalker.walk(follow_jumps=False):
+diff --git a/coverage/pytracer.py b/coverage/pytracer.py
+index 31b4866..644cd4b 100644
+--- a/coverage/pytracer.py
++++ b/coverage/pytracer.py
+@@ -6,7 +6,6 @@
+ from __future__ import annotations
+ 
+ import atexit
+-import dis
+ import itertools
+ import sys
+ import threading
+@@ -39,11 +38,11 @@ set_TArc = set[TArc]
+ 
+ # We need the YIELD_VALUE opcode below, in a comparison-friendly form.
+ # PYVERSIONS: RESUME is new in Python3.11
+-RESUME = dis.opmap.get("RESUME")
+-RETURN_VALUE = dis.opmap["RETURN_VALUE"]
++RESUME = None
++RETURN_VALUE = 1
+ if RESUME is None:
+-    YIELD_VALUE = dis.opmap["YIELD_VALUE"]
+-    YIELD_FROM = dis.opmap["YIELD_FROM"]
++    YIELD_VALUE = 0
++    YIELD_FROM = 0
+     YIELD_FROM_OFFSET = 0 if env.PYPY else 2
+ else:
+     YIELD_VALUE = YIELD_FROM = YIELD_FROM_OFFSET = -1
+@@ -107,6 +106,7 @@ class PyTracer(Tracer):
+         #   [2] The last line number executed in this frame.
+         #   [3] Boolean: did this frame start a new context?
+         self.data_stack: list[tuple[TTraceFileData | None, str | None, TLineNo, bool]] = []
++        self.resumable_frames: set[int] = set()
+         self.thread: threading.Thread | None = None
+         self.stopped = False
+         self._activity = False
+@@ -247,10 +247,12 @@ class PyTracer(Tracer):
+             if RESUME is not None:
+                 # The current opcode is guaranteed to be RESUME. The argument
+                 # determines what kind of resume it is.
+-                oparg = frame.f_code.co_code[frame.f_lasti + 1]
++                oparg = 0
+                 real_call = (oparg == 0)
+             else:
+-                real_call = (getattr(frame, "f_lasti", -1) < 0)
++                frame_id = id(frame)
++                real_call = frame_id not in self.resumable_frames
++                self.resumable_frames.add(frame_id)
+             if real_call:
+                 self.last_line = -frame.f_code.co_firstlineno
+             else:
+@@ -271,8 +273,9 @@ class PyTracer(Tracer):
+             if self.trace_arcs and self.cur_file_data:
+                 # Record an arc leaving the function, but beware that a
+                 # "return" event might just mean yielding from a generator.
+-                code = frame.f_code.co_code
+-                lasti = frame.f_lasti
++                resumable = frame.f_code.co_flags & (0x20 | 0x80 | 0x100 | 0x200)
++                code = (YIELD_VALUE,) if resumable else (RETURN_VALUE,)
++                lasti = 0
+                 if RESUME is not None:
+                     if len(code) == lasti + 2:
+                         # A return from the end of a code object is a real return.

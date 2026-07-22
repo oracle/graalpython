@@ -60,6 +60,7 @@ except ImportError:
 MARKER_FILE_NAME = 'GRAALPY_MARKER'
 METADATA_FILENAME = 'metadata.toml'
 DEFAULT_PATCHES_PATH = Path(__graalpython__.core_home) / 'patches'
+CARGO_PATCHES_SUBDIR = 'crates'
 VERSION_PARAMETER = '<version>'
 DEFAULT_PATCHES_URL = f'https://raw.githubusercontent.com/oracle/graalpython/refs/heads/github/patches/{VERSION_PARAMETER}/graalpython/lib-graalpython/patches/'
 
@@ -240,6 +241,7 @@ class RemotePatchRepository(AbstractPatchRepository):
 
 
 __PATCH_REPOSITORY = None
+__CARGO_PATCH_REPOSITORY = None
 
 
 def repository_from_url_or_path(url_or_path):
@@ -255,7 +257,7 @@ def repository_from_url_or_path(url_or_path):
         return RemotePatchRepository.from_url(patches_url)
 
 
-def create_patch_repository(patches_url):
+def create_patch_repository(patches_url, default_patches_path=DEFAULT_PATCHES_PATH):
     if patches_url and VERSION_PARAMETER in patches_url:
         if not GRAALPY_VERSION.endswith('-dev'):
             patches_url = patches_url.replace(VERSION_PARAMETER, GRAALPY_VERSION)
@@ -276,7 +278,7 @@ def create_patch_repository(patches_url):
                 logger.warning("Failed to load GraalPy patch repository: %s", e)
                 logger.warning("Falling back to bundled GraalPy patch repository")
     try:
-        return LocalPatchRepository.from_path(DEFAULT_PATCHES_PATH)
+        return LocalPatchRepository.from_path(default_patches_path)
     except RepositoryException as e:
         logger.warning("Failed to load internal GraalPy patch repository: %s", e)
     return EmptyRepository()
@@ -287,6 +289,22 @@ def get_patch_repository():
     if not __PATCH_REPOSITORY:
         __PATCH_REPOSITORY = create_patch_repository(PATCHES_URL)
     return __PATCH_REPOSITORY
+
+
+def get_cargo_patch_repository():
+    global __CARGO_PATCH_REPOSITORY
+    if not __CARGO_PATCH_REPOSITORY:
+        if PATCHES_URL == DISABLED_PATCHES_URL:
+            cargo_patches_url = PATCHES_URL
+        elif '://' in PATCHES_URL:
+            cargo_patches_url = f'{PATCHES_URL.rstrip("/")}/{CARGO_PATCHES_SUBDIR}/'
+        else:
+            cargo_patches_url = str(Path(PATCHES_URL) / CARGO_PATCHES_SUBDIR)
+        __CARGO_PATCH_REPOSITORY = create_patch_repository(
+            cargo_patches_url,
+            DEFAULT_PATCHES_PATH / CARGO_PATCHES_SUBDIR,
+        )
+    return __CARGO_PATCH_REPOSITORY
 
 
 def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
@@ -321,6 +339,7 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
     version = name_ver_match.group('version')
     suffix = name_ver_match.group('suffix')
     is_wheel = suffix == "whl"
+    cargo_location = location
 
     if is_wheel and is_wheel_marked(filename):
         # We already processed it when building from source
@@ -342,10 +361,13 @@ def apply_graalpy_patches(filename, location, warn_suggested_versions=False):
             # with a patch intended for a binary distribution, because in the source
             # distribution the actual deployed sources may be in a subdirectory (typically "src")
             location = os.path.join(location, subdir)
-    if not rule or rule.get('autopatch', True):
-        import autopatch_capi
+        if not rule or rule.get('autopatch', True):
+            import autopatch_capi
+            import autopatch_cargo
 
-        autopatch_capi.auto_patch_tree(location)
+            autopatch_capi.auto_patch_tree(location)
+            autopatch_cargo.auto_patch_tree(cargo_location, get_cargo_patch_repository())
+
     if rule:
         if patch := rule.get('patch'):
             with repository.resolve_patch(patch) as patch_path:

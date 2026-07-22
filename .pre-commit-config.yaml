@@ -5,7 +5,7 @@ repos:
     name: Copyright check
     language: system
     require_serial: true
-    entry: bash scripts/pre-commit-checkcopyrights.sh
+    entry: env VERIFY_PATCHES_GIT=1 bash scripts/pre-commit-checkcopyrights.sh
     types: [text]
   - id: eclipseformat
     name: Eclipse formatter

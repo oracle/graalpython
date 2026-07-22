@@ -37,7 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import argparse
+import os
 import re
+import subprocess
 from pathlib import Path
 
 from pip._vendor import tomli  # pylint: disable=no-name-in-module
@@ -61,9 +63,24 @@ ALLOWED_WITH_CLAUSES = {
 
 SECTIONS = frozenset({'rules', 'add-sources'})
 RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority', 'note', 'autopatch'})
+CRATE_VERSION_SPECIFIER_RE = re.compile(r'(==|!=|<=|>=|<|>)\s*\d+(?:\.\d+)*')
 
 
-def validate_metadata(patches_dir):
+def validate_metadata(patches_dir, crates=False):
+    verify_git = os.environ.get('VERIFY_PATCHES_GIT')
+    if verify_git:
+        patch_files = {
+            patches_dir / file
+            for file in subprocess.run(
+                ['git', '-C', patches_dir, 'ls-files'],
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            ).stdout.splitlines()
+            if Path(file).parent == Path('.')
+        }
+    else:
+        patch_files = set(patches_dir.iterdir())
     with open(patches_dir / 'metadata.toml', 'rb') as f:
         all_metadata = tomli.load(f)
     patches = set()
@@ -78,6 +95,8 @@ def validate_metadata(patches_dir):
                     if patch := rule.get('patch'):
                         patch_path = patches_dir / patch
                         assert patch_path.is_file(), f"Patch file does not exists: {patch_path}"
+                        if verify_git:
+                            assert patch_path in patch_files, f"Patch file is not tracked by git: {patch_path}"
                         patches.add(patch_path)
                         license_id = rule.get('license')
                         assert license_id, f"'license' not specified for patch {patch}"
@@ -97,8 +116,13 @@ def validate_metadata(patches_dir):
                     if 'autopatch' in rule:
                         assert isinstance(rule['autopatch'], bool), "'rules.autopatch' must be a bool"
                     if version := rule.get('version'):
-                        # Just try that it doesn't raise
-                        SpecifierSet(version)
+                        if crates:
+                            for constraint in version.split(','):
+                                assert CRATE_VERSION_SPECIFIER_RE.fullmatch(constraint.strip()), \
+                                    f"Unsupported crate version constraint: {constraint!r}"
+                        else:
+                            # Just try that it doesn't raise
+                            SpecifierSet(version)
             if add_sources := metadata.get('add-sources'):
                 for add_source in add_sources:
                     if unexpected_keys := set(add_source) - {'version', 'url'}:
@@ -107,8 +131,12 @@ def validate_metadata(patches_dir):
                     assert add_source.get('url'), "Missing 'add_sources.url' key"
         except Exception as e:
             raise AssertionError(f"{package}: {e}")
-    for file in patches_dir.iterdir():
-        assert not file.name.endswith('patch') or file in patches, f"Dangling patch file: {file}"
+    for patch_file in patch_files:
+        if patch_file.is_file() and patch_file.name.endswith('patch'):
+            assert patch_file in patches, f"Dangling patch file: {patch_file}"
+    crates_dir = patches_dir / 'crates'
+    if crates_dir.is_dir():
+        validate_metadata(crates_dir, crates=True)
 
 
 def main():

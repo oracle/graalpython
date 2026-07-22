@@ -50,6 +50,12 @@ version = '== 2.2.1'
 patch = 'cloudpickle-2.2.1.patch'
 license = 'BSD-3-Clause'
 
+[[coverage.rules]]
+version = '== 7.10.0'
+patch = 'coverage-7.10.0.patch'
+license = 'Apache-2.0'
+dist-type = 'wheel'
+
 [[cramjam.rules]]
 version = '== 2.7.0'
 patch = 'cramjam-2.7.0.patch'

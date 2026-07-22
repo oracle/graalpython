@@ -34,6 +34,19 @@ index 3a0b52c..1819ec6 100644
      include_directories: [
        'include',
        'src/common',
+diff --git a/numpy/_core/src/common/pythoncapi-compat/pythoncapi_compat.h b/numpy/_core/src/common/pythoncapi-compat/pythoncapi_compat.h
+index 10b7bf7..fc61d66 100644
+--- a/numpy/_core/src/common/pythoncapi-compat/pythoncapi_compat.h
++++ b/numpy/_core/src/common/pythoncapi-compat/pythoncapi_compat.h
+@@ -2684,7 +2684,7 @@ PyUnstable_SetImmortal(PyObject *op)
+     op->ob_ref_local = _Py_IMMORTAL_REFCNT_LOCAL;
+     op->ob_ref_shared = 0;
+ #else
+-    Py_REFCNT(op) = _Py_IMMORTAL_REFCNT;
++    Py_SET_REFCNT(op, _Py_IMMORTAL_REFCNT);
+ #endif
+ #endif
+     return 1;
 diff --git a/numpy/_core/src/multiarray/compiled_base.c b/numpy/_core/src/multiarray/compiled_base.c
 index 6e37968..010bd03 100644
 --- a/numpy/_core/src/multiarray/compiled_base.c

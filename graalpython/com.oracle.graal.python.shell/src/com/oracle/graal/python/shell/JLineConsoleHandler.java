@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,8 +74,11 @@ import org.graalvm.shadowed.org.jline.reader.impl.DefaultParser;
 import org.graalvm.shadowed.org.jline.terminal.Terminal;
 import org.graalvm.shadowed.org.jline.terminal.TerminalBuilder;
 import org.graalvm.shadowed.org.jline.utils.InputStreamReader;
+import org.graalvm.shadowed.org.jline.utils.Signals;
 
 public class JLineConsoleHandler extends ConsoleHandler {
+    private static final String[] SIGNALS = {"INT", "QUIT", "TSTP", "CONT", "WINCH"};
+
     private final InputStream inputStream;
     private final OutputStream outputStream;
     private LineReader reader;
@@ -93,10 +96,13 @@ public class JLineConsoleHandler extends ConsoleHandler {
     @SuppressWarnings("unused")
     public void initializeReadline(Value readlineModule) {
         Terminal terminal;
+        Object[] signalHandlers = stashSignalHandlers();
         try {
-            terminal = TerminalBuilder.builder().jna(false).streams(inputStream, outputStream).system(true).signalHandler(Terminal.SignalHandler.SIG_IGN).build();
+            terminal = TerminalBuilder.builder().jna(false).streams(inputStream, outputStream).system(true).build();
         } catch (IOException ex) {
             throw new RuntimeException("unexpected error opening console reader", ex);
+        } finally {
+            restoreSignalHandlers(signalHandlers);
         }
         final Value getCompleter = readlineModule.getMember("get_completer");
         final Value shouldRecord = readlineModule.getMember("get_auto_history");
@@ -226,6 +232,7 @@ public class JLineConsoleHandler extends ConsoleHandler {
             }
         }
         if (lineBuffer.isEmpty()) {
+            Object[] signalHandlers = stashSignalHandlers();
             try {
                 String lines = reader.readLine(prompt);
                 Collections.addAll(lineBuffer, lines.split("\n"));
@@ -235,9 +242,25 @@ public class JLineConsoleHandler extends ConsoleHandler {
                 return null;
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
+            } finally {
+                restoreSignalHandlers(signalHandlers);
             }
         }
         return lineBuffer.poll();
+    }
+
+    private static Object[] stashSignalHandlers() {
+        Object[] handlers = new Object[SIGNALS.length];
+        for (int i = 0; i < SIGNALS.length; i++) {
+            handlers[i] = Signals.registerDefault(SIGNALS[i]);
+        }
+        return handlers;
+    }
+
+    private static void restoreSignalHandlers(Object[] handlers) {
+        for (int i = 0; i < SIGNALS.length; i++) {
+            Signals.unregister(SIGNALS[i], handlers[i]);
+        }
     }
 
     // Used via interop

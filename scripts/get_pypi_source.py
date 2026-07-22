@@ -136,8 +136,10 @@ def get_matching_rule(name, version, dist_type):
 
 
 def should_autopatch(name, version, artifact_type):
+    if artifact_type != "sdist":
+        return False
     rule = get_matching_rule(name, version, artifact_type)
-    if artifact_type == "sdist" and not rule:
+    if not rule:
         rule = get_matching_rule(name, version, "wheel")
     return not rule or rule.get("autopatch", True)
 
@@ -237,6 +239,16 @@ def autopatch_capi(target_dir):
         run(["git", "commit", "--quiet", "-m", "Autopatched"], cwd=target_dir)
 
 
+def autopatch_cargo(target_dir):
+    from autopatch_cargo import auto_patch_tree
+
+    crate_patches = PATCHES_DIR / "crates"
+    auto_patch_tree(target_dir, LocalPatchRepository.from_path(crate_patches))
+    if has_git_changes(target_dir):
+        run(["git", "add", "-A", "-f"], cwd=target_dir)
+        run(["git", "commit", "--quiet", "-m", "Autopatched Cargo crates"], cwd=target_dir)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Download and extract a PyPI package artifact into a temporary directory."
@@ -271,6 +283,7 @@ def main(argv=None):
         raise
     if should_autopatch(name, version, artifact_type):
         autopatch_capi(target_dir)
+        autopatch_cargo(target_dir)
     else:
         eprint(f"Skipping autopatch for {name}=={version}")
 

@@ -91,6 +91,9 @@ public final class PTraceback extends PythonBuiltinObject {
         frame = other.frame;
         frameInfo = other.frameInfo;
         lineno = other.lineno;
+        bci = other.bci;
+        bytecodeNode = other.bytecodeNode;
+        lasti = other.lasti;
         next = other.next;
     }
 

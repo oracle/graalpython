@@ -1,0 +1,13 @@
+diff --git a/src/cpython/dictobject.rs b/src/cpython/dictobject.rs
+index 37991ee..5f76604 100644
+--- a/src/cpython/dictobject.rs
++++ b/src/cpython/dictobject.rs
+@@ -2,6 +2,8 @@
+ use crate::object::*;
+ #[cfg(not(any(PyPy, GraalPy)))]
+ use crate::pyport::Py_ssize_t;
++#[cfg(all(GraalPy, Py_3_13))]
++use crate::PyObject;
+ 
+ #[cfg(not(PyPy))]
+ opaque_struct!(pub PyDictKeysObject);

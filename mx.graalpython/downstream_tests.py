@@ -161,6 +161,9 @@ def downstream_test_virtualenv(graalpy, testdir):
 def downstream_test_pyo3(graalpy, testdir):
     run(['git', 'clone', 'https://github.com/PyO3/pyo3.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'pyo3'
+    # The runtime test session does not run mypy. Avoid installing it because its
+    # librt dependency relies on CPython-internal APIs that are incompatible with GraalPy.
+    replace_in_file(src / 'pytests/pyproject.toml', r'^\s*"mypy[^\n]*\n', '', flags=re.MULTILINE)
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
     run_in_venv(venv, ['python', '-m', 'pip', 'install', '--upgrade', 'pip', 'nox[uv]'])
@@ -230,10 +233,8 @@ def downstream_test_cython(graalpy, testdir):
     run([graalpy, '-m', 'venv', str(venv)])
     if not CI:
         replace_in_file(src / 'Tools/ci-run.sh', r'^\s*sudo', '# sudo', flags=re.MULTILINE)
-        try:
-            run([graalpy, '--version', '--experimental-options', '--engine.Compilation=false'])
-        except subprocess.CalledProcessError:
-            replace_in_file(src / 'Tools/ci-run.sh', r'--engine\.Compilation=false', '')
+        replace_in_file(src / 'Tools/ci-run.sh', r'--engine.Compilation=false', '-X jit=0')
+        replace_in_file(src / 'Tools/ci-run.sh', r'--no-cache-dir', '')
     run_in_venv(venv, ["bash", "./Tools/ci-run.sh"], cwd=src, env=env)
 
 

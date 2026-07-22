@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -81,7 +81,9 @@ def repair_wheels(wheelhouse):
                 env=env,
             )
         elif sys.platform == "linux":
-            ensure_installed("auditwheel", "patchelf")
+            ensure_installed("auditwheel")
+            if shutil.which("patchelf") is None:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "patchelf"])
             p = subprocess.run(
                 [
                     join(dirname(sys.executable), "auditwheel"),
