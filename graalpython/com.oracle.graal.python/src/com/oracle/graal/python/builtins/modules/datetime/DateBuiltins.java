@@ -522,6 +522,10 @@ public final class DateBuiltins extends PythonBuiltins {
         return IsForeignObjectNode.executeUncached(dateObj) ? PythonBuiltinClassType.PDate : GetClassNode.executeUncached(dateObj);
     }
 
+    private static Object getResultDateType(Object dateObj, Node inliningTarget, IsForeignObjectNode isForeignObjectNode, GetClassNode getClassNode) {
+        return isForeignObjectNode.execute(inliningTarget, dateObj) ? PythonBuiltinClassType.PDate : getClassNode.execute(inliningTarget, dateObj);
+    }
+
     @Builtin(name = "today", minNumOfPositionalArgs = 1, isClassmethod = true, parameterNames = {"self"})
     @GenerateNodeFactory
     public abstract static class TodayNode extends PythonBuiltinNode {
@@ -768,6 +772,7 @@ public final class DateBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TemporalValueNodes.GetDateValue readDateValueNode,
                         @Cached PyLongAsLongNode longAsLongNode,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached GetClassNode getClassNode,
                         @Cached DateNodes.SubclassNewNode newNode) {
             DateValue date = readDateValueNode.execute(inliningTarget, self);
@@ -791,7 +796,7 @@ public final class DateBuiltins extends PythonBuiltins {
                 day = (int) longAsLongNode.execute(frame, inliningTarget, dayObject);
             }
 
-            return newNode.execute(frame, inliningTarget, getClassNode.execute(inliningTarget, self), year, month, day);
+            return newNode.execute(frame, inliningTarget, getResultDateType(self, inliningTarget, isForeignObjectNode, getClassNode), year, month, day);
         }
     }
 
