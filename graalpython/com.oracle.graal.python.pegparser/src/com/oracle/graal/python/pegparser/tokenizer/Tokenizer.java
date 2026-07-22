@@ -1385,6 +1385,7 @@ public class Tokenizer {
                         int quote = c;
                         int quote_size = 1;
                         int end_quote_size = 0;
+                        boolean hasEscapedQuote = false;
 
                         /*
                          * Nodes of type STRING, especially multi line strings must be handled
@@ -1437,6 +1438,9 @@ public class Tokenizer {
                                 if (quote_size == 3) {
                                     return syntaxError(String.format("unterminated triple-quoted string literal" +
                                                     " (detected at line %d)", start));
+                                } else if (hasEscapedQuote) {
+                                    return syntaxError(String.format("unterminated string literal" +
+                                                    " (detected at line %d); perhaps you escaped the end quote?", start));
                                 } else {
                                     return syntaxError(String.format("unterminated string literal" +
                                                     " (detected at line %d)", start));
@@ -1448,6 +1452,9 @@ public class Tokenizer {
                                 end_quote_size = 0;
                                 if (c == '\\') {
                                     c = nextChar(); /* skip escaped char */
+                                    if (c == quote) {
+                                        hasEscapedQuote = true;
+                                    }
                                     if (c == '\r') {
                                         nextChar();
                                     }
