@@ -1,7 +1,7 @@
 import os
 import sqlite3
 from pathlib import Path
-from contextlib import suppress, closing
+from contextlib import closing
 from collections.abc import MutableMapping
 
 BUILD_TABLE = """
@@ -68,13 +68,14 @@ class _Database(MutableMapping):
         except sqlite3.Error as exc:
             raise error(str(exc))
 
-        if flag != "ro":
-            # This is an optimization only; it's ok if it fails.
-            with suppress(sqlite3.OperationalError):
-                self._cx.execute("PRAGMA journal_mode = wal")
-
-            if flag == "rwc":
-                self._execute(BUILD_TABLE)
+        # GraalPy change: do not enable WAL mode. It is only an optimization,
+        # and its cleanup relies on CPython's immediate refcount-based
+        # statement finalization.
+        if flag == "rwc":
+            # GraalPy change: do not rely on refcounting to close the cursor
+            # and finish the statement.
+            with self._execute(BUILD_TABLE):
+                pass
 
     def _execute(self, *args, **kwargs):
         if not self._cx:
@@ -97,7 +98,10 @@ class _Database(MutableMapping):
         return row[0]
 
     def __setitem__(self, key, value):
-        self._execute(STORE_KV, (key, value))
+        # GraalPy change: do not rely on refcounting to close the cursor and
+        # finish the statement.
+        with self._execute(STORE_KV, (key, value)):
+            pass
 
     def __delitem__(self, key):
         with self._execute(DELETE_KEY, (key,)) as cu:
