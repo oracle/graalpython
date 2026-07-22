@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -51,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_doc;
@@ -159,6 +161,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -642,6 +645,22 @@ public final class PythonCextAbstractBuiltins {
         Object key = CharPtrToPythonNode.executeUncached(keyPtr);
         Object result = PyObjectGetItem.executeUncached(obj, key);
         return PythonToNativeInternalNode.executeNewRefUncached(result);
+    }
+
+    @CApiBuiltin(name = "GraalPyPrivate_Mapping_GetOptionalItemString", ret = Int, args = {PyObjectRawPointer, ConstCharPtr, PyObjectPtr}, call = Ignored)
+    static int GraalPyPrivate_Mapping_GetOptionalItemString(long objPtr, long keyPtr, long resultPtr) {
+        Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
+        Object key = CharPtrToPythonNode.executeUncached(keyPtr);
+        Object result;
+        try {
+            result = PyObjectGetItem.executeUncached(obj, key);
+        } catch (PException e) {
+            e.expectUncached(KeyError);
+            NativeMemory.writePtr(resultPtr, NULLPTR);
+            return 0;
+        }
+        NativeMemory.writePtr(resultPtr, PythonToNativeInternalNode.executeNewRefUncached(result));
+        return 1;
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Ignored)

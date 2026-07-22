@@ -2463,6 +2463,10 @@ PyMapping_GetOptionalItemString(PyObject *obj, const char *key, PyObject **resul
         null_error();
         return -1;
     }
+    // GraalPy change: avoid temp key object if receiver is managed
+    if (points_to_py_handle_space(obj)) {
+        return GraalPyPrivate_Mapping_GetOptionalItemString(obj, key, result);
+    }
     PyObject *okey = PyUnicode_FromString(key);
     if (okey == NULL) {
         *result = NULL;

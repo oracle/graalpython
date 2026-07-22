@@ -456,6 +456,7 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = Ignored)
+    @CApiBuiltin(name = "GraalPyPrivate_Object_GetOptionalAttrString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObjectPtr}, call = Ignored)
     abstract static class GraalPyPrivate_Object_GetOptionalAttr extends CApiTernaryBuiltinNode {
         @Specialization
         static int getOptionalAttr(Object obj, Object attr, long resultPointer,

@@ -89,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.Se
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageForEachCallback;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItemWithHash;
@@ -414,6 +415,7 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = Direct)
+    @CApiBuiltin(name = "PyDict_GetItemStringRef", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObjectPtr}, call = Direct)
     abstract static class PyDict_GetItemRef extends CApiTernaryBuiltinNode {
         @Specialization
         static int getItem(PDict dict, Object key, long resultPtr,
@@ -447,6 +449,42 @@ public final class PythonCextDictBuiltins {
         @Fallback
         int fallback(Object dict, @SuppressWarnings("unused") Object key, Object resultPtr) {
             NativeMemory.writePtr((long) resultPtr, NULLPTR);
+            throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObjectPtr}, call = Direct)
+    abstract static class PyDict_PopString extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int pop(PDict dict, Object key, long resultPtr,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached HashingStorageDelItem delItemNode,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached PythonToNativeInternalNode toNativeNode) {
+            long result = NULLPTR;
+            try {
+                Object value = delItemNode.executePop(null, inliningTarget, dict.getDictStorage(), key, dict);
+                if (value == null) {
+                    return 0;
+                }
+                if (resultPtr != NULLPTR) {
+                    result = toNativeNode.executeNewRef(inliningTarget, ensureNode.execute(context, value, false));
+                }
+                return 1;
+            } finally {
+                if (resultPtr != NULLPTR) {
+                    NativeMemory.writePtr(resultPtr, result);
+                }
+            }
+        }
+
+        @Fallback
+        int fallback(Object dict, @SuppressWarnings("unused") Object key, Object resultPtr) {
+            long pointer = (long) resultPtr;
+            if (pointer != NULLPTR) {
+                NativeMemory.writePtr(pointer, NULLPTR);
+            }
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
@@ -644,6 +682,7 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    @CApiBuiltin(name = "PyDict_ContainsString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class PyDict_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         static int contains(PDict dict, Object key,

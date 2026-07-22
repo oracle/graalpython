@@ -1437,6 +1437,10 @@ PyObject_GetOptionalAttr(PyObject *v, PyObject *name, PyObject **result)
 int
 PyObject_GetOptionalAttrString(PyObject *obj, const char *name, PyObject **result)
 {
+    // GraalPy change: avoid temp name object if receiver is managed
+    if (points_to_py_handle_space(obj)) {
+        return GraalPyPrivate_Object_GetOptionalAttrString(obj, name, result);
+    }
     if (Py_TYPE(obj)->tp_getattr == NULL) {
         PyObject *oname = PyUnicode_FromString(name);
         if (oname == NULL) {

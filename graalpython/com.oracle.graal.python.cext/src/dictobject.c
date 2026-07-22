@@ -2961,6 +2961,7 @@ PyDict_Pop(PyObject *op, PyObject *key, PyObject **result)
 }
 
 
+#if 0 // GraalPy change
 int
 PyDict_PopString(PyObject *op, const char *key, PyObject **result)
 {
@@ -2976,6 +2977,7 @@ PyDict_PopString(PyObject *op, const char *key, PyObject **result)
     Py_DECREF(key_obj);
     return res;
 }
+#endif // GraalPy change
 
 
 PyObject *
@@ -4649,6 +4651,7 @@ PyDict_Contains(PyObject *op, PyObject *key)
     return _PyDict_Contains_KnownHash(op, key, hash);
 }
 
+#if 0 // GraalPy change
 int
 PyDict_ContainsString(PyObject *op, const char *key)
 {
@@ -4660,6 +4663,7 @@ PyDict_ContainsString(PyObject *op, const char *key)
     Py_DECREF(key_obj);
     return res;
 }
+#endif // GraalPy change
 
 /* Internal version of PyDict_Contains used when the hash value is already known */
 int
@@ -4881,6 +4885,7 @@ PyDict_GetItemString(PyObject *v, const char *key)
 }
 #endif // GraalPy change
 
+#if 0 // GraalPy change
 int
 PyDict_GetItemStringRef(PyObject *v, const char *key, PyObject **result)
 {
@@ -4893,6 +4898,7 @@ PyDict_GetItemStringRef(PyObject *v, const char *key, PyObject **result)
     Py_DECREF(key_obj);
     return res;
 }
+#endif // GraalPy change
 
 int
 _PyDict_SetItemId(PyObject *v, _Py_Identifier *key, PyObject *item)

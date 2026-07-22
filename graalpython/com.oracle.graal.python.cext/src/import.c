@@ -325,7 +325,6 @@ import_add_module(PyThreadState *tstate, PyObject *name)
 
     return m;
 }
-#endif // GraalPy change
 
 PyObject *
 PyImport_AddModuleRef(const char *name)
@@ -334,13 +333,12 @@ PyImport_AddModuleRef(const char *name)
     if (name_obj == NULL) {
         return NULL;
     }
-    // GraalPy change: import_add_module is part of the disabled CPython import
-    // machinery; the active PyImport_AddModuleObject implementation already
-    // uses GraalPy's module dictionary path and returns a strong reference.
-    PyObject *module = PyImport_AddModuleObject(name_obj);
+    PyThreadState *tstate = _PyThreadState_GET();
+    PyObject *module = import_add_module(tstate, name_obj);
     Py_DECREF(name_obj);
     return module;
 }
+#endif // GraalPy change
 
 
 PyObject *

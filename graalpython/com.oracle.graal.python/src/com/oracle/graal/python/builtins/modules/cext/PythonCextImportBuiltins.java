@@ -62,8 +62,11 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -72,6 +75,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -96,6 +100,25 @@ public final class PythonCextImportBuiltins {
         @Specialization
         Object getModuleDict() {
             return getContext().getSysModules();
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
+    abstract static class PyImport_AddModuleRef extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object addModule(TruffleString name,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached HashingStorageGetItem getItemNode,
+                        @Cached SetItemNode setItemNode) {
+            PDict modules = context.getSysModules();
+            Object module = getItemNode.execute(null, inliningTarget, modules.getDictStorage(), name);
+            if (module instanceof PythonModule) {
+                return module;
+            }
+            PythonModule newModule = PFactory.createPythonModule(name);
+            setItemNode.execute(null, inliningTarget, modules, name, newModule);
+            return newModule;
         }
     }
 
