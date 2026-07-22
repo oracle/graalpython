@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -142,7 +142,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "pack_into", minNumOfPositionalArgs = 4, parameterNames = {"$self", "format", "buffer", "offset"}, declaresExplicitSelf = true, takesVarArgs = true, forceSplitDirectCalls = true)
-    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @ArgumentClinic(name = "offset", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class PackIntoNode extends PythonClinicBuiltinNode {
