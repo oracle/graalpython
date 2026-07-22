@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltinsFactory;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -1974,10 +1975,12 @@ public abstract class TypeNodes {
                         @Cached HashingStorageIteratorKey itKey,
                         @Cached HashingStorageIteratorValue itValue,
                         @Cached HashingStorageDelItem delItemNamespace,
+                        @Cached PyUnicodeCheckNode stringCheck,
                         @Cached GetClassNode getClassNode,
                         @Cached("create(T___SET_NAME__)") LookupSpecialMethodNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached("create(T___INIT_SUBCLASS__)") GetFixedAttributeNode getInitSubclassNode,
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Bind PythonLanguage language,
@@ -2072,11 +2075,16 @@ public abstract class TypeNodes {
 
             HashingStorage storage = namespace.getDictStorage();
             HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
+            boolean warnedAboutNonStringKey = false;
             while (itNext.execute(inliningTarget, storage, it)) {
+                Object key = itKey.execute(inliningTarget, storage, it);
+                if (!warnedAboutNonStringKey && !stringCheck.execute(inliningTarget, key)) {
+                    warnNode.warnFormat(frame, PythonBuiltinClassType.RuntimeWarning, ErrorMessages.NON_STRING_KEY_IN_DICT_OF_CLASS_N, newType);
+                    warnedAboutNonStringKey = true;
+                }
                 Object value = itValue.execute(inliningTarget, storage, it);
                 Object setName = getSetNameNode.execute(frame, getClassNode.execute(inliningTarget, value), value);
                 if (setName != PNone.NO_VALUE) {
-                    Object key = itKey.execute(inliningTarget, storage, it);
                     try {
                         callSetNameNode.execute(frame, setName, value, newType, key);
                     } catch (PException e) {

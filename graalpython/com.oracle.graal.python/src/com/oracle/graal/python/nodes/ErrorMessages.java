@@ -593,6 +593,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NOT_ENOUGH_VALUES_TO_UNPACK = tsLiteral("not enough values to unpack (expected %d, got %d)");
     public static final TruffleString NOT_ENOUGH_VALUES_TO_UNPACK_EX = tsLiteral("not enough values to unpack (expected at least %d, got %d)");
     public static final TruffleString NOT_SUPPORTED_BETWEEN_INSTANCES = tsLiteral("'%s' not supported between instances of '%p' and '%p'");
+    public static final TruffleString NON_STRING_KEY_IN_DICT_OF_CLASS_N = tsLiteral("non-string key in the __dict__ of class %N");
     public static final TruffleString NUMBER_IS_REQUIRED = tsLiteral("a number is required");
     public static final TruffleString OBJ_INDEX_MUST_BE_INT_OR_SLICES = tsLiteral("%s indices must be integers or slices, not %p");
     public static final TruffleString OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = tsLiteral("'%p' object cannot be interpreted as an integer");
