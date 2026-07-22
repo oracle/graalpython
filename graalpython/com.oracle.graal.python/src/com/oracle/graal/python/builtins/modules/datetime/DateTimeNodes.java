@@ -276,11 +276,12 @@ public class DateTimeNodes {
 
         private static final TruffleString T_FOLD = tsLiteral("fold");
 
-        public abstract Object execute(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject, Object hour, Object minute, Object second, Object microsecond,
-                        Object tzInfo, Object fold);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject, Object hour, Object minute, Object second,
+                        Object microsecond, Object tzInfo, Object fold);
 
-        public static SubclassNewNode getUncached() {
-            return DateTimeNodesFactory.SubclassNewNodeGen.getUncached();
+        public static Object executeUncached(Object cls, Object yearObject, Object monthObject, Object dayObject, Object hour, Object minute, Object second,
+                        Object microsecond, Object tzInfo, Object fold) {
+            return DateTimeNodesFactory.SubclassNewNodeGen.getUncached().execute(null, null, cls, yearObject, monthObject, dayObject, hour, minute, second, microsecond, tzInfo, fold);
         }
 
         @Specialization(guards = {"isBuiltinClass(cls)"})
@@ -291,14 +292,14 @@ public class DateTimeNodes {
         }
 
         @Fallback
-        @TruffleBoundary
-        static Object newDateTimeGeneric(Object cls, Object yearObject, Object monthObject, Object dayObject, Object hourObject, Object minuteObject, Object secondObject,
-                        Object microsecondObject, Object tzInfoObject, Object foldObject) {
+        static Object newDateTimeGeneric(VirtualFrame frame, Object cls, Object yearObject, Object monthObject, Object dayObject, Object hourObject, Object minuteObject, Object secondObject,
+                        Object microsecondObject, Object tzInfoObject, Object foldObject,
+                        @Cached CallNode callNode) {
             Object[] arguments = new Object[]{yearObject, monthObject, dayObject, hourObject, minuteObject, secondObject, microsecondObject, tzInfoObject};
             PKeyword foldKeyword = new PKeyword(T_FOLD, foldObject);
             PKeyword[] keywords = new PKeyword[]{foldKeyword};
 
-            return CallNode.executeUncached(cls, arguments, keywords);
+            return callNode.execute(frame, cls, arguments, keywords);
         }
 
         static boolean isBuiltinClass(Object cls) {

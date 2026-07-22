@@ -95,10 +95,10 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyDateCheckNode;
 import com.oracle.graal.python.lib.PyDeltaCheckNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyFloatCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -377,7 +377,7 @@ public final class DateBuiltins extends PythonBuiltins {
             }
 
             LocalDate localDate = ChronoUnit.DAYS.addTo(from, days - 1);
-            return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget,
+            return DateNodes.SubclassNewNode.executeUncached(
                             getResultDateType(dateObj),
                             localDate.getYear(),
                             localDate.getMonthValue(),
@@ -442,7 +442,7 @@ public final class DateBuiltins extends PythonBuiltins {
                 }
 
                 LocalDate localDate = ChronoUnit.DAYS.addTo(from, days - 1);
-                return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget,
+                return DateNodes.SubclassNewNode.executeUncached(
                                 getResultDateType(left),
                                 localDate.getYear(),
                                 localDate.getMonthValue(),
@@ -528,11 +528,10 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object today(VirtualFrame frame, Object cls,
-                        @Bind Node inliningTarget,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return todayBoundary(cls, inliningTarget);
+                return todayBoundary(cls);
             } finally {
                 // A Python method call (using DateNodes.SubclassNewNode) should be
                 // connected to a current node.
@@ -541,9 +540,9 @@ public final class DateBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object todayBoundary(Object cls, Node inliningTarget) {
+        private static Object todayBoundary(Object cls) {
             var localDate = LocalDate.now();
-            return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget, cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
+            return DateNodes.SubclassNewNode.executeUncached(cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
         }
     }
 
@@ -586,7 +585,7 @@ public final class DateBuiltins extends PythonBuiltins {
             TimeZone timeZone = TimeModuleBuiltins.getGlobalTimeZone(getContext(inliningTarget));
             ZoneId zoneId = timeZone.toZoneId();
             LocalDate localDate = LocalDate.ofInstant(instant, zoneId);
-            return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget, cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
+            return DateNodes.SubclassNewNode.executeUncached(cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
         }
     }
 
@@ -620,7 +619,7 @@ public final class DateBuiltins extends PythonBuiltins {
         private static Object fromIsoCalendarBoundary(Object cls, long year, long week, long dayOfWeek, Node inliningTarget) {
             DatetimeModuleBuiltins.validateIsoCalendarComponentsAndRaise(inliningTarget, year, week, dayOfWeek);
             LocalDate localDate = LocalDate.now().with(IsoFields.WEEK_BASED_YEAR, year).with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, week).with(ChronoField.DAY_OF_WEEK, dayOfWeek);
-            return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget, cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
+            return DateNodes.SubclassNewNode.executeUncached(cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
         }
     }
 
@@ -652,7 +651,7 @@ public final class DateBuiltins extends PythonBuiltins {
             Object date;
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                date = parseIsoDateFormat(source, inliningTarget, cls);
+                date = parseIsoDateFormat(source, cls);
             } finally {
                 // A Python method call (using DateNodes.SubclassNewNode) should be
                 // connected to a current node.
@@ -668,7 +667,7 @@ public final class DateBuiltins extends PythonBuiltins {
 
         // CPython: parse_isoformat_date()
         @TruffleBoundary
-        private static Object parseIsoDateFormat(String source, Node inliningTarget, Object cls) {
+        private static Object parseIsoDateFormat(String source, Object cls) {
             try {
                 int pos = 0;
 
@@ -715,7 +714,7 @@ public final class DateBuiltins extends PythonBuiltins {
                     }
 
                     LocalDate localDate = LocalDate.now().with(IsoFields.WEEK_BASED_YEAR, year).with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, week).with(ChronoField.DAY_OF_WEEK, dayOfWeek);
-                    return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget,
+                    return DateNodes.SubclassNewNode.executeUncached(
                                     cls,
                                     localDate.getYear(),
                                     localDate.getMonthValue(),
@@ -737,7 +736,7 @@ public final class DateBuiltins extends PythonBuiltins {
                     return null;
                 }
 
-                return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget, cls, year, month, day);
+                return DateNodes.SubclassNewNode.executeUncached(cls, year, month, day);
             } catch (IndexOutOfBoundsException e) {
                 return null;
             }
@@ -770,7 +769,7 @@ public final class DateBuiltins extends PythonBuiltins {
                         @Cached TemporalValueNodes.GetDateValue readDateValueNode,
                         @Cached PyLongAsLongNode longAsLongNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached DateNodes.NewNode newNode) {
+                        @Cached DateNodes.SubclassNewNode newNode) {
             DateValue date = readDateValueNode.execute(inliningTarget, self);
             final int year, month, day;
 
@@ -792,7 +791,7 @@ public final class DateBuiltins extends PythonBuiltins {
                 day = (int) longAsLongNode.execute(frame, inliningTarget, dayObject);
             }
 
-            return newNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self), year, month, day);
+            return newNode.execute(frame, inliningTarget, getClassNode.execute(inliningTarget, self), year, month, day);
         }
     }
 
@@ -844,7 +843,7 @@ public final class DateBuiltins extends PythonBuiltins {
             LocalDate baseLocalDate = LocalDate.of(1, 1, 1);
             LocalDate localDate = ChronoUnit.DAYS.addTo(baseLocalDate, days - 1);
 
-            return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget, cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
+            return DateNodes.SubclassNewNode.executeUncached(cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
         }
     }
 

@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
@@ -172,10 +173,10 @@ public class DateNodes {
     @GenerateCached(false)
     public abstract static class SubclassNewNode extends Node {
 
-        public abstract Object execute(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject);
 
-        public static SubclassNewNode getUncached() {
-            return DateNodesFactory.SubclassNewNodeGen.getUncached();
+        public static Object executeUncached(Object cls, Object yearObject, Object monthObject, Object dayObject) {
+            return DateNodesFactory.SubclassNewNodeGen.getUncached().execute(null, null, cls, yearObject, monthObject, dayObject);
         }
 
         @Specialization(guards = {"isBuiltinClass(cls)"})
@@ -185,9 +186,9 @@ public class DateNodes {
         }
 
         @Fallback
-        @TruffleBoundary
-        static Object newDateGeneric(Object cls, Object yearObject, Object monthObject, Object dayObject) {
-            return CallNode.executeUncached(cls, yearObject, monthObject, dayObject);
+        static Object newDateGeneric(VirtualFrame frame, Object cls, Object yearObject, Object monthObject, Object dayObject,
+                        @Cached CallNode callNode) {
+            return callNode.execute(frame, cls, yearObject, monthObject, dayObject);
         }
 
         static boolean isBuiltinClass(Object cls) {
