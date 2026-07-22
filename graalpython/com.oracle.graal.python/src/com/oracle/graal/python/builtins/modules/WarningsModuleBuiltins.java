@@ -165,6 +165,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_DEFAULTACTION = tsLiteral("defaultaction");
     private static final TruffleString T_FILTERS = tsLiteral("filters");
     private static final TruffleString T_WARNING_MESSAGE = tsLiteral("WarningMessage");
+    private static final TruffleString T_SYS_SOURCE = tsLiteral("<sys>");
     private static final TruffleString T_UNKNOWN_SOURCE = tsLiteral("<unknown source>");
 
     @Override
@@ -884,8 +885,8 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
             PDict globals;
             if (f == null || f.getGlobals() == null) {
                 globals = getSysDict();
-                filename[0] = T_SYS;
-                lineno[0] = 1;
+                filename[0] = T_SYS_SOURCE;
+                lineno[0] = 0;
             } else {
                 globals = (PDict) f.getGlobals();
                 lineno[0] = f.getLine();
