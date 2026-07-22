@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -208,7 +208,7 @@ final class StringParser {
                     if (c > 255) {
                         if (!wasInvalidEscapeWarning) {
                             wasInvalidEscapeWarning = true;
-                            warnInvalidEscapeSequence(parser, codePoints, s - 3, token);
+                            warnInvalidEscapeSequence(parser, codePoints, sInput, s - 3, token);
                         }
                     }
                     writer.append(c);
@@ -228,7 +228,7 @@ final class StringParser {
                 default:
                     if (!wasInvalidEscapeWarning) {
                         wasInvalidEscapeWarning = true;
-                        warnInvalidEscapeSequence(parser, codePoints, s - 1, token);
+                        warnInvalidEscapeSequence(parser, codePoints, sInput, s - 1, token);
                     }
                     writer.append('\\');
                     s--;
@@ -258,7 +258,7 @@ final class StringParser {
                     sb.appendCodePoint('\\');
                     if (!emittedDeprecationWarning) {
                         emittedDeprecationWarning = true;
-                        warnInvalidEscapeSequence(parser, codePoints, substringStart, token);
+                        warnInvalidEscapeSequence(parser, codePoints, start, substringStart, token);
                     }
                 }
             } else {
@@ -498,7 +498,7 @@ final class StringParser {
         return -1;
     }
 
-    private static void warnInvalidEscapeSequence(AbstractParser parser, int[] codePoints, int firstInvalidEscape, Token token) {
+    private static void warnInvalidEscapeSequence(AbstractParser parser, int[] codePoints, int inputStart, int firstInvalidEscape, Token token) {
         if (parser.callInvalidRules) {
             // Do not report warnings if we are in the second pass of the parser
             // to avoid showing the warning twice.
@@ -517,11 +517,44 @@ final class StringParser {
         } else {
             category = WarningType.Deprecation;
         }
+        SourceRange sourceRange = getInvalidEscapeSourceRange(codePoints, inputStart, firstInvalidEscape, token);
         if (octal) {
-            parser.callbacks.onWarning(category, token.sourceRange, INVALID_OCTAL_ESCAPE, c, codePoints[firstInvalidEscape + 1], codePoints[firstInvalidEscape + 2]);
+            parser.callbacks.onWarning(category, sourceRange, INVALID_OCTAL_ESCAPE, c, codePoints[firstInvalidEscape + 1], codePoints[firstInvalidEscape + 2]);
         } else {
-            parser.callbacks.onWarning(category, token.sourceRange, INVALID_ESCAPE, c);
+            parser.callbacks.onWarning(category, sourceRange, INVALID_ESCAPE, c);
         }
+    }
+
+    private static SourceRange getInvalidEscapeSourceRange(int[] codePoints, int inputStart, int firstInvalidEscape, Token token) {
+        int line = token.sourceRange.startLine;
+        int column = token.sourceRange.startColumn;
+        for (int i = inputStart; i < firstInvalidEscape; i++) {
+            if (codePoints[i] == '\n') {
+                line++;
+                column = 0;
+            } else {
+                column++;
+            }
+        }
+
+        // The decoded input starts after the opening quotes, which are not included in the
+        // scan above. This mirrors CPython's handling in warn_invalid_escape_sequence.
+        if (line == token.sourceRange.startLine) {
+            int firstQuote = 0;
+            for (int i = token.startOffset; i < token.endOffset; i++) {
+                int codePoint = codePoints[i];
+                if (codePoint != '\'' && codePoint != '"') {
+                    break;
+                }
+                if (firstQuote == 0) {
+                    firstQuote = codePoint;
+                }
+                if (codePoint == firstQuote) {
+                    column++;
+                }
+            }
+        }
+        return new SourceRange(line, column - 1, line, column + 1);
     }
 
     private static final String UNICODE_ERROR = "(unicode error) 'unicodeescape' codec can't decode bytes in position %d-%d:";
