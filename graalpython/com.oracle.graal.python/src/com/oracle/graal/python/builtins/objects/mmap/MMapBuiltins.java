@@ -814,7 +814,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object seek(PMMap self, long dist, int how,
+        static long seek(PMMap self, long dist, int how,
                         @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
@@ -837,7 +837,16 @@ public final class MMapBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.SEEK_OUT_OF_RANGE);
             }
             self.setPos(where);
-            return PNone.NONE;
+            return where;
+        }
+    }
+
+    @Builtin(name = "seekable", parameterNames = {"$self"})
+    @GenerateNodeFactory
+    abstract static class SeekableNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean seekable(@SuppressWarnings("unused") PMMap self) {
+            return true;
         }
     }
 
