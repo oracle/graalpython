@@ -207,10 +207,10 @@ public final class PFrame extends PythonBuiltinObject {
         // TODO: frames: extract the information from the threadState object
         this.globals = globals;
         this.code = code;
-        Reference curFrameInfo = new Reference(bytecodeNode != null ? bytecodeNode.getRootNode() : null, null);
+        Reference curFrameInfo = new Reference(code.getRootNode(), Reference.EMPTY);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
-        this.line = this.bytecodeNode == null ? code.getFirstLineNo() : UNINITIALIZED_LINE;
+        this.line = code.getFirstLineNo();
         this.customLocals = customLocals;
         // This is a synthetic frame, there will be no sync, mark everything as current
         this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
