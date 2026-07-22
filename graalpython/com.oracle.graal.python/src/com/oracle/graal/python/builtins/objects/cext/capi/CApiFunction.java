@@ -514,6 +514,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyTuple_Pack", ret = PyObject, args = {Py_ssize_t, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyTuple_GetItem", ret = PyObjectBorrowed, args = {PyObject, Py_ssize_t}, call = CImpl)
     @CApiBuiltin(name = "PyTuple_SetItem", ret = Int, args = {PyObject, Py_ssize_t, PyObjectTransfer}, call = CImpl)
+    @CApiBuiltin(name = "PyTuple_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_FromModuleAndSpec", ret = PyObject, args = {PyObject, PY_TYPE_SPEC, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyType_FromSpec", ret = PyObject, args = {PY_TYPE_SPEC}, call = CImpl)
     @CApiBuiltin(name = "PyType_FromSpecWithBases", ret = PyObject, args = {PY_TYPE_SPEC, PyObject}, call = CImpl)

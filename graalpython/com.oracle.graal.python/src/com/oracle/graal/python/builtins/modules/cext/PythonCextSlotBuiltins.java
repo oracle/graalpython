@@ -72,13 +72,13 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getter;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setter;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STEP;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STOP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -108,11 +108,11 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -571,11 +571,9 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         static long get(Object object,
                         @Bind Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                         @Cached ObSizeNode obSizeNode) {
-            assert !isSameTypeNode.execute(inliningTarget, getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.PInt);
-            assert !isSameTypeNode.execute(inliningTarget, getClassNode.execute(inliningTarget, object), PythonBuiltinClassType.Boolean);
+            assert !IsBuiltinObjectExactProfile.profileObjectUncached(object, PythonBuiltinClassType.PInt);
+            assert !IsBuiltinObjectExactProfile.profileObjectUncached(object, PythonBuiltinClassType.Boolean);
             return obSizeNode.execute(inliningTarget, object);
         }
     }

@@ -92,6 +92,7 @@ PyTuple_New(Py_ssize_t size)
     _PyObject_GC_TRACK(op);
     return (PyObject *) op;
 }
+#endif // GraalPy change
 
 Py_ssize_t
 PyTuple_Size(PyObject *op)
@@ -100,10 +101,21 @@ PyTuple_Size(PyObject *op)
         PyErr_BadInternalCall();
         return -1;
     }
+#if 0 // GraalPy change
     else
         return Py_SIZE(op);
-}
+#else // GraalPy change
+    /*
+     * CPython uses Py_SIZE here but our Py_SIZE would redundantly check the
+     * type again. Since performance is really crucial for tuples, we inline
+     * the minimal code here.
+     */
+    if (points_to_py_handle_space(op)) {
+        return ((GraalPyVarObject *) pointer_to_stub(op))->ob_size;
+    }
+    return _PyVarObject_CAST(op)->ob_size;
 #endif // GraalPy change
+}
 
 /* Allocate an uninitialized tuple object. Before making it public, following
    steps must be done:
