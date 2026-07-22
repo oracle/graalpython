@@ -338,8 +338,8 @@ NotImplementedType = type(NotImplemented)
 
 def __getattr__(name):
     if name == 'CapsuleType':
-        import _socket
-        return type(_socket.CAPI)
+        # GraalPy change: avoid importing native modules just for type checking
+        return __graalpython__.CapsuleType
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [n for n in globals() if n[:1] != '_']
