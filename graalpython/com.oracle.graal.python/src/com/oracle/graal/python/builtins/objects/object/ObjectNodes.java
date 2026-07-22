@@ -743,10 +743,8 @@ public abstract class ObjectNodes {
     }
 
     /**
-     * Returns the fully qualified name of a class.
-     *
-     * The fully qualified name includes the name of the module (unless it is the
-     * {@code builtins} or {@code __main__} module).
+     * Equivalent of CPython's {@code PyType_GetFullyQualifiedName}. The module is omitted for
+     * types from {@code builtins} and {@code __main__}.
      */
     @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
@@ -794,10 +792,7 @@ public abstract class ObjectNodes {
     }
 
     /**
-     * Returns the fully qualified name of the class of an object.
-     *
-     * The fully qualified name includes the name of the module (unless it is the
-     * {@link BuiltinNames#T_BUILTINS} module).
+     * Equivalent of calling CPython's {@code PyType_GetFullyQualifiedName(Py_TYPE(self))}.
      */
     @GenerateUncached
     @GenerateInline
@@ -829,10 +824,38 @@ public abstract class ObjectNodes {
 
         @Specialization
         static TruffleString repr(VirtualFrame frame, Node inliningTarget, Object self,
-                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyUnicodeCheckNode stringCheck,
+                        @Cached CastToTruffleStringNode cast,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached TypeNodes.GetTpNameNode getTpNameNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached(inline = false) SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString fqcn = getFullyQualifiedClassNameNode.execute(frame, inliningTarget, self);
-            return simpleTruffleStringFormatNode.format("<%s object at 0x%s>", fqcn, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
+            Object cls = getClassNode.execute(inliningTarget, self);
+            Object moduleNameObject = lookupAttr.execute(frame, inliningTarget, cls, T___MODULE__);
+            TruffleString typeName;
+            if (moduleNameObject == PNone.NO_VALUE || !stringCheck.execute(inliningTarget, moduleNameObject)) {
+                typeName = getTpNameNode.execute(inliningTarget, cls);
+            } else {
+                TruffleString moduleName = cast.execute(inliningTarget, moduleNameObject);
+                if (equalNode.execute(moduleName, BuiltinNames.T_BUILTINS, TS_ENCODING)) {
+                    typeName = getTpNameNode.execute(inliningTarget, cls);
+                } else {
+                    Object qualNameObject = lookupAttr.execute(frame, inliningTarget, cls, T___QUALNAME__);
+                    if (qualNameObject == PNone.NO_VALUE) {
+                        typeName = StringLiterals.T_VALUE_UNKNOWN;
+                    } else {
+                        TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
+                        appendStringNode.execute(sb, moduleName);
+                        appendStringNode.execute(sb, T_DOT);
+                        appendStringNode.execute(sb, cast.execute(inliningTarget, qualNameObject));
+                        typeName = toStringNode.execute(sb);
+                    }
+                }
+            }
+            return simpleTruffleStringFormatNode.format("<%s object at 0x%s>", typeName, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
         }
 
         @NeverDefault

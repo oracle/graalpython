@@ -47,10 +47,13 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_MUST_BE_CALLABLE
 import static com.oracle.graal.python.nodes.ErrorMessages.TYPE_S_TAKES_AT_LEAST_ONE_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.WARN_PARTIAL_WILL_BE_METHOD_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
@@ -81,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -89,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrG
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyDictCheckExactNode;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyTupleCheckExactNode;
@@ -110,6 +113,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -537,15 +541,25 @@ public final class PartialBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
-                        @Cached ObjectNodes.GetFullyQualifiedClassNameNode classNameNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectGetAttr getAttrNode,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached HashingStorageGetIterator getHashingStorageIterator,
                         @Cached HashingStorageIteratorNext hashingStorageIteratorNext,
                         @Cached HashingStorageIteratorKey hashingStorageIteratorKey,
                         @Cached HashingStorageGetItem getItem,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            final TruffleString name = classNameNode.execute(frame, inliningTarget, partial);
-            PythonContext ctxt = PythonContext.get(classNameNode);
+            // CPython's partial_repr combines PyType_GetModuleName and PyType_GetQualName.
+            Object type = getClassNode.execute(inliningTarget, partial);
+            TruffleString module = castToStringNode.execute(inliningTarget, getAttrNode.execute(frame, inliningTarget, type, T___MODULE__));
+            TruffleString qualName = castToStringNode.execute(inliningTarget, getAttrNode.execute(frame, inliningTarget, type, T___QUALNAME__));
+            TruffleStringBuilderUTF32 nameBuilder = TruffleStringBuilder.createUTF32();
+            appendStringNode.execute(nameBuilder, module);
+            appendStringNode.execute(nameBuilder, T_DOT);
+            appendStringNode.execute(nameBuilder, qualName);
+            final TruffleString name = toStringNode.execute(nameBuilder);
+            PythonContext ctxt = PythonContext.get(inliningTarget);
             if (!ctxt.reprEnter(partial)) {
                 return T_ELLIPSIS;
             }

@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -198,14 +197,14 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetFieldNamesNode getFieldNamesNode,
-                        @Cached ObjectNodes.GetFullyQualifiedNameNode getQName,
+                        @Cached TypeNodes.GetTpNameNode getTpNameNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
-            appendStringNode.execute(sb, getQName.execute(frame, type));
+            appendStringNode.execute(sb, getTpNameNode.execute(inliningTarget, type));
             appendStringNode.execute(sb, T_LPAREN);
             SequenceStorage tupleStore = self.getSequenceStorage();
             int visibleSize = tupleStore.length();
