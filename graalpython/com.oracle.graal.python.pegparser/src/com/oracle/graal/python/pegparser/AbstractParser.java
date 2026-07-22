@@ -648,46 +648,35 @@ public abstract class AbstractParser {
     }
 
     /**
-     * unpack_top_level_joined_strs
-     */
-    private static ExprTy[] unpackTopLevelJoinedStrs(ExprTy[] rawExpressions) {
-        int reqSize = 0;
-        for (ExprTy expr : rawExpressions) {
-            if (expr instanceof ExprTy.JoinedStr joinedStr) {
-                reqSize += joinedStr.values.length;
-            } else {
-                reqSize++;
-            }
-        }
-
-        ExprTy[] expressions = new ExprTy[reqSize];
-        int reqIndex = 0;
-        for (ExprTy expr : rawExpressions) {
-            if (expr instanceof ExprTy.JoinedStr joinedStr) {
-                ExprTy[] values = joinedStr.values;
-                System.arraycopy(values, 0, expressions, reqIndex, values.length);
-                reqIndex += values.length;
-            } else {
-                expressions[reqIndex++] = expr;
-            }
-        }
-        return expressions;
-    }
-
-    /**
      * _PyPegen_joined_str
      */
-    public ExprTy joinedStr(Token a, ExprTy[] rawExpressions, Token b) {
-        ExprTy[] expr = unpackTopLevelJoinedStrs(rawExpressions);
-        int nItems = expr.length;
+    public ExprTy joinedStr(Token a, ExprTy[] expressions, Token b) {
+        int nItems = expressions.length;
+        int totalItems = nItems;
+        for (ExprTy expression : expressions) {
+            if (expression instanceof ExprTy.JoinedStr joinedStr) {
+                totalItems += joinedStr.values.length - 1;
+            }
+        }
 
         CodePoints quoteStr = tokenizer.getTokenCodePoints(a);
         boolean isRaw = quoteStr.contains('r') || quoteStr.contains('R');
 
-        ExprTy[] seq = new ExprTy[nItems];
+        ExprTy[] seq = new ExprTy[totalItems];
 
         int index = 0;
-        for (ExprTy item : expr) {
+        for (ExprTy item : expressions) {
+            // A top-level JoinedStr is the pair created for a debug expression. Its first
+            // element is source text, which must remain raw rather than being decoded like
+            // an ordinary f-string constant.
+            if (item instanceof ExprTy.JoinedStr joinedStr) {
+                assert joinedStr.values.length == 2;
+                assert joinedStr.values[0] instanceof ExprTy.Constant;
+                assert joinedStr.values[1] instanceof ExprTy.FormattedValue;
+                seq[index++] = joinedStr.values[0];
+                seq[index++] = joinedStr.values[1];
+                continue;
+            }
             if (item instanceof ExprTy.Constant constant) {
                 item = constant = decodeFStringPart(isRaw, constant, b);
                 if (constant.value.kind == Kind.CODEPOINTS && constant.value.getCodePoints().isEmpty()) {
@@ -946,7 +935,7 @@ public abstract class AbstractParser {
     ResultTokenWithMetadata checkFstringConversion(Token convToken, ExprTy conv) {
         if (convToken.sourceRange.startLine != conv.getSourceRange().startLine ||
                         convToken.sourceRange.endColumn != conv.getSourceRange().startColumn) {
-            throw raiseSyntaxErrorKnownRange(convToken, conv, "f-string: conversion type must come right after the exclamanation mark");
+            throw raiseSyntaxErrorKnownRange(convToken, conv, "f-string: conversion type must come right after the exclamation mark");
         }
         return new ResultTokenWithMetadata(conv, convToken.metadata);
     }

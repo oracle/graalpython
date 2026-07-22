@@ -2008,17 +2008,46 @@ public class Tokenizer {
         if (!tokMode.debug || tokenMetadata != null) {
             return;
         }
+        // Look for a '#' outside of string literals. A '#' inside a string is part of the
+        // debug expression and must not be treated as the start of a comment.
         boolean hashDetected = false;
+        boolean inString = false;
+        int quoteChar = 0;
         for (int i = tokMode.debugExprStart; i < tokMode.debugExprEnd; ++i) {
-            if (codePointsInput[i] == '#') {
+            int ch = codePointsInput[i];
+            if (ch == '\\') {
+                i++;
+                continue;
+            }
+            if (ch == '"' || ch == '\'') {
+                if (!inString) {
+                    inString = true;
+                    quoteChar = ch;
+                } else if (ch == quoteChar) {
+                    inString = false;
+                }
+                continue;
+            }
+            if (ch == '#' && !inString) {
                 hashDetected = true;
                 break;
             }
         }
         if (hashDetected) {
             CodePoints.Builder sb = new CodePoints.Builder(tokMode.debugExprEnd - tokMode.debugExprStart);
+            inString = false;
+            quoteChar = 0;
             for (int i = tokMode.debugExprStart; i < tokMode.debugExprEnd; ++i) {
-                if (codePointsInput[i] == '#') {
+                int ch = codePointsInput[i];
+                if (ch == '"' || ch == '\'') {
+                    if (!inString) {
+                        inString = true;
+                        quoteChar = ch;
+                    } else if (ch == quoteChar) {
+                        inString = false;
+                    }
+                    sb.appendCodePoint(ch);
+                } else if (ch == '#' && !inString) {
                     while (i < tokMode.debugExprEnd) {
                         if (codePointsInput[i] == '\n') {
                             sb.appendCodePoint('\n');
@@ -2027,7 +2056,7 @@ public class Tokenizer {
                         i++;
                     }
                 } else {
-                    sb.appendCodePoint(codePointsInput[i]);
+                    sb.appendCodePoint(ch);
                 }
             }
             tokenMetadata = sb.build();
