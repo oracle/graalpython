@@ -784,8 +784,10 @@ class StackSummary(list):
 
 
 def _byte_offset_to_character_offset(str, offset):
-    as_utf8 = str.encode('utf-8')
-    return len(as_utf8[:offset].decode("utf-8", errors="replace"))
+    # GraalPy change: GraalPy location metadata uses Unicode code point offsets,
+    # so no UTF-8 byte-to-character conversion is needed.
+    return offset
+    # End GraalPy change
 
 
 _Anchors = collections.namedtuple(
