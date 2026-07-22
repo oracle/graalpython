@@ -106,8 +106,9 @@ public class ScopeEnvironment {
     private static final String DUPLICATE_TYPE_PARAM = "duplicate type parameter '%s'";
 
     final Scope topScope;
-    // Keys to the `blocks` map are either SSTNode objects or TypeParamTy[] in case of functions
-    // synthesized for implementation of Type Parameter Syntax.
+    // Keys to the `blocks` map are SSTNode objects, TypeParamTy[] in case of functions synthesized
+    // for implementation of Type Parameter Syntax, or TypeVarDefaultScopeKey for a TypeVar default
+    // whose TypeVar node is already used as the key for its bound.
     final HashMap<Object, Scope> blocks = new HashMap<>();
     final ParserCallbacks parserCallbacks;
     final EnumSet<FutureFeature> futureFeatures;
@@ -135,13 +136,43 @@ public class ScopeEnvironment {
     }
 
     private void addScope(Object key, Scope scope) {
-        assert key instanceof SSTNode || key instanceof TypeParamTy[];
+        assert isScopeKey(key);
         blocks.put(key, scope);
     }
 
     public Scope lookupScope(Object key) {
-        assert key instanceof SSTNode || key instanceof TypeParamTy[];
+        assert isScopeKey(key);
         return blocks.get(key);
+    }
+
+    private static boolean isScopeKey(Object key) {
+        return key instanceof SSTNode || key instanceof TypeParamTy[] || key instanceof TypeVarDefaultScopeKey;
+    }
+
+    /**
+     * Returns the synthetic scope key used for a TypeVar default. The TypeVar node itself is the key
+     * for its bound, so a distinct key is needed when it has both a bound and a default.
+     */
+    public static Object typeVarDefaultScopeKey(TypeVar typeVar) {
+        return new TypeVarDefaultScopeKey(typeVar);
+    }
+
+    private static final class TypeVarDefaultScopeKey {
+        private final TypeVar typeVar;
+
+        private TypeVarDefaultScopeKey(TypeVar typeVar) {
+            this.typeVar = typeVar;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof TypeVarDefaultScopeKey other && typeVar == other.typeVar;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(typeVar);
+        }
     }
 
     public Scope lookupParent(Scope scope) {
@@ -562,7 +593,8 @@ public class ScopeEnvironment {
                 case Annotation:
                     throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "%s can not be used within an annotation", name);
                 case TypeVarBound:
-                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "%s cannot be used within a TypeVar bound", name);
+                    assert currentScope.scopeInfo != null;
+                    throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "%s cannot be used within %s", name, currentScope.scopeInfo);
                 case TypeAlias:
                     throw env.parserCallbacks.onError(ErrorType.Syntax, node.getSourceRange(), "%s cannot be used within a type alias", name);
                 case TypeParam:
@@ -1421,32 +1453,42 @@ public class ScopeEnvironment {
         @Override
         public Void visit(TypeVar node) {
             addDef(node.name, EnumSet.of(DefUse.DefTypeParam, DefUse.DefLocal), node);
-            if (node.bound != null) {
-                boolean isInClass = currentScope.canSeeClassScope();
-                enterBlock(node.name, ScopeType.TypeVarBound, node);
-                try {
-                    if (isInClass) {
-                        currentScope.flags.add(ScopeFlags.CanSeeClassScope);
-                        addDef("__classdict__", DefUse.Use, node.bound);
-                    }
-                    node.bound.accept(this);
-                } finally {
-                    exitBlock();
-                }
-            }
+            visitTypeParamBoundOrDefault(node.bound, node.name, node,
+                            node.bound instanceof ExprTy.Tuple ? "a TypeVar constraint" : "a TypeVar bound");
+            visitTypeParamBoundOrDefault(node.defaultValue, node.name, typeVarDefaultScopeKey(node), "a TypeVar default");
             return null;
         }
 
         @Override
         public Void visit(ParamSpec node) {
             addDef(node.name, EnumSet.of(DefUse.DefTypeParam, DefUse.DefLocal), node);
+            visitTypeParamBoundOrDefault(node.defaultValue, node.name, node, "a ParamSpec default");
             return null;
         }
 
         @Override
         public Void visit(TypeVarTuple node) {
             addDef(node.name, EnumSet.of(DefUse.DefTypeParam, DefUse.DefLocal), node);
+            visitTypeParamBoundOrDefault(node.defaultValue, node.name, node, "a TypeVarTuple default");
             return null;
+        }
+
+        private void visitTypeParamBoundOrDefault(ExprTy expression, String name, Object scopeKey, String scopeInfo) {
+            if (expression == null) {
+                return;
+            }
+            boolean isInClass = currentScope.canSeeClassScope();
+            enterBlock(name, ScopeType.TypeVarBound, expression.getSourceRange(), scopeKey);
+            try {
+                currentScope.scopeInfo = scopeInfo;
+                if (isInClass) {
+                    currentScope.flags.add(ScopeFlags.CanSeeClassScope);
+                    addDef("__classdict__", DefUse.Use, expression);
+                }
+                expression.accept(this);
+            } finally {
+                exitBlock();
+            }
         }
     }
 }
