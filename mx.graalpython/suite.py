@@ -1398,8 +1398,9 @@ suite = {
                                     "exclude": ["python-native.lib"],
                                 },
                             ],
-                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/graalpy.exe": "dependency:python-venvlauncher",
-                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/python.exe": "dependency:python-venvlauncher",
+                            # CPython 3.13's venv module copies these launcher names directly.
+                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/venvlauncher.exe": "dependency:python-venvlauncher",
+                            "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/venvwlauncher.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/include/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
                             "./META-INF/resources/<os>/<arch>/Lib/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/<graalpy_sysconfigdata>.py",
                         },
