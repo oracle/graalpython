@@ -109,6 +109,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectDir;
 import com.oracle.graal.python.lib.PyObjectFormat;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetAttrO;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -117,6 +118,7 @@ import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
+import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
@@ -717,6 +719,27 @@ public abstract class PythonCextObjectBuiltins {
         static int isTrue(Object a, Object b,
                         @Cached IsNode isNode) {
             return isNode.execute(a, b) ? 1 : 0;
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Ignored)
+    abstract static class GraalPyPrivate_Object_GetAttrString extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(Object v, TruffleString name,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectGetAttr getAttr) {
+            return getAttr.execute(inliningTarget, v, name);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_Object_SetAttrString extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int doGeneric(Object v, TruffleString name, Object w,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectSetAttr setAttr) {
+            setAttr.execute(inliningTarget, v, name, w);
+            return 0;
         }
     }
 }

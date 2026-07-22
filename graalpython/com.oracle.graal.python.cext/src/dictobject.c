@@ -1766,6 +1766,7 @@ _PyDict_GetItemIdWithError(PyObject *dp, _Py_Identifier *key)
     return PyDict_GetItemWithError(dp, kv);
 }
 
+#if 0 // GraalPy change
 PyObject *
 _PyDict_GetItemStringWithError(PyObject *v, const char *key)
 {
@@ -1779,7 +1780,6 @@ _PyDict_GetItemStringWithError(PyObject *v, const char *key)
     return rv;
 }
 
-#if 0 // GraalPy change
 /* Fast version of global value lookup (LOAD_GLOBAL).
  * Lookup in globals, then builtins.
  *
@@ -3895,6 +3895,7 @@ PyTypeObject PyDict_Type = {
 
 /* For backward compatibility with old dictionary interface */
 
+#if 0 // GraalPy change
 PyObject *
 PyDict_GetItemString(PyObject *v, const char *key)
 {
@@ -3908,6 +3909,7 @@ PyDict_GetItemString(PyObject *v, const char *key)
     Py_DECREF(kv);
     return rv;
 }
+#endif // GraalPy change
 
 int
 _PyDict_SetItemId(PyObject *v, _Py_Identifier *key, PyObject *item)
@@ -3919,6 +3921,7 @@ _PyDict_SetItemId(PyObject *v, _Py_Identifier *key, PyObject *item)
     return PyDict_SetItem(v, kv, item);
 }
 
+#if 0 // GraalPy change
 int
 PyDict_SetItemString(PyObject *v, const char *key, PyObject *item)
 {
@@ -3934,7 +3937,6 @@ PyDict_SetItemString(PyObject *v, const char *key, PyObject *item)
     return err;
 }
 
-#if 0 // GraalPy change
 int
 _PyDict_DelItemId(PyObject *v, _Py_Identifier *key)
 {
@@ -3943,7 +3945,6 @@ _PyDict_DelItemId(PyObject *v, _Py_Identifier *key)
         return -1;
     return PyDict_DelItem(v, kv);
 }
-#endif // GraalPy change
 
 int
 PyDict_DelItemString(PyObject *v, const char *key)
@@ -3958,7 +3959,6 @@ PyDict_DelItemString(PyObject *v, const char *key)
     return err;
 }
 
-#if 0 // GraalPy change
 /* Dictionary iterator types */
 
 typedef struct {
