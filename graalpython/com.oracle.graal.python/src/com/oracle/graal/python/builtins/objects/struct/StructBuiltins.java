@@ -437,6 +437,20 @@ public class StructBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "Struct", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class InitNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object init(PStruct self, Object format,
+                        @Cached ConstructStructNode constructStructNode) {
+            // Compile first so that a bad format leaves the old state untouched, as in CPython.
+            PStruct replacement = constructStructNode.execute(format);
+            self.setStructInfo(replacement.getStructInfo());
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "pack", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, takesVarArgs = true, takesVarKeywordArgs = true, forceSplitDirectCalls = true)
     @GenerateNodeFactory
     public abstract static class StructPackNode extends PythonVarargsBuiltinNode {
