@@ -75,7 +75,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -269,32 +269,34 @@ public abstract class SortNodes {
                         @Cached InlinedConditionProfile isStringOnlyProfile,
                         @Cached InlinedLoopConditionProfile isStringOnlyLoopProfile,
                         @Cached InlinedCountingConditionProfile isStringOnlyBreakProfile,
-                        @Shared @Cached CallContext callContext) {
+                        @Exclusive @Cached CallContext callContext) {
             if (isStringOnlyProfile.profile(inliningTarget, isStringOnly(inliningTarget, storage, isStringOnlyLoopProfile, isStringOnlyBreakProfile))) {
                 // Sorting of strings seems to be so much faster (especially on SVM) that it is
                 // worth always checking for string only sequences and not replacing the strings
                 // specialized code with generic object storage code
                 sortStrings(storage, reverse);
             } else {
-                sortWithoutKey(frame, storage.getInternalObjectArray(), storage.length(), reverse, callContext);
+                sortWithoutKey(frame, inliningTarget, storage.getInternalObjectArray(), storage.length(), reverse, callContext);
             }
         }
 
         @Specialization(guards = "!isPNone(keyfunc)")
+        @SuppressWarnings("truffle-static-method")
         void sort(VirtualFrame frame, ObjectSequenceStorage storage, Object keyfunc, boolean reverse,
-                        @Shared @Cached CallNode callNode,
-                        @Shared @Cached CallContext callContext) {
-            sortWithKey(frame, storage.getInternalObjectArray(), storage.length(), keyfunc, reverse, callNode, callContext);
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached CallNode callNode,
+                        @Exclusive @Cached CallContext callContext) {
+            sortWithKey(frame, inliningTarget, storage.getInternalObjectArray(), storage.length(), keyfunc, reverse, callNode, callContext);
         }
 
         @Fallback
         @SuppressWarnings("truffle-static-method")
         void sort(VirtualFrame frame, SequenceStorage storage, Object keyfunc, boolean reverse,
                         @Bind Node inliningTarget,
-                        @Shared @Cached CallContext callContext,
-                        @Shared @Cached CallNode callNode,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemScalarNode) {
+                        @Exclusive @Cached CallContext callContext,
+                        @Exclusive @Cached CallNode callNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
+                        @Exclusive @Cached SequenceStorageNodes.SetItemScalarNode setItemScalarNode) {
             int len = storage.length();
             Object[] array = new Object[len];
             for (int i = 0; i < len; i++) {
@@ -302,9 +304,9 @@ public abstract class SortNodes {
             }
             LoopNode.reportLoopCount(inliningTarget, len);
             if (keyfunc instanceof PNone) {
-                sortWithoutKey(frame, array, len, reverse, callContext);
+                sortWithoutKey(frame, inliningTarget, array, len, reverse, callContext);
             } else {
-                sortWithKey(frame, array, len, keyfunc, reverse, callNode, callContext);
+                sortWithKey(frame, inliningTarget, array, len, keyfunc, reverse, callNode, callContext);
             }
             for (int i = 0; i < len; i++) {
                 setItemScalarNode.execute(inliningTarget, storage, i, array[i]);
@@ -312,7 +314,7 @@ public abstract class SortNodes {
             LoopNode.reportLoopCount(inliningTarget, len);
         }
 
-        private void sortWithoutKey(VirtualFrame frame, Object[] array, int len, boolean reverse, CallContext callContext) {
+        private void sortWithoutKey(VirtualFrame frame, Node inliningTarget, Object[] array, int len, boolean reverse, CallContext callContext) {
             if (len <= 1) {
                 return;
             }
@@ -331,7 +333,7 @@ public abstract class SortNodes {
                     IndirectCalleeContext.exit(threadState, state);
                 }
             } else {
-                callContext.prepareCall(frame, arguments, callTarget);
+                callContext.prepareCall(frame, inliningTarget, arguments, callTarget);
                 EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
                 Node prev = nodeRef.set(this);
                 try {
@@ -390,7 +392,7 @@ public abstract class SortNodes {
             }
         }
 
-        private void sortWithKey(VirtualFrame frame, Object[] array, int len, Object keyfunc, boolean reverse, CallNode callNode, CallContext callContext) {
+        private void sortWithKey(VirtualFrame frame, Node inliningTarget, Object[] array, int len, Object keyfunc, boolean reverse, CallNode callNode, CallContext callContext) {
             if (len == 0) {
                 return;
             }
@@ -439,7 +441,7 @@ public abstract class SortNodes {
                         IndirectCalleeContext.exit(threadState, state);
                     }
                 } else {
-                    callContext.prepareCall(frame, arguments, callTarget);
+                    callContext.prepareCall(frame, inliningTarget, arguments, callTarget);
                     EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
                     Node prev = nodeRef.set(this);
                     try {
