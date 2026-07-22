@@ -227,7 +227,7 @@ if sys.implementation.name == "graalpy":
                 )
                 packages = json.loads(metadata.stdout)["packages"]
                 crate = next(package for package in packages if package["name"] == "made-up-crate")
-                assert "/.graalpy/crates/made-up-crate-1.2.3/Cargo.toml" in crate["manifest_path"]
+                assert Path(crate["manifest_path"]) == patched_crate / "Cargo.toml"
 
             assert autopatch_cargo.auto_patch_tree(self.workspace, repository) == 0
 
