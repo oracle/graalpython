@@ -48,12 +48,14 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.dsl.Bind;
@@ -70,6 +72,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(defineModule = J_ARRAY)
 public final class ArrayModuleBuiltins extends PythonBuiltins {
 
+    private static final TruffleString T_COLLECTIONS_ABC = tsLiteral("_collections_abc");
+    private static final TruffleString T_MUTABLE_SEQUENCE = tsLiteral("MutableSequence");
+    private static final TruffleString T_REGISTER = tsLiteral("register");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ArrayModuleBuiltinsFactory.getFactories();
@@ -81,6 +87,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         PythonModule arrayModule = core.lookupBuiltinModule(T_ARRAY);
         arrayModule.setAttribute(tsLiteral("ArrayType"), core.lookupType(PythonBuiltinClassType.PArray));
         arrayModule.setAttribute(tsLiteral("typecodes"), tsLiteral("bBuwhHiIlLqQfd"));
+
+        Object collectionsAbc = AbstractImportNode.importModule(T_COLLECTIONS_ABC);
+        Object mutableSequence = PyObjectGetAttr.executeUncached(collectionsAbc, T_MUTABLE_SEQUENCE);
+        PyObjectCallMethodObjArgs.executeUncached(mutableSequence, T_REGISTER, core.lookupType(PythonBuiltinClassType.PArray));
     }
 
     @Builtin(name = "_array_reconstructor", minNumOfPositionalArgs = 4, numOfPositionalOnlyArgs = 4, parameterNames = {"arrayType", "typeCode", "mformatCode", "items"})
