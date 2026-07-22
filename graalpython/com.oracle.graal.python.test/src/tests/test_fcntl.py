@@ -89,21 +89,25 @@ def python_flock_interacts_with_sh_flock(python_flock_type, sh_flock_type, shoul
 class FcntlTests(unittest.TestCase):
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'No support in Truffle API (GR-28740)')
     @unittest.skipUnless(sys.platform != 'darwin', 'MacOSX does not have flock utility')
+    @unittest.skipUnless(sys.platform != 'win32', 'Windows does not have flock utility')
     def test_flock_x_and_x(self):
         python_flock_interacts_with_sh_flock(fcntl.LOCK_EX, 'x', should_block=True)
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'No support in Truffle API (GR-28740)')
     @unittest.skipUnless(sys.platform != 'darwin', 'MacOSX does not have flock utility')
+    @unittest.skipUnless(sys.platform != 'win32', 'Windows does not have flock utility')
     def test_flock_x_and_s(self):
         python_flock_interacts_with_sh_flock(fcntl.LOCK_EX, 's', should_block=True)
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'No support in Truffle API (GR-28740)')
     @unittest.skipUnless(sys.platform != 'darwin', 'MacOSX does not have flock utility')
+    @unittest.skipUnless(sys.platform != 'win32', 'Windows does not have flock utility')
     def test_flock_s_and_x(self):
         python_flock_interacts_with_sh_flock(fcntl.LOCK_SH, 'x', should_block=True)
 
     @unittest.skipUnless(__graalpython__.posix_module_backend() != 'java', 'No support in Truffle API (GR-28740)')
     @unittest.skipUnless(sys.platform != 'darwin', 'MacOSX does not have flock utility')
+    @unittest.skipUnless(sys.platform != 'win32', 'Windows does not have flock utility')
     @unittest.skipUnless("graalpython" in os.environ.get("BITBUCKET_REPO_URL", "graalpython"), "Do not run this in auxillary CI jobs, it can be flaky")
     def test_flock_s_and_s(self):
         python_flock_interacts_with_sh_flock(fcntl.LOCK_SH, 's', should_block=False)

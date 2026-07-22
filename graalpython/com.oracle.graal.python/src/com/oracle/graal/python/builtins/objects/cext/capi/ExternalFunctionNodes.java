@@ -118,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GraalPyUnicodeObjectUtil;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadAndClearNativeException;
@@ -2339,7 +2340,7 @@ public abstract class ExternalFunctionNodes {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(promoted);
                 args[i] = promoted;
                 long nativeString = pythonToNativeNode.executeNewRef(inliningTarget, promoted);
-                CApiTransitions.setGraalPyUnicodeObjectInterned(HandlePointerConverter.pointerToStub(nativeString), CApiTransitions.GRAALPY_UNICODE_INTERN_STATE_INTERNED);
+                GraalPyUnicodeObjectUtil.setInterned(HandlePointerConverter.pointerToStub(nativeString), GraalPyUnicodeObjectUtil.GRAALPY_UNICODE_INTERN_STATE_INTERNED);
                 writePtrArrayElement(obItem, i, nativeString);
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,18 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -76,6 +84,14 @@ public abstract class PyUnicodeCheckNode extends PNodeWithContext {
     @Specialization
     static boolean doPString(@SuppressWarnings("unused") PString object) {
         return true;
+    }
+
+    @Specialization
+    public static boolean doNative(PythonAbstractNativeObject nativeObject) {
+        long obType = readPtrField(nativeObject.pointer, PyObject__ob_type);
+        boolean isUnicodeSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.UNICODE_SUBCLASS) != 0L;
+        assert IsBuiltinObjectProfile.profileObjectUncached(nativeObject, PythonBuiltinClassType.PString) == isUnicodeSubclass;
+        return isUnicodeSubclass;
     }
 
     @Fallback

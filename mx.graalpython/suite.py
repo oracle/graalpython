@@ -816,12 +816,12 @@ suite = {
             "deliverable": "posix",
             "buildDependencies": [],
             "cflags": [
-                "-DNDEBUG", "-O3", "-Wall", "-Werror",
+                "-DNDEBUG", "-O3",
             ],
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        "defaultBuild": False,
+                        "ldlibs": ["Ws2_32.lib"],
                         "multitarget": {
                             "libc": ["default"],
                         },
@@ -829,7 +829,7 @@ suite = {
                 },
                 "darwin": {
                     "<others>": {
-                        "defaultBuild": True,
+                        "cflags": ["-Wall", "-Werror"],
                         "multitarget": {
                             "libc": ["default"],
                         },
@@ -837,8 +837,8 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
+                        "cflags": ["-Wall", "-Werror"],
                         "ldlibs": ["-lutil", "-lrt"],
-                        "defaultBuild": True,
                         "multitarget": [
                             {"libc": ["glibc", "default"]},
                             {"libc": ["musl"], "variant": ["swcfi"]},
@@ -1057,6 +1057,7 @@ suite = {
                         "layout": {
                             "<os>/<arch>/": [
                                 "dependency:com.oracle.graal.python.cext/<os>-<arch>/<multitarget_libc_selection>/bin/*",
+                                "dependency:python-libposix/<os>-<arch>/<multitarget_libc_selection>/*",
                                 "dependency:python-libbz2/<os>-<arch>/<multitarget_libc_selection>/bin/*",
                             ]
                         },

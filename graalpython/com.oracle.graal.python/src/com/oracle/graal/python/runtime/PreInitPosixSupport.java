@@ -243,6 +243,20 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getOsfHandle(int fd,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.getOsfHandle(nativePosixSupport, fd);
+    }
+
+    @ExportMessage
+    final int openOsfHandle(long handle, int flags,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        return nativeLib.openOsfHandle(nativePosixSupport, handle, flags);
+    }
+
+    @ExportMessage
     final int[] pipe(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();
         return nativeLib.pipe(nativePosixSupport);
@@ -548,6 +562,13 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInPreInitialization();
+        nativeLib.replaceat(nativePosixSupport, oldDirFd, oldPath, newDirFd, newPath);
+    }
+
+    @ExportMessage
     final boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws UnsupportedPosixFeatureException {
         checkNotInPreInitialization();
@@ -829,10 +850,10 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final Object mmap(long length, int prot, int flags, int fd, long offset,
+    final Object mmap(long length, int prot, int flags, int fd, long offset, Object tagname,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInPreInitialization();
-        return nativeLib.mmap(nativePosixSupport, length, prot, flags, fd, offset);
+        return nativeLib.mmap(nativePosixSupport, length, prot, flags, fd, offset, tagname);
     }
 
     @ExportMessage
@@ -1209,5 +1230,50 @@ public class PreInitPosixSupport extends PosixSupport {
             return PosixSupportLibrary.getUncached().getPathAsBytes(emulatedPosixSupport, path);
         }
         return nativeLib.getPathAsBytes(nativePosixSupport, path);
+    }
+
+    @ExportMessage
+    final Object createCStringFromString(TruffleString string,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().createCStringFromString(emulatedPosixSupport, string);
+        }
+        return nativeLib.createCStringFromString(nativePosixSupport, string);
+    }
+
+    @ExportMessage
+    final Object createCStringFromBytes(byte[] bytes,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().createCStringFromBytes(emulatedPosixSupport, bytes);
+        }
+        return nativeLib.createCStringFromBytes(nativePosixSupport, bytes);
+    }
+
+    @ExportMessage
+    final Object createWideStringFromString(TruffleString string,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().createWideStringFromString(emulatedPosixSupport, string);
+        }
+        return nativeLib.createWideStringFromString(nativePosixSupport, string);
+    }
+
+    @ExportMessage
+    final TruffleString getCStringAsString(Object string,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().getCStringAsString(emulatedPosixSupport, string);
+        }
+        return nativeLib.getCStringAsString(nativePosixSupport, string);
+    }
+
+    @ExportMessage
+    final Buffer getCStringAsBytes(Object string,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        if (inPreInitialization) {
+            return PosixSupportLibrary.getUncached().getCStringAsBytes(emulatedPosixSupport, string);
+        }
+        return nativeLib.getCStringAsBytes(nativePosixSupport, string);
     }
 }

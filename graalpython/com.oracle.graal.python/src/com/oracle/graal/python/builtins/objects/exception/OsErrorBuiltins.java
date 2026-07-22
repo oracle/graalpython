@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -389,12 +389,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
         Object generic(PBaseException self, Object value,
                         @Cached BaseExceptionAttrNode attrNode) {
             Object result = attrNode.execute(self, value, IDX_WINERROR, OS_ERROR_ATTR_FACTORY);
-            if (result instanceof PNone) {
-                // TODO: fallback to errno for now
-                return attrNode.execute(self, value, IDX_ERRNO, OS_ERROR_ATTR_FACTORY);
-            } else {
-                return result;
-            }
+            return result;
         }
     }
 

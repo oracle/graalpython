@@ -292,7 +292,7 @@ public abstract class SocketNodes {
                     gil.release(true);
                     try {
                         // TODO getaddrinfo lock?
-                        AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, null, posixLib.createPathFromString(posixSupport, T_ZERO),
+                        AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, null, posixLib.createCStringFromString(posixSupport, T_ZERO),
                                         family, SOCK_DGRAM.value, 0, AI_PASSIVE.value);
                         try {
                             if (addrInfoLib.next(cursor)) {
@@ -336,7 +336,7 @@ public abstract class SocketNodes {
                 gil.release(true);
                 try {
                     // TODO getaddrinfo lock?
-                    AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, posixLib.createPathFromBytes(posixSupport, name), null,
+                    AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, posixLib.createCStringFromBytes(posixSupport, name), null,
                                     family, 0, 0, 0);
                     try {
                         return addrInfoLib.getSockAddr(cursor);
@@ -372,7 +372,7 @@ public abstract class SocketNodes {
             static byte[] doParse(PosixSupportLibrary posixLib, Object posixSupport, int family, byte[] string) {
                 assert family == AF_INET.value || family == AF_INET6.value;
                 try {
-                    return posixLib.inet_pton(posixSupport, family, posixLib.createPathFromBytes(posixSupport, string));
+                    return posixLib.inet_pton(posixSupport, family, posixLib.createCStringFromBytes(posixSupport, string));
                 } catch (PosixException | InvalidAddressException e) {
                     return null;
                 }
@@ -412,12 +412,12 @@ public abstract class SocketNodes {
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
                     Object posixSupport = context.getPosixSupport();
-                    TruffleString addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
+                    TruffleString addressString = posixLib.getCStringAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
                     return PFactory.createTuple(language, new Object[]{addressString, inet4SockAddr.getPort()});
                 } else if (family == AF_INET6.value) {
                     Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
                     Object posixSupport = context.getPosixSupport();
-                    TruffleString addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
+                    TruffleString addressString = posixLib.getCStringAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
                     return PFactory.createTuple(language, new Object[]{addressString, inet6SockAddr.getPort(), inet6SockAddr.getFlowInfo(), inet6SockAddr.getScopeId()});
                 } else if (family == AF_UNIX.value) {
                     UnixSockAddr unixSockAddr = addrLib.asUnixSockAddr(addr);
@@ -469,11 +469,11 @@ public abstract class SocketNodes {
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
                     Object posixSupport = context.getPosixSupport();
-                    return posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
+                    return posixLib.getCStringAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
                 } else if (family == AF_INET6.value) {
                     Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
                     Object posixSupport = context.getPosixSupport();
-                    return posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
+                    return posixLib.getCStringAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
                 } else {
                     throw raiseNode.raise(inliningTarget, NotImplementedError, toTruffleStringUncached("makesockaddr: unknown address family"));
                 }

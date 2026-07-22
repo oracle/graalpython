@@ -60,6 +60,8 @@ def test_import():
 
 
 def test_getrusage():
+    if sys.platform not in ['darwin', 'linux']:
+        raise unittest.SkipTest("resource.getrusage is not available on this platform")
     from resource import getrusage, RUSAGE_SELF
     try:
         from resource import RUSAGE_THREAD

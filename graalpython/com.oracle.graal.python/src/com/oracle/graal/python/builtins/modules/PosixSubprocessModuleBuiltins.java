@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -109,7 +110,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
     /**
      * Helper converter which iterates the argv argument and converts each element to the opaque
-     * path representation used by {@link PosixSupportLibrary}.
+     * narrow string representation used by {@link PosixSupportLibrary}.
      */
     abstract static class ProcessArgsConversionNode extends ArgumentCastNode {
         @Specialization
@@ -122,10 +123,12 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object[] doSequence(VirtualFrame frame, Object processArgs,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached FastConstructListNode fastConstructListNode,
                         @Cached GetSequenceStorageNode getSequenceStorageNode,
                         @Cached IsBuiltinObjectProfile isBuiltinClassProfile,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached PRaiseNode raiseNode) {
             PList argsList;
@@ -146,7 +149,9 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);
                 }
                 Object o = getItemNode.execute(argsStorage, i);
-                argsArray[i] = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
+                Object path = objectToOpaquePathNode.execute(frame, inliningTarget, o, false);
+                Buffer bytes = posixLib.getPathAsBytes(context.getPosixSupport(), path);
+                argsArray[i] = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes.data);
             }
             return argsArray;
         }
@@ -179,7 +184,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < length; ++i) {
                 Object o = getItem.execute(frame, inliningTarget, env, i);
                 byte[] bytes = toBytesNode.execute(frame, o);
-                Object o1 = posixLib.createPathFromBytes(context.getPosixSupport(), bytes);
+                Object o1 = posixLib.createCStringFromBytes(context.getPosixSupport(), bytes);
                 if (o1 == null) {
                     throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
                 }
@@ -231,10 +236,10 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return s.getBytes();
         }
 
-        private static Object createPathFromBytes(Node inliningTarget, byte[] bytes, PosixSupportLibrary posixLib, PRaiseNode raiseNode) {
-            Object o = posixLib.createPathFromBytes(PosixSupport.get(inliningTarget), bytes);
+        private static Object createCStringFromBytes(Node inliningTarget, byte[] bytes, PosixSupportLibrary posixLib, PRaiseNode raiseNode) {
+            Object o = posixLib.createCStringFromBytes(PosixSupport.get(inliningTarget), bytes);
             if (o == null) {
-                // TODO reconsider the contract of PosixSupportLibrary#createPathFromBytes w.r.t.
+                // TODO reconsider the contract of PosixSupportLibrary#createCStringFromBytes w.r.t.
                 // embedded null checks (we need to review that anyway since PosixSupportLibrary
                 // cannot do Python-specific fsencode)
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
@@ -291,7 +296,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     }
                     Object[] extendedArgs = new Object[additionalArgs.length + (processArgs.length == 0 ? 0 : processArgs.length - 1)];
                     for (int j = 0; j < additionalArgs.length; ++j) {
-                        extendedArgs[j] = createPathFromBytes(inliningTarget, fsEncode(additionalArgs[j].toJavaStringUncached()), posixLib, raiseNode);
+                        extendedArgs[j] = createCStringFromBytes(inliningTarget, fsEncode(additionalArgs[j].toJavaStringUncached()), posixLib, raiseNode);
                     }
                     if (processArgs.length > 1) {
                         PythonUtils.arraycopy(processArgs, 1, extendedArgs, additionalArgs.length, processArgs.length - 1);
@@ -299,7 +304,7 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                     processArgs = extendedArgs;
                     executables[i] = extendedArgs[0];
                 } else {
-                    executables[i] = createPathFromBytes(inliningTarget, bytes, posixLib, raiseNode);
+                    executables[i] = createCStringFromBytes(inliningTarget, bytes, posixLib, raiseNode);
                 }
             }
 

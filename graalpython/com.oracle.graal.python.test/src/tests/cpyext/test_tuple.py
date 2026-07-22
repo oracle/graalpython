@@ -391,16 +391,19 @@ class TestNativeSubclass(unittest.TestCase):
 
     def test_utime_ns_divmod_native_tuple(self):
         class NativeDivmod:
+            def __init__(self, value):
+                self.value = value
+
             def __divmod__(self, other):
                 assert other == 1000000000
-                result = TupleSubclass(1, 234567890)
+                result = TupleSubclass(*divmod(self.value, other))
                 assert is_native_object(result)
                 return result
 
         with tempfile.NamedTemporaryFile() as f:
-            os.utime(f.name, ns=(NativeDivmod(), NativeDivmod()))
+            expected = 1700000001234567890
+            os.utime(f.name, ns=(NativeDivmod(expected), NativeDivmod(expected)))
             stat = os.stat(f.name)
-            expected = 1234567890
             # We don't care about the exact value. It's about if native tuples are accepted.
             tolerance = 1_000_000_000
             assert abs(stat.st_atime_ns - expected) <= tolerance

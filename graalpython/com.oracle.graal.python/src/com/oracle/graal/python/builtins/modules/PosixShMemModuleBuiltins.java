@@ -47,8 +47,6 @@ import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
-import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -66,6 +64,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_posixshmem")
 public final class PosixShMemModuleBuiltins extends PythonBuiltins {
@@ -76,7 +75,7 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "shm_open", minNumOfPositionalArgs = 2, parameterNames = {"path", "flags", "mode"})
-    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "path", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
     @ArgumentClinic(name = "mode", conversion = ClinicConversion.Int, defaultValue = "0777")
     @GenerateNodeFactory
@@ -88,21 +87,22 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int shmOpen(VirtualFrame frame, PosixPath path, int flags, int mode,
+        static int shmOpen(VirtualFrame frame, TruffleString path, int flags, int mode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                return posixLib.shmOpen(context.getPosixSupport(), path.value, flags, mode);
+                Object name = posixLib.createCStringFromString(context.getPosixSupport(), path);
+                return posixLib.shmOpen(context.getPosixSupport(), name, flags, mode);
             } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path);
             }
         }
     }
 
     @Builtin(name = "shm_unlink", minNumOfPositionalArgs = 1, parameterNames = {"path"})
-    @ArgumentClinic(name = "path", conversionClass = PathConversionNode.class, args = {"false", "false"})
+    @ArgumentClinic(name = "path", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     public abstract static class ShmUnlinkNode extends PythonUnaryClinicBuiltinNode {
 
@@ -112,15 +112,16 @@ public final class PosixShMemModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PNone shmUnlink(VirtualFrame frame, PosixPath path,
+        static PNone shmUnlink(VirtualFrame frame, TruffleString path,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                posixLib.shmUnlink(context.getPosixSupport(), path.value);
+                Object name = posixLib.createCStringFromString(context.getPosixSupport(), path);
+                posixLib.shmUnlink(context.getPosixSupport(), name);
             } catch (PosixException e) {
-                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path.originalObject);
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e, path);
             }
             return PNone.NONE;
         }

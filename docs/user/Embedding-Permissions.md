@@ -22,7 +22,8 @@ The `PosixModuleBackend` option determines which backend is used: `native` or `j
 
 ### Native Backend
 
-The native backend directly calls the POSIX API in mostly the same way as CPython (the reference Python implementation).
+The native backend directly calls the operating system API in mostly the same way as CPython (the reference Python implementation).
+On POSIX platforms this means POSIX APIs; on Windows this means a Windows-native backend that maps Python's OS interface to the CRT, Win32, and Winsock APIs.
 
 This approach is the most compatible with CPython and provides bare access to the underlying OS interface without an intermediate emulation layer.
 

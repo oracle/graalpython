@@ -438,7 +438,8 @@ public final class NativeLZMASupport extends NativeCompressionSupport {
     }
 
     public int decompress(long lzmast, byte[] inputBuffer, long offset, long maxLength, long bufsize, long lzsAvailIn) {
-        long nativeInputBuffer = copyToNativeByteArray(inputBuffer);
+        int inputLength = Math.toIntExact(Math.addExact(offset, lzsAvailIn));
+        long nativeInputBuffer = copyToNativeByteArray(inputBuffer, inputLength);
         try {
             return nativeFunctions.lzma_decompress(lzmast, nativeInputBuffer, offset, maxLength, bufsize, lzsAvailIn);
         } finally {

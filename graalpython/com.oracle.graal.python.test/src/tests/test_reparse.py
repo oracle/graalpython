@@ -125,7 +125,7 @@ def pyc_reparse(test_content, expect_success=True, python_options=()):
             if expect_success:
                 assert proc.wait() == 0, out
             else:
-                assert proc.wait() == 1 and re.search(r"SystemError:.*--python\.KeepBytecodeInMemory", out), out
+                assert proc.wait() == 1 and re.search(r"SystemError:[\s\S]*--python\.KeepBytecodeInMemory", out), repr(out)
 
 
 TRACING_TEST = '''
@@ -182,7 +182,7 @@ def test_reparse_modified():
 
 
 def test_reparse_disabled():
-    with pyc_reparse(TRACING_TEST, python_options=["--python.KeepBytecodeInMemory"], expect_success=True) \
+    with pyc_reparse(TRACING_TEST, python_options=["--experimental-options=true", "--python.KeepBytecodeInMemory"], expect_success=True) \
             as (example_file, pyc_file):
         pyc_file.unlink()
 
@@ -192,9 +192,15 @@ def foo():
     a = 42
     return a
 
-assert foo() == 42
-foo.__code__ = foo.__code__.replace(co_code=foo.__code__.co_code)
-assert foo() == 42
+try:
+    assert foo() == 42
+    foo.__code__ = foo.__code__.replace(co_code=foo.__code__.co_code)
+    assert foo() == 42
+except SystemError as e:
+    # Traceback rendering may itself need the deleted bytecode file and stop before printing the
+    # exception. Emit it first so that the parent can verify the expected reparse failure.
+    print(f"SystemError: {e}", flush=True)
+    raise
 '''
 
 

@@ -242,6 +242,28 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final long getOsfHandle(int fd,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getOsfHandle", "%d", fd);
+        try {
+            return logExit("getOsfHandle", "%d", lib.getOsfHandle(delegate, fd));
+        } catch (PosixException e) {
+            throw logException("getOsfHandle", e);
+        }
+    }
+
+    @ExportMessage
+    final int openOsfHandle(long handle, int flags,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("openOsfHandle", "%d, %d", handle, flags);
+        try {
+            return logExit("openOsfHandle", "%d", lib.openOsfHandle(delegate, handle, flags));
+        } catch (PosixException e) {
+            throw logException("openOsfHandle", e);
+        }
+    }
+
+    @ExportMessage
     final int[] pipe(
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("pipe", "");
@@ -682,6 +704,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void replaceat(int oldDirFd, Object oldPath, int newDirFd, Object newPath,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("replaceAt", "%d, %s, %d, %s", oldDirFd, oldPath, newDirFd, newPath);
+        try {
+            lib.replaceat(delegate, oldDirFd, oldPath, newDirFd, newPath);
+        } catch (PosixException e) {
+            throw logException("replaceAt", e);
+        }
+    }
+
+    @ExportMessage
     final boolean faccessat(int dirFd, Object path, int mode, boolean effectiveIds, boolean followSymlinks,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws UnsupportedPosixFeatureException {
         logEnter("faccessAt", "%d, %s, 0%o, %b, %b", dirFd, path, mode, effectiveIds, followSymlinks);
@@ -825,11 +858,11 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public Object mmap(long length, int prot, int flags, int fd, long offset,
+    public Object mmap(long length, int prot, int flags, int fd, long offset, Object tagname,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("mmap", "%d, %d, %d, %d, %d", length, prot, flags, fd, offset);
+        logEnter("mmap", "%d, %d, %d, %d, %d, %s", length, prot, flags, fd, offset, tagname);
         try {
-            return logExit("mmap", "%s", lib.mmap(delegate, length, prot, flags, fd, offset));
+            return logExit("mmap", "%s", lib.mmap(delegate, length, prot, flags, fd, offset, tagname));
         } catch (PosixException e) {
             throw logException("mmap", e);
         }
@@ -1652,6 +1685,36 @@ public class LoggingPosixSupport extends PosixSupport {
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "getPathAsBytes", "%s", path);
         return logExit(Level.FINEST, "getPathAsBytes", "%s", lib.getPathAsBytes(delegate, path));
+    }
+
+    @ExportMessage
+    final Object createCStringFromString(TruffleString string,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.createCStringFromString(delegate, string);
+    }
+
+    @ExportMessage
+    final Object createCStringFromBytes(byte[] bytes,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.createCStringFromBytes(delegate, bytes);
+    }
+
+    @ExportMessage
+    final Object createWideStringFromString(TruffleString string,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.createWideStringFromString(delegate, string);
+    }
+
+    @ExportMessage
+    final TruffleString getCStringAsString(Object string,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.getCStringAsString(delegate, string);
+    }
+
+    @ExportMessage
+    final Buffer getCStringAsBytes(Object string,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return lib.getCStringAsBytes(delegate, string);
     }
 
     @TruffleBoundary

@@ -104,6 +104,22 @@ class TestSubprocess(unittest.TestCase):
             self.fail("Expected ValueError when stdout arg supplied.")
         self.assertIn('stdout', c.exception.args[0])
 
+    @unittest.skipUnless(sys.platform == 'win32', "Windows handle-list specific")
+    def test_close_fds_with_handle_list(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            leak_path = os.path.join(tmp_dir, "leak")
+            out_path = os.path.join(tmp_dir, "out")
+            leak = open(leak_path, "w+")
+            os.set_inheritable(leak.fileno(), True)
+            with open(out_path, "w+") as out:
+                p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(5)"], stdout=out, stderr=out)
+                leak.close()
+                try:
+                    os.unlink(leak_path)
+                finally:
+                    p.terminate()
+                    p.wait()
+
     def test_kill(self):
         p = subprocess.Popen([sys.executable, "-c", "print('oh no')"])
         p.kill()

@@ -35,12 +35,6 @@ except ImportError:
         raise
     _winapi = None
 
-# GraalPy change: temporary until we implement proper multiprocessing for Windows
-_winapi = None
-#
-#
-#
-
 BUFSIZE = 8192
 # A very generous timeout when it comes to local connections...
 CONNECTION_TIMEOUT = 20.

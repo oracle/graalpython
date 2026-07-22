@@ -55,6 +55,9 @@ import posix
 import stat
 import tempfile
 import io
+import glob
+import shutil
+import socket
 from contextlib import contextmanager
 
 
@@ -270,6 +273,59 @@ class PosixTests(unittest.TestCase):
             except Exception:
                 pass
 
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_lone_surrogate_paths(self):
+        root = tempfile.mkdtemp()
+        old_cwd = os.getcwd()
+        filenames = ['suffix-\udc80', 'middle-\udc80-name', 'non-bmp-\U0001f600-\udc80']
+        dirname = 'directory-\udc80'
+        try:
+            for filename in filenames:
+                path = os.path.join(root, filename)
+                fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+                os.write(fd, b'content')
+                os.close(fd)
+                self.assertTrue(os.path.isfile(path))
+                os.stat(path)
+                os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+                os.utime(path, (1, 2))
+                self.assertIn(filename, os.listdir(root))
+                self.assertIn(filename.encode('utf-8', 'surrogatepass'), os.listdir(os.fsencode(root)))
+                self.assertEqual([path], glob.glob(path))
+                with os.scandir(root) as entries:
+                    self.assertIn(filename, [entry.name for entry in entries])
+
+                copied = path + '.copy'
+                shutil.copyfile(path, copied)
+                with open(copied, 'rb') as copied_file:
+                    self.assertEqual(b'content', copied_file.read())
+                os.unlink(copied)
+
+                renamed = path + '.new'
+                os.rename(path, renamed)
+                self.assertTrue(os.path.isfile(renamed))
+                os.unlink(renamed)
+
+                encoded_path = path.encode('utf-8', 'surrogatepass')
+                fd = os.open(encoded_path, os.O_CREAT | os.O_WRONLY)
+                os.close(fd)
+                self.assertTrue(os.path.isfile(path))
+                os.unlink(encoded_path)
+
+            directory_path = os.path.join(root, dirname)
+            os.mkdir(directory_path)
+            os.chdir(directory_path)
+            self.assertEqual(dirname, os.path.basename(os.getcwd()))
+            os.chdir(old_cwd)
+            os.rmdir(directory_path)
+
+            with self.assertRaises(UnicodeDecodeError):
+                os.stat(os.fsencode(root) + b'\\malformed-\xff')
+        finally:
+            os.chdir(old_cwd)
+            os.rmdir(root)
+
     def test_failed_read_write_errno(self):
         read_fd, write_fd = os.pipe()
         try:
@@ -283,6 +339,143 @@ class PosixTests(unittest.TestCase):
         finally:
             os.close(read_fd)
             os.close(write_fd)
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() != 'java',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_error_codes(self):
+        missing_path = os.path.join(TEMP_DIR, 'graalpython_missing_path_for_winerror')
+        try:
+            os.unlink(missing_path)
+        except FileNotFoundError:
+            pass
+
+        with self.assertRaises(OSError) as missing_error:
+            os.stat(missing_path)
+        self.assertEqual(errno.ENOENT, missing_error.exception.errno)
+        self.assertEqual(2, missing_error.exception.winerror)  # ERROR_FILE_NOT_FOUND
+
+        # A CRT failure following a WinAPI failure must not reuse the earlier winerror.
+        read_fd, write_fd = os.pipe()
+        os.close(read_fd)
+        os.close(write_fd)
+        with self.assertRaises(OSError) as crt_error:
+            os.read(read_fd, 1)
+        self.assertEqual(errno.EBADF, crt_error.exception.errno)
+        self.assertIsNone(crt_error.exception.winerror)
+
+        def assert_crt_error(operation, expected_errno):
+            # Seed the native last-error state before every CRT failure.
+            with self.assertRaises(OSError) as winapi_error:
+                os.stat(missing_path)
+            self.assertEqual(2, winapi_error.exception.winerror)
+            with self.assertRaises(OSError) as error:
+                operation()
+            self.assertEqual(expected_errno, error.exception.errno)
+            self.assertIsNone(error.exception.winerror)
+
+        assert_crt_error(lambda: os.rename(missing_path, missing_path + '.renamed'), errno.ENOENT)
+        assert_crt_error(lambda: os.chmod(missing_path, 0o600), errno.ENOENT)
+        assert_crt_error(lambda: os.listdir(''), errno.ENOENT)
+
+        import socket
+        first = socket.socket()
+        second = socket.socket()
+        try:
+            first.bind(('127.0.0.1', 0))
+            with self.assertRaises(OSError) as socket_error:
+                second.bind(first.getsockname())
+            self.assertEqual(errno.EADDRINUSE, socket_error.exception.errno)
+            self.assertEqual(10048, socket_error.exception.winerror)  # WSAEADDRINUSE
+        finally:
+            first.close()
+            second.close()
+
+        # Winsock reports WSAEWOULDBLOCK while a timed connect is in progress. The socket layer
+        # must treat that as EINPROGRESS and wait for completion instead of raising immediately.
+        server = socket.socket()
+        try:
+            server.bind(('127.0.0.1', 0))
+            server.listen()
+            with socket.create_connection(server.getsockname(), timeout=10) as client:
+                accepted, _ = server.accept()
+                accepted.close()
+        finally:
+            server.close()
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup2_socket(self):
+        source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        target = os.open(os.devnull, os.O_RDONLY)
+        try:
+            source.bind(('127.0.0.1', 0))
+            self.assertEqual(target, os.dup2(source.fileno(), target))
+            duplicate = socket.socket(fileno=target)
+            target = -1
+            with duplicate:
+                self.assertEqual(source.getsockname(), duplicate.getsockname())
+        finally:
+            source.close()
+            if target >= 0:
+                os.close(target)
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup2_file_over_socket(self):
+        read_fd, write_fd = os.pipe()
+        target = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        target_fd = target.detach()
+        try:
+            self.assertEqual(target_fd, os.dup2(read_fd, target_fd))
+            os.close(read_fd)
+            read_fd = -1
+            os.write(write_fd, b'x')
+            self.assertEqual(b'x', os.read(target_fd, 1))
+        finally:
+            if read_fd >= 0:
+                os.close(read_fd)
+            os.close(write_fd)
+            os.close(target_fd)
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup2_socket_over_socket(self):
+        source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        target = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        target.bind(('127.0.0.1', 0))
+        target_fd = target.detach()
+        try:
+            source.bind(('127.0.0.1', 0))
+            self.assertEqual(target_fd, os.dup2(source.fileno(), target_fd))
+            duplicate = socket.socket(fileno=target_fd)
+            target_fd = -1
+            with duplicate:
+                self.assertEqual(source.getsockname(), duplicate.getsockname())
+        finally:
+            source.close()
+            if target_fd >= 0:
+                os.close(target_fd)
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup2_socket_to_self_non_inheritable(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            fd = sock.fileno()
+            os.set_inheritable(fd, True)
+            self.assertEqual(fd, os.dup2(fd, fd, inheritable=False))
+            self.assertFalse(os.get_inheritable(fd))
+            sock.getsockname()
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'requires the Windows native POSIX backend')
+    def test_windows_native_dup_nonblocking_socket(self):
+        source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        source.setblocking(False)
+        try:
+            with socket.socket(fileno=os.dup(source.fileno())) as duplicate:
+                self.assertFalse(duplicate.getblocking())
+        finally:
+            source.close()
 
     def test_fd_converter(self):
         class MyInt(int):
@@ -439,6 +632,15 @@ class WithTempFilesTests(unittest.TestCase):
         inode = os.stat(TEST_FULL_PATH1).st_ino
         with open(TEST_FULL_PATH2, 0) as fd:           # follows symlink
             self.assertEqual(inode, os.fstat(fd).st_ino)
+
+    @unittest.skipUnless(sys.platform == 'win32' and __graalpython__.posix_module_backend() == 'native',
+                         'test requires the Windows native POSIX backend')
+    def test_windows_native_stat_uses_utc_timestamps(self):
+        timestamp = 1700000000
+        os.utime(TEST_FULL_PATH1, (timestamp, timestamp))
+        self.assertEqual(timestamp, int(os.stat(TEST_FULL_PATH1).st_mtime))
+        with open(TEST_FULL_PATH1, 0) as fd:
+            self.assertEqual(timestamp, int(os.fstat(fd).st_mtime))
 
     def test_statvfs(self):
         res = os.statvfs(TEST_FULL_PATH1)

@@ -144,6 +144,31 @@ def get_setuptools(setuptools='67.6.1'):
     ensure_packages(setuptools=setuptools)
 
 
+def _system_python_for_venv():
+    python = os.environ.get("MX_PYTHON") or "python"
+    resolved = shutil.which(python)
+    if resolved and (not sys.platform.startswith('win32') or Path(resolved).suffix.lower() == ".exe"):
+        return resolved
+    if sys.platform.startswith('win32'):
+        version = os.environ.get("MX_PYTHON_VERSION")
+        if not version and python.startswith("python") and len(python) > len("python"):
+            version = python[len("python"):]
+        if version:
+            version_dir = version.replace(".", "")
+            for candidate in (
+                f"C:/Python{version_dir}/python.exe",
+                f"C:/Python{version_dir}/python3.exe",
+                f"C:/Python{version_dir}/{python}.exe",
+            ):
+                if Path(candidate).is_file():
+                    return candidate
+        for executable in ("python.exe", "python3.exe", "python"):
+            fallback = shutil.which(executable)
+            if fallback and Path(fallback).suffix.lower() == ".exe":
+                return fallback
+    return python
+
+
 def install_venv(venv_path: Path) -> bool:
     """Installs a virtual environment at the given path."""
     if not sys.executable or (sys.platform.startswith('win32') and sys.implementation.name == "graalpy"):
@@ -151,7 +176,7 @@ def install_venv(venv_path: Path) -> bool:
         # And thus we must defer to the system's python
         # Deferring to the system's python is fine as it will only be used to install setuptools
         import subprocess
-        subprocess.run(["python", "-m", "venv", str(venv_path)], check=True)
+        subprocess.run([_system_python_for_venv(), "-m", "venv", str(venv_path)], check=True)
         return True
     else:
         import venv

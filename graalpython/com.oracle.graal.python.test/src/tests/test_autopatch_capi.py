@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import sys
+import os
 import tempfile
 import textwrap
 
@@ -48,13 +49,17 @@ if sys.implementation.name == 'graalpy':
     def check_autopatched(source, expected):
         source = textwrap.dedent(source).rstrip()
         expected = textwrap.dedent(expected).rstrip()
-        with tempfile.NamedTemporaryFile('r+') as f:
+        with tempfile.NamedTemporaryFile('w+', delete=False) as f:
             f.write(source)
             f.flush()
-            autopatch_capi.auto_patch(f.name, False)
-            f.seek(0)
-            actual = f.read()
+            name = f.name
+        try:
+            autopatch_capi.auto_patch(name, False)
+            with open(name) as f:
+                actual = f.read()
             assert actual == expected, f"Autopatch didn't make expected changes. Expected:\n{expected}\nActual:\n{actual}"
+        finally:
+            os.unlink(name)
 
 
     def test_replace_field_access():

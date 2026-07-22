@@ -3,6 +3,30 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
+#ifdef _WIN32
+
+#include <errno.h>
+#include <stdint.h>
+
+__declspec(dllexport) int32_t fork_exec(
+            char *data, int64_t *offsets, int32_t offsetsLen, int32_t argsPos, int32_t envPos, int32_t cwdPos,
+            int32_t stdinRdFd, int32_t stdinWrFd,
+            int32_t stdoutRdFd, int32_t stdoutWrFd,
+            int32_t stderrRdFd, int32_t stderrWrFd,
+            int32_t errPipeRdFd, int32_t errPipeWrFd,
+            int32_t closeFds,
+            int32_t restoreSignals,
+            int32_t callSetsid,
+            int32_t pgidToSet,
+            int32_t allowVFork,
+            int32_t *fdsToKeep, int64_t fdsToKeepLen
+            ) {
+    errno = ENOSYS;
+    return -1;
+}
+
+#else
+
 #if defined(__gnu_linux__) && !defined(_GNU_SOURCE)
 #define _GNU_SOURCE 1
 #endif
@@ -637,3 +661,5 @@ int32_t fork_exec(
     capture_errno();
     return pid;
 }
+
+#endif

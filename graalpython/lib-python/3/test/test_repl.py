@@ -185,7 +185,7 @@ class TestInteractiveInterpreter(unittest.TestCase):
         ''')
         process = spawn_repl('-c', prepare_repl)
         output = process.communicate(user_input)[0]
-        self.assertEqual(process.returncode, 0)
+        self.assertEqual(process.returncode, 0, output)
         self.assertIn('before close', output)
 
     def test_interactive_traceback_reporting(self):
@@ -426,7 +426,7 @@ class TestAsyncioREPL(unittest.TestCase):
         """)
         p.stdin.write(user_input2)
         output = kill_python(p)
-        self.assertEqual(p.returncode, 0)
+        self.assertEqual(p.returncode, 0, output)
         expected = "toplevel contextvar test: ok"
         self.assertIn(expected, output, expected)
 

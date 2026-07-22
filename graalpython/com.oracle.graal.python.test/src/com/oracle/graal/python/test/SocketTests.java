@@ -1060,11 +1060,11 @@ public class SocketTests {
     }
 
     private Object s2p(String s) {
-        return lib.createPathFromString(posixSupport, toTruffleStringUncached(s));
+        return lib.createCStringFromString(posixSupport, toTruffleStringUncached(s));
     }
 
     private String p2s(Object p) {
-        return lib.getPathAsString(posixSupport, p).toJavaStringUncached();
+        return lib.getCStringAsString(posixSupport, p).toJavaStringUncached();
     }
 
     private static void expectErrno(ThrowingRunnable runnable, OSErrorEnum... expectedErrorCodes) {
