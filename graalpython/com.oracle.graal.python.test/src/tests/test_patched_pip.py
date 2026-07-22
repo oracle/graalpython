@@ -124,9 +124,9 @@ if sys.implementation.name == "graalpy":
                     if not k.startswith('$'):
                         toml_lines.append(f'{k} = {v!r}')
                 if patch := rule.get('patch'):
-                    with open(self.patch_dir / patch, 'w') as f:
+                    with open(self.patch_dir / patch, 'w', newline='\n') as f:
                         f.write(PATCH_TEMPLATE.format(rule.get('$patch-text', 'Patched')))
-            with open(self.patch_dir / 'metadata.toml', 'w') as f:
+            with open(self.patch_dir / 'metadata.toml', 'w', newline='\n') as f:
                 f.write('\n'.join(toml_lines))
 
         def build_package(self, name, version):
