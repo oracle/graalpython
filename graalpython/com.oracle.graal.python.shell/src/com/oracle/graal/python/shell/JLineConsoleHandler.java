@@ -77,7 +77,7 @@ import org.graalvm.shadowed.org.jline.utils.InputStreamReader;
 import org.graalvm.shadowed.org.jline.utils.Signals;
 
 public class JLineConsoleHandler extends ConsoleHandler {
-    private static final String[] SIGNALS = {"INT", "QUIT", "TSTP", "CONT", "WINCH"};
+    private static final Terminal.Signal[] SIGNALS = Terminal.Signal.values();
 
     private final InputStream inputStream;
     private final OutputStream outputStream;
@@ -252,14 +252,14 @@ public class JLineConsoleHandler extends ConsoleHandler {
     private static Object[] stashSignalHandlers() {
         Object[] handlers = new Object[SIGNALS.length];
         for (int i = 0; i < SIGNALS.length; i++) {
-            handlers[i] = Signals.registerDefault(SIGNALS[i]);
+            handlers[i] = Signals.registerDefault(SIGNALS[i].name());
         }
         return handlers;
     }
 
     private static void restoreSignalHandlers(Object[] handlers) {
         for (int i = 0; i < SIGNALS.length; i++) {
-            Signals.unregister(SIGNALS[i], handlers[i]);
+            Signals.unregister(SIGNALS[i].name(), handlers[i]);
         }
     }
 
