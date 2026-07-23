@@ -554,7 +554,7 @@ def interrupt_process(process: subprocess.Popen):
             process.send_signal(signal.SIGINT)
             process.wait(3)
             return
-        except (OSError, subprocess.TimeoutExpired):
+        except (OSError, ValueError, subprocess.TimeoutExpired):
             pass
     process.terminate()
     try:
