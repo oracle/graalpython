@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -40,7 +40,7 @@ public @interface CoreFunctions {
      * Most builtins are not OS specific. If specified, the builtin is included only if the os
      * matches
      */
-    PythonOS os() default PythonOS.PLATFORM_ANY;
+    PythonOS[] os() default PythonOS.PLATFORM_ANY;
 
     PythonBuiltinClassType[] extendClasses() default {};
 
