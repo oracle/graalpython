@@ -69,7 +69,7 @@ class SelectTests(unittest.TestCase):
                 return 1
 
         v = MyVal()
-        if sys.platform == 'win32':
+        if sys.platform == 'win32' and __graalpython__.posix_module_backend() != 'java':
             with self.assertRaises(OSError):
                 select.select([], [], [], v)
         else:
