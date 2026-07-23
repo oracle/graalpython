@@ -54,6 +54,13 @@ from unittest.mock import patch
 
 if sys.implementation.name == "graalpy":
     import autopatch_cargo
+    from tests.util import _is_sandboxed, skip_if_sandboxed
+
+    if os.name == "nt" and not _is_sandboxed():
+        from tests import ensure_packages
+
+        paatch_venv = ensure_packages(use_current_python=True, paatch="1.20.3")
+        os.environ["PATH"] = os.pathsep.join((str(paatch_venv / "Scripts"), os.environ.get("PATH", "")))
 
 
     class AutoPatchCargoTest(unittest.TestCase):
@@ -187,6 +194,7 @@ if sys.implementation.name == "graalpy":
                 """.format(checksum=checksum),
             )
 
+        @skip_if_sandboxed("requires an external patch executable")
         def test_patches_locked_crate_and_adds_cargo_override(self):
             archive, checksum = self.prepare_crate_archive()
             cached_crate = self.cargo_home / "registry" / "src" / "made-up-index" / "made-up-crate-1.2.3"
@@ -231,6 +239,7 @@ if sys.implementation.name == "graalpy":
 
             assert autopatch_cargo.auto_patch_tree(self.workspace, repository) == 0
 
+        @skip_if_sandboxed("requires an external patch executable")
         def test_downloads_and_verifies_uncached_crate(self):
             archive, checksum = self.prepare_crate_archive(cached=False)
             repository = self.prepare_repository()
@@ -244,6 +253,7 @@ if sys.implementation.name == "graalpy":
             patched_crate = self.workspace / ".graalpy" / "crates" / "made-up-crate-1.2.3"
             assert '"patched"' in (patched_crate / "src" / "lib.rs").read_text()
 
+        @skip_if_sandboxed("requires an external patch executable")
         def test_accepts_patch_already_applied_to_cached_archive(self):
             _, checksum = self.prepare_crate_archive(message="patched")
             repository = self.prepare_repository()
