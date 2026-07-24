@@ -49,6 +49,7 @@ import java.time.YearMonth;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.datetime.DateNodesFactory.NewNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
@@ -64,17 +65,17 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
@@ -85,19 +86,28 @@ public class DateNodes {
     @GenerateCached(false)
     public abstract static class NewNode extends Node {
 
-        public abstract Object execute(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject);
+
+        /**
+         * Executes without access to the current Python frame. This overload may only be used when {@code cls} is
+         * {@link PythonBuiltinClassType} and all remaining arguments are known to be valid builtin values.
+         */
+        public final Object execute(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject) {
+            return execute(null, inliningTarget, cls, yearObject, monthObject, dayObject);
+        }
+
+        public static Object executeUncached(Object cls, Object yearObject, Object monthObject, Object dayObject) {
+            return NewNodeGen.getUncached().execute(NewNodeGen.getUncached(), cls, yearObject, monthObject, dayObject);
+        }
 
         @Specialization
-        static Object newDate(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject) {
-            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
-            Node encapsulatingNode = encapsulating.set(inliningTarget);
+        static Object newDate(VirtualFrame frame, Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject,
+                        @Cached("createFor($node)") BoundaryCallData callData) {
+            Object saved = BoundaryCallContext.enter(frame, callData);
             try {
                 return newDateBoundary(inliningTarget, cls, yearObject, monthObject, dayObject);
             } finally {
-                // Some uncached nodes (e.g. PyLongAsLongNode) may raise exceptions
-                // that are not connected to a current node. Set the current node
-                // manually.
-                encapsulating.set(encapsulatingNode);
+                BoundaryCallContext.exit(frame, callData, saved);
             }
         }
 
@@ -167,31 +177,13 @@ public class DateNodes {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class SubclassNewNode extends Node {
-
-        public abstract Object execute(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject);
-
-        public static SubclassNewNode getUncached() {
-            return DateNodesFactory.SubclassNewNodeGen.getUncached();
-        }
-
-        @Specialization(guards = {"isBuiltinClass(cls)"})
-        static Object newDateBuiltin(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject,
-                        @Cached NewNode newNode) {
-            return newNode.execute(inliningTarget, cls, yearObject, monthObject, dayObject);
-        }
-
-        @Fallback
-        @TruffleBoundary
-        static Object newDateGeneric(Object cls, Object yearObject, Object monthObject, Object dayObject) {
-            return CallNode.executeUncached(cls, yearObject, monthObject, dayObject);
-        }
-
-        static boolean isBuiltinClass(Object cls) {
-            return PGuards.isBuiltinClass(cls, PythonBuiltinClassType.PDate);
+    public abstract static class SubclassNewNode {
+        public static Object executeUncached(Object cls, Object yearObject, Object monthObject, Object dayObject) {
+            if (PGuards.isBuiltinClass(cls, PythonBuiltinClassType.PDate)) {
+                return NewNode.executeUncached(cls, yearObject, monthObject, dayObject);
+            } else {
+                return CallNode.executeUncached(cls, yearObject, monthObject, dayObject);
+            }
         }
     }
 

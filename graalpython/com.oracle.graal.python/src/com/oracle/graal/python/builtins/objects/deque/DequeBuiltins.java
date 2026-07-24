@@ -116,6 +116,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -128,7 +130,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -886,31 +887,35 @@ public final class DequeBuiltins extends PythonBuiltins {
     abstract static class DequeReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        TruffleString repr(PDeque self) {
+        TruffleString repr(VirtualFrame frame, PDeque self,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             if (!getContext().reprEnter(self)) {
                 return T_ELLIPSIS_IN_BRACKETS;
             }
-            EncapsulatingNodeReference ref = EncapsulatingNodeReference.getCurrent();
-            Node outerNode = ref.set(this);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                Object[] items = self.data.toArray();
-                PList asList = PFactory.createList(PythonLanguage.get(null), items);
-                int maxLength = self.getMaxLength();
-                TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
-                sb.appendStringUncached(GetNameNode.executeUncached(GetPythonObjectClassNode.executeUncached(self)));
-                sb.appendStringUncached(T_LPAREN);
-                sb.appendStringUncached(PyObjectStrAsTruffleStringNode.executeUncached(asList));
-                if (maxLength != -1) {
-                    sb.appendStringUncached(toTruffleStringUncached(", maxlen="));
-                    sb.appendIntNumberUncached(maxLength);
-                }
-                sb.appendStringUncached(T_RPAREN);
-                return sb.toStringUncached();
+                return reprBoundary(self);
             } finally {
-                ref.set(outerNode);
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
                 getContext().reprLeave(self);
             }
+        }
+
+        @TruffleBoundary
+        private static TruffleString reprBoundary(PDeque self) {
+            Object[] items = self.data.toArray();
+            PList asList = PFactory.createList(PythonLanguage.get(null), items);
+            int maxLength = self.getMaxLength();
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
+            sb.appendStringUncached(GetNameNode.executeUncached(GetPythonObjectClassNode.executeUncached(self)));
+            sb.appendStringUncached(T_LPAREN);
+            sb.appendStringUncached(PyObjectStrAsTruffleStringNode.executeUncached(asList));
+            if (maxLength != -1) {
+                sb.appendStringUncached(toTruffleStringUncached(", maxlen="));
+                sb.appendIntNumberUncached(maxLength);
+            }
+            sb.appendStringUncached(T_RPAREN);
+            return sb.toStringUncached();
         }
     }
 

@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -78,7 +79,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -90,19 +91,21 @@ public class TimeNodes {
     @GenerateCached(false)
     public abstract static class NewNode extends Node {
 
-        public abstract Object execute(Node inliningTarget, Object cls, Object hour, Object minute, Object second, Object microsecond, Object tzInfo, Object fold);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object cls, Object hour, Object minute, Object second, Object microsecond, Object tzInfo, Object fold);
+
+        public final Object execute(Node inliningTarget, Object cls, Object hour, Object minute, Object second, Object microsecond, Object tzInfo, Object fold) {
+            return execute(null, inliningTarget, cls, hour, minute, second, microsecond, tzInfo, fold);
+        }
 
         @Specialization
-        static Object newTime(Node inliningTarget, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject) {
-            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
-            Node encapsulatingNode = encapsulating.set(inliningTarget);
+        static Object newTime(VirtualFrame frame, Node inliningTarget, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject,
+                        Object foldObject,
+                        @Cached("createFor($node)") BoundaryCallData callData) {
+            Object saved = BoundaryCallContext.enter(frame, callData);
             try {
                 return newTimeBoundary(inliningTarget, cls, hourObject, minuteObject, secondObject, microsecondObject, tzInfoObject, foldObject);
             } finally {
-                // Some uncached nodes (e.g. PyLongAsLongNode) may raise exceptions
-                // that are not connected to a current node. Set the current node
-                // manually.
-                encapsulating.set(encapsulatingNode);
+                BoundaryCallContext.exit(frame, callData, saved);
             }
         }
 
