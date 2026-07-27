@@ -68,6 +68,7 @@ import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -76,7 +77,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
@@ -89,10 +90,24 @@ public class TimeDeltaNodes {
         private static final int MAX_DAYS = 999_999_999;
         private static final int MIN_DAYS = -999_999_999;
 
-        public abstract Object execute(Node inliningTarget, Object cls, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours, Object weeks);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object cls, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours,
+                        Object weeks);
+
+        /**
+         * Executes without access to the current Python frame. This overload may only be used when {@code cls} is 
+         * {@link PythonBuiltinClassType} and all remaining arguments are known to be valid builtin values.
+         */
+        public final Object execute(Node inliningTarget, Object cls, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours, Object weeks) {
+            return execute(null, inliningTarget, cls, days, seconds, microseconds, milliseconds, minutes, hours, weeks);
+        }
+
+        public final PTimeDelta executeBuiltin(VirtualFrame frame, Node inliningTarget, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours,
+                        Object weeks) {
+            return (PTimeDelta) execute(frame, inliningTarget, PythonBuiltinClassType.PTimeDelta, days, seconds, microseconds, milliseconds, minutes, hours, weeks);
+        }
 
         public final PTimeDelta executeBuiltin(Node inliningTarget, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours, Object weeks) {
-            return (PTimeDelta) execute(inliningTarget, PythonBuiltinClassType.PTimeDelta, days, seconds, microseconds, milliseconds, minutes, hours, weeks);
+            return executeBuiltin(null, inliningTarget, days, seconds, microseconds, milliseconds, minutes, hours, weeks);
         }
 
         public static TimeDeltaNodes.NewNode getUncached() {
@@ -100,18 +115,16 @@ public class TimeDeltaNodes {
         }
 
         @Specialization
-        static Object newTimeDelta(Node inliningTarget, Object cls, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours, Object weeks,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+        static Object newTimeDelta(VirtualFrame frame, Node inliningTarget, Object cls, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours,
+                        Object weeks,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached("createFor($node)") BoundaryCallData callData) {
             Shape shape = getInstanceShape.execute(cls);
-            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
-            Node encapsulatingNode = encapsulating.set(inliningTarget);
+            Object saved = BoundaryCallContext.enter(frame, callData);
             try {
                 return createTimeDelta(inliningTarget, cls, shape, days, seconds, microseconds, milliseconds, minutes, hours, weeks);
             } finally {
-                // Some uncached nodes (e.g. PyLongFromDoubleNode and PyLongAsLongNode in
-                // Accumulator) may raise exceptions that are not connected to a current
-                // node. Set the current node manually.
-                encapsulating.set(encapsulatingNode);
+                BoundaryCallContext.exit(frame, callData, saved);
             }
         }
 

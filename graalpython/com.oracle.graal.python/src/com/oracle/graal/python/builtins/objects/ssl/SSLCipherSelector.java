@@ -73,12 +73,18 @@ public class SSLCipherSelector {
         // The call fails when no <= TLSv1.2 ciphersuites get selected, regardless of TLSv1.3
         // ciphersuites
         if (selected.isEmpty()) {
-            EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
-            Node prev = nodeRef.set(node);
+            EncapsulatingNodeReference nodeRef = null;
+            Node prev = null;
+            if (node != null && node.isAdoptable()) {
+                nodeRef = EncapsulatingNodeReference.getCurrent();
+                prev = nodeRef.set(node);
+            }
             try {
                 throw PConstructAndRaiseNode.raiseUncachedSSLError(ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
             } finally {
-                nodeRef.set(prev);
+                if (nodeRef != null) {
+                    nodeRef.set(prev);
+                }
             }
         }
         // The API that CPython uses is meant only for setting <= TLSv1.2 ciphersuites, but it
@@ -120,12 +126,18 @@ public class SSLCipherSelector {
             } else if (cipherString.startsWith("@SECLEVEL=")) {
                 handleSecurityLevel(node, cipherString);
             } else {
-                EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
-                Node prev = nodeRef.set(node);
+                EncapsulatingNodeReference nodeRef = null;
+                Node prev = null;
+                if (node != null && node.isAdoptable()) {
+                    nodeRef = EncapsulatingNodeReference.getCurrent();
+                    prev = nodeRef.set(node);
+                }
                 try {
                     throw PConstructAndRaiseNode.raiseUncachedSSLError(ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
                 } finally {
-                    nodeRef.set(prev);
+                    if (nodeRef != null) {
+                        nodeRef.set(prev);
+                    }
                 }
             }
         } else if (cipherString.equals("DEFAULT")) {
