@@ -1247,7 +1247,6 @@ graalpy_resize_compact(PyObject *unicode, Py_ssize_t length)
     // TODO: Actually shrink the allocation when capacity exceeds length by a large amount.
     kind = PyUnicode_KIND(unicode);
     native_unicode->length = length;
-    native_unicode->byte_length = length * kind;
     PyUnicode_WRITE(kind, native_unicode->data, length, 0);
     assert(_PyUnicode_CheckConsistency(unicode, 0));
     return unicode;

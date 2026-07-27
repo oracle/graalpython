@@ -88,7 +88,6 @@ public final class GraalPyUnicodeObjectUtil {
         assert !compact || (data == rawPointer + CStructs.GraalPyUnicodeObject.size());
 
         writeLongField(rawPointer, CFields.GraalPyUnicodeObject__length, length);
-        writeLongField(rawPointer, CFields.GraalPyUnicodeObject__byte_length, byteLength);
         writeLongField(rawPointer, CFields.GraalPyUnicodeObject__hash, -1);
         writeLongField(rawPointer, CFields.GraalPyUnicodeObject__state, createState(charSize, isAscii, interned, compact));
         writePtrField(rawPointer, CFields.GraalPyUnicodeObject__data, data);

@@ -123,7 +123,6 @@ public enum CFields {
     GraalPyVarObject__ob_item(PyObjectPtr),
     GraalPyFloatObject__ob_fval(Double),
     GraalPyUnicodeObject__length(Py_ssize_t),
-    GraalPyUnicodeObject__byte_length(Py_ssize_t),
     GraalPyUnicodeObject__hash(Py_hash_t),
     GraalPyUnicodeObject__state(UINT64_T),
     GraalPyUnicodeObject__data(Pointer),
