@@ -155,9 +155,9 @@ public final class GraalPyUnicodeObjectUtil {
     }
 
     /**
-     * Given the raw (untagged) pointer to a {@code GraalPyObject}, this method checks if the object is a unicode object with non-compact data.
+     * Given the raw (untagged) pointer to a {@code GraalPyObject}, this method checks if the object is a unicode object.
      */
-    public static boolean isNonCompactGraalPyUnicodeObject(long rawPointer) {
+    public static boolean isGraalPyUnicodeObject(long rawPointer) {
         assert !HandlePointerConverter.pointsToPyHandleSpace(rawPointer);
         long obType = readPtrField(rawPointer, PyObject__ob_type);
         boolean isUnicodeSubclass = (readLongField(obType, CFields.PyTypeObject__tp_flags) & TypeFlags.UNICODE_SUBCLASS) != 0L;
@@ -165,12 +165,17 @@ public final class GraalPyUnicodeObjectUtil {
         // During finalization, the native reference for obType may already have been freed, so it cannot be converted back to a managed class.
         assert PythonContext.get(null).isFinalizing() || IsBuiltinClassProfile.profileClassSlowPath(NativeToPythonClassInternalNode.executeUncached(obType),
                         PythonBuiltinClassType.PString) == isUnicodeSubclass;
-        return isUnicodeSubclass && !GraalPyUnicodeObjectUtil.isCompact(rawPointer);
+        return isUnicodeSubclass;
     }
 
     /** Similar to {@code unicodeobject.h:_PyUnicode_NONCOMPACT_DATA} */
     public static long getNonCompactDataPointer(long rawPointer) {
-        assert isNonCompactGraalPyUnicodeObject(rawPointer);
+        assert isGraalPyUnicodeObject(rawPointer) && !isCompact(rawPointer);
         return readPtrField(rawPointer, CFields.GraalPyUnicodeObject__data);
+    }
+
+    public static long getUtf8DataPointer(long rawPointer) {
+        assert isGraalPyUnicodeObject(rawPointer);
+        return readPtrField(rawPointer, CFields.GraalPyUnicodeObject__utf8);
     }
 }

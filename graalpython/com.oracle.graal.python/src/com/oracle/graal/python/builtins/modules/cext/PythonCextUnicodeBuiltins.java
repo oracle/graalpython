@@ -90,6 +90,7 @@ import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.truffle.api.strings.TruffleString.Encoding.US_ASCII;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_8;
@@ -142,6 +143,7 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.FindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -178,6 +180,8 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -1185,20 +1189,56 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization
         static long doUnicode(PString s, long sizePtr,
                         @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile hasSizeProfile,
-                        @Cached InlinedConditionProfile hasUtf8Profile,
-                        @Cached _PyUnicode_AsUTF8String asUTF8String,
-                        @Cached HiddenAttr.ReadNode readAttrNode,
-                        @Cached HiddenAttr.WriteNode writeAttrNode) {
-            PBytes utf8bytes = s.getUtf8Bytes(inliningTarget, readAttrNode);
-            if (hasUtf8Profile.profile(inliningTarget, utf8bytes == null)) {
-                utf8bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
-                s.setUtf8Bytes(inliningTarget, writeAttrNode, utf8bytes);
+                        @Cached StringMaterializeNode stringMaterializeNode,
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached FillNativeDataWithKind fillNativeDataWithKind,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode,
+                        @Cached TruffleString.CopyToNativeMemoryNode copyToNativeMemoryNode) {
+
+            TruffleString materialized;
+            if (s.isMaterialized()) {
+                materialized = s.getMaterialized();
+            } else {
+                materialized = stringMaterializeNode.execute(inliningTarget, s);
             }
-            if (hasSizeProfile.profile(inliningTarget, sizePtr != NULLPTR)) {
-                NativeMemory.writeLong(sizePtr, utf8bytes.getSequenceStorage().length());
+
+            long len;
+            long mem;
+
+            long raw = HandlePointerConverter.pointerToStub(s.getNativePointer());
+            boolean hasNativeData = GraalPyUnicodeObjectUtil.isStateInitialized(raw);
+            TruffleString.CodeRange range = getCodeRangeNode.execute(materialized, PythonUtils.TS_ENCODING);
+            if (!hasNativeData && range == TruffleString.CodeRange.ASCII) {
+                /*
+                 * Initialize native data for ordinary managed ASCII strings so that their character data can also be used as
+                 * UTF-8. Existing native layouts must be preserved: their actual contents may be ASCII even when their layout
+                 * was created for a larger maximum character.
+                 */
+                mem = fillNativeDataWithKind.execute(inliningTarget, s, 1, true, US_ASCII);
+                len = CStructAccess.readLongField(raw, CFields.GraalPyUnicodeObject__length);
+            } else {
+
+                // should never be called if utf8 data is already available
+                assert CStructAccess.readPtrField(raw, CFields.GraalPyUnicodeObject__utf8) == NULLPTR;
+
+                TruffleString utf8Str = encodeNativeStringNode.execute(UTF_8, s, T_STRICT);
+                int iLen = utf8Str.byteLength(UTF_8);
+                len = iLen;
+                mem = NativeMemory.malloc(iLen + 1);
+                NativeMemory.writeByte(mem + len, (byte) 0);
+                copyToNativeMemoryNode.execute(utf8Str, 0, mem, 0, iLen, UTF_8);
+                writeTruffleStringNode.write(mem, utf8Str, UTF_8);
+
+                // populate to native data structure
+                CStructAccess.writePtrField(raw, CFields.GraalPyUnicodeObject__utf8, mem);
+                CStructAccess.writeLongField(raw, CFields.GraalPyUnicodeObject__utf8_length, len);
             }
-            return PySequenceArrayWrapper.ensureNativeSequence(utf8bytes);
+
+            if (sizePtr != NULLPTR) {
+                NativeMemory.writeLong(sizePtr, len);
+            }
+            return mem;
         }
 
         @Fallback
@@ -1373,20 +1413,55 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class FillNativeDataWithKind extends Node {
+
+        abstract long execute(Node inliningTarget, PString stringObject, int unicodeCharSize, boolean isAscii, TruffleString.Encoding unicodeEncoding);
+
+        @Specialization
+        static long doGeneric(PString stringObject, int charSize, boolean isAscii, TruffleString.Encoding unicodeEncoding,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached(inline = false) CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
+
+            long byteLength;
+            TruffleString unicodeString = stringObject.getMaterialized();
+            unicodeString = switchEncodingNode.execute(unicodeString, unicodeEncoding);
+            byteLength = unicodeString.byteLength(unicodeEncoding);
+            long dataSize = byteLength + charSize;
+
+            long taggedPointer = stringObject.getNativePointer();
+            assert HandlePointerConverter.pointsToPyHandleSpace(taggedPointer);
+            long rawPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+            long data = NativeMemory.malloc(dataSize);
+
+            // unicode object may have been interned already
+            int interned = GraalPyUnicodeObjectUtil.getInterned(rawPointer);
+            if (interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED) {
+                interned = GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
+            }
+
+            assert !GraalPyUnicodeObjectUtil.isCompact(rawPointer);
+            GraalPyUnicodeObjectUtil.initializeGraalPyUnicodeObject(rawPointer, data, byteLength / charSize, byteLength, charSize, isAscii, interned, false);
+            writeTruffleStringNode.write(data, unicodeString, unicodeEncoding);
+            return data;
+        }
+
+    }
+
     @CApiBuiltin(ret = Void, args = {PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_FillNativeData extends CApiUnaryBuiltinNode {
         @Specialization
         static Object doUnicode(PString stringObject,
+                        @Bind Node inliningTarget,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
+                        @Cached FillNativeDataWithKind fillNativeDataWithKind) {
             assert stringObject.isNative();
             if (!stringObject.isMaterialized()) {
                 throw CompilerDirectives.shouldNotReachHere("unmaterialized PString should already have a native unicode stub");
             }
             int unicodeCharSize;
             boolean unicodeIsAscii = false;
-            long unicodeByteLength;
             TruffleString unicodeString = stringObject.getMaterialized();
             TruffleString.Encoding unicodeEncoding;
 
@@ -1405,24 +1480,7 @@ public final class PythonCextUnicodeBuiltins {
                 unicodeCharSize = 4;
                 unicodeEncoding = TruffleString.Encoding.UTF_32;
             }
-            unicodeString = switchEncodingNode.execute(unicodeString, unicodeEncoding);
-            unicodeByteLength = unicodeString.byteLength(unicodeEncoding);
-            long dataSize = unicodeByteLength + unicodeCharSize;
-
-            long taggedPointer = stringObject.getNativePointer();
-            assert HandlePointerConverter.pointsToPyHandleSpace(taggedPointer);
-            long rawPointer = HandlePointerConverter.pointerToStub(taggedPointer);
-            long data = NativeMemory.malloc(dataSize);
-
-            // unicode object may have been interned already
-            int interned = GraalPyUnicodeObjectUtil.getInterned(rawPointer);
-            if (interned == GRAALPY_UNICODE_INTERN_STATE_UNDETERMINED) {
-                interned = GRAALPY_UNICODE_INTERN_STATE_NOT_INTERNED;
-            }
-
-            assert !GraalPyUnicodeObjectUtil.isCompact(rawPointer);
-            GraalPyUnicodeObjectUtil.initializeGraalPyUnicodeObject(rawPointer, data, unicodeByteLength / unicodeCharSize, unicodeByteLength, unicodeCharSize, unicodeIsAscii, interned, false);
-            writeTruffleStringNode.write(data, unicodeString, unicodeEncoding);
+            fillNativeDataWithKind.execute(inliningTarget, stringObject, unicodeCharSize, unicodeIsAscii, unicodeEncoding);
             return PNone.NO_VALUE;
         }
     }

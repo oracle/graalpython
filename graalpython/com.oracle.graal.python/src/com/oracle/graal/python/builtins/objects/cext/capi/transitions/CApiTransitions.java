@@ -824,19 +824,28 @@ public abstract class CApiTransitions {
         assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
         boolean isLoggable = LOGGER.isLoggable(Level.FINE);
         long rawPointer = HandlePointerConverter.pointerToStub(pointer);
-        if (GraalPyUnicodeObjectUtil.isNonCompactGraalPyUnicodeObject(rawPointer)) {
-            if (isLoggable) {
-                LOGGER.fine(PythonUtils.formatJString("releasing native non-compact GraalPyUnicodeObject stub 0x%x", rawPointer));
+        if (GraalPyUnicodeObjectUtil.isGraalPyUnicodeObject(rawPointer)) {
+            if (!GraalPyUnicodeObjectUtil.isCompact(rawPointer)) {
+                if (isLoggable) {
+                    LOGGER.fine(PythonUtils.formatJString("releasing native non-compact GraalPyUnicodeObject stub 0x%x", rawPointer));
+                }
+                long nonCompactDataPointer = GraalPyUnicodeObjectUtil.getNonCompactDataPointer(rawPointer);
+                /*
+                 * If 'rawPointer + sizeof(GraalPyUnicodeObject) == nonCompactDataPointer', this indicates that the compact flag is incorrect. However, this is
+                 * not guaranteed because the allocated memory of the GraalPyUnicodeObject and the data could, by accident, be consecutive. So, we cannot assert this.
+                 */
+                if (isLoggable && rawPointer + CStructs.GraalPyUnicodeObject.size() == nonCompactDataPointer) {
+                    LOGGER.fine(PythonUtils.formatJString("Non-compact data pointer looks like compact data (GraalPyUnicodeObject=0x%x, data=0x%x)", rawPointer, nonCompactDataPointer));
+                }
+                free(nonCompactDataPointer);
             }
-            long nonCompactDataPointer = GraalPyUnicodeObjectUtil.getNonCompactDataPointer(rawPointer);
-            /*
-             * If 'rawPointer + sizeof(GraalPyUnicodeObject) == nonCompactDataPointer', this indicates that the compact flag is incorrect. However, this is
-             * not guaranteed because the allocated memory of the GraalPyUnicodeObject and the data could, by accident, be consecutive. So, we cannot assert this.
-             */
-            if (isLoggable && rawPointer + CStructs.GraalPyUnicodeObject.size() == nonCompactDataPointer) {
-                LOGGER.fine(PythonUtils.formatJString("Non-compact data pointer looks like compact data (GraalPyUnicodeObject=0x%x, data=0x%x)", rawPointer, nonCompactDataPointer));
+            long utf8data = GraalPyUnicodeObjectUtil.getUtf8DataPointer(rawPointer);
+            if (utf8data != NULLPTR) {
+                if (isLoggable) {
+                    LOGGER.fine(PythonUtils.formatJString("releasing native utf8 data of GraalPyUnicodeObject stub 0x%x", utf8data));
+                }
+                free(utf8data);
             }
-            free(nonCompactDataPointer);
         }
         if (gc) {
             PyObjectGCDelNode.executeUncached(pointer);
