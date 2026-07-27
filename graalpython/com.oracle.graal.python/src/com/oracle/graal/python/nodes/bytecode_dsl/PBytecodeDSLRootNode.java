@@ -211,8 +211,10 @@ import com.oracle.graal.python.nodes.bytecode.RaiseNode;
 import com.oracle.graal.python.nodes.bytecode.SetupAnnotationsNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
+import com.oracle.graal.python.nodes.call.CallDispatchers.FunctionDirectInvokeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers.FunctionIndirectInvokeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.AbstractCallMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -378,6 +380,10 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(SetupAnnotationsNode.class)
 @OperationProxy(GetAIterNode.class)
 @OperationProxy(GetANextNode.class)
+@OperationProxy(CallUnaryMethodNode.class)
+@OperationProxy(CallBinaryMethodNode.class)
+@OperationProxy(CallTernaryMethodNode.class)
+@OperationProxy(CallQuaternaryMethodNode.class)
 @OperationProxy(value = ReadGlobalOrBuiltinNode.class, name = "ReadGlobal")
 @OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
 @OperationProxy(value = PyObjectIsTrueNode.class, name = "Yes")
@@ -3584,47 +3590,23 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation(storeBytecodeIndex = true)
+    @ImportStatic({AbstractCallMethodNode.class, CallDispatchers.class, PythonOptions.class})
     public static final class CallNilaryMethod {
-        @Specialization
+        @ForceQuickening
+        @Specialization(guards = {"isSingleContext()", "hasSimpleSignature(cachedFunc, 0)", "func == cachedFunc"}, excludeForUncached = true, //
+                        assumptions = "cachedFunc.getCodeStableAssumption()", limit = "getCallSiteInlineCacheMaxDepth()")
+        public static Object callPFunction(VirtualFrame frame, PFunction func,
+                        @Bind Node inliningTarget,
+                        @Cached(value = "func", weak = true) PFunction cachedFunc,
+                        @Cached("createDirectCallNodeFor(cachedFunc)") DirectCallNode callNode,
+                        @Cached FunctionDirectInvokeNode invokeNode) {
+            return invokeNode.execute(frame, inliningTarget, callNode, cachedFunc, PArguments.create(0));
+        }
+
+        @Specialization(replaces = "callPFunction")
         public static Object doCall(VirtualFrame frame, Object callable,
                         @Cached CallNode node) {
             return node.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = true)
-    public static final class CallUnaryMethod {
-        @Specialization
-        public static Object doCall(VirtualFrame frame, Object callable, Object arg0,
-                        @Cached CallUnaryMethodNode node) {
-            return node.executeObject(frame, callable, arg0);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = true)
-    public static final class CallBinaryMethod {
-        @Specialization
-        public static Object doObject(VirtualFrame frame, Object callable, Object arg0, Object arg1,
-                        @Cached CallBinaryMethodNode node) {
-            return node.executeObject(frame, callable, arg0, arg1);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = true)
-    public static final class CallTernaryMethod {
-        @Specialization
-        public static Object doCall(VirtualFrame frame, Object callable, Object arg0, Object arg1, Object arg2,
-                        @Cached CallTernaryMethodNode node) {
-            return node.execute(frame, callable, arg0, arg1, arg2);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = true)
-    public static final class CallQuaternaryMethod {
-        @Specialization
-        public static Object doCall(VirtualFrame frame, Object callable, Object arg0, Object arg1, Object arg2, Object arg3,
-                        @Cached CallQuaternaryMethodNode node) {
-            return node.execute(frame, callable, arg0, arg1, arg2, arg3);
         }
     }
 
