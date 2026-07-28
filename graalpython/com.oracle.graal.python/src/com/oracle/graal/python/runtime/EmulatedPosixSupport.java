@@ -225,6 +225,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
@@ -4528,8 +4529,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object createPathFromString(TruffleString path,
-                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-        return checkEmbeddedNulls(toJavaStringNode.execute(path));
+                    @Bind Node inliningTarget,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                    @Exclusive @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
+        String javaPath = getPythonOS() == PLATFORM_WIN32
+                        ? toJavaStringNode.execute(path)
+                        : createUTF8String(encodeFSDefaultNode.execute(null, inliningTarget, path));
+        return checkEmbeddedNulls(javaPath);
     }
 
     @ExportMessage
