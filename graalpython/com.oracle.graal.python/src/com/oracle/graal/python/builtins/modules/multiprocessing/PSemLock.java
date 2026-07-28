@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.modules.multiprocessing;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -101,6 +100,6 @@ public class PSemLock extends PythonBuiltinObject {
     }
 
     public boolean isMine() {
-        return count > 0 && lastThreadId == PThread.getThreadId(Thread.currentThread());
+        return count > 0 && lastThreadId == Thread.currentThread().threadId();
     }
 }

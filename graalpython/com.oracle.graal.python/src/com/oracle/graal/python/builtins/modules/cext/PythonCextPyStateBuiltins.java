@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -186,7 +185,7 @@ public final class PythonCextPyStateBuiltins {
         @TruffleBoundary
         int doIt(long id, Object exceptionObject) {
             for (Thread thread : getContext().getThreads()) {
-                if (PThread.getThreadId(thread) == id) {
+                if (thread.threadId() == id) {
                     if (PGuards.isNoValue(exceptionObject)) {
                         LOGGER.warning("The application used PyThreadState_SetAsyncExc to clear an exception on another thread. " +
                                         "This is not supported and ignored by GraalPy.");

@@ -197,7 +197,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -1011,7 +1010,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
             EconomicMapStorage storage = EconomicMapStorage.create(targetThreads.size());
             for (Thread thread : targetThreads) {
-                long key = PThread.getThreadId(thread);
+                long key = thread.threadId();
                 long hash = PyObjectHashNode.hash(key);
                 ObjectHashMap.PutNode.putUncached(storage, key, hash, frames.getOrDefault(thread, PNone.NONE));
             }

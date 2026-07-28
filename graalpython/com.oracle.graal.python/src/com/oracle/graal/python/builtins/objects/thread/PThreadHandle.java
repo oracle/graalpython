@@ -77,7 +77,7 @@ public final class PThreadHandle extends PythonBuiltinObject {
     public synchronized void setRunning(Thread thread) {
         assert state == STARTING;
         this.thread = thread;
-        this.ident = PThread.getThreadId(thread);
+        this.ident = thread.threadId();
         this.state = RUNNING;
     }
 
@@ -117,7 +117,7 @@ public final class PThreadHandle extends PythonBuiltinObject {
     @TruffleBoundary
     public void join(Node node, long timeoutMillis) {
         assert state >= RUNNING : "thread not started";
-        assert exiting || ident != PThread.getThreadId(Thread.currentThread()) : "Cannot join current thread";
+        assert exiting || ident != Thread.currentThread().threadId() : "Cannot join current thread";
 
         Thread threadToJoin = thread;
         if (threadToJoin != null) {

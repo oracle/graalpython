@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.thread.PThreadHandle;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
@@ -170,7 +169,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public static long getId() {
-            return PThread.getThreadId(Thread.currentThread());
+            return Thread.currentThread().threadId();
         }
     }
 
@@ -180,7 +179,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public static long getId() {
-            return PThread.getThreadId(Thread.currentThread());
+            return Thread.currentThread().threadId();
         }
     }
 
@@ -532,7 +531,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         static long getMainThreadIdent(
                         @Bind PythonContext context) {
             Thread mainThread = context.getMainThread();
-            return PThread.getThreadId(mainThread != null ? mainThread : Thread.currentThread());
+            return (mainThread != null ? mainThread : Thread.currentThread()).threadId();
         }
     }
 
@@ -564,7 +563,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         static Object shutdown(PythonModule self,
                         @Bind Node inliningTarget) {
             ModuleState state = self.getModuleState(ModuleState.class);
-            long currentIdent = PThread.getThreadId(Thread.currentThread());
+            long currentIdent = Thread.currentThread().threadId();
             while (true) {
                 PThreadHandle handle = nextShutdownHandle(state, currentIdent);
                 if (handle == null) {

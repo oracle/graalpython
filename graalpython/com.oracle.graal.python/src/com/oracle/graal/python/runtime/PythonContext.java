@@ -33,7 +33,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.NATIVE_POINTER_FREED;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
-import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
@@ -739,7 +738,7 @@ public final class PythonContext extends Python3Core {
     private final List<Object> auditHooks = new ArrayList<>();
     private final List<Runnable> capiHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
-    private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+    private final ThreadGroup threadGroup = new ThreadGroup("GRAALPYTHON_THREADS");
     private final IDUtils idUtils = new IDUtils();
 
     @CompilationFinal private SecureRandom secureRandom;
