@@ -2451,6 +2451,10 @@ PyMapping_Length(PyObject *o)
 PyObject *
 PyMapping_GetItemString(PyObject *o, const char *key)
 {
+    if (o == NULL || key == NULL) {
+        null_error();
+        return NULL;
+    }
     // GraalPy change: different implementation
     return GraalPyPrivate_Object_GetItemString(o, key);
 }

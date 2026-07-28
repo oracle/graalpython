@@ -229,6 +229,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyDescr_IsData", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_NewClassMethod", ret = PyObject, args = {PyTypeObject, PyMethodDef}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_NewGetSet", ret = PyObject, args = {PyTypeObject, PyGetSetDef}, call = CImpl)
+    @CApiBuiltin(name = "PyDict_GetItemString", ret = PyObjectReturn, args = {PyObjectReturn, ConstCharPtr}, call = CImpl)
     @CApiBuiltin(name = "PyDict_Next", ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyDict_Size", ret = Py_ssize_t, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyErr_BadArgument", ret = Int, args = {}, call = CImpl)

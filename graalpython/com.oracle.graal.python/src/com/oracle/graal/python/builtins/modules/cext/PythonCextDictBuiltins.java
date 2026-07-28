@@ -44,7 +44,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeE
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleStringStrict;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
@@ -80,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonStrictNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
@@ -349,17 +351,6 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    public abstract static class PyDict_GetItemString extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object dict, Object key,
-                        @Bind Node inliningTarget,
-                        @Cached DictGetAndPromoteItem getAndPromoteItem) {
-            return getAndPromoteItem.execute(inliningTarget, dict, key);
-        }
-    }
-
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, PyObject}, call = Direct)
     public abstract static class PyDict_GetItem extends CApiBinaryBuiltinNode {
 
@@ -415,7 +406,6 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = Direct)
-    @CApiBuiltin(name = "PyDict_GetItemStringRef", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObjectPtr}, call = Direct)
     abstract static class PyDict_GetItemRef extends CApiTernaryBuiltinNode {
         @Specialization
         static int getItem(PDict dict, Object key, long resultPtr,
@@ -453,17 +443,62 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObjectPtr}, call = Direct)
-    abstract static class PyDict_PopString extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr, PyObjectPtr}, call = Direct)
+    abstract static class PyDict_GetItemStringRef extends CApiTernaryBuiltinNode {
         @Specialization
-        static int pop(PDict dict, Object key, long resultPtr,
+        static int getItemString(PDict dict, long keyPtr, long resultPtr,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
+                        @Cached CharPtrToPythonStrictNode fromCharPointerNode,
+                        @Cached HashingStorageGetItem getItem,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached SetItemNode setItemNode,
+                        @Cached PythonToNativeInternalNode toNativeNode) {
+            long result = NULLPTR;
+            try {
+                if (keyPtr == NULLPTR) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                }
+                Object key = fromCharPointerNode.execute(keyPtr);
+                Object value = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
+                // See PyDict_GetItemRef
+                if (value != null) {
+                    Object promotedValue = ensureNode.execute(context, value, false);
+                    if (promotedValue != value) {
+                        setItemNode.execute(null, inliningTarget, dict, key, promotedValue);
+                    }
+                    result = toNativeNode.executeNewRef(inliningTarget, promotedValue);
+                    return 1;
+                }
+                return 0;
+            } finally {
+                NativeMemory.writePtr(resultPtr, result);
+            }
+        }
+
+        @Fallback
+        int fallback(Object dict, @SuppressWarnings("unused") Object key, Object resultPtr) {
+            NativeMemory.writePtr((long) resultPtr, NULLPTR);
+            throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr, PyObjectPtr}, call = Direct)
+    abstract static class PyDict_PopString extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int pop(PDict dict, long keyPtr, long resultPtr,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached CharPtrToPythonStrictNode fromCharPointerNode,
                         @Cached HashingStorageDelItem delItemNode,
                         @Cached EnsurePythonObjectNode ensureNode,
                         @Cached PythonToNativeInternalNode toNativeNode) {
             long result = NULLPTR;
             try {
+                if (keyPtr == NULLPTR) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                }
+                Object key = fromCharPointerNode.execute(keyPtr);
                 Object value = delItemNode.executePop(null, inliningTarget, dict.getDictStorage(), key, dict);
                 if (value == null) {
                     return 0;
@@ -489,7 +524,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject, ConstCharPtrAsTruffleStringStrict}, call = Direct)
     abstract static class _PyDict_GetItemStringWithError extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object dict, Object key,
@@ -499,7 +534,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleStringStrict, PyObject}, call = Direct)
     @ImportStatic(PGuards.class)
     abstract static class PyDict_SetItemString extends CApiTernaryBuiltinNode {
         @Specialization
@@ -630,7 +665,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleStringStrict}, call = Direct)
     @ImportStatic(PGuards.class)
     abstract static class PyDict_DelItemString extends CApiBinaryBuiltinNode {
         @Specialization
@@ -682,7 +717,7 @@ public final class PythonCextDictBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    @CApiBuiltin(name = "PyDict_ContainsString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
+    @CApiBuiltin(name = "PyDict_ContainsString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleStringStrict}, call = Direct)
     abstract static class PyDict_Contains extends CApiBinaryBuiltinNode {
         @Specialization
         static int contains(PDict dict, Object key,

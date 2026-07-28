@@ -4860,30 +4860,19 @@ PyTypeObject PyDict_Type = {
 
 /* For backward compatibility with old dictionary interface */
 
-#if 0 // GraalPy change
 PyObject *
 PyDict_GetItemString(PyObject *v, const char *key)
 {
-    PyObject *kv, *rv;
-    kv = PyUnicode_FromString(key);
-    if (kv == NULL) {
-        PyErr_FormatUnraisable(
-            "Exception ignored in PyDict_GetItemString(); consider using "
-            "PyDict_GetItemRefString()");
-        return NULL;
-    }
-    // GraalPy change
-    rv = PyDict_GetItemWithError(v, kv);
+    // GraalPy change: different implementation
+    PyObject *rv = _PyDict_GetItemStringWithError(v, key);
     if (rv == NULL && PyErr_Occurred()) {
         PyErr_FormatUnraisable(
             "Exception ignored in PyDict_GetItemString(); consider using "
             "PyDict_GetItemRefString()");
         return NULL;
     }
-    Py_DECREF(kv);
     return rv;  // borrowed reference
 }
-#endif // GraalPy change
 
 #if 0 // GraalPy change
 int

@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonStrictNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -642,21 +643,21 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(name = "GraalPyPrivate_Object_GetItemString", ret = PyObjectRawPointer, args = {PyObjectRawPointer, ConstCharPtr}, call = Ignored)
     static long GraalPyPrivate_Object_GetItemString(long objPtr, long keyPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
-        Object key = CharPtrToPythonNode.executeUncached(keyPtr);
+        Object key = CharPtrToPythonStrictNode.executeUncached(keyPtr);
         Object result = PyObjectGetItem.executeUncached(obj, key);
         return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
     @CApiBuiltin(name = "GraalPyPrivate_Mapping_GetOptionalItemString", ret = Int, args = {PyObjectRawPointer, ConstCharPtr, PyObjectPtr}, call = Ignored)
     static int GraalPyPrivate_Mapping_GetOptionalItemString(long objPtr, long keyPtr, long resultPtr) {
+        NativeMemory.writePtr(resultPtr, NULLPTR);
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
-        Object key = CharPtrToPythonNode.executeUncached(keyPtr);
+        Object key = CharPtrToPythonStrictNode.executeUncached(keyPtr);
         Object result;
         try {
             result = PyObjectGetItem.executeUncached(obj, key);
         } catch (PException e) {
             e.expectUncached(KeyError);
-            NativeMemory.writePtr(resultPtr, NULLPTR);
             return 0;
         }
         NativeMemory.writePtr(resultPtr, PythonToNativeInternalNode.executeNewRefUncached(result));

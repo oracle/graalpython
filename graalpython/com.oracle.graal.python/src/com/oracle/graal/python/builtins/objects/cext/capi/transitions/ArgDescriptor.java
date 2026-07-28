@@ -44,6 +44,7 @@ import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonStrictNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
@@ -75,6 +76,7 @@ enum ArgBehavior {
                     NativeToPythonTransferNode.getUncached()),
     Pointer(NativeSimpleType.POINTER),
     TruffleStringPointer(NativeSimpleType.POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
+    TruffleStringPointerStrict(NativeSimpleType.POINTER, null, CharPtrToPythonStrictNode::create, CharPtrToPythonStrictNode.getUncached()),
     Char8(NativeSimpleType.SINT8),
     UChar8(NativeSimpleType.SINT8),
     Char16(NativeSimpleType.SINT16),
@@ -166,6 +168,7 @@ public enum ArgDescriptor {
     CHAR_PTR(ArgBehavior.Pointer, "char*"),
     CHAR_PTR_LIST(ArgBehavior.Pointer, "char**"),
     ConstCharPtrAsTruffleString(ArgBehavior.TruffleStringPointer, "const char*"),
+    ConstCharPtrAsTruffleStringStrict(ArgBehavior.TruffleStringPointerStrict, "const char*"),
     ConstCharPtr(ArgBehavior.Pointer, "const char*"),
     CharPtrAsTruffleString(ArgBehavior.TruffleStringPointer, "char*"),
     CONST_CHAR_PTR_LIST("const char**"),
@@ -438,14 +441,14 @@ public enum ArgDescriptor {
 
     public boolean isPyObjectOrPointer() {
         return switch (behavior) {
-            case PyObject, PyTypeObject, PyObjectBorrowed, Pointer, TruffleStringPointer -> true;
+            case PyObject, PyTypeObject, PyObjectBorrowed, Pointer, TruffleStringPointer, TruffleStringPointerStrict -> true;
             default -> false;
         };
     }
 
     public boolean isPointer() {
         return switch (behavior) {
-            case Pointer, TruffleStringPointer -> true;
+            case Pointer, TruffleStringPointer, TruffleStringPointerStrict -> true;
             default -> false;
         };
     }
@@ -458,7 +461,7 @@ public enum ArgDescriptor {
     }
 
     public boolean isCharPtr() {
-        return this == CharPtrAsTruffleString || this == CHAR_PTR || this == ConstCharPtr || this == ConstCharPtrAsTruffleString;
+        return this == CharPtrAsTruffleString || this == CHAR_PTR || this == ConstCharPtr || this == ConstCharPtrAsTruffleString || this == ConstCharPtrAsTruffleStringStrict;
     }
 
     public boolean isI64() {

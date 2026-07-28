@@ -53,6 +53,8 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
+import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.free;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.mallocPtrArray;
@@ -73,6 +75,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
@@ -133,6 +136,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
+import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -1653,6 +1657,54 @@ public abstract class CApiTransitions {
 
         public static CharPtrToPythonNode getUncached() {
             return CApiTransitionsFactory.CharPtrToPythonNodeGen.getUncached();
+        }
+    }
+
+    /**
+     * Converts a zero-terminated UTF-8 string like {@code PyUnicode_FromString}. Unlike
+     * {@link CharPtrToPythonNode}, malformed UTF-8 raises {@code UnicodeDecodeError}.
+     */
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class CharPtrToPythonStrictNode extends CExtToJavaNode {
+
+        @TruffleBoundary
+        public static Object executeUncached(long pointer) {
+            return CApiTransitionsFactory.CharPtrToPythonStrictNodeGen.getUncached().execute(pointer);
+        }
+
+        @Specialization
+        static Object doGeneric(long pointer,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedConditionProfile nullProfile,
+                        @Cached TruffleString.FromZeroTerminatedNativePointerNode fromNativePointerNode,
+                        @Cached TruffleString.IsValidNode isValidNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+            if (nullProfile.profile(inliningTarget, pointer == NULLPTR)) {
+                return PNone.NO_VALUE;
+            }
+            TruffleString utf8 = fromNativePointerNode.execute8Bit(pointer, 0, TruffleString.Encoding.UTF_8, true);
+            if (!isValidNode.execute(utf8, TruffleString.Encoding.UTF_8)) {
+                return doErrorPath(utf8);
+            }
+            return switchEncodingNode.execute(utf8, PythonUtils.TS_ENCODING);
+        }
+
+        @TruffleBoundary
+        private static Object doErrorPath(TruffleString utf8) {
+            Object input = PFactory.createBytes(PythonLanguage.get(null), utf8.copyToByteArrayUncached(TruffleString.Encoding.UTF_8));
+            // This should throw an exception, but we defensively try to return the result just in case the two algorithms are not consistent
+            return CodecsModuleBuiltins.CodecsDecodeNode.decodeSlowPath(input, T_UTF8, T_STRICT, true, CharsetMapping.getJavaCharset("UTF-8"), input)[0];
+        }
+
+        @NeverDefault
+        public static CharPtrToPythonStrictNode create() {
+            return CApiTransitionsFactory.CharPtrToPythonStrictNodeGen.create();
+        }
+
+        public static CharPtrToPythonStrictNode getUncached() {
+            return CApiTransitionsFactory.CharPtrToPythonStrictNodeGen.getUncached();
         }
     }
 

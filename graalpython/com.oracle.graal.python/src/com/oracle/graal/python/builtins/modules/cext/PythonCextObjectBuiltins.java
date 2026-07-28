@@ -44,7 +44,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleStringStrict;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -62,6 +64,7 @@ import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMOR
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtr;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -119,6 +122,7 @@ import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectIsInstanceNode;
 import com.oracle.graal.python.lib.PyObjectIsSubclassNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -456,7 +460,6 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = Ignored)
-    @CApiBuiltin(name = "GraalPyPrivate_Object_GetOptionalAttrString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObjectPtr}, call = Ignored)
     abstract static class GraalPyPrivate_Object_GetOptionalAttr extends CApiTernaryBuiltinNode {
         @Specialization
         static int getOptionalAttr(Object obj, Object attr, long resultPointer,
@@ -465,9 +468,34 @@ public abstract class PythonCextObjectBuiltins {
                         @Cached PyObjectLookupAttrO lookupAttrNode,
                         @Cached EnsurePythonObjectNode ensureNode,
                         @Cached PythonToNativeInternalNode toNativeNode) {
-            long result = 0;
+            long result = NULLPTR;
             try {
                 Object value = lookupAttrNode.execute(null, inliningTarget, obj, attr);
+                if (value == PNone.NO_VALUE) {
+                    return 0;
+                }
+                result = toNativeNode.executeNewRef(inliningTarget, ensureNode.execute(context, value, false));
+                return 1;
+            } finally {
+                writePtr(resultPointer, result);
+            }
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr, PyObjectPtr}, call = Ignored)
+    abstract static class GraalPyPrivate_Object_GetOptionalAttrString extends CApiTernaryBuiltinNode {
+        @Specialization
+        static int getOptionalAttr(Object obj, long attrPointer, long resultPointer,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached CApiTransitions.CharPtrToPythonStrictNode charPtrToString,
+                        @Cached PyObjectLookupAttr lookupAttrNode,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached PythonToNativeInternalNode toNativeNode) {
+            long result = NULLPTR;
+            try {
+                TruffleString string = (TruffleString) charPtrToString.execute(attrPointer);
+                Object value = lookupAttrNode.execute(null, inliningTarget, obj, string);
                 if (value == PNone.NO_VALUE) {
                     return 0;
                 }
@@ -732,7 +760,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleStringStrict}, call = Ignored)
     abstract static class GraalPyPrivate_Object_GetAttrString extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doGeneric(Object v, TruffleString name,
@@ -742,7 +770,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleStringStrict, PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Object_SetAttrString extends CApiTernaryBuiltinNode {
         @Specialization
         static int doGeneric(Object v, TruffleString name, Object w,
