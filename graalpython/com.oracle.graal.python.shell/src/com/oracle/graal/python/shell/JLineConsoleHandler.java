@@ -98,7 +98,7 @@ public class JLineConsoleHandler extends ConsoleHandler {
         Terminal terminal;
         Object[] signalHandlers = stashSignalHandlers();
         try {
-            terminal = TerminalBuilder.builder().jna(false).streams(inputStream, outputStream).system(true).build();
+            terminal = TerminalBuilder.builder().streams(inputStream, outputStream).system(true).build();
         } catch (IOException ex) {
             throw new RuntimeException("unexpected error opening console reader", ex);
         } finally {

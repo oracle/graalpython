@@ -63,9 +63,10 @@ ALLOWED_WITH_CLAUSES = {
 
 SECTIONS = frozenset({'rules', 'add-sources'})
 RULE_KEYS = frozenset({'version', 'patch', 'license', 'subdir', 'dist-type', 'install-priority', 'note', 'autopatch'})
+CRATE_VERSION_SPECIFIER_RE = re.compile(r'(==|!=|<=|>=|<|>)\s*\d+(?:\.\d+)*')
 
 
-def validate_metadata(patches_dir):
+def validate_metadata(patches_dir, crates=False):
     verify_git = os.environ.get('VERIFY_PATCHES_GIT')
     if verify_git:
         patch_files = {
@@ -115,8 +116,13 @@ def validate_metadata(patches_dir):
                     if 'autopatch' in rule:
                         assert isinstance(rule['autopatch'], bool), "'rules.autopatch' must be a bool"
                     if version := rule.get('version'):
-                        # Just try that it doesn't raise
-                        SpecifierSet(version)
+                        if crates:
+                            for constraint in version.split(','):
+                                assert CRATE_VERSION_SPECIFIER_RE.fullmatch(constraint.strip()), \
+                                    f"Unsupported crate version constraint: {constraint!r}"
+                        else:
+                            # Just try that it doesn't raise
+                            SpecifierSet(version)
             if add_sources := metadata.get('add-sources'):
                 for add_source in add_sources:
                     if unexpected_keys := set(add_source) - {'version', 'url'}:
@@ -130,7 +136,7 @@ def validate_metadata(patches_dir):
             assert patch_file in patches, f"Dangling patch file: {patch_file}"
     crates_dir = patches_dir / 'crates'
     if crates_dir.is_dir():
-        validate_metadata(crates_dir)
+        validate_metadata(crates_dir, crates=True)
 
 
 def main():

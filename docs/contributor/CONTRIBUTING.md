@@ -17,42 +17,192 @@ For full editing support, run `mx vscodeinit` and open the `graalpython.code-wor
 
 ### Setting up on your machine
 
-The first thing you want to do is to set up [`mx`](https://github.com/graalvm/mx.git).
-This is the build tool we use to develop GraalVM languages.
+#### General prerequisites
+
+All platforms require:
+
+* Git
+* CPython 3.8 or newer, which is required to run `mx`
+* [Maven](https://maven.apache.org/), with its `bin` directory on your `PATH`
+* [`mx`](https://github.com/graalvm/mx.git), the build tool used to develop GraalVM languages
+* A suitable JDK
+* CMake 3.22 or newer
+
+`mx` provides Ninja when it is not already available, so Ninja does not need to
+be installed separately.
+
+After installing the platform-specific prerequisites described below, clone `mx`:
+
 ```shell
 git clone https://github.com/graalvm/mx.git
 ```
-Make sure to add the `mx` directory to your `PATH`.
 
-Use `mx` to get additional projects at the right versions.
-From within your `graalpython` checkout, run:
+Add the `mx` directory to your `PATH`.
+
+Use `mx` to get additional projects at the right versions. From within your
+`graalpython` checkout, run:
+
 ```
 mx sforceimport
 ```
 
 You can then download a suitable JDK:
-```bash
+
+```shell
 mx -p ../graal/vm --env ce-python fetch-jdk -A --jdk-id labsjdk-ce-latest
 ```
 
-Make sure that the `JAVA_HOME` environment variable is set:
-```bash
-export JAVA_HOME="${HOME}/.mx/jdks/labsjdk-ce-latest
-```
+Set the `JAVA_HOME` environment variable as described for your platform below.
 
-(Or on Windows)
-```
-$env:JAVA_HOME="$HOME\.mx\jdks\labsjdk-ce-latest"
-```
+#### Linux prerequisites
 
-For building GraalPy, you will also need some native build tools and libraries. On a Debian based system, install:
+For building GraalPy, you will also need some native build tools and libraries.
+On a Debian-based system, install:
+
 ```bash
 sudo apt install build-essential libc++-12-dev zlib1g-dev cmake
 ```
 
-(On Windows, make sure you are running in a Visual Studio Developer Powershell, that should have everything you need.)
+The `python-libzsupport` project uses the zlib headers and library from
+`zlib1g-dev`. `python-libposix` uses the libc development headers and links
+against `libutil` and `librt`; these are provided by `libc6-dev`, which is
+installed through `build-essential`.
+The bzip2 and XZ sources used by `python-libbz2` and `python-liblzma` are
+downloaded by `mx`, so `libbz2-dev` and `liblzma-dev` are not required.
+If your distribution provides a CMake version older than 3.22, install a newer
+version separately.
 
-Lastly, download maven, extract it and include it on your `PATH`.
+Set `JAVA_HOME`:
+
+```bash
+export JAVA_HOME="${HOME}/.mx/jdks/labsjdk-ce-latest"
+```
+
+#### Windows prerequisites
+
+GraalPy can be built natively on 64-bit Windows. Use
+[Git for Windows](https://gitforwindows.org/) for the general Git prerequisite.
+In addition, install:
+
+* Visual Studio 2022 with the **Desktop development with C++** workload, including
+  the MSVC x64 build tools and a Windows SDK
+
+The Windows SDK provides the headers and `Ws2_32.lib` required by
+`python-libposix`. CMake 3.22.2 is tested. Newer Visual Studio and CMake
+versions may work, but are not tested.
+
+GraalPy's checkout and generated build output require symbolic links and long paths.
+First, enable **Developer Mode** in Windows Settings under **System > For developers**.
+Developer Mode allows an unelevated process to create symbolic links. If Developer
+Mode is controlled by organizational policy, builds must instead run from an
+elevated shell.
+
+Next, enable Win32 long paths from an Administrator PowerShell:
+
+```powershell
+Set-ItemProperty `
+    -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+    -Name LongPathsEnabled `
+    -Type DWord `
+    -Value 1
+```
+
+Verify that the command prints `1`:
+
+```powershell
+Get-ItemPropertyValue `
+    -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+    -Name LongPathsEnabled
+```
+
+Close and reopen applications after changing this setting; a reboot may be needed
+because applications can cache it. Configure Git to support both long paths and
+symbolic links:
+
+```powershell
+git config --global core.longpaths true
+git config --global core.symlinks true
+```
+
+For a new checkout, explicitly enable symbolic links while cloning:
+
+```powershell
+git clone -c core.symlinks=true https://github.com/oracle/graalpython.git
+```
+
+Git for Windows may have written `core.symlinks=false` into an existing checkout's
+local `.git/config`, which overrides the global setting. Check all effective values
+from inside the checkout:
+
+```powershell
+git config --show-origin --show-scope --get-all core.symlinks
+```
+
+If the local value is `false`, repair the configuration:
+
+```powershell
+git config --local core.symlinks true
+```
+
+Files stored as symbolic links have mode `120000` in Git:
+
+```powershell
+git ls-files -s | Select-String '^120000\s'
+```
+
+For example, verify the `common.json` link:
+
+```powershell
+Get-Item -Force .\common.json | Format-List LinkType,Target
+```
+
+It should report `LinkType: SymbolicLink`. If it is a regular file containing only
+`./ci/graal/common.json`, changing the configuration does not automatically
+re-materialize it. Replace it after enabling Developer Mode and `core.symlinks`:
+
+```powershell
+Remove-Item -LiteralPath .\common.json
+git restore --source=HEAD --worktree -- .\common.json
+```
+
+Run the build in a 64-bit Visual Studio Developer PowerShell. A Developer PowerShell
+can be initialized from an ordinary PowerShell without relying on a
+version-specific Visual Studio installation path:
+
+```powershell
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$vsPath = & $vswhere -latest -products * `
+    -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+    -property installationPath
+& "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64
+```
+
+Verify the target architecture and tools before building:
+
+```powershell
+$env:VSCMD_ARG_TGT_ARCH
+cl
+where.exe cl
+where.exe dumpbin
+cmake --version
+python --version
+$env:INCLUDE
+$env:LIB
+```
+
+`VSCMD_ARG_TGT_ARCH` and the `cl` banner must indicate `x64`, not `x86`.
+Both `INCLUDE` and `LIB` must contain the Visual C++ and Windows SDK paths.
+
+Set `JAVA_HOME`:
+
+```powershell
+$env:JAVA_HOME="$HOME\.mx\jdks\labsjdk-ce-latest"
+```
+
+Make sure you are running in the x64 Visual Studio Developer PowerShell configured
+above when building.
+
+#### Building GraalPy
 
 Once you have all the necessary tools, you can run `mx python-jvm` in this repository.
 This will initially download the required dependencies next to the repository and build Python.
