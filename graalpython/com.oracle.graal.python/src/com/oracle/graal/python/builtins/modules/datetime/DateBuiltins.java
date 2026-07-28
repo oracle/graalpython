@@ -120,7 +120,9 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -129,7 +131,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -176,7 +177,7 @@ public final class DateBuiltins extends PythonBuiltins {
     public abstract static class NewNode extends PythonBuiltinNode {
 
         @Specialization
-        static Object newDate(Object cls, Object yearObject, Object monthObject, Object dayObject,
+        static Object newDate(VirtualFrame frame, Object cls, Object yearObject, Object monthObject, Object dayObject,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
@@ -215,7 +216,7 @@ public final class DateBuiltins extends PythonBuiltins {
                 }
             }
 
-            return newNode.execute(inliningTarget, cls, yearObject, monthObject, dayObject);
+            return newNode.execute(frame, inliningTarget, cls, yearObject, monthObject, dayObject);
         }
 
         /**
@@ -555,17 +556,14 @@ public final class DateBuiltins extends PythonBuiltins {
     public abstract static class FromTimestampNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static Object fromTimestamp(Object cls, Object timestampObject,
-                        @Bind Node inliningTarget) {
-            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
-            Node encapsulatingNode = encapsulating.set(inliningTarget);
+        static Object fromTimestamp(VirtualFrame frame, Object cls, Object timestampObject,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData callData) {
+            Object saved = BoundaryCallContext.enter(frame, callData);
             try {
                 return fromTimestampBoundary(cls, timestampObject, inliningTarget);
             } finally {
-                // Some uncached nodes (e.g. PyFloatAsDoubleNode and PyLongAsLongNode)
-                // may raise exceptions that are not connected to a current node. Set
-                // the current node manually.
-                encapsulating.set(encapsulatingNode);
+                BoundaryCallContext.exit(frame, callData, saved);
             }
         }
 

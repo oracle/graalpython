@@ -509,6 +509,12 @@ public abstract class ExecutionContext {
          * access the exception state or current frame reference in the code that cannot take the
          * {@link VirtualFrame} as an argument.
          * <p>
+         * Also pushes the {@link BoundaryCallData} node as {@link EncapsulatingNodeReference}.
+         * When a location is needed we normally traverse the AST up to the {@link BytecodeNode},
+         * but behind Truffle boundary we may be executing uncached nodes disconnected from the AST,
+         * in such case by convention the last boundary transition location should be set as
+         * {@link EncapsulatingNodeReference}.
+         * <p>
          * See also {@link IndirectCalleeContext} for helper methods to make a call from a caller
          * without frame to a Python function.
          */

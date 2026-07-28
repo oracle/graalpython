@@ -163,7 +163,7 @@ public final class TimeBuiltins extends PythonBuiltins {
     public abstract static class NewNode extends PythonBuiltinNode {
 
         @Specialization
-        static Object newTime(Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject,
+        static Object newTime(VirtualFrame frame, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject,
                         @Bind Node inliningTarget,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached TimeNodes.NewNode newTimeNode) {
@@ -177,7 +177,7 @@ public final class TimeBuiltins extends PythonBuiltins {
             }
 
             // ordinal constructor call
-            return newTimeNode.execute(inliningTarget, cls, hourObject, minuteObject, secondObject, microsecondObject, tzInfoObject, foldObject);
+            return newTimeNode.execute(frame, inliningTarget, cls, hourObject, minuteObject, secondObject, microsecondObject, tzInfoObject, foldObject);
         }
 
         @TruffleBoundary
