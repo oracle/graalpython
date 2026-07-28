@@ -780,7 +780,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             } else {
                 Object[] searchPaths = getSearchPaths(context);
                 for (Object func : searchPaths) {
-                    Object obj = callNode.executeObject(func, normalizedEncoding);
+                    Object obj = callNode.executeObject(frame, func, normalizedEncoding);
                     if (obj != PNone.NONE) {
                         if (isTupleProfile.profile(inliningTarget, !isTupleInstanceCheck(frame, inliningTarget, obj, 4, typeCheck, sizeNode))) {
                             throw raiseNode.raise(inliningTarget, TypeError, CODEC_SEARCH_MUST_RETURN_4);
@@ -940,7 +940,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile isTupleProfile,
                         @Cached PRaiseNode raiseNode) {
             Object encoder = CodecsModuleBuiltins.encoder(frame, inliningTarget, encoding, lookupNode, getItemNode);
-            Object result = callEncoderNode.executeObject(encoder, obj, errors);
+            Object result = callEncoderNode.executeObject(frame, encoder, obj, errors);
             if (isTupleProfile.profile(inliningTarget, !isTupleInstanceCheck(frame, inliningTarget, result, 2, typeCheck, sizeNode))) {
                 throw raiseNode.raise(inliningTarget, TypeError, S_MUST_RETURN_TUPLE, "encoder");
             }
@@ -975,7 +975,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile isTupleProfile,
                         @Cached PRaiseNode raiseNode) {
             Object decoder = CodecsModuleBuiltins.decoder(frame, inliningTarget, encoding, lookupNode, getItemNode);
-            Object result = callEncoderNode.executeObject(decoder, obj, errors);
+            Object result = callEncoderNode.executeObject(frame, decoder, obj, errors);
             if (isTupleProfile.profile(inliningTarget, !isTupleInstanceCheck(frame, inliningTarget, result, 2, typeCheck, sizeNode))) {
                 throw raiseNode.raise(inliningTarget, TypeError, S_MUST_RETURN_TUPLE, "decoder");
             }

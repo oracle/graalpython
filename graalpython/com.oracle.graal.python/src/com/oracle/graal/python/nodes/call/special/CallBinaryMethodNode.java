@@ -82,10 +82,6 @@ public abstract class CallBinaryMethodNode extends AbstractCallMethodNode {
 
     public abstract Object executeObject(Frame frame, Object callable, Object arg1, Object arg2);
 
-    public final Object executeObject(Object callable, Object arg1, Object arg2) {
-        return executeObject(null, callable, arg1, arg2);
-    }
-
     @Specialization(guards = {"isSingleContext()", "func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callObjectSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
