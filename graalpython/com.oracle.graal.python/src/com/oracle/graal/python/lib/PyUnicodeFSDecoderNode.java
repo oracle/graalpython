@@ -75,7 +75,6 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 @GenerateInline(false)
 public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
     public static final TranscodingErrorHandler SURROGATE_ESCAPE_FROM_UTF8_TRANSCODING_ERROR_HANDLER = PyUnicodeFSDecoderNode::surrogateEscapeTranscodingError;
-    public static final TranscodingErrorHandler SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER = PyUnicodeFSDecoderNode::surrogateEscapeToUTF8Handler;
 
     public abstract TruffleString execute(Frame frame, Object object);
 
@@ -135,10 +134,4 @@ public abstract class PyUnicodeFSDecoderNode extends PNodeWithContext {
         return new TranscodingErrorHandler.ReplacementString(TruffleString.fromCodePointUncached(0xdc00 | b, TS_ENCODING, true), 1);
     }
 
-    private static TranscodingErrorHandler.ReplacementString surrogateEscapeToUTF8Handler(AbstractTruffleString sourceString, int byteIndex,
-                    @SuppressWarnings("unused") int estimatedByteLength, Encoding sourceEncoding, Encoding targetEncoding) {
-        assert sourceEncoding == TS_ENCODING && targetEncoding == UTF_8;
-        int codepoint = sourceString.codePointAtByteIndexUncached(byteIndex, TS_ENCODING);
-        return new TranscodingErrorHandler.ReplacementString(TruffleString.fromByteArrayUncached(new byte[]{(byte) codepoint}, TruffleString.Encoding.UTF_8), 4);
-    }
 }

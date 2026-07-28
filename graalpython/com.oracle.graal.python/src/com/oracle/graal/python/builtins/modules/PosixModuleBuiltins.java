@@ -33,7 +33,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_SYMLINK_FOLLOW;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CLOEXEC;
-import static com.oracle.graal.python.lib.PyUnicodeFSDecoderNode.SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -99,6 +98,7 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -147,8 +147,8 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -158,7 +158,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 @CoreFunctions(defineModule = "posix", extendsModule = "nt", isEager = true)
 public final class PosixModuleBuiltins extends PythonBuiltins {
@@ -3138,34 +3137,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     // Helpers
 
     /**
-     * Helper node that accepts either str or bytes and converts it to {@code PBytes}.
-     */
-    @GenerateInline
-    @GenerateCached(false)
-    @ImportStatic(PGuards.class)
-    public abstract static class StringOrBytesToBytesNode extends Node {
-        public abstract PBytes execute(Node inliningTarget, Object obj);
-
-        @Specialization(guards = "isString(strObj)")
-        static PBytes doString(Node inliningTarget, Object strObj,
-                        @Bind PythonLanguage language,
-                        @Cached CastToTruffleStringNode castToStringNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            TruffleString str = castToStringNode.execute(inliningTarget, strObj);
-            TruffleString utf8 = switchEncodingNode.execute(str, Encoding.UTF_8, SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER);
-            byte[] bytes = new byte[utf8.byteLength(Encoding.UTF_8)];
-            copyToByteArrayNode.execute(utf8, 0, bytes, 0, bytes.length, Encoding.UTF_8);
-            return PFactory.createBytes(language, bytes);
-        }
-
-        @Specialization
-        static PBytes doBytes(PBytes bytes) {
-            return bytes;
-        }
-    }
-
-    /**
      * Helper node that accepts either str or bytes and converts it to a representation specific to
      * the {@link PosixSupportLibrary} in use. Basically equivalent of
      * {@code PyUnicode_EncodeFSDefault}.
@@ -3391,15 +3362,23 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isWindows()")
         static PBytes convertPosix(VirtualFrame frame, Object value,
                         @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PyOSFSPathNode fspathNode,
-                        @Cached StringOrBytesToBytesNode stringOrBytesToBytesNode) {
-            return stringOrBytesToBytesNode.execute(inliningTarget, fspathNode.execute(frame, inliningTarget, value));
+                        @Exclusive @Cached CastToTruffleStringNode castToStringNode,
+                        @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode,
+                        @Cached InlinedConditionProfile isBytesProfile) {
+            Object path = fspathNode.execute(frame, inliningTarget, value);
+            if (isBytesProfile.profile(inliningTarget, path instanceof PBytes)) {
+                return (PBytes) path;
+            }
+            TruffleString str = castToStringNode.castKnownString(inliningTarget, path);
+            return PFactory.createBytes(language, encodeFSDefaultNode.execute(frame, inliningTarget, str));
         }
 
         @Specialization(guards = {"isWindows()", "isString(value)"})
         static TruffleString convertWindows(Object value,
                         @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToStringNode) {
+                        @Exclusive @Cached CastToTruffleStringNode castToStringNode) {
             return castToStringNode.execute(inliningTarget, value);
         }
 

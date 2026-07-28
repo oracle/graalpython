@@ -148,6 +148,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.RichCmpOp;
@@ -1102,10 +1103,9 @@ public final class PythonCextUnicodeBuiltins {
         static PBytes fromObject(Object s,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            TruffleString utf8Str = switchEncodingNode.execute(castStr.execute(inliningTarget, s), TruffleString.Encoding.UTF_8);
-            return PFactory.createBytes(PythonLanguage.get(inliningTarget), copyToByteArrayNode.execute(utf8Str, TruffleString.Encoding.UTF_8));
+                        @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
+            TruffleString str = castStr.execute(inliningTarget, s);
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), encodeFSDefaultNode.execute(null, inliningTarget, str));
         }
     }
 

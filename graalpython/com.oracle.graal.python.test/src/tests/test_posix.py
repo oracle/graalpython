@@ -261,6 +261,13 @@ class PosixTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, r"expected C.__fspath__\(\) to return str or bytes, not bytearray"):
             os.open(C(), 0)
 
+    @unittest.skipIf(sys.platform == 'win32', 'Windows uses surrogatepass for filesystem paths')
+    def test_path_converter_surrogateescape(self):
+        with self.assertRaises(UnicodeEncodeError):
+            os.stat('invalid-\udc74')
+        with self.assertRaises(OSError):
+            os.stat('valid-\udc80')
+
     def test_open_bytes_path(self):
         try:
             with open(os.fsencode(TEST_FULL_PATH1), os.O_WRONLY | os.O_CREAT) as fd:

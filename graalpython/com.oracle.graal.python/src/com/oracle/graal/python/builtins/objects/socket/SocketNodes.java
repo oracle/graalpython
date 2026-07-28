@@ -75,6 +75,7 @@ import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -196,17 +197,14 @@ public abstract class SocketNodes {
                         @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary(limit = "1") @Shared("posixLib") PosixSupportLibrary posixLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             byte[] path;
             if (unicodeCheckNode.execute(inliningTarget, address)) {
-                // PyUnicode_EncodeFSDefault
-                TruffleString utf8 = switchEncodingNode.execute(toTruffleStringNode.execute(inliningTarget, address), Encoding.UTF_8);
-                path = copyToByteArrayNode.execute(utf8, Encoding.UTF_8);
+                path = encodeFSDefaultNode.execute(frame, inliningTarget, toTruffleStringNode.execute(inliningTarget, address));
             } else {
                 Object buffer = bufferAcquireLib.acquireReadonly(address, frame, callData);
                 try {

@@ -45,7 +45,6 @@ import static com.oracle.graal.python.annotations.NativeSimpleType.POINTER;
 import static com.oracle.graal.python.annotations.NativeSimpleType.SINT32;
 import static com.oracle.graal.python.annotations.NativeSimpleType.SINT64;
 import static com.oracle.graal.python.annotations.NativeSimpleType.VOID;
-import static com.oracle.graal.python.lib.PyUnicodeFSDecoderNode.SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN6_ADDR_S6_ADDR;
 import static com.oracle.graal.python.runtime.NativePosixConstants.OFFSETOF_STRUCT_IN_ADDR_S_ADDR;
@@ -97,6 +96,7 @@ import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -3379,14 +3379,15 @@ public final class NativePosixSupport extends PosixSupport {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object createPathFromString(TruffleString path,
+                    @Bind Node inliningTarget,
                     @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                    @Exclusive @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
         if (WINDOWS) {
             TruffleString utf16 = switchEncodingNode.execute(path, UTF_16LE, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
             return checkWidePath(copyToByteArrayNode.execute(utf16, UTF_16LE));
         }
-        TruffleString utf8 = switchEncodingNode.execute(path, UTF_8, SURROGATE_ESCAPE_TO_UTF8_TRANSCODING_ERROR_HANDLER);
-        return checkNarrowPath(copyToByteArrayNode.execute(utf8, UTF_8));
+        return checkNarrowPath(encodeFSDefaultNode.execute(null, inliningTarget, path));
     }
 
     @ExportMessage
