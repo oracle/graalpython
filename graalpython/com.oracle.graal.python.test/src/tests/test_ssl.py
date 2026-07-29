@@ -41,6 +41,10 @@ import unittest
 import ssl
 import os
 import json
+import sys
+
+
+IS_OPENSSL_3_0_0 = sys.implementation.name == 'graalpy' or ssl.OPENSSL_VERSION_INFO >= (3, 0, 0)
 
 
 def data_file(name):
@@ -119,6 +123,7 @@ class CertTests(unittest.TestCase):
         client_context.verify_flags &= ~ssl.VERIFY_X509_PARTIAL_CHAIN
         check_handshake(server_context, client_context, ssl.SSLCertVerificationError)
 
+    @unittest.skipUnless(IS_OPENSSL_3_0_0, "test requires RFC 5280 check added in OpenSSL 3.0+")
     def test_verify_x509_strict(self):
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         server_context.load_cert_chain(cpython_cert_data("leaf-missing-aki.keycert.pem"))
@@ -498,6 +503,7 @@ def get_cipher_list(cipher_string):
 
 class CipherTests(unittest.TestCase):
 
+    @unittest.skipUnless(IS_OPENSSL_3_0_0, "expected cipher list requires OpenSSL 3.0+")
     def test_set_ciphers(self):
         with open(data_file('expected_ciphers.json')) as fo:
             data = json.load(fo)
