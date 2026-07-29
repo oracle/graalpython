@@ -180,7 +180,7 @@ def test_native_weakref_shutdown_skips_c_retained_object():
         print(held_wr() is not None, free_wr() is None, flush=True)
     """)
     env = dict(os.environ)
-    env["PYTHONPATH"] = os.pathsep.join([module_dir, env["PYTHONPATH"]])
+    env["PYTHONPATH"] = module_dir
     with tempfile.TemporaryDirectory() as tmpdir:
         marker = Path(tmpdir) / "deallocated"
         env["GR50212_DEALLOC_MARKER"] = str(marker)

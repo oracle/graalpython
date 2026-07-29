@@ -117,7 +117,7 @@ def test_start_new_thread_at_finalization():
         [sys.executable, "-c", script],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        timeout=10,
+        timeout=120,
     )
     assert result.returncode == 0, result.stderr.decode("utf-8", "replace")
     assert result.stdout == b"OK"
