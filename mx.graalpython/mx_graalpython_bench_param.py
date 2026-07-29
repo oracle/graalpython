@@ -57,6 +57,7 @@ ITER_10 = ['-i', '10']
 ITER_6 = ['-i', '6']
 ITER_5 = ['-i', '5']
 ITER_3 = ['-i', '3']
+ITER_1 = ['-i', '1']
 WARMUP_2 = ['-w', '2']
 
 # For benchmarking with Truffle compilation
@@ -306,6 +307,7 @@ MESO_BENCHMARKS_SMALL = {
 
 MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
+    'c-cythonize-numpy': ITER_1 + [],
     'c-pydantic-validate': ITER_10 + ['200000'],
     'c-pymupdf-parse': ITER_10 + ['1'],
     'c-oracledb-load': ITER_5 + ['2000000'],
