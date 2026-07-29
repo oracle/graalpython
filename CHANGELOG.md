@@ -3,6 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 25.3.4
+* Update Python standard library to 3.13.14 and implement new Python 3.13 features.
+
 ## Version 25.2.4
 * Windows standalone builds now use a native OS backend by default, improving compatibility for files, sockets, subprocesses, `mmap`, and Windows-specific modules compared to the Java-based backend.
 
