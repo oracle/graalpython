@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,8 +48,8 @@ class PosixConstantsDarwin {
     }
 
     static void getConstants(PosixConstants.Registry constants) {
-        constants.put("HAVE_FUTIMENS", false);
-        constants.put("HAVE_UTIMENSAT", false);
+        constants.put("HAVE_FUTIMENS", true);
+        constants.put("HAVE_UTIMENSAT", true);
         constants.put("FD_SETSIZE", 1024);
         constants.put("PATH_MAX", 1024);
         constants.put("L_ctermid", 1024);

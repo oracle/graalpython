@@ -118,7 +118,7 @@ type_defs = {
 # Column #2 - type specifier:
 #   `i` - int
 #   `x` - int, appearing in hexadecimal in the generated source
-#   `b` - boolean, will be true if the plaform is Linux (WTF?)
+#   `b` - boolean, will be true on POSIX platforms
 # Column #3 - the name of the constant
 # Comments can come after that starting with "//"
 constant_defs = '''
@@ -654,7 +654,7 @@ def generate_platform():
         f.write('\nint main() {\n')
         for c in constants:
             if c.format is None:
-                val = 'true' if platform == 'Linux' else 'false'
+                val = 'true' if platform in ('Linux', 'Darwin') else 'false'
                 f.write(f'    printf("        constants.put(\\"{c.name}\\", {val});\\n");\n')
                 continue
             if c.optional:

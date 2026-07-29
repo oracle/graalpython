@@ -2500,7 +2500,7 @@ void call_rewinddir(intptr_t dirp) {
     rewinddir((DIR *) dirp);
 }
 
-#ifdef __gnu_linux__
+#if defined(__gnu_linux__) || defined(__APPLE__)
 int32_t call_utimensat(int32_t dirFd, const char *path, int64_t *timespec, int32_t followSymlinks) {
     if (!timespec) {
         CAPTURE_ERRNO_AND_RETURN(-1, utimensat(dirFd, path, NULL, followSymlinks ? 0 : AT_SYMLINK_NOFOLLOW));
