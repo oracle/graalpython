@@ -259,7 +259,7 @@
             "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
         }),
         "python-unittest-cpython": cpygate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier1,
+            "linux:amd64:jdk-latest"     : tier1 + $.ol8,
         }),
         "python-unittest-retagger": ut_retagger + platform_spec(no_jobs) + batches(RETAGGER_SPLIT) + platform_spec({
             "linux:amd64:jdk-latest"     : weekly    + t("20:00:00") + require(GPY_NATIVE_STANDALONE),

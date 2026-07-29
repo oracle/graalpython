@@ -2,6 +2,7 @@
     local common = import "graal/ci/common.jsonnet",
 
     MX_VERSION:: "HEAD",
+    CPYTHON_VERSION:: "3.13.14",
 
     TIME_LIMIT:: {
         "10m": "00:10:00",

@@ -164,7 +164,7 @@
         packages +: packages(self.os, self.arch),
         environment +: environment(self.os, self.arch),
         logs +: logs(self.os, self.arch),
-        setup: $.cpython_artifact_setup(self.os, self.arch),
+        setup: [],
         run: [
             bench_cmd(self.bench, self.mx_args, self.mx_bench_args, self.vm, self.vm_config_name, self.vm_info),
         ],
@@ -227,7 +227,7 @@
     //------------------------------------------------------------------------------------------------------------------
     // graalpy bench tasks
     //------------------------------------------------------------------------------------------------------------------
-    bench_task(bench=null, benchmarks=$.BENCHMARKS):: os_arch_jdk_mixin + test_reports + task_spec(
+    bench_task(bench=null, benchmarks=$.BENCHMARKS):: $.ol8 + $.cpython_runtime + os_arch_jdk_mixin + test_reports + task_spec(
         bench_base_task(bench=bench, benchmarks=benchmarks) +
         evaluate_late(
             {bench_task_1: function(builder)

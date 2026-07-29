@@ -115,7 +115,6 @@
             HOST_VM_CONFIG: "graal-core",
             BENCH_RESULTS_FILE_PATH: "bench-results.json",
             GRAALVM_CHECK_EXPERIMENTAL_OPTIONS: "true",
-            MX_PYTHON_VERSION: "3.8",
             MX_OUTPUT_ROOT_INCLUDES_CONFIG: "false", // this is important so we can build things on JDK-latest and run them on older JDKs
             CI: "true",
             BISECT_BENCHMARK_CONFIG: "bisect-benchmark.ini",
@@ -131,7 +130,7 @@
         darwin: {
             common: ENV_POSIX + {
                 LC_CTYPE: "en_US.UTF-8",
-                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$PATH:$MUSL_TOOLCHAIN/bin"),
+                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$MUSL_TOOLCHAIN/bin"),
             },
             amd64: {},
             aarch64: {},
@@ -152,7 +151,7 @@
         LD_LIBRARY_PATH: "$LIBGMP/lib:$LD_LIBRARY_PATH",
         FORK_COUNTS_DIRECTORY: "$BUILD_DIR/benchmarking-config/fork-counts",
         RODINIA_DATASET_ZIP: $.overlay_imports.RODINIA_DATASET_ZIP,
-        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin"),
+        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$MUSL_TOOLCHAIN/bin"),
     },
 
     // This is the diff to 'ENVIRONMENT' and meant to be used on OL8 images.
@@ -357,15 +356,6 @@
 
     logs(os, arch):: LOGS,
 
-    cpython_artifact_setup(os, arch)::
-        if os == "linux" && arch == "amd64" then [
-            ["artifact_download.py", "cpython/linux-amd64-3.13.14-2.tar.gz", "../cpython-linux-amd64.tar.gz"],
-            ["mkdir", "-p", "../cpython"],
-            ["tar", "-xzf", "../cpython-linux-amd64.tar.gz", "-C", "../cpython"],
-            ["ln", "-sf", "python3", "../cpython/usr/local/bin/python"],
-            ["set-export", "PYTHON3_HOME", "$PWD/../cpython/usr/local/bin"],
-        ] else [],
-
     //------------------------------------------------------------------------------------------------------------------
     // graalpy gates
     //------------------------------------------------------------------------------------------------------------------
@@ -407,7 +397,6 @@
         // all gates share the same base environment
         environment+: $.environment(self.os, self.arch),
         packages+: $.packages(self.os, self.arch),
-        setup+: $.cpython_artifact_setup(self.os, self.arch),
         run+: [
             ["mx"] + self.mx_parameters + self.dy + self.primary_suite + [
                 "--strict-compliance", "--primary", "gate", "--tags", self.tags, "-B=--force-deprecation-as-warning",
@@ -416,7 +405,16 @@
         deploysArtifacts: true,
     }),
 
-    cpython_gate:: base_gate + test_reports + task_spec({
+    cpython_runtime:: task_spec(evaluate_late("_3_cpython", {
+        environment+: {
+            MX_PYTHON: "python3",
+        },
+        packages+: {
+            python3: "==" + const.CPYTHON_VERSION,
+        },
+    })),
+
+    cpython_gate:: base_gate + test_reports + $.cpython_runtime + task_spec({
         tags:: "python-unittest-cpython",
         guard: {
             "includes": [
