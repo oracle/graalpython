@@ -80,9 +80,17 @@ to avoid the expense of doing their own locking).
    For each of these functions, the GIL must be held by the current thread.
  */
 
-// GraalPy-specific
+
+#if 0 // GraalPy change
+#ifdef HAVE_THREAD_LOCAL
+_Py_thread_local PyThreadState *_Py_tss_tstate = NULL;
+#endif
+#endif // GraalPy change
+
 static inline PyThreadState *
-_get_thread_state() {
+current_fast_get(void)
+{
+    // GralPy change: different implementation
     PyThreadState *ts = tstate_current;
     if (UNLIKELY(ts == NULL)) {
         /*
@@ -98,21 +106,7 @@ _get_thread_state() {
     return ts;
 }
 
-#ifdef HAVE_THREAD_LOCAL
-_Py_thread_local PyThreadState *_Py_tss_tstate = NULL;
-#endif
-
-static inline PyThreadState *
-current_fast_get(void)
-{
-#ifdef HAVE_THREAD_LOCAL
-    return _Py_tss_tstate;
-#else
-    // XXX Fall back to the PyThread_tss_*() API.
-#  error "no supported thread-local variable storage classifier"
-#endif
-}
-
+#if 0 // GraalPy change
 static inline void
 current_fast_set(_PyRuntimeState *Py_UNUSED(runtime), PyThreadState *tstate)
 {
@@ -140,6 +134,7 @@ current_fast_clear(_PyRuntimeState *Py_UNUSED(runtime))
     if (tstate == current_fast_get()) { \
         _Py_FatalErrorFormat(__func__, "tstate %p is still current", tstate); \
     }
+#endif // GraalPy change
 
 PyThreadState *
 _PyThreadState_GetCurrent(void)
@@ -148,6 +143,7 @@ _PyThreadState_GetCurrent(void)
 }
 
 
+#if 0 // GraalPy change
 //------------------------------------------------
 // the thread state bound to the current OS thread
 //------------------------------------------------
@@ -441,7 +437,6 @@ _Py_COMP_DIAG_POP
         &(runtime)->_main_interpreter.code_state.mutex, \
     }
 
-#if 0 // GraalPy change
 static void
 init_runtime(_PyRuntimeState *runtime,
              void *open_code_hook, void *open_code_userdata,
@@ -599,7 +594,6 @@ _PyInterpreterState_Enable(_PyRuntimeState *runtime)
     interpreters->next_id = 0;
     return _PyStatus_OK();
 }
-#endif // GraalPy change
 
 
 static PyInterpreterState *
@@ -608,7 +602,6 @@ alloc_interpreter(void)
     return PyMem_RawCalloc(1, sizeof(PyInterpreterState));
 }
 
-#if 0 // GraalPy change
 static void
 free_interpreter(PyInterpreterState *interp)
 {
@@ -1159,7 +1152,6 @@ _PyInterpreterState_ReinitRunningMain(PyThreadState *tstate)
         set_main_thread(interp, NULL);
     }
 }
-#endif // GraalPy change
 
 
 //----------
@@ -1200,6 +1192,7 @@ _PyInterpreterState_SetWhence(PyInterpreterState *interp, long whence)
     assert(check_interpreter_whence(whence) == 0);
     interp->_whence = whence;
 }
+#endif // GraalPy change
 
 
 PyObject *
@@ -1216,10 +1209,13 @@ PyUnstable_InterpreterState_GetMainModule(PyInterpreterState *interp)
 }
 
 
-#if 0 // GraalPy change: keep the single-interpreter implementation below
+// GraalPy change: We don't have subinterpreters at the moment, so store the dict into a global object
+static PyObject* interpreter_dict;
+
 PyObject *
 PyInterpreterState_GetDict(PyInterpreterState *interp)
 {
+#if 0 // GraalPy change
     if (interp->dict == NULL) {
         interp->dict = PyDict_New();
         if (interp->dict == NULL) {
@@ -1228,8 +1224,17 @@ PyInterpreterState_GetDict(PyInterpreterState *interp)
     }
     /* Returning NULL means no per-interpreter dict is available. */
     return interp->dict;
-}
+#else // GraalPy change
+    if (interpreter_dict == NULL) {
+        interpreter_dict = PyDict_New();
+        if (interpreter_dict == NULL) {
+            PyErr_Clear();
+        }
+    }
+    /* Returning NULL means no per-interpreter dict is available. */
+    return interpreter_dict;
 #endif // GraalPy change
+}
 
 
 //----------
@@ -1365,45 +1370,8 @@ _PyInterpreterState_RequireIDRef(PyInterpreterState *interp, int required)
 {
     interp->requires_idref = required ? 1 : 0;
 }
-
-PyObject *
-_PyInterpreterState_GetMainModule(PyInterpreterState *interp)
-{
-    PyObject *modules = _PyImport_GetModules(interp);
-    if (modules == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "interpreter not initialized");
-        return NULL;
-    }
-    return PyMapping_GetItemString(modules, "__main__");
-}
-#endif //
-
-// GraalPy change: We don't have subinterpreters at the moment, so store the dict into a global object
-static PyObject* interpreter_dict;
-
-PyObject *
-PyInterpreterState_GetDict(PyInterpreterState *interp)
-{
-#if 0 // GraalPy change
-    if (interp->dict == NULL) {
-        interp->dict = PyDict_New();
-        if (interp->dict == NULL) {
-            PyErr_Clear();
-        }
-    }
-    /* Returning NULL means no per-interpreter dict is available. */
-    return interp->dict;
-#else // GraalPy change
-    if (interpreter_dict == NULL) {
-        interpreter_dict = PyDict_New();
-        if (interpreter_dict == NULL) {
-            PyErr_Clear();
-        }
-    }
-    /* Returning NULL means no per-interpreter dict is available. */
-    return interpreter_dict;
 #endif // GraalPy change
-}
+
 
 //-----------------------------
 // look up an interpreter state
@@ -1610,7 +1578,6 @@ init_threadstate(_PyThreadStateImpl *_tstate,
     tstate->datastack_limit = NULL;
     tstate->datastack_cached_chunk = NULL;
     tstate->what_event = -1;
-    graalpy_initialize_thread_state_singletons(tstate);
     tstate->previous_executor = NULL;
     tstate->dict_global_version = 0;
 
@@ -1954,13 +1921,11 @@ PyThreadState_Delete(PyThreadState *tstate)
     tstate_delete_common(tstate, 0);
     free_threadstate((_PyThreadStateImpl *)tstate);
 }
-#endif // GraalPy change
 
 
 void
 _PyThreadState_DeleteCurrent(PyThreadState *tstate)
 {
-#if 0 // GraalPy change
     _Py_EnsureTstateNotNULL(tstate);
 #ifdef Py_GIL_DISABLED
     _Py_qsbr_detach(((_PyThreadStateImpl *)tstate)->qsbr);
@@ -1968,7 +1933,6 @@ _PyThreadState_DeleteCurrent(PyThreadState *tstate)
     current_fast_clear(tstate->interp->runtime);
     tstate_delete_common(tstate, 1);  // release GIL as part of call
     free_threadstate((_PyThreadStateImpl *)tstate);
-#endif // GraalPy change
 }
 
 void
@@ -1979,7 +1943,6 @@ PyThreadState_DeleteCurrent(void)
 }
 
 
-#if 0 // GraalPy change
 // Unlinks and removes all thread states from `tstate->interp`, with the
 // exception of the one passed as an argument. However, it does not delete
 // these thread states. Instead, it returns the removed thread states as a
@@ -2037,7 +2000,6 @@ _PyThreadState_DeleteList(PyThreadState *list)
         free_threadstate((_PyThreadStateImpl *)p);
     }
 }
-#endif // GraalPy change
 
 
 //----------
@@ -2064,7 +2026,6 @@ _PyThreadState_GetDict(PyThreadState *tstate)
 }
 
 
-#if 0 // GraalPy change
 PyObject *
 PyThreadState_GetDict(void)
 {
@@ -2111,6 +2072,7 @@ PyThreadState_GetID(PyThreadState *tstate)
 }
 
 
+#if 0 // GraalPy change
 static inline void
 tstate_activate(PyThreadState *tstate)
 {
@@ -2171,7 +2133,6 @@ tstate_set_detached(PyThreadState *tstate, int detached_state)
 static void
 tstate_wait_attach(PyThreadState *tstate)
 {
-#ifdef Py_GIL_DISABLED
     do {
         int expected = _Py_THREAD_SUSPENDED;
 
@@ -2181,10 +2142,6 @@ tstate_wait_attach(PyThreadState *tstate)
 
         // Once we're back in DETACHED we can re-attach
     } while (!tstate_try_attach(tstate));
-#else
-    (void)tstate;
-    Py_UNREACHABLE();
-#endif
 }
 
 void
@@ -2203,9 +2160,7 @@ _PyThreadState_Attach(PyThreadState *tstate)
 
 
     while (1) {
-        // GraalPy change: this cext subset does not build CPython's
-        // ceval_gil.c lock helpers; native thread attachment is handled by
-        // GraalPy's embedding layer.
+        _PyEval_AcquireLock(tstate);
 
         // XXX assert(tstate_is_alive(tstate));
         current_fast_set(&_PyRuntime, tstate);
@@ -2233,11 +2188,9 @@ _PyThreadState_Attach(PyThreadState *tstate)
 
     // Resume previous critical section. This acquires the lock(s) from the
     // top-most critical section.
-#if 0 // GraalPy change
     if (tstate->critical_section != 0) {
         _PyCriticalSection_Resume(tstate);
     }
-#endif // GraalPy change
 
 #if defined(Py_DEBUG)
     errno = err;
@@ -2250,20 +2203,16 @@ detach_thread(PyThreadState *tstate, int detached_state)
     // XXX assert(tstate_is_alive(tstate) && tstate_is_bound(tstate));
     assert(_Py_atomic_load_int_relaxed(&tstate->state) == _Py_THREAD_ATTACHED);
     assert(tstate == current_fast_get());
-#if 0 // GraalPy change
     if (tstate->critical_section != 0) {
         _PyCriticalSection_SuspendAll(tstate);
     }
-#endif // GraalPy change
 #ifdef Py_GIL_DISABLED
     _Py_qsbr_detach(((_PyThreadStateImpl *)tstate)->qsbr);
 #endif
     tstate_deactivate(tstate);
     tstate_set_detached(tstate, detached_state);
     current_fast_clear(&_PyRuntime);
-#if 0 // GraalPy change
     _PyEval_ReleaseLock(tstate->interp, tstate, 0);
-#endif // GraalPy change
 }
 
 void
@@ -2272,7 +2221,6 @@ _PyThreadState_Detach(PyThreadState *tstate)
     detach_thread(tstate, _Py_THREAD_DETACHED);
 }
 
-#if 0 // GraalPy change
 void
 _PyThreadState_Suspend(PyThreadState *tstate)
 {
@@ -2543,20 +2491,16 @@ PyThreadState_SetAsyncExc(unsigned long id, PyObject *exc)
 PyThreadState *
 PyThreadState_GetUnchecked(void)
 {
-    return _get_thread_state();
+    return current_fast_get();
 }
 
 
 PyThreadState *
 PyThreadState_Get(void)
 {
-#if 0 // GraalPy change
     PyThreadState *tstate = current_fast_get();
     _Py_EnsureTstateNotNULL(tstate);
     return tstate;
-#else // GraalPy change
-    return _get_thread_state();
-#endif // GraalPy change
 }
 
 #if 0 // GraalPy change
@@ -2856,7 +2800,7 @@ PyGILState_GetThisThreadState(void)
     }
     return gilstate_tss_get(runtime);
 #else // GraalPy change
-    return _get_thread_state();
+    return PyThreadState_Get();
 #endif // GraalPy change
 }
 
@@ -3074,7 +3018,8 @@ _PyInterpreterState_SetEvalFrameFunc(PyInterpreterState *interp,
         _Py_Executors_InvalidateAll(interp, 1);
     }
 #endif
-    // GraalPy change: rare event stats state is not present in this cext subset.
+    // GraalPy change
+    // RARE_EVENT_INC(set_eval_frame_func);
     interp->eval_frame = eval_frame;
 }
 

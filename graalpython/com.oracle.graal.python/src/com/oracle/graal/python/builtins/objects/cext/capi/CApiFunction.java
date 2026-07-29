@@ -490,7 +490,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PySys_WriteStderr", ret = Void, args = {ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PySys_WriteStdout", ret = Void, args = {ConstCharPtrAsTruffleString, VARARGS}, call = CImpl)
     @CApiBuiltin(name = "PyThreadState_Clear", ret = Void, args = {PyThreadState}, call = CImpl)
-    @CApiBuiltin(name = "PyThreadState_DeleteCurrent", ret = Void, args = {}, call = CImpl)
+    @CApiBuiltin(name = "PyThreadState_DeleteCurrent", ret = Void, args = {}, call = NotImplemented)
     @CApiBuiltin(name = "PyThreadState_Get", ret = PyThreadState, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyThreadState_GetUnchecked", ret = PyThreadState, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyThread_free_lock", ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = CImpl)
