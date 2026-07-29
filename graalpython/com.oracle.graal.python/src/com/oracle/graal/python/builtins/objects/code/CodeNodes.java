@@ -145,7 +145,8 @@ public abstract class CodeNodes {
                  * Even if the code object is not executable, it will be used for introspection when
                  * you call `inspect.signature()` on such function-like object.
                  */
-                int posArgCount = argCount + positionalOnlyArgCount;
+                // Like CPython's co_argcount, argCount already includes positional-only arguments.
+                int posArgCount = argCount;
                 TruffleString[] parameterNames, kwOnlyNames;
                 if (varnames != null) {
                     parameterNames = Arrays.copyOf(varnames, posArgCount);
