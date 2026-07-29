@@ -211,8 +211,13 @@ public abstract class ReadFrameNode extends Node {
                 if (i == level) {
                     // We found the right reference
                     // Maybe it's for the frame we're in?
-                    if (curFrameInfo == executingFrameInfo) {
-                        return materializeFrameNode.execute(this, false, CallerFlags.needsLocals(callerFlags), frame);
+                    if (curFrameInfo == executingFrameInfo && frame != null) {
+                        PFrame pFrame = materializeFrameNode.execute(this, false, CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsMaterializedLocals(callerFlags), frame);
+                        if (CallerFlags.needsMaterializedLocals(callerFlags) && !pFrame.hasMaterializedFrame()) {
+                            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
+                            pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frame.materialize()), true);
+                        }
+                        return pFrame;
                     }
                     if (curFrameInfo.getPyFrame() != null && !curFrameInfo.getPyFrame().needsRefresh(null, callerFlags)) {
                         return curFrameInfo.getPyFrame();

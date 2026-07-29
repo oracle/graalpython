@@ -275,6 +275,10 @@ public final class PFrame extends PythonBuiltinObject {
         return customLocals;
     }
 
+    public boolean hasMaterializedFrame() {
+        return materializedFrame;
+    }
+
     public boolean syncsLocals() {
         return customLocals == null && !materializedFrame;
     }
