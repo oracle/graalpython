@@ -1,0 +1,107 @@
+# Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# The Universal Permissive License (UPL), Version 1.0
+#
+# Subject to the condition set forth below, permission is hereby granted to any
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
+#
+# (a) the Software, and
+#
+# (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
+#
+# without restriction, including without limitation the rights to copy, create
+# derivative works of, display, perform, and distribute the Software and make,
+# use, sell, offer for sale, import, export, have made, and have sold the
+# Software and the Larger Work(s), and to sublicense the foregoing rights on
+# either these or other terms.
+#
+# This license is subject to the following condition:
+#
+# The above copyright notice and either this complete permission notice or at a
+# minimum a reference to the UPL must be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+import json
+from typing import Annotated, Literal
+
+ensure_packages(pydantic="2.12.5")
+from pydantic import BaseModel, Field, TypeAdapter
+
+
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+    groups: list[str]
+
+
+class CreatedEvent(BaseModel):
+    kind: Literal["created"]
+    sequence: int
+    actor: User
+    tags: list[str]
+    metadata: dict[str, str | int]
+
+
+class UpdatedEvent(BaseModel):
+    kind: Literal["updated"]
+    sequence: int
+    actor: User
+    changes: dict[str, str]
+    active: bool
+
+
+Event = Annotated[CreatedEvent | UpdatedEvent, Field(discriminator="kind")]
+EVENT_ADAPTER = TypeAdapter(list[Event])
+EVENT_DATA = [
+    {
+        "kind": "created",
+        "sequence": str(i),
+        "actor": {
+            "id": str(i),
+            "name": f"User {i}",
+            "email": f"user{i}@example.com",
+            "groups": ["users", f"team-{i % 8}"],
+        },
+        "tags": ["new", f"region-{i % 4}"],
+        "metadata": {"source": "api", "attempt": i % 3},
+    }
+    if i % 2 == 0
+    else {
+        "kind": "updated",
+        "sequence": str(i),
+        "actor": {
+            "id": str(i),
+            "name": f"User {i}",
+            "email": f"user{i}@example.com",
+            "groups": ["users", f"team-{i % 8}"],
+        },
+        "changes": {"name": f"Updated User {i}", "team": f"team-{(i + 1) % 8}"},
+        "active": "true",
+    }
+    for i in range(64)
+]
+JSON_DATA = json.dumps(EVENT_DATA, separators=(",", ":")).encode()
+
+
+def __benchmark__(iterations=2000):
+    result = None
+    for _ in range(iterations):
+        result = EVENT_ADAPTER.validate_json(JSON_DATA)
+    return result

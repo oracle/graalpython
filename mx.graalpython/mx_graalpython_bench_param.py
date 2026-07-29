@@ -308,7 +308,12 @@ MESO_BENCHMARKS_SMALL = {
 MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
     'c-cythonize-numpy': ITER_1 + [],
+    'c-pydantic-schema-build': ITER_10 + ['100'],
+    'c-pydantic-serialize-json': ITER_10 + ['1000'],
     'c-pydantic-validate': ITER_10 + ['200000'],
+    'c-pydantic-validate-callbacks': ITER_10 + ['1000'],
+    'c-pydantic-validate-json': ITER_10 + ['2000'],
+    'c-pydantic-validation-errors': ITER_10 + ['1000'],
     'c-pymupdf-parse': ITER_10 + ['1'],
     'c-oracledb-load': ITER_5 + ['2000000'],
 }
