@@ -1524,16 +1524,19 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None, only_projects=None):
         f'-Dlocal.repo.url=' + pathlib.Path(local_repo_path).as_uri(),
         f"-Dgradle.java.home={gradle_java_home}"
     ]
-    mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
-            *common_args, '-Pmxurlrewrite',
-            '-N', 'exec:java@patch-gradle-props'],
-            env=env, cwd=graalpy_extensions_path)
-    if only_projects:
-        common_args += ['-pl', ','.join(only_projects)]
-    mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
-            *common_args, '-DdeployAtEnd=true',
-            f'-DaltDeploymentRepository=local::{pathlib.Path(local_repo_path).as_uri()}',
-            'deploy'], env=env, cwd=graalpy_extensions_path)
+    with use_local_maven_repo_settings(local_repo_path) as maven_settings:
+        mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
+                '--settings', maven_settings,
+                *common_args, '-Pmxurlrewrite',
+                '-N', 'exec:java@patch-gradle-props'],
+                env=env, cwd=graalpy_extensions_path)
+        if only_projects:
+            common_args += ['-pl', ','.join(only_projects)]
+        mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
+                '--settings', maven_settings,
+                *common_args, '-DdeployAtEnd=true',
+                f'-DaltDeploymentRepository=local::{pathlib.Path(local_repo_path).as_uri()}',
+                'deploy'], env=env, cwd=graalpy_extensions_path)
 
     return local_repo_path, version, env
 
