@@ -144,10 +144,12 @@ typedef struct {
 typedef struct {
     GraalPyObject ob_base;
     Py_ssize_t length;
-    Py_ssize_t byte_length;
     Py_hash_t hash;
     /* Bits 0-2: kind; bit 3: is_ascii; bits 4-5: interned state. */
     uint64_t state;
+    Py_ssize_t utf8_length;     /* Number of bytes in utf8, excluding the
+                                 * terminating \0. */
+    char *utf8;                 /* UTF-8 representation (null-terminated) */
     void *data;
 } GraalPyUnicodeObject;
 

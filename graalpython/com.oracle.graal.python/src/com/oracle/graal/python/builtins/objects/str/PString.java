@@ -66,14 +66,6 @@ public final class PString extends PythonBuiltinObject {
         return isMaterialized() ? getMaterialized() : StringMaterializeNode.executeUncached(this);
     }
 
-    public PBytes getUtf8Bytes(Node inliningTarget, HiddenAttr.ReadNode readNode) {
-        return (PBytes) readNode.execute(inliningTarget, this, HiddenAttr.PSTRING_UTF8, null);
-    }
-
-    public void setUtf8Bytes(Node inliningTarget, HiddenAttr.WriteNode writeNode, PBytes value) {
-        writeNode.execute(inliningTarget, this, HiddenAttr.PSTRING_UTF8, value);
-    }
-
     public PBytes getWCharBytes(Node inliningTarget, HiddenAttr.ReadNode readNode) {
         return (PBytes) readNode.execute(inliningTarget, this, HiddenAttr.PSTRING_WCHAR, null);
     }
