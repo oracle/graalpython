@@ -45,13 +45,15 @@ except:
             return 'cpython'
     __graalpython__ = GP()
 
-import fcntl
 import os
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
-import sys
+
+if sys.platform != 'win32':
+    import fcntl
 
 PREFIX = 'select_graalpython_test'
 TEMP_DIR = tempfile.gettempdir()

@@ -554,7 +554,7 @@ def interrupt_process(process: subprocess.Popen):
             process.send_signal(signal.SIGINT)
             process.wait(3)
             return
-        except (OSError, subprocess.TimeoutExpired):
+        except (OSError, ValueError, subprocess.TimeoutExpired):
             pass
     process.terminate()
     try:
@@ -589,7 +589,7 @@ class ParallelTestRunner(TestRunner):
         else:
             per_file_suites, unpartitioned = partition_list(
                 suites,
-                lambda suite: suite.test_file.config.new_worker_per_file,
+                lambda suite: suite.test_file.config.new_worker_per_file or suite.test_file.test_config.subprocess_args,
             )
         partitions = [suite.collected_tests for suite in per_file_suites]
 
@@ -613,7 +613,7 @@ class ParallelTestRunner(TestRunner):
         timed_files.sort(reverse=True, key=lambda x: x[0])
 
         # Greedily assign to balance by timing sum
-        process_loads = [[] for _ in range(self.num_processes)]
+        process_loads = [[] for _ in range(min(self.num_processes, len(timed_files)))]
         process_times = [0.0] * self.num_processes
         for t, suite in timed_files:
             i = process_times.index(min(process_times))
@@ -697,6 +697,8 @@ class SubprocessWorker:
     def __init__(self, worker_id: int, runner: ParallelTestRunner, tests: list['Test']):
         self.prefix = f'[worker-{worker_id + 1}] '
         self.runner = runner
+        self.subprocess_args = tests[0].test_file.test_config.subprocess_args
+        assert all(test.test_file.test_config.subprocess_args == self.subprocess_args for test in tests)
         self.stop_event = runner.stop_event
         self.lock = threading.RLock()
         self.remaining_test_ids = [test.test_id for test in tests]
@@ -805,8 +807,9 @@ class SubprocessWorker:
                     self.last_started_time = time.time()
                     cmd = [
                         sys.executable,
-                        '-u',
                         *self.runner.subprocess_args,
+                        *self.subprocess_args,
+                        '-u',
                         __file__,
                         'worker',
                         '--port', str(port),
@@ -922,14 +925,20 @@ class TestFileConfig:
     serial: bool | None = None
     partial_splits: bool | None = None
     per_test_timeout: float | None = None
+    subprocess_args: tuple[str, ...] = ()
     exclude: bool = False
 
     @classmethod
     def from_dict(cls, config: dict):
+        subprocess_args = tuple(config.get('subprocess_args', ()))
+        subprocess_args_on = config.get('subprocess_args_on')
+        if subprocess_args and subprocess_args_on is not None and not platform_keys_match(subprocess_args_on):
+            subprocess_args = ()
         return cls(
             serial=config.get('serial', cls.serial),
             partial_splits=config.get('partial_splits_individual_tests', cls.partial_splits),
             per_test_timeout=config.get('per_test_timeout', cls.per_test_timeout),
+            subprocess_args=subprocess_args,
             exclude=platform_keys_match(config.get('exclude_on', ())),
         )
 
@@ -938,6 +947,7 @@ class TestFileConfig:
             serial=(self.serial if other.serial is None else other.serial),
             partial_splits=(self.partial_splits if other.partial_splits is None else other.partial_splits),
             per_test_timeout=(self.per_test_timeout if other.per_test_timeout is None else other.per_test_timeout),
+            subprocess_args=self.subprocess_args + other.subprocess_args,
             exclude=self.exclude or other.exclude,
         )
 

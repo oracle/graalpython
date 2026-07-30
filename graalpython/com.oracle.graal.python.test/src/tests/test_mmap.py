@@ -45,9 +45,13 @@ import unittest
 
 PAGESIZE = mmap.PAGESIZE
 FIND_BUFFER_SIZE = 1024  # keep in sync with FindNode#BUFFER_SIZE
+NAMED_MMAP_SUPPORTED = (
+    sys.platform == "win32"
+    and (sys.implementation.name != "graalpy" or __graalpython__.posix_module_backend() == "native")
+)
 
 
-@unittest.skipUnless(sys.platform == "win32", "requires Windows named mmap support")
+@unittest.skipUnless(NAMED_MMAP_SUPPORTED, "requires native Windows named mmap support")
 def test_named_mmap_clears_windows_last_error():
     import ctypes
     import _winapi
@@ -66,7 +70,7 @@ def test_named_mmap_clears_windows_last_error():
         ctypes.set_last_error(0)
 
 
-@unittest.skipUnless(sys.platform == "win32", "requires Windows named mmap support")
+@unittest.skipUnless(NAMED_MMAP_SUPPORTED, "requires native Windows named mmap support")
 def test_windows_tagname_as_third_positional_argument():
     data = b"named mmap"
     tagname = f"graalpy-mmap-test-{os.getpid()}-{time.time_ns()}"

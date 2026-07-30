@@ -467,7 +467,8 @@ public abstract class Python3Core {
             } else {
                 CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
                 builtin.setNeedsPostInitialize(annotation.isEager() || annotation.extendClasses().length != 0);
-                if (annotation.os() != PythonOS.PLATFORM_ANY && annotation.os() != currentOs) {
+                List<PythonOS> supportedOS = Arrays.asList(annotation.os());
+                if (!supportedOS.contains(PythonOS.PLATFORM_ANY) && !supportedOS.contains(currentOs)) {
                     toRemove.add(builtin);
                 }
             }

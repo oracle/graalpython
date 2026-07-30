@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -230,6 +231,10 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
                         @Exclusive @Cached LZMANodes.DecompressNode decompress) {
             byte[] bytes = toBytes.execute(inliningTarget, data.getSequenceStorage());
             int len = data.getSequenceStorage().length();
+            // Incremental decompression uses the backing array length to detect appended input.
+            if (bytes.length != len) {
+                bytes = PythonUtils.arrayCopyOf(bytes, len);
+            }
             return PFactory.createBytes(language, decompress.execute(inliningTarget, self, bytes, len, maxLength));
 
         }
