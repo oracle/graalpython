@@ -316,6 +316,7 @@ MACRO_BENCHMARKS = {
     'c-pydantic-validation-errors': ITER_10 + ['1000'],
     'c-pymupdf-parse': ITER_10 + ['1'],
     'c-oracledb-load': ITER_5 + ['2000000'],
+    'c-ujson-loads': ITER_10 + ['150'],
 }
 
 
