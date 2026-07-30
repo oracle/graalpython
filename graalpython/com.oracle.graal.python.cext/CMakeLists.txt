@@ -40,8 +40,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 execute_process(COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_SOURCE_DIR}/.compile_commands.json.probe" RESULT_VARIABLE _touch_res)
 if(_touch_res EQUAL 0)
     file(REMOVE "${CMAKE_SOURCE_DIR}/.compile_commands.json.probe")
-    add_custom_target(compile_commands_target ALL
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/compile_commands.json" "${CMAKE_SOURCE_DIR}")
+    set(COMPILATION_DATABASE "${CMAKE_SOURCE_DIR}/compile_commands.json")
+    add_custom_command(
+        OUTPUT "${COMPILATION_DATABASE}"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/compile_commands.json" "${COMPILATION_DATABASE}"
+        DEPENDS "${CMAKE_BINARY_DIR}/compile_commands.json"
+        VERBATIM)
+    add_custom_target(compile_commands_target ALL DEPENDS "${COMPILATION_DATABASE}")
 else()
     message(STATUS "Source directory is not writable, skipping copy of compile_commands.json.")
     add_custom_target(compile_commands_target)
