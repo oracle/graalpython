@@ -878,8 +878,8 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-DELVEEWHEEL_GRAALPY_ARTIFACT = "graal/python-native-standalone-svm-svmee-java25-windows-amd64-25.1.3.zip"
-DELVEEWHEEL_GRAALPY_HOME = "graalpy3.12-25.1.3-windows-amd64"
+DELVEEWHEEL_GRAALPY_ARTIFACT = "graal/python-native-standalone-svm-svmee-java25-windows-amd64-25.2.4.zip"
+DELVEEWHEEL_GRAALPY_HOME = "graalpy3.12-25.2.4-windows-amd64"
 
 
 def _downloaded_graalpy_for_delvewheel():
