@@ -35,13 +35,3 @@ release tag commit and then it should change the CI overlay version to point to
 the head of branch `graalpy-patch-branch` in order to disable unnecessary gates
 on it. The GitHub sync needs to be manually enabled in the mirroring service
 configuration.
-
-### Updating hpy
-
-1. Switch to the `hpy-import` branch
-2. Delete `graalpython/hpy`
-3. Copy the sources from the hpy repo into `graalpython/hpy` (e.g git clone
-   them there, then delete the `graalpython/hpy/.git` folder)
-4. Go back to your previous branch and merge hpy-import.
-5. Go to `graalpython/hpy/build.py` and update the `VERSION` constant to
-   whatever you updated to.

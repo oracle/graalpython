@@ -70,50 +70,6 @@ def downstream_test(name):
     return decorator
 
 
-@downstream_test('hpy')
-def downstream_test_hpy(graalpy, testdir=None, args=None, env=None, check=True, timeout=None):
-    if not testdir:
-        testdir = Path('downstream-tests').absolute()
-        shutil.rmtree(testdir, ignore_errors=True)
-        testdir.mkdir(exist_ok=True)
-    hpy_root = DIR / "graalpython" / "hpy"
-    shutil.copytree(hpy_root, testdir / "hpy")
-    hpy_root = testdir / "hpy"
-    hpy_test_root = hpy_root / "test"
-    venv = testdir / 'hpy_venv'
-    run([graalpy, "-m", "venv", str(venv)])
-    run_in_venv(venv, [
-        "pip",
-        "install",
-        "pytest==9.1.1",
-        "pytest-xdist==3.8.0",
-        "pytest-rerunfailures==16.4",
-        "filelock==3.30.0",
-    ])
-    env = env or os.environ.copy()
-    env["SETUPTOOLS_SCM_PRETEND_VERSION"] = "0.9.0"
-    run_in_venv(venv, ["pip", "install", "-e", "."], cwd=str(hpy_root), env=env)
-    parallelism = str(min(os.cpu_count(), int(os.cpu_count() / 4)))
-    args = args or []
-    args = [
-        "python",
-        "--vm.ea",
-        "--experimental-options=true",
-        "--python.EnableDebuggingBuiltins",
-        *args,
-        "-m", "pytest",
-        "-v",
-        # for those cases where testing invalid handles corrupts the process so
-        # much that we crash - we don't recover gracefully in some cases :(
-        "--reruns", "3",
-        "-n", parallelism,
-        str(hpy_test_root),
-        # test_distutils is just slow and testing the build infrastructure
-        "-k", "not test_distutils"
-    ]
-    return run_in_venv(venv, args, env=env, cwd=str(hpy_root), check=check, timeout=timeout)
-
-
 @downstream_test('pybind11')
 def downstream_test_pybind11(graalpy, testdir):
     run(['git', 'clone', 'https://github.com/pybind/pybind11.git', '--depth', '1'], cwd=testdir)
