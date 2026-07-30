@@ -189,9 +189,6 @@
             "linux:aarch64:jdk-latest"   : daily     + t("00:30:00") + require(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : daily     + t("00:30:00") + require(GPY_JVM_STANDALONE),
         }),
-        "python-unittest-hpy": gpgate + require(GPY_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier3,
-        }),
         "python-unittest-arrow-storage": gpgate + require(GPY_JVM_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2,
         }),

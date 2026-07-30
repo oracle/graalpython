@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -154,7 +154,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
         }
         Object getBufferAttr = readGetBufferNode.execute(inliningTarget, type, HiddenAttr.GETBUFFER, null);
         if (hasSlotProfile.profile(inliningTarget, getBufferAttr != null)) {
-            // HPy object with buffer slot
+            // Native object with buffer slot
             Object result = callNode.execute(frame, getBufferAttr, object, BufferFlags.PyBUF_FULL_RO);
             if (!(result instanceof CExtPyBuffer)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
