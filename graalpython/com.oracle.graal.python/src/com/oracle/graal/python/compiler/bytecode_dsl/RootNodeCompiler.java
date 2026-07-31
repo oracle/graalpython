@@ -4950,6 +4950,17 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 return boundNames;
             }
 
+            private void reserveBindVariable(String name) {
+                if (bindVariables.containsKey(name)) {
+                    return;
+                }
+
+                b.beginBindStackValue();
+                b.emitLoadNull();
+                StackValue result = b.endBindStackValue();
+                bindVariables.put(name, result);
+            }
+
             private void allocateBindVariable(String name, Runnable valueProducer) {
                 checkForbiddenName(name, NameOperation.BeginWrite);
                 if (!boundNames.add(name)) {
@@ -4998,6 +5009,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             } else {
                 // The case can be irrefutable if it's last or has a guard expression.
                 PatternContext pc = new PatternContext(rootSubject, nextCase, last || c.guard != null);
+                if (c.pattern.getSourceRange().startLine != c.pattern.getSourceRange().endLine) {
+                    // If the pattern spans multiple lines, we will create sub-blocks and be unable to bind values
+                    // to this top-level block. Bind them ahead of time.
+                    for (String name : collectPatternBindings(c.pattern)) {
+                        pc.reserveBindVariable(name);
+                    }
+                }
                 emitCheckPattern(c.pattern, c.guard, pc);
                 visitStatements(c.body);
                 if (!last) {
@@ -5425,22 +5443,22 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // @formatter:on
         }
 
-        private Map<String, SourceRange> collectPatternBindings(PatternTy pattern) {
+        private Set<String> collectPatternBindings(PatternTy pattern) {
             return new PatternBindingVisitor().collect(pattern);
         }
 
         private final class PatternBindingVisitor implements BaseBytecodeDSLVisitor<Void> {
-            private final Map<String, SourceRange> names = new HashMap<>();
+            private final Set<String> names = new HashSet<>();
 
-            Map<String, SourceRange> collect(PatternTy pattern) {
+            Set<String> collect(PatternTy pattern) {
                 pattern.accept(this);
-                return Map.copyOf(names);
+                return Set.copyOf(names);
             }
 
             @Override
             public Void visit(PatternTy.MatchAs node) {
                 if (node.name != null) {
-                    collectName(node.name, node.getSourceRange());
+                    names.add(node.name);
                 }
                 if (node.pattern != null) {
                     node.pattern.accept(this);
@@ -5459,18 +5477,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             public Void visit(PatternTy.MatchMapping node) {
                 visitPatterns(node.patterns);
                 if (node.rest != null) {
-                    collectName(node.rest, node.getSourceRange());
+                    names.add(node.rest);
                 }
                 return null;
             }
 
             @Override
             public Void visit(PatternTy.MatchOr node) {
-                // Note: syntax errors in one alternative are reported before syntax errors in later alternatives.
-                // So, here we intentionally defer checking of other alternatives' bound names until they are emitted.
-                for (Map.Entry<String, SourceRange> binding : collectPatternBindings(node.patterns[0]).entrySet()) {
-                    collectName(binding.getKey(), binding.getValue());
-                }
+                names.addAll(collectPatternBindings(node.patterns[0]));
                 return null;
             }
 
@@ -5488,7 +5502,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             @Override
             public Void visit(PatternTy.MatchStar node) {
                 if (node.name != null) {
-                    collectName(node.name, node.getSourceRange());
+                    names.add(node.name);
                 }
                 return null;
             }
@@ -5505,13 +5519,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     }
                 }
             }
-
-            private void collectName(String name, SourceRange location) {
-                checkForbiddenName(name, NameOperation.BeginWrite, location);
-                if (names.putIfAbsent(name, location) != null) {
-                    ctx.errorCallback.onError(ErrorType.Syntax, location, "multiple assignments to name '%s' in pattern", name);
-                }
-            }
         }
 
         private void checkAlternativePatternDifferentNames(Set<String> control, Set<String> names) {
@@ -5522,11 +5529,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         private void doVisitPattern(PatternTy.MatchOr node, PatternContext pc) {
             PatternTy[] patterns = node.patterns;
-            Set<String> control = collectPatternBindings(patterns[0]).keySet();
+            Set<String> control = collectPatternBindings(patterns[0]);
             // Reserve bind variables before evaluating each alternative.
             // Each alternative will write its values into the bind variables.
             for (String name : control) {
-                pc.allocateBindVariable(name, b::emitLoadNull);
+                pc.reserveBindVariable(name);
             }
 
             b.beginBlock();

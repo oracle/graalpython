@@ -265,6 +265,29 @@ def test_multiple_or_pattern_creates_locals():
     assert y == 6
 
 
+def test_multiline_pattern_bindings():
+    def sequence(value):
+        match value:
+            case (
+                x,
+                y,
+            ):
+                return x + y
+
+    def alternatives(value):
+        match value:
+            case (
+            [x]
+            | {"x": x}
+            ):
+                return x
+
+    assert sequence((20, 22)) == 42
+    assert alternatives([42]) == 42
+    assert alternatives({"x": 43}) == 43
+
+
+
 class TestErrors(unittest.TestCase):
     def assert_syntax_error(self, code: str):
         with self.assertRaises(SyntaxError):
