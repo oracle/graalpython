@@ -1,4 +1,4 @@
-From 9edd0115fec81c1add7e1301eaccb0a3eef49d2e Mon Sep 17 00:00:00 2001
+From 149a24c95fc67592caf1bb3e3905b170bfbc3a88 Mon Sep 17 00:00:00 2001
 From: Mohaned Qunaibit <mohaned.qunaibit@oracle.com>
 Date: Tue, 5 Dec 2023 14:47:39 +0300
 Subject: [PATCH] patch 0.5.1
@@ -12,14 +12,16 @@ Subject: [PATCH] patch 0.5.1
  asv/commands/run.py           |   2 +-
  asv/config.py                 |   2 +
  asv/plugins/comparisonlist.py | 236 ++++++++++++++++++++++
- asv/runner.py                 |  94 ++++++---
+ asv/plugins/virtualenv.py     |   5 +-
+ asv/runner.py                 |  92 ++++++---
  asv/util.py                   |   2 +-
  asv/www/asv.js                |   2 +
  asv/www/comparisonlist.css    |  92 +++++++++
  asv/www/comparisonlist.js     | 362 ++++++++++++++++++++++++++++++++++
  asv/www/index.html            |   9 +
  docs/source/benchmarks.rst    |   3 +
- 15 files changed, 898 insertions(+), 26 deletions(-)
+ setup.py                      |   2 +-
+ 17 files changed, 902 insertions(+), 27 deletions(-)
  create mode 100644 asv/plugins/comparisonlist.py
  create mode 100644 asv/www/comparisonlist.css
  create mode 100644 asv/www/comparisonlist.js
@@ -292,21 +294,6 @@ index c6d15d7..b52c846 100644
  
      @classmethod
      def load(cls, path=None):
-diff --git a/asv/plugins/virtualenv.py b/asv/plugins/virtualenv.py
---- a/asv/plugins/virtualenv.py
-+++ b/asv/plugins/virtualenv.py
-@@ -3,7 +3,10 @@
- 
- from __future__ import absolute_import, division, unicode_literals, print_function
- 
--from distutils.version import LooseVersion
-+try:
-+    from packaging.version import parse as LooseVersion
-+except:
-+    from distutils.version import LooseVersion
- import sys
- import re
- import os
 diff --git a/asv/plugins/comparisonlist.py b/asv/plugins/comparisonlist.py
 new file mode 100644
 index 0000000..dfe078f
@@ -549,8 +536,24 @@ index 0000000..dfe078f
 +                        row += '|' + benchmark["pretty_name"] + '|\n'
 +                        fp.write(row)
 +                    fp.write('\n\n\n')
+diff --git a/asv/plugins/virtualenv.py b/asv/plugins/virtualenv.py
+index 166b929..7756009 100644
+--- a/asv/plugins/virtualenv.py
++++ b/asv/plugins/virtualenv.py
+@@ -3,7 +3,10 @@
+ 
+ from __future__ import absolute_import, division, unicode_literals, print_function
+ 
+-from distutils.version import LooseVersion
++try:
++    from packaging.version import parse as LooseVersion
++except:
++    from distutils.version import LooseVersion
+ import sys
+ import re
+ import os
 diff --git a/asv/runner.py b/asv/runner.py
-index 2c19e15..9321f33 100644
+index 2c19e15..ca2de36 100644
 --- a/asv/runner.py
 +++ b/asv/runner.py
 @@ -111,7 +111,8 @@ def run_benchmarks(benchmarks, env, results=None,
@@ -718,7 +721,6 @@ index 2c19e15..9321f33 100644
 -            errcode=errcode,
 -            stderr=out.strip(),
 -            profile=profile_data)
--
 +        return (BenchmarkResult(
 +                    result=[result],
 +                    samples=[samples],
@@ -726,7 +728,7 @@ index 2c19e15..9321f33 100644
 +                    errcode=errcode,
 +                    stderr=out.strip(),
 +                    profile=profile_data),
-+
+ 
 +                # maxrss
 +                None if maxrss is None else BenchmarkResult(
 +                    result=[maxrss],
@@ -1293,6 +1295,19 @@ index 7a1e3a4..c8bf6eb 100644
  - ``rounds``: How many rounds to run the benchmark in (default: 2).
    The rounds run different timing benchmarks in an interleaved order,
    allowing to sample over longer periods of background performance
+diff --git a/setup.py b/setup.py
+index b4c39ef..b114130 100755
+--- a/setup.py
++++ b/setup.py
+@@ -209,7 +209,7 @@ def run_setup(build_binary=False):
+                          if not x.strip().startswith('#')]
+ 
+     if build_binary:
+-        ext_modules = [Extension("asv._rangemedian", ["asv/_rangemedian.cpp"])]
++        ext_modules = []
+     else:
+         ext_modules = []
+ 
 -- 
-2.25.1
+2.55.0
 
