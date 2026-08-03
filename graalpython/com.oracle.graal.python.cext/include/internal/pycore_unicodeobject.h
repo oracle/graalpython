@@ -180,13 +180,13 @@ extern PyObject* _PyUnicode_DecodeRawUnicodeEscapeStateful(
 
 /* --- Latin-1 Codecs ----------------------------------------------------- */
 
-extern PyObject* _PyUnicode_AsLatin1String(
+PyAPI_FUNC(PyObject*) _PyUnicode_AsLatin1String(
     PyObject* unicode,
     const char* errors);
 
 /* --- ASCII Codecs ------------------------------------------------------- */
 
-extern PyObject* _PyUnicode_AsASCIIString(
+PyAPI_FUNC(PyObject*) _PyUnicode_AsASCIIString(
     PyObject* unicode,
     const char* errors);
 
@@ -269,7 +269,7 @@ extern Py_ssize_t _PyUnicode_InsertThousandsGrouping(
 
 /* --- Misc functions ----------------------------------------------------- */
 
-extern PyObject* _PyUnicode_FormatLong(PyObject *, int, int, int);
+PyAPI_FUNC(PyObject*) _PyUnicode_FormatLong(PyObject *, int, int, int);
 
 /* Fast equality check when the inputs are known to be exact unicode types
    and where the hash values are equal (i.e. a very probable match) */
