@@ -218,8 +218,9 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     /**
-     * Get the locals synced by {@link BytecodeFrame}. May be null when using custom locals. In most
-     * cases, you should use {@link GetFrameLocalsNode} instead of this method.
+     * Get the bytecode frame with locals backing this frame. May be copied from the real frame or it might be materialized,
+     * depending on how the PFrame was synced. May be null when using custom locals. In most
+     * cases, you should use {@link GetFrameLocalsNode} to get a copy of the locals instead of this method.
      */
     public BytecodeFrame getBytecodeFrame() {
         return bytecodeFrame;
