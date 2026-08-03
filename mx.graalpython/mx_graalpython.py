@@ -2202,16 +2202,16 @@ def tox_example(args=None):
 
     mx.log("Setting up CPython venv to run tox itself")
     libs = [
-        "distlib==0.3.9",
-        "filelock==3.18.0",
-        "packaging==25.0",
-        "platformdirs==4.3.8",
-        "pluggy==1.5.0",
-        "pyparsing==3.2.3",
+        "distlib==0.4.3",
+        "filelock==3.32.2",
+        "packaging==26.2",
+        "platformdirs==4.11.0",
+        "pluggy==1.6.0",
+        "pyparsing==3.3.2",
         "six==1.17.0",
         "toml==0.10.2",
-        "tox==4.25.0",
-        "virtualenv==20.31.2",
+        "tox==4.58.0",
+        "virtualenv==21.7.1",
         os.path.join(os.path.dirname(graalpy), "..", "graalpy_virtualenv_seeder"),
     ]
 
