@@ -3,6 +3,14 @@ tags_dir = '../../../com.oracle.graal.python.test/src/tests/unittest_tags'
 new_worker_per_file = true
 
 [[test_rules]]
+# The pure-Python JSON recursion tests rely on the VM stack overflow being converted to
+# RecursionError. The standalone's normal 16 MiB worker stack is too large on Windows.
+# The runner collects test_json as a package, so this is the narrowest configurable scope.
+selector = ['test_json']
+subprocess_args = ['--vm.Xss1m']
+subprocess_args_on = ['win32', 'win32-github']
+
+[[test_rules]]
 # A list of tests that cannot run in parallel with other tests
 serial = true
 selector = [

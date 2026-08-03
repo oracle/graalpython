@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_LINUX;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.runtime.PosixConstants.F_RDLCK;
 import static com.oracle.graal.python.runtime.PosixConstants.F_UNLCK;
@@ -93,7 +95,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = "fcntl")
+@CoreFunctions(defineModule = "fcntl", os = {PLATFORM_LINUX, PLATFORM_DARWIN})
 public final class FcntlModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_FCNTL_FLOCK = tsLiteral("fcntl.flock");
     private static final TruffleString T_FCNTL_LOCKF = tsLiteral("fcntl.lockf");

@@ -115,7 +115,7 @@ def _package_present(site_packages_dir: Path, package: str, version: str) -> boo
     return os.path.isdir(site_packages_dir / normalized)
 
 
-def ensure_packages(**package_specs):
+def ensure_packages(*, use_current_python=False, **package_specs):
     import site
     package_names = "-".join(package_specs.keys())
     venv_dir = find_rootdir() / f'{sys.implementation.name}-{package_names}-venv'
@@ -125,7 +125,7 @@ def ensure_packages(**package_specs):
         import subprocess
         package_specs = [f'{p}=={v}' for p, v in package_specs.items()]
         print(f'installing {package_specs} in {venv_dir}')
-        system_python = install_venv(venv_dir)
+        install_venv(venv_dir, use_current_python=use_current_python)
         site_packages_dir = _venv_site_packages(venv_dir, py_executable)
         subprocess.run([py_executable, "-m", "pip", "install", *package_specs], check=True)
         print(f'{package_specs} installed in {venv_dir}')
@@ -133,6 +133,7 @@ def ensure_packages(**package_specs):
     pyvenv_site = str(site_packages_dir)
     if os.path.normcase(os.path.normpath(pyvenv_site)) not in {os.path.normcase(os.path.normpath(entry)) for entry in sys.path}:
         site.addsitedir(pyvenv_site)
+    return venv_dir
 
 
 def get_setuptools(setuptools='67.6.1'):
@@ -169,9 +170,13 @@ def _system_python_for_venv():
     return python
 
 
-def install_venv(venv_path: Path) -> bool:
+def install_venv(venv_path: Path, use_current_python=False) -> bool:
     """Installs a virtual environment at the given path."""
-    if not sys.executable or (sys.platform.startswith('win32') and sys.implementation.name == "graalpy"):
+    if use_current_python:
+        import subprocess
+        subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
+        return False
+    elif not sys.executable or (sys.platform.startswith('win32') and sys.implementation.name == "graalpy"):
         # When running in a PolyBench benchmark context sys.executable is unset
         # And thus we must defer to the system's python
         # Deferring to the system's python is fine as it will only be used to install setuptools

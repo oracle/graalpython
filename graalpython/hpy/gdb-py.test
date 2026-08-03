@@ -1,3 +1,0 @@
-#!/bin/bash
-
-gdb --eval-command run --args python3 -m pytest -s "$@"

@@ -143,12 +143,7 @@ public abstract class StringNodes {
             long ptr = HandlePointerConverter.pointerToStub(x.getNativePointer());
             long data = CStructAccess.readPtrField(ptr, CFields.GraalPyUnicodeObject__data);
             assert data != 0;
-            int byteLength;
-            try {
-                byteLength = PInt.intValueExact(CStructAccess.readLongField(ptr, CFields.GraalPyUnicodeObject__byte_length));
-            } catch (OverflowException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            long length = CStructAccess.readLongField(ptr, CFields.GraalPyUnicodeObject__length);
             int kind = GraalPyUnicodeObjectUtil.getKind(ptr);
             TruffleString.CompactionLevel compactionLevel = switch (kind) {
                 case 1 -> TruffleString.CompactionLevel.S1;
@@ -156,6 +151,12 @@ public abstract class StringNodes {
                 case 4 -> TruffleString.CompactionLevel.S4;
                 default -> throw CompilerDirectives.shouldNotReachHere();
             };
+            int byteLength;
+            try {
+                byteLength = PInt.intValueExact(PythonUtils.multiplyExact(length, kind));
+            } catch (OverflowException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
             TruffleString materialized = fromNativePointerNode.execute(data, 0, byteLength, compactionLevel, copyNativeData);
             x.setMaterialized(materialized);
             return materialized;

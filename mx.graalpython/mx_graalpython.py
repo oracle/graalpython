@@ -42,7 +42,8 @@ import sys
 import time
 from functools import wraps
 from pathlib import Path
-from textwrap import dedent
+from textwrap import dedent, indent
+from xml.sax.saxutils import escape
 
 from typing import cast, Union, Literal, overload
 
@@ -877,8 +878,8 @@ def _dev_pythonhome():
     return os.path.join(SUITE.dir, "graalpython")
 
 
-DELVEEWHEEL_GRAALPY_ARTIFACT = "graal/python-native-standalone-svm-svmee-java25-windows-amd64-25.1.3.zip"
-DELVEEWHEEL_GRAALPY_HOME = "graalpy3.12-25.1.3-windows-amd64"
+DELVEEWHEEL_GRAALPY_ARTIFACT = "graal/python-native-standalone-svm-svmee-java25-windows-amd64-25.2.4.zip"
+DELVEEWHEEL_GRAALPY_HOME = "graalpy3.12-25.2.4-windows-amd64"
 
 
 def _downloaded_graalpy_for_delvewheel():
@@ -1096,8 +1097,6 @@ class GraalPythonTags(object):
     unittest_multi_sandboxed = 'python-unittest-multi-context-sandboxed'
     unittest_jython = 'python-unittest-jython'
     unittest_arrow = 'python-unittest-arrow-storage'
-    unittest_hpy = 'python-unittest-hpy'
-    unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
     unittest_standalone = 'python-unittest-standalone'
     tagged = 'python-tagged-unittest'
     svmbuild = 'python-svm-build'
@@ -1353,6 +1352,75 @@ def update_maven_opts(env):
     return env
 
 
+@contextlib.contextmanager
+def use_local_maven_repo_settings(repo_path):
+    """Yield Maven user settings that resolve artifacts from ``repo_path`` first.
+
+    Maven repositories declared in settings profiles take precedence over repositories from the
+    project POM. Generate a self-contained user settings file with the local repository followed by
+    Maven Central URLs processed by mx URL rewriting. In CI, these URLs resolve to the corporate
+    ArtifactHub mirrors. Maven still merges this user settings file with its global settings.
+    """
+    profile_id = 'graalpy-local-maven-repository'
+
+    def repository_xml(repository_id, repository_url, element_name):
+        return dedent(f"""\
+            <{element_name}>
+              <id>{escape(repository_id)}</id>
+              <url>{escape(repository_url)}</url>
+              <releases>
+                <enabled>true</enabled>
+              </releases>
+              <snapshots>
+                <enabled>true</enabled>
+              </snapshots>
+            </{element_name}>""")
+
+    repositories = [
+        ('graalpy-local', pathlib.Path(repo_path).resolve().as_uri()),
+        ('graalpy-central', mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')),
+    ]
+    search_maven_url = 'https://search.maven.org/remotecontent?filepath='
+    rewritten_search_maven_url = mx_urlrewrites.rewriteurl(search_maven_url)
+    if rewritten_search_maven_url != search_maven_url:
+        repositories.append(('graalpy-central-fallback', rewritten_search_maven_url))
+
+    repositories_xml = '\n'.join(
+        indent(repository_xml(*repository, 'repository'), '        ') for repository in repositories
+    )
+    plugin_repositories_xml = '\n'.join(
+        indent(repository_xml(*repository, 'pluginRepository'), '        ') for repository in repositories
+    )
+    settings_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <profiles>
+    <profile>
+      <id>{profile_id}</id>
+      <repositories>
+{repositories_xml}
+      </repositories>
+      <pluginRepositories>
+{plugin_repositories_xml}
+      </pluginRepositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>{profile_id}</activeProfile>
+  </activeProfiles>
+</settings>
+"""
+
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', encoding='UTF-8', delete=False) as settings:
+        settings.write(settings_xml)
+        settings_path = settings.name
+    try:
+        yield settings_path
+    finally:
+        os.unlink(settings_path)
+
+
 def deploy_library_to_local_maven_repo(library_name, repo_url, env):
     library = mx.library(library_name)
     if not hasattr(library, 'maven'):
@@ -1454,16 +1522,19 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None, only_projects=None):
         f'-Dlocal.repo.url=' + pathlib.Path(local_repo_path).as_uri(),
         f"-Dgradle.java.home={gradle_java_home}"
     ]
-    mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
-            *common_args, '-Pmxurlrewrite',
-            '-N', 'exec:java@patch-gradle-props'],
-            env=env, cwd=graalpy_extensions_path)
-    if only_projects:
-        common_args += ['-pl', ','.join(only_projects)]
-    mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
-            *common_args, '-DdeployAtEnd=true',
-            f'-DaltDeploymentRepository=local::{pathlib.Path(local_repo_path).as_uri()}',
-            'deploy'], env=env, cwd=graalpy_extensions_path)
+    with use_local_maven_repo_settings(local_repo_path) as maven_settings:
+        mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
+                '--settings', maven_settings,
+                *common_args, '-Pmxurlrewrite',
+                '-N', 'exec:java@patch-gradle-props'],
+                env=env, cwd=graalpy_extensions_path)
+        if only_projects:
+            common_args += ['-pl', ','.join(only_projects)]
+        mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
+                '--settings', maven_settings,
+                *common_args, '-DdeployAtEnd=true',
+                f'-DaltDeploymentRepository=local::{pathlib.Path(local_repo_path).as_uri()}',
+                'deploy'], env=env, cwd=graalpy_extensions_path)
 
     return local_repo_path, version, env
 
@@ -1746,17 +1817,6 @@ def run_sandboxed_tests(python_binary, report, args=None, **kwargs):
     run_tagged_unittests(python_binary, args=args, paths=paths, report=report, **kwargs)
 
 
-def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report: Union[Task, bool, None] = False):
-    t0 = time.time()
-    result = downstream_tests.downstream_test_hpy(python_binary, args=args, env=env, check=nonZeroIsFatal, timeout=timeout)
-    if isinstance(report, mx.Task):
-        mx_gate.make_test_report([{
-            "name": report.title,
-            "status": "PASSED" if result == 0 else "FAILED",
-            "duration": int((time.time() - t0) * 1000)
-        }], report.title)
-
-
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
                          report: Union[Task, bool, None] = False, parallel=8, exclude=None, paths=(), args=None):
     if checkIfWithGraalPythonEE:
@@ -1848,29 +1908,28 @@ def graalpython_gate_runner(_, tasks):
     with Task('GraalPython integration JUnit with Maven', tasks, tags=[GraalPythonTags.junit_maven]) as task:
         if task:
             mvn_repo_path, artifacts_version, env = deploy_local_maven_repo()
-            mvn_repo_path = pathlib.Path(mvn_repo_path).as_uri()
-            central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
-            mvn_cmd_base = ['-f', pom_path,
-                            f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
-                            f'-Dcom.oracle.graal.python.test.polyglot_repo={mvn_repo_path}',
-                            f'-Dcom.oracle.graal.python.test.central_repo={central_override}',
-                            '--batch-mode']
 
             env['PATH'] = get_path_with_patchelf()
 
-            default_runtime_arg = []
-            if not HAS_JEP_454:
-                # Bytecode DSL does not work on JDK21 with optimizing runtime (GR-72424)
-                default_runtime_arg = ['-Dtruffle.UseFallbackRuntime=true']
-            graalvm_jdk_path = graalvm_jdk()
-            mx.log(f"Running integration JUnit tests on GraalVM SDK: {graalvm_jdk_path} (extra arguments: {' '.join(default_runtime_arg)})")
-            env['JAVA_HOME'] = graalvm_jdk_path
-            mx.run_maven(mvn_cmd_base + [*default_runtime_arg, '-U', 'clean', 'test'], env=env)
+            with use_local_maven_repo_settings(mvn_repo_path) as maven_settings:
+                mvn_cmd_base = ['--settings', maven_settings,
+                                '-f', pom_path,
+                                f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
+                                '--batch-mode']
 
-            env['JAVA_HOME'] = os.environ['JAVA_HOME']
-            mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
-            mx.run_maven(mvn_cmd_base + ['-U', '-Dpolyglot.engine.WarnInterpreterOnly=false', 'clean', 'test'], env=env)
+                default_runtime_arg = []
+                if not HAS_JEP_454:
+                    # Bytecode DSL does not work on JDK21 with optimizing runtime (GR-72424)
+                    default_runtime_arg = ['-Dtruffle.UseFallbackRuntime=true']
+                graalvm_jdk_path = graalvm_jdk()
+                mx.log(f"Running integration JUnit tests on GraalVM SDK: {graalvm_jdk_path} (extra arguments: {' '.join(default_runtime_arg)})")
+                env['JAVA_HOME'] = graalvm_jdk_path
+                mx.run_maven(mvn_cmd_base + [*default_runtime_arg, '-U', 'clean', 'test'], env=env)
+
+                env['JAVA_HOME'] = os.environ['JAVA_HOME']
+                mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
+                mx.run_maven(mvn_cmd_base + ['-U', '-Dpolyglot.engine.WarnInterpreterOnly=false', 'clean', 'test'], env=env)
 
     # JUnit tests with Maven and polyglot isolates
     with Task('GraalPython integration JUnit with Maven and Polyglot Isolates', tasks, tags=[GraalPythonTags.junit_maven_isolates]) as task:
@@ -1884,35 +1943,34 @@ def graalpython_gate_runner(_, tasks):
                 "NATIVE_IMAGES": "",
                 "POLYGLOT_ISOLATES": "python",
             })
-            mvn_repo_path = pathlib.Path(mvn_repo_path).as_uri()
-            central_override = mx_urlrewrites.rewriteurl('https://repo1.maven.org/maven2/')
             pom_path = os.path.join(SUITE.dir, 'graalpython/com.oracle.graal.python.test.integration/pom.xml')
-            mvn_cmd_base = ['-f', pom_path,
-                            f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
-                            f'-Dcom.oracle.graal.python.test.polyglot_repo={mvn_repo_path}',
-                            f'-Dcom.oracle.graal.python.test.central_repo={central_override}',
-                            '--batch-mode']
 
             env['PATH'] = get_path_with_patchelf()
 
-            mx.log("Running integration JUnit tests on GraalVM SDK with external polyglot isolates")
-            env['JAVA_HOME'] = graalvm_jdk(enterprise=True)
-            mx.run_maven(mvn_cmd_base + [
-                '-U',
-                '-Pisolate',
-                '-Dpolyglot.engine.AllowExperimentalOptions=true',
-                '-Dpolyglot.engine.SpawnIsolate=true',
-                '-Dpolyglot.engine.IsolateMode=external',
-                'clean',
-                'test',
-            ], env=env)
+            with use_local_maven_repo_settings(mvn_repo_path) as maven_settings:
+                mvn_cmd_base = ['--settings', maven_settings,
+                                '-f', pom_path,
+                                f'-Dcom.oracle.graal.python.test.polyglot.version={artifacts_version}',
+                                '--batch-mode']
 
-            mx.log("Running integration JUnit tests on GraalVM SDK with untrusted sandbox policy")
-            mx.run_maven(mvn_cmd_base + [
-                '-Pisolate',
-                '-Dtest=SandboxPolicyUntrustedTest',
-                'test',
-            ], env=env)
+                mx.log("Running integration JUnit tests on GraalVM SDK with external polyglot isolates")
+                env['JAVA_HOME'] = graalvm_jdk(enterprise=True)
+                mx.run_maven(mvn_cmd_base + [
+                    '-U',
+                    '-Pisolate',
+                    '-Dpolyglot.engine.AllowExperimentalOptions=true',
+                    '-Dpolyglot.engine.SpawnIsolate=true',
+                    '-Dpolyglot.engine.IsolateMode=external',
+                    'clean',
+                    'test',
+                ], env=env)
+
+                mx.log("Running integration JUnit tests on GraalVM SDK with untrusted sandbox policy")
+                mx.run_maven(mvn_cmd_base + [
+                    '-Pisolate',
+                    '-Dtest=SandboxPolicyUntrustedTest',
+                    'test',
+                ], env=env)
 
     # Unittests on JVM
     with Task('GraalPython JVM build', tasks, tags=[GraalPythonTags.jvmbuild]) as task:
@@ -1987,14 +2045,6 @@ def graalpython_gate_runner(_, tasks):
     with Task('GraalPython with Arrow Storage Strategy', tasks, tags=[GraalPythonTags.unittest_arrow]) as task:
         if task:
             run_python_unittests(graalpy_standalone_jvm(), args=["--python.UseNativePrimitiveStorageStrategy"], report=report(), nonZeroIsFatal=nonZeroIsFatal)
-
-    with Task('GraalPython HPy tests', tasks, tags=[GraalPythonTags.unittest_hpy]) as task:
-        if task:
-            run_hpy_unittests(graalpy_standalone_native(), nonZeroIsFatal=nonZeroIsFatal, report=report())
-
-    with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
-        if task:
-            run_hpy_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, report=report())
 
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
@@ -2725,7 +2775,6 @@ def python_checkcopyrights(args):
             if any(x in line for x in [
                 "lib-python/3",
                 ".test/testData",
-                "/hpy/",
                 "com.oracle.graal.python.test.integration/src/org.graalvm.python.vfs/",
                 "com.oracle.graal.python.test.integration/src/GRAALPY-VFS/",
                 "com.oracle.graal.python.benchmarks/python/micro/pyperformance/",
@@ -3000,7 +3049,6 @@ def python_coverage(args):
             # Run only a few tagged tests that are relevant to the files in lib-graalpython
             {"tagged": True, "paths": ["test_re.py", "test_unicodedata.py"]},
             {"args": ["--python.EmulateJython"], "paths": ["test_interop.py"]},
-            {"hpy": True},
         ]
 
         common_coverage_args = [
@@ -3023,8 +3071,6 @@ def python_coverage(args):
             env['GRAAL_PYTHON_VM_ARGS'] = " ".join(extra_args)
             if kwds.pop("tagged", False):
                 run_tagged_unittests(executable, env=env, nonZeroIsFatal=False, **kwds) # pylint: disable=unexpected-keyword-arg;
-            elif kwds.pop("hpy", False):
-                run_hpy_unittests(executable, env=env, nonZeroIsFatal=False, timeout=5*60*60) # hpy unittests are really slow under coverage
             else:
                 run_python_unittests(executable, env=env, nonZeroIsFatal=False, timeout=3600, **kwds) # pylint: disable=unexpected-keyword-arg;
 

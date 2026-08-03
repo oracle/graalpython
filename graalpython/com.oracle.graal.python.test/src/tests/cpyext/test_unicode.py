@@ -1317,10 +1317,50 @@ class TestUnicodeObject(unittest.TestCase):
                 Py_ssize_t n = PyUnicode_GET_LENGTH(arg);
                 return PyBytes_FromStringAndSize(data, n);
             }
+
+            static PyObject* compact_unicode_as_utf8(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(arg)) {
+                PyObject *compact = create_compact();
+                if (compact == NULL) {
+                    return NULL;
+                }
+                if (!PyUnicode_IS_COMPACT(compact) || PyUnicode_IS_ASCII(compact)) {
+                    Py_DECREF(compact);
+                    PyErr_SetString(PyExc_TypeError, "expected compact non-ASCII layout");
+                    return NULL;
+                }
+
+                Py_ssize_t size1;
+                const char *utf8_1 = PyUnicode_AsUTF8AndSize(compact, &size1);
+                if (utf8_1 == NULL) {
+                    Py_DECREF(compact);
+                    return NULL;
+                }
+                Py_ssize_t size2;
+                const char *utf8_2 = PyUnicode_AsUTF8AndSize(compact, &size2);
+                if (utf8_2 == NULL) {
+                    Py_DECREF(compact);
+                    return NULL;
+                }
+                if (utf8_1 != utf8_2 || size1 != size2) {
+                    Py_DECREF(compact);
+                    PyErr_SetString(PyExc_RuntimeError, "UTF-8 cache was not reused");
+                    return NULL;
+                }
+                if (!PyUnicode_IS_COMPACT(compact) || PyUnicode_IS_ASCII(compact)) {
+                    Py_DECREF(compact);
+                    PyErr_SetString(PyExc_RuntimeError, "UTF-8 conversion changed the Unicode layout");
+                    return NULL;
+                }
+
+                PyObject *result = PyBytes_FromStringAndSize(utf8_1, size1);
+                Py_DECREF(compact);
+                return result;
+            }
             ''',
             tp_methods='''
             {"compact_unicode_as_bytes", (PyCFunction)compact_unicode_as_bytes, METH_NOARGS, ""},
-            {"noncompact_unicode_as_bytes", (PyCFunction)noncompact_unicode_as_bytes, METH_O, ""}
+            {"noncompact_unicode_as_bytes", (PyCFunction)noncompact_unicode_as_bytes, METH_O, ""},
+            {"compact_unicode_as_utf8", (PyCFunction)compact_unicode_as_utf8, METH_NOARGS, ""}
             ''',
         )
         tester = TestUnicodeData()
@@ -1331,6 +1371,7 @@ class TestUnicodeObject(unittest.TestCase):
 
         assert tester.compact_unicode_as_bytes() == b'hello'
         assert tester.noncompact_unicode_as_bytes(noncompact_unicode) == b'hello'
+        assert tester.compact_unicode_as_utf8() == b'hello'
 
 
 class TestNativeUnicodeSubclass(unittest.TestCase):

@@ -542,7 +542,7 @@
             "python-unittest",
             "python-unittest-multi-context",
             "python-unittest-jython",
-        ] + if self.os != 'windows' then ["python-unittest-hpy"] else [],
+        ],
     }),
     cov_truffle_gate:: $.coverage_gate + task_spec({
         coverage_args:: ["truffle"],

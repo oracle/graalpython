@@ -90,9 +90,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -136,7 +134,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -921,19 +918,15 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
 
             @Specialization
-            static void set(Node inliningTarget, PythonAbstractNativeObject type, TruffleString value,
+            static void set(PythonAbstractNativeObject type, TruffleString value,
                             @Bind PythonLanguage language,
-                            @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject,
-                            @Cached HiddenAttr.WriteNode writeAttrNode,
-                            @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                            @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-                value = switchEncodingNode.execute(value, TruffleString.Encoding.UTF_8);
-                byte[] bytes = copyToByteArrayNode.execute(value, TruffleString.Encoding.UTF_8);
-                PBytes utf8Bytes = PFactory.createBytes(language, bytes);
+                            @Bind PythonContext context,
+                            @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject) {
                 long typeRawPtr = type.getPtr();
-                writePtrField(typeRawPtr, PyTypeObject__tp_name, PySequenceArrayWrapper.ensureNativeSequence(utf8Bytes));
+                // TODO(fa): the allocated 'char *' will be free'd at context finalization. It should be free'd if the type is free'd.
+                long namePointer = context.stringToNativeUtf8Bytes(value, true);
+                writePtrField(typeRawPtr, PyTypeObject__tp_name, namePointer);
                 PString pString = PFactory.createString(language, value);
-                writeAttrNode.execute(inliningTarget, pString, HiddenAttr.PSTRING_UTF8, utf8Bytes);
                 writeObject.writeToObject(type, PyHeapTypeObject__ht_name, pString);
             }
         }

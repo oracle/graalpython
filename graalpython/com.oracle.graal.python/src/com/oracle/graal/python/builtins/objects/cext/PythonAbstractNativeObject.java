@@ -101,9 +101,6 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     private Object[] replicatedNativeReferences;
 
     public PythonAbstractNativeObject(long pointer) {
-        // GR-50245
-        // Fails in
-        // graalpython/com.oracle.graal.python.hpy.test/src/hpytest/test_slots_legacy.py::TestCustomLegacySlotsFeatures::test_legacy_slots_getsets[hybrid]
         assert pointer != UNINITIALIZED;
         this.pointer = pointer;
     }

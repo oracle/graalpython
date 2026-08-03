@@ -338,27 +338,6 @@ suite = {
             ],
         },
 
-        # HPy
-        "hpy": {
-            "subDir": "graalpython",
-            "vpath": True,
-            "type": "GraalpythonProject",
-            "defaultBuild": False,
-            "args": [
-                "<path:hpy>/build.py",
-                "--out",
-                "<output_root:hpy>",
-                "--cflags",
-                "-I<output_root:com.oracle.graal.python>/jni_gen -I<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>/ -I<path:com.oracle.graal.python.cext>/include",
-            ],
-            "platformDependent": True,
-            "buildDependencies": [
-                "com.oracle.graal.python",
-                "GRAALPYTHON-LAUNCHER",
-                "regex:TREGEX",
-            ],
-        },
-
         "com.oracle.graal.python.resources": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],

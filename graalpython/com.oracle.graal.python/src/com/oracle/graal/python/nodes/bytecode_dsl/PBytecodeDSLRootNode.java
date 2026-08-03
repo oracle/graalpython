@@ -211,8 +211,10 @@ import com.oracle.graal.python.nodes.bytecode.RaiseNode;
 import com.oracle.graal.python.nodes.bytecode.SetupAnnotationsNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
+import com.oracle.graal.python.nodes.call.CallDispatchers.FunctionDirectInvokeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers.FunctionIndirectInvokeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.AbstractCallMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -312,6 +314,8 @@ import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.nodes.SlowPathException;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.PropertyGetter;
 import com.oracle.truffle.api.object.Shape;
@@ -377,6 +381,10 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(SetupAnnotationsNode.class)
 @OperationProxy(GetAIterNode.class)
 @OperationProxy(GetANextNode.class)
+@OperationProxy(CallUnaryMethodNode.class)
+@OperationProxy(CallBinaryMethodNode.class)
+@OperationProxy(CallTernaryMethodNode.class)
+@OperationProxy(CallQuaternaryMethodNode.class)
 @OperationProxy(value = ReadGlobalOrBuiltinNode.class, name = "ReadGlobal")
 @OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
 @OperationProxy(value = PyObjectIsTrueNode.class, name = "Yes")
@@ -1999,43 +2007,82 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return TpSlots.canBeSpecialMethod(key, CodePointLengthNode.getUncached(), CodePointAtIndexUTF32Node.getUncached());
         }
 
-        public static Object getValue(PropertyGetter getter, PythonObject obj) {
+        public static Object getValue(PropertyGetter getter, PythonObject obj) throws FastPathBailoutException {
             assert obj.checkDictFlags();
-            return getter.get(obj);
+            Object value = getter.get(obj);
+            if (value == PNone.NO_VALUE) {
+                throw FastPathBailoutException.INSTANCE;
+            }
+            return value;
+        }
+
+        public static int getIntValue(PropertyGetter getter, PythonObject obj) throws FastPathBailoutException, UnexpectedResultException {
+            assert obj.checkDictFlags();
+            try {
+                return getter.getInt(obj);
+            } catch (UnexpectedResultException e) {
+                if (e.getResult() == PNone.NO_VALUE) {
+                    throw FastPathBailoutException.INSTANCE;
+                }
+                throw e;
+            }
+        }
+
+        public static final class FastPathBailoutException extends SlowPathException {
+            private static final long serialVersionUID = 8275772171120097556L;
+            private static final FastPathBailoutException INSTANCE = new FastPathBailoutException();
+
+            private FastPathBailoutException() {
+            }
+        }
+
+        @Specialization(guards = {
+                        "!canBeSpecialMethod(cachedKey)", //
+                        "!hasMaterializedDict(cachedShape)", "isBuiltinModule(cachedShape)", //
+                        "getter != null", "getter.accepts(receiver)"}, //
+                        rewriteOn = {FastPathBailoutException.class, UnexpectedResultException.class}, limit = "3")
+        static int doModuleInt(TruffleString key, PythonModule receiver,
+                        @Cached("key") TruffleString cachedKey,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter) throws FastPathBailoutException, UnexpectedResultException {
+            assert key == cachedKey; // should be a constant operand
+            return getIntValue(getter, receiver);
         }
 
         @ForceQuickening
         @Specialization(guards = {
                         "!canBeSpecialMethod(cachedKey)", //
                         "!hasMaterializedDict(cachedShape)", "isBuiltinModule(cachedShape)", //
-                        "getter != null", "getter.accepts(receiver)", //
-                        "!isNoValue(value)"}, limit = "3")
+                        "getter != null", "getter.accepts(receiver)"}, //
+                        replaces = "doModuleInt", rewriteOn = FastPathBailoutException.class, limit = "3")
         static Object doModule(TruffleString key, PythonModule receiver,
                         @Cached("key") TruffleString cachedKey,
                         @Cached("receiver.getShape()") Shape cachedShape,
-                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
-                        @Bind("getValue(getter, receiver)") Object value) {
+                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter) throws FastPathBailoutException {
             assert key == cachedKey; // should be a constant operand
-            return value;
+            return getValue(getter, receiver);
         }
 
         // For type instance field: for builtin type we know descriptors only have dunder names
         // (__xxx__), so we can skip descriptor check + we need to check the __get__ (tp_descr_get)
         // on the resulting value (this is common situation)
         public static Object loadTypeInstanceValue(VirtualFrame frame, Node inliningTarget, PythonManagedClass object, GetObjectSlotsNode getValueSlotsNode,
-                        CallSlotDescrGet callSlotDescrGet, PropertyGetter cachedPropertyGetter, InlinedBranchProfile hasNonDescriptorValueProfile) {
+                        CallSlotDescrGet callSlotDescrGet, PropertyGetter cachedPropertyGetter, InlinedBranchProfile hasNonDescriptorValueProfile) throws FastPathBailoutException {
             assert object.checkDictFlags();
             Object value = cachedPropertyGetter.get(object);
-            if (value != PNone.NO_VALUE) {
+            if (value != PNone.NO_VALUE && value != null) {
                 var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
                 if (valueGet == null) {
                     hasNonDescriptorValueProfile.enter(inliningTarget);
                     return value;
                 } else {
-                    return callSlotDescrGet.execute(frame, inliningTarget, valueGet, value, PNone.NO_VALUE, object);
+                    Object result = callSlotDescrGet.execute(frame, inliningTarget, valueGet, value, PNone.NO_VALUE, object);
+                    if (result != null) {
+                        return result;
+                    }
                 }
             }
-            return null;
+            throw FastPathBailoutException.INSTANCE;
         }
 
         @Idempotent
@@ -2043,23 +2090,42 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return cachedShape.getDynamicType() == PythonBuiltinClassType.PythonClass;
         }
 
+        @Specialization(guards = {
+                        "!canBeSpecialMethod(cachedKey)", //
+                        "!hasMaterializedDict(cachedShape)", "isBuiltinType(cachedShape)", //
+                        "getter != null", "getter.accepts(receiver)"}, //
+                        rewriteOn = {FastPathBailoutException.class, UnexpectedResultException.class}, limit = "3")
+        static int doTypeInt(@SuppressWarnings("unused") VirtualFrame frame, TruffleString key, PythonManagedClass receiver,
+                        @Bind Node inliningTarget,
+                        @Cached("key") TruffleString cachedKey,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
+                        @SuppressWarnings("unused") @Shared("typeGetObjectSlots") @Cached GetObjectSlotsNode getObjectSlotsNode,
+                        @SuppressWarnings("unused") @Shared("typeCallSlotDescrGet") @Cached CallSlotDescrGet callSlotDescrGet,
+                        @SuppressWarnings("unused") @Shared("typeNonDescriptorProfile") @Cached InlinedBranchProfile hasNonDescriptorValueProfile) throws FastPathBailoutException,
+                        UnexpectedResultException {
+            assert key == cachedKey; // should be a constant operand
+            // A primitive int cannot itself be a descriptor, so the direct field value is final.
+            return getIntValue(getter, receiver);
+        }
+
         @ForceQuickening
         @StoreBytecodeIndex // we may be calling the descriptor
         @Specialization(guards = {
                         "!canBeSpecialMethod(cachedKey)", //
                         "!hasMaterializedDict(cachedShape)", "isBuiltinType(cachedShape)", //
-                        "getter != null", "getter.accepts(receiver)", //
-                        "value != null"}, limit = "3")
+                        "getter != null", "getter.accepts(receiver)"}, //
+                        replaces = "doTypeInt", rewriteOn = FastPathBailoutException.class, limit = "3")
         static Object doType(VirtualFrame frame, TruffleString key, PythonManagedClass receiver,
+                        @Bind Node inliningTarget,
                         @Cached("key") TruffleString cachedKey,
                         @Cached("receiver.getShape()") Shape cachedShape,
                         @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
-                        @Cached GetObjectSlotsNode getObjectSlotsNode,
-                        @Cached CallSlotDescrGet callSlotDescrGet,
-                        @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
-                        @Bind("loadTypeInstanceValue(frame, $node, receiver, getObjectSlotsNode, callSlotDescrGet, getter, hasNonDescriptorValueProfile)") Object value) {
+                        @Shared("typeGetObjectSlots") @Cached GetObjectSlotsNode getObjectSlotsNode,
+                        @Shared("typeCallSlotDescrGet") @Cached CallSlotDescrGet callSlotDescrGet,
+                        @Shared("typeNonDescriptorProfile") @Cached InlinedBranchProfile hasNonDescriptorValueProfile) throws FastPathBailoutException {
             assert key == cachedKey; // should be a constant operand
-            return value;
+            return loadTypeInstanceValue(frame, inliningTarget, receiver, getObjectSlotsNode, callSlotDescrGet, getter, hasNonDescriptorValueProfile);
         }
 
         // The convention is that if klass is null, then the object is assumed to be of a builtin
@@ -2067,16 +2133,33 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         // dynamically
         public static Object loadInstanceValue(Node inliningTarget, PythonObject object, PythonManagedClass klass,
                         TruffleString key, LookupAttributeInMRONode.CachedKeyFastPath getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter,
-                        InlineWeakValueProfile slotsValueProfile) {
+                        InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException {
+            checkCanLoadInstanceValue(inliningTarget, object, klass, key, getDesc, cachedShape, slotsValueProfile);
+            Object value = cachedPropertyGetter.get(object);
+            if (value == PNone.NO_VALUE) {
+                throw FastPathBailoutException.INSTANCE;
+            }
+            return value;
+        }
+
+        public static int loadInstanceValueInt(Node inliningTarget, PythonObject object, PythonManagedClass klass,
+                        TruffleString key, LookupAttributeInMRONode.CachedKeyFastPath getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter,
+                        InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException, UnexpectedResultException {
+            checkCanLoadInstanceValue(inliningTarget, object, klass, key, getDesc, cachedShape, slotsValueProfile);
+            return getIntValue(cachedPropertyGetter, object);
+        }
+
+        private static void checkCanLoadInstanceValue(Node inliningTarget, PythonObject object, PythonManagedClass klass,
+                        TruffleString key, LookupAttributeInMRONode.CachedKeyFastPath getDesc, Shape cachedShape,
+                        InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException {
             if (klass == null || hasObjectOrModuleGetattro(inliningTarget, klass, slotsValueProfile)) {
                 Object descr = getDesc.execute(inliningTarget, cachedShape.getDynamicType(), key);
                 if (descr == PNone.NO_VALUE) {
                     assert object.checkDictFlags();
-                    Object value = cachedPropertyGetter.get(object);
-                    return value == PNone.NO_VALUE ? null : value;
+                    return;
                 }
             }
-            return null;
+            throw FastPathBailoutException.INSTANCE;
         }
 
         private static boolean hasObjectOrModuleGetattro(Node inliningTarget, PythonManagedClass klass, InlineWeakValueProfile slotsValueProfile) {
@@ -2097,23 +2180,37 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return cachedShape.getDynamicType() instanceof PythonBuiltinClassType type && hasObjectOrModuleGetattro(type.getSlots());
         }
 
+        @StoreBytecodeIndex // looking up attribute in MRO may have side effects
+        @Specialization(guards = {
+                        "!hasMaterializedDict(cachedShape)", "managedClass != null || isBuiltinWithObjectOrModuleGetattro(cachedShape)", //
+                        "getter != null", "getter.accepts(receiver)"}, //
+                        rewriteOn = {FastPathBailoutException.class, UnexpectedResultException.class}, limit = "3")
+        static int doInstanceValueInt(TruffleString key, PythonObject receiver,
+                        @Bind Node inliningTarget,
+                        @Cached("receiver.getShape()") Shape cachedShape,
+                        @Cached("getManagedClassOrNull(cachedShape)") PythonManagedClass managedClass,
+                        @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
+                        @Exclusive @Cached LookupAttributeInMRONode.CachedKeyFastPath getDesc,
+                        @Exclusive @Cached InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException, UnexpectedResultException {
+            return loadInstanceValueInt(inliningTarget, receiver, managedClass, key, getDesc, cachedShape, getter, slotsValueProfile);
+        }
+
         @ForceQuickening
         @Specialization(guards = {
                         "!hasMaterializedDict(cachedShape)", "managedClass != null || isBuiltinWithObjectOrModuleGetattro(cachedShape)", //
-                        "getter != null", "getter.accepts(receiver)", //
-                        "value != null"}, replaces = "doModule", limit = "3")
+                        "getter != null", "getter.accepts(receiver)"}, //
+                        replaces = "doInstanceValueInt", rewriteOn = FastPathBailoutException.class, limit = "3")
         static Object doInstanceValue(TruffleString key, PythonObject receiver,
                         @Bind Node inliningTarget,
                         @Cached("receiver.getShape()") Shape cachedShape,
                         @Cached("getManagedClassOrNull(cachedShape)") PythonManagedClass managedClass,
                         @Cached("getPropertyGetterWithFinalAssumption(cachedShape, key)") PropertyGetter getter,
-                        @Cached LookupAttributeInMRONode.CachedKeyFastPath getDesc,
-                        @Cached InlineWeakValueProfile slotsValueProfile,
-                        @Bind("loadInstanceValue(inliningTarget, receiver, managedClass, key, getDesc, cachedShape, getter, slotsValueProfile)") Object value) {
-            return value;
+                        @Exclusive @Cached LookupAttributeInMRONode.CachedKeyFastPath getDesc,
+                        @Exclusive @Cached InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException {
+            return loadInstanceValue(inliningTarget, receiver, managedClass, key, getDesc, cachedShape, getter, slotsValueProfile);
         }
 
-        @Specialization(excludeForUncached = true, replaces = {"doInstanceValue", "doType"})
+        @Specialization(excludeForUncached = true, replaces = {"doModule", "doInstanceValue", "doType"})
         @StoreBytecodeIndex
         public static Object doIt(VirtualFrame frame,
                         TruffleString key,
@@ -3576,47 +3673,23 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation(storeBytecodeIndex = true)
+    @ImportStatic({AbstractCallMethodNode.class, CallDispatchers.class, PythonOptions.class})
     public static final class CallNilaryMethod {
-        @Specialization
+        @ForceQuickening
+        @Specialization(guards = {"isSingleContext()", "hasSimpleSignature(cachedFunc, 0)", "func == cachedFunc"}, excludeForUncached = true, //
+                        assumptions = "cachedFunc.getCodeStableAssumption()", limit = "getCallSiteInlineCacheMaxDepth()")
+        public static Object callPFunction(VirtualFrame frame, PFunction func,
+                        @Bind Node inliningTarget,
+                        @Cached(value = "func", weak = true) PFunction cachedFunc,
+                        @Cached("createDirectCallNodeFor(cachedFunc)") DirectCallNode callNode,
+                        @Cached FunctionDirectInvokeNode invokeNode) {
+            return invokeNode.execute(frame, inliningTarget, callNode, cachedFunc, PArguments.create(0));
+        }
+
+        @Specialization(replaces = "callPFunction")
         public static Object doCall(VirtualFrame frame, Object callable,
                         @Cached CallNode node) {
             return node.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = true)
-    public static final class CallUnaryMethod {
-        @Specialization
-        public static Object doCall(VirtualFrame frame, Object callable, Object arg0,
-                        @Cached CallUnaryMethodNode node) {
-            return node.executeObject(frame, callable, arg0);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = true)
-    public static final class CallBinaryMethod {
-        @Specialization
-        public static Object doObject(VirtualFrame frame, Object callable, Object arg0, Object arg1,
-                        @Cached CallBinaryMethodNode node) {
-            return node.executeObject(frame, callable, arg0, arg1);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = true)
-    public static final class CallTernaryMethod {
-        @Specialization
-        public static Object doCall(VirtualFrame frame, Object callable, Object arg0, Object arg1, Object arg2,
-                        @Cached CallTernaryMethodNode node) {
-            return node.execute(frame, callable, arg0, arg1, arg2);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = true)
-    public static final class CallQuaternaryMethod {
-        @Specialization
-        public static Object doCall(VirtualFrame frame, Object callable, Object arg0, Object arg1, Object arg2, Object arg3,
-                        @Cached CallQuaternaryMethodNode node) {
-            return node.execute(frame, callable, arg0, arg1, arg2, arg3);
         }
     }
 

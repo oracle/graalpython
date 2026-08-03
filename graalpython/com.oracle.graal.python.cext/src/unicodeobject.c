@@ -1288,7 +1288,6 @@ graalpy_resize_compact(PyObject *unicode, Py_ssize_t length)
     // TODO: Actually shrink the allocation when capacity exceeds length by a large amount.
     kind = PyUnicode_KIND(unicode);
     native_unicode->length = length;
-    native_unicode->byte_length = length * kind;
     PyUnicode_WRITE(kind, native_unicode->data, length, 0);
     assert(_PyUnicode_CheckConsistency(unicode, 0));
     return unicode;
@@ -3959,6 +3958,9 @@ unicode_ensure_utf8(PyObject *unicode)
 }
 #endif // GraalPy change
 
+// GraalPy change
+static const char *graalpy_unicode_as_utf8_and_size(PyObject *unicode, Py_ssize_t *size);
+
 const char *
 PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize)
 {
@@ -3971,7 +3973,7 @@ PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize)
     }
     // GraalPy change: upcall for managed objects
     if (points_to_py_handle_space(unicode)) {
-        return GraalPyPrivate_Unicode_AsUTF8AndSize(unicode, psize);
+        return graalpy_unicode_as_utf8_and_size(unicode, psize);
     }
 
     if (PyUnicode_UTF8(unicode) == NULL) {
@@ -15583,12 +15585,18 @@ GraalPyUnicodeObject_IsCompact(GraalPyUnicodeObject *unicode)
     return GraalPyUnicodeObject_IsCompactFromState(unicode->state);
 }
 
+static inline int
+GraalPyUnicodeObject_HasNativeData(GraalPyUnicodeObject *raw) {
+    assert (!points_to_py_handle_space(raw));
+    return GraalPyUnicodeObject_GetKind(raw);
+}
+
 static inline GraalPyUnicodeObject *
 GraalpyUnicodeObject_EnsureNativeData(PyObject *op) {
     GraalPyUnicodeObject *raw = (GraalPyUnicodeObject *) pointer_to_stub(op);
     /* 'kind == 0' is not a valid kind for any unicode object. We use it to indicate that
      * the native data was not yet initialized. */
-    if (GraalPyUnicodeObject_GetKind(raw) == 0) {
+    if (!GraalPyUnicodeObject_HasNativeData(raw)) {
         GraalPyPrivate_Unicode_FillNativeData(op);
     }
     return raw;
@@ -15652,6 +15660,27 @@ void* GraalPyUnicode_COMPACT_DATA(PyObject* op) {
         return _Py_STATIC_CAST(void*, (_PyASCIIObject_CAST(op) + 1));
     }
     return _Py_STATIC_CAST(void*, (_PyCompactUnicodeObject_CAST(op) + 1));
+}
+
+static const char * graalpy_unicode_as_utf8_and_size(PyObject *unicode, Py_ssize_t *psize) {
+    assert (points_to_py_handle_space(unicode));
+    GraalPyUnicodeObject *raw = (GraalPyUnicodeObject *) pointer_to_stub(unicode);
+
+    /* If native data is already available and is ASCII, then just use it. */
+    if (GraalPyUnicodeObject_HasNativeData(raw) && GraalPyUnicodeObject_IsAscii(raw)) {
+        assert (!raw->utf8);
+        if (psize) {
+            *psize = raw->length;
+        }
+        return PyUnicode_DATA(unicode);
+    }
+    if (raw->utf8) {
+        if (psize) {
+            *psize = raw->utf8_length;
+        }
+        return raw->utf8;
+    }
+    return GraalPyPrivate_Unicode_AsUTF8AndSize(unicode, psize);
 }
 
 #ifdef __cplusplus

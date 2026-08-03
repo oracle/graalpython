@@ -40,14 +40,17 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.annotations.Slot.SlotSignature;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
@@ -56,24 +59,20 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.NodeField;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic({PythonOptions.class, PGuards.class})
-@NodeField(name = "maxSizeExceeded", type = boolean.class)
-abstract class AbstractCallMethodNode extends PNodeWithContext {
-
-    /**
-     * for interpreter performance: cache if we exceeded the max caller size. We never allow
-     * inlining in the uncached case.
-     */
-    protected abstract boolean isMaxSizeExceeded();
-
-    protected abstract void setMaxSizeExceeded(boolean value);
+public abstract class AbstractCallMethodNode extends Node {
 
     protected PythonBuiltinBaseNode getBuiltin(VirtualFrame frame, PBuiltinFunction func, int nargs) {
+        return getBuiltin(frame, func, nargs, this);
+    }
+
+    public static PythonBuiltinBaseNode getBuiltin(VirtualFrame frame, PBuiltinFunction func, int nargs, Node caller) {
         CompilerAsserts.neverPartOfCompilation();
         NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = func.getBuiltinNodeFactory();
         if (builtinNodeFactory == null) {
@@ -113,7 +112,7 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
             }
         }
         PythonBuiltinBaseNode builtinNode = builtinNodeFactory.createNode();
-        if (!callerExceedsMaxSize(builtinNode)) {
+        if (!BuiltinInliningPolicy.exceedsCallerSize(BuiltinInliningPolicy.checkCallerSize(caller, builtinNode))) {
             return builtinNode;
         }
         return null;
@@ -132,18 +131,7 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         return -1;
     }
 
-    private <T extends PythonBuiltinBaseNode> boolean callerExceedsMaxSize(T builtinNode) {
-        if (!isMaxSizeExceeded()) {
-            BuiltinInliningPolicy.CallerSizeCheck result = BuiltinInliningPolicy.checkCallerSize(this, builtinNode);
-            if (result == BuiltinInliningPolicy.CallerSizeCheck.EXCEEDS_MAX_SIZE) {
-                setMaxSizeExceeded(true);
-            }
-            return BuiltinInliningPolicy.exceedsCallerSize(result);
-        }
-        return true;
-    }
-
-    protected static boolean takesSelfArg(Object func) {
+    public static boolean takesSelfArg(Object func) {
         if (func instanceof PBuiltinFunction) {
             return ((PBuiltinFunction) func).declaresExplicitSelf();
         } else if (func instanceof PBuiltinMethod) {
@@ -152,7 +140,26 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         return true;
     }
 
-    protected static Object callUnaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1) {
+    @Idempotent
+    public static boolean hasSimpleSignature(PFunction fun, int positionalArgCount) {
+        // TODO: GR-78023 make LoadVariableArguments and LoadKeywordArguments check argument array bounds,
+        // so that we can omit passing varargs array and PKeyword arrays if the callee passed only pos args
+        Signature signature = fun.getCode().getSignature();
+        return signature.takesPositionalOnly() && signature.getMaxNumOfPositionalArgs() == positionalArgCount;
+    }
+
+    @Idempotent
+    public static boolean isSingleContext() {
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonLanguage.get(null).isSingleContext();
+    }
+
+    @Idempotent
+    public static PFunction getPFunction(PMethod method) {
+        return method.getFunction() instanceof PFunction function ? function : null;
+    }
+
+    public static Object callUnaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1) {
         CompilerAsserts.partialEvaluationConstant(builtin);
         if (builtin instanceof PythonUnaryBuiltinNode) {
             return ((PythonUnaryBuiltinNode) builtin).execute(frame, arg1);
@@ -166,7 +173,7 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         throw CompilerDirectives.shouldNotReachHere("Unexpected builtin node type");
     }
 
-    protected static Object callBinaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1, Object arg2) {
+    public static Object callBinaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1, Object arg2) {
         CompilerAsserts.partialEvaluationConstant(builtin);
         if (builtin instanceof PythonBinaryBuiltinNode) {
             return ((PythonBinaryBuiltinNode) builtin).execute(frame, arg1, arg2);
@@ -178,7 +185,7 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         throw CompilerDirectives.shouldNotReachHere("Unexpected builtin node type");
     }
 
-    protected static Object callTernaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1, Object arg2, Object arg3) {
+    public static Object callTernaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1, Object arg2, Object arg3) {
         CompilerAsserts.partialEvaluationConstant(builtin);
         if (builtin instanceof PythonTernaryBuiltinNode) {
             return ((PythonTernaryBuiltinNode) builtin).execute(frame, arg1, arg2, arg3);
@@ -188,7 +195,7 @@ abstract class AbstractCallMethodNode extends PNodeWithContext {
         throw CompilerDirectives.shouldNotReachHere("Unexpected builtin node type");
     }
 
-    protected static Object callQuaternaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1, Object arg2, Object arg3, Object arg4) {
+    public static Object callQuaternaryBuiltin(VirtualFrame frame, PythonBuiltinBaseNode builtin, Object arg1, Object arg2, Object arg3, Object arg4) {
         CompilerAsserts.partialEvaluationConstant(builtin);
         if (builtin instanceof PythonQuaternaryBuiltinNode) {
             return ((PythonQuaternaryBuiltinNode) builtin).execute(frame, arg1, arg2, arg3, arg4);

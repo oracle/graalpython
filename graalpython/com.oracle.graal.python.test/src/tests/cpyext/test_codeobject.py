@@ -195,7 +195,7 @@ class TestCodeobject(CPyExtTestCase):
                 goto done;
             }
             result = PyUnstable_Code_NewWithPosOnlyArgs(
-                            1, 0, 2, 3, 4, 0,
+                            2, 1, 1, 3, 4, 0,
                             code, consts, names, varnames,
                             freevars, cellvars,
                             filename, name, qualname,

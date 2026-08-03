@@ -742,8 +742,6 @@ class GraalPythonPolyBenchVm(GuestVm):
             args += ["--gc=" + host.gc, "-H:+SpawnIsolates"]
         if host.native_architecture:
             args.append("-march=native")
-        if host.use_string_inlining:
-            args.append("-H:+UseStringInlining")
         if host.future_defaults_all:
             args.append("--future-defaults=all")
         if host.optimization_level:

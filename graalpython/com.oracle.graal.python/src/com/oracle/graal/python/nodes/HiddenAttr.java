@@ -108,7 +108,6 @@ public final class HiddenAttr {
     public static final HiddenAttr PROMOTED_STOP = new HiddenAttr("promoted_stop");     // PythonCextSlotBuiltins
     public static final HiddenAttr INSTANCESHAPE = new HiddenAttr("instanceshape");
     public static final HiddenAttr STRUCTSEQ_FIELD_NAMES = new HiddenAttr("struct_seq_field_names");
-    public static final HiddenAttr PSTRING_UTF8 = new HiddenAttr("utf8");
     public static final HiddenAttr PSTRING_WCHAR = new HiddenAttr("wchar");
 
     private final HiddenKey key;
