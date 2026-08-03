@@ -8,6 +8,7 @@ import os
 import platform
 import sys
 from test import support
+from test.support import warnings_helper
 from test.support import skip_if_buggy_ucrt_strfptime, run_with_locales
 from datetime import date as datetime_date
 
@@ -128,7 +129,7 @@ class TimeRETests(unittest.TestCase):
 
     def test_pattern(self):
         # Test TimeRE.pattern
-        pattern_string = self.time_re.pattern(r"%a %A %d")
+        pattern_string = self.time_re.pattern(r"%a %A %d %Y")
         self.assertTrue(pattern_string.find(self.locale_time.a_weekday[2]) != -1,
                         "did not find abbreviated weekday in pattern string '%s'" %
                          pattern_string)
@@ -168,10 +169,11 @@ class TimeRETests(unittest.TestCase):
                           found.group('b')))
         for directive in ('a','A','b','B','c','d','G','H','I','j','m','M','p',
                           'S','u','U','V','w','W','x','X','y','Y','Z','%'):
-            compiled = self.time_re.compile("%" + directive)
-            found = compiled.match(time.strftime("%" + directive))
+            fmt = "%d %Y" if directive == 'd' else "%" + directive
+            compiled = self.time_re.compile(fmt)
+            found = compiled.match(time.strftime(fmt))
             self.assertTrue(found, "Matching failed on '%s' using '%s' regex" %
-                                    (time.strftime("%" + directive),
+                                    (time.strftime(fmt),
                                      compiled.pattern))
 
     def test_blankpattern(self):
@@ -221,16 +223,18 @@ class StrptimeTests(unittest.TestCase):
         # Make sure ValueError is raised when match fails or format is bad
         self.assertRaises(ValueError, _strptime._strptime_time, data_string="%d",
                           format="%A")
-        for bad_format in ("%", "% ", "%e"):
-            try:
+        for bad_format in ("%", "% ", "%\n"):
+            with (self.subTest(format=bad_format),
+                  self.assertRaisesRegex(ValueError, "stray % in format ")):
                 _strptime._strptime_time("2005", bad_format)
-            except ValueError:
-                continue
-            except Exception as err:
-                self.fail("'%s' raised %s, not ValueError" %
-                            (bad_format, err.__class__.__name__))
-            else:
-                self.fail("'%s' did not raise ValueError" % bad_format)
+        for bad_format in ("%i", "%Oi", "%O", "%O ", "%Ee", "%E", "%E ",
+                           "%.", "%+", "%~", "%\\",
+                           "%O.", "%O+", "%O_", "%O~", "%O\\"):
+            directive = bad_format[1:].rstrip()
+            with (self.subTest(format=bad_format),
+                  self.assertRaisesRegex(ValueError,
+                    f"'{re.escape(directive)}' is a bad directive in format ")):
+                _strptime._strptime_time("2005", bad_format)
 
         msg_week_no_year_or_weekday = r"ISO week directive '%V' must be used with " \
             r"the ISO year directive '%G' and a weekday directive " \
@@ -286,11 +290,11 @@ class StrptimeTests(unittest.TestCase):
         # check that this doesn't chain exceptions needlessly (see #17572)
         with self.assertRaises(ValueError) as e:
             _strptime._strptime_time('', '%D')
-        self.assertIs(e.exception.__suppress_context__, True)
-        # additional check for IndexError branch (issue #19545)
+        self.assertTrue(e.exception.__suppress_context__)
+        # additional check for stray % branch
         with self.assertRaises(ValueError) as e:
-            _strptime._strptime_time('19', '%Y %')
-        self.assertIsNone(e.exception.__context__)
+            _strptime._strptime_time('%', '%')
+        self.assertTrue(e.exception.__suppress_context__)
 
     def test_unconverteddata(self):
         # Check ValueError is raised when there is unconverted data
@@ -335,6 +339,15 @@ class StrptimeTests(unittest.TestCase):
         for m in range(1, 13):
             self.roundtrip('%B', 1, (1900, m, 1, 0, 0, 0, 0, 1, 0))
             self.roundtrip('%b', 1, (1900, m, 1, 0, 0, 0, 0, 1, 0))
+
+    @run_with_locales('LC_TIME', 'az_AZ', 'ber_DZ', 'ber_MA', 'crh_UA')
+    def test_month_locale2(self):
+        # Test for month directives
+        # Month name contains 'İ' ('\u0130')
+        self.roundtrip('%B', 1, (2025, 6, 1, 0, 0, 0, 6, 152, 0))
+        self.roundtrip('%b', 1, (2025, 6, 1, 0, 0, 0, 6, 152, 0))
+        self.roundtrip('%B', 1, (2025, 7, 1, 0, 0, 0, 1, 182, 0))
+        self.roundtrip('%b', 1, (2025, 7, 1, 0, 0, 0, 1, 182, 0))
 
     def test_day(self):
         # Test for day directives
@@ -484,13 +497,11 @@ class StrptimeTests(unittest.TestCase):
     # * Year is not included: ha_NG.
     # * Use non-Gregorian calendar: lo_LA, thai, th_TH.
     #   On Windows: ar_IN, ar_SA, fa_IR, ps_AF.
-    #
-    # BUG: Generates regexp that does not match the current date and time
-    # for lzh_TW.
     @run_with_locales('LC_TIME', 'C', 'en_US', 'fr_FR', 'de_DE', 'ja_JP',
                       'he_IL', 'eu_ES', 'ar_AE', 'mfe_MU', 'yo_NG',
                       'csb_PL', 'br_FR', 'gez_ET', 'brx_IN',
-                      'my_MM', 'or_IN', 'shn_MM', 'az_IR')
+                      'my_MM', 'or_IN', 'shn_MM', 'az_IR',
+                      'byn_ER', 'wal_ET', 'lzh_TW')
     def test_date_time_locale(self):
         # Test %c directive
         loc = locale.getlocale(locale.LC_TIME)[0]
@@ -529,11 +540,9 @@ class StrptimeTests(unittest.TestCase):
 
     # NB: Does not roundtrip because use non-Gregorian calendar:
     # lo_LA, thai, th_TH. On Windows: ar_IN, ar_SA, fa_IR, ps_AF.
-    # BUG: Generates regexp that does not match the current date
-    # for lzh_TW.
     @run_with_locales('LC_TIME', 'C', 'en_US', 'fr_FR', 'de_DE', 'ja_JP',
                       'he_IL', 'eu_ES', 'ar_AE',
-                      'az_IR', 'my_MM', 'or_IN', 'shn_MM')
+                      'az_IR', 'my_MM', 'or_IN', 'shn_MM', 'lzh_TW')
     def test_date_locale(self):
         # Test %x directive
         now = time.time()
@@ -553,11 +562,11 @@ class StrptimeTests(unittest.TestCase):
         "musl libc issue on Emscripten, bpo-46390"
     )
     @run_with_locales('LC_TIME', 'en_US', 'fr_FR', 'de_DE', 'ja_JP',
-                      'eu_ES', 'ar_AE', 'my_MM', 'shn_MM')
+                      'eu_ES', 'ar_AE', 'my_MM', 'shn_MM', 'lzh_TW')
     def test_date_locale2(self):
         # Test %x directive
         loc = locale.getlocale(locale.LC_TIME)[0]
-        if sys.platform.startswith('sunos'):
+        if sys.platform.startswith(('sunos', 'aix')):
             if loc in ('en_US', 'de_DE', 'ar_AE'):
                 self.skipTest(f'locale {loc!r} may not work on this platform')
         self.roundtrip('%x', slice(0, 3), (1900, 1, 1, 0, 0, 0, 0, 1, 0))
@@ -569,11 +578,11 @@ class StrptimeTests(unittest.TestCase):
     #   norwegian, nynorsk.
     # * Hours are in 12-hour notation without AM/PM indication: hy_AM,
     #   ms_MY, sm_WS.
-    # BUG: Generates regexp that does not match the current time for lzh_TW.
     @run_with_locales('LC_TIME', 'C', 'en_US', 'fr_FR', 'de_DE', 'ja_JP',
                       'aa_ET', 'am_ET', 'az_IR', 'byn_ER', 'fa_IR', 'gez_ET',
                       'my_MM', 'om_ET', 'or_IN', 'shn_MM', 'sid_ET', 'so_SO',
-                      'ti_ET', 'tig_ER', 'wal_ET')
+                      'ti_ET', 'tig_ER', 'wal_ET', 'lzh_TW',
+                      'ar_SA', 'bg_BG')
     def test_time_locale(self):
         # Test %X directive
         loc = locale.getlocale(locale.LC_TIME)[0]
@@ -626,9 +635,11 @@ class StrptimeTests(unittest.TestCase):
         need_escaping = r".^$*+?{}\[]|)("
         self.assertTrue(_strptime._strptime_time(need_escaping, need_escaping))
 
+    @warnings_helper.ignore_warnings(category=DeprecationWarning)  # gh-70647
     def test_feb29_on_leap_year_without_year(self):
         time.strptime("Feb 29", "%b %d")
 
+    @warnings_helper.ignore_warnings(category=DeprecationWarning)  # gh-70647
     def test_mar1_comes_after_feb29_even_when_omitting_the_year(self):
         self.assertLess(
                 time.strptime("Feb 29", "%b %d"),
@@ -808,25 +819,25 @@ class CacheTests(unittest.TestCase):
     def test_time_re_recreation(self):
         # Make sure cache is recreated when current locale does not match what
         # cached object was created with.
-        _strptime._strptime_time("10", "%d")
+        _strptime._strptime_time("10 2004", "%d %Y")
         _strptime._strptime_time("2005", "%Y")
         _strptime._TimeRE_cache.locale_time.lang = "Ni"
         original_time_re = _strptime._TimeRE_cache
-        _strptime._strptime_time("10", "%d")
+        _strptime._strptime_time("10 2004", "%d %Y")
         self.assertIsNot(original_time_re, _strptime._TimeRE_cache)
         self.assertEqual(len(_strptime._regex_cache), 1)
 
     def test_regex_cleanup(self):
         # Make sure cached regexes are discarded when cache becomes "full".
         try:
-            del _strptime._regex_cache['%d']
+            del _strptime._regex_cache['%d %Y']
         except KeyError:
             pass
         bogus_key = 0
         while len(_strptime._regex_cache) <= _strptime._CACHE_MAX_SIZE:
             _strptime._regex_cache[bogus_key] = None
             bogus_key += 1
-        _strptime._strptime_time("10", "%d")
+        _strptime._strptime_time("10 2004", "%d %Y")
         self.assertEqual(len(_strptime._regex_cache), 1)
 
     def test_new_localetime(self):
@@ -834,7 +845,7 @@ class CacheTests(unittest.TestCase):
         # is created.
         locale_time_id = _strptime._TimeRE_cache.locale_time
         _strptime._TimeRE_cache.locale_time.lang = "Ni"
-        _strptime._strptime_time("10", "%d")
+        _strptime._strptime_time("10 2004", "%d %Y")
         self.assertIsNot(locale_time_id, _strptime._TimeRE_cache.locale_time)
 
     def test_TimeRE_recreation_locale(self):
@@ -846,7 +857,7 @@ class CacheTests(unittest.TestCase):
             try:
                 # Change the locale and force a recreation of the cache.
                 locale.setlocale(locale.LC_TIME, ('de_DE', 'UTF8'))
-                _strptime._strptime_time('10', '%d')
+                _strptime._strptime_time('10 2004', '%d %Y')
                 # Get the new cache object's id.
                 second_time_re = _strptime._TimeRE_cache
                 # They should not be equal.

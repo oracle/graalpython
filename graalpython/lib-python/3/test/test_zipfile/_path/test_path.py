@@ -1,19 +1,20 @@
+import contextlib
 import io
 import itertools
-import contextlib
 import pathlib
 import pickle
+import stat
 import sys
 import time
 import unittest
 import zipfile
+import zipfile._path
 
-from test.support.os_helper import temp_dir, FakePath
+from test.support.os_helper import FakePath, temp_dir
 
 from ._functools import compose
 from ._itertools import Counter
-
-from ._test_params import parameterize, Invoked
+from ._test_params import Invoked, parameterize
 
 
 class jaraco:
@@ -21,14 +22,8 @@ class jaraco:
         Counter = Counter
 
 
-def add_dirs(zf):
-    """
-    Given a writable zip file zf, inject directory entries for
-    any directories implied by the presence of children.
-    """
-    for name in zipfile.CompleteDirs._implied_dirs(zf.namelist()):
-        zf.writestr(name, b"")
-    return zf
+def _make_link(info: zipfile.ZipInfo):  # type: ignore[name-defined]
+    info.external_attr |= stat.S_IFLNK << 16
 
 
 def build_alpharep_fixture():
@@ -37,6 +32,7 @@ def build_alpharep_fixture():
 
     .
     ├── a.txt
+    ├── n.txt (-> a.txt)
     ├── b
     │   ├── c.txt
     │   ├── d
@@ -57,6 +53,7 @@ def build_alpharep_fixture():
     - multiple files in a directory (b/c, b/f)
     - a directory containing only a directory (g/h)
     - a directory with files of different extensions (j/klm)
+    - a symlink (n) pointing to (a)
 
     "alpha" because it uses alphabet
     "rep" because it's a representative example
@@ -71,13 +68,16 @@ def build_alpharep_fixture():
     zf.writestr("j/k.bin", b"content of k")
     zf.writestr("j/l.baz", b"content of l")
     zf.writestr("j/m.bar", b"content of m")
+    zf.writestr("n.txt", b"a.txt")
+    _make_link(zf.infolist()[-1])
+
     zf.filename = "alpharep.zip"
     return zf
 
 
 alpharep_generators = [
     Invoked.wrap(build_alpharep_fixture),
-    Invoked.wrap(compose(add_dirs, build_alpharep_fixture)),
+    Invoked.wrap(compose(zipfile._path.CompleteDirs.inject, build_alpharep_fixture)),
 ]
 
 pass_alpharep = parameterize(['alpharep'], alpharep_generators)
@@ -101,7 +101,7 @@ class TestPath(unittest.TestCase):
     def test_iterdir_and_types(self, alpharep):
         root = zipfile.Path(alpharep)
         assert root.is_dir()
-        a, b, g, j = root.iterdir()
+        a, n, b, g, j = root.iterdir()
         assert a.is_file()
         assert b.is_dir()
         assert g.is_dir()
@@ -121,7 +121,7 @@ class TestPath(unittest.TestCase):
     @pass_alpharep
     def test_iterdir_on_file(self, alpharep):
         root = zipfile.Path(alpharep)
-        a, b, g, j = root.iterdir()
+        a, n, b, g, j = root.iterdir()
         with self.assertRaises(ValueError):
             a.iterdir()
 
@@ -136,7 +136,7 @@ class TestPath(unittest.TestCase):
     @pass_alpharep
     def test_open(self, alpharep):
         root = zipfile.Path(alpharep)
-        a, b, g, j = root.iterdir()
+        a, n, b, g, j = root.iterdir()
         with a.open(encoding="utf-8") as strm:
             data = strm.read()
         self.assertEqual(data, "content of a")
@@ -193,10 +193,10 @@ class TestPath(unittest.TestCase):
         """EncodingWarning must blame the read_text and open calls."""
         assert sys.flags.warn_default_encoding
         root = zipfile.Path(alpharep)
-        with self.assertWarns(EncodingWarning) as wc:
+        with self.assertWarns(EncodingWarning) as wc:  # noqa: F821 (astral-sh/ruff#13296)
             root.joinpath("a.txt").read_text()
         assert __file__ == wc.filename
-        with self.assertWarns(EncodingWarning) as wc:
+        with self.assertWarns(EncodingWarning) as wc:  # noqa: F821 (astral-sh/ruff#13296)
             root.joinpath("a.txt").open("r").close()
         assert __file__ == wc.filename
 
@@ -211,11 +211,12 @@ class TestPath(unittest.TestCase):
         with zf.joinpath('file.txt').open('w', encoding="utf-8") as strm:
             strm.write('text file')
 
-    def test_open_extant_directory(self):
+    @pass_alpharep
+    def test_open_extant_directory(self, alpharep):
         """
         Attempting to open a directory raises IsADirectoryError.
         """
-        zf = zipfile.Path(add_dirs(build_alpharep_fixture()))
+        zf = zipfile.Path(alpharep)
         with self.assertRaises(IsADirectoryError):
             zf.joinpath('b').open()
 
@@ -227,18 +228,19 @@ class TestPath(unittest.TestCase):
         with self.assertRaises(ValueError):
             root.joinpath('a.txt').open('rb', 'utf-8')
 
-    def test_open_missing_directory(self):
+    @pass_alpharep
+    def test_open_missing_directory(self, alpharep):
         """
         Attempting to open a missing directory raises FileNotFoundError.
         """
-        zf = zipfile.Path(add_dirs(build_alpharep_fixture()))
+        zf = zipfile.Path(alpharep)
         with self.assertRaises(FileNotFoundError):
             zf.joinpath('z').open()
 
     @pass_alpharep
     def test_read(self, alpharep):
         root = zipfile.Path(alpharep)
-        a, b, g, j = root.iterdir()
+        a, n, b, g, j = root.iterdir()
         assert a.read_text(encoding="utf-8") == "content of a"
         # Also check positional encoding arg (gh-101144).
         assert a.read_text("utf-8") == "content of a"
@@ -273,7 +275,8 @@ class TestPath(unittest.TestCase):
         """
         zipfile_ondisk = self.zipfile_ondisk(alpharep)
         pathlike = FakePath(str(zipfile_ondisk))
-        zipfile.Path(pathlike)
+        root = zipfile.Path(pathlike)
+        root.root.close()
 
     @pass_alpharep
     def test_traverse_pathlike(self, alpharep):
@@ -304,7 +307,7 @@ class TestPath(unittest.TestCase):
         reflect that change.
         """
         root = zipfile.Path(alpharep)
-        a, b, g, j = root.iterdir()
+        a, n, b, g, j = root.iterdir()
         alpharep.writestr('foo.txt', 'foo')
         alpharep.writestr('bar/baz.txt', 'baz')
         assert any(child.name == 'foo.txt' for child in root.iterdir())
@@ -361,6 +364,18 @@ class TestPath(unittest.TestCase):
         """
         root = zipfile.Path(alpharep)
         assert root.name == 'alpharep.zip' == root.filename.name
+
+    @pass_alpharep
+    def test_root_on_disk(self, alpharep):
+        """
+        The name/stem of the root should match the zipfile on disk.
+
+        This condition must hold across platforms.
+        """
+        root = zipfile.Path(self.zipfile_ondisk(alpharep))
+        assert root.name == 'alpharep.zip' == root.filename.name
+        assert root.stem == 'alpharep' == root.filename.stem
+        root.root.close()
 
     @pass_alpharep
     def test_suffix(self, alpharep):
@@ -533,12 +548,9 @@ class TestPath(unittest.TestCase):
 
     @pass_alpharep
     def test_is_symlink(self, alpharep):
-        """
-        See python/cpython#82102 for symlink support beyond this object.
-        """
-
         root = zipfile.Path(alpharep)
-        assert not root.is_symlink()
+        assert not root.joinpath('a.txt').is_symlink()
+        assert root.joinpath('n.txt').is_symlink()
 
     @pass_alpharep
     def test_relative_to(self, alpharep):
@@ -565,11 +577,13 @@ class TestPath(unittest.TestCase):
     )
     def test_pickle(self, alpharep, path_type, subpath):
         zipfile_ondisk = path_type(str(self.zipfile_ondisk(alpharep)))
-
-        saved_1 = pickle.dumps(zipfile.Path(zipfile_ondisk, at=subpath))
+        root = zipfile.Path(zipfile_ondisk, at=subpath)
+        saved_1 = pickle.dumps(root)
+        root.root.close()
         restored_1 = pickle.loads(saved_1)
         first, *rest = restored_1.iterdir()
         assert first.read_text(encoding='utf-8').startswith('content of ')
+        restored_1.root.close()
 
     @pass_alpharep
     def test_extract_orig_with_implied_dirs(self, alpharep):
@@ -581,6 +595,7 @@ class TestPath(unittest.TestCase):
         # wrap the zipfile for its side effect
         zipfile.Path(zf)
         zf.extractall(source_path.parent)
+        zf.close()
 
     @pass_alpharep
     def test_getinfo_missing(self, alpharep):

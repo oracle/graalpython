@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,15 @@
  */
 package com.oracle.graal.python.pegparser.test;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.EnumSet;
 
 import org.junit.Test;
 
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
+import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 /**
  * Testing invalid rules. If the test method has the same names, but different number, then it tests
@@ -341,5 +344,19 @@ public class ErrorTests extends ParserTestBase {
     @Test
     public void testDeprecationInvalidEscape() {
         checkDeprecationWarning("'\\z'", "invalid escape sequence '\\z'");
+    }
+
+    @Test
+    public void testInvalidEscapeLocation() {
+        parse("'''\n\\z'''", "testInvalidEscapeLocation", InputType.FILE);
+        SourceRange sourceRange = errorCallback.getWarnings().get(0).sourceRange();
+        assertEquals(2, sourceRange.startLine);
+        assertEquals(0, sourceRange.startColumn);
+
+        errorCallback = new TestParserCallbacksImpl();
+        parse("\"''Incorrect \\ logic?\"", "testInvalidEscapeLocation", InputType.FILE);
+        sourceRange = errorCallback.getWarnings().get(0).sourceRange();
+        assertEquals(1, sourceRange.startLine);
+        assertEquals(13, sourceRange.startColumn);
     }
 }

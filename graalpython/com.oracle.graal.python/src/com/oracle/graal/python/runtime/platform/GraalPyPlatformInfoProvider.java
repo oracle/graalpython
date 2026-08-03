@@ -46,12 +46,18 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public interface GraalPyPlatformInfoProvider {
     public static final class PlatformInfo {
+        private final TruffleString soabi;
         private final TruffleString extensionSuffix;
         private final TruffleString multiarch;
 
-        public PlatformInfo(String extensionSuffix, String multiarch) {
+        public PlatformInfo(String soabi, String extensionSuffix, String multiarch) {
+            this.soabi = toTruffleStringUncached(soabi);
             this.extensionSuffix = toTruffleStringUncached(extensionSuffix);
             this.multiarch = toTruffleStringUncached(multiarch);
+        }
+
+        public TruffleString soabi() {
+            return soabi;
         }
 
         public TruffleString extensionSuffix() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,19 +41,40 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SYSCONFIG;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.util.Collections;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = J__SYSCONFIG, isEager = true)
 public final class SysconfigModuleBuiltins extends PythonBuiltins {
+    @Builtin(name = "config_vars", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class ConfigVars extends PythonBuiltinNode {
+        @Specialization
+        Object configVars(@Bind PythonLanguage language) {
+            return PFactory.createDict(language, new PKeyword[]{
+                            new PKeyword(tsLiteral("EXT_SUFFIX"), PythonLanguage.getPlatformInfo().extensionSuffix()),
+                            new PKeyword(tsLiteral("SOABI"), PythonLanguage.getPlatformInfo().soabi()),
+                            new PKeyword(tsLiteral("Py_GIL_DISABLED"), 0)
+            });
+        }
+    }
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return Collections.emptyList();
+        return SysconfigModuleBuiltinsFactory.getFactories();
     }
 }

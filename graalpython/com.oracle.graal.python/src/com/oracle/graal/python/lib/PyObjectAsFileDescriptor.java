@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,9 +43,12 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeWarning;
 
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -55,6 +58,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -66,8 +70,16 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @GenerateInline
 @GenerateCached(false)
+@ImportStatic(PGuards.class)
 public abstract class PyObjectAsFileDescriptor extends PNodeWithContext {
     public abstract int execute(Frame frame, Node inliningTarget, Object object);
+
+    @Specialization
+    static int doBoolean(VirtualFrame frame, boolean object,
+                    @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode) {
+        warnNode.warnEx(frame, RuntimeWarning, ErrorMessages.BOOL_USED_AS_FILE_DESCRIPTOR, 1);
+        return object ? 1 : 0;
+    }
 
     @Specialization
     static int doInt(Node inliningTarget, @SuppressWarnings("unused") int object,
@@ -75,7 +87,7 @@ public abstract class PyObjectAsFileDescriptor extends PNodeWithContext {
         return checkResult(object, inliningTarget, raise);
     }
 
-    @Specialization(guards = "longCheckNode.execute(inliningTarget, object)", limit = "1")
+    @Specialization(guards = {"!isBoolean(object)", "longCheckNode.execute(inliningTarget, object)"}, limit = "1")
     static int doPyLong(VirtualFrame frame, @SuppressWarnings("unused") Node inliningTarget, Object object,
                     @SuppressWarnings("unused") @Exclusive @Cached PyLongCheckNode longCheckNode,
                     @Exclusive @Cached PyLongAsIntNode asIntNode,

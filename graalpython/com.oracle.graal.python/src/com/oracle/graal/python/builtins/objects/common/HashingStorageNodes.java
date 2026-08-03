@@ -536,8 +536,8 @@ public class HashingStorageNodes {
             return (boolean) HashingStorageDelItemNodeGen.getUncached().executeWithAsserts(null, null, self, key, false, toUpdate);
         }
 
-        public static void executeUncachedWithHash(EconomicMapStorage storage, Object key, long hash) {
-            ObjectHashMapFactory.RemoveNodeGen.getUncached().execute(null, null, storage, key, hash);
+        public static Object executePopUncached(HashingStorage self, Object key, Object toUpdate) {
+            return HashingStorageDelItemNodeGen.getUncached().executeWithAsserts(null, null, self, key, true, toUpdate);
         }
 
         public final boolean execute(Node inliningTarget, HashingStorage self, TruffleString key, Object toUpdate) {

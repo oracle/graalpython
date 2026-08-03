@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -147,18 +147,10 @@ int _PyUnicode_IsNumeric(Py_UCS4 ch)
     return (ctype->flags & NUMERIC_MASK) != 0;
 }
 
-/* Returns 1 for Unicode characters to be hex-escaped when repr()ed,
-   0 otherwise.
-   All characters except those characters defined in the Unicode character
-   database as following categories are considered printable.
-      * Cc (Other, Control)
-      * Cf (Other, Format)
-      * Cs (Other, Surrogate)
-      * Co (Other, Private Use)
-      * Cn (Other, Not Assigned)
-      * Zl Separator, Line ('\u2028', LINE SEPARATOR)
-      * Zp Separator, Paragraph ('\u2029', PARAGRAPH SEPARATOR)
-      * Zs (Separator, Space) other than ASCII space('\x20').
+/* Returns 1 for Unicode characters that repr() may use in its output,
+   and 0 for characters to be hex-escaped.
+
+   See documentation of `str.isprintable` for details.
 */
 int _PyUnicode_IsPrintable(Py_UCS4 ch)
 {

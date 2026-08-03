@@ -245,44 +245,6 @@ class TestPySet(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PySet_NextEntry = CPyExtFunctionOutVars(
-        _reference_next,
-        lambda: ((set(),1),
-            (set([1, 2, 3]),1),
-            (set({'a', 'b'}),1),
-            (frozenset([1, 2, 3]),1),
-            (frozenset({'a', 'b'}),1),
-            (frozenset([None]),1),
-            (FrozenSetSubclass(),1),
-            (SetSubclass([None]),1),),
-        code='''int wrap_PySet_NextEntry(PyObject* set, Py_ssize_t* ppos, PyObject **key, Py_hash_t* hash) {
-            int res = 0;
-            Py_ssize_t iterations = *ppos;
-            Py_ssize_t i;
-            *ppos = 0;
-            for(i=0; i < iterations; i++) {
-                _PySet_NextEntry(set, ppos, key, hash);
-            }
-            res = _PySet_NextEntry(set, ppos, key, hash);
-            if (!res) {
-                // avoid problems when building the result value
-                *key = set;
-                *hash = 0;
-                Py_INCREF(set);
-            }
-            return res;
-        }
-        ''',
-        resultspec="iOn",
-        argspec='On',
-        arguments=("PyObject* set", "Py_ssize_t ppos"),
-        resulttype="int",
-        argumentnames=("set, &ppos"),
-        resultvars=("PyObject* key", "Py_hash_t hash"),
-        callfunction="wrap_PySet_NextEntry",
-        cmpfunc=lambda x, y: type(x) == tuple and type(y) == tuple and len(x) == 3 and len(y) == 3 and (x[0] == 0 and y[0] == 0 or x == y)
-    )
-
     # PySet_Pop
     test_PySet_Pop = CPyExtFunction(
         _reference_pop,

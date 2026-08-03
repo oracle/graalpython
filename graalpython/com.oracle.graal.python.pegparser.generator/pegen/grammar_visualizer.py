@@ -1,10 +1,11 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import argparse
 import sys
-from typing import Any, Callable, Iterator
+from collections.abc import Callable, Iterator
+from typing import Any
 
 from pegen.build import build_parser
 from pegen.grammar import Grammar, Rule
@@ -33,7 +34,6 @@ class ASTGrammarPrinter:
             printer(self.print_nodes_recursively(rule))
 
     def print_nodes_recursively(self, node: Rule, prefix: str = "", istail: bool = True) -> str:
-
         children = list(self.children(node))
         value = self.name(node)
 
@@ -57,7 +57,7 @@ def main() -> None:
     try:
         grammar, parser, tokenizer = build_parser(args.filename)
     except Exception as err:
-        print("ERROR: Failed to parse grammar file", file=sys.stderr)
+        print("ERROR: Failed to parse grammar file", err, file=sys.stderr)
         sys.exit(1)
 
     visitor = ASTGrammarPrinter()

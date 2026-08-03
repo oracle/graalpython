@@ -245,7 +245,7 @@ sys.stdout = StdoutAtShutdown()
         self.assertEqual(proc.returncode, 120)
         self.assertRegex(
             stderr,
-            r"Exception ignored in: <__main__\.StdoutAtShutdown object at 0x[0-9a-fA-F]+>\n"
+            r"Exception ignored on flushing sys\.stdout:\n"
             r"Traceback \(most recent call last\):\n"
             r'  File "<string>", line 10, in flush\n'
             r"SystemError: could not acquire lock for <_io\.BufferedWriter name='<stdout>'> "

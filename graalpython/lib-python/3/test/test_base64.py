@@ -200,18 +200,6 @@ class BaseXYTestCase(unittest.TestCase):
         self.check_other_types(base64.b64decode, b"YWJj", b"abc")
         self.check_decode_type_errors(base64.b64decode)
 
-        # Test with arbitrary alternative characters
-        tests_altchars = {(b'01a*b$cd', b'*$'): b'\xd3V\xbeo\xf7\x1d',
-                          }
-        for (data, altchars), res in tests_altchars.items():
-            data_str = data.decode('ascii')
-            altchars_str = altchars.decode('ascii')
-
-            eq(base64.b64decode(data, altchars=altchars), res)
-            eq(base64.b64decode(data_str, altchars=altchars), res)
-            eq(base64.b64decode(data, altchars=altchars_str), res)
-            eq(base64.b64decode(data_str, altchars=altchars_str), res)
-
         # Test standard alphabet
         for data, res in tests.items():
             eq(base64.standard_b64decode(data), res)
@@ -231,6 +219,20 @@ class BaseXYTestCase(unittest.TestCase):
         self.check_other_types(base64.urlsafe_b64decode, b'01a-b_cd',
                                b'\xd3V\xbeo\xf7\x1d')
         self.check_decode_type_errors(base64.urlsafe_b64decode)
+
+    def test_b64decode_altchars(self):
+        # Test with arbitrary alternative characters
+        eq = self.assertEqual
+        res = b'\xd3V\xbeo\xf7\x1d'
+        for altchars in b'*$', b'+/', b'/+', b'+_', b'-+', b'-/', b'/_':
+            data = b'01a%cb%ccd' % tuple(altchars)
+            data_str = data.decode('ascii')
+            altchars_str = altchars.decode('ascii')
+
+            eq(base64.b64decode(data, altchars=altchars), res)
+            eq(base64.b64decode(data_str, altchars=altchars), res)
+            eq(base64.b64decode(data, altchars=altchars_str), res)
+            eq(base64.b64decode(data_str, altchars=altchars_str), res)
 
     def test_b64decode_padding_error(self):
         self.assertRaises(binascii.Error, base64.b64decode, b'abc')
@@ -264,9 +266,12 @@ class BaseXYTestCase(unittest.TestCase):
                 base64.b64decode(bstr.decode('ascii'), validate=True)
 
         # Normal alphabet characters not discarded when alternative given
-        res = b'\xFB\xEF\xBE\xFF\xFF\xFF'
-        self.assertEqual(base64.b64decode(b'++[[//]]', b'[]'), res)
-        self.assertEqual(base64.urlsafe_b64decode(b'++--//__'), res)
+        res = b'\xfb\xef\xff'
+        self.assertEqual(base64.b64decode(b'++//', validate=True), res)
+        self.assertEqual(base64.b64decode(b'++//', '-_', validate=True), res)
+        self.assertEqual(base64.b64decode(b'--__', '-_', validate=True), res)
+        self.assertEqual(base64.urlsafe_b64decode(b'++//'), res)
+        self.assertEqual(base64.urlsafe_b64decode(b'--__'), res)
 
     def test_b32encode(self):
         eq = self.assertEqual
@@ -321,23 +326,33 @@ class BaseXYTestCase(unittest.TestCase):
         self.assertRaises(binascii.Error, base64.b32decode, b'me======')
         self.assertRaises(binascii.Error, base64.b32decode, 'me======')
 
+    def test_b32decode_map01(self):
         # Mapping zero and one
-        eq(base64.b32decode(b'MLO23456'), b'b\xdd\xad\xf3\xbe')
-        eq(base64.b32decode('MLO23456'), b'b\xdd\xad\xf3\xbe')
+        eq = self.assertEqual
+        res_L = b'b\xdd\xad\xf3\xbe'
+        res_I = b'b\x1d\xad\xf3\xbe'
+        eq(base64.b32decode(b'MLO23456'), res_L)
+        eq(base64.b32decode('MLO23456'), res_L)
+        eq(base64.b32decode(b'MIO23456'), res_I)
+        eq(base64.b32decode('MIO23456'), res_I)
+        self.assertRaises(binascii.Error, base64.b32decode, b'M1023456')
+        self.assertRaises(binascii.Error, base64.b32decode, b'M1O23456')
+        self.assertRaises(binascii.Error, base64.b32decode, b'ML023456')
+        self.assertRaises(binascii.Error, base64.b32decode, b'MI023456')
 
-        map_tests = {(b'M1023456', b'L'): b'b\xdd\xad\xf3\xbe',
-                     (b'M1023456', b'I'): b'b\x1d\xad\xf3\xbe',
-                     }
-        for (data, map01), res in map_tests.items():
-            data_str = data.decode('ascii')
+        data = b'M1023456'
+        data_str = data.decode('ascii')
+        for map01, res in [(b'L', res_L), (b'I', res_I)]:
             map01_str = map01.decode('ascii')
 
             eq(base64.b32decode(data, map01=map01), res)
             eq(base64.b32decode(data_str, map01=map01), res)
             eq(base64.b32decode(data, map01=map01_str), res)
             eq(base64.b32decode(data_str, map01=map01_str), res)
-            self.assertRaises(binascii.Error, base64.b32decode, data)
-            self.assertRaises(binascii.Error, base64.b32decode, data_str)
+
+            eq(base64.b32decode(b'M1O23456', map01=map01), res)
+            eq(base64.b32decode(b'M%c023456' % map01, map01=map01), res)
+            eq(base64.b32decode(b'M%cO23456' % map01, map01=map01), res)
 
     def test_b32decode_error(self):
         tests = [b'abc', b'ABCDEF==', b'==ABCDEF']
@@ -545,6 +560,40 @@ class BaseXYTestCase(unittest.TestCase):
         self.check_other_types(base64.b85encode, b"www.python.org",
                                b'cXxL#aCvlSZ*DGca%T')
 
+    def test_z85encode(self):
+        eq = self.assertEqual
+
+        tests = {
+            b'': b'',
+            b'www.python.org': b'CxXl-AcVLsz/dgCA+t',
+            bytes(range(255)): b"""009c61o!#m2NH?C3>iWS5d]J*6CRx17-skh9337x"""
+                b"""ar.{NbQB=+c[cR@eg&FcfFLssg=mfIi5%2YjuU>)kTv.7l}6Nnnj=AD"""
+                b"""oIFnTp/ga?r8($2sxO*itWpVyu$0IOwmYv=xLzi%y&a6dAb/]tBAI+J"""
+                b"""CZjQZE0{D[FpSr8GOteoH(41EJe-<UKDCY&L:dM3N3<zjOsMmzPRn9P"""
+                b"""Q[%@^ShV!$TGwUeU^7HuW6^uKXvGh.YUh4]Z})[9-kP:p:JqPF+*1CV"""
+                b"""^9Zp<!yAd4/Xb0k*$*&A&nJXQ<MkK!>&}x#)cTlf[Bu8v].4}L}1:^-"""
+                b"""@qDP""",
+            b"""abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"""
+                b"""0123456789!@#0^&*();:<>,. []{}""":
+                b"""vpA.SwObN*x>?B1zeKohADlbxB-}$ND3R+ylQTvjm[uizoh55PpF:[^"""
+                b"""q=D:$s6eQefFLssg=mfIi5@cEbqrBJdKV-ciY]OSe*aw7DWL""",
+            b'no padding..': b'zF{UpvpS[.zF7NO',
+            b'zero compression\x00\x00\x00\x00': b'Ds.bnay/tbAb]JhB7]Mg00000',
+            b'zero compression\x00\x00\x00': b'Ds.bnay/tbAb]JhB7]Mg0000',
+            b"""Boundary:\x00\x00\x00\x00""": b"""lt}0:wmoI7iSGcW00""",
+            b'Space compr:    ': b'q/DePwGUG3ze:IRarR^H',
+            b'\xff': b'@@',
+            b'\xff'*2: b'%nJ',
+            b'\xff'*3: b'%nS9',
+            b'\xff'*4: b'%nSc0',
+        }
+
+        for data, res in tests.items():
+            eq(base64.z85encode(data), res)
+
+        self.check_other_types(base64.z85encode, b"www.python.org",
+                               b'CxXl-AcVLsz/dgCA+t')
+
     def test_a85decode(self):
         eq = self.assertEqual
 
@@ -626,6 +675,41 @@ class BaseXYTestCase(unittest.TestCase):
         self.check_other_types(base64.b85decode, b'cXxL#aCvlSZ*DGca%T',
                                b"www.python.org")
 
+    def test_z85decode(self):
+        eq = self.assertEqual
+
+        tests = {
+            b'': b'',
+            b'CxXl-AcVLsz/dgCA+t': b'www.python.org',
+            b"""009c61o!#m2NH?C3>iWS5d]J*6CRx17-skh9337x"""
+                b"""ar.{NbQB=+c[cR@eg&FcfFLssg=mfIi5%2YjuU>)kTv.7l}6Nnnj=AD"""
+                b"""oIFnTp/ga?r8($2sxO*itWpVyu$0IOwmYv=xLzi%y&a6dAb/]tBAI+J"""
+                b"""CZjQZE0{D[FpSr8GOteoH(41EJe-<UKDCY&L:dM3N3<zjOsMmzPRn9P"""
+                b"""Q[%@^ShV!$TGwUeU^7HuW6^uKXvGh.YUh4]Z})[9-kP:p:JqPF+*1CV"""
+                b"""^9Zp<!yAd4/Xb0k*$*&A&nJXQ<MkK!>&}x#)cTlf[Bu8v].4}L}1:^-"""
+                b"""@qDP""": bytes(range(255)),
+            b"""vpA.SwObN*x>?B1zeKohADlbxB-}$ND3R+ylQTvjm[uizoh55PpF:[^"""
+                b"""q=D:$s6eQefFLssg=mfIi5@cEbqrBJdKV-ciY]OSe*aw7DWL""":
+                b"""abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"""
+                b"""0123456789!@#0^&*();:<>,. []{}""",
+            b'zF{UpvpS[.zF7NO': b'no padding..',
+            b'Ds.bnay/tbAb]JhB7]Mg00000': b'zero compression\x00\x00\x00\x00',
+            b'Ds.bnay/tbAb]JhB7]Mg0000': b'zero compression\x00\x00\x00',
+            b"""lt}0:wmoI7iSGcW00""": b"""Boundary:\x00\x00\x00\x00""",
+            b'q/DePwGUG3ze:IRarR^H': b'Space compr:    ',
+            b'@@': b'\xff',
+            b'%nJ': b'\xff'*2,
+            b'%nS9': b'\xff'*3,
+            b'%nSc0': b'\xff'*4,
+        }
+
+        for data, res in tests.items():
+            eq(base64.z85decode(data), res)
+            eq(base64.z85decode(data.decode("ascii")), res)
+
+        self.check_other_types(base64.z85decode, b'CxXl-AcVLsz/dgCA+t',
+                               b'www.python.org')
+
     def test_a85_padding(self):
         eq = self.assertEqual
 
@@ -693,6 +777,19 @@ class BaseXYTestCase(unittest.TestCase):
         self.assertRaises(ValueError, base64.a85decode, b'aaaay',
                           foldspaces=True)
 
+        self.assertEqual(base64.a85decode(b"a b\nc", ignorechars=b" \n"),
+                         b'\xc9\x89')
+        with self.assertRaises(ValueError):
+            base64.a85decode(b"a b\nc", ignorechars=b"")
+        with self.assertRaises(ValueError):
+            base64.a85decode(b"a b\nc", ignorechars=b" ")
+        with self.assertRaises(ValueError):
+            base64.a85decode(b"a b\nc", ignorechars=b"\n")
+        with self.assertRaises(TypeError):
+            base64.a85decode(b"a b\nc", ignorechars=" \n")
+        with self.assertRaises(TypeError):
+            base64.a85decode(b"a b\nc", ignorechars=None)
+
     def test_b85decode_errors(self):
         illegal = list(range(33)) + \
                   list(b'"\',./:[\\]') + \
@@ -707,6 +804,21 @@ class BaseXYTestCase(unittest.TestCase):
         self.assertRaises(ValueError, base64.b85decode, b'|NsC')
         self.assertRaises(ValueError, base64.b85decode, b'|NsC1')
 
+    def test_z85decode_errors(self):
+        illegal = list(range(33)) + \
+                  list(b'"\',;_`|\\~') + \
+                  list(range(128, 256))
+        for c in illegal:
+            with self.assertRaises(ValueError, msg=bytes([c])):
+                base64.z85decode(b'0000' + bytes([c]))
+
+        # b'\xff\xff\xff\xff' encodes to b'%nSc0', the following will overflow:
+        self.assertRaises(ValueError, base64.z85decode, b'%')
+        self.assertRaises(ValueError, base64.z85decode, b'%n')
+        self.assertRaises(ValueError, base64.z85decode, b'%nS')
+        self.assertRaises(ValueError, base64.z85decode, b'%nSc')
+        self.assertRaises(ValueError, base64.z85decode, b'%nSc1')
+
     def test_decode_nonascii_str(self):
         decode_funcs = (base64.b64decode,
                         base64.standard_b64decode,
@@ -714,7 +826,8 @@ class BaseXYTestCase(unittest.TestCase):
                         base64.b32decode,
                         base64.b16decode,
                         base64.b85decode,
-                        base64.a85decode)
+                        base64.a85decode,
+                        base64.z85decode)
         for f in decode_funcs:
             self.assertRaises(ValueError, f, 'with non-ascii \xcb')
 

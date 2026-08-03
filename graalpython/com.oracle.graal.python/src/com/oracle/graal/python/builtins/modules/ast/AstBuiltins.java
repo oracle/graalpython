@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,36 +40,50 @@
  */
 package com.oracle.graal.python.builtins.modules.ast;
 
+import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__ATTRIBUTES;
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELDS;
-import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A_SEQUENCE;
+import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELD_TYPES;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_AST_FIELD_S_MISSING_FROM_P_FIELD_TYPES;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_P_INIT_GOT_UNEXPECTED_KEYWORD_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_P_INIT_MISSING_REQUIRED_POSITIONAL_ARGUMENT_S;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.DeprecationWarning;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
+import com.oracle.graal.python.builtins.objects.types.PUnionType;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSetAttrO;
+import com.oracle.graal.python.lib.PySequenceContainsNode;
+import com.oracle.graal.python.lib.PySequenceGetItemNode;
+import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -79,9 +93,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -89,7 +102,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.AST)
 public final class AstBuiltins extends PythonBuiltins {
@@ -118,51 +130,73 @@ public final class AstBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InitNode extends PythonVarargsBuiltinNode {
 
-        // TODO CPython uses PySequence_Size, PySequence_GetItem, PySequence_Contains and
-        // PySequence_Contains. The code here works for the generated classes, but may
-        // behave differently in some corner cases.
-
         @Specialization
         protected Object doIt(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwArgs,
                         @Bind Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached PySequenceSizeNode sequenceSizeNode,
+                        @Cached PySequenceGetItemNode getItemNode,
+                        @Cached SetNodes.ConstructSetNode constructSetNode,
+                        @Cached SetNodes.DiscardNode discardNode,
+                        @Cached PySequenceContainsNode containsNode,
                         @Cached PyObjectSetAttrO setAttrNode,
-                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached HashingStorageGetItem getDictItemNode,
+                        @Cached HashingStorageLen storageLenNode,
+                        @Bind PythonLanguage language,
+                        @Bind PythonContext context,
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
             Object fieldsObj = lookupAttrNode.execute(frame, inliningTarget, self, T__FIELDS);
-            Object[] fields;
-            if (fieldsObj == PNone.NO_VALUE) {
-                fields = EMPTY_OBJECT_ARRAY;
-            } else {
-                if (!(fieldsObj instanceof PSequence)) {
-                    throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A_SEQUENCE, fieldsObj);
-                }
-                fields = getObjectArrayNode.execute(inliningTarget, fieldsObj);
-            }
-            if (fields.length < args.length) {
-                throw raiseNode.raise(inliningTarget, TypeError, S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S, self, fields.length, fields.length == 1 ? "" : "s");
+            int numFields = sequenceSizeNode.execute(frame, inliningTarget, fieldsObj);
+            PSet remainingFields = constructSetNode.execute(frame, fieldsObj);
+            if (numFields < args.length) {
+                throw raiseNode.raise(inliningTarget, TypeError, S_CONSTRUCTOR_TAKES_AT_MOST_D_POSITIONAL_ARGUMENT_S, self, numFields, numFields == 1 ? "" : "s");
             }
             for (int i = 0; i < args.length; ++i) {
-                setAttrNode.execute(frame, inliningTarget, self, fields[i], args[i]);
+                Object field = getItemNode.execute(frame, fieldsObj, i);
+                setAttrNode.execute(frame, inliningTarget, self, field, args[i]);
+                discardNode.execute(frame, remainingFields, field);
             }
+            Object selfType = getClassNode.execute(inliningTarget, self);
             for (PKeyword kwArg : kwArgs) {
-                if (contains(fields, args.length, kwArg.getName(), equalNode)) {
-                    throw raiseNode.raise(inliningTarget, TypeError, P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S, self, kwArg.getName());
+                if (containsNode.execute(frame, inliningTarget, fieldsObj, kwArg.getName())) {
+                    if (!discardNode.execute(frame, remainingFields, kwArg.getName())) {
+                        throw raiseNode.raise(inliningTarget, TypeError, P_GOT_MULTIPLE_VALUES_FOR_ARGUMENT_S, self, kwArg.getName());
+                    }
+                } else {
+                    Object attributesObj = lookupAttrNode.execute(frame, inliningTarget, selfType, T__ATTRIBUTES);
+                    if (!containsNode.execute(frame, inliningTarget, attributesObj, kwArg.getName())) {
+                        warnNode.warnFormat(frame, DeprecationWarning, WARN_P_INIT_GOT_UNEXPECTED_KEYWORD_S, self, kwArg.getName());
+                    }
                 }
                 setAttrNode.execute(frame, inliningTarget, self, kwArg.getName(), kwArg.getValue());
             }
-            return PNone.NONE;
-        }
-
-        @TruffleBoundary
-        private static boolean contains(Object[] fields, int maxIndex, TruffleString name, TruffleString.EqualNode equalNode) {
-            for (int i = 0; i < maxIndex; ++i) {
-                if (fields[i] instanceof TruffleString && equalNode.execute(name, (TruffleString) fields[i], TS_ENCODING)) {
-                    return true;
+            if (storageLenNode.execute(inliningTarget, remainingFields.getDictStorage()) > 0) {
+                Object fieldTypesObj = lookupAttrNode.execute(frame, inliningTarget, selfType, T__FIELD_TYPES);
+                if (!(fieldTypesObj instanceof PDict fieldTypes)) {
+                    return PNone.NONE;
+                }
+                for (int i = 0; i < numFields; i++) {
+                    Object field = getItemNode.execute(frame, fieldsObj, i);
+                    if (containsNode.execute(frame, inliningTarget, remainingFields, field)) {
+                        Object fieldType = getDictItemNode.execute(frame, inliningTarget, fieldTypes.getDictStorage(), field);
+                        if (fieldType == null) {
+                            warnNode.warnFormat(frame, DeprecationWarning, WARN_AST_FIELD_S_MISSING_FROM_P_FIELD_TYPES, reprNode.execute(frame, inliningTarget, field), self);
+                        } else if (fieldType instanceof PUnionType) {
+                            // Optional fields have a None default on the class.
+                        } else if (fieldType instanceof PGenericAlias) {
+                            setAttrNode.execute(frame, inliningTarget, self, field, PFactory.createList(language));
+                        } else if (fieldType == AstModuleBuiltins.getAstState(context).clsExprContextTy) {
+                            setAttrNode.execute(frame, inliningTarget, self, field, AstModuleBuiltins.getAstState(context).singletonLoad);
+                        } else {
+                            warnNode.warnFormat(frame, DeprecationWarning, WARN_P_INIT_MISSING_REQUIRED_POSITIONAL_ARGUMENT_S, self, reprNode.execute(frame, inliningTarget, field));
+                        }
+                    }
                 }
             }
-            return false;
+            return PNone.NONE;
         }
     }
 
@@ -202,10 +236,26 @@ public final class AstBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PySequenceSizeNode sequenceSizeNode,
+                        @Cached PySequenceGetItemNode getItemNode,
+                        @Cached HashingStorageGetItem getDictItemNode,
                         @Bind PythonLanguage language) {
             Object clazz = getClassNode.execute(inliningTarget, self);
             Object dict = lookupAttr.execute(frame, inliningTarget, self, T___DICT__);
-            return PFactory.createTuple(language, new Object[]{clazz, PFactory.createTuple(language, EMPTY_OBJECT_ARRAY), dict});
+            Object fieldsObj = lookupAttr.execute(frame, inliningTarget, clazz, T__FIELDS);
+            int numFields = sequenceSizeNode.execute(frame, inliningTarget, fieldsObj);
+            PDict selfDict = (PDict) dict;
+            int numPositionalArgs = 0;
+            for (int i = 0; i < numFields; i++) {
+                Object field = getItemNode.execute(frame, fieldsObj, i);
+                if (!getDictItemNode.hasKey(frame, inliningTarget, selfDict.getDictStorage(), field)) {
+                    break;
+                }
+                numPositionalArgs++;
+            }
+            PNone[] positionalArgs = new PNone[numPositionalArgs];
+            Arrays.fill(positionalArgs, PNone.NONE);
+            return PFactory.createTuple(language, new Object[]{clazz, PFactory.createTuple(language, positionalArgs), dict});
         }
     }
 }

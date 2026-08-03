@@ -84,6 +84,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -343,10 +344,10 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 // its frame to the traceback manually.
                 self.markAsFinished();
                 RootNode rootNode = self.getCurrentCallTarget().getRootNode();
-                Node location = ((PBytecodeDSLRootNode) self.getRootNode()).getBytecodeNode();
+                BytecodeNode bytecodeNode = ((PBytecodeDSLRootNode) self.getRootNode()).getBytecodeNode();
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 PFrame.Reference ref = new PFrame.Reference(rootNode, PFrame.Reference.EMPTY);
-                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(inliningTarget), location, generatorFrame, self.getGeneratorFunction(), self.getGlobals(), ref);
+                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(inliningTarget), bytecodeNode, generatorFrame, self.getGeneratorFunction(), self.getGlobals(), ref);
                 BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getFirstLineNumber());
                 Object existingTracebackObj = getTracebackNode.execute(inliningTarget, instance);

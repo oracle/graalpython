@@ -12,7 +12,7 @@ import unittest
 import weakref
 from collections.abc import MutableMapping
 from test import mapping_tests, support
-from test.support import import_helper
+from test.support import import_helper, suppress_immortalization
 
 
 py_coll = import_helper.import_fresh_module('collections',
@@ -673,6 +673,7 @@ class OrderedDictTests:
         self.assertNotIn('NULL', repr(od))
 
     @support.impl_detail("finalization", graalpy=False)
+    @suppress_immortalization()
     def test_reference_loop(self):
         # Issue 25935
         OrderedDict = self.OrderedDict

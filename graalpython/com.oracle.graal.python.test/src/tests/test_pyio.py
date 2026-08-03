@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -176,3 +176,26 @@ def test_builtin_open():
         unlink(file_name)
 
     assert success
+
+
+def test_builtin_open_normalizes_pathlike_name():
+    import _io
+
+    file_name = "pathlike-name-test.bin"
+
+    class PathLike:
+        def __fspath__(self):
+            return file_name
+
+    path = PathLike()
+    try:
+        with open(path, "wb", buffering=0) as f:
+            assert f.name == file_name
+        with open(path, "rb") as f:
+            assert f.name == file_name
+
+        # Direct FileIO construction does not normalize .name in CPython.
+        with _io.FileIO(path, "rb") as f:
+            assert f.name is path
+    finally:
+        unlink(file_name)

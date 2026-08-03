@@ -523,7 +523,8 @@ class DefaultErrorHandlerTest(unittest.TestCase):
         self.assertEqual((b'\xed\xa0\x80\xed\xbf\xbf', 3), handler(UnicodeEncodeError('utf-8', 'a\uD800\uDFFFd', 1, 3, 'c')))
         self.assertEqual((b'\xed\xa0\x80\xed\xbf\xbf', 3), handler(UnicodeEncodeError('uTf_8', 'a\uD800\uDFFFd', 1, 3, 'c')))
         self.assertEqual((b'\xed\xa0\x80\xed\xbf\xbf', 3), handler(UnicodeEncodeError('UtF8', 'a\uD800\uDFFFd', 1, 3, 'c')))
-        self.assertEqual((b'\xed\xa0\x80\xed\xbf\xbf', 3), handler(UnicodeEncodeError('CP_UTF8', 'a\uD800\uDFFFd', 1, 3, 'c')))
+        self.assertEqual((b'\xed\xa0\x80\xed\xbf\xbf', 3), handler(UnicodeEncodeError('cp65001', 'a\uD800\uDFFFd', 1, 3, 'c')))
+        self.assertRaises(UnicodeEncodeError, handler, UnicodeEncodeError('CP_UTF8', 'a\uD800\uDFFFd', 1, 3, 'c'))
         # non-surrogates are still errors
         self.assertRaises(UnicodeEncodeError, handler, UnicodeEncodeError('utf-8', 'abc', 1, 2, 'c'))
         # start/end clamping
@@ -583,7 +584,8 @@ class DefaultErrorHandlerTest(unittest.TestCase):
         handler = codecs.lookup_error('surrogatepass')
         self.assertEqual(('\ud800', 4), handler(UnicodeDecodeError('utf-8', b'a\xed\xa0\x80\xed\xbf\xbfd', 1, 7, 'c')))
         self.assertEqual(('\ud800', 4), handler(UnicodeDecodeError('UTF_8', b'a\xed\xa0\x80\xed\xbf\xbfd', 1, 7, 'c')))
-        self.assertEqual(('\ud800', 4), handler(UnicodeDecodeError('CP_UTF8', b'a\xed\xa0\x80\xed\xbf\xbfd', 1, 7, 'c')))
+        self.assertEqual(('\ud800', 4), handler(UnicodeDecodeError('cp65001', b'a\xed\xa0\x80\xed\xbf\xbfd', 1, 7, 'c')))
+        self.assertRaises(UnicodeDecodeError, handler, UnicodeDecodeError('CP_UTF8', b'a\xed\xa0\x80\xed\xbf\xbfd', 1, 7, 'c'))
         # non-surrogates are still errors
         self.assertRaises(UnicodeDecodeError, handler, UnicodeDecodeError('utf-8', b'abc', 1, 2, 'c'))
         # start/end clamping

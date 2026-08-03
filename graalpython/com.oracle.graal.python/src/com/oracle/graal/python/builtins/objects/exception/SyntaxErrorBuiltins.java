@@ -86,7 +86,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(extendClasses = {PythonBuiltinClassType.SyntaxError, PythonBuiltinClassType.IndentationError, PythonBuiltinClassType.TabError})
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.SyntaxError, PythonBuiltinClassType.IncompleteInputError, PythonBuiltinClassType.IndentationError, PythonBuiltinClassType.TabError})
 public final class SyntaxErrorBuiltins extends PythonBuiltins {
 
     public static final int IDX_MSG = 0;

@@ -4,6 +4,7 @@ from tkinter import TclError
 import os
 from test.support import requires
 
+from test.test_tkinter.support import setUpModule  # noqa: F401
 from test.test_tkinter.support import (requires_tk, tk_version,
                                   get_tk_patchlevel, widget_eq,
                                   AbstractDefaultRootTest)
@@ -1509,14 +1510,6 @@ class DefaultRootTest(AbstractDefaultRootTest, unittest.TestCase):
     def test_label(self):
         self._test_widget(tkinter.Label)
 
-
-tests_gui = (
-        ButtonTest, CanvasTest, CheckbuttonTest, EntryTest,
-        FrameTest, LabelFrameTest,LabelTest, ListboxTest,
-        MenubuttonTest, MenuTest, MessageTest, OptionMenuTest,
-        PanedWindowTest, RadiobuttonTest, ScaleTest, ScrollbarTest,
-        SpinboxTest, TextTest, ToplevelTest, DefaultRootTest,
-)
 
 if __name__ == '__main__':
     unittest.main()

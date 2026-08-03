@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ import os
 import shutil
 import sys
 from textwrap import dedent
-import glob
 
 import mx
 
@@ -55,7 +54,7 @@ class AbstractRule(abc.ABC):
         self.source_path = source_path
 
     @abc.abstractmethod
-    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides, tracked_files):
         pass
 
 
@@ -75,7 +74,7 @@ class Ignore(AbstractRule):
     def __init__(self):
         super().__init__(None)
 
-    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides, tracked_files):
         match_overrides(graalpy_path, overrides)
 
 
@@ -84,18 +83,23 @@ class CopyFrom(AbstractRule):
     A rule that copies a file or a whole directory recursively.
     """
 
-    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides, tracked_files):
         match_overrides(graalpy_path, overrides)
         src = os.path.join(source_dir, self.source_path)
         dst = os.path.join(graalpy_dir, graalpy_path)
         if os.path.isfile(src):
+            if self.source_path not in tracked_files:
+                sys.exit(f"Source path {src} is not tracked by git")
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy(src, dst)
         elif os.path.isdir(src):
-            shutil.copytree(src, dst, dirs_exist_ok=True)
-            files = glob.iglob(os.path.join(dst, '**', '__pycache__', '*'), recursive=True)
-            for f in files:
-                os.remove(f)
+            source_prefix = f"{self.source_path}/"
+            for source_file in tracked_files:
+                if source_file.startswith(source_prefix):
+                    relative_path = source_file.removeprefix(source_prefix)
+                    destination_file = os.path.join(dst, relative_path)
+                    os.makedirs(os.path.dirname(destination_file), exist_ok=True)
+                    shutil.copy(os.path.join(source_dir, source_file), destination_file)
         else:
             sys.exit(f"Source path {src} not found")
 
@@ -105,7 +109,7 @@ class CopyFromWithOverrides(AbstractRule):
     A rule that copies a directory using a list of files specified in the license header overrides list.
     """
 
-    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides, tracked_files):
         src = os.path.join(source_dir, self.source_path)
         if os.path.isdir(src):
             graalpy_prefix = f"{graalpy_path}/"
@@ -118,6 +122,9 @@ class CopyFromWithOverrides(AbstractRule):
                     src = os.path.join(src, f.removeprefix(graalpy_prefix))
                 if not os.path.exists(src):
                     sys.exit(f"File {f} from license overrides not found in {self.source_path}")
+                source_file = os.path.relpath(src, source_dir).replace(os.sep, '/')
+                if source_file not in tracked_files:
+                    sys.exit(f"File {f} from license overrides is not tracked by git in {self.source_path}")
                 shutil.copy(src, dst)
         elif os.path.exists(src):
             sys.exit(f"{type(self)} rule should only be used with directories")
@@ -141,26 +148,23 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
     "graalpython/com.oracle.graal.python.cext/expat": CopyFromWithOverrides("Modules/expat"),
     "graalpython/com.oracle.graal.python.cext/modules/_sqlite": CopyFrom("Modules/_sqlite"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.c": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.c"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.h": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.h"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Streaming_Types.h": CopyFrom("Modules/_hacl/Hacl_Streaming_Types.h"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/FStar_UInt128_Verified.h": CopyFrom("Modules/_hacl/include/krml/FStar_UInt128_Verified.h"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/FStar_UInt_8_16_32_64.h": CopyFrom("Modules/_hacl/include/krml/FStar_UInt_8_16_32_64.h"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/fstar_uint128_struct_endianness.h": CopyFrom("Modules/_hacl/include/krml/fstar_uint128_struct_endianness.h"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/internal/target.h": CopyFrom("Modules/_hacl/include/krml/internal/target.h"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/lowstar_endianness.h": CopyFrom("Modules/_hacl/include/krml/lowstar_endianness.h"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/types.h": CopyFrom("Modules/_hacl/include/krml/types.h"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/internal/Hacl_Hash_SHA3.h": CopyFrom("Modules/_hacl/internal/Hacl_Hash_SHA3.h"),
-	"graalpython/com.oracle.graal.python.cext/modules/_hacl/python_hacl_namespaces.h": CopyFrom("Modules/_hacl/python_hacl_namespaces.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.c": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.c"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.h": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Streaming_Types.h": CopyFrom("Modules/_hacl/Hacl_Streaming_Types.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/FStar_UInt128_Verified.h": CopyFrom("Modules/_hacl/include/krml/FStar_UInt128_Verified.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/FStar_UInt_8_16_32_64.h": CopyFrom("Modules/_hacl/include/krml/FStar_UInt_8_16_32_64.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/fstar_uint128_struct_endianness.h": CopyFrom("Modules/_hacl/include/krml/fstar_uint128_struct_endianness.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/internal/target.h": CopyFrom("Modules/_hacl/include/krml/internal/target.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/lowstar_endianness.h": CopyFrom("Modules/_hacl/include/krml/lowstar_endianness.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/include/krml/types.h": CopyFrom("Modules/_hacl/include/krml/types.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/internal/Hacl_Hash_SHA3.h": CopyFrom("Modules/_hacl/internal/Hacl_Hash_SHA3.h"),
+    "graalpython/com.oracle.graal.python.cext/modules/_hacl/python_hacl_namespaces.h": CopyFrom("Modules/_hacl/python_hacl_namespaces.h"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_sre": CopyFromWithOverrides("Modules/_sre"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_testcapi.c": CopyFrom("Modules/_testcapimodule.c"),
-    "graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h": CopyFrom("Modules/clinic/_struct.c.h"),
-    "graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c": CopyFrom("Modules/_struct.c"),
     "graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h": CopyFrom("Objects/clinic/memoryobject.c.h"),
     "graalpython/com.oracle.graal.python.cext/modules/clinic/sha3module.c.h": CopyFrom("Modules/clinic/sha3module.c.h"),
-    "graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h": CopyFrom("Modules/_testcapi/testcapi_long.h"),
     "graalpython/com.oracle.graal.python.cext/modules": CopyFromWithOverrides("Modules"),
 
     "graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c": CopyFrom("Modules/getbuildinfo.c"),
@@ -182,11 +186,19 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/src/pyctype.c": CopyFrom("Python/pyctype.c"),
     "graalpython/com.oracle.graal.python.cext/src/pyhash.c": CopyFrom("Python/pyhash.c"),
     "graalpython/com.oracle.graal.python.cext/src/thread.c": CopyFrom("Python/thread.c"),
+    "graalpython/com.oracle.graal.python.cext/src/thread_nt.h": CopyFrom("Python/thread_nt.h"),
+    "graalpython/com.oracle.graal.python.cext/src/condvar.h": CopyFrom("Python/condvar.h"),
+    "graalpython/com.oracle.graal.python.cext/src/thread_pthread.h": CopyFrom("Python/thread_pthread.h"),
+    "graalpython/com.oracle.graal.python.cext/src/thread_pthread_stubs.h": CopyFrom("Python/thread_pthread_stubs.h"),
     "graalpython/com.oracle.graal.python.cext/src/_warnings.c": CopyFrom("Python/_warnings.c"),
     "graalpython/com.oracle.graal.python.cext/src/typeslots.inc": CopyFrom("Objects/typeslots.inc"),
     "graalpython/com.oracle.graal.python.cext/src/fileutils.c": CopyFrom("Python/fileutils.c"),
+    "graalpython/com.oracle.graal.python.cext/src/invalid_parameter_handler.c": CopyFrom("PC/invalid_parameter_handler.c"),
     "graalpython/com.oracle.graal.python.cext/src/ceval.c": CopyFrom("Python/ceval.c"),
     "graalpython/com.oracle.graal.python.cext/src/pystate.c": CopyFrom("Python/pystate.c"),
+    "graalpython/com.oracle.graal.python.cext/src/lock.c": CopyFrom("Python/lock.c"),
+    "graalpython/com.oracle.graal.python.cext/src/parking_lot.c": CopyFrom("Python/parking_lot.c"),
+    "graalpython/com.oracle.graal.python.cext/src/pytime.c": CopyFrom("Python/pytime.c"),
 
     "graalpython/com.oracle.graal.python.cext/src": CopyFromWithOverrides("Objects"),
 
@@ -198,6 +210,7 @@ CPYTHON_SOURCES_MAPPING = {
 
     # PEG Parser
     "graalpython/com.oracle.graal.python.pegparser.generator/pegen": CopyFrom("Tools/peg_generator/pegen"),
+    "graalpython/com.oracle.graal.python.pegparser.generator/input_files/Python.asdl": CopyFrom("Parser/Python.asdl"),
     "graalpython/com.oracle.graal.python.pegparser.generator/asdl/asdl.py": CopyFrom("Parser/asdl.py"),
     "graalpython/com.oracle.graal.python.pegparser.generator/input_files/python.gram": CopyFrom("Grammar/python.gram"),
     "graalpython/com.oracle.graal.python.pegparser.generator/input_files/Tokens": CopyFrom("Grammar/Tokens"),
@@ -221,6 +234,10 @@ def import_python_sources(args):
                         help='Python version to be updated to (used for commit message)', required=True)
     args = parser.parse_args(args)
 
+    tracked_files = set(
+        SUITE.vc.git_command(args.cpython, ['ls-files', '--full-name', '-z'], abortOnError=True).split('\0')
+    )
+
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
         entries = [line.strip().split(',') for line in f if ',' in line]
         cpython_files = [file for file, license in entries if
@@ -239,7 +256,7 @@ def import_python_sources(args):
     def copy_inlined_files(mapping, source_directory, overrides):
         overrides = list(overrides)
         for path, rule in mapping.items():
-            rule.copy(source_directory, import_dir, path, overrides)
+            rule.copy(source_directory, import_dir, path, overrides, tracked_files)
         if overrides:
             lines = '\n'.join(overrides)
             sys.exit(f"ERROR: The following files were not matched by any rule:\n{lines}")
@@ -247,7 +264,10 @@ def import_python_sources(args):
     copy_inlined_files(CPYTHON_SOURCES_MAPPING, args.cpython, cpython_files)
 
     # Commit and fetch changes back into the main repository
-    SUITE.vc.git_command(import_dir, ["add", "."])
+    # Some CPython test fixtures match GraalPy's ignore rules (for example
+    # Lib/test/archivetestdata/zipdir.zip). Also, do not let a developer's
+    # global Git ignore configuration affect which imported files are staged.
+    SUITE.vc.git_command(import_dir, ["add", "--force", "."])
     SUITE.vc.commit(import_dir, f"Update Python inlined files: {args.python_version}")
     SUITE.vc.git_command(SUITE.dir, ['fetch', 'python-import', '+python-import:python-import'])
     print(dedent("""\

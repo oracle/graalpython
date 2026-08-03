@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,10 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateCached(false)
 public abstract class PyComplexCheckNode extends Node {
     public abstract boolean execute(Node inliningTarget, Object object);
+
+    public static boolean executeUncached(Object object) {
+        return PyComplexCheckNodeGen.getUncached().execute(null, object);
+    }
 
     @Specialization
     static boolean doPComplex(@SuppressWarnings("unused") PComplex pComplex) {

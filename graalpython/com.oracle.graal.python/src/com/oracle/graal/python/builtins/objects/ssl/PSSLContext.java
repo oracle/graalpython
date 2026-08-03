@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.ssl;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.LOGGER;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_FLAG_CRL_CHECK;
 import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_FLAG_CRL_CHECK_ALL;
+import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_FLAG_PARTIAL_CHAIN;
+import static com.oracle.graal.python.builtins.modules.SSLModuleBuiltins.X509_V_FLAG_X509_STRICT;
 import static java.security.cert.PKIXRevocationChecker.Option.NO_FALLBACK;
 import static java.security.cert.PKIXRevocationChecker.Option.ONLY_END_ENTITY;
 import static java.security.cert.PKIXRevocationChecker.Option.PREFER_CRLS;
@@ -96,6 +98,7 @@ public final class PSSLContext extends PythonBuiltinObject {
     private final SSLContext context;
     private boolean checkHostname;
     private int verifyMode;
+    private int hostFlags;
     private SSLCipher[] ciphers;
     private long options;
     private SSLProtocol minimumVersion;
@@ -189,15 +192,19 @@ public final class PSSLContext extends PythonBuiltinObject {
         return crls;
     }
 
+    int getCRLCount() {
+        return crls == null ? 0 : crls.size();
+    }
+
     void setCertChain(PrivateKey pk, char[] password, X509Certificate[] certs) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
         this.password = password;
         getChainKeyStore().setKeyEntry(CertUtils.getAlias(pk), pk, password, certs);
     }
 
     void init() throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyManagementException, InvalidAlgorithmParameterException, IOException, CertificateException {
-        X509ExtendedTrustManager defaultTrustManager = getDefaultTrustManager();
-        X509ExtendedTrustManager trustManager = getX509ExtendedTrustManager(getTrustManagerFactory(getCAKeyStore()).getTrustManagers());
-        TrustManager tm = new DelegateTrustManager(trustManager, defaultTrustManager, verifyMode);
+        X509ExtendedTrustManager defaultTrustManager = getConfiguredDefaultTrustManager();
+        X509ExtendedTrustManager trustManager = getTrustManager(getCAKeyStore());
+        TrustManager tm = new DelegateTrustManager(trustManager, defaultTrustManager, verifyMode, (verifyFlags & X509_V_FLAG_X509_STRICT) != 0);
 
         KeyManager[] kms = null;
         if (chainKeystore != null) {
@@ -218,6 +225,20 @@ public final class PSSLContext extends PythonBuiltinObject {
         return null;
     }
 
+    private X509ExtendedTrustManager getConfiguredDefaultTrustManager()
+                    throws KeyStoreException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, IOException, CertificateException {
+        X509ExtendedTrustManager defaultTrustManager = getDefaultTrustManager();
+        if (defaultTrustManager != null) {
+            KeyStore defaultKeyStore = KeyStore.getInstance("JKS");
+            defaultKeyStore.load(null);
+            for (X509Certificate cert : defaultTrustManager.getAcceptedIssuers()) {
+                defaultKeyStore.setCertificateEntry(CertUtils.getAlias(cert), cert);
+            }
+            return getTrustManager(defaultKeyStore);
+        }
+        return null;
+    }
+
     private static X509ExtendedTrustManager getX509ExtendedTrustManager(TrustManager[] tms) {
         for (TrustManager tm : tms) {
             if (tm instanceof X509ExtendedTrustManager) {
@@ -234,30 +255,62 @@ public final class PSSLContext extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private TrustManagerFactory getTrustManagerFactory(KeyStore ks) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, KeyStoreException {
+    private X509ExtendedTrustManager getTrustManager(KeyStore ks) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, KeyStoreException {
         TrustManagerFactory tmf = getTrustManagerFactory();
         boolean crlCheck = (verifyFlags & X509_V_FLAG_CRL_CHECK) != 0;
         boolean crlCheckAll = (verifyFlags & X509_V_FLAG_CRL_CHECK_ALL) != 0;
-        LOGGER.fine(() -> String.format("PSSLContext.getTrustManagerFactory() crlCheck: %b, crlCheckAll: %b", crlCheck, crlCheckAll));
-        if (crlCheck || crlCheckAll) {
-            PKIXRevocationChecker rc = (PKIXRevocationChecker) CertPathBuilder.getInstance("PKIX").getRevocationChecker();
-            EnumSet<PKIXRevocationChecker.Option> opt = EnumSet.of(PREFER_CRLS, NO_FALLBACK);
-            if (crlCheck) {
-                opt.add(ONLY_END_ENTITY);
+        boolean partialChain = (verifyFlags & X509_V_FLAG_PARTIAL_CHAIN) != 0;
+        LOGGER.fine(() -> String.format("PSSLContext.getTrustManager() crlCheck: %b, crlCheckAll: %b, partialChain: %b", crlCheck, crlCheckAll, partialChain));
+        if (crlCheck || crlCheckAll || !partialChain) {
+            KeyStore trustAnchors = ks;
+            Collection<Object> additionalCertificates = new ArrayList<>();
+            if (!partialChain) {
+                trustAnchors = KeyStore.getInstance("JKS");
+                try {
+                    trustAnchors.load(null);
+                } catch (IOException | CertificateException e) {
+                    throw new KeyStoreException(e);
+                }
+                Enumeration<String> aliases = ks.aliases();
+                while (aliases.hasMoreElements()) {
+                    String alias = aliases.nextElement();
+                    X509Certificate cert = (X509Certificate) ks.getCertificate(alias);
+                    if (CertUtils.isSelfSigned(cert)) {
+                        trustAnchors.setCertificateEntry(alias, cert);
+                    } else {
+                        additionalCertificates.add(cert);
+                    }
+                }
+                if (trustAnchors.size() == 0) {
+                    // Without PARTIAL_CHAIN a store containing only intermediates must not
+                    // authenticate anything.
+                    return null;
+                }
             }
-            rc.setOptions(opt);
-            PKIXBuilderParameters params = new PKIXBuilderParameters(ks, new X509CertSelector());
-            params.addCertPathChecker(rc);
+            PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, new X509CertSelector());
+            params.setRevocationEnabled(crlCheck || crlCheckAll);
+            if (crlCheck || crlCheckAll) {
+                PKIXRevocationChecker rc = (PKIXRevocationChecker) CertPathBuilder.getInstance("PKIX").getRevocationChecker();
+                EnumSet<PKIXRevocationChecker.Option> opt = EnumSet.of(PREFER_CRLS, NO_FALLBACK);
+                if (crlCheck) {
+                    opt.add(ONLY_END_ENTITY);
+                }
+                rc.setOptions(opt);
+                params.addCertPathChecker(rc);
+            }
             if (crls != null && !crls.isEmpty()) {
-                CertStore certStores = CertStore.getInstance("Collection", new CollectionCertStoreParameters(crls));
-                params.addCertStore(certStores);
-                LOGGER.fine("PSSLContext.getTrustManagerFactory() adding crls");
+                additionalCertificates.addAll(crls);
+                LOGGER.fine("PSSLContext.getTrustManager() adding crls");
+            }
+            if (!additionalCertificates.isEmpty()) {
+                CertStore certStore = CertStore.getInstance("Collection", new CollectionCertStoreParameters(additionalCertificates));
+                params.addCertStore(certStore);
             }
             tmf.init(new CertPathTrustManagerParameters(params));
         } else {
             tmf.init(ks);
         }
-        return tmf;
+        return getX509ExtendedTrustManager(tmf.getTrustManagers());
     }
 
     public SSLContext getContext() {
@@ -271,6 +324,14 @@ public final class PSSLContext extends PythonBuiltinObject {
     public void setCheckHostname(boolean checkHostname) {
         LOGGER.fine(() -> String.format("PSSLContext.setCheckHostname: %b", checkHostname));
         this.checkHostname = checkHostname;
+    }
+
+    int getHostFlags() {
+        return hostFlags;
+    }
+
+    void setHostFlags(int hostFlags) {
+        this.hostFlags = hostFlags;
     }
 
     int getVerifyMode() {
@@ -386,13 +447,15 @@ public final class PSSLContext extends PythonBuiltinObject {
         private final X509ExtendedTrustManager delegate;
         private final X509ExtendedTrustManager defaultTM;
         private final int verifyMode;
+        private final boolean strict;
 
         private X509Certificate[] issuers;
 
-        public DelegateTrustManager(X509ExtendedTrustManager delegate, X509ExtendedTrustManager defaultTM, int verifyMode) {
+        public DelegateTrustManager(X509ExtendedTrustManager delegate, X509ExtendedTrustManager defaultTM, int verifyMode, boolean strict) {
             this.delegate = delegate;
             this.defaultTM = defaultTM;
             this.verifyMode = verifyMode;
+            this.strict = strict;
             LOGGER.fine(() -> String.format("PSSLContext.init() using DelegateTrustManager, verifyMode=",
                             verifyMode == SSLModuleBuiltins.SSL_CERT_OPTIONAL ? "SSL_CERT_OPTIONAL" : "SSL_CERT_REQUIRED"));
         }
@@ -402,6 +465,7 @@ public final class PSSLContext extends PythonBuiltinObject {
             if (skipCheckClientTrusted(chain)) {
                 return;
             }
+            checkStrict(chain);
             if (canCheckDelegateTrustManager()) {
                 try {
                     delegate.checkClientTrusted(chain, authType);
@@ -424,6 +488,7 @@ public final class PSSLContext extends PythonBuiltinObject {
             if (skipCheckClientTrusted(chain)) {
                 return;
             }
+            checkStrict(chain);
             if (canCheckDelegateTrustManager()) {
                 try {
                     delegate.checkClientTrusted(chain, string, socket);
@@ -446,6 +511,7 @@ public final class PSSLContext extends PythonBuiltinObject {
             if (skipCheckClientTrusted(chain)) {
                 return;
             }
+            checkStrict(chain);
             if (canCheckDelegateTrustManager()) {
                 try {
                     delegate.checkClientTrusted(chain, string, ssle);
@@ -468,6 +534,7 @@ public final class PSSLContext extends PythonBuiltinObject {
             if (skipCheckServerTrusted()) {
                 return;
             }
+            checkStrict(chain);
             if (canCheckDelegateTrustManager()) {
                 try {
                     delegate.checkServerTrusted(chain, authType);
@@ -490,6 +557,7 @@ public final class PSSLContext extends PythonBuiltinObject {
             if (skipCheckServerTrusted()) {
                 return;
             }
+            checkStrict(chain);
             if (canCheckDelegateTrustManager()) {
                 try {
                     delegate.checkServerTrusted(chain, string, socket);
@@ -512,6 +580,7 @@ public final class PSSLContext extends PythonBuiltinObject {
             if (skipCheckServerTrusted()) {
                 return;
             }
+            checkStrict(chain);
             if (canCheckDelegateTrustManager()) {
                 try {
                     delegate.checkServerTrusted(chain, string, ssle);
@@ -538,8 +607,38 @@ public final class PSSLContext extends PythonBuiltinObject {
             return verifyMode == SSLModuleBuiltins.SSL_CERT_NONE;
         }
 
+        /**
+         * Enforce the RFC 5280 requirements enabled by OpenSSL's X509_STRICT flag which are
+         * not consistently checked by the JDK providers. The JDK already checks signatures,
+         * validity, path constraints, key usage and unknown critical extensions.
+         */
+        private void checkStrict(X509Certificate[] chain) throws CertificateException {
+            if (!strict || chain == null) {
+                return;
+            }
+            for (X509Certificate cert : chain) {
+                boolean selfSigned = CertUtils.isSelfSigned(cert);
+                if (!selfSigned && cert.getExtensionValue("2.5.29.35") == null) {
+                    throw new CertificateException("certificate verify failed: Missing Authority Key Identifier");
+                }
+                if (cert.getBasicConstraints() >= 0 && !selfSigned) {
+                    Set<String> criticalExtensions = cert.getCriticalExtensionOIDs();
+                    if (cert.getExtensionValue("2.5.29.14") == null) {
+                        throw new CertificateException("certificate verify failed: Missing Subject Key Identifier");
+                    }
+                    if (criticalExtensions == null || !criticalExtensions.contains("2.5.29.19")) {
+                        throw new CertificateException("certificate verify failed: Basic Constraints of CA cert not marked critical");
+                    }
+                    boolean[] keyUsage = cert.getKeyUsage();
+                    if (keyUsage == null || criticalExtensions == null || !criticalExtensions.contains("2.5.29.15")) {
+                        throw new CertificateException("certificate verify failed: CA cert does not include key usage extension");
+                    }
+                }
+            }
+        }
+
         private boolean canCheckDelegateTrustManager() {
-            return delegate.getAcceptedIssuers().length > 0;
+            return delegate != null && delegate.getAcceptedIssuers().length > 0;
         }
 
         private boolean canCheckDefaultTrustManager() {
@@ -550,9 +649,9 @@ public final class PSSLContext extends PythonBuiltinObject {
         public X509Certificate[] getAcceptedIssuers() {
             if (issuers == null) {
                 if (defaultTM == null) {
-                    issuers = delegate.getAcceptedIssuers();
+                    issuers = delegate == null ? new X509Certificate[0] : delegate.getAcceptedIssuers();
                 } else {
-                    X509Certificate[] delegateIssuers = delegate.getAcceptedIssuers();
+                    X509Certificate[] delegateIssuers = delegate == null ? new X509Certificate[0] : delegate.getAcceptedIssuers();
                     X509Certificate[] defaultIssuers = defaultTM.getAcceptedIssuers();
                     issuers = new X509Certificate[delegateIssuers.length + defaultIssuers.length];
                     PythonUtils.arraycopy(delegateIssuers, 0, issuers, 0, delegateIssuers.length);

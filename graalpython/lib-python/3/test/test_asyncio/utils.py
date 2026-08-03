@@ -28,7 +28,6 @@ except ImportError:  # pragma: no cover
 from asyncio import base_events
 from asyncio import events
 from asyncio import format_helpers
-from asyncio import futures
 from asyncio import tasks
 from asyncio.log import logger
 from test import support
@@ -43,10 +42,9 @@ CLOCK_RES = 0.050
 
 
 def data_file(*filename):
-    if hasattr(support, 'TEST_HOME_DIR'):
-        fullname = os.path.join(support.TEST_HOME_DIR, *filename)
-        if os.path.isfile(fullname):
-            return fullname
+    fullname = os.path.join(support.TEST_HOME_DIR, *filename)
+    if os.path.isfile(fullname):
+        return fullname
     fullname = os.path.join(os.path.dirname(__file__), '..', *filename)
     if os.path.isfile(fullname):
         return fullname
@@ -121,7 +119,7 @@ def run_until(loop, pred, timeout=support.SHORT_TIMEOUT):
         loop.run_until_complete(tasks.sleep(delay))
         delay = max(delay * 2, 1.0)
     else:
-        raise futures.TimeoutError()
+        raise TimeoutError()
 
 
 def run_once(loop):
@@ -302,12 +300,17 @@ def run_udp_echo_server(*, host='127.0.0.1', port=0):
     family, type, proto, _, sockaddr = addr_info[0]
     sock = socket.socket(family, type, proto)
     sock.bind((host, port))
+    sockname = sock.getsockname()
     thread = threading.Thread(target=lambda: echo_datagrams(sock))
     thread.start()
     try:
-        yield sock.getsockname()
+        yield sockname
     finally:
-        sock.sendto(b'STOP', sock.getsockname())
+        # gh-122187: use a separate socket to send the stop message to avoid
+        # TSan reported race on the same socket.
+        sock2 = socket.socket(family, type, proto)
+        sock2.sendto(b'STOP', sockname)
+        sock2.close()
         thread.join()
 
 

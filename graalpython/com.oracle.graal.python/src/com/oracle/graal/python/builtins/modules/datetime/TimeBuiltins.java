@@ -674,7 +674,7 @@ public final class TimeBuiltins extends PythonBuiltins {
                     timezone = TimeZoneNodes.NewNode.getUncached().execute(inliningTarget, getContext(inliningTarget), timeZoneType, timeDelta, PNone.NO_VALUE);
                 }
 
-                return TimeNodes.SubclassNewNode.getUncached().execute(inliningTarget, cls, hours, minutes, seconds, microseconds, timezone, 0);
+                return TimeNodes.SubclassNewNode.executeUncached(cls, hours, minutes, seconds, microseconds, timezone, 0);
             }
         }
 
@@ -984,6 +984,8 @@ public final class TimeBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"self", "hour", "minute", "second", "microsecond", "tzinfo"}, keywordOnlyNames = {"fold"})
+    @Builtin(name = "__replace__", minNumOfPositionalArgs = 1, parameterNames = {"self", "hour", "minute", "second", "microsecond", "tzinfo"}, keywordOnlyNames = {
+                    "fold"}, doc = "The same as replace().")
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends PythonBuiltinNode {
 
@@ -995,7 +997,7 @@ public final class TimeBuiltins extends PythonBuiltins {
                         @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached TimeNodes.TzInfoNode tzInfoNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached TimeNodes.NewNode newTimeNode) {
+                        @Cached TimeNodes.SubclassNewNode newTimeNode) {
             TimeValue time = asManagedTimeNode.execute(inliningTarget, self);
             final long hour, minute, second, microsecond, fold;
             final Object tzInfo;
@@ -1039,7 +1041,7 @@ public final class TimeBuiltins extends PythonBuiltins {
             }
 
             Object type = getResultTimeType(self, inliningTarget, isForeignObjectNode, getClassNode);
-            return newTimeNode.execute(frame, inliningTarget, type, hour, minute, second, microsecond, tzInfo, fold);
+            return newTimeNode.execute(frame, inliningTarget, type, hour, minute, second, microsecond, tzInfo != null ? tzInfo : PNone.NONE, fold);
         }
     }
 

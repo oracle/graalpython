@@ -272,6 +272,7 @@ import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignTimeZoneBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
+import com.oracle.graal.python.builtins.objects.frame.FrameLocalsProxyBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
@@ -353,6 +354,7 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.MemoryBIOBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLCertificateBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLSocketBuiltins;
@@ -363,6 +365,7 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.ThreadHandleBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
@@ -378,6 +381,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.GenericBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.NoDefaultBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecArgsBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecKwargsBuiltins;
@@ -547,6 +551,7 @@ public abstract class Python3Core {
                         new BuiltinClassmethodBuiltins(),
                         new CodeBuiltins(),
                         new FrameBuiltins(),
+                        new FrameLocalsProxyBuiltins(),
                         new MappingproxyBuiltins(),
                         new DescriptorBuiltins(),
                         new GetSetDescriptorTypeBuiltins(),
@@ -686,6 +691,7 @@ public abstract class Python3Core {
                         new SuperBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLContextBuiltins(),
+                        PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLCertificateBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLErrorBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new SSLSocketBuiltins(),
                         PythonImageBuildOptions.WITHOUT_SSL ? null : new MemoryBIOBuiltins(),
@@ -746,6 +752,7 @@ public abstract class Python3Core {
                         new CommonLockBuiltins(),
                         new LockTypeBuiltins(),
                         new RLockBuiltins(),
+                        new ThreadHandleBuiltins(),
                         new PwdModuleBuiltins(),
                         new ResourceModuleBuiltins(),
                         new ContextvarsModuleBuiltins(),
@@ -818,6 +825,7 @@ public abstract class Python3Core {
                         new ParamSpecBuiltins(),
                         new ParamSpecArgsBuiltins(),
                         new ParamSpecKwargsBuiltins(),
+                        new NoDefaultBuiltins(),
                         new TypeAliasTypeBuiltins(),
                         new GenericBuiltins()));
         if (HAS_PROFILER_TOOL) {

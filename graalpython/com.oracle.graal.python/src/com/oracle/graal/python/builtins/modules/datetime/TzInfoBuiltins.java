@@ -192,8 +192,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
                         @Cached DateTimeNodes.TzInfoNode tzInfoNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode,
-                        @Cached TimeDeltaNodes.NewNode newTimeDeltaNode,
-                        @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {
+                        @Cached TimeDeltaNodes.NewNode newTimeDeltaNode) {
             if (!dateTimeCheckNode.execute(inliningTarget, dateTime)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
@@ -225,7 +224,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
                             0,
                             0);
 
-            Object dateTimeInTimeZone = DatetimeModuleBuiltins.addOffsetToDateTime(dateTime, offsetStandard, dateTimeSubclassNewNode, inliningTarget);
+            Object dateTimeInTimeZone = DatetimeModuleBuiltins.addOffsetToDateTime(dateTime, offsetStandard, inliningTarget);
 
             if (tzInfo == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FROMUTC_TZ_DST_GAVE_INCONSISTENT_RESULT_CANNOT_CONVERT);
@@ -240,7 +239,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             if (dstNew.isZero()) {
                 return dateTimeInTimeZone;
             } else {
-                return DatetimeModuleBuiltins.addOffsetToDateTime(dateTimeInTimeZone, dstNew, dateTimeSubclassNewNode, inliningTarget);
+                return DatetimeModuleBuiltins.addOffsetToDateTime(dateTimeInTimeZone, dstNew, inliningTarget);
             }
         }
     }

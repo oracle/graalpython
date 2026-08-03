@@ -1,9 +1,7 @@
-import platform
 from platform import architecture as _architecture
 import struct
 import sys
 import unittest
-from test.test_ctypes import need_symbol
 from ctypes import (CDLL, Array, Structure, Union, POINTER, sizeof, byref, alignment,
                     c_void_p, c_char, c_wchar, c_byte, c_ubyte,
                     c_uint8, c_uint16, c_uint32,
@@ -11,14 +9,13 @@ from ctypes import (CDLL, Array, Structure, Union, POINTER, sizeof, byref, align
                     c_long, c_ulong, c_longlong, c_ulonglong, c_float, c_double)
 from ctypes.util import find_library
 from struct import calcsize
-import _ctypes_test
 from collections import namedtuple
 from test import support
+from test.support import import_helper
+_ctypes_test = import_helper.import_module("_ctypes_test")
+from ._support import (_CData, PyCStructType, Py_TPFLAGS_DISALLOW_INSTANTIATION,
+                       Py_TPFLAGS_IMMUTABLETYPE)
 
-# The following definition is meant to be used from time to time to assist
-# temporarily disabling tests on specific architectures while investigations
-# are in progress, to keep buildbots happy.
-MACHINE = platform.machine()
 
 class SubclassesTest(unittest.TestCase):
     def test_subclass(self):
@@ -59,6 +56,7 @@ class SubclassesTest(unittest.TestCase):
         self.assertEqual(Y._fields_, [("b", c_int)])
         self.assertEqual(Z._fields_, [("a", c_int)])
 
+
 class StructureTestCase(unittest.TestCase):
     formats = {"c": c_char,
                "b": c_byte,
@@ -74,6 +72,36 @@ class StructureTestCase(unittest.TestCase):
                "f": c_float,
                "d": c_double,
                }
+
+    def test_inheritance_hierarchy(self):
+        self.assertEqual(Structure.mro(), [Structure, _CData, object])
+
+        self.assertEqual(PyCStructType.__name__, "PyCStructType")
+        self.assertEqual(type(PyCStructType), type)
+
+
+    def test_type_flags(self):
+        for cls in Structure, PyCStructType:
+            with self.subTest(cls=cls):
+                self.assertTrue(Structure.__flags__ & Py_TPFLAGS_IMMUTABLETYPE)
+                self.assertFalse(Structure.__flags__ & Py_TPFLAGS_DISALLOW_INSTANTIATION)
+
+    def test_metaclass_details(self):
+        # Abstract classes (whose metaclass __init__ was not called) can't be
+        # instantiated directly
+        NewStructure = PyCStructType.__new__(PyCStructType, 'NewStructure',
+                                             (Structure,), {})
+        for cls in Structure, NewStructure:
+            with self.subTest(cls=cls):
+                with self.assertRaisesRegex(TypeError, "abstract class"):
+                    obj = cls()
+
+        # Cannot call the metaclass __init__ more than once
+        class T(Structure):
+            _fields_ = [("x", c_char),
+                        ("y", c_char)]
+        with self.assertRaisesRegex(SystemError, "already initialized"):
+            PyCStructType.__init__(T, 'ptr', (), {})
 
     def test_simple_structs(self):
         for code, tp in self.formats.items():
@@ -310,7 +338,6 @@ class StructureTestCase(unittest.TestCase):
         self.assertEqual(p.phone.number, b"5678")
         self.assertEqual(p.age, 5)
 
-    @need_symbol('c_wchar')
     def test_structures_with_wchar(self):
         class PersonW(Structure):
             _fields_ = [("name", c_wchar * 12),
@@ -374,9 +401,6 @@ class StructureTestCase(unittest.TestCase):
         self.assertEqual((cls, msg), (TypeError, "abstract class"))
 
     def test_methods(self):
-##        class X(Structure):
-##            _fields_ = []
-
         self.assertIn("in_dll", dir(type(Structure)))
         self.assertIn("from_address", dir(type(Structure)))
         self.assertIn("in_dll", dir(type(Structure)))
@@ -501,8 +525,8 @@ class StructureTestCase(unittest.TestCase):
     @unittest.skipUnless(sys.byteorder == 'little', "can't test on this platform")
     def test_issue18060_a(self):
         # This test case calls
-        # PyCStructUnionType_update_stgdict() for each
-        # _fields_ assignment, and PyCStgDict_clone()
+        # PyCStructUnionType_update_stginfo() for each
+        # _fields_ assignment, and PyCStgInfo_clone()
         # for the Mid and Vector class definitions.
         class Base(Structure):
             _fields_ = [('y', c_double),
@@ -517,7 +541,7 @@ class StructureTestCase(unittest.TestCase):
     @unittest.skipUnless(sys.byteorder == 'little', "can't test on this platform")
     def test_issue18060_b(self):
         # This test case calls
-        # PyCStructUnionType_update_stgdict() for each
+        # PyCStructUnionType_update_stginfo() for each
         # _fields_ assignment.
         class Base(Structure):
             _fields_ = [('y', c_double),
@@ -532,7 +556,7 @@ class StructureTestCase(unittest.TestCase):
     @unittest.skipUnless(sys.byteorder == 'little', "can't test on this platform")
     def test_issue18060_c(self):
         # This test case calls
-        # PyCStructUnionType_update_stgdict() for each
+        # PyCStructUnionType_update_stginfo() for each
         # _fields_ assignment.
         class Base(Structure):
             _fields_ = [('y', c_double)]
@@ -857,6 +881,7 @@ class StructureTestCase(unittest.TestCase):
         self.assertEqual(ctx.exception.args[0], 'item 1 in _argtypes_ passes '
                          'a union by value, which is unsupported.')
 
+
 class PointerMemberTestCase(unittest.TestCase):
 
     def test(self):
@@ -883,8 +908,6 @@ class PointerMemberTestCase(unittest.TestCase):
 
         s.array[0] = 1
 
-##        s.array[1] = 42
-
         items = [s.array[i] for i in range(3)]
         self.assertEqual(items, [1, 2, 3])
 
@@ -897,6 +920,7 @@ class PointerMemberTestCase(unittest.TestCase):
         s.x = 12345678
         s.p = None
         self.assertEqual(s.x, 12345678)
+
 
 class TestRecursiveStructure(unittest.TestCase):
     def test_contains_itself(self):
@@ -926,6 +950,7 @@ class TestRecursiveStructure(unittest.TestCase):
             self.assertIn("_fields_ is final", str(details))
         else:
             self.fail("AttributeError not raised")
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -130,8 +130,15 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
 
     public static final int X509_V_FLAG_CRL_CHECK = 0x4;
     public static final int X509_V_FLAG_CRL_CHECK_ALL = 0x8;
-    private static final int X509_V_FLAG_X509_STRICT = 0x20;
+    public static final int X509_V_FLAG_X509_STRICT = 0x20;
     public static final int X509_V_FLAG_TRUSTED_FIRST = 0x8000;
+    public static final int X509_V_FLAG_PARTIAL_CHAIN = 0x80000;
+
+    /*
+     * This flag is there for compatiblity with urllib3, but we can't implement it.
+     * Given that it only relaxes existing checks, it shouldn't be a problem for security.
+     */
+    public static final int HOSTFLAG_NEVER_CHECK_SUBJECT = 0x20;
 
     public static List<SSLProtocol> getSupportedProtocols() {
         assert supportedProtocols != null : "Uninitialized protocols";
@@ -224,6 +231,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute(tsLiteral("OPENSSL_VERSION"), toTruffleStringUncached("OpenSSL compatible GraalVM JSSE"));
         module.setAttribute(tsLiteral("_DEFAULT_CIPHERS"), T_DEFAULT_CIPHER_STRING);
         module.setAttribute(tsLiteral("_OPENSSL_API_VERSION"), versionInfo);
+        module.setAttribute(tsLiteral("ENCODING_PEM"), 1);
+        module.setAttribute(tsLiteral("ENCODING_DER"), 2);
 
         module.setAttribute(tsLiteral("CERT_NONE"), SSL_CERT_NONE);
         module.setAttribute(tsLiteral("CERT_OPTIONAL"), SSL_CERT_OPTIONAL);
@@ -234,7 +243,8 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute(tsLiteral("HAS_ECDH"), false);
         module.setAttribute(tsLiteral("HAS_NPN"), false);
         module.setAttribute(tsLiteral("HAS_ALPN"), true);
-        module.setAttribute(tsLiteral("HAS_NEVER_CHECK_COMMON_NAME"), false);
+        module.setAttribute(tsLiteral("HAS_NEVER_CHECK_COMMON_NAME"), true);
+        module.setAttribute(tsLiteral("HOSTFLAG_NEVER_CHECK_SUBJECT"), HOSTFLAG_NEVER_CHECK_SUBJECT);
         module.setAttribute(tsLiteral("HAS_SSLv2"), false);
         boolean hasSSLv3 = supportedProtocols.contains(SSLProtocol.SSLv3);
         module.setAttribute(tsLiteral("HAS_SSLv3"), hasSSLv3);
@@ -242,6 +252,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute(tsLiteral("HAS_TLSv1_1"), supportedProtocols.contains(SSLProtocol.TLSv1_1));
         module.setAttribute(tsLiteral("HAS_TLSv1_2"), supportedProtocols.contains(SSLProtocol.TLSv1_2));
         module.setAttribute(tsLiteral("HAS_TLSv1_3"), supportedProtocols.contains(SSLProtocol.TLSv1_3));
+        module.setAttribute(tsLiteral("HAS_PSK"), false);
 
         module.setAttribute(tsLiteral("PROTO_MINIMUM_SUPPORTED"), SSLProtocol.PROTO_MINIMUM_SUPPORTED);
         module.setAttribute(tsLiteral("PROTO_MAXIMUM_SUPPORTED"), SSLProtocol.PROTO_MAXIMUM_SUPPORTED);
@@ -289,6 +300,7 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         module.setAttribute(tsLiteral("VERIFY_CRL_CHECK_CHAIN"), X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
         module.setAttribute(tsLiteral("VERIFY_X509_STRICT"), X509_V_FLAG_X509_STRICT);
         module.setAttribute(tsLiteral("VERIFY_X509_TRUSTED_FIRST"), X509_V_FLAG_TRUSTED_FIRST);
+        module.setAttribute(tsLiteral("VERIFY_X509_PARTIAL_CHAIN"), X509_V_FLAG_PARTIAL_CHAIN);
     }
 
     @Builtin(name = "txt2obj", minNumOfPositionalArgs = 1, parameterNames = {"txt", "name"})

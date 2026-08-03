@@ -14,7 +14,6 @@ test.test_listcomps.ListComprehensionTest.test_exception_in_post_comp_call @ dar
 test.test_listcomps.ListComprehensionTest.test_explicit_global @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_explicit_global_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_explicit_global_3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_listcomps.ListComprehensionTest.test_frame_locals @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_free_inner_cell_outer @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_free_var_in_comp_child @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_listcomps.ListComprehensionTest.test_global_in_class_scope @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

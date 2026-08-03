@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,28 +52,34 @@ public abstract class CallerFlags {
     public static final int NEEDS_PFRAME = 1 << 2;
     /** Whether the callee needs the caller PFrame with locals. Implies NEEDS_PFRAME */
     public static final int NEEDS_LOCALS = 1 << 3;
+    /** Whether the callee needs the frame locals to be materialized. Implies NEEDS_LOCALS */
+    public static final int NEEDS_MATERIALIZED_LOCALS = 1 << 4;
     /**
      * Whether the callee needs the current PFrame last instruction index / lineno. Implies
      * NEEDS_PFRAME
      */
-    public static final int NEEDS_LASTI = 1 << 4;
+    public static final int NEEDS_LASTI = 1 << 5;
 
-    public static final int ALL_FRAME_FLAGS = NEEDS_FRAME_REFERENCE | NEEDS_PFRAME | NEEDS_LOCALS | NEEDS_LASTI;
+    public static final int ALL_FRAME_FLAGS = NEEDS_FRAME_REFERENCE | NEEDS_PFRAME | NEEDS_LOCALS | NEEDS_MATERIALIZED_LOCALS | NEEDS_LASTI;
 
     public static boolean needsExceptionState(int callerFlags) {
         return (callerFlags & NEEDS_EXCEPTION_STATE) != 0;
     }
 
     public static boolean needsFrameReference(int callerFlags) {
-        return (callerFlags & NEEDS_FRAME_REFERENCE) != 0;
+        return (callerFlags & NEEDS_FRAME_REFERENCE) != 0 || needsPFrame(callerFlags);
     }
 
     public static boolean needsPFrame(int callerFlags) {
-        return (callerFlags & NEEDS_PFRAME) != 0;
+        return (callerFlags & NEEDS_PFRAME) != 0 || needsLocals(callerFlags) || needsLasti(callerFlags);
     }
 
     public static boolean needsLocals(int callerFlags) {
-        return (callerFlags & NEEDS_LOCALS) != 0;
+        return (callerFlags & NEEDS_LOCALS) != 0 || needsMaterializedLocals(callerFlags);
+    }
+
+    public static boolean needsMaterializedLocals(int callerFlags) {
+        return (callerFlags & NEEDS_MATERIALIZED_LOCALS) != 0;
     }
 
     public static boolean needsLasti(int callerFlags) {

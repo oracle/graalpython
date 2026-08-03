@@ -39,10 +39,33 @@
 import os
 import subprocess
 import sys
+from textwrap import dedent
+
 import fast_subprocess
 
 def __setup__(*args):
-    fast_subprocess.setup()
+    fast_subprocess.setup(dedent("""\
+        import threading
+        import contextlib
+        import contextvars
+        import decimal
+        import ast
+        import asyncio
+        import argparse
+        import base64
+        import bisect
+        import calendar
+        import configparser
+        import copyreg
+        import dataclasses
+        import enum
+        import fractions
+        import glob
+        import hashlib
+        import os
+        import typing
+        import tomllib
+    """))
 
 
 def __teardown__():
@@ -50,7 +73,4 @@ def __teardown__():
 
 
 def __benchmark__(num=1000000):
-    fast_subprocess.run(num, "import threading;import contextlib;import contextvars;import decimal;"
-        "import ast;import asyncio;import argparse;import base64;import bisect;import calendar;"
-        "import configparser;import copyreg;import dataclasses;import enum;import fractions;"
-        "import glob;import hashlib;import os;import typing;import tomllib")
+    fast_subprocess.run(num)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,13 +43,20 @@ package com.oracle.graal.python.builtins.modules.ast;
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T_AST;
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__ATTRIBUTES;
 import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELDS;
+import static com.oracle.graal.python.builtins.modules.ast.AstModuleBuiltins.T__FIELD_TYPES;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MATCH_ARGS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.util.PythonUtils.convertToObjectArray;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
@@ -84,6 +91,27 @@ final class AstTypeFactory {
         }
         astModule.setAttribute(name, newType);
         return newType;
+    }
+
+    void setFieldTypes(PythonClass cls, TruffleString[] fields, Object... types) {
+        assert fields.length == types.length;
+        HashingStorage storage = new DynamicObjectStorage(language);
+        for (int i = 0; i < fields.length; i++) {
+            storage = HashingStorageSetItem.executeUncached(storage, fields[i], types[i]);
+        }
+        PDict fieldTypes = PFactory.createDict(language, storage);
+        cls.setAttribute(T__FIELD_TYPES, fieldTypes);
+        cls.setAttribute(T___ANNOTATIONS__, fieldTypes);
+    }
+
+    Object makeFieldType(Object type, boolean sequence, boolean optional) {
+        if (sequence) {
+            type = PFactory.createGenericAlias(language, PythonBuiltinClassType.PList, type);
+        }
+        if (optional) {
+            type = PFactory.createUnionType(language, new Object[]{type, PythonBuiltinClassType.PNone});
+        }
+        return type;
     }
 
     static PythonObject createSingleton(PythonClass cls) {

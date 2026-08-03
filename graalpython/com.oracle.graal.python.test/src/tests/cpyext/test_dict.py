@@ -76,6 +76,31 @@ def _reference_get_item_with_error(args):
     return d.get(args[1])
 
 
+def _reference_get_item_ref(args):
+    d, key = args
+    if not isinstance(d, dict):
+        raise SystemError
+    try:
+        return 1, d[key]
+    except KeyError:
+        return 0, None
+
+
+def _reference_get_item_string_ref(args):
+    return _reference_get_item_ref(args)
+
+
+def _reference_pydict_pop(args):
+    d, key, want_result = args
+    if not isinstance(d, dict):
+        raise SystemError
+    try:
+        value = d.pop(key)
+    except KeyError:
+        return 0, None, d
+    return 1, value if want_result else None, d
+
+
 def _reference_set_item(args):
     try:
         d = args[0]
@@ -88,6 +113,15 @@ def _reference_set_item(args):
 def _reference_setdefault(args):
     d, key, default = args
     return d.setdefault(key, default), d
+
+
+def _reference_setdefault_ref(args):
+    d, key, default, want_result = args
+    if not isinstance(d, dict):
+        raise SystemError
+    already_present = key in d
+    value = d.setdefault(key, default)
+    return (1 if already_present else 0), (value if want_result else None), d
 
 
 def _reference_del_item(args):
@@ -161,6 +195,7 @@ class BadEq:
     def __hash__(self):
         return hash(self.s)
 
+
 class MappingObj:
     def keys(self):
         return "ab"
@@ -169,13 +204,47 @@ class MappingObj:
 
 class TestPyDict(CPyExtTestCase):
 
-    # PyDict_Pop
+    # _PyDict_Pop
     test__PyDict_Pop = CPyExtFunction(
         _reference_pop,
         lambda: (({}, "a", "42"), ({'a': "hello"}, "a", "42"), ({'a': "hello"}, "b", "42"), ({BadEq('a'): "hello"}, "a", "42" )),
         resultspec="O",
         argspec='OOO',
         arguments=("PyObject* dict", "PyObject* key", "PyObject* deflt"),
+        cmpfunc=unhandled_error_compare
+    )
+
+    # PyDict_Pop
+    test_PyDict_Pop = CPyExtFunction(
+        _reference_pydict_pop,
+        lambda: (
+            ({}, "missing", True),
+            ({"key": "value"}, "key", True),
+            ({"key": "value"}, "key", False),
+            ({}, [], True),
+            ([], "key", True),
+            ({BadEq("key"): "value"}, "key", True),
+        ),
+        code='''PyObject* wrap_PyDict_Pop(PyObject* dict, PyObject* key, int want_result) {
+            PyObject* result = (PyObject*)0xdeadbeef;
+            int status = PyDict_Pop(dict, key, want_result ? &result : NULL);
+            if (status < 0) {
+                if (want_result) {
+                    assert(result == NULL);
+                }
+                return NULL;
+            }
+            assert(status == 0 || status == 1);
+            if (want_result) {
+                assert((status == 0) == (result == NULL));
+            }
+            PyObject* value = want_result && result != NULL ? result : Py_NewRef(Py_None);
+            return Py_BuildValue("iNN", status, value, Py_NewRef(dict));
+        }''',
+        resultspec="N",
+        argspec='OOp',
+        arguments=("PyObject* dict", "PyObject* key", "int want_result"),
+        callfunction="wrap_PyDict_Pop",
         cmpfunc=unhandled_error_compare
     )
 
@@ -213,6 +282,23 @@ class TestPyDict(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyDict_GetItem_preserves_exception = CPyExtFunction(
+        lambda args: True,
+        lambda: (({}, "missing"), ({"key": "value"}, "key")),
+        code='''PyObject* wrap_PyDict_GetItem_preserves_exception(PyObject* dict, PyObject* key) {
+            PyErr_SetString(PyExc_ValueError, "preserved");
+            PyDict_GetItem(dict, key);
+            int preserved = PyErr_ExceptionMatches(PyExc_ValueError);
+            PyErr_Clear();
+            return PyBool_FromLong(preserved);
+        }''',
+        resultspec="O",
+        argspec='OO',
+        arguments=("PyObject* dict", "PyObject* key"),
+        callfunction="wrap_PyDict_GetItem_preserves_exception",
+        cmpfunc=unhandled_error_compare
+    )
+
     # PyDict_GetItemWithError
     test_PyDict_GetItemWithError = CPyExtFunction(
         _reference_get_item_with_error,
@@ -232,6 +318,59 @@ class TestPyDict(CPyExtTestCase):
         argspec='OO',
         arguments=("PyObject* dict", "PyObject* key"),
         callfunction="wrap_PyDict_GetItemWithError",
+        cmpfunc=unhandled_error_compare
+    )
+
+    # PyDict_GetItemRef
+    test_PyDict_GetItemRef = CPyExtFunction(
+        _reference_get_item_ref,
+        lambda: (
+            ({}, "missing"),
+            ({"key": "present"}, "key"),
+            ({}, []),
+            ([], "key"),
+        ),
+        code='''PyObject* wrap_PyDict_GetItemRef(PyObject* dict, PyObject* key) {
+            PyObject* result = (PyObject*)0xdeadbeef;
+            int status = PyDict_GetItemRef(dict, key, &result);
+            if (status < 0) {
+                assert(result == NULL);
+                return NULL;
+            }
+            assert((status == 0) == (result == NULL));
+            PyObject* value = result == NULL ? Py_NewRef(Py_None) : result;
+            return Py_BuildValue("iN", status, value);
+        }''',
+        resultspec="N",
+        argspec='OO',
+        arguments=("PyObject* dict", "PyObject* key"),
+        callfunction="wrap_PyDict_GetItemRef",
+        cmpfunc=unhandled_error_compare
+    )
+
+    # PyDict_GetItemStringRef
+    test_PyDict_GetItemStringRef = CPyExtFunction(
+        _reference_get_item_string_ref,
+        lambda: (
+            ({}, "missing"),
+            ({"key": "present"}, "key"),
+            ([], "key"),
+        ),
+        code='''PyObject* wrap_PyDict_GetItemStringRef(PyObject* dict, const char* key) {
+            PyObject* result = (PyObject*)0xdeadbeef;
+            int status = PyDict_GetItemStringRef(dict, key, &result);
+            if (status < 0) {
+                assert(result == NULL);
+                return NULL;
+            }
+            assert((status == 0) == (result == NULL));
+            PyObject* value = result == NULL ? Py_NewRef(Py_None) : result;
+            return Py_BuildValue("iN", status, value);
+        }''',
+        resultspec="N",
+        argspec='Os',
+        arguments=("PyObject* dict", "const char* key"),
+        callfunction="wrap_PyDict_GetItemStringRef",
         cmpfunc=unhandled_error_compare
     )
 
@@ -272,6 +411,23 @@ class TestPyDict(CPyExtTestCase):
         arguments=("PyObject* dict", "char* key"),
         resulttype="PyObject*",
         callfunction="wrap_PyDict_GetItemString",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyDict_GetItemString_preserves_exception = CPyExtFunction(
+        lambda args: True,
+        lambda: (({}, "missing"), ({"key": "value"}, "key")),
+        code='''PyObject* wrap_PyDict_GetItemString_preserves_exception(PyObject* dict, char* key) {
+            PyErr_SetString(PyExc_ValueError, "preserved");
+            PyDict_GetItemString(dict, key);
+            int preserved = PyErr_ExceptionMatches(PyExc_ValueError);
+            PyErr_Clear();
+            return PyBool_FromLong(preserved);
+        }''',
+        resultspec="O",
+        argspec='Os',
+        arguments=("PyObject* dict", "char* key"),
+        callfunction="wrap_PyDict_GetItemString_preserves_exception",
         cmpfunc=unhandled_error_compare
     )
 
@@ -344,24 +500,32 @@ class TestPyDict(CPyExtTestCase):
 
     # _PyDict_SetItem_KnownHash
     test__PyDict_SetItem_KnownHash = CPyExtFunction(
-        lambda args: {'a': "hello"},
-        lambda: (({'a': "hello"}, ),),
-        code='''PyObject* wrap__PyDict_SetItem_KnownHash(PyObject* dict) {
+        lambda args: {args[0]: args[1]},
+        lambda: (('a', "hello"),),
+        code='''#define Py_BUILD_CORE
+        #include "internal/pycore_dict.h"
+        #undef Py_BUILD_CORE
+
+        PyObject* wrap__PyDict_SetItem_KnownHash(PyObject* key, PyObject* value) {
             PyObject* result = PyDict_New();
-
-            Py_ssize_t ppos = 0;
-            PyObject* key;
-            PyObject* value;
-            Py_hash_t phash;
-
-            _PyDict_Next(dict, &ppos, &key, &value, &phash);
-            _PyDict_SetItem_KnownHash(result, key, value, phash);
+            if (result == NULL) {
+                return NULL;
+            }
+            Py_hash_t phash = PyObject_Hash(key);
+            if (phash == -1) {
+                Py_DECREF(result);
+                return NULL;
+            }
+            if (_PyDict_SetItem_KnownHash(result, key, value, phash) < 0) {
+                Py_DECREF(result);
+                return NULL;
+            }
             return result;
         }
         ''',
         resultspec="O",
-        argspec='O',
-        arguments=["PyObject* dict"],
+        argspec='OO',
+        arguments=["PyObject* key", "PyObject* value"],
         callfunction="wrap__PyDict_SetItem_KnownHash",
     )
 
@@ -386,6 +550,37 @@ class TestPyDict(CPyExtTestCase):
         argspec='OOO',
         arguments=("PyObject* dict", "PyObject* key", "PyObject* deflt"),
         callfunction="wrap_PyDict_SetDefault",
+        cmpfunc=unhandled_error_compare
+    )
+
+    # PyDict_SetDefaultRef
+    test_PyDict_SetDefaultRef = CPyExtFunction(
+        _reference_setdefault_ref,
+        lambda: (
+            ({}, "key", "inserted", True),
+            ({"key": "present"}, "key", "default", True),
+            ({}, "key", "inserted", False),
+            ({"key": "present"}, "key", "default", False),
+            ({}, [], "default", True),
+            ([], "key", "default", True),
+        ),
+        code='''PyObject* wrap_PyDict_SetDefaultRef(PyObject* dict, PyObject* key, PyObject* deflt, int want_result) {
+            PyObject* result = (PyObject*)0xdeadbeef;
+            int status = PyDict_SetDefaultRef(dict, key, deflt, want_result ? &result : NULL);
+            if (status < 0) {
+                if (want_result) {
+                    assert(result == NULL);
+                }
+                return NULL;
+            }
+            assert(status == 0 || status == 1);
+            PyObject* value = want_result ? result : Py_NewRef(Py_None);
+            return Py_BuildValue("iNN", status, value, Py_NewRef(dict));
+        }''',
+        resultspec="N",
+        argspec='OOOp',
+        arguments=("PyObject* dict", "PyObject* key", "PyObject* deflt", "int want_result"),
+        callfunction="wrap_PyDict_SetDefaultRef",
         cmpfunc=unhandled_error_compare
     )
 

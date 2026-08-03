@@ -79,15 +79,18 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
 
     @autoretry
     def validate_repl(stdin, python_args=(), ignore_preamble=True, extra_input_and_output=()):
-        env = os.environ.copy()
-        env['TERM'] = 'ansi'
-        env['PYTHONIOENCODING'] = 'utf-8'
+        env = {
+            'TERM': 'ansi',
+            'NO_COLOR': '1',
+            'PYTHONIOENCODING': 'utf-8',
+            'PYTHON_BASIC_REPL': '1',
+        }
         pty_parent, pty_child = os.openpty()
         try:
             import termios
             termios.tcsetwinsize(pty_parent, (60, 80))
             proc = subprocess.Popen(
-                [sys.executable, '-s', '-E', '-P', *python_args],
+                [sys.executable, '-s', '-P', *python_args],
                 env=env,
                 stdin=pty_child,
                 stdout=pty_child,
@@ -169,7 +172,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             'hello'
             >>> _
             'hello'
-        """), python_args=['-I'])
+        """), python_args=['-S'])
 
 
     @autoretry
@@ -213,6 +216,8 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             >>> 1 / 0
             Traceback (most recent call last):
               File "<stdin>", line 1, in <module>
+                1 / 0
+                ~~^~~
             ZeroDivisionError: division by zero
             >>> import sys
             >>> sys.last_value
@@ -224,7 +229,10 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             >>> BrokenRepr()
             Traceback (most recent call last):
               File "<stdin>", line 1, in <module>
+                BrokenRepr()
+                ~~~~~~~~~~^^
               File "<stdin>", line 3, in __repr__
+                asdf
             NameError: name 'asdf' is not defined
         """))
 
@@ -259,6 +267,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 Traceback (most recent call last):
                   File "{os.path.realpath(f.name)}", line 3, in <module>
                     sys.exit(1)
+                    ~~~~~~~~^^^
                 SystemExit: 1
                 >>> a
                 1

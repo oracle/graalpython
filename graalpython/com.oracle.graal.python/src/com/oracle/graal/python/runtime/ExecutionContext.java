@@ -419,20 +419,16 @@ public abstract class ExecutionContext {
             PFrame.Reference info = PArguments.getCurrentFrameInfo(frame);
             CompilerAsserts.partialEvaluationConstant(node);
             if (node.getFrameEscapedProfile().profile(info.isEscaped())) {
-                exitEscaped(frame, node, location, info);
+                exitEscaped(frame, location, info);
             }
         }
 
         @InliningCutoff
-        private void exitEscaped(VirtualFrame frame, PRootNode node, Node location, Reference info) {
+        private void exitEscaped(VirtualFrame frame, Node location, Reference info) {
             if (!everEscaped) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 everEscaped = true;
             }
-            forceEscapeFrame(frame, location, info, ensureMaterializeNode());
-        }
-
-        public static void forceEscapeFrame(Frame frame, Node location, Reference info, MaterializeFrameNode materializeNode) {
             Reference callerInfo = info.getCallerInfo();
             if (callerInfo == null) {
                 // we didn't request the caller frame reference. now we need it.
@@ -455,7 +451,12 @@ public abstract class ExecutionContext {
             // go to the other branch and setNeedsCallerFrame. This helps to prevent one-off
             // initializations (importing a module) from invalidating the assumption
 
-            materializeNode.execute(location, false, true, frame);
+            PFrame pFrame = ensureMaterializeNode().execute(location, false, false, frame);
+            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
+            if (bytecodeNode != null) {
+                pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frame.materialize()), true);
+                assert !pFrame.outdatedCallerFlags(CallerFlags.ALL_FRAME_FLAGS);
+            }
             // if this frame escaped we must ensure that also f_back does
             callerInfo.markAsEscaped();
             info.setCallerInfo(callerInfo);

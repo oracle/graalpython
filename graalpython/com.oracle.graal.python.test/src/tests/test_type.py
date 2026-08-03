@@ -463,3 +463,55 @@ def test_call_not_function():
     class Callable:
         __call__ = dict
     assert Callable()(a=1) == {'a': 1}
+
+
+def test_class_firstlineno():
+    def identity(cls):
+        return cls
+
+    namespace = {"identity": identity, "__name__": "test_firstlineno"}
+    exec("""\
+
+class Plain:
+    pass
+
+@identity
+@identity
+class Decorated:
+    pass
+""", namespace)
+
+    assert namespace["Plain"].__firstlineno__ == 2
+    assert namespace["Decorated"].__firstlineno__ == 5
+
+    namespace["Plain"].__module__ = "elsewhere"
+    assert not hasattr(namespace["Plain"], "__firstlineno__")
+
+
+def test_class_static_attributes():
+    class C:
+        def f(self, obj):
+            self.z = self.a = 42
+            self.a = 43
+            self.read
+            self.augmented += 1
+            del self.deleted
+            obj.self = 44
+
+            def nested(self):
+                self.nested = 45
+
+    assert C.__static_attributes__ == ("a", "nested", "z")
+
+
+def test_class_static_attributes_nested_classes():
+    class Outer:
+        def f(self):
+            self.outer = 1
+
+        class Inner:
+            def f(self):
+                self.inner = 2
+
+    assert Outer.__static_attributes__ == ("outer",)
+    assert Outer.Inner.__static_attributes__ == ("inner",)

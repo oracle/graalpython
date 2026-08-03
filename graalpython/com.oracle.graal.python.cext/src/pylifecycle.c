@@ -56,6 +56,7 @@
 
 
 #include <locale.h>               // setlocale()
+#include <stdarg.h>               // va_list
 #include <stdlib.h>               // getenv()
 #ifdef HAVE_UNISTD_H
 #  include <unistd.h>             // isatty()
@@ -68,7 +69,7 @@ int Py_IsInitialized(void) {
 }
 
 int
-_Py_IsFinalizing(void)
+Py_IsFinalizing(void)
 {
     return graalpy_finalizing;
 }
@@ -116,10 +117,26 @@ void _Py_NO_RETURN  _Py_FatalErrorFunc(const char *func, const char *msg) {
     abort();
 }
 
+void _Py_NO_RETURN
+_Py_FatalErrorFormat(const char *func, const char *format, ...)
+{
+    char buffer[256];
+    va_list vargs;
+
+    if (!format) {
+        _Py_FatalErrorFunc(func, NULL);
+    }
+
+    va_start(vargs, format);
+    PyOS_vsnprintf(buffer, sizeof(buffer), format, vargs);
+    va_end(vargs);
+    _Py_FatalErrorFunc(func, buffer);
+}
+
 _PyRuntimeState _PyRuntime
 #if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
 __attribute__ ((section (".PyRuntime")))
 #endif
-= _PyRuntimeState_INIT(_PyRuntime);
+= _PyRuntimeState_INIT(_PyRuntime, _Py_Debug_Cookie);
 
 static int runtime_initialized = 0;

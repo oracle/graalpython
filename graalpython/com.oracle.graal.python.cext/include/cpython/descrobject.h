@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -61,8 +61,6 @@ typedef struct {
     struct wrapperbase *d_base;
     void *d_wrapped; /* This can be any function pointer */
 } PyWrapperDescrObject;
-
-PyAPI_DATA(PyTypeObject) _PyMethodWrapper_Type;
 
 PyAPI_FUNC(PyObject *) PyDescr_NewWrapper(PyTypeObject *,
                                                 struct wrapperbase *, void *);

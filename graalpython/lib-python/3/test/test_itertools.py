@@ -1,5 +1,6 @@
 import doctest
 import unittest
+import itertools
 from test import support
 from test.support import threading_helper, script_helper
 from itertools import *
@@ -187,7 +188,11 @@ class TestBasicOps(unittest.TestCase):
                              [('A', 'B'), ('C', 'D'), ('E', 'F'), ('G',)])
         self.assertEqual(list(batched('ABCDEFG', 1)),
                             [('A',), ('B',), ('C',), ('D',), ('E',), ('F',), ('G',)])
+        self.assertEqual(list(batched('ABCDEF', 2, strict=True)),
+                             [('A', 'B'), ('C', 'D'), ('E', 'F')])
 
+        with self.assertRaises(ValueError):         # Incomplete batch when strict
+            list(batched('ABCDEFG', 3, strict=True))
         with self.assertRaises(TypeError):          # Too few arguments
             list(batched('ABCDEFG'))
         with self.assertRaises(TypeError):
@@ -651,7 +656,7 @@ class TestBasicOps(unittest.TestCase):
         count(1, maxsize+5); sys.exc_info()
 
     @pickle_deprecated
-    def test_count_with_stride(self):
+    def test_count_with_step(self):
         self.assertEqual(lzip('abc',count(2,3)), [('a', 2), ('b', 5), ('c', 8)])
         self.assertEqual(lzip('abc',count(start=2,step=3)),
                          [('a', 2), ('b', 5), ('c', 8)])
@@ -725,6 +730,28 @@ class TestBasicOps(unittest.TestCase):
         self.assertEqual(repr(c), f'count({maxsize}, -1)')
         next(c)
         self.assertEqual(repr(c), f'count({maxsize - 1}, -1)')
+
+    @threading_helper.requires_working_threading()
+    def test_count_threading(self, step=1):
+        # this test verifies multithreading consistency, which is
+        # mostly for testing builds without GIL, but nice to test anyway
+        count_to = 10_000
+        num_threads = 10
+        c = count(step=step)
+        def counting_thread():
+            for i in range(count_to):
+                next(c)
+        threads = []
+        for i in range(num_threads):
+            thread = threading.Thread(target=counting_thread)
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
+        self.assertEqual(next(c), count_to * num_threads * step)
+
+    def test_count_with_step_threading(self):
+        self.test_count_threading(step=5)
 
     def test_cycle(self):
         self.assertEqual(take(10, cycle('abc')), list('abcabcabca'))
@@ -969,6 +996,59 @@ class TestBasicOps(unittest.TestCase):
         self.assertRaises(ExpectedError, gulp, [None], keyfunc)
         keyfunc.skip = 1
         self.assertRaises(ExpectedError, gulp, [None, None], keyfunc)
+
+    def test_groupby_reentrant_eq_does_not_crash(self):
+        # regression test for gh-143543
+        class Key:
+            def __init__(self, do_advance):
+                self.do_advance = do_advance
+
+            def __eq__(self, other):
+                if self.do_advance:
+                    self.do_advance = False
+                    next(g)
+                    return NotImplemented
+                return False
+
+        def keys():
+            yield Key(True)
+            yield Key(False)
+
+        g = itertools.groupby([None, None], keys().send)
+        next(g)
+        next(g)  # must pass with address sanitizer
+
+    def test_grouper_reentrant_eq_does_not_crash(self):
+        # regression test for gh-146613
+        grouper_iter = None
+
+        class Key:
+            __hash__ = None
+
+            def __init__(self, do_advance):
+                self.do_advance = do_advance
+
+            def __eq__(self, other):
+                nonlocal grouper_iter
+                if self.do_advance:
+                    self.do_advance = False
+                    if grouper_iter is not None:
+                        try:
+                            next(grouper_iter)
+                        except StopIteration:
+                            pass
+                    return NotImplemented
+                return True
+
+        def keyfunc(element):
+            if element == 0:
+                return Key(do_advance=True)
+            return Key(do_advance=False)
+
+        g = itertools.groupby(range(4), keyfunc)
+        key, grouper_iter = next(g)
+        items = list(grouper_iter)
+        self.assertEqual(len(items), 1)
 
     def test_filter(self):
         self.assertEqual(list(filter(isEven, range(6))), [0,2,4])
@@ -1293,12 +1373,16 @@ class TestBasicOps(unittest.TestCase):
                 else:
                     return
 
-        def product2(*args, **kwds):
+        def product2(*iterables, repeat=1):
             'Pure python version used in docs'
-            pools = list(map(tuple, args)) * kwds.get('repeat', 1)
+            if repeat < 0:
+                raise ValueError('repeat argument cannot be negative')
+            pools = [tuple(pool) for pool in iterables] * repeat
+
             result = [[]]
             for pool in pools:
                 result = [x+[y] for x in result for y in pool]
+
             for prod in result:
                 yield tuple(prod)
 
@@ -1848,6 +1932,13 @@ class TestBasicOps(unittest.TestCase):
     def test_zip_longest_result_gc(self):
         # Ditto for zip_longest.
         it = zip_longest([[]])
+        gc.collect()
+        self.assertTrue(gc.is_tracked(next(it)))
+
+    @support.cpython_only
+    def test_pairwise_result_gc(self):
+        # Ditto for pairwise.
+        it = pairwise([None, None])
         gc.collect()
         self.assertTrue(gc.is_tracked(next(it)))
 
@@ -2821,7 +2912,7 @@ class SizeofTest(unittest.TestCase):
 
 
 def load_tests(loader, tests, pattern):
-    tests.addTest(doctest.DocTestSuite())
+    tests.addTest(doctest.DocTestSuite(itertools))
     return tests
 
 

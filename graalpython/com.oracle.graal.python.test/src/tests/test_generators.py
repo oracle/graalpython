@@ -554,7 +554,7 @@ def _test_generator_frame(checks):
     except StopIteration:
         pass
     if f:
-        assert f.f_back is sys._getframe()
+        assert f.f_back is None
         assert f.f_globals is globals()
         assert f.f_locals == {'a': 1, 'b': 2, 'c': 3}
         # TODO GR-61955
@@ -588,7 +588,7 @@ def test_generator_frame_from_getframe():
         assert False
     except StopIteration:
         pass
-    assert f.f_back is sys._getframe()
+    assert f.f_back is None
     assert f.f_globals is globals()
     assert f.f_locals == {'a': 1, 'b': 2}
     # TODO GR-61955

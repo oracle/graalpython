@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -88,3 +88,31 @@ class TestCeval(CPyExtTestCase):
             tp_methods='{"get_globals", (PyCFunction)get_globals, METH_NOARGS | METH_STATIC, NULL}',
         )
         assert Tester.get_globals() is globals()
+
+    def test_PyEval_GetFrameObjects(self):
+        Tester = CPyExtType(
+            "GetFrameObjectsTester",
+            code="""
+            static PyObject* get_builtins(PyObject* unused) {
+                return PyEval_GetFrameBuiltins();
+            }
+
+            static PyObject* get_globals(PyObject* unused) {
+                return PyEval_GetFrameGlobals();
+            }
+
+            static PyObject* get_locals(PyObject* unused) {
+                return PyEval_GetFrameLocals();
+            }
+            """,
+            tp_methods='''
+                {"get_builtins", (PyCFunction)get_builtins, METH_NOARGS | METH_STATIC, NULL},
+                {"get_globals", (PyCFunction)get_globals, METH_NOARGS | METH_STATIC, NULL},
+                {"get_locals", (PyCFunction)get_locals, METH_NOARGS | METH_STATIC, NULL}
+            ''',
+        )
+
+        marker = object()
+        assert Tester.get_builtins() is __builtins__
+        assert Tester.get_globals() is globals()
+        assert Tester.get_locals()["marker"] is marker

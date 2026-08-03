@@ -10,11 +10,13 @@
 #include "Python.h"
 #if 0 // GraalPy change
 #include "pycore_abstract.h"      // _PyIndex_Check()
+#include "pycore_ceval.h"         // _PyEval_GetBuiltin()
 #endif // GraalPy change
 #include "pycore_gc.h"            // _PyObject_GC_IS_TRACKED()
 #if 0 // GraalPy change
 #include "pycore_initconfig.h"    // _PyStatus_OK()
 #endif // GraalPy change
+#include "pycore_modsupport.h"    // _PyArg_NoKeywords()
 #include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
 
 #if 0 // GraalPy change
@@ -72,7 +74,7 @@ tuple_alloc(Py_ssize_t size)
 static inline PyObject *
 tuple_get_empty(void)
 {
-    return Py_NewRef(&_Py_SINGLETON(tuple_empty));
+    return (PyObject *)&_Py_SINGLETON(tuple_empty);
 }
 
 PyObject *
@@ -252,7 +254,6 @@ _PyTuple_MaybeUntrack(PyObject *op)
     _PyObject_GC_UNTRACK(op);
 }
 
-NO_INLINE // GraalPy change: disallow bitcode inlining
 PyObject *
 PyTuple_Pack(Py_ssize_t n, ...)
 {
@@ -893,8 +894,8 @@ tuple_subtype_new(PyTypeObject *type, PyObject *iterable)
         return NULL;
     }
     // GraalPy change
-    PyObject **src_arr = _PyTuple_ITEMS(tmp);
-    PyObject **arr = _PyTuple_ITEMS(newobj);
+    PyObject **src_arr = GraalPyTuple_ITEMS(tmp);
+    PyObject **arr = GraalPyTuple_ITEMS(newobj);
     for (i = 0; i < n; i++) {
 #if 0 // GraalPy change
         item = PyTuple_GET_ITEM(tmp, i);
@@ -995,11 +996,17 @@ tuple___getnewargs___impl(PyTupleObject *self)
     return Py_BuildValue("(N)", tupleslice(self, 0, Py_SIZE(self)));
 }
 
+
+PyDoc_STRVAR(tuple_class_getitem_doc,
+"Tuples are generic over the types of their contents.\n\n\
+For example, use ``tuple[int, str]`` for a pair whose first element is an int and second element is a string.\n\n\
+Tuples also support the form ``tuple[T, ...]`` to indicate an arbitrary length tuple of elements of type T.");
+
 static PyMethodDef tuple_methods[] = {
     TUPLE___GETNEWARGS___METHODDEF
     TUPLE_INDEX_METHODDEF
     TUPLE_COUNT_METHODDEF
-    {"__class_getitem__", Py_GenericAlias, METH_O|METH_CLASS, PyDoc_STR("See PEP 585")},
+    {"__class_getitem__", Py_GenericAlias, METH_O|METH_CLASS, tuple_class_getitem_doc},
     {NULL,              NULL}           /* sentinel */
 };
 
@@ -1130,11 +1137,12 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
     for (i = newsize; i < oldsize; i++) {
         Py_CLEAR(v->ob_item[i]);
     }
+    _PyReftracerTrack((PyObject *)v, PyRefTracer_DESTROY);
     sv = PyObject_GC_Resize(PyTupleObject, v, newsize);
     if (sv == NULL) {
         *pv = NULL;
 #ifdef Py_REF_DEBUG
-        _Py_DecRefTotal(_PyInterpreterState_GET());
+        _Py_DecRefTotal(_PyThreadState_GET());
 #endif
         PyObject_GC_Del(v);
         return -1;
@@ -1151,18 +1159,13 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
 
 #if 0 // GraalPy change
 
-static void maybe_freelist_clear(PyInterpreterState *, int);
+static void maybe_freelist_clear(struct _Py_object_freelists *, int);
+
 
 void
-_PyTuple_Fini(PyInterpreterState *interp)
+_PyTuple_ClearFreeList(struct _Py_object_freelists *freelists, int is_finalization)
 {
-    maybe_freelist_clear(interp, 1);
-}
-
-void
-_PyTuple_ClearFreeList(PyInterpreterState *interp)
-{
-    maybe_freelist_clear(interp, 0);
+    maybe_freelist_clear(freelists, is_finalization);
 }
 
 /*********************** Tuple Iterator **************************/
@@ -1314,30 +1317,26 @@ tuple_iter(PyObject *seq)
  * freelists *
  *************/
 
-#define STATE (interp->tuple)
-#define FREELIST_FINALIZED (STATE.numfree[0] < 0)
+#define TUPLE_FREELIST (freelists->tuples)
+#define FREELIST_FINALIZED (TUPLE_FREELIST.numfree[0] < 0)
 
 static inline PyTupleObject *
 maybe_freelist_pop(Py_ssize_t size)
 {
-#if PyTuple_NFREELISTS > 0
-    PyInterpreterState *interp = _PyInterpreterState_GET();
-#ifdef Py_DEBUG
-    /* maybe_freelist_pop() must not be called after maybe_freelist_fini(). */
-    assert(!FREELIST_FINALIZED);
-#endif
+#ifdef WITH_FREELISTS
+    struct _Py_object_freelists *freelists = _Py_object_freelists_GET();
     if (size == 0) {
         return NULL;
     }
     assert(size > 0);
     if (size <= PyTuple_MAXSAVESIZE) {
         Py_ssize_t index = size - 1;
-        PyTupleObject *op = STATE.free_list[index];
+        PyTupleObject *op = TUPLE_FREELIST.items[index];
         if (op != NULL) {
             /* op is the head of a linked list, with the first item
                pointing to the next node.  Here we pop off the old head. */
-            STATE.free_list[index] = (PyTupleObject *) op->ob_item[0];
-            STATE.numfree[index]--;
+            TUPLE_FREELIST.items[index] = (PyTupleObject *) op->ob_item[0];
+            TUPLE_FREELIST.numfree[index]--;
             /* Inlined _PyObject_InitVar() without _PyType_HasFeature() test */
 #ifdef Py_TRACE_REFS
             /* maybe_freelist_push() ensures these were already set. */
@@ -1358,25 +1357,22 @@ maybe_freelist_pop(Py_ssize_t size)
 static inline int
 maybe_freelist_push(PyTupleObject *op)
 {
-#if PyTuple_NFREELISTS > 0
-    PyInterpreterState *interp = _PyInterpreterState_GET();
-#ifdef Py_DEBUG
-    /* maybe_freelist_push() must not be called after maybe_freelist_fini(). */
-    assert(!FREELIST_FINALIZED);
-#endif
+#ifdef WITH_FREELISTS
+    struct _Py_object_freelists *freelists = _Py_object_freelists_GET();
     if (Py_SIZE(op) == 0) {
         return 0;
     }
     Py_ssize_t index = Py_SIZE(op) - 1;
     if (index < PyTuple_NFREELISTS
-        && STATE.numfree[index] < PyTuple_MAXFREELIST
+        && TUPLE_FREELIST.numfree[index] < PyTuple_MAXFREELIST
+        && TUPLE_FREELIST.numfree[index] >= 0
         && Py_IS_TYPE(op, &PyTuple_Type))
     {
         /* op is the head of a linked list, with the first item
            pointing to the next node.  Here we set op as the new head. */
-        op->ob_item[0] = (PyObject *) STATE.free_list[index];
-        STATE.free_list[index] = op;
-        STATE.numfree[index]++;
+        op->ob_item[0] = (PyObject *) TUPLE_FREELIST.items[index];
+        TUPLE_FREELIST.items[index] = op;
+        TUPLE_FREELIST.numfree[index]++;
         OBJECT_STAT_INC(to_freelist);
         return 1;
     }
@@ -1385,13 +1381,13 @@ maybe_freelist_push(PyTupleObject *op)
 }
 
 static void
-maybe_freelist_clear(PyInterpreterState *interp, int fini)
+maybe_freelist_clear(struct _Py_object_freelists *freelists, int fini)
 {
-#if PyTuple_NFREELISTS > 0
+#ifdef WITH_FREELISTS
     for (Py_ssize_t i = 0; i < PyTuple_NFREELISTS; i++) {
-        PyTupleObject *p = STATE.free_list[i];
-        STATE.free_list[i] = NULL;
-        STATE.numfree[i] = fini ? -1 : 0;
+        PyTupleObject *p = TUPLE_FREELIST.items[i];
+        TUPLE_FREELIST.items[i] = NULL;
+        TUPLE_FREELIST.numfree[i] = fini ? -1 : 0;
         while (p) {
             PyTupleObject *q = p;
             p = (PyTupleObject *)(p->ob_item[0]);
@@ -1405,14 +1401,14 @@ maybe_freelist_clear(PyInterpreterState *interp, int fini)
 void
 _PyTuple_DebugMallocStats(FILE *out)
 {
-#if PyTuple_NFREELISTS > 0
-    PyInterpreterState *interp = _PyInterpreterState_GET();
+#ifdef WITH_FREELISTS
+    struct _Py_object_freelists *freelists = _Py_object_freelists_GET();
     for (int i = 0; i < PyTuple_NFREELISTS; i++) {
         int len = i + 1;
         char buf[128];
         PyOS_snprintf(buf, sizeof(buf),
                       "free %d-sized PyTupleObject", len);
-        _PyDebugAllocatorStats(out, buf, STATE.numfree[i],
+        _PyDebugAllocatorStats(out, buf, TUPLE_FREELIST.numfree[i],
                                _PyObject_VAR_SIZE(&PyTuple_Type, len));
     }
 #endif

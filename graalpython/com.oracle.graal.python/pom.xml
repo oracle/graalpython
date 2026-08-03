@@ -116,7 +116,7 @@ SOFTWARE.
             </goals>
             <configuration>
               <sources>
-                <source>../../mxbuild/graalpython/com.oracle.graal.python/src_gen</source>
+                <source>../../mxbuild/jdk25/com.oracle.graal.python/src_gen</source>
               </sources>
             </configuration>
           </execution>

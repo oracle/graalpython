@@ -70,7 +70,7 @@ class VenvTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             tmpfile = os.path.join(d, "venvlauncher.exe")
             launcher_command = f'"{os.path.realpath(sys.executable)}" -S'
-            shutil.copy(os.path.join(venv.__path__[0], "scripts", "nt", "graalpy.exe"), tmpfile)
+            shutil.copy(os.path.join(venv.__path__[0], "scripts", "nt", "venvlauncher.exe"), tmpfile)
             with open(tmpfile, "ab") as f:
                 sz = f.write(launcher_command.encode("utf-16le"))
                 assert f.write(struct.pack("@I", sz)) == 4

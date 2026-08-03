@@ -40,14 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes.UnpackValueNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -59,8 +65,32 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ArrayNodes {
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class GetFormatCheckedNode extends Node {
+        abstract BufferFormat execute(Node inliningTarget, TruffleString typeCode);
+
+        @Specialization
+        static BufferFormat get(Node inliningTarget, TruffleString typeCode,
+                        @Cached TruffleString.CodePointLengthNode lengthNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
+                        @Cached PRaiseNode raise,
+                        @Cached(value = "createIdentityProfile()", inline = false) ValueProfile valueProfile) {
+            if (lengthNode.execute(typeCode, TS_ENCODING) != 1) {
+                throw raise.raise(inliningTarget, TypeError, ErrorMessages.ARRAY_ARG_1_MUST_BE_UNICODE);
+            }
+            BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
+            if (format == null) {
+                throw raise.raise(inliningTarget, ValueError, ErrorMessages.BAD_TYPECODE);
+            }
+            return valueProfile.profile(format);
+        }
+    }
+
     @GenerateInline
     @GenerateUncached(false)
     @GenerateCached(false)

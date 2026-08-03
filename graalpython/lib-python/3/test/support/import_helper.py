@@ -114,7 +114,7 @@ def multi_interp_extensions_check(enabled=True):
     This only applies to modules that haven't been imported yet.
     It overrides the PyInterpreterConfig.check_multi_interp_extensions
     setting (see support.run_in_subinterp_with_config() and
-    _xxsubinterpreters.create()).
+    _interpreters.create()).
 
     Also see importlib.utils.allowing_all_extensions().
     """
@@ -303,8 +303,8 @@ def ready_to_import(name=None, source=""):
         try:
             sys.path.insert(0, tempdir)
             yield name, path
-            sys.path.remove(tempdir)
         finally:
+            sys.path.remove(tempdir)
             if old_module is not None:
                 sys.modules[name] = old_module
             else:

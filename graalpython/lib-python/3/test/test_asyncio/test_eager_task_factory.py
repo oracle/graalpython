@@ -2,16 +2,11 @@
 
 import asyncio
 import contextvars
-import gc
-import time
 import unittest
 
-from types import GenericAlias
 from unittest import mock
-from asyncio import base_events
 from asyncio import tasks
 from test.test_asyncio import utils as test_utils
-from test.test_asyncio.test_tasks import get_innermost_context
 from test.support.script_helper import assert_python_ok
 
 MOCK_ANY = mock.ANY
@@ -307,6 +302,18 @@ class CEagerTaskFactoryLoopTests(EagerTaskFactoryLoopTests, test_utils.TestCase)
 
        self.run_coro(run())
 
+    def test_name(self):
+        name = None
+        async def coro():
+            nonlocal name
+            name = asyncio.current_task().get_name()
+
+        async def main():
+            task = self.loop.create_task(coro(), name="test name")
+            self.assertEqual(name, "test name")
+            await task
+
+        self.run_coro(coro())
 
 class AsyncTaskCounter:
     def __init__(self, loop, *, task_class, eager):

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -169,7 +169,7 @@ public abstract class BufferStorageNodes {
             return PFactory.createBytes(language, new byte[]{bufferLib.readByte(buffer, offset)});
         }
 
-        @Specialization(guards = "format == UNICODE")
+        @Specialization(guards = "isUnicode(format)")
         static TruffleString unpackUnicode(Node inliningTarget, @SuppressWarnings("unused") BufferFormat format, Object buffer, int offset,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode,
@@ -341,7 +341,7 @@ public abstract class BufferStorageNodes {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError);
         }
 
-        @Specialization(guards = "format == UNICODE")
+        @Specialization(guards = "isUnicode(format)")
         static void packDouble(Node inliningTarget, @SuppressWarnings("unused") BufferFormat format, Object object, Object buffer, int offset,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached StringNodes.CastToTruffleStringChecked0Node cast,

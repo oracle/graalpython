@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -22,13 +22,13 @@
 /* Version parsed out into numeric values */
 /*--start constants--*/
 #define PY_MAJOR_VERSION        3
-#define PY_MINOR_VERSION        12
-#define PY_MICRO_VERSION        8
+#define PY_MINOR_VERSION        13
+#define PY_MICRO_VERSION        14
 #define PY_RELEASE_LEVEL        PY_RELEASE_LEVEL_FINAL
 #define PY_RELEASE_SERIAL       0
 
 /* Version as a string */
-#define PY_VERSION              "3.12.8"
+#define PY_VERSION              "3.13.14"
 /*--end constants--*/
 
 /* Version as a single 4-byte hex number, e.g. 0x010502B2 == 1.5.2b2.

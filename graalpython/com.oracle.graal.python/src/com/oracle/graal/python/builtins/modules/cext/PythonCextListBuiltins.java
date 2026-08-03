@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
@@ -52,8 +53,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtr;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtr;
 
 import java.util.Arrays;
 
@@ -154,6 +155,42 @@ public final class PythonCextListBuiltins {
         @Fallback
         Object fallback(Object list, @SuppressWarnings("unused") Object pos) {
             throw raiseFallback(list, PythonBuiltinClassType.PList);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
+    abstract static class PyList_GetItemRef extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object doPList(PList list, long key,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached EnsurePythonObjectNode ensureNode,
+                        @Cached ListGeneralizationNode generalizationNode,
+                        @Cached SetItemScalarNode setItemNode,
+                        @Cached GetItemScalarNode getItemNode,
+                        @Cached PRaiseNode raiseNode) {
+            SequenceStorage sequenceStorage = list.getSequenceStorage();
+            // we must do a bounds-check but we must not normalize the index
+            if (key < 0 || key >= sequenceStorage.length()) {
+                throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            }
+            Object result = getItemNode.execute(inliningTarget, sequenceStorage, (int) key);
+            // See the note in PyDict_GetItemRef
+            Object promotedValue = ensureNode.execute(context, result, false);
+            if (promotedValue != result) {
+                sequenceStorage = generalizationNode.execute(inliningTarget, sequenceStorage, promotedValue);
+                list.setSequenceStorage(sequenceStorage);
+                setItemNode.execute(inliningTarget, sequenceStorage, (int) key, promotedValue);
+                return promotedValue;
+            }
+            return result;
+        }
+
+        @Fallback
+        static Object fallback(@SuppressWarnings("unused") Object list, @SuppressWarnings("unused") Object pos,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_LIST);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,9 @@ package com.oracle.graal.python.builtins.objects.property;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ISABSTRACTMETHOD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SET_NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMETHOD__;
@@ -59,6 +61,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -141,6 +144,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         static Object doGenericBoundary(PProperty self, Object fget, Object fset, Object fdel, Object doc) {
+            self.setPropertyName(null);
             /*
              * CPython explicitly checks if the objects are 'NONE' and if so, they set 'NULL'. Also,
              * they just allow 'NULL' (which indicates a missing parameter and is our
@@ -246,6 +250,42 @@ public final class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, allowsDelete = true)
+    @GenerateNodeFactory
+    abstract static class PropertyNameNode extends PythonBinaryBuiltinNode {
+
+        @Specialization(guards = "isNoValue(value)")
+        static Object doGet(VirtualFrame frame, PProperty self, @SuppressWarnings("unused") PNone value,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectLookupAttr lookup,
+                        @Cached PRaiseNode raiseNode) {
+            Object name = self.getPropertyName();
+            if (name != null) {
+                return name;
+            }
+            Object fget = self.getFget();
+            if (fget != null) {
+                name = lookup.execute(frame, inliningTarget, fget, T___NAME__);
+                if (name != PNone.NO_VALUE) {
+                    return name;
+                }
+            }
+            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, self, T___NAME__);
+        }
+
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
+        static Object doSet(PProperty self, Object value) {
+            self.setPropertyName(value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        static Object doDelete(PProperty self, @SuppressWarnings("unused") DescriptorDeleteMarker marker) {
+            self.setPropertyName(null);
+            return PNone.NONE;
+        }
+    }
+
     @SuppressWarnings("this-escape")
     abstract static class PropertyCopyingNode extends PythonBinaryBuiltinNode {
         @Child BoundaryCallData boundaryCallData = BoundaryCallData.createFor(this);
@@ -305,6 +345,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
             if (IsBuiltinClassProfile.profileClassSlowPath(type, PythonBuiltinClassType.PProperty)) {
                 PProperty copy = PFactory.createProperty(PythonLanguage.get(null));
                 PropertyInitNode.doGenericBoundary(copy, get, set, del, doc);
+                copy.setPropertyName(pold.getPropertyName());
                 return copy;
             }
             PProperty newProp = (PProperty) CallNode.executeUncached(type, get, set, del, doc);
@@ -355,11 +396,19 @@ public final class PropertyBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetQualNameNode getQualNameNode,
+                        @Cached PyObjectLookupAttr lookupName,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached PRaiseNode raiseNode) {
             TruffleString qualName = getQualNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, obj));
-            if (self.getPropertyName() != null) {
-                TruffleString propertyName = reprNode.execute(frame, inliningTarget, self.getPropertyName());
+            Object name = self.getPropertyName();
+            if (name == null && self.getFget() != null) {
+                name = lookupName.execute(frame, inliningTarget, self.getFget(), T___NAME__);
+                if (name == PNone.NO_VALUE) {
+                    name = null;
+                }
+            }
+            if (name != null) {
+                TruffleString propertyName = reprNode.execute(frame, inliningTarget, name);
                 throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.PROPERTY_S_OF_S_OBJECT_HAS_NO_S, propertyName, qualName, what);
             } else {
                 throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.PROPERTY_OF_S_OBJECT_HAS_NO_S, qualName, what);

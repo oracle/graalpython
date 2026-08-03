@@ -118,7 +118,7 @@ def regrtest_runner(result: TestResult, test_func, runtests: RunTests) -> None:
 
 
 # Storage of uncollectable GC objects (gc.garbage)
-GC_GARBAGE = []
+GC_GARBAGE: list[object] = []
 
 
 def _load_run_test(result: TestResult, runtests: RunTests) -> None:
@@ -245,7 +245,7 @@ def _runtest(result: TestResult, runtests: RunTests) -> None:
     try:
         setup_tests(runtests)
 
-        if output_on_failure:
+        if output_on_failure or runtests.pgo:
             support.verbose = True
 
             stream = io.StringIO()
@@ -304,7 +304,10 @@ def run_single_test(test_name: TestName, runtests: RunTests) -> TestResult:
     result = TestResult(test_name)
     pgo = runtests.pgo
     try:
-        _runtest(result, runtests)
+        # gh-117783: don't immortalize deferred objects when tracking
+        # refleaks. Only releveant for the free-threaded build.
+        with support.suppress_immortalization(runtests.hunt_refleak):
+            _runtest(result, runtests)
     except:
         if not pgo:
             msg = traceback.format_exc()

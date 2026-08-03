@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.frame;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -62,23 +63,14 @@ import com.oracle.truffle.api.nodes.RootNode;
 public final class PFrame extends PythonBuiltinObject {
     private static final int UNINITIALIZED_LINE = -2;
 
+    private boolean materializedFrame;
     private BytecodeFrame bytecodeFrame;
 
-    /**
-     * Whether the frame has dict locals passed from the caller (happens in eval/exec and class
-     * bodies). Then locals is null and localsDict contains the dict locals. Otherwise both locals
-     * and localsDict might contain a copy of the frame locals.
-     */
-    private final boolean hasCustomLocals;
-    private Object localsDict;
+    private final Object customLocals;
     private PythonObject globals;
     private final Reference virtualFrameInfo;
     private final Thread thread;
-    /**
-     * The location must be an AST node connected to the
-     * {@link BytecodeNode} that was executed at the time when the BCI was captured.
-     */
-    private Node location;
+    private BytecodeNode bytecodeNode;
     private PFunction function;
     private PCode code;
     private int line = UNINITIALIZED_LINE;
@@ -96,7 +88,7 @@ public final class PFrame extends PythonBuiltinObject {
     public static final int NO_JUMP = -2;
     private int jumpDestLine = DISALLOW_JUMPS;
     private Object localTraceFun = null;
-    private boolean localsAccessed;
+    private PDict extraLocals;
 
     private boolean traceLine = true;
 
@@ -134,12 +126,12 @@ public final class PFrame extends PythonBuiltinObject {
         this.jumpDestLine = jumpDestLine;
     }
 
-    public boolean localsAccessed() {
-        return localsAccessed;
+    public PDict getExtraLocals() {
+        return extraLocals;
     }
 
-    public void setLocalsAccessed(boolean localsAccessed) {
-        this.localsAccessed = localsAccessed;
+    public void setExtraLocals(PDict extraLocals) {
+        this.extraLocals = extraLocals;
     }
 
     // TODO: frames: this is a large object, think about how to make this
@@ -194,51 +186,49 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object functionOrCode, boolean hasCustomLocals) {
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, BytecodeNode bytecodeNode, Object functionOrCode, Object customLocals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
-        this.location = location;
+        this.bytecodeNode = bytecodeNode;
         if (functionOrCode instanceof PFunction function) {
             this.function = function;
         } else if (functionOrCode instanceof PCode code) {
             this.code = code;
         }
-        this.hasCustomLocals = hasCustomLocals;
+        this.customLocals = customLocals;
         // Mark everything as current for now. MaterializeFrameNode will set lastCallerFlags to a
         // narrower value if needed
         this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
         this.thread = Thread.currentThread();
     }
 
-    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") long threadState, PCode code, PythonObject globals, Object localsDict) {
+    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") long threadState, PCode code, PythonObject globals, Object customLocals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         // TODO: frames: extract the information from the threadState object
         this.globals = globals;
         this.code = code;
-        this.location = code.getRootNode();
-        Reference curFrameInfo = new Reference(location != null ? location.getRootNode() : null, null);
+        Reference curFrameInfo = new Reference(code.getRootNode(), Reference.EMPTY);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
-        this.line = this.location == null ? code.getFirstLineNo() : UNINITIALIZED_LINE;
-        this.hasCustomLocals = true;
-        this.localsDict = localsDict;
+        this.line = code.getFirstLineNo();
+        this.customLocals = customLocals;
         // This is a synthetic frame, there will be no sync, mark everything as current
         this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
         this.thread = null;
     }
 
     /**
-     * Get the locals synced by {@link BytecodeFrame}. May be null when using custom locals, but
-     * null may also indicate that the locals were just not synced yet. Use
-     * {@link #hasCustomLocals()} to check if this {@code PFrame} has custom locals. In most cases,
-     * you should use {@link GetFrameLocalsNode} instead of this method.
+     * Get the bytecode frame with locals backing this frame. May be copied from the real frame or it might be materialized,
+     * depending on how the PFrame was synced. May be null when using custom locals. In most
+     * cases, you should use {@link GetFrameLocalsNode} to get a copy of the locals instead of this method.
      */
     public BytecodeFrame getBytecodeFrame() {
         return bytecodeFrame;
     }
 
-    public void setBytecodeFrame(BytecodeFrame bytecodeFrame) {
+    public void setBytecodeFrame(BytecodeFrame bytecodeFrame, boolean materialized) {
         this.bytecodeFrame = bytecodeFrame;
+        this.materializedFrame = materialized;
     }
 
     /**
@@ -258,7 +248,7 @@ public final class PFrame extends PythonBuiltinObject {
         if (outdatedCallerFlags(callerFlags)) {
             return true;
         }
-        if (CallerFlags.needsLocals(callerFlags) || CallerFlags.needsLasti(callerFlags)) {
+        if ((CallerFlags.needsLocals(callerFlags) && syncsLocals()) || CallerFlags.needsLasti(callerFlags)) {
             if (frame != null && PArguments.getCurrentFrameInfo(frame) == getRef()) {
                 return true;
             }
@@ -269,12 +259,8 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public boolean outdatedCallerFlags(int callerFlags) {
-        if (hasCustomLocals) {
-            // Custom locals don't need locals sync
-            callerFlags &= ~CallerFlags.NEEDS_LOCALS;
-        }
-        if (CallerFlags.needsLocals(callerFlags) && bytecodeFrame == null) {
-            return true;
+        if (CallerFlags.needsLocals(callerFlags) && !syncsLocals()) {
+            callerFlags &= ~(CallerFlags.NEEDS_LOCALS | CallerFlags.NEEDS_MATERIALIZED_LOCALS);
         }
         return (callerFlags & lastCallerFlags) != callerFlags;
     }
@@ -286,16 +272,16 @@ public final class PFrame extends PythonBuiltinObject {
     /**
      * Use {@link GetFrameLocalsNode} instead of accessing this directly.
      */
-    public Object getLocalsDict() {
-        return localsDict;
+    public Object getCustomLocals() {
+        return customLocals;
     }
 
-    public boolean hasCustomLocals() {
-        return hasCustomLocals;
+    public boolean hasMaterializedFrame() {
+        return materializedFrame;
     }
 
-    public void setLocalsDict(Object dict) {
-        localsDict = dict;
+    public boolean syncsLocals() {
+        return customLocals == null && !materializedFrame;
     }
 
     public PFrame.Reference getRef() {
@@ -336,13 +322,11 @@ public final class PFrame extends PythonBuiltinObject {
     @TruffleBoundary
     public int getLine() {
         if (line == UNINITIALIZED_LINE) {
-            if (location == null) {
+            if (bytecodeNode == null) {
                 line = -1;
             } else {
-                if (location instanceof BytecodeNode bytecodeNode) {
-                    PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) bytecodeNode.getRootNode();
-                    return rootNode.bciToLine(getBci(), bytecodeNode);
-                }
+                PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) bytecodeNode.getRootNode();
+                return rootNode.bciToLine(getBci(), bytecodeNode);
             }
         }
         return line;
@@ -374,16 +358,12 @@ public final class PFrame extends PythonBuiltinObject {
         this.globals = globals;
     }
 
-    public void setLocation(Node location) {
-        this.location = location;
-    }
-
-    public Node getLocation() {
-        return location;
+    public void setBytecodeNode(BytecodeNode bytecodeNode) {
+        this.bytecodeNode = bytecodeNode;
     }
 
     public BytecodeNode getBytecodeNode() {
-        return BytecodeNode.get(location);
+        return bytecodeNode;
     }
 
     public int getBci() {
@@ -397,7 +377,7 @@ public final class PFrame extends PythonBuiltinObject {
 
     public int getLasti() {
         assert CallerFlags.needsLasti(lastCallerFlags) : "Missing frame location sync";
-        return bciToLasti(bci, location);
+        return bciToLasti(bci, bytecodeNode);
     }
 
     @TruffleBoundary

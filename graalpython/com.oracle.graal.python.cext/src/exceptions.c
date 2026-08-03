@@ -40,6 +40,7 @@
  */
 #include "capi.h"
 
+#include <pycore_pyerrors.h>
 #include <pyerrors.h>
 
 #define EXCEPTION(NAME) PyObject* PyExc_##NAME = NULL;
@@ -66,4 +67,12 @@ GraalPyPrivate_Exception_SubtypeNew(PyTypeObject *type, PyObject *args) {
     self->args = args;
     Py_INCREF(args);
     return (PyObject *)self;
+}
+
+
+PyObject *
+_PyErr_NoMemory(PyThreadState *tstate)
+{
+    _PyErr_SetNone(tstate, PyExc_MemoryError);
+    return NULL;
 }

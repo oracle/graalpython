@@ -52,7 +52,7 @@ def test_strength():
     assert not s1.weaker(s1, s2)
 
 
-def test_classmethod_wraps_descriptor():
+def test_classmethod_does_not_chain_descriptor():
     class Descriptor:
         def __get__(self, obj, typ=None):
             return obj, typ
@@ -60,15 +60,19 @@ def test_classmethod_wraps_descriptor():
     class C:
         method = classmethod(Descriptor())
 
-    assert C.method == (C, C)
-    assert C().method == (C, C)
+    assert C.method.__self__ is C
+    assert C.method.__func__ is C.__dict__["method"].__func__
+    assert C().method.__self__ is C
+    assert C().method.__func__ is C.__dict__["method"].__func__
 
     method = C.__dict__["method"]
-    assert method.__get__(None, C) == (C, C)
-    assert method.__get__(C()) == (C, C)
+    assert method.__get__(None, C).__self__ is C
+    assert method.__get__(None, C).__func__ is method.__func__
+    assert method.__get__(C()).__self__ is C
+    assert method.__get__(C()).__func__ is method.__func__
 
 
-def test_classmethod_wraps_property():
+def test_classmethod_does_not_chain_property():
     class C:
         @classmethod
         @property
@@ -78,21 +82,29 @@ def test_classmethod_wraps_property():
     class D(C):
         pass
 
-    assert C.name == "C"
-    assert C().name == "C"
-    assert D.name == "D"
-    assert D().name == "D"
+    descriptor = C.__dict__["name"]
+    assert C.name.__self__ is C
+    assert C.name.__func__ is descriptor.__func__
+    assert C().name.__self__ is C
+    assert C().name.__func__ is descriptor.__func__
+    assert D.name.__self__ is D
+    assert D.name.__func__ is descriptor.__func__
+    assert D().name.__self__ is D
+    assert D().name.__func__ is descriptor.__func__
 
 
-def test_classmethod_wraps_staticmethod():
+def test_classmethod_does_not_chain_staticmethod():
     class C:
         method = classmethod(staticmethod(lambda value: ("static", value)))
 
-    assert C.method("arg") == ("static", "arg")
-    assert C().method("arg") == ("static", "arg")
+    descriptor = C.__dict__["method"]
+    assert C.method.__self__ is C
+    assert C.method.__func__ is descriptor.__func__
+    assert C().method.__self__ is C
+    assert C().method.__func__ is descriptor.__func__
 
 
-def test_classmethod_wraps_classmethod():
+def test_classmethod_does_not_chain_classmethod():
     class C:
         def method(cls, value):
             return cls, value
@@ -102,10 +114,15 @@ def test_classmethod_wraps_classmethod():
     class D(C):
         pass
 
-    assert C.method("arg") == (C, "arg")
-    assert C().method("arg") == (C, "arg")
-    assert D.method("arg") == (D, "arg")
-    assert D().method("arg") == (D, "arg")
+    descriptor = C.__dict__["method"]
+    assert C.method.__self__ is C
+    assert C.method.__func__ is descriptor.__func__
+    assert C().method.__self__ is C
+    assert C().method.__func__ is descriptor.__func__
+    assert D.method.__self__ is D
+    assert D.method.__func__ is descriptor.__func__
+    assert D().method.__self__ is D
+    assert D().method.__func__ is descriptor.__func__
 
 
 def test_classmethod_wraps_bound_method():
@@ -114,7 +131,9 @@ def test_classmethod_wraps_bound_method():
             return self, cls
 
     receiver = C()
-    assert not hasattr(type(receiver.method), "__get__")
+    bound = receiver.method
+    assert hasattr(type(bound), "__get__")
+    assert bound.__get__(object(), object) is bound
 
     class D:
         method = classmethod(receiver.method)

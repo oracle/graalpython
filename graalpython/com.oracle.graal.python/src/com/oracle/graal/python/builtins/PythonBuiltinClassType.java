@@ -43,6 +43,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_GENERIC;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_LRU_CACHE_WRAPPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MD5;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_MEMBER_DESCRIPTOR;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_NO_DEFAULT_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ORDERED_DICT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PARAM_SPEC_ARGS;
@@ -51,10 +52,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_PARTIAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POLYGLOT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_POSIX;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_PROPERTY;
-import static com.oracle.graal.python.nodes.BuiltinNames.J_SIGNAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA1;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA2;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SHA3;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_SIGNAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_SIMPLE_QUEUE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TUPLE_GETTER;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPES;
@@ -189,6 +190,7 @@ import com.oracle.graal.python.builtins.objects.foreign.ForeignNumberBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignTimeZoneBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
+import com.oracle.graal.python.builtins.objects.frame.FrameLocalsProxyBuiltins;
 import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.MethodDescriptorBuiltins;
@@ -260,6 +262,7 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.MemoryBIOBuiltins;
+import com.oracle.graal.python.builtins.objects.ssl.SSLCertificateBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLContextBuiltins;
 import com.oracle.graal.python.builtins.objects.ssl.SSLErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
@@ -269,6 +272,7 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.ThreadHandleBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
@@ -282,6 +286,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasBuiltins;
 import com.oracle.graal.python.builtins.objects.types.GenericAliasIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.typing.NoDefaultBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecArgsBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecBuiltins;
 import com.oracle.graal.python.builtins.objects.typing.ParamSpecKwargsBuiltins;
@@ -368,7 +373,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSimpleNamespace("SimpleNamespace", PythonObject, newBuilder().publishInModule("types").basetype().addDict(16).slots(SimpleNamespaceBuiltins.SLOTS).doc("""
                     A simple attribute-based namespace.
 
-                    SimpleNamespace(**kwargs)""")),
+                    SimpleNamespace(mapping_or_iterable=(), /, **kwargs)""")),
     PKeyWrapper("KeyWrapper", PythonObject, newBuilder().moduleName("functools").publishInModule("_functools").disallowInstantiation().slots(KeyWrapperBuiltins.SLOTS)),
     PPartial(J_PARTIAL, PythonObject, newBuilder().moduleName("functools").publishInModule("_functools").basetype().addDict().slots(PartialBuiltins.SLOTS).doc("""
                     partial(func, *args, **keywords) - new function with partial application
@@ -452,6 +457,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     newBuilder().publishInModule(J_BUILTINS).basetype().slots(FloatBuiltins.SLOTS).doc("""
                                     Convert a string or number to a floating point number, if possible.""")),
     PFrame("frame", PythonObject, newBuilder().disallowInstantiation().slots(FrameBuiltins.SLOTS)),
+    PFrameLocalsProxy("FrameLocalsProxy", PythonObject, newBuilder().disallowInstantiation().slots(FrameLocalsProxyBuiltins.SLOTS)),
     PFrozenSet(
                     "frozenset",
                     PythonObject,
@@ -631,12 +637,14 @@ public enum PythonBuiltinClassType implements TruffleObject {
                                     If strict is true and one of the arguments is exhausted before the others,
                                     raise a ValueError.""")),
     PThreadLocal("_local", PythonObject, newBuilder().publishInModule(J__THREAD).basetype().slots(ThreadLocalBuiltins.SLOTS)),
-    PLock("LockType", PythonObject, newBuilder().publishInModule(J__THREAD).disallowInstantiation().slots(CommonLockBuiltins.SLOTS, LockTypeBuiltins.SLOTS)),
+    PLock("LockType", PythonObject, newBuilder().publishInModule(J__THREAD).slots(CommonLockBuiltins.SLOTS, LockTypeBuiltins.SLOTS)),
     PRLock("RLock", PythonObject, newBuilder().publishInModule(J__THREAD).basetype().slots(CommonLockBuiltins.SLOTS, RLockBuiltins.SLOTS)),
+    PThreadHandle("_ThreadHandle", PythonObject, newBuilder().publishInModule(J__THREAD).slots(ThreadHandleBuiltins.SLOTS)),
     PSemLock("SemLock", PythonObject, newBuilder().publishInModule("_multiprocessing").basetype().slots(SemLockBuiltins.SLOTS)),
     PSocket("socket", PythonObject, newBuilder().publishInModule(J__SOCKET).basetype().slots(SocketBuiltins.SLOTS)),
     PStaticmethod("staticmethod", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().addDict(24).slots(StaticmethodBuiltins.SLOTS).doc("""
-                    staticmethod(function) -> method
+                    staticmethod(function, /)
+                    --
 
                     Convert a function to be a static method.
 
@@ -655,7 +663,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     Static methods in Python are similar to those found in Java or C++.
                     For a more advanced concept, see the classmethod builtin.""")),
     PClassmethod("classmethod", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().addDict(24).slots(ClassmethodCommonBuiltins.SLOTS, ClassmethodBuiltins.SLOTS).doc("""
-                    classmethod(function) -> method
+                    classmethod(function, /)
+                    --
 
                     Convert a function to be a class method.
 
@@ -734,15 +743,23 @@ public enum PythonBuiltinClassType implements TruffleObject {
     KeyboardInterrupt("KeyboardInterrupt", PBaseException, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     GeneratorExit("GeneratorExit", PBaseException, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     Exception("Exception", PBaseException, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
+    InterpreterError("InterpreterError", Exception, newBuilder().basetype().addDict().doc("""
+                    A cross-interpreter operation failed""")),
+    InterpreterNotFoundError("InterpreterNotFoundError", InterpreterError, newBuilder().basetype().addDict().doc("""
+                    An interpreter was not found""")),
     ReferenceError("ReferenceError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     RuntimeError("RuntimeError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
+    PythonFinalizationError("PythonFinalizationError", RuntimeError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().doc("""
+                    Operation blocked during Python finalization.""")),
     NotImplementedError("NotImplementedError", RuntimeError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     SyntaxError("SyntaxError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(SyntaxErrorBuiltins.SLOTS)),
+    IncompleteInputError("_IncompleteInputError", SyntaxError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(SyntaxErrorBuiltins.SLOTS).doc("incomplete input.")),
     IndentationError("IndentationError", SyntaxError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(SyntaxErrorBuiltins.SLOTS)),
     TabError("TabError", IndentationError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(SyntaxErrorBuiltins.SLOTS)),
     SystemError("SystemError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     TypeError("TypeError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     ValueError("ValueError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
+    NotShareableError("NotShareableError", ValueError, newBuilder().basetype().addDict()),
     StopIteration("StopIteration", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(StopIterationBuiltins.SLOTS)),
     StopAsyncIteration("StopAsyncIteration", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     ArithmeticError("ArithmeticError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
@@ -999,6 +1016,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                                     Type used to pass arguments to _thread._excepthook.""")),
     PSSLSession("SSLSession", PythonObject, newBuilder().publishInModule(J__SSL).disallowInstantiation()),
+    PSSLCertificate("Certificate", PythonObject, newBuilder().publishInModule(J__SSL).disallowInstantiation().slots(SSLCertificateBuiltins.SLOTS)),
     PSSLContext("_SSLContext", PythonObject, newBuilder().publishInModule(J__SSL).basetype().slots(SSLContextBuiltins.SLOTS)),
     PSSLSocket("_SSLSocket", PythonObject, newBuilder().publishInModule(J__SSL).basetype()),
     PMemoryBIO("MemoryBIO", PythonObject, newBuilder().publishInModule(J__SSL).basetype().slots(MemoryBIOBuiltins.SLOTS)),
@@ -1461,6 +1479,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                     This type is meant for runtime introspection and has no special meaning
                     to static type checkers.
+                    """)),
+    PNoDefault(J_NO_DEFAULT_TYPE, PythonObject, newBuilder().publishInModule(J__TYPING).moduleName(J_BUILTINS).slots(NoDefaultBuiltins.SLOTS).doc("""
+                    NoDefaultType()
+                    --
+
+                    The type of the NoDefault singleton.
                     """)),
     PTypeAliasType(
                     J_TYPE_ALIAS_TYPE,

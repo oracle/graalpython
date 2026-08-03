@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -51,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_doc;
@@ -79,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonStrictNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -159,6 +162,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -639,9 +643,25 @@ public final class PythonCextAbstractBuiltins {
     @CApiBuiltin(name = "GraalPyPrivate_Object_GetItemString", ret = PyObjectRawPointer, args = {PyObjectRawPointer, ConstCharPtr}, call = Ignored)
     static long GraalPyPrivate_Object_GetItemString(long objPtr, long keyPtr) {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
-        Object key = CharPtrToPythonNode.executeUncached(keyPtr);
+        Object key = CharPtrToPythonStrictNode.executeUncached(keyPtr);
         Object result = PyObjectGetItem.executeUncached(obj, key);
         return PythonToNativeInternalNode.executeNewRefUncached(result);
+    }
+
+    @CApiBuiltin(name = "GraalPyPrivate_Mapping_GetOptionalItemString", ret = Int, args = {PyObjectRawPointer, ConstCharPtr, PyObjectPtr}, call = Ignored)
+    static int GraalPyPrivate_Mapping_GetOptionalItemString(long objPtr, long keyPtr, long resultPtr) {
+        NativeMemory.writePtr(resultPtr, NULLPTR);
+        Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
+        Object key = CharPtrToPythonStrictNode.executeUncached(keyPtr);
+        Object result;
+        try {
+            result = PyObjectGetItem.executeUncached(obj, key);
+        } catch (PException e) {
+            e.expectUncached(KeyError);
+            return 0;
+        }
+        NativeMemory.writePtr(resultPtr, PythonToNativeInternalNode.executeNewRefUncached(result));
+        return 1;
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Ignored)
@@ -794,12 +814,12 @@ public final class PythonCextAbstractBuiltins {
         Object obj = NativeToPythonInternalNode.executeUncached(objPtr, false);
         Object value = CharPtrToPythonNode.executeUncached(valuePtr);
         if (obj instanceof PBuiltinFunction builtinFunction) {
-            CFunctionDocUtils.writeDocAndTextSignature(builtinFunction, builtinFunction.getName(), value);
+            CFunctionDocUtils.writeDocAndTextSignature(builtinFunction, builtinFunction.getName(), value, builtinFunction.getFlags());
             return 1;
         }
         if (obj instanceof PBuiltinMethod builtinMethod) {
             PBuiltinFunction builtinFunction = builtinMethod.getBuiltinFunction();
-            CFunctionDocUtils.writeDocAndTextSignature(builtinFunction, builtinFunction.getName(), value);
+            CFunctionDocUtils.writeDocAndTextSignature(builtinFunction, builtinFunction.getName(), value, builtinFunction.getFlags());
             return 1;
         }
         if (obj instanceof GetSetDescriptor descriptor) {

@@ -641,8 +641,12 @@ def test_top_level_exception_handler():
     expected = dedent("""\
         Traceback (most recent call last):
           File "<string>", line 6, in <module>
+            reraise()
+            ~~~~~~~^^
           File "<string>", line 5, in reraise
+            raise e
           File "<string>", line 3, in reraise
+            raise RuntimeError("test")
         RuntimeError: test
         """).strip()
     assert expected in err.strip(), f"Expected tracback in stderr:\n{expected}\nGot stderr:\n{err.strip()}"

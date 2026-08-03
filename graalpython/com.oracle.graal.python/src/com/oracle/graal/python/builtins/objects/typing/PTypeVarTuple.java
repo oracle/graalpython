@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,9 +47,14 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PTypeVarTuple extends PythonBuiltinObject {
 
     final TruffleString name;
+    Object defaultValue;
+    Object evaluateDefault;
 
-    public PTypeVarTuple(Object cls, Shape instanceShape, TruffleString name) {
+    public PTypeVarTuple(Object cls, Shape instanceShape, TruffleString name, Object defaultValue, Object evaluateDefault) {
         super(cls, instanceShape);
+        assert (defaultValue == null) != (evaluateDefault == null);
         this.name = name;
+        this.defaultValue = defaultValue;
+        this.evaluateDefault = evaluateDefault;
     }
 }

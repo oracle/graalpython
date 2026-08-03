@@ -123,6 +123,9 @@ import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 @CoreFunctions(defineModule = J_HASHLIB)
 public final class HashlibModuleBuiltins extends PythonBuiltins {
 
+    private static final TruffleString DATA_STRING_MUTUALLY_EXCLUSIVE = tsLiteral(
+                    "'data' and 'string' are mutually exclusive and support for 'string' keyword parameter is slated for removal in a future version.");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return HashlibModuleBuiltinsFactory.getFactories();
@@ -345,7 +348,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
     static Mac createMac(TruffleString digest, byte[] key, int keyLen, byte[] msg, int msgLen) throws NoSuchAlgorithmException, InvalidKeyException {
         String inputName = digest.toJavaStringUncached().toLowerCase();
         String algorithm = "hmac" + NAME_MAPPINGS.getOrDefault(inputName, inputName);
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key, 0, keyLen, algorithm);
+        // SecretKeySpec rejects empty keys, but HMAC permits them. A single zero byte is equivalent to
+        // an empty HMAC key because the key is zero-padded to the digest block size.
+        SecretKeySpec secretKeySpec = keyLen == 0 ? new SecretKeySpec(new byte[1], algorithm) : new SecretKeySpec(key, 0, keyLen, algorithm);
         Mac mac = Mac.getInstance(algorithm);
         mac.init(secretKeySpec);
         if (msg != null) {
@@ -367,7 +372,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raise) {
             Object buffer;
-            if (value instanceof PNone) {
+            if (value == PNone.NO_VALUE) {
                 buffer = null;
             } else if (acquireLib.hasBuffer(value)) {
                 buffer = acquireLib.acquireReadonly(value, frame, callData);
@@ -418,7 +423,16 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "new", minNumOfPositionalArgs = 1, parameterNames = {"name", "string"}, keywordOnlyNames = {"usedforsecurity"})
+    static Object resolveDataArgument(Node inliningTarget, Object data, Object string, PRaiseNode raiseNode) {
+        boolean hasData = data != PNone.NO_VALUE;
+        boolean hasString = string != PNone.NO_VALUE;
+        if (hasData && hasString) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, DATA_STRING_MUTUALLY_EXCLUSIVE);
+        }
+        return hasString ? string : data;
+    }
+
+    @Builtin(name = "new", minNumOfPositionalArgs = 1, parameterNames = {"name", "data"}, keywordOnlyNames = {"usedforsecurity", "string"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
     @ArgumentClinic(name = "usedforsecurity", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
@@ -429,13 +443,15 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object newDigest(VirtualFrame frame, TruffleString name, Object buffer, @SuppressWarnings("unused") boolean usedForSecurity,
+        static Object newDigest(VirtualFrame frame, TruffleString name, Object data, @SuppressWarnings("unused") boolean usedForSecurity, Object string,
                         @Bind Node inliningTarget,
                         @Cached CreateDigestNode createNode,
-                        @Cached CastToJavaStringNode castStr) {
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached PRaiseNode raiseNode) {
             String pythonDigestName = getPythonName(castStr.execute(name));
             String javaDigestName = getJavaName(pythonDigestName);
             PythonBuiltinClassType digestType = getTypeFor(javaDigestName);
+            Object buffer = resolveDataArgument(inliningTarget, data, string, raiseNode);
             return createNode.execute(frame, inliningTarget, digestType, pythonDigestName, javaDigestName, buffer);
         }
 

@@ -100,6 +100,27 @@ NativeTypeWithAttr = CPyExtHeapType("NativeTypeWithAttr")
 NativeTypeWithAttr.attr = "str"
 
 
+class DelAttrObject:
+    def __init__(self):
+        self.a = 1
+        setattr(self, "🐍", 2)
+
+    def __delattr__(self, name):
+        if name == "evil":
+            raise RuntimeError(name)
+        object.__delattr__(self, name)
+
+
+class DelItemMapping:
+    def __init__(self):
+        self.items = {"a": 1, "🐍": 2}
+
+    def __delitem__(self, key):
+        if key == "evil":
+            raise RuntimeError(key)
+        del self.items[key]
+
+
 class TestPyObject(CPyExtTestCase):
 
     test_Py_TYPE = CPyExtFunction(
@@ -277,6 +298,26 @@ class TestPyObject(CPyExtTestCase):
         resultspec="i",
         cmpfunc=unhandled_error_compare
     )
+
+    def delitemstring(args):
+        del args[0][args[1].decode()]
+        return 0
+
+    test_PyObject_DelItemString = CPyExtFunction(
+        delitemstring,
+        lambda: (
+            (DelItemMapping(), b"a"),
+            (DelItemMapping(), "🐍".encode()),
+            (DelItemMapping(), b"missing"),
+            (DelItemMapping(), b"evil"),
+            ([], b"item"),
+        ),
+        arguments=["PyObject* object", "const char* key"],
+        argspec="Oy",
+        resultspec="i",
+        cmpfunc=unhandled_error_compare
+    )
+
     # PyObject_AsReadBuffer
     # PyObject_AsWriteBuffer
     # PyObject_GetBuffer
@@ -430,6 +471,32 @@ class TestPyObject(CPyExtTestCase):
         argspec="OO",
     )
 
+    test__PyType_LookupRef = CPyExtFunction(
+        lambda args: getattr(*args, None),
+        lambda: (
+            (TypeWithAttr, "attr"),
+            (SubtypeWithAttr, "attr"),
+            (NativeTypeWithAttr, "attr"),
+            (TypeWithAttr, "missing"),
+        ),
+        arguments=["PyTypeObject* type", "PyObject* name"],
+        argspec="OO",
+        resultspec="N",
+        callfunction="test_lookup_ref",
+        code="""
+        static PyObject *
+        test_lookup_ref(PyTypeObject *type, PyObject *name)
+        {
+#if PY_VERSION_HEX >= 0x030D0000
+            PyObject *result = _PyType_LookupRef(type, name);
+#else
+            PyObject *result = Py_XNewRef(_PyType_Lookup(type, name));
+#endif
+            return result != NULL ? result : Py_NewRef(Py_None);
+        }
+        """,
+    )
+
     def setattrstring(args):
         setattr(*args)
         return 0
@@ -445,6 +512,26 @@ class TestPyObject(CPyExtTestCase):
         resultspec="i",
         cmpfunc=unhandled_error_compare
     )
+
+    def delattrstring(args):
+        delattr(args[0], args[1].decode())
+        return 0
+
+    test_PyObject_DelAttrString = CPyExtFunction(
+        delattrstring,
+        lambda: (
+            (DelAttrObject(), b"a"),
+            (DelAttrObject(), "🐍".encode()),
+            (DelAttrObject(), b"missing"),
+            (DelAttrObject(), b"evil"),
+            (42, b"numerator"),
+        ),
+        arguments=["PyObject* object", "const char* attr"],
+        argspec="Oy",
+        resultspec="i",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyObject_HasAttr = CPyExtFunction(
         lambda args: 1 if hasattr(*args) else 0,
         lambda: (
@@ -616,9 +703,9 @@ class TestPyCFunction(unittest.TestCase):
         assert module.with_signature.__doc__ == "Return module function metadata."
         assert module.with_signature.__text_signature__ == "($module, value, /)"
         assert module.without_signature.__doc__ == "Return a plain docstring."
-        assert module.without_signature.__text_signature__ is None
+        assert module.without_signature.__text_signature__ == "($self, object, /)"
         assert module.without_doc.__doc__ is None
-        assert module.without_doc.__text_signature__ is None
+        assert module.without_doc.__text_signature__ == "($self, /)"
 
         TypeWithTextSignature = CPyExtType(
             "TypeWithTextSignature",

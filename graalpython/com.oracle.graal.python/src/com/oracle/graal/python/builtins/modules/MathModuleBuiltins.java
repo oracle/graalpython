@@ -1594,12 +1594,38 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         public abstract double executeObject(VirtualFrame frame, Object value, Object base);
 
         private static final double LOG2 = Math.log(2.0);
+        private static final int[] HALF_EVEN_CORRECTION = {0, -1, -2, 1, 0, -1, 2, 1};
 
         protected static double logBigInteger(BigInteger val) {
-            int blex = val.bitLength() - 1022; // any value in 60..1023 is ok
-            BigInteger value = blex > 0 ? val.shiftRight(blex) : val;
-            double res = Math.log(value.doubleValue());
-            return blex > 0 ? res + blex * LOG2 : res;
+            double[] frexp = frexpBigInteger(val);
+            return Math.log(frexp[0]) + frexp[1] * LOG2;
+        }
+
+        protected static double log10BigInteger(BigInteger val) {
+            double[] frexp = frexpBigInteger(val);
+            return Math.log10(frexp[0]) + frexp[1] * Math.log10(2.0);
+        }
+
+        /* Equivalent to CPython's _PyLong_Frexp for positive integers. */
+        private static double[] frexpBigInteger(BigInteger val) {
+            int exponent = val.bitLength();
+            int shift = exponent - 55; // DBL_MANT_DIG + 2
+            BigInteger top;
+            if (shift <= 0) {
+                top = val.shiftLeft(-shift);
+            } else {
+                top = val.shiftRight(shift);
+                if (val.getLowestSetBit() < shift) {
+                    top = top.setBit(0); // sticky bit
+                }
+            }
+            top = top.add(BigInteger.valueOf(HALF_EVEN_CORRECTION[top.intValue() & 7]));
+            double mantissa = Math.scalb(top.doubleValue(), -55);
+            if (mantissa == 1.0) {
+                mantissa = 0.5;
+                exponent++;
+            }
+            return new double[]{mantissa, exponent};
         }
 
         private static double countBase(double base, Node inliningTarget, InlinedConditionProfile divByZero, PRaiseNode raiseNode) {
@@ -1856,8 +1882,6 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Log10Node extends PythonUnaryBuiltinNode {
 
-        private static final double LOG10 = Math.log(10);
-
         @TruffleBoundary
         public static int getDigitCount(BigInteger number) {
             double factor = Math.log(2) / Math.log(10);
@@ -1877,7 +1901,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             if (bValue.compareTo(BigInteger.TEN.pow(digitCount)) == 0) {
                 return digitCount;
             }
-            return LogNode.logBigInteger(bValue) / LOG10;
+            return LogNode.log10BigInteger(bValue);
         }
 
         @Specialization(guards = "!isPInt(value)")

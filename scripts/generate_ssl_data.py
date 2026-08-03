@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -126,7 +126,7 @@ def get_all_ciphers():
 
 def get_all_cipher_strings():
     with open(os.path.join(OPENSSL_PREFIX, 'include', 'openssl', 'ssl.h')) as hfile:
-        cipher_strings = re.findall(r'^#\s*define SSL_TXT_\S*\s+ "([^"]+)"', hfile.read(), re.MULTILINE)
+        cipher_strings = re.findall(r'^#\s*define SSL_TXT_\S*\s+"([^"]+)"', hfile.read(), re.MULTILINE)
         # This one doesn't have a macro, add it manually
         cipher_strings.append("TLSv1.0")
         cipher_strings.sort()

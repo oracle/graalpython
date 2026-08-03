@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -32,6 +32,8 @@ typedef struct {
                    int with_named_seq);
 
 } _PyUnicode_Name_CAPI;
+
+extern _PyUnicode_Name_CAPI* _PyUnicode_GetNameCAPI(void);
 
 #ifdef __cplusplus
 }

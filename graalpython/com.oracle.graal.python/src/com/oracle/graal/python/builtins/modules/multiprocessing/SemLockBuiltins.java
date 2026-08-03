@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.multiprocessing.SemLockBuiltinsClinicProviders.SemLockNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -247,7 +246,7 @@ public class SemLockBuiltins extends PythonBuiltins {
             }
             if (acquired) {
                 self.increaseCount();
-                self.setLastThreadId(PThread.getThreadId(Thread.currentThread()));
+                self.setLastThreadId(Thread.currentThread().threadId());
                 return true;
             } else {
                 return false;

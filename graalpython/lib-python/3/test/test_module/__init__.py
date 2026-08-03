@@ -4,6 +4,7 @@ import unittest
 import weakref
 from test.support import gc_collect, impl_detail
 from test.support import import_helper
+from test.support import suppress_immortalization
 from test.support.script_helper import assert_python_ok
 
 import sys
@@ -104,6 +105,7 @@ class ModuleTests(unittest.TestCase):
         self.assertEqual(f().__dict__["bar"], 4)
 
     @impl_detail("refcounting", graalpy=False)
+    @suppress_immortalization()
     def test_clear_dict_in_ref_cycle(self):
         destroyed = []
         m = ModuleType("foo")
@@ -119,6 +121,7 @@ a = A(destroyed)"""
         gc_collect()
         self.assertEqual(destroyed, [1])
 
+    @suppress_immortalization()
     def test_weakref(self):
         m = ModuleType("foo")
         wr = weakref.ref(m)

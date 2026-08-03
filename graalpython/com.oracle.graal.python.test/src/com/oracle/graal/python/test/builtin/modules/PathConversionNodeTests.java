@@ -150,9 +150,10 @@ public class PathConversionNodeTests extends ConversionNodeTests {
     }
 
     @Test
-    public void boolAllowed() {
-        Assert.assertEquals(0, callAndExpectFd(false));
-        Assert.assertEquals(1, callAndExpectFd(true));
+    public void boolWarns() {
+        Context.getCurrent().eval("python", "import warnings; warnings.simplefilter('error', RuntimeWarning)");
+        expectPythonMessage("RuntimeWarning: bool is used as a file descriptor", () -> callAndExpectFd(false));
+        expectPythonMessage("RuntimeWarning: bool is used as a file descriptor", () -> callAndExpectFd(true));
     }
 
     @Test

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -8,28 +8,31 @@ package com.oracle.graal.python.builtins.objects.struct;
 import static com.oracle.graal.python.util.NumericSupport.asUnsigned;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PStruct extends PythonBuiltinObject {
-    @CompilationFinal(dimensions = 1) private final byte[] format;
-    private final int size;
-    private final int len;
-    public final FormatAlignment formatAlignment;
-    @CompilationFinal(dimensions = 1) private final FormatCode[] codes;
+    private byte[] format;
+    private int size;
+    private int len;
+    public FormatAlignment formatAlignment;
+    private FormatCode[] codes;
 
     public PStruct(Object clazz, Shape instanceShape, StructInfo structInfo) {
-        this(clazz, instanceShape, structInfo.format, structInfo.size, structInfo.len, structInfo.formatAlignment, structInfo.codes);
+        super(clazz, instanceShape);
+        setStructInfo(structInfo);
     }
 
-    public PStruct(Object clazz, Shape instanceShape, byte[] format, int size, int len, FormatAlignment formatAlignment, FormatCode[] codes) {
-        super(clazz, instanceShape);
-        this.format = format;
-        this.size = size;
-        this.len = len;
-        this.formatAlignment = formatAlignment;
-        this.codes = codes;
+    public void setStructInfo(StructInfo structInfo) {
+        this.format = structInfo.format;
+        this.size = structInfo.size;
+        this.len = structInfo.len;
+        this.formatAlignment = structInfo.formatAlignment;
+        this.codes = structInfo.codes;
+    }
+
+    public StructInfo getStructInfo() {
+        return new StructInfo(format, size, len, formatAlignment, codes);
     }
 
     public int getSize() {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -16,6 +16,3 @@ struct _traceback {
     int tb_lasti;
     int tb_lineno;
 };
-
-PyAPI_FUNC(int) _Py_DisplaySourceLine(PyObject *, PyObject *, int, int, int *, PyObject **);
-PyAPI_FUNC(void) _PyTraceback_Add(const char *, const char *, int);

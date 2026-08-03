@@ -227,7 +227,6 @@ import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
 import com.oracle.graal.python.nodes.exception.HandleExceptionsInHandlerNode;
 import com.oracle.graal.python.nodes.exception.ValidExceptionNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
-import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNode;
@@ -436,8 +435,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @CompilationFinal(dimensions = 1) protected transient Assumption[] cellEffectivelyFinalAssumptions;
 
     /*
-     * We don't want to store the assumption in MakeFunction node to be able to have an uncached version of it.
-     * So we put it into the root of the function that MakeFunction is creating.
+     * We don't want to store the assumption in MakeFunction node to be able to have an uncached
+     * version of it. So we put it into the root of the function that MakeFunction is creating.
      */
     private final transient AtomicReference<Assumption> functionCodeFinalAssumption = new AtomicReference<>();
 
@@ -630,8 +629,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * }
      * </pre>
      *
-     * In {@code interceptTruffleException} we check whether a {@code C_CALL} is underway. If so,
-     * we report the {@code C_EXCEPTION} event.
+     * In {@code interceptTruffleException} we check whether a {@code C_CALL} is underway. If so, we
+     * report the {@code C_EXCEPTION} event.
      *
      * <p>
      * A simpler implementation should be possible if GR-71168 adds support for replacing call
@@ -721,7 +720,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             profileCEventCallStarted = false;
         }
 
-        // called when we intercept an exception; report C_EXCEPTION only for a C call that actually started
+        // called when we intercept an exception; report C_EXCEPTION only for a C call that actually
+        // started
         void profileCEventCallablesForException(PBytecodeDSLRootNode root, VirtualFrame frame, BytecodeNode location) {
             int oldStackTop = profileCEventStackTop;
             boolean callStarted = profileCEventCallStarted;
@@ -755,8 +755,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     private TracingNodes getTracingNodes(BytecodeNode location) {
         /*
-         * The TracingNodes node must be child of the BytecodeNode and not the root node, so
-         * in case BytecodeNode changed, we must reinsert it
+         * The TracingNodes node must be child of the BytecodeNode and not the root node, so in case
+         * BytecodeNode changed, we must reinsert it
          */
         if (tracingNodes == null || tracingNodes.getParent() != location) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -769,12 +769,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return getTracingNodes(location).materializeFrameNode.executeOnStack(frame, location, true, false);
     }
 
-    private void syncLocalsBackToFrame(VirtualFrame frame, PFrame pyFrame, BytecodeNode location) {
-        if (pyFrame.localsAccessed()) {
-            GetFrameLocalsNode.syncLocalsBackToFrame(co, location, pyFrame, frame);
-        }
-    }
-
     @InliningCutoff
     private void invokeProfileFunction(VirtualFrame virtualFrame, BytecodeNode location, Object profileFun,
                     PythonContext.PythonThreadState threadState, PythonContext.ProfileEvent event, Object arg) {
@@ -784,9 +778,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         threadState.profilingStart();
         PFrame pyFrame = ensurePyFrame(virtualFrame, location);
         try {
-            pyFrame.setLocalsAccessed(false);
             Object result = getTracingNodes(location).profilingCallNode.execute(virtualFrame, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
-            syncLocalsBackToFrame(virtualFrame, pyFrame, location);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
@@ -867,9 +859,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 pyFrame.setLineLock(line);
             }
 
-            pyFrame.setLocalsAccessed(false);
             Object result = getTracingNodes(location).tracingCallNode.execute(virtualFrame, traceFn, pyFrame, event.pythonName, nonNullArg);
-            syncLocalsBackToFrame(virtualFrame, pyFrame, location);
             // https://github.com/python/cpython/issues/104232
             if (useLocalFn) {
                 Object realResult = result == PNone.NONE ? traceFn : result;
@@ -2138,7 +2128,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return loadTypeInstanceValue(frame, inliningTarget, receiver, getObjectSlotsNode, callSlotDescrGet, getter, hasNonDescriptorValueProfile);
         }
 
-        // The convention is that if klass is null, then the object is assumed to be of a builtin type that has the object's or module's tp_getattro - we do not need to recheck that dynamically
+        // The convention is that if klass is null, then the object is assumed to be of a builtin
+        // type that has the object's or module's tp_getattro - we do not need to recheck that
+        // dynamically
         public static Object loadInstanceValue(Node inliningTarget, PythonObject object, PythonManagedClass klass,
                         TruffleString key, LookupAttributeInMRONode.CachedKeyFastPath getDesc, Shape cachedShape, PropertyGetter cachedPropertyGetter,
                         InlineWeakValueProfile slotsValueProfile) throws FastPathBailoutException {
@@ -2546,9 +2538,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 storage = new ObjectSequenceStorage(array, array.length);
             } else {
                 /*
-                 * In multi-context mode, even if we started with context-independent objects, they can get replaced with
-                 * context-dependent ones when using the C API (i.e. TruffleString gets "inflated" to PString).
-                 * So we need to copy.
+                 * In multi-context mode, even if we started with context-independent objects, they
+                 * can get replaced with context-dependent ones when using the C API (i.e.
+                 * TruffleString gets "inflated" to PString). So we need to copy.
                  */
                 storage = new ObjectSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
             }

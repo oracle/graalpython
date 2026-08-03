@@ -38,42 +38,16 @@
 # SOFTWARE.
 
 import os
-import signal
 import subprocess
+import sys
 import tempfile
 import textwrap
 from pathlib import Path
-
-import sys
 from unittest import skipIf
+
 from tests import compile_module_from_string
-from tests.util import run_subprocess_with_graalpy_startup_retry
 
 GRAALPY = sys.implementation.name == 'graalpy'
-
-DIR = Path(__file__).parent
-MODULE_PATH = DIR / 'module_with_native_destructor.py'
-ENV = dict(os.environ)
-ENV['PYTHONPATH'] = str(DIR.parent.parent)
-ARGS = []
-if GRAALPY:
-    ARGS = ['--experimental-options', f'--log.file={os.devnull}', '--python.EnableDebuggingBuiltins']
-    if not __graalpython__.is_native:
-        ARGS += [f'--vm.Djdk.graal.LogFile={os.devnull}']
-COMMAND = [sys.executable, *ARGS, str(MODULE_PATH)]
-
-
-# Test that running Py_DECREF in native global destructor doesn't crash
-def test_normal_exit():
-    run_subprocess_with_graalpy_startup_retry(COMMAND, check=True, env=ENV)
-
-
-def test_sigterm():
-    proc = subprocess.Popen([*COMMAND, "sleep"], env=ENV, stdout=subprocess.PIPE)
-    expected = b'sleeping\n'
-    assert proc.stdout.read(len(expected)) == expected
-    proc.terminate()
-    assert proc.wait() in [-signal.SIGTERM, 128 + signal.SIGTERM]
 
 
 @skipIf(not GRAALPY, "GraalPy-only native weakref shutdown test")
@@ -205,8 +179,8 @@ def test_native_weakref_shutdown_skips_c_retained_object():
             gc.collect()
         print(held_wr() is not None, free_wr() is None, flush=True)
     """)
-    env = dict(ENV)
-    env["PYTHONPATH"] = os.pathsep.join([module_dir, env["PYTHONPATH"]])
+    env = dict(os.environ)
+    env["PYTHONPATH"] = module_dir
     with tempfile.TemporaryDirectory() as tmpdir:
         marker = Path(tmpdir) / "deallocated"
         env["GR50212_DEALLOC_MARKER"] = str(marker)

@@ -867,6 +867,10 @@ class PandasSuite(PySuite):
             pip = join(workdir, vm_venv, "bin", "pip")
             with tempfile.NamedTemporaryFile('w') as constraints:
                 constraints.write(f"setuptools=={SETUPTOOLS_PIN}\n")
+                # pandas' isolated build must use the same NumPy C ABI as the
+                # runtime. An older build-time NumPy uses different offsets
+                # for datetime dtype metadata and segfaults at runtime.
+                constraints.write(f"numpy=={NumPySuite.VERSION}\n")
                 constraints.flush()
                 env = os.environ.copy()
                 env['PIP_CONSTRAINT'] = constraints.name

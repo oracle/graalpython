@@ -330,8 +330,18 @@ public final class PythonCextErrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, PyObject}, call = Direct)
-    abstract static class _PyErr_WriteUnraisableMsg extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    abstract static class _Py_CalculateSuggestions extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static Object calculate(@SuppressWarnings("unused") Object dir, @SuppressWarnings("unused") Object name) {
+            // TODO implement suggestions
+            return NATIVE_NULL;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {ConstCharPtrAsTruffleString, PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_WriteUnraisable extends CApiBinaryBuiltinNode {
         @Specialization
         static Object write(Object msg, Object obj,
                         @Bind Node inliningTarget,
@@ -352,6 +362,25 @@ public final class PythonCextErrBuiltins {
                 m = null;
             }
             writeUnraisableNode.execute(currentException, m, (obj == PNone.NO_VALUE) ? PNone.NONE : obj);
+            return PNone.NONE;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {PyObject}, call = Direct)
+    abstract static class PyErr_WriteUnraisable extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object write(Object obj,
+                        @Bind Node inliningTarget,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached WriteUnraisableNode writeUnraisableNode,
+                        @Cached ReadAndClearNativeException readAndClearNativeException) {
+            PythonContext.PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, PythonContext.get(inliningTarget));
+            Object currentException = readAndClearNativeException.execute(inliningTarget, threadState);
+            if (currentException == PNone.NO_VALUE) {
+                // This means an invalid call, but this function is not supposed to raise exceptions
+                return PNone.NONE;
+            }
+            writeUnraisableNode.execute(currentException, null, (obj == PNone.NO_VALUE) ? PNone.NONE : obj);
             return PNone.NONE;
         }
     }

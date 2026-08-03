@@ -44,11 +44,14 @@ import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXIT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
-import static com.oracle.graal.python.nodes.BuiltinNames.T___EXCEPTHOOK__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_THREADING;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___EXCEPTHOOK__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -59,41 +62,50 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.thread.PThreadHandle;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
+import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleThreadBuilder;
@@ -110,6 +122,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(defineModule = J__THREAD)
 public final class ThreadModuleBuiltins extends PythonBuiltins {
 
+    private static final TruffleString T_GRAALPY_THREAD_EXIT = tsLiteral("_graalpy_thread_exit");
+
     public static final StructSequence.BuiltinTypeDescriptor EXCEPTHOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PExceptHookArgs,
                     4,
@@ -118,6 +132,11 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                     new String[]{
                                     "Exception type", "Exception value", "Exception traceback",
                                     "Exception thread"});
+
+    private static final class ModuleState {
+        int count;
+        final List<PThreadHandle> shutdownHandles = Collections.synchronizedList(new ArrayList<>());
+    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -129,7 +148,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
         addBuiltinConstant("TIMEOUT_MAX", TIMEOUT_MAX);
         StructSequence.initType(core, EXCEPTHOOK_ARGS_DESC);
-        core.lookupBuiltinModule(T__THREAD).setModuleState(0);
+        core.lookupBuiltinModule(T__THREAD).setModuleState(new ModuleState());
         super.initialize(core);
     }
 
@@ -150,7 +169,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public static long getId() {
-            return PThread.getThreadId(Thread.currentThread());
+            return Thread.currentThread().threadId();
         }
     }
 
@@ -160,7 +179,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public static long getId() {
-            return PThread.getThreadId(Thread.currentThread());
+            return Thread.currentThread().threadId();
         }
     }
 
@@ -170,7 +189,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         long getCount(PythonModule self) {
-            return self.getModuleState(Integer.class);
+            return self.getModuleState(ModuleState.class).count;
         }
     }
 
@@ -287,8 +306,6 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StartNewThreadNode extends PythonTernaryBuiltinNode {
 
-        private static final TruffleString IN_THREAD_STARTED_BY = tsLiteral("in thread started by");
-
         @Specialization
         @SuppressWarnings("try")
         static long start(VirtualFrame frame, Object callable, Object args, Object kwargs,
@@ -296,21 +313,86 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Cached CallNode callNode,
                         @Cached ExecutePositionalStarargsNode getArgsNode,
-                        @Cached ExpandKeywordStarargsNode getKwArgsNode) {
-            TruffleLanguage.Env env = context.getEnv();
-            PythonModule threadModule = context.lookupBuiltinModule(T__THREAD);
+                        @Cached ExpandKeywordStarargsNode getKwArgsNode,
+                        @Cached PyCallableCheckNode callableCheck,
+                        @Cached PyTupleCheckNode tupleCheck,
+                        @Cached PRaiseNode raiseNode) {
+            if (!callableCheck.execute(inliningTarget, callable)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.FIRST_ARG_MUST_BE_CALLABLE);
+            }
+            if (!tupleCheck.execute(inliningTarget, args)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.SECOND_ARG_MUST_BE_TUPLE);
+            }
+            if (kwargs != PNone.NO_VALUE && !(kwargs instanceof PDict)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OPTIONAL_THIRD_ARG_MUST_BE_DICT);
+            }
 
             // if args is an arbitrary iterable, converting it to an Object[] may run Python code
             Object[] arguments = getArgsNode.executeWith(frame, args);
             PKeyword[] keywords = getKwArgsNode.execute(frame, inliningTarget, kwargs);
 
+            PThreadHandle handle = PFactory.createThreadHandle(context.getLanguage(inliningTarget));
+            startThread(context, handle, callable, arguments, keywords, true, callNode, raiseNode, inliningTarget);
+            return handle.getIdent();
+        }
+    }
+
+    @Builtin(name = "start_joinable_thread", minNumOfPositionalArgs = 1, parameterNames = {"function", "handle", "daemon"})
+    @ArgumentClinic(name = "daemon", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true", useDefaultForNone = true)
+    @GenerateNodeFactory
+    abstract static class StartJoinableThreadNode extends PythonTernaryClinicBuiltinNode {
+        @Specialization
+        static PThreadHandle start(Object callable, Object handleObj, boolean daemon,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached CallNode callNode,
+                        @Cached PyCallableCheckNode callableCheck,
+                        @Cached PRaiseNode raiseNode) {
+            if (!callableCheck.execute(inliningTarget, callable)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.THREAD_FUNCTION_MUST_BE_CALLABLE);
+            }
+            PThreadHandle handle;
+            if (handleObj instanceof PNone) {
+                handle = PFactory.createThreadHandle(context.getLanguage(inliningTarget));
+            } else if (handleObj instanceof PThreadHandle) {
+                handle = (PThreadHandle) handleObj;
+            } else {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.HANDLE_MUST_BE_THREAD_HANDLE);
+            }
+            startThread(context, handle, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, daemon, callNode, raiseNode, inliningTarget);
+            return handle;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ThreadModuleBuiltinsClinicProviders.StartJoinableThreadNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @SuppressWarnings("try")
+    private static void startThread(PythonContext context, PThreadHandle handle, Object callable, Object[] arguments, PKeyword[] keywords, boolean daemon, CallNode callNode, PRaiseNode raiseNode,
+                    Node inliningTarget) {
+        if (context.isFinalizing()) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.PythonFinalizationError, ErrorMessages.CANT_CREATE_NEW_THREAD_AT_INTERPRETER_SHUTDOWN);
+        }
+        TruffleLanguage.Env env = context.getEnv();
+        PythonModule threadModule = context.lookupBuiltinModule(T__THREAD);
+        ModuleState state = threadModule.getModuleState(ModuleState.class);
+
+        if (!handle.markStarting()) {
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.THREAD_ALREADY_STARTED);
+        }
+        if (!daemon) {
+            addShutdownHandle(state, handle);
+        }
+
+        try {
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
             TruffleThreadBuilder threadBuilder = env.newTruffleThreadBuilder(() -> {
                 try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
                     // the increment is protected by the gil
-                    int curCount = threadModule.getModuleState(Integer.class);
-                    threadModule.setModuleState(curCount + 1);
+                    state.count++;
                     try {
                         // n.b.: It is important to pass 'null' frame here because each thread has
                         // its own stack and if we would pass the current frame, this would be
@@ -321,25 +403,57 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                         return;
                     } catch (PException e) {
                         if (!IsBuiltinObjectProfile.profileObjectUncached(e.getUnreifiedException(), PythonBuiltinClassType.SystemExit)) {
-                            WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), IN_THREAD_STARTED_BY, callable);
+                            WriteUnraisableNode.getUncached().execute(e.getUnreifiedException(), ErrorMessages.IN_THREAD_STARTED_BY, callable);
                         }
                         // SystemExit is silently ignored (see _threadmodule.c: thread_run)
                     } finally {
-                        curCount = threadModule.getModuleState(Integer.class);
-                        threadModule.setModuleState(curCount - 1);
+                        state.count--;
                     }
+                    // Do not call back into Python after PythonThreadKillException during shutdown.
+                    removeDummyThread(context, callNode);
+                } finally {
+                    if (!daemon) {
+                        removeShutdownHandle(state, handle);
+                    }
+                    handle.notifyThreadExiting();
                 }
             }).context(env.getContext()).threadGroup(context.getThreadGroup());
 
             Thread thread = threadBuilder.build();
+            handle.setRunning(thread);
             startThread(thread);
-            return PThread.getThreadId(thread);
+        } catch (Throwable t) {
+            if (!daemon) {
+                removeShutdownHandle(state, handle);
+            }
+            handle.notifyThreadExiting();
+            throw t;
         }
+    }
 
-        @TruffleBoundary
-        private static void startThread(Thread thread) {
-            thread.start();
+    private static void removeDummyThread(PythonContext context, CallNode callNode) {
+        Object threadingModule = HashingStorageGetItem.executeUncached(context.getSysModules().getDictStorage(), T_THREADING);
+        if (threadingModule != null) {
+            Object callback = ReadAttributeFromObjectNode.getUncached().execute(threadingModule, T_GRAALPY_THREAD_EXIT);
+            if (callback != PNone.NO_VALUE) {
+                callNode.execute(null, callback);
+            }
         }
+    }
+
+    @TruffleBoundary
+    private static void startThread(Thread thread) {
+        thread.start();
+    }
+
+    @TruffleBoundary
+    private static void addShutdownHandle(ModuleState state, PThreadHandle handle) {
+        state.shutdownHandles.add(handle);
+    }
+
+    @TruffleBoundary
+    private static void removeShutdownHandle(ModuleState state, PThreadHandle handle) {
+        state.shutdownHandles.remove(handle);
     }
 
     @Builtin(name = "_set_sentinel", minNumOfPositionalArgs = 0)
@@ -397,6 +511,80 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         public static boolean daemonAllowed() {
             return true;
+        }
+    }
+
+    @Builtin(name = "_is_main_interpreter", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class IsMainInterpreterNode extends PythonBuiltinNode {
+        @Specialization
+        static boolean isMainInterpreter() {
+            return true;
+        }
+    }
+
+    @Builtin(name = "_get_main_thread_ident", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetMainThreadIdentNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static long getMainThreadIdent(
+                        @Bind PythonContext context) {
+            Thread mainThread = context.getMainThread();
+            return (mainThread != null ? mainThread : Thread.currentThread()).threadId();
+        }
+    }
+
+    @Builtin(name = "_make_thread_handle", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class MakeThreadHandleNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static PThreadHandle makeThreadHandle(Object identObj,
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached PyLongCheckNode longCheckNode,
+                        @Cached CastToJavaUnsignedLongNode castToJavaUnsignedLongNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (!longCheckNode.execute(inliningTarget, identObj)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.IDENT_MUST_BE_INTEGER);
+            }
+            PThreadHandle handle = PFactory.createThreadHandle(language);
+            handle.setRunning(castToJavaUnsignedLongNode.execute(inliningTarget, identObj));
+            return handle;
+        }
+    }
+
+    @Builtin(name = "_shutdown", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class ShutdownNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        @SuppressWarnings("try")
+        static Object shutdown(PythonModule self,
+                        @Bind Node inliningTarget) {
+            ModuleState state = self.getModuleState(ModuleState.class);
+            long currentIdent = Thread.currentThread().threadId();
+            while (true) {
+                PThreadHandle handle = nextShutdownHandle(state, currentIdent);
+                if (handle == null) {
+                    return PNone.NONE;
+                }
+                try (var gil = GilNode.UncachedRelease.uncachedRelease()) {
+                    handle.join(inliningTarget, -1);
+                }
+            }
+        }
+
+        @TruffleBoundary
+        private static PThreadHandle nextShutdownHandle(ModuleState state, long currentIdent) {
+            synchronized (state.shutdownHandles) {
+                for (PThreadHandle handle : state.shutdownHandles) {
+                    if (handle.getIdent() != currentIdent) {
+                        return handle;
+                    }
+                }
+            }
+            return null;
         }
     }
 }

@@ -45,7 +45,6 @@ import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_LINUX;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.modules.SignalModuleBuiltins.signalFromName;
 import static com.oracle.graal.python.builtins.modules.SignalModuleBuiltins.triggerEmulatedSignal;
-import static com.oracle.graal.python.builtins.objects.thread.PThread.getThreadId;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
@@ -226,6 +225,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
@@ -2391,7 +2391,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             java.lang.management.ThreadMXBean threadMXBean = java.lang.management.ManagementFactory.getThreadMXBean();
             if (PosixConstants.RUSAGE_THREAD.defined &&
                             who == PosixConstants.RUSAGE_THREAD.getValueIfDefined()) {
-                long id = getThreadId(Thread.currentThread());
+                long id = Thread.currentThread().threadId();
                 if (threadMXBean.isCurrentThreadCpuTimeSupported()) {
                     ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0;
                     ru_stime = Math.max(0, (threadMXBean.getThreadCpuTime(id) - threadMXBean.getThreadUserTime(id))) / 1000000000.0;
@@ -4529,8 +4529,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object createPathFromString(TruffleString path,
-                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
-        return checkEmbeddedNulls(toJavaStringNode.execute(path));
+                    @Bind Node inliningTarget,
+                    @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                    @Exclusive @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
+        String javaPath = getPythonOS() == PLATFORM_WIN32
+                        ? toJavaStringNode.execute(path)
+                        : createUTF8String(encodeFSDefaultNode.execute(null, inliningTarget, path));
+        return checkEmbeddedNulls(javaPath);
     }
 
     @ExportMessage

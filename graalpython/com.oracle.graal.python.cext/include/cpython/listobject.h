@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -26,9 +26,6 @@ typedef struct {
     Py_ssize_t allocated;
 } PyListObject;
 
-PyAPI_FUNC(PyObject *) _PyList_Extend(PyListObject *, PyObject *);
-PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE *out);
-
 /* Cast argument to PyListObject* type. */
 #define _PyList_CAST(op) \
     (assert(PyList_Check(op)), _Py_CAST(PyListObject*, (op)))
@@ -37,7 +34,11 @@ PyAPI_FUNC(void) _PyList_DebugMallocStats(FILE *out);
 
 static inline Py_ssize_t PyList_GET_SIZE(PyObject *op) {
     PyListObject *list = _PyList_CAST(op);
+#ifdef Py_GIL_DISABLED
+    return _Py_atomic_load_ssize_relaxed(&(_PyVarObject_CAST(list)->ob_size));
+#else
     return Py_SIZE(list);
+#endif
 }
 #define PyList_GET_SIZE(op) PyList_GET_SIZE(_PyObject_CAST(op))
 
@@ -53,3 +54,6 @@ PyList_SET_ITEM(PyObject *op, Py_ssize_t index, PyObject *value) {
 }
 #define PyList_SET_ITEM(op, index, value) \
     PyList_SET_ITEM(_PyObject_CAST(op), (index), _PyObject_CAST(value))
+
+PyAPI_FUNC(int) PyList_Extend(PyObject *self, PyObject *iterable);
+PyAPI_FUNC(int) PyList_Clear(PyObject *self);

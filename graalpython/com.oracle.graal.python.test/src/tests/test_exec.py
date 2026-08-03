@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -144,14 +144,6 @@ class ExecTests(unittest.TestCase):
                 return a
             raises(NameError, f)\n""")
 
-    def test_specialcase_free_load2(self):
-        exec("""if 1:
-            def f(a):
-                exec('a=3')
-                return a
-            x = f(4)\n""")
-        assert eval("x") == 4
-
     def test_nested_names_are_not_confused(self):
         def get_nested_class():
             method_and_var = "var"
@@ -272,13 +264,13 @@ class ExecTests(unittest.TestCase):
     def test_locals_call(self):
         l = locals()
         exec("""if 1:
-            assert locals() is l
+            assert locals() is not l
             def f(a):
                 exec('a=3')
                 return a
             x = f(4)\n""")
-        assert eval("locals() is l")
-        assert l["x"] == 4
+        assert eval("locals() is not l")
+        assert "x" not in l
 
     def test_custom_locals(self):
         class M(object):

@@ -67,8 +67,9 @@ public enum BufferFormat {
     HALF_FLOAT(2, 1, "e"),
     FLOAT(4, 2, "f"),
     DOUBLE(8, 3, "d"),
-    // Unicode is array-only and deprecated
-    UNICODE(4, 2, "u"),
+    // Unicode formats are array-only. The 'u' typecode is deprecated, but 'w' is not.
+    UNICODE_U(4, 2, "u"),
+    UNICODE_W(4, 2, "w"),
     // The following are memoryview-only
     CHAR(1, 0, "c"),
     BOOLEAN(1, 0, "?"),
@@ -119,7 +120,10 @@ public enum BufferFormat {
         if (length == 1) {
             char fmtchar = (char) atIndexNode.execute(formatString, 0);
             if (fmtchar == 'u') {
-                return UNICODE;
+                return UNICODE_U;
+            }
+            if (fmtchar == 'w') {
+                return UNICODE_W;
             }
             return fromCharCommon(fmtchar);
         }
@@ -161,6 +165,10 @@ public enum BufferFormat {
 
     public static boolean isFloatingPoint(BufferFormat format) {
         return format == HALF_FLOAT || format == FLOAT || format == DOUBLE;
+    }
+
+    public static boolean isUnicode(BufferFormat format) {
+        return format == UNICODE_U || format == UNICODE_W;
     }
 
 }

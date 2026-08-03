@@ -1,8 +1,9 @@
 """ Tests for the internal type cache in CPython. """
+import collections.abc
 import unittest
 import dis
 from test import support
-from test.support import import_helper
+from test.support import import_helper, requires_specialization
 try:
     from sys import _clear_type_cache
 except ImportError:
@@ -79,8 +80,56 @@ class TypeCacheTests(unittest.TestCase):
 
         _clear_type_cache()
 
+    def test_per_class_limit(self):
+        class C:
+            x = 0
+
+        type_assign_version(C)
+        orig_version = type_get_version(C)
+        for i in range(1001):
+            C.x = i
+            type_assign_version(C)
+
+        new_version = type_get_version(C)
+        self.assertEqual(new_version, 0)
+
+    def test_119462(self):
+
+        class Holder:
+            value = None
+
+            @classmethod
+            def set_value(cls):
+                cls.value = object()
+
+        class HolderSub(Holder):
+            pass
+
+        for _ in range(1050):
+            Holder.set_value()
+            HolderSub.value
+
+    def test_abc_register_invalidates_subclass_versions(self):
+        class Parent:
+            pass
+
+        class Child(Parent):
+            pass
+
+        type_assign_version(Parent)
+        type_assign_version(Child)
+        parent_version = type_get_version(Parent)
+        child_version = type_get_version(Child)
+        if parent_version == 0 or child_version == 0:
+            self.skipTest("Could not assign valid type versions")
+
+        collections.abc.Mapping.register(Parent)
+
+        self.assertEqual(type_get_version(Parent), 0)
+        self.assertEqual(type_get_version(Child), 0)
 
 @support.cpython_only
+@requires_specialization
 class TypeCacheWithSpecializationTests(unittest.TestCase):
     def tearDown(self):
         _clear_type_cache()
@@ -91,8 +140,10 @@ class TypeCacheWithSpecializationTests(unittest.TestCase):
         if type_get_version(type_) == 0:
             self.skipTest("Could not assign valid type version")
 
-    def _assign_and_check_version_0(self, user_type):
+    def _no_more_versions(self, user_type):
         type_modified(user_type)
+        for _ in range(1001):
+            type_assign_specific_version_unsafe(user_type, 1000_000_000)
         type_assign_specific_version_unsafe(user_type, 0)
         self.assertEqual(type_get_version(user_type), 0)
 
@@ -121,7 +172,7 @@ class TypeCacheWithSpecializationTests(unittest.TestCase):
         self._check_specialization(load_foo_1, A, "LOAD_ATTR", should_specialize=True)
         del load_foo_1
 
-        self._assign_and_check_version_0(A)
+        self._no_more_versions(A)
 
         def load_foo_2(type_):
             return type_.foo
@@ -129,8 +180,8 @@ class TypeCacheWithSpecializationTests(unittest.TestCase):
         self._check_specialization(load_foo_2, A, "LOAD_ATTR", should_specialize=False)
 
     def test_class_load_attr_specialization_static_type(self):
-        self._assign_valid_version_or_skip(str)
-        self._assign_valid_version_or_skip(bytes)
+        self.assertNotEqual(type_get_version(str), 0)
+        self.assertNotEqual(type_get_version(bytes), 0)
 
         def get_capitalize_1(type_):
             return type_.capitalize
@@ -138,25 +189,6 @@ class TypeCacheWithSpecializationTests(unittest.TestCase):
         self._check_specialization(get_capitalize_1, str, "LOAD_ATTR", should_specialize=True)
         self.assertEqual(get_capitalize_1(str)('hello'), 'Hello')
         self.assertEqual(get_capitalize_1(bytes)(b'hello'), b'Hello')
-        del get_capitalize_1
-
-        # Permanently overflow the static type version counter, and force str and bytes
-        # to have tp_version_tag == 0
-        for _ in range(2**16):
-            type_modified(str)
-            type_assign_version(str)
-            type_modified(bytes)
-            type_assign_version(bytes)
-
-        self.assertEqual(type_get_version(str), 0)
-        self.assertEqual(type_get_version(bytes), 0)
-
-        def get_capitalize_2(type_):
-            return type_.capitalize
-
-        self._check_specialization(get_capitalize_2, str, "LOAD_ATTR", should_specialize=False)
-        self.assertEqual(get_capitalize_2(str)('hello'), 'Hello')
-        self.assertEqual(get_capitalize_2(bytes)(b'hello'), b'Hello')
 
     def test_property_load_attr_specialization_user_type(self):
         class G:
@@ -172,7 +204,7 @@ class TypeCacheWithSpecializationTests(unittest.TestCase):
         self._check_specialization(load_x_1, G(), "LOAD_ATTR", should_specialize=True)
         del load_x_1
 
-        self._assign_and_check_version_0(G)
+        self._no_more_versions(G)
 
         def load_x_2(instance):
             instance.x
@@ -191,12 +223,51 @@ class TypeCacheWithSpecializationTests(unittest.TestCase):
         self._check_specialization(store_bar_1, B(), "STORE_ATTR", should_specialize=True)
         del store_bar_1
 
-        self._assign_and_check_version_0(B)
+        self._no_more_versions(B)
 
         def store_bar_2(type_):
             type_.bar = 10
 
         self._check_specialization(store_bar_2, B(), "STORE_ATTR", should_specialize=False)
+
+    def test_class_call_specialization_user_type(self):
+        class F:
+            def __init__(self):
+                pass
+
+        self._assign_valid_version_or_skip(F)
+
+        def call_class_1(type_):
+            type_()
+
+        self._check_specialization(call_class_1, F, "CALL", should_specialize=True)
+        del call_class_1
+
+        self._no_more_versions(F)
+
+        def call_class_2(type_):
+            type_()
+
+        self._check_specialization(call_class_2, F, "CALL", should_specialize=False)
+
+    def test_to_bool_specialization_user_type(self):
+        class H:
+            pass
+
+        self._assign_valid_version_or_skip(H)
+
+        def to_bool_1(instance):
+            not instance
+
+        self._check_specialization(to_bool_1, H(), "TO_BOOL", should_specialize=True)
+        del to_bool_1
+
+        self._no_more_versions(H)
+
+        def to_bool_2(instance):
+            not instance
+
+        self._check_specialization(to_bool_2, H(), "TO_BOOL", should_specialize=False)
 
 
 if __name__ == "__main__":

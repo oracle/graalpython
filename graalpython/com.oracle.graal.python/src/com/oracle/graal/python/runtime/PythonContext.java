@@ -33,7 +33,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.NATIVE_POINTER_FREED;
 import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
-import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
@@ -221,6 +220,9 @@ public final class PythonContext extends Python3Core {
     private List<Long> nativeResources;
 
     private volatile boolean finalizing;
+
+    /* Counter used to give code compiled from interactive sources unique filenames. */
+    private long interactiveSourceCount;
 
     // Used for testing only.
     public boolean wasStackWalk;
@@ -736,7 +738,7 @@ public final class PythonContext extends Python3Core {
     private final List<Object> auditHooks = new ArrayList<>();
     private final List<Runnable> capiHooks = new ArrayList<>();
     private final HashMap<PythonNativeClass, CyclicAssumption> nativeClassStableAssumptions = new HashMap<>();
-    private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+    private final ThreadGroup threadGroup = new ThreadGroup("GRAALPYTHON_THREADS");
     private final IDUtils idUtils = new IDUtils();
 
     @CompilationFinal private SecureRandom secureRandom;
@@ -1073,6 +1075,18 @@ public final class PythonContext extends Python3Core {
 
     public long getPerfCounterStart() {
         return perfCounterStart;
+    }
+
+    @TruffleBoundary
+    public TruffleString getNextInteractiveSourceFilename(TruffleString filename) {
+        String name = filename.toJavaStringUncached();
+        long count = interactiveSourceCount++;
+        if (name.length() >= 2 && name.charAt(0) == '<' && name.charAt(name.length() - 1) == '>') {
+            name = name.substring(0, name.length() - 1) + "-" + count + ">";
+        } else {
+            name = name + "-" + count;
+        }
+        return toTruffleStringUncached(name);
     }
 
     /**
@@ -1787,6 +1801,7 @@ public final class PythonContext extends Python3Core {
 
     private static final String SHUTDOWN_LOCK_ERROR_PREFIX = "could not acquire lock for ";
     private static final String SHUTDOWN_LOCK_ERROR_SUFFIX = " at interpreter shutdown, possibly due to daemon threads";
+    private static final TruffleString T_EXCEPTION_IGNORED_ON_FLUSHING_SYS_STDOUT = tsLiteral("Exception ignored on flushing sys.stdout");
 
     private static boolean flushFile(Object file, Object originalStdout, boolean useWriteUnraisable) {
         if (!(file instanceof PNone)) {
@@ -1802,7 +1817,8 @@ public final class PythonContext extends Python3Core {
                 } catch (PException e) {
                     if (useWriteUnraisable) {
                         if (!isDaemonThreadShutdownLockError(file, originalStdout, e)) {
-                            WriteUnraisableNode.getUncached().execute(e.getEscapedException(), null, file);
+                            WriteUnraisableNode.getUncached().execute(e.getEscapedException(), T_EXCEPTION_IGNORED_ON_FLUSHING_SYS_STDOUT,
+                                            PNone.NONE);
                             return true;
                         }
                     }

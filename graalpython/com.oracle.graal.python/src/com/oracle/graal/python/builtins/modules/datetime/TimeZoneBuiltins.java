@@ -330,8 +330,7 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyDateTimeCheckNode dateTimeCheckNode,
                         @Cached DateTimeNodes.TzInfoNode tzInfoNode,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {
+                        @Cached PRaiseNode raiseNode) {
             if (!dateTimeCheckNode.execute(inliningTarget, dateTime)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
@@ -340,7 +339,7 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FROMUTC_DT_TZINFO_IS_NOT_SELF);
             }
 
-            return DatetimeModuleBuiltins.addOffsetToDateTime(dateTime, self.offset, dateTimeSubclassNewNode, inliningTarget);
+            return DatetimeModuleBuiltins.addOffsetToDateTime(dateTime, self.offset, inliningTarget);
         }
     }
 

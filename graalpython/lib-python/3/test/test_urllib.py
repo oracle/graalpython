@@ -12,6 +12,8 @@ from test import support
 from test.support import os_helper
 from test.support import socket_helper
 from test.support import warnings_helper
+from test.support import control_characters_c0
+from test.support.testcase import ExtraAssertions
 import os
 try:
     import ssl
@@ -139,7 +141,7 @@ class FakeFTPMixin(object):
         urllib.request.ftpwrapper = self._ftpwrapper_class
 
 
-class urlopen_FileTests(unittest.TestCase):
+class urlopen_FileTests(unittest.TestCase, ExtraAssertions):
     """Test urlopen() opening a temporary file.
 
     Try to test as much functionality as possible so as to cut down on reliance
@@ -157,7 +159,7 @@ class urlopen_FileTests(unittest.TestCase):
         finally:
             f.close()
         self.pathname = os_helper.TESTFN
-        self.quoted_pathname = urllib.parse.quote(self.pathname)
+        self.quoted_pathname = urllib.parse.quote(os.fsencode(self.pathname))
         self.returned_obj = urlopen("file:%s" % self.quoted_pathname)
 
     def tearDown(self):
@@ -169,9 +171,7 @@ class urlopen_FileTests(unittest.TestCase):
         # Make sure object returned by urlopen() has the specified methods
         for attr in ("read", "readline", "readlines", "fileno",
                      "close", "info", "geturl", "getcode", "__iter__"):
-            self.assertTrue(hasattr(self.returned_obj, attr),
-                         "object returned by urlopen() lacks %s attribute" %
-                         attr)
+            self.assertHasAttr(self.returned_obj, attr)
 
     def test_read(self):
         self.assertEqual(self.text, self.returned_obj.read())
@@ -476,7 +476,9 @@ Connection: close
 Content-Type: text/html; charset=iso-8859-1
 ''', mock_close=True)
         try:
-            self.assertRaises(OSError, urlopen, "http://python.org/")
+            with self.assertRaises(urllib.error.HTTPError) as cm:
+                urllib.request.urlopen("http://python.org/")
+            cm.exception.close()
         finally:
             self.unfakehttp()
 
@@ -491,8 +493,9 @@ Content-Type: text/html; charset=iso-8859-1
 ''', mock_close=True)
         try:
             msg = "Redirection to url 'file:"
-            with self.assertRaisesRegex(urllib.error.HTTPError, msg):
-                urlopen("http://python.org/")
+            with self.assertRaisesRegex(urllib.error.HTTPError, msg) as cm:
+                urllib.request.urlopen("http://python.org/")
+            cm.exception.close()
         finally:
             self.unfakehttp()
 
@@ -505,8 +508,9 @@ Location: file://guidocomputer.athome.com:/python/license
 Connection: close
 ''', mock_close=True)
             try:
-                self.assertRaises(urllib.error.HTTPError, urlopen,
-                    "http://something")
+                with self.assertRaises(urllib.error.HTTPError) as cm:
+                    urllib.request.urlopen("http://something")
+                cm.exception.close()
             finally:
                 self.unfakehttp()
 
@@ -596,17 +600,8 @@ Connection: close
         with warnings_helper.check_warnings(('',DeprecationWarning)):
             urllib.request.URLopener()
 
-    @unittest.skipUnless(ssl, "ssl module required")
-    def test_cafile_and_context(self):
-        context = ssl.create_default_context()
-        with warnings_helper.check_warnings(('', DeprecationWarning)):
-            with self.assertRaises(ValueError):
-                urllib.request.urlopen(
-                    "https://localhost", cafile="/nonexistent/path", context=context
-                )
 
-
-class urlopen_DataTests(unittest.TestCase):
+class urlopen_DataTests(unittest.TestCase, ExtraAssertions):
     """Test urlopen() opening a data URL."""
 
     def setUp(self):
@@ -635,18 +630,17 @@ class urlopen_DataTests(unittest.TestCase):
             "QOjdAAAAAXNSR0IArs4c6QAAAA9JREFUCNdj%0AYGBg%2BP//PwAGAQL%2BCm8 "
             "vHgAAAABJRU5ErkJggg%3D%3D%0A%20")
 
-        self.text_url_resp = urllib.request.urlopen(self.text_url)
-        self.text_url_base64_resp = urllib.request.urlopen(
-            self.text_url_base64)
-        self.image_url_resp = urllib.request.urlopen(self.image_url)
+        self.text_url_resp = self.enterContext(
+            urllib.request.urlopen(self.text_url))
+        self.text_url_base64_resp = self.enterContext(
+            urllib.request.urlopen(self.text_url_base64))
+        self.image_url_resp = self.enterContext(urllib.request.urlopen(self.image_url))
 
     def test_interface(self):
         # Make sure object returned by urlopen() has the specified methods
         for attr in ("read", "readline", "readlines",
                      "close", "info", "geturl", "getcode", "__iter__"):
-            self.assertTrue(hasattr(self.text_url_resp, attr),
-                         "object returned by urlopen() lacks %s attribute" %
-                         attr)
+            self.assertHasAttr(self.text_url_resp, attr)
 
     def test_info(self):
         self.assertIsInstance(self.text_url_resp.info(), email.message.Message)
@@ -654,8 +648,10 @@ class urlopen_DataTests(unittest.TestCase):
             [('text/plain', ''), ('charset', 'ISO-8859-1')])
         self.assertEqual(self.image_url_resp.info()['content-length'],
             str(len(self.image)))
-        self.assertEqual(urllib.request.urlopen("data:,").info().get_params(),
+        r = urllib.request.urlopen("data:,")
+        self.assertEqual(r.info().get_params(),
             [('text/plain', ''), ('charset', 'US-ASCII')])
+        r.close()
 
     def test_geturl(self):
         self.assertEqual(self.text_url_resp.geturl(), self.text_url)
@@ -682,6 +678,13 @@ class urlopen_DataTests(unittest.TestCase):
         # missing padding character
         self.assertRaises(ValueError,urllib.request.urlopen,'data:;base64,Cg=')
 
+    def test_invalid_mediatype(self):
+        for c0 in control_characters_c0():
+            self.assertRaises(ValueError,urllib.request.urlopen,
+                              f'data:text/html;{c0},data')
+        for c0 in control_characters_c0():
+            self.assertRaises(ValueError,urllib.request.urlopen,
+                              f'data:text/html{c0};base64,ZGF0YQ==')
 
 class urlretrieve_FileTests(unittest.TestCase):
     """Test urllib.urlretrieve() on local files"""

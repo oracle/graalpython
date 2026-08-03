@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -58,11 +58,12 @@ class BasicZipImportTests(ZipImportBaseTestCase, unittest.TestCase):
     def test_zipimporter_attribute(self):
         self.assertTrue(self.z.prefix == "")
         self.assertTrue(self.z.archive == ZIP_ABS_PATH)
-        self.assertTrue(type(self.z._files) is dict)
-        self.assertTrue(self.z._files["MyTestModule.py"] is not None)
-        self.assertTrue(self.z._files["empty.txt"] is not None)
-        self.assertTrue(self.z._files[os.path.join("packageA", "moduleC.py")] is not None)
-        self.assertTrue(self.z._files[os.path.join("cesta", "moduleA.py")] is not None)
+        files = self.z._get_files()
+        self.assertTrue(type(files) is dict)
+        self.assertTrue(files["MyTestModule.py"] is not None)
+        self.assertTrue(files["empty.txt"] is not None)
+        self.assertTrue(files[os.path.join("packageA", "moduleC.py")] is not None)
+        self.assertTrue(files[os.path.join("cesta", "moduleA.py")] is not None)
 
     def test_create_zipimport_from_string(self):
         zipimport._zip_directory_cache.clear()
@@ -139,11 +140,12 @@ class ZipImportWithPrefixTests(ZipImportBaseTestCase, unittest.TestCase):
     def test_zipimporter_with_prefix_attribute(self):
         self.assertTrue(self.z.prefix == "cesta" + os.sep)
         self.assertTrue(self.z.archive == ZIP_ABS_PATH)
-        self.assertTrue(type(self.z._files) is dict)
-        self.assertTrue(self.z._files["MyTestModule.py"] is not None)
-        self.assertTrue(self.z._files["empty.txt"] is not None)
-        self.assertTrue(self.z._files[os.path.join("packageA", "moduleC.py")] is not None)
-        self.assertTrue(self.z._files[os.path.join("cesta", "moduleA.py")] is not None)
+        files = self.z._get_files()
+        self.assertTrue(type(files) is dict)
+        self.assertTrue(files["MyTestModule.py"] is not None)
+        self.assertTrue(files["empty.txt"] is not None)
+        self.assertTrue(files[os.path.join("packageA", "moduleC.py")] is not None)
+        self.assertTrue(files[os.path.join("cesta", "moduleA.py")] is not None)
 
     def test_zipimporter_with_prefix_find_spec(self):
         self.assertTrue(None is self.z.find_spec("MyTestModule"))
@@ -175,15 +177,16 @@ class BasicEggImportTests(ZipImportBaseTestCase, unittest.TestCase):
     def test_zipimporter_egg(self):
         self.assertTrue(self.z.prefix == "")
         self.assertTrue(self.z.archive == EGG_ABS_PATH)
-        self.assertTrue(type(self.z._files) is dict)
-        self.assertTrue(self.z._files["data.bin"] is not None)
-        self.assertTrue(self.z._files["read.me"] is not None)
-        
+        files = self.z._get_files()
+        self.assertTrue(type(files) is dict)
+        self.assertTrue(files["data.bin"] is not None)
+        self.assertTrue(files["read.me"] is not None)
+
     def test_egg_get_data(self):
         data = self.z.get_data("data.bin")
         self.assertTrue(type(data) is bytes)
         self.assertEqual(bytes(b'ahojPK\003\004ahoj'), data)
-    
+
     def test_egg_get_readme(self):
         data = self.z.get_data("read.me")
         self.assertTrue(type(data) is bytes)
@@ -199,5 +202,6 @@ class GR15813ImportTests(ZipImportBaseTestCase, unittest.TestCase):
 
     def test_zipimporter_gr_18813(self):
         self.assertTrue(self.z.prefix == "")
-        self.assertTrue(type(self.z._files) is dict)
-        self.assertTrue(6, len(self.z._files))
+        files = self.z._get_files()
+        self.assertTrue(type(files) is dict)
+        self.assertTrue(6, len(files))

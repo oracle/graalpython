@@ -4,6 +4,7 @@ import tkinter
 from tkinter import TclError
 from test.support import requires
 
+from test.test_tkinter.support import setUpModule  # noqa: F401
 from test.test_tkinter.support import pixels_conv
 from test.test_tkinter.widget_tests import AbstractWidgetTest
 
@@ -903,10 +904,6 @@ class GridTest(AbstractWidgetTest, unittest.TestCase):
         self.assertEqual(self.root.grid_slaves(column=1), [d, c, a])
         self.assertEqual(self.root.grid_slaves(row=1, column=1), [d, c])
 
-
-tests_gui = (
-    PackTest, PlaceTest, GridTest,
-)
 
 if __name__ == '__main__':
     unittest.main()

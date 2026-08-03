@@ -8,7 +8,6 @@ import tempfile
 import unittest
 
 from .. import support
-from . import warnings_helper
 
 HOST = "localhost"
 HOSTv4 = "127.0.0.1"
@@ -196,7 +195,6 @@ _NOT_SET = object()
 def transient_internet(resource_name, *, timeout=_NOT_SET, errnos=()):
     """Return a context manager that raises ResourceDenied when various issues
     with the internet connection manifest themselves as exceptions."""
-    nntplib = warnings_helper.import_deprecated("nntplib")
     import urllib.error
     if timeout is _NOT_SET:
         timeout = support.INTERNET_TIMEOUT
@@ -249,10 +247,6 @@ def transient_internet(resource_name, *, timeout=_NOT_SET, errnos=()):
         if timeout is not None:
             socket.setdefaulttimeout(timeout)
         yield
-    except nntplib.NNTPTemporaryError as err:
-        if support.verbose:
-            sys.stderr.write(denied.args[0] + "\n")
-        raise denied from err
     except OSError as err:
         # urllib can wrap original socket errors multiple times (!), we must
         # unwrap to get at the original error.
@@ -265,6 +259,10 @@ def transient_internet(resource_name, *, timeout=_NOT_SET, errnos=()):
             #        raise OSError('socket error', msg) from msg
             elif len(a) >= 2 and isinstance(a[1], OSError):
                 err = a[1]
+            # The error can also be wrapped as __cause__:
+            #    raise URLError(f"ftp error: {exp}") from exp
+            elif isinstance(err, urllib.error.URLError) and err.__cause__:
+                err = err.__cause__
             else:
                 break
         filter_error(err)

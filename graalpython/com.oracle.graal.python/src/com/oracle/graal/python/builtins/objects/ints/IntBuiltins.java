@@ -2412,8 +2412,11 @@ public final class IntBuiltins extends PythonBuiltins {
             }
 
             boolean overflow = number != signByte;
-            if (signed && byteCount > 0) {
-                int mostSignificantByte = isBigEndian ? bytes[0] : bytes[byteCount - 1];
+            if (signed) {
+                int mostSignificantByte = 0;
+                if (byteCount > 0) {
+                    mostSignificantByte = isBigEndian ? bytes[0] : bytes[byteCount - 1];
+                }
                 if ((mostSignificantByte < 0) != (self < 0)) {
                     overflow = true;
                 }
@@ -2644,7 +2647,7 @@ public final class IntBuiltins extends PythonBuiltins {
             if (intMaxStrDigits > 0) {
                 int digits = self.isNegative() ? value.length() - 1 : value.length();
                 if (digits > intMaxStrDigits) {
-                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION);
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EXCEEDS_THE_LIMIT_FOR_INTEGER_STRING_CONVERSION, intMaxStrDigits);
                 }
             }
             return fromJavaStringNode.execute(value, TS_ENCODING);

@@ -24,6 +24,9 @@ import unittest
 import sqlite3 as sqlite
 from collections.abc import Sequence
 
+from .util import memory_database
+from .util import MemoryDatabaseMixin
+
 
 def dict_factory(cursor, row):
     d = {}
@@ -45,10 +48,12 @@ class ConnectionFactoryTests(unittest.TestCase):
             def __init__(self, *args, **kwargs):
                 sqlite.Connection.__init__(self, *args, **kwargs)
 
-        for factory in DefectFactory, OkFactory:
-            with self.subTest(factory=factory):
-                con = sqlite.connect(":memory:", factory=factory)
-                self.assertIsInstance(con, factory)
+        with memory_database(factory=OkFactory) as con:
+            self.assertIsInstance(con, OkFactory)
+        regex = "Base Connection.__init__ not called."
+        with self.assertRaisesRegex(sqlite.ProgrammingError, regex):
+            with memory_database(factory=DefectFactory) as con:
+                self.assertIsInstance(con, DefectFactory)
 
     def test_connection_factory_relayed_call(self):
         # gh-95132: keyword args must not be passed as positional args
@@ -57,26 +62,30 @@ class ConnectionFactoryTests(unittest.TestCase):
                 kwargs["isolation_level"] = None
                 super(Factory, self).__init__(*args, **kwargs)
 
-        con = sqlite.connect(":memory:", factory=Factory)
-        self.assertIsNone(con.isolation_level)
-        self.assertIsInstance(con, Factory)
+        with memory_database(factory=Factory) as con:
+            self.assertIsNone(con.isolation_level)
+            self.assertIsInstance(con, Factory)
 
     def test_connection_factory_as_positional_arg(self):
         class Factory(sqlite.Connection):
             def __init__(self, *args, **kwargs):
                 super(Factory, self).__init__(*args, **kwargs)
 
-        con = sqlite.connect(":memory:", 5.0, 0, None, True, Factory)
-        self.assertIsNone(con.isolation_level)
-        self.assertIsInstance(con, Factory)
+        regex = (
+            r"Passing more than 1 positional argument to _sqlite3.Connection\(\) "
+            r"is deprecated. Parameters 'timeout', 'detect_types', "
+            r"'isolation_level', 'check_same_thread', 'factory', "
+            r"'cached_statements' and 'uri' will become keyword-only "
+            r"parameters in Python 3.15."
+        )
+        with self.assertWarnsRegex(DeprecationWarning, regex) as cm:
+            with memory_database(5.0, 0, None, True, Factory) as con:
+                self.assertIsNone(con.isolation_level)
+                self.assertIsInstance(con, Factory)
+        self.assertEqual(cm.filename, __file__)
 
 
-class CursorFactoryTests(unittest.TestCase):
-    def setUp(self):
-        self.con = sqlite.connect(":memory:")
-
-    def tearDown(self):
-        self.con.close()
+class CursorFactoryTests(MemoryDatabaseMixin, unittest.TestCase):
 
     def test_is_instance(self):
         cur = self.con.cursor()
@@ -94,9 +103,8 @@ class CursorFactoryTests(unittest.TestCase):
         # invalid callable returning non-cursor
         self.assertRaises(TypeError, self.con.cursor, lambda con: None)
 
-class RowFactoryTestsBackwardsCompat(unittest.TestCase):
-    def setUp(self):
-        self.con = sqlite.connect(":memory:")
+
+class RowFactoryTestsBackwardsCompat(MemoryDatabaseMixin, unittest.TestCase):
 
     def test_is_produced_by_factory(self):
         cur = self.con.cursor(factory=MyCursor)
@@ -105,12 +113,11 @@ class RowFactoryTestsBackwardsCompat(unittest.TestCase):
         self.assertIsInstance(row, dict)
         cur.close()
 
-    def tearDown(self):
-        self.con.close()
 
-class RowFactoryTests(unittest.TestCase):
+class RowFactoryTests(MemoryDatabaseMixin, unittest.TestCase):
+
     def setUp(self):
-        self.con = sqlite.connect(":memory:")
+        super().setUp()
         self.con.row_factory = sqlite.Row
 
     def test_custom_factory(self):
@@ -147,6 +154,16 @@ class RowFactoryTests(unittest.TestCase):
             row[2**1000]
         with self.assertRaises(IndexError):
             row[complex()]  # index must be int or string
+
+    def test_delete_connection_row_factory(self):
+        # gh-149738: deleting row_factory should raise an exception
+        with self.assertRaises(AttributeError):
+            del self.con.row_factory
+
+    def test_delete_connection_text_factory(self):
+        # gh-149738: deleting text_factory should raise an exception
+        with self.assertRaises(AttributeError):
+            del self.con.text_factory
 
     def test_sqlite_row_index_unicode(self):
         row = self.con.execute("select 1 as \xff").fetchone()
@@ -253,12 +270,8 @@ class RowFactoryTests(unittest.TestCase):
         self.assertRaises(TypeError, self.con.cursor, FakeCursor)
         self.assertRaises(TypeError, sqlite.Row, FakeCursor(), ())
 
-    def tearDown(self):
-        self.con.close()
 
-class TextFactoryTests(unittest.TestCase):
-    def setUp(self):
-        self.con = sqlite.connect(":memory:")
+class TextFactoryTests(MemoryDatabaseMixin, unittest.TestCase):
 
     def test_unicode(self):
         austria = "Österreich"
@@ -279,14 +292,16 @@ class TextFactoryTests(unittest.TestCase):
         self.assertEqual(type(row[0]), str, "type of row[0] must be unicode")
         self.assertTrue(row[0].endswith("reich"), "column must contain original data")
 
-    def tearDown(self):
-        self.con.close()
 
 class TextFactoryTestsWithEmbeddedZeroBytes(unittest.TestCase):
+
     def setUp(self):
         self.con = sqlite.connect(":memory:")
         self.con.execute("create table test (value text)")
         self.con.execute("insert into test (value) values (?)", ("a\x00b",))
+
+    def tearDown(self):
+        self.con.close()
 
     def test_string(self):
         # text_factory defaults to str
@@ -312,9 +327,6 @@ class TextFactoryTestsWithEmbeddedZeroBytes(unittest.TestCase):
         row = self.con.execute("select value from test").fetchone()
         self.assertIs(type(row[0]), bytes)
         self.assertEqual(row[0], b"a\x00b")
-
-    def tearDown(self):
-        self.con.close()
 
 
 if __name__ == "__main__":

@@ -207,6 +207,10 @@ abstract class FormatProcessor<T> {
 
     protected abstract InternalFormat.Formatter handleSingleCharacterFormat(InternalFormat.Spec spec);
 
+    protected char normalizeIntegerFormatType(char type) {
+        return type;
+    }
+
     protected InternalFormat.Formatter formatInteger(Object intObj, InternalFormat.Spec spec) {
         IntegerFormatter.Traditional fi;
         if (intObj instanceof Integer) {
@@ -439,12 +443,18 @@ abstract class FormatProcessor<T> {
                     // Format the argument using this Spec.
                     // Note various types accepted here as long as they have an __int__ method.
                     arg = getArg();
-                    f = formatInteger(asNumber(arg, spec.type), spec);
+                    char integerFormatType = normalizeIntegerFormatType(spec.type);
+                    InternalFormat.Spec integerSpec = spec;
+                    if (integerFormatType != spec.type) {
+                        integerSpec = new Spec(spec.fill, spec.align, spec.sign, spec.noNegativeZero, spec.alternate, spec.width,
+                                        spec.grouping, spec.precision, integerFormatType);
+                    }
+                    f = formatInteger(asNumber(arg, integerFormatType), integerSpec);
                     if (f == null) {
-                        if (allowsFloat(spec.type)) {
-                            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.S_FORMAT_NUMBER_IS_REQUIRED_NOT_S, spec.type, arg);
+                        if (allowsFloat(integerFormatType)) {
+                            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.S_FORMAT_NUMBER_IS_REQUIRED_NOT_S, integerFormatType, arg);
                         } else {
-                            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.S_FORMAT_INTEGER_IS_REQUIRED_NOT_S, spec.type, arg);
+                            throw PRaiseNode.raiseStatic(raisingNode, TypeError, ErrorMessages.S_FORMAT_INTEGER_IS_REQUIRED_NOT_S, integerFormatType, arg);
                         }
                     }
                     break;

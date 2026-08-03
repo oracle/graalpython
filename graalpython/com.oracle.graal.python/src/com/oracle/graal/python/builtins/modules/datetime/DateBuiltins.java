@@ -523,17 +523,20 @@ public final class DateBuiltins extends PythonBuiltins {
         return IsForeignObjectNode.executeUncached(dateObj) ? PythonBuiltinClassType.PDate : GetClassNode.executeUncached(dateObj);
     }
 
+    private static Object getResultDateType(Object dateObj, Node inliningTarget, IsForeignObjectNode isForeignObjectNode, GetClassNode getClassNode) {
+        return isForeignObjectNode.execute(inliningTarget, dateObj) ? PythonBuiltinClassType.PDate : getClassNode.execute(inliningTarget, dateObj);
+    }
+
     @Builtin(name = "today", minNumOfPositionalArgs = 1, isClassmethod = true, parameterNames = {"self"})
     @GenerateNodeFactory
     public abstract static class TodayNode extends PythonBuiltinNode {
 
         @Specialization
         static Object today(VirtualFrame frame, Object cls,
-                        @Bind Node inliningTarget,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return todayBoundary(cls, inliningTarget);
+                return todayBoundary(cls);
             } finally {
                 // A Python method call (using DateNodes.SubclassNewNode) should be
                 // connected to a current node.
@@ -542,7 +545,7 @@ public final class DateBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object todayBoundary(Object cls, Node inliningTarget) {
+        private static Object todayBoundary(Object cls) {
             var localDate = LocalDate.now();
             return DateNodes.SubclassNewNode.executeUncached(cls, localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
         }
@@ -650,7 +653,7 @@ public final class DateBuiltins extends PythonBuiltins {
             Object date;
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                date = parseIsoDateFormat(source, inliningTarget, cls);
+                date = parseIsoDateFormat(source, cls);
             } finally {
                 // A Python method call (using DateNodes.SubclassNewNode) should be
                 // connected to a current node.
@@ -666,7 +669,7 @@ public final class DateBuiltins extends PythonBuiltins {
 
         // CPython: parse_isoformat_date()
         @TruffleBoundary
-        private static Object parseIsoDateFormat(String source, Node inliningTarget, Object cls) {
+        private static Object parseIsoDateFormat(String source, Object cls) {
             try {
                 int pos = 0;
 
@@ -758,6 +761,7 @@ public final class DateBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "replace", minNumOfPositionalArgs = 1, parameterNames = {"self", "year", "month", "day"})
+    @Builtin(name = "__replace__", minNumOfPositionalArgs = 1, parameterNames = {"self", "year", "month", "day"}, doc = "The same as replace().")
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends PythonBuiltinNode {
 
@@ -766,8 +770,9 @@ public final class DateBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TemporalValueNodes.GetDateValue readDateValueNode,
                         @Cached PyLongAsLongNode longAsLongNode,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached DateNodes.NewNode newNode) {
+                        @Cached DateNodes.SubclassNewNode newNode) {
             DateValue date = readDateValueNode.execute(inliningTarget, self);
             final int year, month, day;
 
@@ -789,7 +794,7 @@ public final class DateBuiltins extends PythonBuiltins {
                 day = (int) longAsLongNode.execute(frame, inliningTarget, dayObject);
             }
 
-            return newNode.execute(frame, inliningTarget, getClassNode.execute(inliningTarget, self), year, month, day);
+            return newNode.execute(frame, inliningTarget, getResultDateType(self, inliningTarget, isForeignObjectNode, getClassNode), year, month, day);
         }
     }
 

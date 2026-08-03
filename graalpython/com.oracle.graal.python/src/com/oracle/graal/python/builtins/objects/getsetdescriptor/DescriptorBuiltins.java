@@ -147,7 +147,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj,
+        static Object doIndexedSlotDescriptor(IndexedSlotDescriptor descr, PythonAbstractObject obj,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached GetOrCreateIndexedSlots getSlotsNode) {
@@ -156,7 +156,7 @@ public final class DescriptorBuiltins extends PythonBuiltins {
             if (val != null) {
                 return val;
             }
-            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, descr.getType(), descr.getName());
+            throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.OBJ_T_HAS_NO_ATTR_S, obj, descr.getName());
         }
     }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2021 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -241,7 +241,7 @@ ACTION_MAPPINGS = {
     '_PyAST_IfExp ( b , a , c , EXTRA )': (2, 'factory.createIfExpression(b, a, c, $RANGE)'),
     '_PyAST_Import ( a , EXTRA )': (1, 'factory.createImport(a, $RANGE)'),
     '_PyAST_ImportFrom ( NULL , b , _PyPegen_seq_count_dots ( a ) , EXTRA )': (1, 'factory.createImportFrom(null, b, countDots(a), $RANGE)'),
-    '_PyAST_ImportFrom ( b -> v . Name . id , c , _PyPegen_seq_count_dots ( a ) , EXTRA )': (1, 'factory.createImportFrom(((ExprTy.Name) b).id, c, countDots(a), $RANGE)'),
+    '_PyPegen_checked_future_import ( p , b -> v . Name . id , c , _PyPegen_seq_count_dots ( a ) , EXTRA )': (1, 'factory.createImportFrom(((ExprTy.Name) b).id, c, countDots(a), $RANGE)'),
     '_PyAST_Interactive ( a , p -> arena )': (1, 'factory.createInteractiveModule(a, $RANGE)'),
     '_PyAST_Lambda ( ( a ) ? a : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , EXTRA )': (1, 'factory.createLambda(a == null ? factory.emptyArguments() : a, b, $RANGE)'),
     '_PyAST_ListComp ( a , b , EXTRA )': (1, 'factory.createListComprehension(a, b, $RANGE)'),
@@ -263,8 +263,8 @@ ACTION_MAPPINGS = {
     '_PyAST_Tuple ( CHECK ( asdl_expr_seq* , _PyPegen_seq_insert_in_front ( p , a , b ) ) , Store , EXTRA )': (1, 'factory.createTuple(this.insertInFront(a,b), ExprContextTy.Store, $RANGE)'),
     '_PyAST_Tuple ( CHECK ( asdl_expr_seq* , _PyPegen_singleton_seq ( p , a ) ) , Load , EXTRA )': (2, 'factory.createTuple(new ExprTy[] {a}, ExprContextTy.Load, $RANGE)'),
     '_PyAST_While ( a , b , c , EXTRA )': (1, 'factory.createWhile(a, b, c, $RANGE)'),
-    '_PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (1, 'factory.createWith(a, b, newTypeComment(tc), $RANGE)'),
-    '_PyAST_With ( a , b , NULL , EXTRA )': (1, 'factory.createWith(a, b, null, $RANGE)'),
+    '_PyAST_With ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA )': (2, 'factory.createWith(a, b, newTypeComment(tc), $RANGE)'),
+    '_PyAST_With ( a , b , NULL , EXTRA )': (0, 'factory.createWith(a, b, null, $RANGE)'),
     '_PyAST_Yield ( a , EXTRA )': (1, 'factory.createYield(a, false, $RANGE)'),
     '_PyAST_YieldFrom ( a , EXTRA )': (1, 'factory.createYield(a, true, $RANGE)'),
     '_PyAST_alias ( a -> v . Name . id , ( b ) ? ( ( expr_ty ) b ) -> v . Name . id : NULL , EXTRA )': (2, 'factory.createAlias(((ExprTy.Name) a).id, b == null ? null : ((ExprTy.Name) b).id, $RANGE)'),
@@ -358,11 +358,12 @@ ACTION_MAPPINGS = {
     # Type alias/type params
     'CHECK_VERSION ( stmt_ty , 12 , "Type statement is" , _PyAST_TypeAlias ( CHECK ( expr_ty , _PyPegen_set_expr_context ( p , n , Store ) ) , t , b , EXTRA ) )': (1, 'checkVersion(12, "Type statement is", factory.createTypeAlias(setExprContext(n, ExprContextTy.Store), t, b, $RANGE))'),
     'CHECK_VERSION ( asdl_type_param_seq* , 12 , "Type parameter lists are" , t )': (1, 'checkVersion(12, "Type parameter lists are", t)'),
-    '_PyAST_TypeVar ( a -> v . Name . id , b , EXTRA )': (1, 'factory.createTypeVar(((ExprTy.Name) a).id, b, $RANGE)'),
+    '_PyAST_TypeVar ( a -> v . Name . id , b , c , EXTRA )': (1, 'factory.createTypeVar(((ExprTy.Name) a).id, b, c, $RANGE)'),
     'RAISE_SYNTAX_ERROR_STARTING_FROM ( colon , e -> kind == Tuple_kind ? "cannot use constraints with TypeVarTuple" : "cannot use bound with TypeVarTuple" )': (1, 'this.raiseSyntaxErrorStartingFrom(colon, e instanceof ExprTy.Tuple ? "cannot use constraints with TypeVarTuple" : "cannot use bound with TypeVarTuple")'),
-    '_PyAST_TypeVarTuple ( a -> v . Name . id , EXTRA )': (1, 'factory.createTypeVarTuple(((ExprTy.Name) a).id, $RANGE)'),
+    '_PyAST_TypeVarTuple ( a -> v . Name . id , b , EXTRA )': (1, 'factory.createTypeVarTuple(((ExprTy.Name) a).id, b, $RANGE)'),
     'RAISE_SYNTAX_ERROR_STARTING_FROM ( colon , e -> kind == Tuple_kind ? "cannot use constraints with ParamSpec" : "cannot use bound with ParamSpec" )': (1, 'this.raiseSyntaxErrorStartingFrom(colon, e instanceof ExprTy.Tuple ? "cannot use constraints with ParamSpec" : "cannot use bound with ParamSpec")'),
-    '_PyAST_ParamSpec ( a -> v . Name . id , EXTRA )': (1, 'factory.createParamSpec(((ExprTy.Name) a).id, $RANGE)'),
+    '_PyAST_ParamSpec ( a -> v . Name . id , b , EXTRA )': (1, 'factory.createParamSpec(((ExprTy.Name) a).id, b, $RANGE)'),
+    'CHECK_VERSION ( expr_ty , 13 , "Type parameter defaults are" , e )': (2, 'checkVersion(13, "Type parameter defaults are", e)'),
 
     # f-strings
     '_PyPegen_constant_from_token ( p , t )': (1, 'constantFromToken(t)'),
@@ -392,11 +393,11 @@ ACTION_MAPPINGS_RE = {
     r'_PyAST_UnaryOp \( (\w+) , (\w+) , EXTRA \)': (6, 'factory.createUnaryOp(UnaryOpTy.\\1, \\2, $RANGE)'),
     r'_PyPegen_augoperator \( p , (\w+) \)': (12, 'OperatorTy.\\1'),
     r'_PyPegen_cmpop_expr_pair \( p , (\w+) , a \)': (10, 'new CmpopExprPair(CmpOpTy.\\1, a)'),
-    r'RAISE_SYNTAX_ERROR \( "(.+)" \)': (17, 'this.raiseSyntaxError("\\1")'),
+    r'RAISE_SYNTAX_ERROR \( "(.+)" \)': (18, 'this.raiseSyntaxError("\\1")'),
     r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" \)': (38, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2")'),
-    r'RAISE_SYNTAX_ERROR_KNOWN_RANGE \( (\w+) , (\w+) , "(.+)" \)': (13, 'this.raiseSyntaxErrorKnownRange(\\1, \\2, "\\3")'),
+    r'RAISE_SYNTAX_ERROR_KNOWN_RANGE \( (\w+) , (\w+) , "(.+)" \)': (15, 'this.raiseSyntaxErrorKnownRange(\\1, \\2, "\\3")'),
     r'RAISE_SYNTAX_ERROR_KNOWN_LOCATION \( (\w+) , "(.+)" , _PyPegen_get_expr_name \( \1 \) \)': (4, 'this.raiseSyntaxErrorKnownLocation(\\1, "\\2", getExprName(\\1))'),
-    r'RAISE_SYNTAX_ERROR_STARTING_FROM \( (\w+) , "(.+)" \)': (5, 'this.raiseSyntaxErrorStartingFrom(\\1, "\\2")'),
+    r'RAISE_SYNTAX_ERROR_STARTING_FROM \( (\w+) , "(.+)" \)': (8, 'this.raiseSyntaxErrorStartingFrom(\\1, "\\2")'),
     r'RAISE_INDENTATION_ERROR \( "(.+)" \)': (1, 'this.raiseIndentationError("\\1")'),
     r'RAISE_INDENTATION_ERROR \( "(.+)" , (\w+) -> lineno \)': (16, 'this.raiseIndentationError("\\1", \\2.getSourceRange().startLine)'),
     'RAISE_SYNTAX_ERROR_ON_NEXT_TOKEN \( "(.+)" \)': (3, 'raiseSyntaxErrorOnNextToken("\\1")'),
@@ -1202,7 +1203,13 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             f'''debugMessageln("Hit with action [%d-%d]: %s", _mark, mark(), "{str(node).replace('"', "'")}");'''
         )
 
-    def emit_default_action(self, is_gather: bool, node: Alt) -> None:
+    def emit_default_action(self, is_gather: bool, node: Alt, rulename: Optional[str]) -> None:
+        # Invalid rules with multiple values only use the default action as a success marker. Returning a dummy
+        # value here can hide an error raised by a nested invalid rule. A sole value, however, is the actual result
+        # of helper rules such as invalid_ann_assign_target and must be propagated, as in CPython's generator.
+        if rulename and rulename.startswith("invalid_") and len(self.local_variable_names) > 1:
+            self.print("_res = null;")
+            return
         if len(self.local_variable_names) > 1:
             if is_gather:
                 assert len(self.local_variable_names) == 2
@@ -1246,7 +1253,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             elif node.action:
                 self.emit_action(node)
             else:
-                self.emit_default_action(is_gather, node)
+                self.emit_default_action(is_gather, node, rulename)
 
             # As the current option has parsed correctly, do not continue with the rest.
             # Java change: C uses a goto here, we have the goto target code in a lambda
@@ -1267,7 +1274,7 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             elif node.action:
                 self.emit_action(node)
             else:
-                self.emit_default_action(is_gather, node)
+                self.emit_default_action(is_gather, node, rulename)
 
             # Add the result of rule to the temporary buffer of children. This buffer
             # will populate later an asdl_seq with all elements to return.

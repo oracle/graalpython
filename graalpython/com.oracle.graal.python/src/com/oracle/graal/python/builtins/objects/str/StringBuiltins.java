@@ -286,7 +286,9 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Exclusive @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Exclusive @Cached PyUnicodeCheckNode stringCheckNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
+            checkEncodingAndErrors(inliningTarget, encoding, errors, stringCheckNode, raiseNode);
             Object buffer;
             try {
                 buffer = acquireLib.acquireReadonly(obj, frame, callData);
@@ -333,7 +335,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfString(isSubtype, cls)", //
                         "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "1")
-        static Object doNativeSubclassEncodeErr(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
+        static Object doNativeSubclassEncodeErr(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Exclusive @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
@@ -346,7 +348,9 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Exclusive @Cached BytesCommonBuiltins.DecodeNode decodeNode,
                         @Exclusive @Cached CExtNodes.StringSubtypeNew subtypeNew,
                         @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Exclusive @Cached PyUnicodeCheckNode stringCheckNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
+            checkEncodingAndErrors(inliningTarget, encoding, errors, stringCheckNode, raiseNode);
             Object buffer;
             try {
                 buffer = acquireLib.acquireReadonly(obj, frame, callData);
@@ -370,6 +374,15 @@ public final class StringBuiltins extends PythonBuiltins {
 
         protected static boolean isSubtypeOfString(IsSubtypeNode isSubtypeNode, Object cls) {
             return isSubtypeNode.execute(cls, PythonBuiltinClassType.PString);
+        }
+
+        private static void checkEncodingAndErrors(Node inliningTarget, Object encoding, Object errors, PyUnicodeCheckNode stringCheckNode, PRaiseNode raiseNode) {
+            if (encoding != PNone.NO_VALUE && !stringCheckNode.execute(inliningTarget, encoding)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.STR_ARG_S_MUST_BE_STR_NOT_T, "encoding", encoding);
+            }
+            if (errors != PNone.NO_VALUE && !stringCheckNode.execute(inliningTarget, errors)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.STR_ARG_S_MUST_BE_STR_NOT_T, "errors", errors);
+            }
         }
 
         private static Object asPString(Object cls, TruffleString str, Node inliningTarget, IsBuiltinClassExactProfile isPrimitiveProfile,

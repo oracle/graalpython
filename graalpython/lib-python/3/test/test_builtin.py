@@ -4,6 +4,7 @@ import ast
 import asyncio
 import builtins
 import collections
+import contextlib
 import decimal
 import fractions
 import gc
@@ -30,6 +31,7 @@ from types import AsyncGeneratorType, FunctionType, CellType
 from operator import neg
 from test import support
 from test.support import (cpython_only, swap_attr, maybe_get_event_loop_policy)
+from test.support.import_helper import import_module
 from test.support.os_helper import (EnvironmentVarGuard, TESTFN, unlink)
 from test.support.script_helper import assert_python_ok
 from test.support.warnings_helper import check_warnings
@@ -47,6 +49,8 @@ from test.support import impl_detail # GraalPy change
 x, y = 1e16, 2.9999 # use temporary values to defeat peephole optimizer
 HAVE_DOUBLE_ROUNDING = (x + y == 1e16 + 4)
 
+# used as proof of globals being used
+A_GLOBAL_VALUE = 123
 
 class Squares:
 
@@ -309,14 +313,13 @@ class BuiltinTest(unittest.TestCase):
         self.assertTrue(callable(c3))
 
     def test_chr(self):
+        self.assertEqual(chr(0), '\0')
         self.assertEqual(chr(32), ' ')
         self.assertEqual(chr(65), 'A')
         self.assertEqual(chr(97), 'a')
         self.assertEqual(chr(0xff), '\xff')
-        self.assertRaises(ValueError, chr, 1<<24)
-        self.assertEqual(chr(sys.maxunicode),
-                         str('\\U0010ffff'.encode("ascii"), 'unicode-escape'))
         self.assertRaises(TypeError, chr)
+        self.assertRaises(TypeError, chr, 65.0)
         self.assertEqual(chr(0x0000FFFF), "\U0000FFFF")
         self.assertEqual(chr(0x00010000), "\U00010000")
         self.assertEqual(chr(0x00010001), "\U00010001")
@@ -328,7 +331,11 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(chr(0x0010FFFF), "\U0010FFFF")
         self.assertRaises(ValueError, chr, -1)
         self.assertRaises(ValueError, chr, 0x00110000)
-        self.assertRaises((OverflowError, ValueError), chr, 2**32)
+        self.assertRaises(ValueError, chr, 1<<24)
+        self.assertRaises(ValueError, chr, 2**32-1)
+        self.assertRaises(ValueError, chr, -2**32)
+        self.assertRaises(ValueError, chr, 2**1000)
+        self.assertRaises(ValueError, chr, -2**1000)
 
     def test_cmp(self):
         self.assertTrue(not hasattr(builtins, "cmp"))
@@ -370,16 +377,17 @@ class BuiltinTest(unittest.TestCase):
                   (1, False, 'doc', False, False),
                   (2, False, None, False, False)]
         for optval, *expected in values:
+            with self.subTest(optval=optval):
             # test both direct compilation and compilation via AST
-            codeobjs = []
-            codeobjs.append(compile(codestr, "<test>", "exec", optimize=optval))
-            tree = ast.parse(codestr)
-            codeobjs.append(compile(tree, "<test>", "exec", optimize=optval))
-            for code in codeobjs:
-                ns = {}
-                exec(code, ns)
-                rv = ns['f']()
-                self.assertEqual(rv, tuple(expected))
+                codeobjs = []
+                codeobjs.append(compile(codestr, "<test>", "exec", optimize=optval))
+                tree = ast.parse(codestr, optimize=optval)
+                codeobjs.append(compile(tree, "<test>", "exec", optimize=optval))
+                for code in codeobjs:
+                    ns = {}
+                    exec(code, ns)
+                    rv = ns['f']()
+                    self.assertEqual(rv, tuple(expected))
 
     @impl_detail("async support", graalpy=False)
     def test_compile_top_level_await_no_coro(self):
@@ -520,6 +528,30 @@ class BuiltinTest(unittest.TestCase):
         exec(co, glob)
         self.assertEqual(type(glob['ticker']()), AsyncGeneratorType)
 
+    def test_compile_ast(self):
+        args = ("a*(1+2)", "f.py", "exec")
+        raw = compile(*args, flags = ast.PyCF_ONLY_AST).body[0]
+        opt1 = compile(*args, flags = ast.PyCF_OPTIMIZED_AST).body[0]
+        opt2 = compile(ast.parse(args[0]), *args[1:], flags = ast.PyCF_OPTIMIZED_AST).body[0]
+
+        for tree in (raw, opt1, opt2):
+            self.assertIsInstance(tree.value, ast.BinOp)
+            self.assertIsInstance(tree.value.op, ast.Mult)
+            self.assertIsInstance(tree.value.left, ast.Name)
+            self.assertEqual(tree.value.left.id, 'a')
+
+        raw_right = raw.value.right  # expect BinOp(1, '+', 2)
+        self.assertIsInstance(raw_right, ast.BinOp)
+        self.assertIsInstance(raw_right.left, ast.Constant)
+        self.assertEqual(raw_right.left.value, 1)
+        self.assertIsInstance(raw_right.right, ast.Constant)
+        self.assertEqual(raw_right.right.value, 2)
+
+        for opt in [opt1, opt2]:
+            opt_right = opt.value.right  # expect Constant(3)
+            self.assertIsInstance(opt_right, ast.Constant)
+            self.assertEqual(opt_right.value, 3)
+
     def test_delattr(self):
         sys.spam = 1
         delattr(sys, 'spam')
@@ -659,6 +691,11 @@ class BuiltinTest(unittest.TestCase):
                 raise ValueError
         self.assertRaises(ValueError, eval, "foo", {}, X())
 
+    def test_eval_kwargs(self):
+        data = {"A_GLOBAL_VALUE": 456}
+        self.assertEqual(eval("globals()['A_GLOBAL_VALUE']", globals=data), 456)
+        self.assertEqual(eval("globals()['A_GLOBAL_VALUE']", locals=data), 123)
+
     def test_general_eval(self):
         # Tests that general mappings can be used for the locals argument
 
@@ -751,6 +788,19 @@ class BuiltinTest(unittest.TestCase):
         if '__builtins__' in l:
             del l['__builtins__']
         self.assertEqual((g, l), ({'a': 1}, {'b': 2}))
+
+    def test_exec_kwargs(self):
+        g = {}
+        exec('global z\nz = 1', globals=g)
+        if '__builtins__' in g:
+            del g['__builtins__']
+        self.assertEqual(g, {'z': 1})
+
+        # if we only set locals, the global assignment will not
+        # reach this locals dictionary
+        g = {}
+        exec('global z\nz = 1', locals=g)
+        self.assertEqual(g, {})
 
     def test_exec_globals(self):
         code = compile("print('Hello World!')", "", "exec")
@@ -927,8 +977,24 @@ class BuiltinTest(unittest.TestCase):
             three_freevars.__code__,
             three_freevars.__globals__,
             closure=my_closure)
+        my_closure = tuple(my_closure)
+
+        # should fail: anything passed to closure= isn't allowed
+        # when the source is a string
+        self.assertRaises(TypeError,
+            exec,
+            "pass",
+            closure=int)
+
+        # should fail: correct closure= argument isn't allowed
+        # when the source is a string
+        self.assertRaises(TypeError,
+            exec,
+            "pass",
+            closure=my_closure)
 
         # should fail: closure tuple with one non-cell-var
+        my_closure = list(my_closure)
         my_closure[0] = int
         my_closure = tuple(my_closure)
         self.assertRaises(TypeError,
@@ -1031,6 +1097,16 @@ class BuiltinTest(unittest.TestCase):
             def __hash__(self):
                 return self
         self.assertEqual(hash(Z(42)), hash(42))
+
+    def test_invalid_hash_typeerror(self):
+        # GH-140406: The returned object from __hash__() would leak if it
+        # wasn't an integer.
+        class A:
+            def __hash__(self):
+                return 1.0
+
+        with self.assertRaises(TypeError):
+            hash(A())
 
     def test_hex(self):
         self.assertEqual(hex(16), '0x10')
@@ -1532,6 +1608,29 @@ class BuiltinTest(unittest.TestCase):
             sys.stdout = savestdout
             fp.close()
 
+    def test_input_gh130163(self):
+        class X(io.StringIO):
+            def __getattribute__(self, name):
+                nonlocal patch
+                if patch:
+                    patch = False
+                    sys.stdout = X()
+                    sys.stderr = X()
+                    sys.stdin = X('input\n')
+                    support.gc_collect()
+                return io.StringIO.__getattribute__(self, name)
+
+        with (support.swap_attr(sys, 'stdout', None),
+              support.swap_attr(sys, 'stderr', None),
+              support.swap_attr(sys, 'stdin', None)):
+            patch = False
+            # the only references:
+            sys.stdout = X()
+            sys.stderr = X()
+            sys.stdin = X('input\n')
+            patch = True
+            input()  # should not crash
+
     # test_int(): see test_int.py for tests of built-in function int().
 
     def test_repr(self):
@@ -1660,7 +1759,7 @@ class BuiltinTest(unittest.TestCase):
         msg = r"^attribute name must be string, not 'int'$"
         self.assertRaisesRegex(TypeError, msg, setattr, sys, 1, 'spam')
 
-    # test_str(): see test_unicode.py and test_bytes.py for str() tests.
+    # test_str(): see test_str.py and test_bytes.py for str() tests.
 
     def test_sum(self):
         self.assertEqual(sum([]), 0)
@@ -2307,7 +2406,10 @@ class PtyTests(unittest.TestCase):
 
         return lines
 
-    def check_input_tty(self, prompt, terminal_input, stdio_encoding=None):
+    def check_input_tty(self, prompt, terminal_input, stdio_encoding=None, *,
+                        expected=None,
+                        stdin_errors='surrogateescape',
+                        stdout_errors='replace'):
         if not sys.stdin.isatty() or not sys.stdout.isatty():
             self.skipTest("stdin and stdout must be ttys")
         def child(wpipe):
@@ -2315,48 +2417,78 @@ class PtyTests(unittest.TestCase):
             if stdio_encoding:
                 sys.stdin = io.TextIOWrapper(sys.stdin.detach(),
                                              encoding=stdio_encoding,
-                                             errors='surrogateescape')
+                                             errors=stdin_errors)
                 sys.stdout = io.TextIOWrapper(sys.stdout.detach(),
                                               encoding=stdio_encoding,
-                                              errors='replace')
+                                              errors=stdout_errors)
             print("tty =", sys.stdin.isatty() and sys.stdout.isatty(), file=wpipe)
-            print(ascii(input(prompt)), file=wpipe)
-        lines = self.run_child(child, terminal_input + b"\r\n")
+            try:
+                print(ascii(input(prompt)), file=wpipe)
+            except BaseException as e:
+                print(ascii(f'{e.__class__.__name__}: {e!s}'), file=wpipe)
+        with self.detach_readline():
+            lines = self.run_child(child, terminal_input + b"\r\n")
         # Check we did exercise the GNU readline path
         self.assertIn(lines[0], {'tty = True', 'tty = False'})
         if lines[0] != 'tty = True':
             self.skipTest("standard IO in should have been a tty")
         input_result = eval(lines[1])   # ascii() -> eval() roundtrip
-        if stdio_encoding:
-            expected = terminal_input.decode(stdio_encoding, 'surrogateescape')
-        else:
-            expected = terminal_input.decode(sys.stdin.encoding)  # what else?
+        if expected is None:
+            if stdio_encoding:
+                expected = terminal_input.decode(stdio_encoding, 'surrogateescape')
+            else:
+                expected = terminal_input.decode(sys.stdin.encoding)  # what else?
         self.assertEqual(input_result, expected)
 
-    def test_input_tty(self):
-        # Test input() functionality when wired to a tty (the code path
-        # is different and invokes GNU readline if available).
-        self.check_input_tty("prompt", b"quux")
-
-    def skip_if_readline(self):
+    @contextlib.contextmanager
+    def detach_readline(self):
         # bpo-13886: When the readline module is loaded, PyOS_Readline() uses
         # the readline implementation. In some cases, the Python readline
         # callback rlhandler() is called by readline with a string without
-        # non-ASCII characters. Skip tests on non-ASCII characters if the
-        # readline module is loaded, since test_builtin is not intended to test
+        # non-ASCII characters.
+        # Unlink readline temporarily from PyOS_Readline() for those tests,
+        # since test_builtin is not intended to test
         # the readline module, but the builtins module.
-        if 'readline' in sys.modules:
-            self.skipTest("the readline module is loaded")
+        if "readline" in sys.modules:
+            c = import_module("ctypes")
+            fp_api = "PyOS_ReadlineFunctionPointer"
+            prev_value = c.c_void_p.in_dll(c.pythonapi, fp_api).value
+            c.c_void_p.in_dll(c.pythonapi, fp_api).value = None
+            try:
+                yield
+            finally:
+                c.c_void_p.in_dll(c.pythonapi, fp_api).value = prev_value
+        else:
+            yield
+
+    def test_input_tty(self):
+        # Test input() functionality when wired to a tty
+        self.check_input_tty("prompt", b"quux")
 
     def test_input_tty_non_ascii(self):
-        self.skip_if_readline()
         # Check stdin/stdout encoding is used when invoking PyOS_Readline()
-        self.check_input_tty("prompté", b"quux\xe9", "utf-8")
+        self.check_input_tty("prompté", b"quux\xc3\xa9", "utf-8")
 
     def test_input_tty_non_ascii_unicode_errors(self):
-        self.skip_if_readline()
         # Check stdin/stdout error handler is used when invoking PyOS_Readline()
         self.check_input_tty("prompté", b"quux\xe9", "ascii")
+
+    def test_input_tty_null_in_prompt(self):
+        self.check_input_tty("prompt\0", b"",
+                expected='ValueError: input: prompt string cannot contain '
+                         'null characters')
+
+    def test_input_tty_nonencodable_prompt(self):
+        self.check_input_tty("prompté", b"quux", "ascii", stdout_errors='strict',
+                expected="UnicodeEncodeError: 'ascii' codec can't encode "
+                         "character '\\xe9' in position 6: ordinal not in "
+                         "range(128)")
+
+    def test_input_tty_nondecodable_input(self):
+        self.check_input_tty("prompt", b"quux\xe9", "ascii", stdin_errors='strict',
+                expected="UnicodeDecodeError: 'ascii' codec can't decode "
+                         "byte 0xe9 in position 4: ordinal not in "
+                         "range(128)")
 
     def test_input_no_stdout_fileno(self):
         # Issue #24402: If stdin is the original terminal but stdout.fileno()
@@ -2488,6 +2620,7 @@ class TestType(unittest.TestCase):
         self.assertEqual(A.__module__, __name__)
         self.assertEqual(A.__bases__, (object,))
         self.assertIs(A.__base__, object)
+        self.assertNotIn('__firstlineno__', A.__dict__)
         x = A()
         self.assertIs(type(x), A)
         self.assertIs(x.__class__, A)
@@ -2565,6 +2698,17 @@ class TestType(unittest.TestCase):
         with self.assertRaises(TypeError):
             A.__qualname__ = b'B'
         self.assertEqual(A.__qualname__, 'D.E')
+
+    def test_type_firstlineno(self):
+        A = type('A', (), {'__firstlineno__': 42})
+        self.assertEqual(A.__name__, 'A')
+        self.assertEqual(A.__module__, __name__)
+        self.assertEqual(A.__dict__['__firstlineno__'], 42)
+        A.__module__ = 'testmodule'
+        self.assertEqual(A.__module__, 'testmodule')
+        self.assertNotIn('__firstlineno__', A.__dict__)
+        A.__firstlineno__ = 43
+        self.assertEqual(A.__dict__['__firstlineno__'], 43)
 
     def test_type_typeparams(self):
         class A[T]:
@@ -2647,7 +2791,8 @@ class TestType(unittest.TestCase):
 
 def load_tests(loader, tests, pattern):
     from doctest import DocTestSuite
-    tests.addTest(DocTestSuite(builtins))
+    if sys.float_repr_style == 'short':
+        tests.addTest(DocTestSuite(builtins))
     return tests
 
 if __name__ == "__main__":

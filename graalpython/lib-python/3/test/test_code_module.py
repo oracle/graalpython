@@ -5,18 +5,13 @@ import unittest
 from textwrap import dedent
 from contextlib import ExitStack
 from unittest import mock
+from test.support import force_not_colorized_test_class
 from test.support import import_helper
-
 
 code = import_helper.import_module('code')
 
 
-class TestInteractiveConsole(unittest.TestCase):
-    maxDiff = None
-
-    def setUp(self):
-        self.console = code.InteractiveConsole()
-        self.mock_sys()
+class MockSys:
 
     def mock_sys(self):
         "Mock system environment for InteractiveConsole"
@@ -34,6 +29,15 @@ class TestInteractiveConsole(unittest.TestCase):
         del self.sysmod.ps1
         del self.sysmod.ps2
 
+
+@force_not_colorized_test_class
+class TestInteractiveConsole(unittest.TestCase, MockSys):
+    maxDiff = None
+
+    def setUp(self):
+        self.console = code.InteractiveConsole()
+        self.mock_sys()
+
     def test_ps1(self):
         self.infunc.side_effect = EOFError('Finished')
         self.console.interact()
@@ -46,9 +50,9 @@ class TestInteractiveConsole(unittest.TestCase):
         self.infunc.side_effect = EOFError('Finished')
         self.console.interact()
         self.assertEqual(self.sysmod.ps2, '... ')
-        self.sysmod.ps1 = 'custom2> '
+        self.sysmod.ps2 = 'custom2> '
         self.console.interact()
-        self.assertEqual(self.sysmod.ps1, 'custom2> ')
+        self.assertEqual(self.sysmod.ps2, 'custom2> ')
 
     def test_console_stderr(self):
         self.infunc.side_effect = ["'antioch'", "", EOFError('Finished')]
@@ -291,6 +295,23 @@ class TestInteractiveConsole(unittest.TestCase):
         self.assertIs(self.sysmod.last_traceback, self.sysmod.last_value.__traceback__)
         self.assertIsNotNone(self.sysmod.last_traceback)
         self.assertIs(self.sysmod.last_exc, self.sysmod.last_value)
+
+
+class TestInteractiveConsoleLocalExit(unittest.TestCase, MockSys):
+
+    def setUp(self):
+        self.console = code.InteractiveConsole(local_exit=True)
+        self.mock_sys()
+
+    @unittest.skipIf(sys.flags.no_site, "exit() isn't defined unless there's a site module")
+    def test_exit(self):
+        # default exit message
+        self.infunc.side_effect = ["exit()"]
+        self.console.interact(banner='')
+        self.assertEqual(len(self.stderr.method_calls), 2)
+        err_msg = self.stderr.method_calls[1]
+        expected = 'now exiting InteractiveConsole...\n'
+        self.assertEqual(err_msg, ['write', (expected,), {}])
 
 
 if __name__ == "__main__":

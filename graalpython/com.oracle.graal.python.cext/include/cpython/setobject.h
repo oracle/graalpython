@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -68,14 +68,13 @@ typedef struct {
 
 static inline Py_ssize_t PySet_GET_SIZE(PyObject *so) {
 #if 0 // GraalPy change
+#ifdef Py_GIL_DISABLED
+    return _Py_atomic_load_ssize_relaxed(&(_PySet_CAST(so)->used));
+#else
     return _PySet_CAST(so)->used;
+#endif
 #else // GraalPy change
     return PySet_Size(so);
 #endif // GraalPy change
 }
 #define PySet_GET_SIZE(so) PySet_GET_SIZE(_PyObject_CAST(so))
-
-PyAPI_DATA(PyObject *) _PySet_Dummy;
-
-PyAPI_FUNC(int) _PySet_NextEntry(PyObject *set, Py_ssize_t *pos, PyObject **key, Py_hash_t *hash);
-PyAPI_FUNC(int) _PySet_Update(PyObject *set, PyObject *iterable);

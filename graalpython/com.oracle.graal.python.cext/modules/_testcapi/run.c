@@ -1,11 +1,13 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 #define PY_SSIZE_T_CLEAN
+#define PYTESTCAPI_NEED_INTERNAL_API
 #include "parts.h"
 #include "util.h"
+#include "pycore_fileutils.h"     // _Py_IsValidFD()
 
 #include <stdio.h>
 #include <errno.h>
@@ -77,21 +79,18 @@ run_fileexflags(PyObject *mod, PyObject *pos_args)
         PyErr_SetFromErrnoWithFilename(PyExc_OSError, filename);
         return NULL;
     }
+    int fd = fileno(fp);
 
     result = PyRun_FileExFlags(fp, filename, start, globals, locals, closeit, pflags);
 
-#if defined(__linux__) || defined(MS_WINDOWS) || defined(__APPLE__)
-    /* The behavior of fileno() after fclose() is undefined, but it is
-     * the only practical way to check whether the file was closed.
-     * Only test this on the known platforms. */
-    if (closeit && result && fileno(fp) >= 0) {
+    if (closeit && result && _Py_IsValidFD(fd)) {
         PyErr_SetString(PyExc_AssertionError, "File was not closed after excution");
         Py_DECREF(result);
         fclose(fp);
         return NULL;
     }
-#endif
-    if (!closeit && fileno(fp) < 0) {
+
+    if (!closeit && !_Py_IsValidFD(fd)) {
         PyErr_SetString(PyExc_AssertionError, "Bad file descriptor after excution");
         Py_XDECREF(result);
         return NULL;

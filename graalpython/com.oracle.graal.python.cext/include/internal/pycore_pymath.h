@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -151,17 +151,17 @@ extern void _Py_set_387controlword(unsigned short);
     unsigned int old_fpcr, new_fpcr
 #define _Py_SET_53BIT_PRECISION_START                                   \
     do {                                                                \
-        __asm__ ("fmove.l %%fpcr,%0" : "=g" (old_fpcr));                \
+        __asm__ ("fmove.l %%fpcr,%0" : "=dm" (old_fpcr));               \
         /* Set double precision / round to nearest.  */                 \
         new_fpcr = (old_fpcr & ~0xf0) | 0x80;                           \
         if (new_fpcr != old_fpcr) {                                     \
-              __asm__ volatile ("fmove.l %0,%%fpcr" : : "g" (new_fpcr));\
+            __asm__ volatile ("fmove.l %0,%%fpcr" : : "dm" (new_fpcr)); \
         }                                                               \
     } while (0)
 #define _Py_SET_53BIT_PRECISION_END                                     \
     do {                                                                \
         if (new_fpcr != old_fpcr) {                                     \
-            __asm__ volatile ("fmove.l %0,%%fpcr" : : "g" (old_fpcr));  \
+            __asm__ volatile ("fmove.l %0,%%fpcr" : : "dm" (old_fpcr)); \
         }                                                               \
     } while (0)
 #endif

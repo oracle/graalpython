@@ -140,6 +140,7 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 public final class PythonCextTypeBuiltins {
 
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyTypeObject, PyObject}, call = Direct)
+    @CApiBuiltin(name = "_PyType_LookupRef", ret = PyObjectTransfer, args = {PyTypeObject, PyObject}, call = Direct)
     abstract static class _PyType_Lookup extends CApiBinaryBuiltinNode {
         @Specialization
         Object doGeneric(Object type, Object name,
@@ -294,7 +295,7 @@ public final class PythonCextTypeBuiltins {
         PBuiltinFunction func = MethodDescriptorWrapper.createWrapperFunction(language, name, methPtr, type, flags);
         if (func != null) {
             WriteAttributeToPythonObjectNode.executeUncached(func, T___NAME__, name);
-            CFunctionDocUtils.writeDocAndTextSignature(func, name, doc);
+            CFunctionDocUtils.writeDocAndTextSignature(func, name, doc, flags);
         }
         if (CExtContext.isMethClass(flags)) {
             if (CExtContext.isMethStatic(flags)) {

@@ -8,37 +8,15 @@ patch = 'autopep8.patch'
 license = 'MIT'
 
 [[bcrypt.rules]]
-note = "With pyo3 changes upstreamed, this patch is not needed in recent versions. This old version is still used in ray's tests."
+note = "With pyo3 changes upstreamed, this patch is not needed in recent versions"
 install-priority = 0
 version = '== 4.0.1'
 patch = 'bcrypt-4.0.1.patch'
 license = 'Apache-2.0'
 
-[[blosc2.rules]]
-note = "This patch is not needed in newer versions."
-version = '< 3'
-patch = 'blosc2.patch'
-install-priority = 0
-license = 'BSD-3-Clause'
-
-[[catboost.rules]]
-version = '== 1.2.3'
-patch = 'catboost-1.2.3.patch'
-license = 'Apache-2.0'
-
-[[catboost.rules]]
-version = '== 1.2.2'
-patch = 'catboost-1.2.2.patch'
-license = 'Apache-2.0'
-
 [[category-encoders.rules]]
 patch = 'category-encoders.patch'
 license = 'BSD-3-Clause'
-
-[[cffi.rules]]
-version = '== 1.15.1'
-patch = 'cffi-1.15.1.patch'
-license = 'MIT'
 
 [[cffi.rules]]
 version = '>= 1.16.0'
@@ -145,18 +123,6 @@ autopatch = false
 patch = 'Cython-3.0.10.patch'
 license = 'Apache-2.0'
 
-[[cython.rules]]
-version = '== 0.29.37'
-patch = 'Cython-0.29.37.patch'
-license = 'Apache-2.0'
-
-[[cython.rules]]
-version = '== 0.29.32'
-# Also referenced outside of pip in ray patches
-# Also referenced outside of pip in tensorflow patches
-patch = 'Cython-0.29.32.patch'
-license = 'Apache-2.0'
-
 [[flake8.rules]]
 version = '== 6.0.0'
 patch = 'flake8-6.0.0.patch'
@@ -177,18 +143,6 @@ license = 'MIT'
 version = '>= 3.0.0, < 3.1.1'
 patch = 'greenlet-3.0.0.patch'
 license = 'MIT'
-
-[[grpcio.rules]]
-# Force re-cythonize
-version = '== 1.56.2'
-patch = 'grpcio-1.56.2.patch'
-license = 'Apache-2.0'
-
-[[grpcio.rules]]
-# Force re-cythonize + other fixes
-version = '>= 1.60.0, < 1.64.0'
-patch = 'grpcio-1.60.0.patch'
-license = 'Apache-2.0'
 
 [[grpcio.rules]]
 # Force re-cythonize + other fixes
@@ -263,13 +217,6 @@ license = 'Apache-2.0'
 version = '0.4.13'
 url = 'https://github.com/google/jax/archive/refs/tags/jaxlib-v0.4.13.tar.gz'
 
-[[jiter.rules]]
-note = "GraalPy patch was accepted upstream and should not be needed in the next release."
-version = '<= 0.5.0'
-install-priority = 0
-patch = 'jiter.patch'
-license = 'MIT'
-
 [[joblib.rules]]
 version = '==1.4.*'
 patch = 'joblib-1.4.0.patch'
@@ -300,13 +247,6 @@ patch = 'lazy-object-proxy.patch'
 install-priority = 0
 license = 'BSD-2-Clause'
 dist-type = 'sdist'
-
-[[libcst.rules]]
-version = '== 1.0.1'
-patch = 'libcst-1.0.1.patch'
-# Not needed in newer versions
-install-priority = 0
-license = 'MIT'
 
 [[lightfm.rules]]
 version = '== 1.15'
@@ -339,39 +279,6 @@ license = 'BSD-3-Clause'
 version = '>= 5.3.0, < 5.3.2'
 patch = 'lxml-5.3.0.patch'
 license = 'BSD-3-Clause'
-
-[[lxml.rules]]
-version = '== 5.2.*'
-patch = 'lxml-5.2.patch'
-license = 'BSD-3-Clause'
-
-[[lxml.rules]]
-version = '== 5.1.1'
-patch = 'lxml-5.1.1.patch'
-license = 'BSD-3-Clause'
-
-[[lxml.rules]]
-version = '== 5.1.0'
-patch = 'lxml-5.1.0.patch'
-license = 'BSD-3-Clause'
-
-[[lxml.rules]]
-version = '== 5.0.*'
-patch = 'lxml-5.0.patch'
-license = 'BSD-3-Clause'
-
-[[lxml.rules]]
-version = '>= 4.9, < 5'
-patch = 'lxml-4.9.patch'
-license = 'BSD-3-Clause'
-
-[[MarkupSafe.rules]]
-note = "GraalPy patch is upstreamed."
-version = "< 2.1.0"
-patch = "MarkupSafe.patch"
-license = "BSD-3-Clause"
-install-priority = 0  # Don't make pip install prefer this version
-dist-type = "sdist"
 
 [[meson-python.rules]]
 note = "GraalPy patch is upstreamed."
@@ -411,13 +318,6 @@ version = '== 0.65.1'
 patch = 'numba-0.65.1.patch'
 license = 'BSD-2-Clause'
 
-[[numba.rules]]
-# Not upstreamable, we disable the JIT
-note = "Numba JIT relies on bytecode parsing and is disabled on GraalPy."
-version = '== 0.59.1'
-patch = 'numba-0.59.1.patch'
-license = 'BSD-2-Clause'
-
 [[numpy.rules]]
 version = '>= 2.4, < 2.4.5'
 patch = 'numpy-2.4.4.patch'
@@ -429,29 +329,6 @@ version = '>= 2.0.0rc1, < 2.4'
 patch = 'numpy-2.0.0.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
-
-[[numpy.rules]]
-version = '== 1.26.4'
-patch = 'numpy-1.26.4.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[numpy.rules]]
-# 1.26.2 is currently used by oldest-supported-numpy
-version = '== 1.26.2'
-patch = 'numpy-1.26.2.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[onnxruntime.rules]]
-version = '== 1.17.1'
-patch = 'onnxruntime-1.17.1.patch'
-license = 'MIT'
-dist-type = 'sdist'
-
-[[onnxruntime.add-sources]]
-version = '1.17.1'
-url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.17.1.tar.gz'
 
 [[onnxruntime.rules]]
 version = '== 1.22.1'
@@ -510,16 +387,6 @@ patch = 'optree.patch'
 license = 'Apache-2.0'
 
 [[orjson.rules]]
-version = '== 3.9.7'
-patch = 'orjson-3.9.7.patch'
-license = 'Apache-2.0 OR MIT'
-
-[[orjson.rules]]
-version = '== 3.10.5'
-patch = 'orjson-3.10.5.patch'
-license = 'Apache-2.0 OR MIT'
-
-[[orjson.rules]]
 version = '== 3.10.18'
 patch = 'orjson-3.10.18.patch'
 license = 'Apache-2.0 OR MIT'
@@ -563,39 +430,14 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
 [[pandas.rules]]
-version = '== 2.2.2'
-patch = 'pandas-2.2.2.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[pandas.rules]]
 version = '== 2.2.3'
 patch = 'pandas-2.2.3.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
-[[pandas.rules]]
-version = '== 2.0.3'
-patch = 'pandas-2.0.3.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[pandas.rules]]
-version = '== 1.5.2'
-patch = 'pandas-1.5.2.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[pendulum.rules]]
-version = '== 3.0.0'
-patch = 'pendulum-3.0.0.patch'
-note = "Not needed since 3.1."
-install-priority = 0
-license = 'MIT'
-
 [[pip.rules]]
-version = '== 24.3.1'
-patch = 'pip-24.3.1.patch'
+version = '== 26.1.2'
+patch = 'pip-26.1.2.patch'
 license = 'MIT'
 subdir = 'src'
 
@@ -613,27 +455,9 @@ license = 'BSD-3-Clause'
 dist-type = 'sdist'
 install-priority = 0
 
-[[protobuf.rules]]
-# msimacek: This version doesn't exist, but the patch file is referenced from the tensorflow patch which I'm afraid to touch
-version = '== 3.21.9'
-patch = 'protobuf-3.21.9.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-install-priority = 0
-
-[[psycopg2.rules]]
-version = '<= 2.9.9'
-patch = "psycopg2-2.9.9.patch"
-license = "LGPL-3.0-or-later WITH openssl-exception"
-
 [[psycopg2.rules]]
 version = '>= 2.9.10'
 patch = "psycopg2-2.9.10.patch"
-license = "LGPL-3.0-or-later WITH openssl-exception"
-
-[[psycopg2-binary.rules]]
-version = '<= 2.9.9'
-patch = "psycopg2-2.9.9.patch"
 license = "LGPL-3.0-or-later WITH openssl-exception"
 
 [[psycopg2-binary.rules]]
@@ -654,16 +478,6 @@ license = 'Apache-2.0'
 [[pyarrow.rules]]
 version = '>= 21.0.0, < 24.0.0'
 patch = 'pyarrow-22.0.0.patch'
-license = 'Apache-2.0'
-
-[[pyarrow.rules]]
-version = '== 15.0.0'
-patch = 'pyarrow-15.0.0.patch'
-license = 'Apache-2.0'
-
-[[pyarrow.rules]]
-version = '== 12.0.0'
-patch = 'pyarrow-12.0.0.patch'
 license = 'Apache-2.0'
 
 [[pyarrow.rules]]
@@ -693,17 +507,10 @@ license = 'BSD-3-Clause'
 [[pybind11.rules]]
 install-priority = 0
 # Note: This patch file is also used directly outside of pip during onnxruntime build
-# Note: This patch file is also used directly outside of pip during tensorflow build
 # Note: This patch is also inlined in torch
 version = '>= 2.10.1, < 2.11.0'
 patch = 'pybind11-2.10.1.patch'
 license = 'BSD-3-Clause'
-
-[[pydantic-core.rules]]
-version = '== 2.10.1'
-install-priority = 0
-patch = 'pydantic-core-2.10.1.patch'
-license = 'MIT'
 
 [[pydantic-core.rules]]
 version = '== 2.23.4'
@@ -745,12 +552,6 @@ license = 'LGPL-2.0-or-later'
 version = '== 3.52.3'
 patch = 'pygobject-3.52.3.patch'
 license = 'LGPL-2.0-or-later'
-
-[[pymongo.rules]]
-version = "< 4.8.0"
-patch = 'pymongo.patch'
-install-priority = 0
-license = 'Apache-2.0'
 
 [[pymongo.rules]]
 version = ">= 4.8.0, <= 4.13.0"
@@ -822,14 +623,6 @@ version = '== 0.18.1'
 patch = 'pythran-0.18.1.patch'
 license = 'BSD-3-Clause'
 
-[[pyzmq.rules]]
-version = '< 26'
-install-priority = 0
-# The patch just makes it re-cythonize to pick up our cython changes
-patch = 'pyzmq.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
 [[rapidfuzz.rules]]
 version = '< 3.10'
 patch = 'rapidfuzz.patch'
@@ -848,24 +641,6 @@ url = 'https://github.com/rapidfuzz/Levenshtein/archive/refs/tags/v0.26.1.zip'
 version = '0.27.1'
 url = 'https://github.com/rapidfuzz/Levenshtein/archive/refs/tags/v0.27.1.zip'
 
-[[ray.rules]]
-version = '== 2.3.0'
-patch = 'ray-2.3.0.patch'
-license = 'Apache-2.0'
-
-[[ray.add-sources]]
-version = '2.3.0'
-url = 'https://github.com/ray-project/ray/releases/download/ray-2.3.0/ray-2.3.0.tar.gz'
-
-[[ray.rules]]
-version = '== 2.9.1'
-patch = 'ray-2.9.1.patch'
-license = 'Apache-2.0'
-
-[[ray.add-sources]]
-version = '2.9.1'
-url = 'https://github.com/ray-project/ray/archive/refs/tags/ray-2.9.1.tar.gz'
-
 [[rasterio.rules]]
 install-priority = 0
 version = '<= 1.4.3'
@@ -878,13 +653,6 @@ install-priority = 0
 version = '== 0.10.3'
 patch = 'rpds_py-0.10.3.patch'
 license = 'MIT'
-
-[[safetensors.rules]]
-note = "GraalPy patch is not needed anymore in recent version since PyO3 now supports GraalPy."
-install-priority = 0
-version = '== 0.3.3'
-patch = 'safetensors-0.3.3.patch'
-license = 'Apache-2.0'
 
 [[scikit-build-core.rules]]
 version = '~= 0.11.0'
@@ -908,28 +676,9 @@ patch = 'scikit-learn-1.5.2.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
-[[scikit-learn.rules]]
-version = '== 1.2.2'
-patch = 'scikit-learn-1.2.2.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[scikit-learn.rules]]
-version = '== 1.1.3'
-patch = 'scikit-learn-1.1.3.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
 [[scipy.rules]]
 version = '>= 1.17.0'
 patch = 'scipy-1.17.0.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[scipy.rules]]
-version = '== 1.10.1'
-install-priority = 0
-patch = 'scipy-1.10.1.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
 
@@ -948,78 +697,6 @@ version = '== 3.11.1'
 patch = 'tables-3.11.1.patch'
 license = 'BSD-3-Clause'
 
-[[tensorflow.rules]]
-version = '== 2.15.0'
-patch = 'tensorflow-2.15.0.patch'
-license = 'Apache-2.0'
-
-[[tensorflow.add-sources]]
-version = '2.15.0'
-url = 'https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.15.0.tar.gz'
-
-[[tensorflow.rules]]
-version = '== 2.14.0'
-patch = 'tensorflow-2.14.0.patch'
-license = 'Apache-2.0'
-
-[[tensorflow.add-sources]]
-version = '2.14.0'
-url = 'https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.14.0.tar.gz'
-
-[[tensorflow-io.rules]]
-version = '== 0.34.0'
-patch = 'tensorflow-io-0.34.0.patch'
-license = 'Apache-2.0'
-
-[[tensorflow-io.add-sources]]
-version = '0.34.0'
-url = 'https://github.com/tensorflow/io/archive/refs/tags/v0.34.0.tar.gz'
-
-[[tensorflow-io-gcs-filesystem.rules]]
-version = '== 0.34.0'
-patch = 'tensorflow-io-gcs-filesystem-0.34.0.patch'
-license = 'Apache-2.0'
-
-[[tensorflow-io-gcs-filesystem.add-sources]]
-version = '0.34.0'
-url = 'https://github.com/tensorflow/io/archive/refs/tags/v0.34.0.tar.gz'
-
-[[tiktoken.rules]]
-version = '== 0.7.0'
-install-priority = 0
-patch = 'tiktoken-0.7.0.patch'
-license = 'MIT'
-
-[[tokenizers.rules]]
-version = '== 0.13.3'
-install-priority = 0
-patch = 'tokenizers-0.13.3.patch'
-license = 'Apache-2.0'
-
-[[tokenizers.rules]]
-version = '== 0.15.0'
-install-priority = 0
-patch = 'tokenizers-0.15.0.patch'
-license = 'Apache-2.0'
-
-[[torch.rules]]
-version = '== 1.13.1'
-patch = 'torch-1.13.1.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[torch.rules]]
-version = '== 2.2.1'
-patch = 'torch-2.2.1.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
-[[torch.rules]]
-version = '== 2.4.1'
-patch = 'torch-2.4.1.patch'
-license = 'BSD-3-Clause'
-dist-type = 'sdist'
-
 [[torch.rules]]
 version = '== 2.7.0'
 patch = 'torch-2.7.0.patch'
@@ -1031,18 +708,6 @@ version = '== 2.10.0'
 patch = 'torch-2.10.0.patch'
 license = 'BSD-3-Clause'
 dist-type = 'sdist'
-
-[[torch.add-sources]]
-version = '1.13.1'
-url = 'https://github.com/pytorch/pytorch/releases/download/v1.13.1/pytorch-v1.13.1.tar.gz'
-
-[[torch.add-sources]]
-version = '2.2.1'
-url = 'https://github.com/pytorch/pytorch/releases/download/v2.2.1/pytorch-v2.2.1.tar.gz'
-
-[[torch.add-sources]]
-version = '2.4.1'
-url = 'https://github.com/pytorch/pytorch/releases/download/v2.4.1/pytorch-v2.4.1.tar.gz'
 
 [[torch.add-sources]]
 version = '2.7.0'
@@ -1064,24 +729,6 @@ license = 'BSD-3-Clause'
 [[torchvision.add-sources]]
 version = '0.22.0'
 url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.22.0.tar.gz'
-
-[[torchvision.rules]]
-version = '== 0.19.1'
-patch = 'torchvision-0.19.1.patch'
-license = 'BSD-3-Clause'
-
-[[torchvision.add-sources]]
-version = '0.19.1'
-url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.19.1.tar.gz'
-
-[[torchvision.rules]]
-version = '== 0.17.1'
-patch = 'torchvision-0.17.1.patch'
-license = 'BSD-3-Clause'
-
-[[torchvision.add-sources]]
-version = '0.17.1'
-url = 'https://github.com/pytorch/vision/archive/refs/tags/v0.17.1.tar.gz'
 
 [[trio.rules]]
 patch = 'trio.patch'

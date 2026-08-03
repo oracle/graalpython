@@ -58,6 +58,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleStringStrict;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4;
@@ -150,6 +151,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.RichCmpOp;
@@ -186,6 +188,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
@@ -226,6 +229,14 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleStringStrict}, call = Direct)
+    abstract static class PyUnicode_FromString extends CApiUnaryBuiltinNode {
+        @Specialization
+        static TruffleString fromString(TruffleString value) {
+            return value;
+        }
+    }
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_FromObject extends CApiUnaryBuiltinNode {
@@ -261,6 +272,13 @@ public final class PythonCextUnicodeBuiltins {
         protected boolean isPStringType(Node inliningTarget, Object obj, GetClassNode getClassNode) {
             return getClassNode.execute(inliningTarget, obj) == PythonBuiltinClassType.PString;
         }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObjectAsTruffleString}, call = Direct)
+    public static long _PyUnicode_Copy(long unicodePtr) {
+        Object unicode = NativeToPythonInternalNode.executeUncached(unicodePtr, false);
+        Object copy = PFactory.createString(PythonLanguage.get(null), CastToTruffleStringNode.castKnownStringUncached(unicode));
+        return PythonToNativeInternalNode.executeUncached(copy, true);
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
@@ -647,6 +665,30 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    @SuppressWarnings("serial")
+    private static class InvalidStringException extends ControlFlowException {
+        static final InvalidStringException INSTANCE = new InvalidStringException();
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, ConstCharPtr, Py_ssize_t}, call = Direct)
+    public static int PyUnicode_EqualToUTF8AndSize(long unicodePtr, long str, long size) {
+        if (size < 0) {
+            return 0;
+        }
+        try {
+            int intSize = PInt.intValueExact(size);
+            Object unicodeObj = NativeToPythonInternalNode.executeUncached(unicodePtr, false);
+            TruffleString unicode = CastToTruffleStringNode.castKnownStringUncached(unicodeObj);
+            TruffleString utf8 = TruffleString.fromNativePointerUncached(str, 0, intSize, UTF_8, true);
+            TruffleString decodedStr = utf8.switchEncodingUncached(TS_ENCODING, (sourceString, byteIndex, estimatedByteLength, sourceEncoding, targetEncoding) -> {
+                throw InvalidStringException.INSTANCE;
+            });
+            return unicode.equalsUncached(decodedStr, TS_ENCODING) ? 1 : 0;
+        } catch (OverflowException | InvalidStringException e) {
+            return 0;
+        }
+    }
+
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Compare extends CApiBinaryBuiltinNode {
@@ -980,20 +1022,6 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString}, call = Direct)
-    abstract static class PyUnicode_FromString extends CApiUnaryBuiltinNode {
-        @Specialization
-        static PString run(TruffleString str,
-                        @Bind PythonLanguage language) {
-            return PFactory.createString(language, str);
-        }
-
-        @Specialization
-        static PString run(PString str) {
-            return str;
-        }
-    }
-
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
     abstract static class PyUnicode_Contains extends CApiBinaryBuiltinNode {
         @Specialization
@@ -1097,10 +1125,9 @@ public final class PythonCextUnicodeBuiltins {
         static PBytes fromObject(Object s,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
-            TruffleString utf8Str = switchEncodingNode.execute(castStr.execute(inliningTarget, s), TruffleString.Encoding.UTF_8);
-            return PFactory.createBytes(PythonLanguage.get(inliningTarget), copyToByteArrayNode.execute(utf8Str, TruffleString.Encoding.UTF_8));
+                        @Cached PyUnicodeEncodeFSDefaultNode encodeFSDefaultNode) {
+            TruffleString str = castStr.execute(inliningTarget, s);
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), encodeFSDefaultNode.execute(null, inliningTarget, str));
         }
     }
 

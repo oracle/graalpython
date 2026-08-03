@@ -440,7 +440,7 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
                         sb.append(' ');
                     }
                     cp = decomposition.codePointAt(i);
-                    sb.append(String.format("%04x", cp));
+                    sb.append(String.format("%04X", cp));
                 }
             }
 

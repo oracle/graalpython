@@ -214,7 +214,6 @@ test.test_io.CTextIOWrapperTest.test_detach @ darwin-arm64,linux-aarch64,linux-a
 test.test_io.CTextIOWrapperTest.test_encoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.CTextIOWrapperTest.test_encoding_errors_reading @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.CTextIOWrapperTest.test_encoding_errors_writing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_io.CTextIOWrapperTest.test_error_through_destructor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.CTextIOWrapperTest.test_errors_property @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.CTextIOWrapperTest.test_flush_error_on_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.CTextIOWrapperTest.test_illegal_decoder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -475,7 +474,6 @@ test.test_io.PyTextIOWrapperTest.test_detach @ darwin-arm64,linux-aarch64,linux-
 test.test_io.PyTextIOWrapperTest.test_encoding @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.PyTextIOWrapperTest.test_encoding_errors_reading @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.PyTextIOWrapperTest.test_encoding_errors_writing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_io.PyTextIOWrapperTest.test_error_through_destructor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.PyTextIOWrapperTest.test_errors_property @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.PyTextIOWrapperTest.test_flush_error_on_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.PyTextIOWrapperTest.test_illegal_decoder @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

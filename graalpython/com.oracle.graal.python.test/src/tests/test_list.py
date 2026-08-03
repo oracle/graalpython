@@ -760,7 +760,15 @@ class ListTest(list_tests.CommonTest):
         self.assertEqual([10,20,30,40,10,20,30,40], ll)
 
         l.extend(l)
-        self.assertEqual([1,2,3,4,10,20,30,40], l)
+        self.assertEqual([1,2,3,4,1,2,3,4], l)
+
+        l = LyingList([1,2,3,4])
+        l += l
+        self.assertEqual([1,2,3,4,1,2,3,4], l)
+
+        l = LyingList([1,2,3,4])
+        l.__init__(l)
+        self.assertEqual([], l)
 
 class ListCompareTest(CompareTest):
 

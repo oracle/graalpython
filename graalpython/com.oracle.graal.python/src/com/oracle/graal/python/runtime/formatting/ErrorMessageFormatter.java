@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,6 +47,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -58,19 +59,28 @@ import com.oracle.truffle.api.strings.TruffleString;
 /**
  * Custom formatter adding Python-specific conversions often required in error messages.
  * <p>
- * The following conversions are additionally available to {@link Formatter}:
+ * The following conversions are additionally available to {@link Formatter}. The distinction
+ * between them is both whether the argument is an arbitrary object or a type, and which form of
+ * the type name is produced:
  * <dl>
- * <dt>%p</dt>
- * <dd>Determines the Python class of the corresponding object and prints its name.</dd>
- * <dt>%P</dt>
- * <dd>Determines the Python class of the corresponding object and prints the class' {@code repr}
- * string.</dd>
- * <dt>%N</dt>
- * <dd></dd>
- * <dt>%m</dt>
- * <dd></dd>
+ * <dt>{@code %p} - object argument, raw {@code tp_name}</dt>
+ * <dd>Prints {@code Py_TYPE(argument)->tp_name}. A native or built-in type's {@code tp_name} can
+ * contain a module prefix; a heap type's {@code tp_name} is normally unqualified.</dd>
+ * <dt>{@code %P} - object argument, unqualified type name</dt>
+ * <dd>Prints the equivalent of {@code _PyType_Name(Py_TYPE(argument))}. In particular, this strips
+ * any module prefix from {@code tp_name}; it does not call {@code repr}.</dd>
+ * <dt>{@code %N} - type argument, raw {@code tp_name}</dt>
+ * <dd>The argument itself must be a Python type. Prints {@code argument->tp_name} without first
+ * taking the argument's class. This is GraalPy's historical conversion and is not the fully
+ * qualified {@code %N} conversion supported by CPython's {@code PyUnicode_FromFormat}.</dd>
+ * <dt>{@code %T} - object argument, fully qualified type name</dt>
+ * <dd>Prints the equivalent of {@code PyType_GetFullyQualifiedName(Py_TYPE(argument))}: the class'
+ * {@code __module__} and {@code __qualname__}, omitting the module for {@code builtins} and
+ * {@code __main__}.</dd>
+ * <dt>{@code %m} - Java exception argument</dt>
+ * <dd>Prints the exception's simple Java class name and message, followed by its Java stack trace
+ * when Java stack-trace output is enabled.</dd>
  * </dl>
- * </p>
  */
 public abstract class ErrorMessageFormatter {
 
@@ -105,7 +115,7 @@ public abstract class ErrorMessageFormatter {
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
             } else if ("%P".equals(group)) {
-                // %p is equivalent of CPython's _PyType_Name(Py_TYPE(o))
+                // %P is equivalent of CPython's _PyType_Name(Py_TYPE(o))
                 String name = getClassTypeName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
@@ -114,6 +124,13 @@ public abstract class ErrorMessageFormatter {
             } else if ("%N".equals(group)) {
                 // %N is equivalent of CPython's t->tp_name
                 String name = getTpName(args[matchIdx]);
+                sb.replace(m.start() + offset, m.end() + offset, name);
+                offset += name.length() - (m.end() - m.start());
+                args[matchIdx] = REMOVED_MARKER;
+                removedCnt++;
+            } else if ("%T".equals(group)) {
+                // %T is equivalent to CPython's PyType_GetFullyQualifiedName(Py_TYPE(o))
+                String name = getClassFullyQualifiedName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
@@ -158,6 +175,11 @@ public abstract class ErrorMessageFormatter {
         return TypeNodes.GetNameNode.executeUncached(GetClassNode.executeUncached(obj)).toJavaStringUncached();
     }
 
+    private static String getClassFullyQualifiedName(Object obj) {
+        Object type = GetClassNode.executeUncached(obj);
+        return ObjectNodes.GetFullyQualifiedNameNode.executeUncached(type).toJavaStringUncached();
+    }
+
     private static String getTpName(Object type) {
         return TypeNodes.GetTpNameNode.executeUncached(type).toJavaStringUncached();
     }
@@ -170,7 +192,7 @@ public abstract class ErrorMessageFormatter {
         int pidx = -1;
         while ((pidx = format.indexOf('%', pidx + 1)) != -1 && pidx + 1 < format.length()) {
             char c = format.charAt(pidx + 1);
-            if (c == 'p' || c == 'P' || c == 'm' || c == 'N') {
+            if (c == 'p' || c == 'P' || c == 'm' || c == 'N' || c == 'T') {
                 return true;
             }
         }

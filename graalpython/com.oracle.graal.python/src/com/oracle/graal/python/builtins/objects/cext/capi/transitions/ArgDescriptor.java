@@ -44,6 +44,7 @@ import com.oracle.graal.python.annotations.NativeSimpleType;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonStrictNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
@@ -75,6 +76,7 @@ enum ArgBehavior {
                     NativeToPythonTransferNode.getUncached()),
     Pointer(NativeSimpleType.POINTER),
     TruffleStringPointer(NativeSimpleType.POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
+    TruffleStringPointerStrict(NativeSimpleType.POINTER, null, CharPtrToPythonStrictNode::create, CharPtrToPythonStrictNode.getUncached()),
     Char8(NativeSimpleType.SINT8),
     UChar8(NativeSimpleType.SINT8),
     Char16(NativeSimpleType.SINT16),
@@ -155,8 +157,8 @@ public enum ArgDescriptor {
     _PYCROSSINTERPRETERDATA_PTR("_PyCrossInterpreterData*"),
     _PYERR_STACKITEM_PTR("_PyErr_StackItem*"),
     _PYTIME_ROUND_T("_PyTime_round_t"),
-    _PYTIME_T("_PyTime_t"),
-    _PYTIME_T_PTR("_PyTime_t*"),
+    _PYTIME_T("PyTime_t"),
+    _PYTIME_T_PTR("PyTime_t*"),
     _PYUNICODEWRITER_PTR("_PyUnicodeWriter*"),
     CHAR(ArgBehavior.Char8, "char"),
     UCHAR(ArgBehavior.UChar8, "unsigned char"),
@@ -166,6 +168,7 @@ public enum ArgDescriptor {
     CHAR_PTR(ArgBehavior.Pointer, "char*"),
     CHAR_PTR_LIST(ArgBehavior.Pointer, "char**"),
     ConstCharPtrAsTruffleString(ArgBehavior.TruffleStringPointer, "const char*"),
+    ConstCharPtrAsTruffleStringStrict(ArgBehavior.TruffleStringPointerStrict, "const char*"),
     ConstCharPtr(ArgBehavior.Pointer, "const char*"),
     CharPtrAsTruffleString(ArgBehavior.TruffleStringPointer, "char*"),
     CONST_CHAR_PTR_LIST("const char**"),
@@ -177,6 +180,7 @@ public enum ArgDescriptor {
     CONST_PY_UNICODE("const Py_UNICODE*"),
     CONST_PYCONFIG_PTR("const PyConfig*"),
     CONST_PYPRECONFIG_PTR("const PyPreConfig*"),
+    CONST_UINT8_T_PTR(ArgBehavior.Pointer, "const uint8_t*"),
     CONST_UNSIGNED_CHAR_PTR(ArgBehavior.Pointer, "const unsigned char*"),
     CONST_VOID_PTR(ArgBehavior.Pointer, "const void*"),
     CONST_VOID_PTR_LIST("const void**"),
@@ -185,6 +189,7 @@ public enum ArgDescriptor {
     FILE_PTR("FILE*"),
     FREEFUNC("freefunc"),
     INITTAB("struct _inittab*"),
+    INT32_T(ArgBehavior.Int32, "int32_t"),
     INT_LIST("int*"),
     INT8_T_PTR(ArgBehavior.Pointer, "int8_t*"),
     INT64_T(ArgBehavior.Int64, "int64_t"),
@@ -209,6 +214,8 @@ public enum ArgDescriptor {
     PyCode_WatchCallback(ArgBehavior.Pointer, "PyCode_WatchCallback"),
     PY_COMPILER_FLAGS(ArgBehavior.Pointer, "PyCompilerFlags*"),
     PY_COMPLEX("Py_complex"),
+    PY_CRITICAL_SECTION_PTR(ArgBehavior.Pointer, "PyCriticalSection*"),
+    PY_CRITICAL_SECTION2_PTR(ArgBehavior.Pointer, "PyCriticalSection2*"),
     PyCodeAddressRange("PyCodeAddressRange*"),
     PyCompactUnicodeObject(ArgBehavior.PyObject, "PyCompactUnicodeObject*"),
     PyFunctionObject(ArgBehavior.PyObject, "PyFunctionObject*"),
@@ -234,6 +241,7 @@ public enum ArgDescriptor {
     PyModuleObject(ArgBehavior.PyObject, "PyModuleObject*"),
     PyModuleObjectTransfer(ArgBehavior.PyObject, "PyModuleObject*", true, false),
     PyMethodDef(ArgBehavior.Pointer, "PyMethodDef*"),
+    PY_MONITORING_STATE_PTR(ArgBehavior.Pointer, "PyMonitoringState*"),
     PyModuleDef(ArgBehavior.Pointer, "PyModuleDef*"), // it's unclear if this should be
                                                       // PyObject
     PyModuleDefSlot(ArgBehavior.Pointer, "PyModuleDef_Slot*"),
@@ -246,6 +254,7 @@ public enum ArgDescriptor {
     PySendResult(ArgBehavior.Int32, "PySendResult"),
     PySetObject(ArgBehavior.PyObject, "PySetObject*"),
     PyDescrObject(ArgBehavior.PyObject, "PyDescrObject*"),
+    PY_MUTEX_PTR(ArgBehavior.Pointer, "PyMutex*"),
     PY_OPENCODEHOOKFUNCTION("Py_OpenCodeHookFunction"),
     PY_OS_SIGHANDLER("PyOS_sighandler_t"),
     PySliceObject(ArgBehavior.PyObject, "PySliceObject*"),
@@ -253,6 +262,7 @@ public enum ArgDescriptor {
     PY_STRUCT_SEQUENCE_DESC("PyStructSequence_Desc*"),
     PyThreadState(ArgBehavior.Pointer, "PyThreadState*"),
     PyThreadStatePtr(ArgBehavior.Pointer, "PyThreadState**"),
+    PY_REF_TRACER(ArgBehavior.Pointer, "PyRefTracer"),
     PY_THREAD_TYPE_LOCK(ArgBehavior.Int64, "PyThread_type_lock"),
     PY_THREAD_TYPE_LOCK_PTR(ArgBehavior.Pointer, "PyThread_type_lock*"),
     PyTryBlock("PyTryBlock*"),
@@ -299,6 +309,7 @@ public enum ArgDescriptor {
     TM_PTR("struct tm*"),
     UINTPTR_T(ArgBehavior.UInt64, "uintptr_t"),
     UINT64_T(ArgBehavior.UInt64, "uint64_t"),
+    UINT64_T_PTR(ArgBehavior.Pointer, "uint64_t*"),
     UNSIGNED_CHAR_PTR(ArgBehavior.Pointer, "unsigned char*"),
     UNSIGNED_INT(ArgBehavior.UInt32, "unsigned int"),
     UNSIGNED_LONG(ArgBehavior.Long, "unsigned long"),
@@ -430,14 +441,14 @@ public enum ArgDescriptor {
 
     public boolean isPyObjectOrPointer() {
         return switch (behavior) {
-            case PyObject, PyTypeObject, PyObjectBorrowed, Pointer, TruffleStringPointer -> true;
+            case PyObject, PyTypeObject, PyObjectBorrowed, Pointer, TruffleStringPointer, TruffleStringPointerStrict -> true;
             default -> false;
         };
     }
 
     public boolean isPointer() {
         return switch (behavior) {
-            case Pointer, TruffleStringPointer -> true;
+            case Pointer, TruffleStringPointer, TruffleStringPointerStrict -> true;
             default -> false;
         };
     }
@@ -450,7 +461,7 @@ public enum ArgDescriptor {
     }
 
     public boolean isCharPtr() {
-        return this == CharPtrAsTruffleString || this == CHAR_PTR || this == ConstCharPtr || this == ConstCharPtrAsTruffleString;
+        return this == CharPtrAsTruffleString || this == CHAR_PTR || this == ConstCharPtr || this == ConstCharPtrAsTruffleString || this == ConstCharPtrAsTruffleStringStrict;
     }
 
     public boolean isI64() {

@@ -70,13 +70,13 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyErrExceptionMatchesNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -350,8 +350,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static MatcherType getMatcherType(Node inliningTarget, Object value) {
-        // CPython really does PyFunction_Check(value). One would expect a callable check...
-        if (value instanceof PFunction) {
+        if (PyCallableCheckNode.executeUncached(value) && !TypeNodes.IsTypeNode.executeUncached(value)) {
             return MatcherType.BY_PREDICATE;
         }
         if (isExceptionTypeUncached(value)) {
@@ -362,12 +361,12 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
             for (int i = 0; i < storage.length(); i++) {
                 Object elem = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
                 if (!isExceptionTypeUncached(elem)) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES);
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_AN_EXCEPTION_TYPE_TUPLE_OR_CALLABLE_OTHER_THAN_CLASS);
                 }
             }
             return MatcherType.BY_TYPE;
         }
-        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_A_FUNCTION_EXCEPTION_TYPE_OR_TUPLE_OF_EXCEPTION_TYPES);
+        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.EXPECTED_AN_EXCEPTION_TYPE_TUPLE_OR_CALLABLE_OTHER_THAN_CLASS);
     }
 
     private static SequenceStorage getExactTupleStorage(Object value) {

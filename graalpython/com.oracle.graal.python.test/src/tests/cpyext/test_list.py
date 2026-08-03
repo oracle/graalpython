@@ -58,6 +58,15 @@ def _reference_getitem(args):
     return listObj[pos]
 
 
+def _reference_getitemref(args):
+    listObj, pos = args
+    if not isinstance(listObj, list):
+        raise TypeError("expected a list")
+    if pos < 0:
+        raise IndexError("list index out of range")
+    return listObj[pos]
+
+
 def _reference_setitem(args):
     capacity = args[0]
     pos = args[1]
@@ -190,6 +199,25 @@ class TestPyList(CPyExtTestCase):
         resultspec="O",
         argspec='On',
         arguments=["PyObject* op", "Py_ssize_t size"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyList_GetItemRef = CPyExtFunction(
+        _reference_getitemref,
+        lambda: (
+            ([DummyClass()], 0),
+            ([], 0),
+            ([DummyClass()], -1),
+            ((DummyClass(),), 0),
+            (DummyClass(), 0),
+        ),
+        code='''PyObject* wrap_PyList_GetItemRef(PyObject* op, Py_ssize_t idx) {
+            return PyList_GetItemRef(op, idx);
+        }''',
+        resultspec="N",
+        argspec='On',
+        arguments=("PyObject* op", "Py_ssize_t idx"),
+        callfunction="wrap_PyList_GetItemRef",
         cmpfunc=unhandled_error_compare
     )
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -8,8 +8,10 @@
 #endif
 
 PyAPI_DATA(PyTypeObject) PyFrame_Type;
+PyAPI_DATA(PyTypeObject) PyFrameLocalsProxy_Type;
 
 #define PyFrame_Check(op) Py_IS_TYPE((op), &PyFrame_Type)
+#define PyFrameLocalsProxy_Check(op) Py_IS_TYPE((op), &PyFrameLocalsProxy_Type)
 
 PyAPI_FUNC(PyFrameObject *) PyFrame_GetBack(PyFrameObject *frame);
 PyAPI_FUNC(PyObject *) PyFrame_GetLocals(PyFrameObject *frame);
@@ -38,3 +40,11 @@ PyAPI_FUNC(int) PyUnstable_InterpreterFrame_GetLasti(struct _PyInterpreterFrame 
 /* Returns the currently executing line number, or -1 if there is no line number.
  * Does not raise an exception. */
 PyAPI_FUNC(int) PyUnstable_InterpreterFrame_GetLine(struct _PyInterpreterFrame *frame);
+
+#define PyUnstable_EXECUTABLE_KIND_SKIP 0
+#define PyUnstable_EXECUTABLE_KIND_PY_FUNCTION 1
+#define PyUnstable_EXECUTABLE_KIND_BUILTIN_FUNCTION 3
+#define PyUnstable_EXECUTABLE_KIND_METHOD_DESCRIPTOR 4
+#define PyUnstable_EXECUTABLE_KINDS 5
+
+PyAPI_DATA(const PyTypeObject *) const PyUnstable_ExecutableKinds[PyUnstable_EXECUTABLE_KINDS+1];

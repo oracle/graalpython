@@ -1,6 +1,7 @@
 import ast
 import sys
 import unittest
+from test.support import import_helper
 
 
 funcdef = """\
@@ -63,6 +64,14 @@ for a in []:  # type: int
 
 withstmt = """\
 with context() as a:  # type: int
+    pass
+"""
+
+parenthesized_withstmt = """\
+with (a as b):  # type: int
+    pass
+
+with (a, b):  # type: int
     pass
 """
 
@@ -260,8 +269,8 @@ class TypeCommentTests(unittest.TestCase):
         self.assertEqual(tree.body[1].type_comment, None)
 
     def test_asyncvar(self):
-        for tree in self.parse_all(asyncvar, maxver=6):
-            pass
+        with self.assertRaises(SyntaxError):
+            self.classic_parse(asyncvar)
 
     def test_asynccomp(self):
         for tree in self.parse_all(asynccomp, minver=6):
@@ -299,6 +308,14 @@ class TypeCommentTests(unittest.TestCase):
             self.assertEqual(tree.body[0].type_comment, "int")
         tree = self.classic_parse(withstmt)
         self.assertEqual(tree.body[0].type_comment, None)
+
+    def test_parenthesized_withstmt(self):
+        for tree in self.parse_all(parenthesized_withstmt):
+            self.assertEqual(tree.body[0].type_comment, "int")
+            self.assertEqual(tree.body[1].type_comment, "int")
+        tree = self.classic_parse(parenthesized_withstmt)
+        self.assertEqual(tree.body[0].type_comment, None)
+        self.assertEqual(tree.body[1].type_comment, None)
 
     def test_vardecl(self):
         for tree in self.parse_all(vardecl):
@@ -374,6 +391,16 @@ class TypeCommentTests(unittest.TestCase):
         check_both_ways("try:\n  pass\nfinally:  # type: int\n  pass\n")
         check_both_ways("pass  # type: ignorewhatever\n")
         check_both_ways("pass  # type: ignoreé\n")
+
+    def test_non_utf8_type_comment_with_ignore_cookie(self):
+        _testcapi = import_helper.import_module('_testcapi')
+        flags = 0x0800 | 0x1000 # PyCF_IGNORE_COOKIE | PyCF_TYPE_COMMENTS
+        with self.assertRaises(UnicodeDecodeError):
+            _testcapi.Py_CompileStringExFlags(
+                b"a=1 # type: \x80", "<test>", 256, flags)
+        with self.assertRaises(UnicodeDecodeError):
+            _testcapi.Py_CompileStringExFlags(
+                b"def a(f=8, #type: \x80\n\x80", "<test>", 256, flags)
 
     def test_func_type_input(self):
 

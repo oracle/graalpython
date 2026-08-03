@@ -4,8 +4,10 @@ import time
 import unittest
 from unittest import mock
 from test import support
-from test.test_grammar import (VALID_UNDERSCORE_LITERALS,
-                               INVALID_UNDERSCORE_LITERALS)
+from test.support.numbers import (
+    VALID_UNDERSCORE_LITERALS,
+    INVALID_UNDERSCORE_LITERALS,
+)
 
 try:
     import _pylong
@@ -90,6 +92,7 @@ class IntTestCases(unittest.TestCase):
 
 
         self.assertRaises(TypeError, int, 1, 12)
+        self.assertRaises(TypeError, int, "10", 2, 1)
 
         self.assertEqual(int('0o123', 0), 83)
         self.assertEqual(int('0x123', 16), 291)
@@ -663,84 +666,78 @@ class IntStrDigitLimitsTests(unittest.TestCase):
         """Regression test: ensure we fail before performing O(N**2) work."""
         maxdigits = sys.get_int_max_str_digits()
         assert maxdigits < 50_000, maxdigits  # A test prerequisite.
-        get_time = time.process_time
-        if get_time() <= 0:  # some platforms like WASM lack process_time()
-            get_time = time.monotonic
 
         huge_int = int(f'0x{"c"*65_000}', base=16)  # 78268 decimal digits.
         digits = 78_268
-        with support.adjust_int_max_str_digits(digits):
-            start = get_time()
+        with (
+                support.adjust_int_max_str_digits(digits),
+                support.CPUStopwatch() as sw_convert):
             huge_decimal = str(huge_int)
-        seconds_to_convert = get_time() - start
         self.assertEqual(len(huge_decimal), digits)
         # Ensuring that we chose a slow enough conversion to measure.
         # It takes 0.1 seconds on a Zen based cloud VM in an opt build.
         # Some OSes have a low res 1/64s timer, skip if hard to measure.
-        if seconds_to_convert < 1/64:
+        if sw_convert.seconds < sw_convert.clock_info.resolution * 2:
             raise unittest.SkipTest('"slow" conversion took only '
-                                    f'{seconds_to_convert} seconds.')
+                                    f'{sw_convert.seconds} seconds.')
 
         # We test with the limit almost at the size needed to check performance.
         # The performant limit check is slightly fuzzy, give it a some room.
         with support.adjust_int_max_str_digits(int(.995 * digits)):
-            with self.assertRaises(ValueError) as err:
-                start = get_time()
+            with (
+                    self.assertRaises(ValueError) as err,
+                    support.CPUStopwatch() as sw_fail_huge):
                 str(huge_int)
-            seconds_to_fail_huge = get_time() - start
         self.assertIn('conversion', str(err.exception))
-        self.assertLessEqual(seconds_to_fail_huge, seconds_to_convert/2)
+        self.assertLessEqual(sw_fail_huge.seconds, sw_convert.seconds/2)
 
         # Now we test that a conversion that would take 30x as long also fails
         # in a similarly fast fashion.
         extra_huge_int = int(f'0x{"c"*500_000}', base=16)  # 602060 digits.
-        with self.assertRaises(ValueError) as err:
-            start = get_time()
+        with (
+                self.assertRaises(ValueError) as err,
+                support.CPUStopwatch() as sw_fail_extra_huge):
             # If not limited, 8 seconds said Zen based cloud VM.
             str(extra_huge_int)
-        seconds_to_fail_extra_huge = get_time() - start
         self.assertIn('conversion', str(err.exception))
-        self.assertLess(seconds_to_fail_extra_huge, seconds_to_convert/2)
+        self.assertLess(sw_fail_extra_huge.seconds, sw_convert.seconds/2)
 
     def test_denial_of_service_prevented_str_to_int(self):
         """Regression test: ensure we fail before performing O(N**2) work."""
         maxdigits = sys.get_int_max_str_digits()
         assert maxdigits < 100_000, maxdigits  # A test prerequisite.
-        get_time = time.process_time
-        if get_time() <= 0:  # some platforms like WASM lack process_time()
-            get_time = time.monotonic
 
         digits = 133700
         huge = '8'*digits
-        with support.adjust_int_max_str_digits(digits):
-            start = get_time()
+        with (
+                support.adjust_int_max_str_digits(digits),
+                support.CPUStopwatch() as sw_convert):
             int(huge)
-        seconds_to_convert = get_time() - start
         # Ensuring that we chose a slow enough conversion to measure.
         # It takes 0.1 seconds on a Zen based cloud VM in an opt build.
         # Some OSes have a low res 1/64s timer, skip if hard to measure.
-        if seconds_to_convert < 1/64:
+        if sw_convert.seconds < sw_convert.clock_info.resolution * 2:
             raise unittest.SkipTest('"slow" conversion took only '
-                                    f'{seconds_to_convert} seconds.')
+                                    f'{sw_convert.seconds} seconds.')
 
         with support.adjust_int_max_str_digits(digits - 1):
-            with self.assertRaises(ValueError) as err:
-                start = get_time()
+            with (
+                    self.assertRaises(ValueError) as err,
+                    support.CPUStopwatch() as sw_fail_huge):
                 int(huge)
-            seconds_to_fail_huge = get_time() - start
         self.assertIn('conversion', str(err.exception))
-        self.assertLessEqual(seconds_to_fail_huge, seconds_to_convert/2)
+        self.assertLessEqual(sw_fail_huge.seconds, sw_convert.seconds/2)
 
         # Now we test that a conversion that would take 30x as long also fails
         # in a similarly fast fashion.
         extra_huge = '7'*1_200_000
-        with self.assertRaises(ValueError) as err:
-            start = get_time()
+        with (
+                self.assertRaises(ValueError) as err,
+                support.CPUStopwatch() as sw_fail_extra_huge):
             # If not limited, 8 seconds in the Zen based cloud VM.
             int(extra_huge)
-        seconds_to_fail_extra_huge = get_time() - start
         self.assertIn('conversion', str(err.exception))
-        self.assertLessEqual(seconds_to_fail_extra_huge, seconds_to_convert/2)
+        self.assertLessEqual(sw_fail_extra_huge.seconds, sw_convert.seconds/2)
 
     def test_power_of_two_bases_unlimited(self):
         """The limit does not apply to power of 2 bases."""
@@ -862,6 +859,18 @@ class PyLongModuleTests(unittest.TestCase):
         a, b = divmod(n*3 + 1, n)
         assert a == 3 and b == 1
 
+    @support.cpython_only  # tests implementation details of CPython.
+    @unittest.skipUnless(_pylong, "_pylong module required")
+    def test_pylong_int_divmod_crash(self):
+        # Regression test for https://github.com/python/cpython/issues/142554.
+        bad_int_divmod = lambda a, b: (1,)
+        # 'k' chosen such that divmod(2**(2*k), 2**k) uses _pylong.int_divmod()
+        k = 10_000
+        a, b = (1 << (2 * k)), (1 << k)
+        with mock.patch.object(_pylong, "int_divmod", wraps=bad_int_divmod):
+            msg = r"tuple of length 2 is required from int_divmod\(\)"
+            self.assertRaisesRegex(ValueError, msg, divmod, a, b)
+
     def test_pylong_str_to_int(self):
         v1 = 1 << 100_000
         s = str(v1)
@@ -911,6 +920,18 @@ class PyLongModuleTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 int(big_value)
 
+    def test_pylong_roundtrip(self):
+        from random import randrange, getrandbits
+        bits = 5000
+        while bits <= 1_000_000:
+            bits += randrange(-100, 101) # break bitlength patterns
+            hibit = 1 << (bits - 1)
+            n = hibit | getrandbits(bits - 1)
+            assert n.bit_length() == bits
+            sn = str(n)
+            self.assertFalse(sn.startswith('0'))
+            self.assertEqual(n, int(sn))
+            bits <<= 1
 
 if __name__ == "__main__":
     unittest.main()

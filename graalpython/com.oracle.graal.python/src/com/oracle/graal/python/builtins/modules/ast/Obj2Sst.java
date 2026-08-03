@@ -996,16 +996,19 @@ final class Obj2Sst extends Obj2SstBase {
     TypeParamTy.TypeVar obj2TypeVar(Object obj, SourceRange sourceRange) {
         String name = lookupAndConvert(obj, AstState.T_F_NAME, AstState.T_C_TYPEVAR, this::obj2identifier, true);
         ExprTy bound = lookupAndConvert(obj, AstState.T_F_BOUND, AstState.T_C_TYPEVAR, this::obj2ExprTy, false);
-        return new TypeParamTy.TypeVar(name, bound, sourceRange);
+        ExprTy defaultValue = lookupAndConvert(obj, AstState.T_F_DEFAULT_VALUE, AstState.T_C_TYPEVAR, this::obj2ExprTy, false);
+        return new TypeParamTy.TypeVar(name, bound, defaultValue, sourceRange);
     }
 
     TypeParamTy.ParamSpec obj2ParamSpec(Object obj, SourceRange sourceRange) {
         String name = lookupAndConvert(obj, AstState.T_F_NAME, AstState.T_C_PARAMSPEC, this::obj2identifier, true);
-        return new TypeParamTy.ParamSpec(name, sourceRange);
+        ExprTy defaultValue = lookupAndConvert(obj, AstState.T_F_DEFAULT_VALUE, AstState.T_C_PARAMSPEC, this::obj2ExprTy, false);
+        return new TypeParamTy.ParamSpec(name, defaultValue, sourceRange);
     }
 
     TypeParamTy.TypeVarTuple obj2TypeVarTuple(Object obj, SourceRange sourceRange) {
         String name = lookupAndConvert(obj, AstState.T_F_NAME, AstState.T_C_TYPEVARTUPLE, this::obj2identifier, true);
-        return new TypeParamTy.TypeVarTuple(name, sourceRange);
+        ExprTy defaultValue = lookupAndConvert(obj, AstState.T_F_DEFAULT_VALUE, AstState.T_C_TYPEVARTUPLE, this::obj2ExprTy, false);
+        return new TypeParamTy.TypeVarTuple(name, defaultValue, sourceRange);
     }
 }

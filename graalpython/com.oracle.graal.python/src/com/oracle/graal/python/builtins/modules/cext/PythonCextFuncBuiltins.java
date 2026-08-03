@@ -108,7 +108,7 @@ public final class PythonCextFuncBuiltins {
                 throw CompilerDirectives.shouldNotReachHere("Unexpected object passed to GraalPyCFunction_SetDoc");
             }
             CFunctionDocUtils.writeDocAndTextSignature(function, function.getName(),
-                            doc != null ? doc : PNone.NO_VALUE);
+                            doc != null ? doc : PNone.NO_VALUE, function.getFlags());
             return PNone.NO_VALUE;
         }
     }

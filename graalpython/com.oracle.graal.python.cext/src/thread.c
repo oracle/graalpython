@@ -1,11 +1,11 @@
-/* Copyright (c) 2021, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-#include "capi.h"
+#include "capi.h" // GraalPy change
+#include "pycore_time.h" // GraalPy change
 
-#if 0 // GraalPy change
 /* Thread package.
    This is intended to be usable independently from Python.
    The implementation for system foobar is in a file thread_foobar.h
@@ -13,15 +13,39 @@
    Stuff shared by all thread_*.h files is collected here. */
 
 #include "Python.h"
+#include "pycore_ceval.h"         // _PyEval_MakePendingCalls()
 #include "pycore_pystate.h"       // _PyInterpreterState_GET()
+#if 0 // GraalPy change
 #include "pycore_structseq.h"     // _PyStructSequence_FiniBuiltin()
-#include "pycore_pythread.h"
+#endif // GraalPy change
+#include "pycore_pythread.h"      // _POSIX_THREADS
+#include "pycore_condvar.h"       // PyMUTEX_T, PyCOND_T
 
 #ifndef DONT_HAVE_STDIO_H
-#include <stdio.h>
+#  include <stdio.h>
 #endif
 
 #include <stdlib.h>
+
+
+// Define PY_TIMEOUT_MAX constant.
+#ifdef _POSIX_THREADS
+   // PyThread_acquire_lock_timed() uses (us * 1000) to convert microseconds
+   // to nanoseconds.
+#  define PY_TIMEOUT_MAX_VALUE (LLONG_MAX / 1000)
+#elif defined (NT_THREADS)
+   // WaitForSingleObject() accepts timeout in milliseconds in the range
+   // [0; 0xFFFFFFFE] (DWORD type). INFINITE value (0xFFFFFFFF) means no
+   // timeout. 0xFFFFFFFE milliseconds is around 49.7 days.
+#  if 0xFFFFFFFELL < LLONG_MAX / 1000
+#    define PY_TIMEOUT_MAX_VALUE (0xFFFFFFFELL * 1000)
+#  else
+#    define PY_TIMEOUT_MAX_VALUE LLONG_MAX
+#  endif
+#else
+#  define PY_TIMEOUT_MAX_VALUE LLONG_MAX
+#endif
+const long long PY_TIMEOUT_MAX = PY_TIMEOUT_MAX_VALUE;
 
 
 static void PyThread__init_thread(void); /* Forward */
@@ -56,6 +80,7 @@ PyThread_init_thread(void)
 #endif
 
 
+#if 0 // GraalPy change
 /* return the current thread stack size */
 size_t
 PyThread_get_stacksize(void)
@@ -78,6 +103,89 @@ PyThread_set_stacksize(size_t size)
 #endif
 }
 #endif // GraalPy change
+
+
+int
+PyThread_ParseTimeoutArg(PyObject *arg, int blocking, PY_TIMEOUT_T *timeout_p)
+{
+    assert(_PyTime_FromSeconds(-1) == PyThread_UNSET_TIMEOUT);
+    if (arg == NULL || arg == Py_None) {
+        *timeout_p = blocking ? PyThread_UNSET_TIMEOUT : 0;
+        return 0;
+    }
+    if (!blocking) {
+        PyErr_SetString(PyExc_ValueError,
+                        "can't specify a timeout for a non-blocking call");
+        return -1;
+    }
+
+    PyTime_t timeout;
+    if (_PyTime_FromSecondsObject(&timeout, arg, _PyTime_ROUND_TIMEOUT) < 0) {
+        return -1;
+    }
+    if (timeout < 0) {
+        PyErr_SetString(PyExc_ValueError,
+                        "timeout value must be a non-negative number");
+        return -1;
+    }
+
+    if (_PyTime_AsMicroseconds(timeout,
+                               _PyTime_ROUND_TIMEOUT) > PY_TIMEOUT_MAX) {
+        PyErr_SetString(PyExc_OverflowError,
+                        "timeout value is too large");
+        return -1;
+    }
+    *timeout_p = timeout;
+    return 0;
+}
+
+PyLockStatus
+PyThread_acquire_lock_timed_with_retries(PyThread_type_lock lock,
+                                         PY_TIMEOUT_T timeout)
+{
+    PyThreadState *tstate = _PyThreadState_GET();
+    PyTime_t endtime = 0;
+    if (timeout > 0) {
+        endtime = _PyDeadline_Init(timeout);
+    }
+
+    PyLockStatus r;
+    do {
+        PyTime_t microseconds;
+        microseconds = _PyTime_AsMicroseconds(timeout, _PyTime_ROUND_CEILING);
+
+        /* first a simple non-blocking try without releasing the GIL */
+        r = PyThread_acquire_lock_timed(lock, 0, 0);
+        if (r == PY_LOCK_FAILURE && microseconds != 0) {
+            Py_BEGIN_ALLOW_THREADS
+            r = PyThread_acquire_lock_timed(lock, microseconds, 1);
+            Py_END_ALLOW_THREADS
+        }
+
+        if (r == PY_LOCK_INTR) {
+            /* Run signal handlers if we were interrupted.  Propagate
+             * exceptions from signal handlers, such as KeyboardInterrupt, by
+             * passing up PY_LOCK_INTR.  */
+            if (_PyEval_MakePendingCalls(tstate) < 0) {
+                return PY_LOCK_INTR;
+            }
+
+            /* If we're using a timeout, recompute the timeout after processing
+             * signals, since those can take time.  */
+            if (timeout > 0) {
+                timeout = _PyDeadline_Get(endtime);
+
+                /* Check for negative values, since those mean block forever.
+                 */
+                if (timeout < 0) {
+                    r = PY_LOCK_FAILURE;
+                }
+            }
+        }
+    } while (r == PY_LOCK_INTR);  /* Retry if we were interrupted. */
+
+    return r;
+}
 
 
 /* Thread Specific Storage (TSS) API
@@ -204,39 +312,3 @@ _PyThread_FiniType(PyInterpreterState *interp)
     _PyStructSequence_FiniBuiltin(interp, &ThreadInfoType);
 }
 #endif // GraalPy change
-
-
-// GraalPy change: In CPython, the following functions have separate implementations for posix and win32 in different files. We just put ours here.
-
-int
-PyThread_tss_create(Py_tss_t *key)
-{
-    if (key->_is_initialized) {
-        return 0;
-    }
-    key->_key = GraalPyPrivate_tss_create();
-    key->_is_initialized = 1;
-    return 0;
-}
-
-void *
-PyThread_tss_get(Py_tss_t *key)
-{
-    return GraalPyPrivate_tss_get(key->_key);
-}
-
-int
-PyThread_tss_set(Py_tss_t *key, void *value)
-{
-    return GraalPyPrivate_tss_set(key->_key, value);
-}
-
-void
-PyThread_tss_delete(Py_tss_t *key)
-{
-    if (!key->_is_initialized) {
-        return;
-    }
-    GraalPyPrivate_tss_delete(key->_key);
-    key->_is_initialized = 0;
-}

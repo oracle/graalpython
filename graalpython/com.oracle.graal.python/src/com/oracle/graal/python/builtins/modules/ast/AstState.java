@@ -48,6 +48,7 @@ package com.oracle.graal.python.builtins.modules.ast;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -73,6 +74,7 @@ final class AstState {
     static final TruffleString T_F_CONVERSION = tsLiteral("conversion");
     static final TruffleString T_F_CTX = tsLiteral("ctx");
     static final TruffleString T_F_DECORATOR_LIST = tsLiteral("decorator_list");
+    static final TruffleString T_F_DEFAULT_VALUE = tsLiteral("default_value");
     static final TruffleString T_F_DEFAULTS = tsLiteral("defaults");
     static final TruffleString T_F_ELT = tsLiteral("elt");
     static final TruffleString T_F_ELTS = tsLiteral("elts");
@@ -1471,34 +1473,147 @@ final class AstState {
                         tsa(),
                         tsa(T_F_LINENO, T_F_COL_OFFSET, T_F_END_LINENO, T_F_END_COL_OFFSET),
                         tsa(),
-                        ts("type_param = TypeVar(identifier name, expr? bound)\n" +
-                        "           | ParamSpec(identifier name)\n" +
-                        "           | TypeVarTuple(identifier name)")
+                        ts("type_param = TypeVar(identifier name, expr? bound, expr? default_value)\n" +
+                        "           | ParamSpec(identifier name, expr? default_value)\n" +
+                        "           | TypeVarTuple(identifier name, expr? default_value)")
         );
 
         // TypeParamTy.TypeVar
         clsTypeVar = factory.makeType(T_C_TYPEVAR, clsTypeParamTy,
-                        tsa(T_F_NAME, T_F_BOUND),
+                        tsa(T_F_NAME, T_F_BOUND, T_F_DEFAULT_VALUE),
                         null,
-                        tsa(T_F_BOUND),
-                        ts("TypeVar(identifier name, expr? bound)")
+                        tsa(T_F_BOUND, T_F_DEFAULT_VALUE),
+                        ts("TypeVar(identifier name, expr? bound, expr? default_value)")
         );
 
         // TypeParamTy.ParamSpec
         clsParamSpec = factory.makeType(T_C_PARAMSPEC, clsTypeParamTy,
-                        tsa(T_F_NAME),
+                        tsa(T_F_NAME, T_F_DEFAULT_VALUE),
                         null,
-                        tsa(),
-                        ts("ParamSpec(identifier name)")
+                        tsa(T_F_DEFAULT_VALUE),
+                        ts("ParamSpec(identifier name, expr? default_value)")
         );
 
         // TypeParamTy.TypeVarTuple
         clsTypeVarTuple = factory.makeType(T_C_TYPEVARTUPLE, clsTypeParamTy,
-                        tsa(T_F_NAME),
+                        tsa(T_F_NAME, T_F_DEFAULT_VALUE),
                         null,
-                        tsa(),
-                        ts("TypeVarTuple(identifier name)")
+                        tsa(T_F_DEFAULT_VALUE),
+                        ts("TypeVarTuple(identifier name, expr? default_value)")
         );
+
+        // Field types
+        factory.setFieldTypes(clsModule, tsa(T_F_BODY, T_F_TYPE_IGNORES), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsTypeIgnoreTy, true, false));
+        factory.setFieldTypes(clsInteractive, tsa(T_F_BODY), factory.makeFieldType(clsStmtTy, true, false));
+        factory.setFieldTypes(clsExpression, tsa(T_F_BODY), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsFunctionType, tsa(T_F_ARGTYPES, T_F_RETURNS), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsFunctionDef, tsa(T_F_NAME, T_F_ARGS, T_F_BODY, T_F_DECORATOR_LIST, T_F_RETURNS, T_F_TYPE_COMMENT, T_F_TYPE_PARAMS), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(clsArgumentsTy, false, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(PythonBuiltinClassType.PString, false, true), factory.makeFieldType(clsTypeParamTy, true, false));
+        factory.setFieldTypes(clsAsyncFunctionDef, tsa(T_F_NAME, T_F_ARGS, T_F_BODY, T_F_DECORATOR_LIST, T_F_RETURNS, T_F_TYPE_COMMENT, T_F_TYPE_PARAMS), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(clsArgumentsTy, false, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(PythonBuiltinClassType.PString, false, true), factory.makeFieldType(clsTypeParamTy, true, false));
+        factory.setFieldTypes(clsClassDef, tsa(T_F_NAME, T_F_BASES, T_F_KEYWORDS, T_F_BODY, T_F_DECORATOR_LIST, T_F_TYPE_PARAMS), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsKeywordTy, true, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsTypeParamTy, true, false));
+        factory.setFieldTypes(clsReturn, tsa(T_F_VALUE), factory.makeFieldType(clsExprTy, false, true));
+        factory.setFieldTypes(clsDelete, tsa(T_F_TARGETS), factory.makeFieldType(clsExprTy, true, false));
+        factory.setFieldTypes(clsAssign, tsa(T_F_TARGETS, T_F_VALUE, T_F_TYPE_COMMENT), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsTypeAlias, tsa(T_F_NAME, T_F_TYPE_PARAMS, T_F_VALUE), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsTypeParamTy, true, false), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsAugAssign, tsa(T_F_TARGET, T_F_OP, T_F_VALUE), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsOperatorTy, false, false), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsAnnAssign, tsa(T_F_TARGET, T_F_ANNOTATION, T_F_VALUE, T_F_SIMPLE), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(PythonBuiltinClassType.PInt, false, false));
+        factory.setFieldTypes(clsFor, tsa(T_F_TARGET, T_F_ITER, T_F_BODY, T_F_ORELSE, T_F_TYPE_COMMENT), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsAsyncFor, tsa(T_F_TARGET, T_F_ITER, T_F_BODY, T_F_ORELSE, T_F_TYPE_COMMENT), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsWhile, tsa(T_F_TEST, T_F_BODY, T_F_ORELSE), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsStmtTy, true, false));
+        factory.setFieldTypes(clsIf, tsa(T_F_TEST, T_F_BODY, T_F_ORELSE), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsStmtTy, true, false));
+        factory.setFieldTypes(clsWith, tsa(T_F_ITEMS, T_F_BODY, T_F_TYPE_COMMENT), factory.makeFieldType(clsWithItemTy, true, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsAsyncWith, tsa(T_F_ITEMS, T_F_BODY, T_F_TYPE_COMMENT), factory.makeFieldType(clsWithItemTy, true, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsMatch, tsa(T_F_SUBJECT, T_F_CASES), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsMatchCaseTy, true, false));
+        factory.setFieldTypes(clsRaise, tsa(T_F_EXC, T_F_CAUSE), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(clsExprTy, false, true));
+        factory.setFieldTypes(clsTry, tsa(T_F_BODY, T_F_HANDLERS, T_F_ORELSE, T_F_FINALBODY), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsExceptHandlerTy, true, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsStmtTy, true, false));
+        factory.setFieldTypes(clsTryStar, tsa(T_F_BODY, T_F_HANDLERS, T_F_ORELSE, T_F_FINALBODY), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsExceptHandlerTy, true, false), factory.makeFieldType(clsStmtTy, true, false), factory.makeFieldType(clsStmtTy, true, false));
+        factory.setFieldTypes(clsAssert, tsa(T_F_TEST, T_F_MSG), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, true));
+        factory.setFieldTypes(clsImport, tsa(T_F_NAMES), factory.makeFieldType(clsAliasTy, true, false));
+        factory.setFieldTypes(clsImportFrom, tsa(T_F_MODULE, T_F_NAMES, T_F_LEVEL), factory.makeFieldType(PythonBuiltinClassType.PString, false, true), factory.makeFieldType(clsAliasTy, true, false), factory.makeFieldType(PythonBuiltinClassType.PInt, false, true));
+        factory.setFieldTypes(clsGlobal, tsa(T_F_NAMES), factory.makeFieldType(PythonBuiltinClassType.PString, true, false));
+        factory.setFieldTypes(clsNonlocal, tsa(T_F_NAMES), factory.makeFieldType(PythonBuiltinClassType.PString, true, false));
+        factory.setFieldTypes(clsExpr, tsa(T_F_VALUE), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsPass, tsa());
+        factory.setFieldTypes(clsBreak, tsa());
+        factory.setFieldTypes(clsContinue, tsa());
+        factory.setFieldTypes(clsBoolOp, tsa(T_F_OP, T_F_VALUES), factory.makeFieldType(clsBoolOpTy, false, false), factory.makeFieldType(clsExprTy, true, false));
+        factory.setFieldTypes(clsNamedExpr, tsa(T_F_TARGET, T_F_VALUE), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsBinOp, tsa(T_F_LEFT, T_F_OP, T_F_RIGHT), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsOperatorTy, false, false), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsUnaryOp, tsa(T_F_OP, T_F_OPERAND), factory.makeFieldType(clsUnaryOpTy, false, false), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsLambda, tsa(T_F_ARGS, T_F_BODY), factory.makeFieldType(clsArgumentsTy, false, false), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsIfExp, tsa(T_F_TEST, T_F_BODY, T_F_ORELSE), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsDict, tsa(T_F_KEYS, T_F_VALUES), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsExprTy, true, false));
+        factory.setFieldTypes(clsSet, tsa(T_F_ELTS), factory.makeFieldType(clsExprTy, true, false));
+        factory.setFieldTypes(clsListComp, tsa(T_F_ELT, T_F_GENERATORS), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsComprehensionTy, true, false));
+        factory.setFieldTypes(clsSetComp, tsa(T_F_ELT, T_F_GENERATORS), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsComprehensionTy, true, false));
+        factory.setFieldTypes(clsDictComp, tsa(T_F_KEY, T_F_VALUE, T_F_GENERATORS), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsComprehensionTy, true, false));
+        factory.setFieldTypes(clsGeneratorExp, tsa(T_F_ELT, T_F_GENERATORS), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsComprehensionTy, true, false));
+        factory.setFieldTypes(clsAwait, tsa(T_F_VALUE), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsYield, tsa(T_F_VALUE), factory.makeFieldType(clsExprTy, false, true));
+        factory.setFieldTypes(clsYieldFrom, tsa(T_F_VALUE), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsCompare, tsa(T_F_LEFT, T_F_OPS, T_F_COMPARATORS), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsCmpOpTy, true, false), factory.makeFieldType(clsExprTy, true, false));
+        factory.setFieldTypes(clsCall, tsa(T_F_FUNC, T_F_ARGS, T_F_KEYWORDS), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsKeywordTy, true, false));
+        factory.setFieldTypes(clsFormattedValue, tsa(T_F_VALUE, T_F_CONVERSION, T_F_FORMAT_SPEC), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(PythonBuiltinClassType.PInt, false, false), factory.makeFieldType(clsExprTy, false, true));
+        factory.setFieldTypes(clsJoinedStr, tsa(T_F_VALUES), factory.makeFieldType(clsExprTy, true, false));
+        factory.setFieldTypes(clsConstant, tsa(T_F_VALUE, T_F_KIND), factory.makeFieldType(PythonBuiltinClassType.PythonObject, false, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsAttribute, tsa(T_F_VALUE, T_F_ATTR, T_F_CTX), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(clsExprContextTy, false, false));
+        factory.setFieldTypes(clsSubscript, tsa(T_F_VALUE, T_F_SLICE, T_F_CTX), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprContextTy, false, false));
+        factory.setFieldTypes(clsStarred, tsa(T_F_VALUE, T_F_CTX), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprContextTy, false, false));
+        factory.setFieldTypes(clsName, tsa(T_F_ID, T_F_CTX), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(clsExprContextTy, false, false));
+        factory.setFieldTypes(clsList, tsa(T_F_ELTS, T_F_CTX), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsExprContextTy, false, false));
+        factory.setFieldTypes(clsTuple, tsa(T_F_ELTS, T_F_CTX), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsExprContextTy, false, false));
+        factory.setFieldTypes(clsSlice, tsa(T_F_LOWER, T_F_UPPER, T_F_STEP), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(clsExprTy, false, true));
+        factory.setFieldTypes(clsLoad, tsa());
+        factory.setFieldTypes(clsStore, tsa());
+        factory.setFieldTypes(clsDel, tsa());
+        factory.setFieldTypes(clsAnd, tsa());
+        factory.setFieldTypes(clsOr, tsa());
+        factory.setFieldTypes(clsAdd, tsa());
+        factory.setFieldTypes(clsSub, tsa());
+        factory.setFieldTypes(clsMult, tsa());
+        factory.setFieldTypes(clsMatMult, tsa());
+        factory.setFieldTypes(clsDiv, tsa());
+        factory.setFieldTypes(clsMod, tsa());
+        factory.setFieldTypes(clsPow, tsa());
+        factory.setFieldTypes(clsLShift, tsa());
+        factory.setFieldTypes(clsRShift, tsa());
+        factory.setFieldTypes(clsBitOr, tsa());
+        factory.setFieldTypes(clsBitXor, tsa());
+        factory.setFieldTypes(clsBitAnd, tsa());
+        factory.setFieldTypes(clsFloorDiv, tsa());
+        factory.setFieldTypes(clsInvert, tsa());
+        factory.setFieldTypes(clsNot, tsa());
+        factory.setFieldTypes(clsUAdd, tsa());
+        factory.setFieldTypes(clsUSub, tsa());
+        factory.setFieldTypes(clsEq, tsa());
+        factory.setFieldTypes(clsNotEq, tsa());
+        factory.setFieldTypes(clsLt, tsa());
+        factory.setFieldTypes(clsLtE, tsa());
+        factory.setFieldTypes(clsGt, tsa());
+        factory.setFieldTypes(clsGtE, tsa());
+        factory.setFieldTypes(clsIs, tsa());
+        factory.setFieldTypes(clsIsNot, tsa());
+        factory.setFieldTypes(clsIn, tsa());
+        factory.setFieldTypes(clsNotIn, tsa());
+        factory.setFieldTypes(clsComprehensionTy, tsa(T_F_TARGET, T_F_ITER, T_F_IFS, T_F_IS_ASYNC), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(PythonBuiltinClassType.PInt, false, false));
+        factory.setFieldTypes(clsExceptHandler, tsa(T_F_TYPE, T_F_NAME, T_F_BODY), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(PythonBuiltinClassType.PString, false, true), factory.makeFieldType(clsStmtTy, true, false));
+        factory.setFieldTypes(clsArgumentsTy, tsa(T_F_POSONLYARGS, T_F_ARGS, T_F_VARARG, T_F_KWONLYARGS, T_F_KW_DEFAULTS, T_F_KWARG, T_F_DEFAULTS), factory.makeFieldType(clsArgTy, true, false), factory.makeFieldType(clsArgTy, true, false), factory.makeFieldType(clsArgTy, false, true), factory.makeFieldType(clsArgTy, true, false), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsArgTy, false, true), factory.makeFieldType(clsExprTy, true, false));
+        factory.setFieldTypes(clsArgTy, tsa(T_F_ARG, T_F_ANNOTATION, T_F_TYPE_COMMENT), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsKeywordTy, tsa(T_F_ARG, T_F_VALUE), factory.makeFieldType(PythonBuiltinClassType.PString, false, true), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsAliasTy, tsa(T_F_NAME, T_F_ASNAME), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsWithItemTy, tsa(T_F_CONTEXT_EXPR, T_F_OPTIONAL_VARS), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsExprTy, false, true));
+        factory.setFieldTypes(clsMatchCaseTy, tsa(T_F_PATTERN, T_F_GUARD, T_F_BODY), factory.makeFieldType(clsPatternTy, false, false), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(clsStmtTy, true, false));
+        factory.setFieldTypes(clsMatchValue, tsa(T_F_VALUE), factory.makeFieldType(clsExprTy, false, false));
+        factory.setFieldTypes(clsMatchSingleton, tsa(T_F_VALUE), factory.makeFieldType(PythonBuiltinClassType.PythonObject, false, false));
+        factory.setFieldTypes(clsMatchSequence, tsa(T_F_PATTERNS), factory.makeFieldType(clsPatternTy, true, false));
+        factory.setFieldTypes(clsMatchMapping, tsa(T_F_KEYS, T_F_PATTERNS, T_F_REST), factory.makeFieldType(clsExprTy, true, false), factory.makeFieldType(clsPatternTy, true, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsMatchClass, tsa(T_F_CLS, T_F_PATTERNS, T_F_KWD_ATTRS, T_F_KWD_PATTERNS), factory.makeFieldType(clsExprTy, false, false), factory.makeFieldType(clsPatternTy, true, false), factory.makeFieldType(PythonBuiltinClassType.PString, true, false), factory.makeFieldType(clsPatternTy, true, false));
+        factory.setFieldTypes(clsMatchStar, tsa(T_F_NAME), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsMatchAs, tsa(T_F_PATTERN, T_F_NAME), factory.makeFieldType(clsPatternTy, false, true), factory.makeFieldType(PythonBuiltinClassType.PString, false, true));
+        factory.setFieldTypes(clsMatchOr, tsa(T_F_PATTERNS), factory.makeFieldType(clsPatternTy, true, false));
+        factory.setFieldTypes(clsTypeIgnore, tsa(T_F_LINENO, T_F_TAG), factory.makeFieldType(PythonBuiltinClassType.PInt, false, false), factory.makeFieldType(PythonBuiltinClassType.PString, false, false));
+        factory.setFieldTypes(clsTypeVar, tsa(T_F_NAME, T_F_BOUND, T_F_DEFAULT_VALUE), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(clsExprTy, false, true), factory.makeFieldType(clsExprTy, false, true));
+        factory.setFieldTypes(clsParamSpec, tsa(T_F_NAME, T_F_DEFAULT_VALUE), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(clsExprTy, false, true));
+        factory.setFieldTypes(clsTypeVarTuple, tsa(T_F_NAME, T_F_DEFAULT_VALUE), factory.makeFieldType(PythonBuiltinClassType.PString, false, false), factory.makeFieldType(clsExprTy, false, true));
     }
 
     private static TruffleString ts(String s) {

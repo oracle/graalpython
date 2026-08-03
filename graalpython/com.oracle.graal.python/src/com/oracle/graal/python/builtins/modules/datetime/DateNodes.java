@@ -71,6 +71,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -177,13 +178,31 @@ public class DateNodes {
         }
     }
 
-    public abstract static class SubclassNewNode {
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class SubclassNewNode extends Node {
+
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject);
+
         public static Object executeUncached(Object cls, Object yearObject, Object monthObject, Object dayObject) {
-            if (PGuards.isBuiltinClass(cls, PythonBuiltinClassType.PDate)) {
-                return NewNode.executeUncached(cls, yearObject, monthObject, dayObject);
-            } else {
-                return CallNode.executeUncached(cls, yearObject, monthObject, dayObject);
-            }
+            return DateNodesFactory.SubclassNewNodeGen.getUncached().execute(null, null, cls, yearObject, monthObject, dayObject);
+        }
+
+        @Specialization(guards = {"isBuiltinClass(cls)"})
+        static Object newDateBuiltin(VirtualFrame frame, Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject,
+                        @Cached NewNode newNode) {
+            return newNode.execute(frame, inliningTarget, cls, yearObject, monthObject, dayObject);
+        }
+
+        @Fallback
+        static Object newDateGeneric(VirtualFrame frame, Object cls, Object yearObject, Object monthObject, Object dayObject,
+                        @Cached CallNode callNode) {
+            return callNode.execute(frame, cls, yearObject, monthObject, dayObject);
+        }
+
+        static boolean isBuiltinClass(Object cls) {
+            return PGuards.isBuiltinClass(cls, PythonBuiltinClassType.PDate);
         }
     }
 

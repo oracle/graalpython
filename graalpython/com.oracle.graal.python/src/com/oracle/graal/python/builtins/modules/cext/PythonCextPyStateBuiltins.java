@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -91,6 +90,22 @@ public final class PythonCextPyStateBuiltins {
     @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
     static int GraalPyPrivate_GILState_Check() {
         return PythonContext.get(null).ownsGil() ? 1 : 0;
+    }
+
+    /*
+     * GraalPy associates one native thread state with each Java thread and considers it current
+     * exactly while that thread owns the GIL. Therefore, within GraalPy's thread-state model,
+     * swapping out the current state is equivalent to PyEval_SaveThread() and swapping a non-null
+     * state back in is equivalent to PyEval_RestoreThread(). Unlike CPython, GraalPy cannot install
+     * an arbitrary native thread-state pointer independently of the Java thread state.
+     */
+    @CApiBuiltin(ret = PyThreadState, args = {PyThreadState}, acquireGil = false, call = Direct)
+    static long PyThreadState_Swap(long newThreadState) {
+        long oldThreadState = PythonContext.get(null).ownsGil() ? PythonCextCEvalBuiltins.PyEval_SaveThread() : NULLPTR;
+        if (newThreadState != NULLPTR) {
+            PythonCextCEvalBuiltins.PyEval_RestoreThread(newThreadState);
+        }
+        return oldThreadState;
     }
 
     @CApiBuiltin(ret = Int, args = {}, acquireGil = false, call = Ignored)
@@ -170,7 +185,7 @@ public final class PythonCextPyStateBuiltins {
         @TruffleBoundary
         int doIt(long id, Object exceptionObject) {
             for (Thread thread : getContext().getThreads()) {
-                if (PThread.getThreadId(thread) == id) {
+                if (thread.threadId() == id) {
                     if (PGuards.isNoValue(exceptionObject)) {
                         LOGGER.warning("The application used PyThreadState_SetAsyncExc to clear an exception on another thread. " +
                                         "This is not supported and ignored by GraalPy.");

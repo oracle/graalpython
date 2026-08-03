@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import struct
+import sys
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, CPyExtType, unhandled_error_compare
 
@@ -123,6 +124,30 @@ def _reference_asvoidptr_roundtrip(args):
     if n < 0:
         return _reference_fromvoidptr(args)
     return n
+
+
+def _reference_from_native_bytes(args):
+    data, flags = args
+    if flags == -1 or flags & 2:
+        byteorder = sys.byteorder
+    else:
+        byteorder = 'little' if flags & 1 else 'big'
+    signed = flags == -1 or not flags & 4
+    return int.from_bytes(data, byteorder, signed=signed)
+
+
+def _reference_as_native_bytes(args):
+    value, size, flags, expected_size = args
+    if flags == -1 or flags & 2:
+        byteorder = sys.byteorder
+    else:
+        byteorder = 'little' if flags & 1 else 'big'
+    if size:
+        value %= 1 << (size * 8)
+        data = value.to_bytes(size, byteorder)
+    else:
+        data = b''
+    return expected_size, data + b'\xa5'
 
 
 def _reference_fromlong(args):
@@ -226,7 +251,7 @@ class TestPyLong(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test__PyLong_AsInt = CPyExtFunction(
+    test_PyLong_AsInt = CPyExtFunction(
         _reference_as_int,
         _int_examples,
         resultspec="l",
@@ -575,7 +600,7 @@ class TestPyLong(CPyExtTestCase):
             memset(buf, 0x33, n + 1);
             PyObject* result;
             Py_INCREF(object);
-            if (_PyLong_AsByteArray((PyLongObject*) object, buf, n, little_endian, is_signed)) {
+            if (_PyLong_AsByteArray((PyLongObject*) object, buf, n, little_endian, is_signed, 1)) {
                 Py_DECREF(object);
                 return NULL;
             }
@@ -659,6 +684,72 @@ class TestPyLong(CPyExtTestCase):
         resultspec="O",
         argspec="y#ii",
         arguments=["const char* bytes", "Py_ssize_t size", "int little_endian", "int is_signed"],
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyLong_FromNativeBytes = CPyExtFunction(
+        _reference_from_native_bytes,
+        lambda: (
+            (b'', 0),
+            (b'\x00', 0),
+            (b'\xff', 0),
+            (b'\xff', 4),
+            (b'\x80\x00', 0),
+            (b'\x80\x00', 1),
+            (b'\x00\x80', 1),
+            (b'\xff\x00', -1),
+            (b'\xff\x00', 2),
+            (b'\xff\x00', 3),
+            (b'\x01\x23\x45\x67\x89\xab\xcd\xef\x01', 0),
+        ),
+        resultspec="O",
+        argspec="y#i",
+        arguments=["const char* buffer", "Py_ssize_t size", "int flags"],
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyLong_AsNativeBytes = CPyExtFunction(
+        _reference_as_native_bytes,
+        lambda: (
+            (0, 0, -1, struct.calcsize('n')),
+            (4, 2, 0, 2),
+            (4, 2, 1, 2),
+            (-42, 2, 0, 2),
+            (-42, 2, 1, 2),
+            (255, 1, 0, 2),
+            (255, 1, 4, 1),
+            (256, 1, 0, struct.calcsize('n')),
+            (-256, 1, 0, struct.calcsize('n')),
+            (2**63, 8, 0, 9),
+            (2**63, 8, 4, 8),
+            (-2**63, 8, 0, 8),
+            (2**255, 32, 0, 33),
+            (-(2**255), 32, 0, 32),
+            (0x123456, 3, -1, 3),
+            (0x123456, 3, 2, 3),
+        ),
+        code='''PyObject* wrap_PyLong_AsNativeBytes(PyObject* value, Py_ssize_t size, int flags, int unused) {
+            unsigned char* buffer = PyMem_Malloc(size + 1);
+            if (buffer == NULL) {
+                return PyErr_NoMemory();
+            }
+            memset(buffer, 0xa5, size + 1);
+            Py_ssize_t result = PyLong_AsNativeBytes(value, buffer, size, flags);
+            if (result < 0) {
+                PyMem_Free(buffer);
+                return NULL;
+            }
+            PyObject* bytes = PyBytes_FromStringAndSize((const char*)buffer, size + 1);
+            PyMem_Free(buffer);
+            if (bytes == NULL) {
+                return NULL;
+            }
+            return Py_BuildValue("nN", result, bytes);
+        }''',
+        callfunction="wrap_PyLong_AsNativeBytes",
+        resultspec="O",
+        argspec="Onii",
+        arguments=["PyObject* value", "Py_ssize_t size", "int flags", "int unused"],
         cmpfunc=unhandled_error_compare,
     )
 

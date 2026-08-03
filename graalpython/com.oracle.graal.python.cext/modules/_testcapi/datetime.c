@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -27,10 +27,17 @@ test_datetime_capi(PyObject *self, PyObject *args)
     test_run_counter++;
     PyDateTime_IMPORT;
 
-    if (PyDateTimeAPI) {
-        Py_RETURN_NONE;
+    if (PyDateTimeAPI == NULL) {
+        return NULL;
     }
-    return NULL;
+    // The following C API types need to outlive interpreters, since the
+    // borrowed references to them can be held by users without being updated.
+    assert(!PyType_HasFeature(PyDateTimeAPI->DateType, Py_TPFLAGS_HEAPTYPE));
+    assert(!PyType_HasFeature(PyDateTimeAPI->TimeType, Py_TPFLAGS_HEAPTYPE));
+    assert(!PyType_HasFeature(PyDateTimeAPI->DateTimeType, Py_TPFLAGS_HEAPTYPE));
+    assert(!PyType_HasFeature(PyDateTimeAPI->DeltaType, Py_TPFLAGS_HEAPTYPE));
+    assert(!PyType_HasFeature(PyDateTimeAPI->TZInfoType, Py_TPFLAGS_HEAPTYPE));
+    Py_RETURN_NONE;
 }
 
 /* Functions exposing the C API type checking for testing */
@@ -483,4 +490,39 @@ _PyTestCapi_Init_DateTime(PyObject *mod)
         return -1;
     }
     return 0;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * Test module for subinterpreters.
+ */
+
+static int
+_testcapi_datetime_exec(PyObject *mod)
+{
+    if (test_datetime_capi(NULL, NULL) == NULL)  {
+        return -1;
+    }
+    return 0;
+}
+
+static PyModuleDef_Slot _testcapi_datetime_slots[] = {
+    {Py_mod_exec, _testcapi_datetime_exec},
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+    {0, NULL},
+};
+
+static struct PyModuleDef _testcapi_datetime_module = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "_testcapi_datetime",
+    .m_size = 0,
+    .m_methods = test_methods,
+    .m_slots = _testcapi_datetime_slots,
+};
+
+PyMODINIT_FUNC
+PyInit__testcapi_datetime(void)
+{
+    return PyModuleDef_Init(&_testcapi_datetime_module);
 }

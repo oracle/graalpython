@@ -83,16 +83,19 @@ int main(int argc, char *argv[]) {
 
 TMPDIR = tempfile.TemporaryDirectory()
 RUNNER_EXE = None
+BENCHMARK_FILE = None
 ORIG_ARGV = None
 
 
-def setup():
-    global RUNNER_EXE
+def setup(code):
+    global RUNNER_EXE, BENCHMARK_FILE
     tmpdir = Path(TMPDIR.name)
     runner_c = tmpdir / 'runner.c'
     runner_c.write_text(RUNNER_CODE)
     RUNNER_EXE = tmpdir / 'runner'
     subprocess.check_call([os.environ.get('CC', 'gcc'), runner_c, '-O2', '-o', RUNNER_EXE])
+    BENCHMARK_FILE = tmpdir / 'benchmark.py'
+    BENCHMARK_FILE.write_text(code)
 
     global ORIG_ARGV
     ORIG_ARGV = sys.orig_argv
@@ -110,7 +113,7 @@ def teardown():
     TMPDIR.cleanup()
 
 
-def run(num, code):
+def run(num):
     subprocess.check_call([
         str(RUNNER_EXE),
         str(num),
@@ -119,6 +122,5 @@ def run(num, code):
         "-S",  # do not import site
         "-B",  # do not attempt to write pyc files
         "-u",  # do not add buffering wrappers around output streams
-        "-c",
-        code
+        str(BENCHMARK_FILE),
     ])

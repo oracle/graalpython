@@ -1191,7 +1191,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     private void evalNonInteractive(Context context, ConsoleHandler consoleHandler) throws IOException {
         Source src;
         if (commandString != null) {
-            src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
+            src = Source.newBuilder(getLanguageId(), commandString, "<string>").option("python.RegisterSource", "true").build();
         } else {
             // the path is passed through a context option, may be empty when running from stdin
             src = Source.newBuilder(getLanguageId(), "__graalpython__.run_path()", "<internal>").internal(true).option("python.NoPythonFrame", "true").build();
@@ -1334,7 +1334,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     StringBuilder sb = new StringBuilder(input).append('\n');
                     while (true) { // processing subsequent lines while input is incomplete
                         try {
-                            context.eval(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).buildLiteral());
+                            context.eval(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).option("python.RegisterSource", "true").buildLiteral());
                             flushInteractiveOutput(sysModule);
                         } catch (PolyglotException e) {
                             if (ps2 == null) {
@@ -1355,7 +1355,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                         // added to find out if there is continuation exception or
                                         // other error. If there is other error, we have to stop
                                         // to ask for additional input.
-                                        context.parse(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).buildLiteral());
+                                        context.parse(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).option("python.RegisterSource", "true").buildLiteral());
                                         e = null;   // the parsing was ok -> try to eval
                                                     // the code in outer while loop
                                         isIncompleteCode = false;

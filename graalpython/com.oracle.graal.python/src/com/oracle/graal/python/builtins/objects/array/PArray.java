@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,10 +26,8 @@
 package com.oracle.graal.python.builtins.objects.array;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
-import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_U;
 import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_W;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteOrder;
@@ -104,7 +102,7 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage(name = "getFormatString")
     public TruffleString getFormatStringForBuffer() {
-        if (T_UNICODE_TYPE_CODE_U.equalsUncached(formatString, TS_ENCODING)) {
+        if (format == BufferFormat.UNICODE_U) {
             return T_UNICODE_TYPE_CODE_W;
         }
         return formatString;
@@ -169,11 +167,11 @@ public final class PArray extends PythonBuiltinObject {
         IEEE_754_FLOAT_BE(15, BufferFormat.FLOAT, ByteOrder.BIG_ENDIAN),
         IEEE_754_DOUBLE_LE(16, BufferFormat.DOUBLE, ByteOrder.LITTLE_ENDIAN),
         IEEE_754_DOUBLE_BE(17, BufferFormat.DOUBLE, ByteOrder.BIG_ENDIAN),
-        UTF32_LE(20, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN, tsLiteral("utf-32-le")),
-        UTF32_BE(21, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN, tsLiteral("utf-32-be")),
-        // These two need to come after UTF32, so that forFormat doesn't pick them for UNICODE
-        UTF16_LE(18, BufferFormat.UNICODE, ByteOrder.LITTLE_ENDIAN, tsLiteral("utf-16-le")),
-        UTF16_BE(19, BufferFormat.UNICODE, ByteOrder.BIG_ENDIAN, tsLiteral("utf-16-be"));
+        UTF32_LE(20, BufferFormat.UNICODE_W, ByteOrder.LITTLE_ENDIAN, tsLiteral("utf-32-le")),
+        UTF32_BE(21, BufferFormat.UNICODE_W, ByteOrder.BIG_ENDIAN, tsLiteral("utf-32-be")),
+        // These two need to come after UTF32, so that forFormat doesn't pick them for Unicode
+        UTF16_LE(18, BufferFormat.UNICODE_W, ByteOrder.LITTLE_ENDIAN, tsLiteral("utf-16-le")),
+        UTF16_BE(19, BufferFormat.UNICODE_W, ByteOrder.BIG_ENDIAN, tsLiteral("utf-16-be"));
 
         public final int code;
         public final BufferFormat format;
@@ -208,6 +206,9 @@ public final class PArray extends PythonBuiltinObject {
         }
 
         public static MachineFormat forFormat(BufferFormat format) {
+            if (BufferFormat.isUnicode(format)) {
+                return BY_BUFFER_FORMAT[BufferFormat.UNICODE_W.ordinal()];
+            }
             return BY_BUFFER_FORMAT[format.ordinal()];
         }
 

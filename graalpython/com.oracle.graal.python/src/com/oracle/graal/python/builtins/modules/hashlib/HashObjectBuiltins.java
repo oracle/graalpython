@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,17 +48,17 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTpNameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -76,12 +76,13 @@ public final class HashObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static TruffleString repr(VirtualFrame frame, DigestObject self,
+        static TruffleString repr(DigestObject self,
                         @Bind Node inliningTarget,
-                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetTpNameNode getTpNameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString fqcn = getFullyQualifiedClassNameNode.execute(frame, inliningTarget, self);
-            return simpleTruffleStringFormatNode.format("<%s %s object @ 0x%s>", self.getAlgorithm(), fqcn, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
+            TruffleString tpName = getTpNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self));
+            return simpleTruffleStringFormatNode.format("<%s %s object @ 0x%s>", self.getAlgorithm(), tpName, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
         }
     }
 }

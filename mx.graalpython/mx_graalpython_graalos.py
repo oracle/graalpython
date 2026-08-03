@@ -193,8 +193,10 @@ def _ensure_graalos_runtime_inputs(runtime_home: Path, on_fail=mx.abort):
 
 
 def _prepare_graalos_demo(standalone_home: Path, env):
+    from mx_graalpython import PYTHON_VERSION_MAJ_MIN
+
     demo_wheels = standalone_home / "demo-wheels"
-    site_packages = standalone_home / "lib" / "python3.12" / "site-packages"
+    site_packages = standalone_home / "lib" / f"python{PYTHON_VERSION_MAJ_MIN}" / "site-packages"
     demo_wheels.mkdir(parents=True, exist_ok=True)
     site_packages.mkdir(parents=True, exist_ok=True)
 
@@ -202,7 +204,7 @@ def _prepare_graalos_demo(standalone_home: Path, env):
         sys.executable, "-m", "pip", "download",
         "--only-binary=:all:",
         "--implementation", "py",
-        "--python-version", "3.12",
+        "--python-version", PYTHON_VERSION_MAJ_MIN,
         "--abi", "none",
         "--platform", "any",
         "--dest", str(demo_wheels),

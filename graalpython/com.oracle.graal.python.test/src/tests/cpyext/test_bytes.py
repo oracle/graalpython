@@ -195,11 +195,16 @@ class TestPyBytes(CPyExtTestCase):
             PyObject *from_size = PyBytes_FromStringAndSize("x", 1);
             PyObject *from_null = PyBytes_FromStringAndSize(NULL, 1);
             PyObject *resize_cached = PyBytes_FromString("x");
+            PyObject *resize_cached_larger = PyBytes_FromString("x");
 
             int from_string_uses_cache = from_string != NULL && from_string == from_size;
             int from_null_is_fresh = from_null != NULL && from_null != from_size;
-            int resize_cached_rejected = _PyBytes_Resize(&resize_cached, 0) < 0;
-            if (resize_cached_rejected) {
+            int resize_cached_ok = _PyBytes_Resize(&resize_cached, 0) == 0;
+            if (!resize_cached_ok) {
+                PyErr_Clear();
+            }
+            int resize_cached_larger_ok = _PyBytes_Resize(&resize_cached_larger, 2) == 0;
+            if (!resize_cached_larger_ok) {
                 PyErr_Clear();
             }
             int resize_fresh_ok = _PyBytes_Resize(&from_null, 0) == 0;
@@ -210,7 +215,13 @@ class TestPyBytes(CPyExtTestCase):
             int result = all_from_size_cached &&
                          from_string_uses_cache &&
                          from_null_is_fresh &&
-                         resize_cached_rejected &&
+                         resize_cached_ok &&
+                         resize_cached != NULL &&
+                         PyBytes_GET_SIZE(resize_cached) == 0 &&
+                         resize_cached_larger_ok &&
+                         resize_cached_larger != NULL &&
+                         PyBytes_GET_SIZE(resize_cached_larger) == 2 &&
+                         PyBytes_AS_STRING(resize_cached_larger)[0] == 'x' &&
                          resize_fresh_ok &&
                          from_null != NULL &&
                          PyBytes_GET_SIZE(from_null) == 0;
@@ -219,6 +230,7 @@ class TestPyBytes(CPyExtTestCase):
             Py_XDECREF(from_size);
             Py_XDECREF(from_null);
             Py_XDECREF(resize_cached);
+            Py_XDECREF(resize_cached_larger);
             return result;
         }
         """,
@@ -388,7 +400,7 @@ class TestPyBytes(CPyExtTestCase):
         argspec="sssi",
         arguments=["char* fmt", "char* arg0", "char* arg1", "int arg2"],
     )
-    
+
     # PyBytes_FromObject
     test_PyBytes_FromObject = CPyExtFunction(
         _reference_from_object,
@@ -406,7 +418,7 @@ class TestPyBytes(CPyExtTestCase):
 
     # PyBytes_Concat
     test_PyBytes_Concat = CPyExtFunctionOutVars(
-        lambda args: (0, args[0] + args[1]),        
+        lambda args: (0, args[0] + args[1]),
         lambda: tuple([tuple(["hello".encode(), " world".encode()])]),
         code='''int wrap_PyBytes_Concat(PyObject** arg0, PyObject* arg1) {
             if(*arg0) {
@@ -520,9 +532,9 @@ class TestPyBytes(CPyExtTestCase):
 
     test__PyBytes_Join = CPyExtFunction(
         lambda args: args[0].join(args[1]),
-        lambda: ( 
+        lambda: (
             (b"hello", b"world"),
-        ),        
+        ),
         resultspec="O",
         argspec="OO",
         arguments=["PyObject* original", "PyObject* newPart"],
@@ -536,17 +548,17 @@ class TestPyBytes(CPyExtTestCase):
         ),
         code="""
         #include <stdio.h>
-        
+
         /* Copies content from 'smaller' to 'larger_content' and returns a pointer to the last char. */
         static char* do_pointer_arithmetics(char* larger_content, PyObject* smaller) {
             char* smaller_content = PyBytes_AS_STRING(smaller);
             Py_ssize_t smaller_len = PyBytes_Size(smaller);
-            
+
             // 'smaller_len + 1' also contains the null byte
             memcpy(larger_content, smaller_content, smaller_len + 1);
             return larger_content + smaller_len;
         }
-        
+
         PyObject* resize_bytes(PyObject* larger, PyObject* smaller) {
             char* data;
             char* dummy;
@@ -554,27 +566,27 @@ class TestPyBytes(CPyExtTestCase):
             Py_ssize_t len;
             Py_ssize_t new_len;
             PyObject* larger_copy;
-            
+
             Py_INCREF(larger);
             Py_INCREF(smaller);
-            
+
             /* we need to create a fresh bytes object */
             larger_copy = PyBytes_FromString(PyBytes_AsString(larger));
             Py_DECREF(larger);
-            
+
             len = PyBytes_Size(larger_copy) + 1;
-            
+
             dummy = (char*) calloc(len, sizeof(char));
             data = PyBytes_AS_STRING(larger_copy);
-            
+
             /* this will force the bytes object's content to native */
             snprintf(data, len, "%s", dummy);
             free(dummy);
-            
+
             /* copy smaller data and return the pointer to the last char */
             end_ptr = do_pointer_arithmetics(data, smaller);
             Py_DECREF(smaller);
-            
+
             /* compute new size */
             new_len = (Py_ssize_t) (end_ptr - PyBytes_AS_STRING(larger_copy));
             _PyBytes_Resize(&larger_copy, new_len);
@@ -620,9 +632,9 @@ class TestPyBytes(CPyExtTestCase):
             Py_DECREF(ret);
             Py_INCREF(bytes);
             return bytes;
-        error_release: 
+        error_release:
             PyBuffer_Release(&buffer);
-            return NULL;            
+            return NULL;
         }
         """,
         resultspec="O",
@@ -741,7 +753,7 @@ class ObjectTests(unittest.TestCase):
                 return PyBuffer_FillInfo(view, (PyObject*)self, buf, 4, 1, flags);
             }
             void releasebuffer(TestMemoryViewBufferPickleObject *self, Py_buffer *view) {}
-            
+
             static PyBufferProcs as_buffer = {
                 (getbufferproc)getbuffer,
                 (releasebufferproc)releasebuffer,

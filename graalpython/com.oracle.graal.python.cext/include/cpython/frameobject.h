@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -37,3 +37,9 @@ PyAPI_FUNC(void) PyFrame_FastToLocals(PyFrameObject *);
 PyAPI_FUNC(void) GraalPyFrame_SetLineNumber(PyFrameObject *, int);
 // Deprecated alias used by current Cython, remove in 27.0
 #define _PyFrame_SetLineNumber GraalPyFrame_SetLineNumber
+
+
+typedef struct {
+    PyObject_HEAD
+    PyFrameObject* frame;
+} PyFrameLocalsProxyObject;

@@ -311,7 +311,7 @@ class TestIsInstanceIsSubclass(unittest.TestCase):
             @property
             def __bases__(self):
                 return self.__bases__
-        with support.infinite_recursion():
+        with support.infinite_recursion(25):
             self.assertRaises(RecursionError, issubclass, X(), int)
             self.assertRaises(RecursionError, issubclass, int, X())
             self.assertRaises(RecursionError, isinstance, 1, X())
@@ -345,7 +345,7 @@ class TestIsInstanceIsSubclass(unittest.TestCase):
                     pass
                 A.__getattr__ = B.__getattr__ = X.__getattr__
                 return (A(), B())
-        with support.infinite_recursion():
+        with support.infinite_recursion(25):
             self.assertRaises(RecursionError, issubclass, X(), int)
 
 
@@ -353,8 +353,7 @@ def blowstack(fxn, arg, compare_to):
     # Make sure that calling isinstance with a deeply nested tuple for its
     # argument will raise RecursionError eventually.
     tuple_arg = (compare_to,)
-    # TODO: GR-23749 revert back when truffle support is in
-    for cnt in range(10000000 if sys.implementation.name == "graalpy" else (support.C_RECURSION_LIMIT * 2)):
+    for cnt in range(support.exceeds_recursion_limit()):
         tuple_arg = (tuple_arg,)
         fxn(arg, tuple_arg)
 

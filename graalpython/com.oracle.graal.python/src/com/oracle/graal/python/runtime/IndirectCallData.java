@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -132,6 +132,9 @@ public abstract class IndirectCallData {
 
         @TruffleBoundary
         public void updateCallerFlags(int newFlags) {
+            if ((newFlags & CallerFlags.NEEDS_MATERIALIZED_LOCALS) != 0) {
+                newFlags |= CallerFlags.NEEDS_LOCALS;
+            }
             if ((newFlags & (CallerFlags.NEEDS_LOCALS | CallerFlags.NEEDS_LASTI)) != 0) {
                 newFlags |= CallerFlags.NEEDS_PFRAME;
             }

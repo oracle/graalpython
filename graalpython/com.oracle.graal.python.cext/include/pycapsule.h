@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -55,7 +55,6 @@ PyAPI_FUNC(int) PyCapsule_SetContext(PyObject *capsule, void *context);
 PyAPI_FUNC(void *) PyCapsule_Import(
     const char *name,           /* UTF-8 encoded string */
     int no_block);
-
 
 #ifdef __cplusplus
 }

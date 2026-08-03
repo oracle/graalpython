@@ -760,7 +760,7 @@ public final class ErrorHandlers {
     @GenerateInline
     @GenerateCached(false)
     abstract static class GetStandardEncodingNode extends Node {
-        private static final TruffleString T_CP_UTF8 = tsLiteral("CP_UTF8");
+        private static final TruffleString T_CP65001 = tsLiteral("cp65001");
 
         abstract StandardEncoding execute(Node inliningTarget, TruffleString encoding);
 
@@ -799,7 +799,7 @@ public final class ErrorHandlers {
                 if (encoding[pos] == '3' && encoding[pos + 1] == '2') {
                     return handleUtf16Or32(encoding, pos + 2, StandardEncoding.UTF32LE, StandardEncoding.UTF32BE);
                 }
-            } else if (equalNode.execute(encodingName, T_CP_UTF8, TS_ENCODING)) {
+            } else if (equalNode.execute(encodingName, T_CP65001, TS_ENCODING)) {
                 return StandardEncoding.UTF8;
             }
             return StandardEncoding.UNKNOWN;

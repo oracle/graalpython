@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -10,7 +10,7 @@ import sys
 import textwrap
 import token
 import tokenize
-from typing import IO, Any, Dict, Final, Optional, Type, cast
+from typing import IO, Any, Final, cast
 
 from pegen.build import compile_c_extension
 from pegen.c_generator import CParserGenerator
@@ -27,21 +27,21 @@ NON_EXACT_TOKENS = {
 }
 
 
-def generate_parser(grammar: Grammar) -> Type[Parser]:
+def generate_parser(grammar: Grammar) -> type[Parser]:
     # Generate a parser.
     out = io.StringIO()
     genr = PythonParserGenerator(grammar, out)
     genr.generate("<string>")
 
     # Load the generated parser class.
-    ns: Dict[str, Any] = {}
+    ns: dict[str, Any] = {}
     exec(out.getvalue(), ns)
     return ns["GeneratedParser"]
 
 
-def run_parser(file: IO[bytes], parser_class: Type[Parser], *, verbose: bool = False) -> Any:
+def run_parser(file: IO[bytes], parser_class: type[Parser], *, verbose: bool = False) -> Any:
     # Run a parser on a file (stream).
-    tokenizer = Tokenizer(tokenize.generate_tokens(file.readline))  # type: ignore # typeshed issue #3515
+    tokenizer = Tokenizer(tokenize.generate_tokens(file.readline))  # type: ignore[arg-type] # typeshed issue #3515
     parser = parser_class(tokenizer, verbose=verbose)
     result = parser.start()
     if result is None:
@@ -50,16 +50,16 @@ def run_parser(file: IO[bytes], parser_class: Type[Parser], *, verbose: bool = F
 
 
 def parse_string(
-    source: str, parser_class: Type[Parser], *, dedent: bool = True, verbose: bool = False
+    source: str, parser_class: type[Parser], *, dedent: bool = True, verbose: bool = False
 ) -> Any:
     # Run the parser on a string.
     if dedent:
         source = textwrap.dedent(source)
     file = io.StringIO(source)
-    return run_parser(file, parser_class, verbose=verbose)  # type: ignore # typeshed issue #3515
+    return run_parser(file, parser_class, verbose=verbose)  # type: ignore[arg-type] # typeshed issue #3515
 
 
-def make_parser(source: str) -> Type[Parser]:
+def make_parser(source: str) -> type[Parser]:
     # Combine parse_string() and generate_parser().
     grammar = parse_string(source, GrammarParser)
     return generate_parser(grammar)
@@ -87,8 +87,10 @@ def generate_c_parser_source(grammar: Grammar) -> str:
 
 
 def generate_parser_c_extension(
-    grammar: Grammar, path: pathlib.PurePath, debug: bool = False,
-    library_dir: Optional[str] = None,
+    grammar: Grammar,
+    path: pathlib.PurePath,
+    debug: bool = False,
+    library_dir: str | None = None,
 ) -> Any:
     """Generate a parser c extension for the given grammar in the given path
 
@@ -116,9 +118,9 @@ def generate_parser_c_extension(
 
 
 def print_memstats() -> bool:
-    MiB: Final = 2 ** 20
+    MiB: Final = 2**20
     try:
-        import psutil  # type: ignore
+        import psutil
     except ImportError:
         return False
     print("Memory stats:")

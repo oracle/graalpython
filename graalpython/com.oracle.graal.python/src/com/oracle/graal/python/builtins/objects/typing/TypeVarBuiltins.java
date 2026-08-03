@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -104,12 +104,13 @@ public final class TypeVarBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(name = J_TYPE_VAR, minNumOfPositionalArgs = 2, takesVarArgs = true, parameterNames = {"$cls", "name"}, keywordOnlyNames = {"bound", "covariant",
+    @SlotSignature(name = J_TYPE_VAR, minNumOfPositionalArgs = 2, takesVarArgs = true, parameterNames = {"$cls", "name"}, keywordOnlyNames = {"bound", "default", "covariant",
                     "contravariant", "infer_variance"}, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "covariant", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "contravariant", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "infer_variance", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @ArgumentClinic(name = "default", defaultValue = "PNoDefault.NO_DEFAULT")
     @GenerateNodeFactory
     abstract static class TypeVarNode extends PythonClinicBuiltinNode {
 
@@ -119,7 +120,8 @@ public final class TypeVarBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PTypeVar newTypeVar(VirtualFrame frame, Object cls, TruffleString name, Object[] constraints, Object bound, boolean covariant, boolean contravariant, boolean inferVariance,
+        static PTypeVar newTypeVar(VirtualFrame frame, Object cls, TruffleString name, Object[] constraints, Object bound, Object defaultValue, boolean covariant, boolean contravariant,
+                        boolean inferVariance,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CheckBoundNode checkBoundNode,
@@ -150,6 +152,7 @@ public final class TypeVarBuiltins extends PythonBuiltins {
             Object module = callerNode.execute(frame, inliningTarget);
 
             PTypeVar result = PFactory.createTypeVar(cls, getInstanceShape.execute(cls), name, boundChecked, null, constraintsTuple, null, covariant, contravariant, inferVariance);
+            result.defaultValue = defaultValue;
             setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
             return result;
         }
@@ -224,6 +227,33 @@ public final class TypeVarBuiltins extends PythonBuiltins {
             self.constraints = callNode.execute(frame, self.evaluateConstraints);
             self.evaluateConstraints = null;
             return self.constraints;
+        }
+    }
+
+    @Builtin(name = "__default__", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetDefaultNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "self.defaultValue != null")
+        static Object doEvaluated(PTypeVar self) {
+            return self.defaultValue;
+        }
+
+        @Specialization(guards = "self.defaultValue == null")
+        static Object doEvaluate(VirtualFrame frame, PTypeVar self,
+                        @Cached CallNode callNode) {
+            assert self.evaluateDefault != null;
+            self.defaultValue = callNode.execute(frame, self.evaluateDefault);
+            self.evaluateDefault = null;
+            return self.defaultValue;
+        }
+    }
+
+    @Builtin(name = "has_default", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class HasDefaultNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static boolean hasDefault(PTypeVar self) {
+            return self.evaluateDefault != null || self.defaultValue != PNoDefault.NO_DEFAULT;
         }
     }
 

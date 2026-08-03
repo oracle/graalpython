@@ -89,7 +89,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         addBuiltinConstant("CODESIZE", 4);
-        addBuiltinConstant("MAGIC", 20221023);
+        addBuiltinConstant("MAGIC", 20230612);
         addBuiltinConstant("MAXREPEAT", 4294967295L);
         addBuiltinConstant("MAXGROUPS", 2147483647);
 

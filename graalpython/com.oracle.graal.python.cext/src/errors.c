@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -20,16 +20,10 @@
 #include "pycore_traceback.h"     // _PyTraceBack_FromFrame()
 #endif // GraalPy change
 
-#include <ctype.h>
 #ifdef MS_WINDOWS
 #  include <windows.h>
 #  include <winbase.h>
 #  include <stdlib.h>             // _sys_nerr
-#endif
-
-
-#ifdef __cplusplus
-extern "C" {
 #endif
 
 /* Forward declarations */
@@ -140,11 +134,11 @@ _PyErr_GetTopmostException(PyThreadState *tstate)
     _PyErr_StackItem *exc_info = tstate->exc_info;
     assert(exc_info);
 
-    while ((exc_info->exc_value == NULL || exc_info->exc_value == Py_None) &&
-           exc_info->previous_item != NULL)
+    while (exc_info->exc_value == NULL && exc_info->previous_item != NULL)
     {
         exc_info = exc_info->previous_item;
     }
+    assert(!Py_IsNone(exc_info->exc_value));
     return exc_info;
 }
 
@@ -325,6 +319,15 @@ PyErr_SetString(PyObject *exception, const char *string)
     _PyErr_SetString(tstate, exception, string);
 }
 
+void
+_PyErr_SetLocaleString(PyObject *exception, const char *string)
+{
+    PyObject *value = PyUnicode_DecodeLocale(string, "surrogateescape");
+    if (value != NULL) {
+        PyErr_SetObject(exception, value);
+        Py_DECREF(value);
+    }
+}
 
 PyObject* _Py_HOT_FUNCTION
 PyErr_Occurred(void)
@@ -632,7 +635,7 @@ PyErr_GetHandledException(void)
 void
 _PyErr_SetHandledException(PyThreadState *tstate, PyObject *exc)
 {
-    Py_XSETREF(tstate->exc_info->exc_value, Py_XNewRef(exc));
+    Py_XSETREF(tstate->exc_info->exc_value, Py_XNewRef(exc == Py_None ? NULL : exc));
 }
 #endif // GraalPy change
 
@@ -674,8 +677,8 @@ _PyErr_StackItemToExcInfoTuple(_PyErr_StackItem *err_info)
     PyObject *exc_type = get_exc_type(exc_value);
     PyObject *exc_traceback = get_exc_traceback(exc_value);
 
-    return Py_BuildValue(
-        "(OOO)",
+    return PyTuple_Pack(
+        3,
         exc_type ? exc_type : Py_None,
         exc_value ? exc_value : Py_None,
         exc_traceback ? exc_traceback : Py_None);
@@ -743,52 +746,28 @@ _PyErr_ChainExceptions1(PyObject *exc)
 }
 
 #if 0 // GraalPy change
-/* Set the currently set exception's context to the given exception.
-
-   If the provided exc_info is NULL, then the current Python thread state's
-   exc_info will be used for the context instead.
+/* If the current thread is handling an exception (exc_info is ), set this
+   exception as the context of the current raised exception.
 
    This function can only be called when _PyErr_Occurred() is true.
    Also, this function won't create any cycles in the exception context
    chain to the extent that _PyErr_SetObject ensures this. */
 void
-_PyErr_ChainStackItem(_PyErr_StackItem *exc_info)
+_PyErr_ChainStackItem(void)
 {
     PyThreadState *tstate = _PyThreadState_GET();
     assert(_PyErr_Occurred(tstate));
 
-    int exc_info_given;
-    if (exc_info == NULL) {
-        exc_info_given = 0;
-        exc_info = tstate->exc_info;
-    } else {
-        exc_info_given = 1;
-    }
-
+    _PyErr_StackItem *exc_info = tstate->exc_info;
     if (exc_info->exc_value == NULL || exc_info->exc_value == Py_None) {
         return;
     }
 
-    _PyErr_StackItem *saved_exc_info;
-    if (exc_info_given) {
-        /* Temporarily set the thread state's exc_info since this is what
-           _PyErr_SetObject uses for implicit exception chaining. */
-        saved_exc_info = tstate->exc_info;
-        tstate->exc_info = exc_info;
-    }
-
-    PyObject *typ, *val, *tb;
-    _PyErr_Fetch(tstate, &typ, &val, &tb);
+    PyObject *exc = _PyErr_GetRaisedException(tstate);
 
     /* _PyErr_SetObject sets the context from PyThreadState. */
-    _PyErr_SetObject(tstate, typ, val);
-    Py_DECREF(typ);  // since _PyErr_Occurred was true
-    Py_XDECREF(val);
-    Py_XDECREF(tb);
-
-    if (exc_info_given) {
-        tstate->exc_info = saved_exc_info;
-    }
+    _PyErr_SetObject(tstate, (PyObject *) Py_TYPE(exc), exc);
+    Py_DECREF(exc);  // since _PyErr_Occurred was true
 }
 #endif // GraalPy change
 
@@ -808,7 +787,6 @@ _PyErr_FormatVFromCause(PyThreadState *tstate, PyObject *exception,
     return NULL;
 }
 
-NO_INLINE // GraalPy change: disallow bitcode inlining
 PyObject *
 _PyErr_FormatFromCauseTstate(PyThreadState *tstate, PyObject *exception,
                              const char *format, ...)
@@ -820,7 +798,6 @@ _PyErr_FormatFromCauseTstate(PyThreadState *tstate, PyObject *exception,
     return NULL;
 }
 
-NO_INLINE // GraalPy change: disallow bitcode inlining
 PyObject *
 _PyErr_FormatFromCause(PyObject *exception, const char *format, ...)
 {
@@ -841,13 +818,6 @@ PyErr_BadArgument(void)
     _PyErr_SetString(tstate, PyExc_TypeError,
                      "bad argument type for built-in operation");
     return 0;
-}
-
-PyObject *
-_PyErr_NoMemory(PyThreadState *tstate)
-{
-    _PyErr_SetNone(tstate, PyExc_MemoryError);
-    return NULL;
 }
 
 PyObject *
@@ -1204,7 +1174,6 @@ PyErr_FormatV(PyObject *exception, const char *format, va_list vargs)
 }
 
 
-NO_INLINE // GraalPy change: disallow bitcode inlining
 PyObject *
 _PyErr_Format(PyThreadState *tstate, PyObject *exception,
               const char *format, ...)
@@ -1217,7 +1186,6 @@ _PyErr_Format(PyThreadState *tstate, PyObject *exception,
 }
 
 
-NO_INLINE // GraalPy change: disallow bitcode inlining
 PyObject *
 PyErr_Format(PyObject *exception, const char *format, ...)
 {
@@ -1540,11 +1508,9 @@ write_unraisable_exc_file(PyThreadState *tstate, PyObject *exc_type,
     }
 
     /* Explicitly call file.flush() */
-    PyObject *res = _PyObject_CallMethodNoArgs(file, &_Py_ID(flush));
-    if (!res) {
+    if (_PyFile_Flush(file) < 0) {
         return -1;
     }
-    Py_DECREF(res);
 
     return 0;
 }
@@ -1555,14 +1521,15 @@ write_unraisable_exc(PyThreadState *tstate, PyObject *exc_type,
                      PyObject *exc_value, PyObject *exc_tb, PyObject *err_msg,
                      PyObject *obj)
 {
-    PyObject *file = _PySys_GetAttr(tstate, &_Py_ID(stderr));
+    PyObject *file;
+    if (_PySys_GetOptionalAttr(&_Py_ID(stderr), &file) < 0) {
+        return -1;
+    }
     if (file == NULL || file == Py_None) {
+        Py_XDECREF(file);
         return 0;
     }
 
-    /* Hold a strong reference to ensure that sys.stderr doesn't go away
-       while we use it */
-    Py_INCREF(file);
     int res = write_unraisable_exc_file(tstate, exc_type, exc_value, exc_tb,
                                         err_msg, obj, file);
     Py_DECREF(file);
@@ -1603,18 +1570,21 @@ _PyErr_WriteUnraisableDefaultHook(PyObject *args)
    for Python to handle it. For example, when a destructor raises an exception
    or during garbage collection (gc.collect()).
 
-   If err_msg_str is non-NULL, the error message is formatted as:
-   "Exception ignored %s" % err_msg_str. Otherwise, use "Exception ignored in"
-   error message.
+   If format is non-NULL, the error message is formatted using format and
+   variable arguments as in PyUnicode_FromFormat().
+   Otherwise, use "Exception ignored in" error message.
 
    An exception must be set when calling this function. */
-void
-_PyErr_WriteUnraisableMsg(const char *err_msg_str, PyObject *obj)
+
+static void
+format_unraisable_v(const char *format, va_list va, PyObject *obj)
 {
+    const char *err_msg_str;
     PyThreadState *tstate = _PyThreadState_GET();
     _Py_EnsureTstateNotNULL(tstate);
 
     PyObject *err_msg = NULL;
+    PyObject *hook = NULL;
     PyObject *exc_type, *exc_value, *exc_tb;
     _PyErr_Fetch(tstate, &exc_type, &exc_value, &exc_tb);
 
@@ -1644,8 +1614,8 @@ _PyErr_WriteUnraisableMsg(const char *err_msg_str, PyObject *obj)
         }
     }
 
-    if (err_msg_str != NULL) {
-        err_msg = PyUnicode_FromFormat("Exception ignored %s", err_msg_str);
+    if (format != NULL) {
+        err_msg = PyUnicode_FromFormatV(format, va);
         if (err_msg == NULL) {
             PyErr_Clear();
         }
@@ -1659,7 +1629,12 @@ _PyErr_WriteUnraisableMsg(const char *err_msg_str, PyObject *obj)
         goto error;
     }
 
-    PyObject *hook = _PySys_GetAttr(tstate, &_Py_ID(unraisablehook));
+    if (_PySys_GetOptionalAttr(&_Py_ID(unraisablehook), &hook) < 0) {
+        Py_DECREF(hook_args);
+        err_msg_str = NULL;
+        obj = NULL;
+        goto error;
+    }
     if (hook == NULL) {
         Py_DECREF(hook_args);
         goto default_hook;
@@ -1707,19 +1682,58 @@ done:
     Py_XDECREF(exc_value);
     Py_XDECREF(exc_tb);
     Py_XDECREF(err_msg);
+    Py_XDECREF(hook);
     _PyErr_Clear(tstate); /* Just in case */
 }
 #endif // GraalPy change
 
+void
+PyErr_FormatUnraisable(const char *format, ...)
+{
+    // GraalPy change: different implementation
+    PyObject *exc_type, *exc_value, *exc_tb;
+    PyObject *err_msg = NULL;
+    const char *err_msg_str = NULL;
+
+    /* Formatting may raise, so preserve the exception to be reported. */
+    PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+
+    if (format != NULL) {
+        va_list vargs;
+        va_start(vargs, format);
+        err_msg = PyUnicode_FromFormatV(format, vargs);
+        va_end(vargs);
+        if (err_msg != NULL) {
+            err_msg_str = PyUnicode_AsUTF8(err_msg);
+        }
+        if (err_msg_str == NULL) {
+            PyErr_Clear();
+        }
+    }
+
+    PyErr_Restore(exc_type, exc_value, exc_tb);
+    GraalPyPrivate_WriteUnraisable(err_msg_str, NULL);
+    Py_XDECREF(err_msg);
+}
+
+#if 0 // GraalPy change
+static void
+format_unraisable(PyObject *obj, const char *format, ...)
+{
+    va_list va;
+
+    va_start(va, format);
+    format_unraisable_v(format, va, obj);
+    va_end(va);
+}
 
 void
 PyErr_WriteUnraisable(PyObject *obj)
 {
-    _PyErr_WriteUnraisableMsg(NULL, obj);
+    format_unraisable(obj, NULL);
 }
 
 
-#if 0 // GraalPy change
 void
 PyErr_SyntaxLocation(const char *filename, int lineno)
 {
@@ -1805,13 +1819,11 @@ PyErr_SyntaxLocationObjectEx(PyObject *filename, int lineno, int col_offset,
         }
     }
     if ((PyObject *)Py_TYPE(exc) != PyExc_SyntaxError) {
-        if (_PyObject_LookupAttr(exc, &_Py_ID(msg), &tmp) < 0) {
+        int rc = PyObject_HasAttrWithError(exc, &_Py_ID(msg));
+        if (rc < 0) {
             _PyErr_Clear(tstate);
         }
-        else if (tmp) {
-            Py_DECREF(tmp);
-        }
-        else {
+        else if (!rc) {
             tmp = PyObject_Str(exc);
             if (tmp) {
                 if (PyObject_SetAttr(exc, &_Py_ID(msg), tmp)) {
@@ -1824,13 +1836,11 @@ PyErr_SyntaxLocationObjectEx(PyObject *filename, int lineno, int col_offset,
             }
         }
 
-        if (_PyObject_LookupAttr(exc, &_Py_ID(print_file_and_line), &tmp) < 0) {
+        rc = PyObject_HasAttrWithError(exc, &_Py_ID(print_file_and_line));
+        if (rc < 0) {
             _PyErr_Clear(tstate);
         }
-        else if (tmp) {
-            Py_DECREF(tmp);
-        }
-        else {
+        else if (!rc) {
             if (PyObject_SetAttr(exc, &_Py_ID(print_file_and_line), Py_None)) {
                 _PyErr_Clear(tstate);
             }
@@ -1975,7 +1985,3 @@ PyErr_ProgramTextObject(PyObject *filename, int lineno)
     return _PyErr_ProgramDecodedTextObject(filename, lineno, NULL);
 }
 #endif // GraalPy change
-
-#ifdef __cplusplus
-}
-#endif

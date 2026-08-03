@@ -85,9 +85,10 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PStructUnpackIterator;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -102,9 +103,10 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -152,7 +154,7 @@ public class StructBuiltins extends PythonBuiltins {
         return StructBuiltinsFactory.getFactories();
     }
 
-    @ImportStatic(PythonUtils.class)
+    @ImportStatic({PythonUtils.class, PGuards.class})
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = "Struct", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
@@ -243,24 +245,34 @@ public class StructBuiltins extends PythonBuiltins {
 
         public abstract PStruct execute(Object cls, Object format);
 
-        @Specialization(guards = "isAscii(format, getCodeRangeNode)")
-        static PStruct struct(@SuppressWarnings("unused") Object cls, TruffleString format,
+        @Specialization(guards = "isString(format)")
+        static PStruct struct(@SuppressWarnings("unused") Object cls, Object format,
                         @Bind Node inliningTarget,
-                        @Cached.Shared @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                        @Cached.Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @SuppressWarnings("unused") @Cached.Shared @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
-            byte[] fmt = PythonUtils.getAsciiBytes(format, copyToByteArrayNode, switchEncodingNode);
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+            TruffleString stringFormat = castToTruffleStringNode.execute(inliningTarget, format);
+            if (!PythonUtils.isAscii(stringFormat, getCodeRangeNode)) {
+                handleEncodingError(constructAndRaiseNode, stringFormat);
+            }
+            byte[] fmt = PythonUtils.getAsciiBytes(stringFormat, copyToByteArrayNode, switchEncodingNode);
             return PFactory.createStruct(PythonLanguage.get(inliningTarget), createStructInternal(inliningTarget, fmt));
         }
 
-        @Specialization
-        static PStruct struct(Object cls, PString format,
-                        @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached.Shared @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                        @Cached.Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @SuppressWarnings("unused") @Cached.Shared @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
-            return struct(cls, castToTruffleStringNode.execute(inliningTarget, format), inliningTarget, copyToByteArrayNode, switchEncodingNode, getCodeRangeNode);
+        @TruffleBoundary
+        private static void handleEncodingError(PConstructAndRaiseNode constructAndRaiseNode, TruffleString stringFormat) {
+            int length = stringFormat.codePointLengthUncached(PythonUtils.TS_ENCODING);
+            int start = 0;
+            while (stringFormat.codePointAtIndexUncached(start, PythonUtils.TS_ENCODING) < 128) {
+                start++;
+            }
+            int end = start + 1;
+            while (end < length && stringFormat.codePointAtIndexUncached(end, PythonUtils.TS_ENCODING) >= 128) {
+                end++;
+            }
+            throw constructAndRaiseNode.raiseUnicodeEncodeError(null, "ascii", stringFormat, start, end, "ordinal not in range(128)");
         }
 
         @Specialization(limit = "1")
@@ -271,18 +283,13 @@ public class StructBuiltins extends PythonBuiltins {
             return PFactory.createStruct(PythonLanguage.get(inliningTarget), createStructInternal(inliningTarget, fmt));
         }
 
-        @Specialization(guards = {"!isPBytes(format)", "!isPString(format)", "!isAsciiTruffleString(format, getCodeRangeNode)"})
+        @Fallback
         static PStruct fallback(@SuppressWarnings("unused") Object cls, Object format,
-                        @SuppressWarnings("unused") @Cached.Shared @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, StructError, ARG_MUST_BE_STR_OR_BYTES, "Struct()", format);
         }
 
-        protected static boolean isAsciiTruffleString(Object o, TruffleString.GetCodeRangeNode getCodeRangeNode) {
-            return o instanceof TruffleString && PythonUtils.isAscii((TruffleString) o, getCodeRangeNode);
-        }
-
-        @CompilerDirectives.TruffleBoundary
+        @TruffleBoundary
         private static PStruct.StructInfo createStructInternal(Node raisingNode, byte[] format) {
             int size = 0;
             int len = 0;
@@ -434,6 +441,20 @@ public class StructBuiltins extends PythonBuiltins {
                 }
             }
             return alignedSize;
+        }
+    }
+
+    @Slot(value = SlotKind.tp_init, isComplex = true)
+    @SlotSignature(name = "Struct", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class InitNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object init(PStruct self, Object format,
+                        @Cached ConstructStructNode constructStructNode) {
+            // Compile first so that a bad format leaves the old state untouched, as in CPython.
+            PStruct replacement = constructStructNode.execute(format);
+            self.setStructInfo(replacement.getStructInfo());
+            return PNone.NONE;
         }
     }
 

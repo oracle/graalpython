@@ -102,12 +102,10 @@ public final class HiddenAttr {
     public static final HiddenAttr PICKLE_STATE = new HiddenAttr("state");              // pickle
     public static final HiddenAttr NEXT_ELEMENT = new HiddenAttr("next_element");       // PythonAbstractObject
     public static final HiddenAttr HOST_INTEROP_BEHAVIOR = new HiddenAttr(J___GRAALPYTHON_INTEROP_BEHAVIOR__);      // polyglot
-    public static final HiddenAttr TREGEX_CACHE = new HiddenAttr("tregex_cache");       // _sre
     public static final HiddenAttr METHOD_DEF_PTR = new HiddenAttr("method_def_ptr");   // PythonCextMethodBuiltins
     public static final HiddenAttr PROMOTED_START = new HiddenAttr("promoted_start");   // PythonCextSlotBuiltins
     public static final HiddenAttr PROMOTED_STEP = new HiddenAttr("promoted_step");     // PythonCextSlotBuiltins
     public static final HiddenAttr PROMOTED_STOP = new HiddenAttr("promoted_stop");     // PythonCextSlotBuiltins
-    public static final HiddenAttr NATIVE_SLOTS = new HiddenAttr("__native_slots__");
     public static final HiddenAttr INSTANCESHAPE = new HiddenAttr("instanceshape");
     public static final HiddenAttr STRUCTSEQ_FIELD_NAMES = new HiddenAttr("struct_seq_field_names");
     public static final HiddenAttr PSTRING_WCHAR = new HiddenAttr("wchar");

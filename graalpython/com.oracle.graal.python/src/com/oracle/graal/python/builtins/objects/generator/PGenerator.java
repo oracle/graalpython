@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.generator;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -217,6 +218,9 @@ public class PGenerator extends PythonBuiltinObject {
 
     public final void markAsFinished() {
         finished = true;
+        // A generator frame is no longer executing after completion, so it must not retain the
+        // frame that resumed it as its Python-level f_back reference.
+        PArguments.getCurrentFrameInfo(frame.getArguments()).setCallerInfo(PFrame.Reference.EMPTY);
     }
 
     @Override

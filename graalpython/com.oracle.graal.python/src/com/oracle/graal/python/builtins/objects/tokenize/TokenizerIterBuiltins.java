@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -267,8 +267,6 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
 
                 if (type > Kind.DEDENT && type < Kind.OP) {
                     type = Kind.OP;
-                } else if (type == Kind.ASYNC || type == Kind.AWAIT) {
-                    type = Kind.NAME;
                 } else if (type == Kind.NEWLINE) {
                     if (!self.tokenizer.isImplicitNewline()) {
                         if (!tokenCp.isEmpty() && tokenCp.get(0) == '\r') {

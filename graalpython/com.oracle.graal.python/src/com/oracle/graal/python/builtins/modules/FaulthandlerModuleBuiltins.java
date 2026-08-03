@@ -237,6 +237,7 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
                         @Cached PyLongCheckNode longCheckNode,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
             if (file instanceof PNone) {
                 file = getAttr.execute(frame, inliningTarget, PythonContext.get(inliningTarget).getSysModule(), T_STDERR);
@@ -245,6 +246,9 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
                 }
             }
             if (longCheckNode.execute(inliningTarget, file)) {
+                if (file instanceof Boolean) {
+                    warnNode.warnEx(frame, PythonBuiltinClassType.RuntimeWarning, ErrorMessages.BOOL_USED_AS_FILE_DESCRIPTOR, 1);
+                }
                 int fd = asIntNode.execute(frame, inliningTarget, file);
                 if (fd < 0) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.FILE_IS_NOT_A_VALID_FILE_DESCRIPTOR);

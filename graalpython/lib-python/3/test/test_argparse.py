@@ -16,6 +16,7 @@ import argparse
 import warnings
 
 from enum import StrEnum
+from test.support import captured_stderr
 from test.support import os_helper
 from test.support.i18n_helper import TestTranslationsBase, update_translation_snapshots
 from unittest import mock
@@ -1046,7 +1047,7 @@ class TestStrEnumChoices(TestCase):
         parser.add_argument('--color', choices=self.Color)
         self.assertRaisesRegex(
             argparse.ArgumentError,
-            r"invalid choice: 'yellow' \(choose from red, green, blue\)",
+            r"invalid choice: 'yellow' \(choose from 'red', 'green', 'blue'\)",
             parser.parse_args,
             ['--color', 'yellow'],
         )
@@ -1492,6 +1493,19 @@ class TestPositionalsActionAppend(ParserTestCase):
         ('a b c', NS(spam=['a', ['b', 'c']])),
     ]
 
+
+class TestPositionalsActionExtend(ParserTestCase):
+    """Test the 'extend' action"""
+
+    argument_signatures = [
+        Sig('spam', action='extend'),
+        Sig('spam', action='extend', nargs=2),
+    ]
+    failures = ['', '--foo', 'a', 'a b', 'a b c d']
+    successes = [
+        ('a b c', NS(spam=['a', 'b', 'c'])),
+    ]
+
 # ========================================
 # Combined optionals and positionals tests
 # ========================================
@@ -1526,6 +1540,32 @@ class TestOptionalsAlmostNumericAndPositionals(ParserTestCase):
         ('a', NS(x='a', y=False)),
         ('-k4', NS(x=None, y=True)),
         ('-k4 a', NS(x='a', y=True)),
+    ]
+
+
+class TestOptionalsAndPositionalsAppend(ParserTestCase):
+    argument_signatures = [
+        Sig('foo', nargs='*', action='append'),
+        Sig('--bar'),
+    ]
+    failures = ['-foo']
+    successes = [
+        ('a b', NS(foo=[['a', 'b']], bar=None)),
+        ('--bar a b', NS(foo=[['b']], bar='a')),
+        ('a b --bar c', NS(foo=[['a', 'b']], bar='c')),
+    ]
+
+
+class TestOptionalsAndPositionalsExtend(ParserTestCase):
+    argument_signatures = [
+        Sig('foo', nargs='*', action='extend'),
+        Sig('--bar'),
+    ]
+    failures = ['-foo']
+    successes = [
+        ('a b', NS(foo=['a', 'b'], bar=None)),
+        ('--bar a b', NS(foo=['b'], bar='a')),
+        ('a b --bar c', NS(foo=['a', 'b'], bar='c')),
     ]
 
 
@@ -2018,6 +2058,10 @@ class TestFileTypeOpenArgs(TestCase):
                 type('foo')
                 m.assert_called_with('foo', *args)
 
+    def test_invalid_file_type(self):
+        with self.assertRaises(ValueError):
+            argparse.FileType('b')('-test')
+
 
 class TestFileTypeMissingInitialization(TestCase):
     """
@@ -2210,6 +2254,27 @@ class TestActionExtend(ParserTestCase):
     successes = [
         ('--foo f1 --foo f2 f3 f4', NS(foo=['f1', 'f2', 'f3', 'f4'])),
     ]
+
+
+class TestInvalidAction(TestCase):
+    """Test invalid user defined Action"""
+
+    class ActionWithoutCall(argparse.Action):
+        pass
+
+    def test_invalid_type(self):
+        parser = argparse.ArgumentParser()
+
+        parser.add_argument('--foo', action=self.ActionWithoutCall)
+        self.assertRaises(NotImplementedError, parser.parse_args, ['--foo', 'bar'])
+
+    def test_modified_invalid_action(self):
+        parser = ErrorRaisingArgumentParser()
+        action = parser.add_argument('--foo')
+        # Someone got crazy and did this
+        action.type = 1
+        self.assertRaises(ArgumentParserError, parser.parse_args, ['--foo', 'bar'])
+
 
 # ================
 # Subparsers tests
@@ -2452,7 +2517,7 @@ class TestAddSubparsers(TestCase):
             parser.parse_args(('baz',))
         self.assertRegex(
             excinfo.exception.stderr,
-            r"error: argument {foo,bar}: invalid choice: 'baz' \(choose from foo, bar\)\n$"
+            r"error: argument {foo,bar}: invalid choice: 'baz' \(choose from 'foo', 'bar'\)\n$"
         )
 
     def test_optional_subparsers(self):
@@ -2910,6 +2975,9 @@ class TestParentParsers(TestCase):
               -x X
         '''.format(progname, ' ' if progname else '' )))
 
+    def test_wrong_type_parents(self):
+        self.assertRaises(TypeError, ErrorRaisingArgumentParser, parents=[1])
+
     def test_mutex_groups_parents(self):
         parent = ErrorRaisingArgumentParser(add_help=False)
         g = parent.add_argument_group(title='g', description='gd')
@@ -3121,12 +3189,12 @@ class TestMutuallyExclusiveLong(MEMixin, TestCase):
     ]
 
     usage_when_not_required = '''\
-    usage: PROG [-h] [--abcde ABCDE] [--fghij FGHIJ]
-                [--klmno KLMNO | --pqrst PQRST]
+    usage: PROG [-h] [--abcde ABCDE] [--fghij FGHIJ] [--klmno KLMNO |
+                --pqrst PQRST]
     '''
     usage_when_required = '''\
-    usage: PROG [-h] [--abcde ABCDE] [--fghij FGHIJ]
-                (--klmno KLMNO | --pqrst PQRST)
+    usage: PROG [-h] [--abcde ABCDE] [--fghij FGHIJ] (--klmno KLMNO |
+                --pqrst PQRST)
     '''
     help = '''\
 
@@ -4197,7 +4265,7 @@ class TestHelpUsageWithParentheses(HelpTestCase):
 
         options:
           -h, --help            show this help message and exit
-          -p {1 (option A), 2 (option B)}, --optional {1 (option A), 2 (option B)}
+          -p, --optional {1 (option A), 2 (option B)}
         '''
     version = ''
 
@@ -4481,6 +4549,177 @@ class TestHelpUsagePositionalsOnlyWrap(HelpTestCase):
     version = ''
 
 
+class TestHelpUsageMetavarsSpacesParentheses(HelpTestCase):
+    # https://github.com/python/cpython/issues/62549
+    # https://github.com/python/cpython/issues/89743
+    parser_signature = Sig(prog='PROG')
+    argument_signatures = [
+        Sig('-n1', metavar='()', help='n1'),
+        Sig('-o1', metavar='(1, 2)', help='o1'),
+        Sig('-u1', metavar=' (uu) ', help='u1'),
+        Sig('-v1', metavar='( vv )', help='v1'),
+        Sig('-w1', metavar='(w)w', help='w1'),
+        Sig('-x1', metavar='x(x)', help='x1'),
+        Sig('-y1', metavar='yy)', help='y1'),
+        Sig('-z1', metavar='(zz', help='z1'),
+        Sig('-n2', metavar='[]', help='n2'),
+        Sig('-o2', metavar='[1, 2]', help='o2'),
+        Sig('-u2', metavar=' [uu] ', help='u2'),
+        Sig('-v2', metavar='[ vv ]', help='v2'),
+        Sig('-w2', metavar='[w]w', help='w2'),
+        Sig('-x2', metavar='x[x]', help='x2'),
+        Sig('-y2', metavar='yy]', help='y2'),
+        Sig('-z2', metavar='[zz', help='z2'),
+    ]
+
+    usage = '''\
+        usage: PROG [-h] [-n1 ()] [-o1 (1, 2)] [-u1  (uu) ] [-v1 ( vv )] [-w1 (w)w]
+                    [-x1 x(x)] [-y1 yy)] [-z1 (zz] [-n2 []] [-o2 [1, 2]] [-u2  [uu] ]
+                    [-v2 [ vv ]] [-w2 [w]w] [-x2 x[x]] [-y2 yy]] [-z2 [zz]
+        '''
+    help = usage + '''\
+
+        options:
+          -h, --help  show this help message and exit
+          -n1 ()      n1
+          -o1 (1, 2)  o1
+          -u1  (uu)   u1
+          -v1 ( vv )  v1
+          -w1 (w)w    w1
+          -x1 x(x)    x1
+          -y1 yy)     y1
+          -z1 (zz     z1
+          -n2 []      n2
+          -o2 [1, 2]  o2
+          -u2  [uu]   u2
+          -v2 [ vv ]  v2
+          -w2 [w]w    w2
+          -x2 x[x]    x2
+          -y2 yy]     y2
+          -z2 [zz     z2
+        '''
+    version = ''
+
+
+class TestHelpUsageNoWhitespaceCrash(TestCase):
+
+    def test_all_suppressed_mutex_followed_by_long_arg(self):
+        # https://github.com/python/cpython/issues/62090
+        # https://github.com/python/cpython/issues/96310
+        parser = argparse.ArgumentParser(prog='PROG')
+        mutex = parser.add_mutually_exclusive_group()
+        mutex.add_argument('--spam', help=argparse.SUPPRESS)
+        parser.add_argument('--eggs-eggs-eggs-eggs-eggs-eggs')
+        usage = textwrap.dedent('''\
+        usage: PROG [-h]
+                    [--eggs-eggs-eggs-eggs-eggs-eggs EGGS_EGGS_EGGS_EGGS_EGGS_EGGS]
+        ''')
+        self.assertEqual(parser.format_usage(), usage)
+
+    def test_newline_in_metavar(self):
+        # https://github.com/python/cpython/issues/77048
+        mapping = ['123456', '12345', '12345', '123']
+        parser = argparse.ArgumentParser('11111111111111')
+        parser.add_argument('-v', '--verbose',
+                            help='verbose mode', action='store_true')
+        parser.add_argument('targets',
+                            help='installation targets',
+                            nargs='+',
+                            metavar='\n'.join(mapping))
+        usage = textwrap.dedent('''\
+        usage: 11111111111111 [-h] [-v]
+                              123456
+        12345
+        12345
+        123 [123456
+        12345
+        12345
+        123 ...]
+        ''')
+        self.assertEqual(parser.format_usage(), usage)
+
+    def test_empty_metavar_required_arg(self):
+        # https://github.com/python/cpython/issues/82091
+        parser = argparse.ArgumentParser(prog='PROG')
+        parser.add_argument('--nil', metavar='', required=True)
+        parser.add_argument('--a', metavar='A' * 70)
+        usage = (
+            'usage: PROG [-h] --nil \n'
+            '            [--a AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            'AAAAAAAAAAAAAAAAAAAAAAA]\n'
+        )
+        self.assertEqual(parser.format_usage(), usage)
+
+    def test_all_suppressed_mutex_with_optional_nargs(self):
+        # https://github.com/python/cpython/issues/98666
+        parser = argparse.ArgumentParser(prog='PROG')
+        mutex = parser.add_mutually_exclusive_group()
+        mutex.add_argument(
+            '--param1',
+            nargs='?', const='default', metavar='NAME', help=argparse.SUPPRESS)
+        mutex.add_argument(
+            '--param2',
+            nargs='?', const='default', metavar='NAME', help=argparse.SUPPRESS)
+        usage = 'usage: PROG [-h]\n'
+        self.assertEqual(parser.format_usage(), usage)
+
+    def test_nested_mutex_groups(self):
+        parser = argparse.ArgumentParser(prog='PROG')
+        g = parser.add_mutually_exclusive_group()
+        g.add_argument("--spam")
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            gg = g.add_mutually_exclusive_group()
+        gg.add_argument("--hax")
+        gg.add_argument("--hox", help=argparse.SUPPRESS)
+        gg.add_argument("--hex")
+        g.add_argument("--eggs")
+        parser.add_argument("--num")
+
+        usage = textwrap.dedent('''\
+        usage: PROG [-h] [--spam SPAM | [--hax HAX | --hex HEX] | --eggs EGGS]
+                    [--num NUM]
+        ''')
+        self.assertEqual(parser.format_usage(), usage)
+
+    def test_long_mutex_groups_wrap(self):
+        parser = argparse.ArgumentParser(prog='PROG')
+        g = parser.add_mutually_exclusive_group()
+        g.add_argument('--op1', metavar='MET', nargs='?')
+        g.add_argument('--op2', metavar=('MET1', 'MET2'), nargs='*')
+        g.add_argument('--op3', nargs='*')
+        g.add_argument('--op4', metavar=('MET1', 'MET2'), nargs='+')
+        g.add_argument('--op5', nargs='+')
+        g.add_argument('--op6', nargs=3)
+        g.add_argument('--op7', metavar=('MET1', 'MET2', 'MET3'), nargs=3)
+
+        usage = textwrap.dedent('''\
+        usage: PROG [-h] [--op1 [MET] | --op2 [MET1 [MET2 ...]] | --op3 [OP3 ...] |
+                    --op4 MET1 [MET2 ...] | --op5 OP5 [OP5 ...] | --op6 OP6 OP6 OP6 |
+                    --op7 MET1 MET2 MET3]
+        ''')
+        self.assertEqual(parser.format_usage(), usage)
+
+    def test_mutex_groups_with_mixed_optionals_positionals_wrap(self):
+        # https://github.com/python/cpython/issues/75949
+        # Mutually exclusive groups containing both optionals and positionals
+        # should preserve pipe separators when the usage line wraps.
+        parser = argparse.ArgumentParser(prog='PROG')
+        g = parser.add_mutually_exclusive_group()
+        g.add_argument('-v', '--verbose', action='store_true')
+        g.add_argument('-q', '--quiet', action='store_true')
+        g.add_argument('-x', '--extra-long-option-name', nargs='?')
+        g.add_argument('-y', '--yet-another-long-option', nargs='?')
+        g.add_argument('positional', nargs='?')
+
+        usage = textwrap.dedent('''\
+        usage: PROG [-h] [-v | -q | -x [EXTRA_LONG_OPTION_NAME] |
+                    -y [YET_ANOTHER_LONG_OPTION] |
+                    positional]
+        ''')
+        self.assertEqual(parser.format_usage(), usage)
+
+
 class TestHelpVariableExpansion(HelpTestCase):
     """Test that variables are expanded properly in help messages"""
 
@@ -4680,8 +4919,8 @@ class TestHelpAlternatePrefixChars(HelpTestCase):
     help = usage + '''\
 
         options:
-          ^^foo              foo help
-          ;b BAR, ;;bar BAR  bar help
+          ^^foo          foo help
+          ;b, ;;bar BAR  bar help
         '''
     version = ''
 
@@ -4895,6 +5134,7 @@ class TestHelpArgumentDefaults(HelpTestCase):
     argument_signatures = [
         Sig('--foo', help='foo help - oh and by the way, %(default)s'),
         Sig('--bar', action='store_true', help='bar help'),
+        Sig('--required', required=True, help='some help'),
         Sig('--taz', action=argparse.BooleanOptionalAction,
             help='Whether to taz it', default=True),
         Sig('--corge', action=argparse.BooleanOptionalAction,
@@ -4908,8 +5148,8 @@ class TestHelpArgumentDefaults(HelpTestCase):
          [Sig('--baz', type=int, default=42, help='baz help')]),
     ]
     usage = '''\
-        usage: PROG [-h] [--foo FOO] [--bar] [--taz | --no-taz] [--corge | --no-corge]
-                    [--quux QUUX] [--baz BAZ]
+        usage: PROG [-h] [--foo FOO] [--bar] --required REQUIRED [--taz | --no-taz]
+                    [--corge | --no-corge] [--quux QUUX] [--baz BAZ]
                     spam [badger]
         '''
     help = usage + '''\
@@ -4924,6 +5164,7 @@ class TestHelpArgumentDefaults(HelpTestCase):
           -h, --help           show this help message and exit
           --foo FOO            foo help - oh and by the way, None
           --bar                bar help (default: False)
+          --required REQUIRED  some help
           --taz, --no-taz      Whether to taz it (default: True)
           --corge, --no-corge  Whether to corge it
           --quux QUUX          Set the quux (default: 42)
@@ -5154,6 +5395,9 @@ class TestInvalidArgumentConstructors(TestCase):
         self.assertValueError('--')
         self.assertValueError('---')
 
+    def test_invalid_prefix(self):
+        self.assertValueError('--foo', '+foo')
+
     def test_invalid_type(self):
         self.assertValueError('--foo', type='int')
         self.assertValueError('--foo', type=(int, float))
@@ -5223,6 +5467,9 @@ class TestInvalidArgumentConstructors(TestCase):
         self.assertTypeError('command', action='parsers', prog='PROG')
         self.assertTypeError('command', action='parsers',
                              parser_class=argparse.ArgumentParser)
+
+    def test_version_missing_params(self):
+        self.assertTypeError('command', action='version')
 
     def test_required_positional(self):
         self.assertTypeError('foo', required=True)
@@ -5443,7 +5690,8 @@ class TestStrings(TestCase):
         string = (
             "Action(option_strings=['--foo', '-a', '-b'], dest='b', "
             "nargs='+', const=None, default=42, type='int', "
-            "choices=[1, 2, 3], required=False, help='HELP', metavar='METAVAR')")
+            "choices=[1, 2, 3], required=False, help='HELP', "
+            "metavar='METAVAR', deprecated=False)")
         self.assertStringEqual(option, string)
 
     def test_argument(self):
@@ -5460,7 +5708,8 @@ class TestStrings(TestCase):
         string = (
             "Action(option_strings=[], dest='x', nargs='?', "
             "const=None, default=2.5, type=%r, choices=[0.5, 1.5, 2.5], "
-            "required=True, help='H HH H', metavar='MV MV MV')" % float)
+            "required=True, help='H HH H', metavar='MV MV MV', "
+            "deprecated=False)" % float)
         self.assertStringEqual(argument, string)
 
     def test_namespace(self):
@@ -5651,6 +5900,139 @@ class TestTypeFunctionCallOnlyOnce(TestCase):
         parser.add_argument('--foo', type=spam, default='bar')
         args = parser.parse_args('--foo spam!'.split())
         self.assertEqual(NS(foo='foo_converted'), args)
+
+
+# ==============================================
+# Check that deprecated arguments output warning
+# ==============================================
+
+class TestDeprecatedArguments(TestCase):
+
+    def test_deprecated_option(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-f', '--foo', deprecated=True)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['--foo', 'spam'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: option '--foo' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['-f', 'spam'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: option '-f' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['--foo', 'spam', '-f', 'ham'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: option '--foo' is deprecated")
+        self.assertRegex(stderr, "warning: option '-f' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 2)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['--foo', 'spam', '--foo', 'ham'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: option '--foo' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+    def test_deprecated_boolean_option(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-f', '--foo', action=argparse.BooleanOptionalAction, deprecated=True)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['--foo'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: option '--foo' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['-f'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: option '-f' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['--no-foo'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: option '--no-foo' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['--foo', '--no-foo'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: option '--foo' is deprecated")
+        self.assertRegex(stderr, "warning: option '--no-foo' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 2)
+
+    def test_deprecated_arguments(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('foo', nargs='?', deprecated=True)
+        parser.add_argument('bar', nargs='?', deprecated=True)
+
+        with captured_stderr() as stderr:
+            parser.parse_args([])
+        stderr = stderr.getvalue()
+        self.assertEqual(stderr.count('is deprecated'), 0)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['spam'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: argument 'foo' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['spam', 'ham'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: argument 'foo' is deprecated")
+        self.assertRegex(stderr, "warning: argument 'bar' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 2)
+
+    def test_deprecated_varargument(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('foo', nargs='*', deprecated=True)
+
+        with captured_stderr() as stderr:
+            parser.parse_args([])
+        stderr = stderr.getvalue()
+        self.assertEqual(stderr.count('is deprecated'), 0)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['spam'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: argument 'foo' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['spam', 'ham'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: argument 'foo' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+    def test_deprecated_subparser(self):
+        parser = argparse.ArgumentParser()
+        subparsers = parser.add_subparsers()
+        subparsers.add_parser('foo', aliases=['baz'], deprecated=True)
+        subparsers.add_parser('bar')
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['bar'])
+        stderr = stderr.getvalue()
+        self.assertEqual(stderr.count('is deprecated'), 0)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['foo'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: command 'foo' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
+        with captured_stderr() as stderr:
+            parser.parse_args(['baz'])
+        stderr = stderr.getvalue()
+        self.assertRegex(stderr, "warning: command 'baz' is deprecated")
+        self.assertEqual(stderr.count('is deprecated'), 1)
+
 
 # ==================================================================
 # Check semantics regarding the default argument and type conversion
@@ -5970,6 +6352,10 @@ class TestIntermixedArgs(TestCase):
                 'argument badger: not allowed with argument --foo',
                 parser.parse_intermixed_args, ['a', '--foo', 'b'])
         self.assertEqual(group.required, True)
+
+    def test_invalid_args(self):
+        parser = ErrorRaisingArgumentParser(prog='PROG')
+        self.assertRaises(ArgumentParserError, parser.parse_intermixed_args, ['a'])
 
 
 class TestIntermixedMessageContentError(TestCase):

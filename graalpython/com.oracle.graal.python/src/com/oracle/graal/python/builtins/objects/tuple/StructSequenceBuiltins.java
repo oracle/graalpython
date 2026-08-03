@@ -49,7 +49,9 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,9 +68,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -78,10 +81,12 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -192,14 +197,14 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClassNode,
                         @Cached GetFieldNamesNode getFieldNamesNode,
-                        @Cached ObjectNodes.GetFullyQualifiedNameNode getQName,
+                        @Cached TypeNodes.GetTpNameNode getTpNameNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(inliningTarget, self);
             TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
-            appendStringNode.execute(sb, getQName.execute(frame, type));
+            appendStringNode.execute(sb, getTpNameNode.execute(inliningTarget, type));
             appendStringNode.execute(sb, T_LPAREN);
             SequenceStorage tupleStore = self.getSequenceStorage();
             int visibleSize = tupleStore.length();
@@ -256,6 +261,67 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                 }
             }
             return PFactory.createTuple(language, new Object[]{type, PFactory.createTuple(language, new Object[]{tuple, dict})});
+        }
+    }
+
+    @Builtin(name = "__replace__", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, doc = "Return a copy of the structure with new values for the specified fields.")
+    @GenerateNodeFactory
+    abstract static class ReplaceNode extends PythonVarargsBuiltinNode {
+
+        @Specialization
+        static PTuple replace(VirtualFrame frame, PTuple self, @SuppressWarnings("unused") Object[] args, PKeyword[] changes,
+                        @Bind Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetSizeNode getSizeNode,
+                        @Cached GetFieldNamesNode getFieldNamesNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShapeNode,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached PRaiseNode raiseNode,
+                        @Bind PythonLanguage language) {
+            if (args.length > 0) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.STRUCTSEQ_REPLACE_NO_POSITIONAL);
+            }
+            Object type = getClassNode.execute(inliningTarget, self);
+            int nFields = getSizeNode.execute(frame, inliningTarget, type, StructSequence.T_N_FIELDS);
+            int nUnnamedFields = getSizeNode.execute(frame, inliningTarget, type, StructSequence.T_N_UNNAMED_FIELDS);
+            if (nUnnamedFields > 0) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.STRUCTSEQ_REPLACE_UNNAMED, StructSequence.getTpName(type));
+            }
+
+            SequenceStorage storage = self.getSequenceStorage();
+            Object[] values = new Object[nFields];
+            for (int i = 0; i < nFields; i++) {
+                values[i] = getItemNode.execute(inliningTarget, storage, i);
+            }
+
+            TruffleString[] fieldNames = getFieldNamesNode.execute(inliningTarget, type);
+            boolean[] matched = new boolean[changes.length];
+            for (int i = 0; i < nFields; i++) {
+                for (int j = 0; j < changes.length; j++) {
+                    if (equalNode.execute(fieldNames[i], changes[j].getName(), TS_ENCODING)) {
+                        values[i] = changes[j].getValue();
+                        matched[j] = true;
+                        break;
+                    }
+                }
+            }
+
+            checkUnexpected(changes, matched, inliningTarget, raiseNode, language);
+            return PFactory.createTuple(type, getInstanceShapeNode.execute(type), new ObjectSequenceStorage(values, storage.length()));
+        }
+
+        @TruffleBoundary
+        private static void checkUnexpected(PKeyword[] changes, boolean[] matched, Node inliningTarget, PRaiseNode raiseNode, PythonLanguage language) {
+            ArrayList<Object> unexpected = new ArrayList<>();
+            for (int i = 0; i < changes.length; i++) {
+                if (!matched[i]) {
+                    unexpected.add(changes[i].getName());
+                }
+            }
+            if (!unexpected.isEmpty()) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.STRUCTSEQ_REPLACE_UNEXPECTED, PFactory.createList(language, unexpected.toArray()));
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 
 import unittest
 from test import support
+from test.support import cpython_only, import_helper, script_helper
 
 testmeths = [
 
@@ -448,15 +449,15 @@ class ClassTests(unittest.TestCase):
     def testHasAttrString(self):
         import sys
         from test.support import import_helper
-        _testcapi = import_helper.import_module('_testcapi')
+        _testlimitedcapi = import_helper.import_module('_testlimitedcapi')
 
         class A:
             def __init__(self):
                 self.attr = 1
 
         a = A()
-        self.assertEqual(_testcapi.object_hasattrstring(a, b"attr"), 1)
-        self.assertEqual(_testcapi.object_hasattrstring(a, b"noattr"), 0)
+        self.assertEqual(_testlimitedcapi.object_hasattrstring(a, b"attr"), 1)
+        self.assertEqual(_testlimitedcapi.object_hasattrstring(a, b"noattr"), 0)
         self.assertIsNone(sys.exception())
 
     @support.impl_detail("finalization", graalpy=False)
@@ -692,6 +693,14 @@ class ClassTests(unittest.TestCase):
         class B:
             y = 0
             __slots__ = ('z',)
+        class C:
+            __slots__ = ("y",)
+
+            def __setattr__(self, name, value) -> None:
+                if name == "z":
+                    super().__setattr__("y", 1)
+                else:
+                    super().__setattr__(name, value)
 
         error_msg = "'A' object has no attribute 'x'"
         with self.assertRaisesRegex(AttributeError, error_msg):
@@ -704,8 +713,16 @@ class ClassTests(unittest.TestCase):
             B().x
         with self.assertRaisesRegex(AttributeError, error_msg):
             del B().x
-        with self.assertRaisesRegex(AttributeError, error_msg):
+        with self.assertRaisesRegex(
+            AttributeError,
+            "'B' object has no attribute 'x' and no __dict__ for setting new attributes"
+        ):
             B().x = 0
+        with self.assertRaisesRegex(
+            AttributeError,
+            "'C' object has no attribute 'x'"
+        ):
+            C().x = 0
 
         error_msg = "'B' object attribute 'y' is read-only"
         with self.assertRaisesRegex(AttributeError, error_msg):
@@ -791,6 +808,227 @@ class ClassTests(unittest.TestCase):
         class A(0, *range(1, 8), **d, foo='bar'): pass
         self.assertEqual(A, (tuple(range(8)), {'foo': 'bar'}))
 
+    def testClassCallRecursionLimit(self):
+        class C:
+            def __init__(self):
+                self.c = C()
+
+        with self.assertRaises(RecursionError):
+            C()
+
+        def add_one_level():
+            #Each call to C() consumes 2 levels, so offset by 1.
+            C()
+
+        with self.assertRaises(RecursionError):
+            add_one_level()
+
+    def testMetaclassCallOptimization(self):
+        calls = 0
+
+        class TypeMetaclass(type):
+            def __call__(cls, *args, **kwargs):
+                nonlocal calls
+                calls += 1
+                return type.__call__(cls, *args, **kwargs)
+
+        class Type(metaclass=TypeMetaclass):
+            def __init__(self, obj):
+                self._obj = obj
+
+        for i in range(100):
+            Type(i)
+        self.assertEqual(calls, 100)
+
+
+# GraalPy change
+#from _testinternalcapi import has_inline_values
+
+Py_TPFLAGS_INLINE_VALUES = (1 << 2)
+Py_TPFLAGS_MANAGED_DICT = (1 << 4)
+
+class NoManagedDict:
+    __slots__ = ('a',)
+
+
+class Plain:
+    pass
+
+
+class WithAttrs:
+
+    def __init__(self):
+        self.a = 1
+        self.b = 2
+        self.c = 3
+        self.d = 4
+
+
+class VarSizedSubclass(tuple):
+    pass
+
+
+@support.impl_detail("inlined dict", graalpy=False)
+class TestInlineValues(unittest.TestCase):
+
+    def test_no_flags_for_slots_class(self):
+        flags = NoManagedDict.__flags__
+        self.assertEqual(flags & Py_TPFLAGS_MANAGED_DICT, 0)
+        self.assertEqual(flags & Py_TPFLAGS_INLINE_VALUES, 0)
+        self.assertFalse(has_inline_values(NoManagedDict()))
+
+    def test_both_flags_for_regular_class(self):
+        for cls in (Plain, WithAttrs):
+            with self.subTest(cls=cls.__name__):
+                flags = cls.__flags__
+                self.assertEqual(flags & Py_TPFLAGS_MANAGED_DICT, Py_TPFLAGS_MANAGED_DICT)
+                self.assertEqual(flags & Py_TPFLAGS_INLINE_VALUES, Py_TPFLAGS_INLINE_VALUES)
+                self.assertTrue(has_inline_values(cls()))
+
+    def test_managed_dict_only_for_varsized_subclass(self):
+        flags = VarSizedSubclass.__flags__
+        self.assertEqual(flags & Py_TPFLAGS_MANAGED_DICT, Py_TPFLAGS_MANAGED_DICT)
+        self.assertEqual(flags & Py_TPFLAGS_INLINE_VALUES, 0)
+        self.assertFalse(has_inline_values(VarSizedSubclass()))
+
+    def test_has_inline_values(self):
+        c = Plain()
+        self.assertTrue(has_inline_values(c))
+        del c.__dict__
+        self.assertFalse(has_inline_values(c))
+
+    def test_instances(self):
+        self.assertTrue(has_inline_values(Plain()))
+        self.assertTrue(has_inline_values(WithAttrs()))
+
+    def test_inspect_dict(self):
+        for cls in (Plain, WithAttrs):
+            c = cls()
+            c.__dict__
+            self.assertTrue(has_inline_values(c))
+
+    def test_update_dict(self):
+        d = { "e": 5, "f": 6 }
+        for cls in (Plain, WithAttrs):
+            c = cls()
+            c.__dict__.update(d)
+            self.assertTrue(has_inline_values(c))
+
+    @staticmethod
+    def set_100(obj):
+        for i in range(100):
+            setattr(obj, f"a{i}", i)
+
+    def check_100(self, obj):
+        for i in range(100):
+            self.assertEqual(getattr(obj, f"a{i}"), i)
+
+    def test_many_attributes(self):
+        class C: pass
+        c = C()
+        self.assertTrue(has_inline_values(c))
+        self.set_100(c)
+        self.assertFalse(has_inline_values(c))
+        self.check_100(c)
+        c = C()
+        self.assertTrue(has_inline_values(c))
+
+    def test_many_attributes_with_dict(self):
+        class C: pass
+        c = C()
+        d = c.__dict__
+        self.assertTrue(has_inline_values(c))
+        self.set_100(c)
+        self.assertFalse(has_inline_values(c))
+        self.check_100(c)
+
+    def test_bug_117750(self):
+        "Aborted on 3.13a6"
+        class C:
+            def __init__(self):
+                self.__dict__.clear()
+
+        obj = C()
+        self.assertEqual(obj.__dict__, {})
+        obj.foo = None # Aborted here
+        self.assertEqual(obj.__dict__, {"foo":None})
+
+    def test_store_attr_deleted_dict(self):
+        class Foo:
+            pass
+
+        f = Foo()
+        del f.__dict__
+        f.a = 3
+        self.assertEqual(f.a, 3)
+
+    def test_rematerialize_object_dict(self):
+        # gh-121860: rematerializing an object's managed dictionary after it
+        # had been deleted caused a crash.
+        class Foo: pass
+        f = Foo()
+        f.__dict__["attr"] = 1
+        del f.__dict__
+
+        # Using a str subclass is a way to trigger the re-materialization
+        class StrSubclass(str): pass
+        self.assertFalse(hasattr(f, StrSubclass("attr")))
+
+        # Changing the __class__ also triggers the re-materialization
+        class Bar: pass
+        f.__class__ = Bar
+        self.assertIsInstance(f, Bar)
+        self.assertEqual(f.__dict__, {})
+
+    def test_store_attr_type_cache(self):
+        """Verifies that the type cache doesn't provide a value which  is
+        inconsistent from the dict."""
+        class X:
+            def __del__(inner_self):
+                v = C.a
+                self.assertEqual(v, C.__dict__['a'])
+
+        class C:
+            a = X()
+
+        # prime the cache
+        C.a
+        C.a
+
+        # destructor shouldn't be able to see inconsistent state
+        C.a = X()
+        C.a = X()
+
+    @cpython_only
+    def test_detach_materialized_dict_no_memory(self):
+        # Skip test if _testcapi is not available:
+        import_helper.import_module('_testcapi')
+
+        code = """if 1:
+            import test.support
+            import _testcapi
+
+            class A:
+                def __init__(self):
+                    self.a = 1
+                    self.b = 2
+            a = A()
+            d = a.__dict__
+            with test.support.catch_unraisable_exception() as ex:
+                _testcapi.set_nomemory(0, 1)
+                del a
+                assert ex.unraisable.exc_type is MemoryError
+            try:
+                d["a"]
+            except KeyError:
+                pass
+            else:
+                assert False, "KeyError not raised"
+        """
+        rc, out, err = script_helper.assert_python_ok("-c", code)
+        self.assertEqual(rc, 0)
+        self.assertFalse(out, msg=out.decode('utf-8'))
+        self.assertFalse(err, msg=err.decode('utf-8'))
 
 if __name__ == '__main__':
     unittest.main()

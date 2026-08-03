@@ -55,6 +55,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATION
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FIRSTLINENO__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__;
@@ -988,6 +989,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         static Object setModule(PythonClass cls, Object value,
                         @Shared @Cached WriteAttributeToObjectNode writeAttrNode) {
+            writeAttrNode.execute(cls, T___FIRSTLINENO__, NO_VALUE);
             writeAttrNode.execute(cls, T___MODULE__, value);
             return PNone.NONE;
         }
@@ -1032,6 +1034,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             if ((flags & TypeFlags.HEAPTYPE) == 0) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_SET_N_S, cls, T___MODULE__);
             }
+            writeAttrNode.execute(cls, T___FIRSTLINENO__, NO_VALUE);
             writeAttrNode.execute(cls, T___MODULE__, value);
             return PNone.NONE;
         }

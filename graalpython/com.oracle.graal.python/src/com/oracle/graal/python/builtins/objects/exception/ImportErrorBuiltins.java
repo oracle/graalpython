@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.S_IS_AN_INVALID_ARG_FOR_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
@@ -130,7 +130,7 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
                 } else if (equalNode.execute(kwName, T_PATH, TS_ENCODING)) {
                     attrs[IDX_PATH] = kw.getValue();
                 } else {
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "ImportError");
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, GOT_UNEXPECTED_KEYWORD_ARG, "ImportError", kw.getName());
                 }
             }
             self.setExceptionAttributes(attrs);

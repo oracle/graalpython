@@ -244,9 +244,9 @@ def test_locals_sync():
     # Forces caller frame materialization, this used to erroneously cause the locals dict to update
     globals()
     assert l == {'a': 1}
-    # Now this should really cause the locals dict to update
+    # Since Python 3.13, locals() returns an independent snapshot in optimized scopes
     locals()
-    assert l == {'a': 1, 'b': 2, 'l': l}
+    assert l == {'a': 1}
 
 
 def test_locals_cells():
@@ -334,6 +334,104 @@ def test_frame_from_another_thread():
     assert frame.f_locals['b'] == 2
     event4.set()
     thread.join(timeout=60)
+
+
+def test_f_locals_proxy_escaped():
+
+    def get_proxy(value):
+        local = value
+        return sys._getframe().f_locals
+
+    proxy = get_proxy(1)
+    assert type(proxy).__name__ == 'FrameLocalsProxy'
+    assert proxy['local'] == 1
+    proxy['local'] = 2
+    assert proxy['local'] == 2
+    proxy['extra'] = 3
+    assert proxy['extra'] == 3
+    assert proxy.copy() == {'value': 1, 'local': 2, 'extra': 3}
+    try:
+        del proxy['local']
+    except ValueError as e:
+        assert 'cannot remove local variables' in str(e)
+    else:
+        assert False
+
+
+def test_f_locals_proxy_after_return():
+
+    def get_proxy(value):
+        local = value
+        return sys._getframe()
+
+    proxy = get_proxy(1).f_locals
+    assert type(proxy).__name__ == 'FrameLocalsProxy'
+    assert proxy['local'] == 1
+    proxy['local'] = 2
+    assert proxy['local'] == 2
+    proxy['extra'] = 3
+    assert proxy['extra'] == 3
+    # sys is a freevar
+    assert proxy.copy() == {'value': 1, 'local': 2, 'extra': 3}
+    try:
+        del proxy['local']
+    except ValueError as e:
+        assert 'cannot remove local variables' in str(e)
+    else:
+        assert False
+
+
+def test_f_locals_proxy_updates_executing_frames():
+
+    def current_frame():
+        value = 1
+        sys._getframe().f_locals['value'] = 2
+        return value
+
+    def caller_frame():
+        value = 1
+
+        def update_caller():
+            sys._getframe(1).f_locals['value'] = 2
+
+        update_caller()
+        return value
+
+    assert current_frame() == 2
+    assert caller_frame() == 2
+
+
+def test_locals_includes_f_locals_extras():
+    sys._getframe().f_locals['extra'] = 42
+    snapshot = locals()
+    assert snapshot['extra'] == 42
+
+
+def test_f_locals_proxy_cellvar_and_freevar():
+    def update_cellvar():
+        cellvar = 1
+
+        def read_cellvar():
+            return cellvar
+
+        locals_proxy = sys._getframe().f_locals
+        assert locals_proxy['cellvar'] == 1
+        locals_proxy['cellvar'] = 2
+        return cellvar, read_cellvar()
+
+    def update_freevar():
+        freevar = 1
+
+        def inner():
+            locals_proxy = sys._getframe().f_locals
+            assert locals_proxy['freevar'] == 1
+            locals_proxy['freevar'] = 2
+            return freevar
+
+        return inner(), freevar
+
+    assert update_cellvar() == (2, 2)
+    assert update_freevar() == (2, 2)
 
 
 OTHER_RUNNING_INNER = 'running_inner'

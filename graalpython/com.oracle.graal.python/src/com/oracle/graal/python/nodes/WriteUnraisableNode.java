@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 
@@ -73,8 +72,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateInline(false)       // footprint reduction 84 -> 68
 public abstract class WriteUnraisableNode extends Node {
 
-    private static final TruffleString T_IGNORED = tsLiteral("Exception ignored ");
-
     public final void execute(VirtualFrame frame, Object exception, TruffleString message, Object object) {
         executeInternal(frame, exception, message, object);
     }
@@ -93,7 +90,6 @@ public abstract class WriteUnraisableNode extends Node {
                     @Cached GetClassNode getClassNode,
                     @Bind PythonLanguage language,
                     @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
-                    @Cached TruffleString.ConcatNode concatNode,
                     @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
         PythonContext context = PythonContext.get(inliningTarget);
         try {
@@ -101,25 +97,20 @@ public abstract class WriteUnraisableNode extends Node {
             Object unraisablehook = lookup.execute(frame, inliningTarget, sysModule, BuiltinNames.T_UNRAISABLEHOOK);
             Object exceptionType = getClassNode.execute(inliningTarget, exception);
             Object traceback = getTracebackNode.execute(inliningTarget, exception);
-            Object messageObj = PNone.NONE;
-            if (message != null) {
-                messageObj = formatMessage(message, concatNode);
-            }
-            Object hookArguments = PFactory.createStructSeq(language, SysModuleBuiltins.UNRAISABLEHOOK_ARGS_DESC, exceptionType, exception, traceback, messageObj,
-                            object != null ? object : PNone.NONE);
+            Object hookArguments = PFactory.createStructSeq(language, SysModuleBuiltins.UNRAISABLEHOOK_ARGS_DESC, exceptionType, exception, traceback,
+                            message != null ? message : PNone.NONE, object != null ? object : PNone.NONE);
             callNode.execute(frame, unraisablehook, hookArguments);
         } catch (PException e) {
-            ignoreException(context, message, concatNode, copyToByteArrayNode);
+            ignoreException(context, message, copyToByteArrayNode);
         }
     }
 
     @TruffleBoundary
-    private static void ignoreException(PythonContext context, TruffleString message, TruffleString.ConcatNode concatNode, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+    private static void ignoreException(PythonContext context, TruffleString message, TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
         try {
             if (message != null) {
-                TruffleString formatedMsg = formatMessage(message, concatNode);
-                byte[] data = new byte[formatedMsg.byteLength(TS_ENCODING)];
-                copyToByteArrayNode.execute(formatedMsg, 0, data, 0, data.length, TS_ENCODING);
+                byte[] data = new byte[message.byteLength(TS_ENCODING)];
+                copyToByteArrayNode.execute(message, 0, data, 0, data.length, TS_ENCODING);
                 context.getEnv().err().write(data);
             } else {
                 context.getEnv().err().write(ignoredMsg());
@@ -127,10 +118,6 @@ public abstract class WriteUnraisableNode extends Node {
         } catch (IOException ioException) {
             throw CompilerDirectives.shouldNotReachHere();
         }
-    }
-
-    private static TruffleString formatMessage(TruffleString message, TruffleString.ConcatNode concatNode) {
-        return concatNode.execute(T_IGNORED, message, TS_ENCODING, true);
     }
 
     @TruffleBoundary

@@ -41,14 +41,18 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYWEAKREFERENCE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
-import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PROXY_TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_A_WEAKREF;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.writePtr;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -63,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins.ReferenceTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -116,11 +121,45 @@ public final class PythonCextWeakrefBuiltins {
         return PythonContext.get(null).getCApiContext().getNonePtr();
     }
 
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PyObjectPtr}, call = Direct, acquireGil = false)
+    public static int PyWeakref_GetRef(long referencePtr, long resultPtr) {
+        long result = NULLPTR;
+        try {
+            if (referencePtr == NULLPTR) {
+                throw PythonCextBuiltins.badInternalCall("PyWeakref_GetRef", "referencePtr");
+            }
+
+            Object reference = NativeToPythonInternalNode.executeUncached(referencePtr, false);
+            Object referent;
+            if (reference instanceof PReferenceType ref) {
+                referent = ref.getObject();
+            } else if (reference instanceof PProxyType proxy) {
+                referent = proxy.weakReference.getObject();
+            } else {
+                throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.TypeError, EXPECTED_A_WEAKREF);
+            }
+
+            if (referent == null) {
+                return 0;
+            }
+            result = PythonToNativeInternalNode.executeNewRefUncached(referent);
+            return 1;
+        } finally {
+            writePtr(resultPtr, result);
+        }
+    }
+
     @CApiBuiltin(name = "_PyWeakref_ClearRef", ret = Void, args = {PYWEAKREFERENCE_PTR}, call = Direct, acquireGil = false, canRaise = false)
     public static void PyWeakref_ClearRef(long referencePtr) {
         Object reference = NativeToPythonInternalNode.executeUncached(referencePtr, false);
         if (reference instanceof PReferenceType ref) {
             ref.clearRef();
         }
+    }
+
+    @CApiBuiltin(name = "_PyWeakref_IsDead", ret = Int, args = {PyObjectRawPointer}, call = Direct, acquireGil = false, canRaise = false)
+    public static int PyWeakref_IsDead(long referencePtr) {
+        PReferenceType reference = (PReferenceType) NativeToPythonInternalNode.executeUncached(referencePtr, false);
+        return reference.getObject() == null ? 1 : 0;
     }
 }

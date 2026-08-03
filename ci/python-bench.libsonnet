@@ -227,7 +227,7 @@
     //------------------------------------------------------------------------------------------------------------------
     // graalpy bench tasks
     //------------------------------------------------------------------------------------------------------------------
-    bench_task(bench=null, benchmarks=$.BENCHMARKS):: os_arch_jdk_mixin + test_reports + task_spec(
+    bench_task(bench=null, benchmarks=$.BENCHMARKS):: $.ol8 + $.cpython_runtime + os_arch_jdk_mixin + test_reports + task_spec(
         bench_base_task(bench=bench, benchmarks=benchmarks) +
         evaluate_late(
             {bench_task_1: function(builder)

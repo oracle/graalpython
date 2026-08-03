@@ -121,7 +121,6 @@ test.test_traceback.TracebackCases.test_exception_is_None @ darwin-arm64,linux-a
 test.test_traceback.TracebackCases.test_format_exception_exc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_traceback.TracebackCases.test_format_exception_only_bad__str__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_traceback.TracebackCases.test_format_exception_only_exc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_traceback.TracebackCases.test_no_caret_with_no_debug_ranges_flag @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_traceback.TracebackCases.test_nocaret @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_traceback.TracebackCases.test_print_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_traceback.TracebackCases.test_print_exception_exc @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

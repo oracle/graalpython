@@ -31,6 +31,7 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
+import java.security.cert.X509Certificate;
 import java.util.LinkedHashMap;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -170,6 +171,7 @@ import com.oracle.graal.python.builtins.objects.itertools.PZipLongest;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.frame.PFrameLocalsProxy;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewIterator;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -199,6 +201,7 @@ import com.oracle.graal.python.builtins.objects.slice.PIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.PObjectSlice;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.PMemoryBIO;
+import com.oracle.graal.python.builtins.objects.ssl.PSSLCertificate;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLSocket;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
@@ -207,6 +210,7 @@ import com.oracle.graal.python.builtins.objects.struct.PStruct;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
+import com.oracle.graal.python.builtins.objects.thread.PThreadHandle;
 import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.tokenize.PTokenizerIter;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -222,6 +226,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.types.PGenericAlias;
 import com.oracle.graal.python.builtins.objects.types.PGenericAliasIterator;
 import com.oracle.graal.python.builtins.objects.types.PUnionType;
+import com.oracle.graal.python.builtins.objects.typing.PNoDefault;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpec;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpecArgs;
 import com.oracle.graal.python.builtins.objects.typing.PParamSpecKwargs;
@@ -250,6 +255,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -835,12 +841,16 @@ public final class PFactory {
      * Frames, traces and exceptions
      */
 
-    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, Object functionOrCode, boolean hasCustomLocals) {
-        return new PFrame(language, frameInfo, location, functionOrCode, hasCustomLocals);
+    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, BytecodeNode location, Object functionOrCode, Object customLocals) {
+        return new PFrame(language, frameInfo, location, functionOrCode, customLocals);
     }
 
-    public static PFrame createPFrame(PythonLanguage language, long threadState, PCode code, PythonObject globals, Object localsDict) {
-        return new PFrame(language, threadState, code, globals, localsDict);
+    public static PFrame createPFrame(PythonLanguage language, long threadState, PCode code, PythonObject globals, Object customLocals) {
+        return new PFrame(language, threadState, code, globals, customLocals);
+    }
+
+    public static PFrameLocalsProxy createFrameLocalsProxy(PythonLanguage language, PFrame frame) {
+        return new PFrameLocalsProxy(PythonBuiltinClassType.PFrameLocalsProxy, PythonBuiltinClassType.PFrameLocalsProxy.getInstanceShape(language), frame);
     }
 
     public static PTraceback createTraceback(PythonLanguage language, PFrame frame, int lineno, PTraceback next) {
@@ -1116,6 +1126,14 @@ public final class PFactory {
         return new PRLock(cls, shape);
     }
 
+    public static PThreadHandle createThreadHandle(PythonLanguage language) {
+        return createThreadHandle(PythonBuiltinClassType.PThreadHandle, PythonBuiltinClassType.PThreadHandle.getInstanceShape(language));
+    }
+
+    public static PThreadHandle createThreadHandle(Object cls, Shape shape) {
+        return new PThreadHandle(cls, shape);
+    }
+
     public static PSemLock createSemLock(Object cls, Shape shape, long handle, int kind, int maxValue, TruffleString name) {
         return new PSemLock(cls, shape, handle, kind, maxValue, name);
     }
@@ -1383,6 +1401,10 @@ public final class PFactory {
         return new PSSLContext(cls, shape, method, verifyFlags, checkHostname, verifyMode, context);
     }
 
+    public static PSSLCertificate createSSLCertificate(PythonLanguage language, X509Certificate certificate) {
+        return new PSSLCertificate(PythonBuiltinClassType.PSSLCertificate, PythonBuiltinClassType.PSSLCertificate.getInstanceShape(language), certificate);
+    }
+
     public static PSSLSocket createSSLSocket(PythonLanguage language, PSSLContext context, SSLEngine engine, PSocket socket) {
         return createSSLSocket(language, PythonBuiltinClassType.PSSLSocket, PythonBuiltinClassType.PSSLSocket.getInstanceShape(language), context, engine, socket);
     }
@@ -1425,7 +1447,7 @@ public final class PFactory {
     }
 
     @TruffleBoundary
-    public static PJSONEncoder createJSONEncoder(Object cls, Shape shape, Object markers, Object defaultFn, Object encoder, Object indent, TruffleString keySeparator,
+    public static PJSONEncoder createJSONEncoder(Object cls, Shape shape, Object markers, Object defaultFn, Object encoder, TruffleString indent, TruffleString keySeparator,
                     TruffleString itemSeparator,
                     boolean sortKeys, boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
         return new PJSONEncoder(cls, shape, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
@@ -1599,28 +1621,59 @@ public final class PFactory {
     public static PTypeVar createTypeVar(PythonLanguage language, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
                     boolean covariant, boolean contravariant, boolean inferVariance) {
         return createTypeVar(PythonBuiltinClassType.PTypeVar, PythonBuiltinClassType.PTypeVar.getInstanceShape(language), name, bound, evaluateBound, constraints, evaluateConstraints,
-                        covariant, contravariant, inferVariance);
+                        covariant, contravariant, inferVariance, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PTypeVar createTypeVar(PythonLanguage language, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
+                    boolean covariant, boolean contravariant, boolean inferVariance, Object defaultValue, Object evaluateDefault) {
+        return createTypeVar(PythonBuiltinClassType.PTypeVar, PythonBuiltinClassType.PTypeVar.getInstanceShape(language), name, bound, evaluateBound, constraints, evaluateConstraints,
+                        covariant, contravariant, inferVariance, defaultValue, evaluateDefault);
     }
 
     public static PTypeVar createTypeVar(Object cls, Shape shape, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
                     boolean covariant, boolean contravariant, boolean inferVariance) {
-        return new PTypeVar(cls, shape, name, bound, evaluateBound, constraints, evaluateConstraints, covariant, contravariant, inferVariance);
+        return createTypeVar(cls, shape, name, bound, evaluateBound, constraints, evaluateConstraints, covariant, contravariant, inferVariance, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PTypeVar createTypeVar(Object cls, Shape shape, TruffleString name, Object bound, Object evaluateBound, Object constraints, Object evaluateConstraints,
+                    boolean covariant, boolean contravariant, boolean inferVariance, Object defaultValue, Object evaluateDefault) {
+        return new PTypeVar(cls, shape, name, bound, evaluateBound, constraints, evaluateConstraints, covariant, contravariant, inferVariance, defaultValue, evaluateDefault);
     }
 
     public static PTypeVarTuple createTypeVarTuple(PythonLanguage language, TruffleString name) {
-        return createTypeVarTuple(PythonBuiltinClassType.PTypeVarTuple, PythonBuiltinClassType.PTypeVarTuple.getInstanceShape(language), name);
+        return createTypeVarTuple(PythonBuiltinClassType.PTypeVarTuple, PythonBuiltinClassType.PTypeVarTuple.getInstanceShape(language), name, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PTypeVarTuple createTypeVarTuple(PythonLanguage language, TruffleString name, Object defaultValue, Object evaluateDefault) {
+        return createTypeVarTuple(PythonBuiltinClassType.PTypeVarTuple, PythonBuiltinClassType.PTypeVarTuple.getInstanceShape(language), name, defaultValue, evaluateDefault);
     }
 
     public static PTypeVarTuple createTypeVarTuple(Object cls, Shape shape, TruffleString name) {
-        return new PTypeVarTuple(cls, shape, name);
+        return createTypeVarTuple(cls, shape, name, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PTypeVarTuple createTypeVarTuple(Object cls, Shape shape, TruffleString name, Object defaultValue, Object evaluateDefault) {
+        return new PTypeVarTuple(cls, shape, name, defaultValue, evaluateDefault);
     }
 
     public static PParamSpec createParamSpec(PythonLanguage language, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance) {
-        return createParamSpec(PythonBuiltinClassType.PParamSpec, PythonBuiltinClassType.PParamSpec.getInstanceShape(language), name, bound, covariant, contravariant, inferVariance);
+        return createParamSpec(PythonBuiltinClassType.PParamSpec, PythonBuiltinClassType.PParamSpec.getInstanceShape(language), name, bound, covariant, contravariant, inferVariance,
+                        PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PParamSpec createParamSpec(PythonLanguage language, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance, Object defaultValue,
+                    Object evaluateDefault) {
+        return createParamSpec(PythonBuiltinClassType.PParamSpec, PythonBuiltinClassType.PParamSpec.getInstanceShape(language), name, bound, covariant, contravariant, inferVariance,
+                        defaultValue, evaluateDefault);
     }
 
     public static PParamSpec createParamSpec(Object cls, Shape shape, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance) {
-        return new PParamSpec(cls, shape, name, bound, covariant, contravariant, inferVariance);
+        return createParamSpec(cls, shape, name, bound, covariant, contravariant, inferVariance, PNoDefault.NO_DEFAULT, null);
+    }
+
+    public static PParamSpec createParamSpec(Object cls, Shape shape, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance, Object defaultValue,
+                    Object evaluateDefault) {
+        return new PParamSpec(cls, shape, name, bound, covariant, contravariant, inferVariance, defaultValue, evaluateDefault);
     }
 
     public static PParamSpecArgs createParamSpecArgs(PythonLanguage language, Object origin) {

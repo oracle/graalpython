@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,7 +65,7 @@ public final class CSVReader extends PythonBuiltinObject {
     final CSVDialect dialect; /* parsing dialect */
     ReaderState state; /* current CSV parse state */
     TruffleStringBuilderUTF32 field; /* temporary buffer */
-    boolean numericField; /* treat field as numeric */
+    boolean unquotedField; /* true if no quotes around the current field */
     int lineNum; /* Source-file line number */
     long fieldLimit; /* Cached copy of CSVModuleBuiltins.fieldLimit */
 
@@ -79,6 +79,6 @@ public final class CSVReader extends PythonBuiltinObject {
     void parseReset() {
         this.field = TruffleStringBuilder.createUTF32();
         this.state = START_RECORD;
-        this.numericField = false;
+        this.unquotedField = false;
     }
 }

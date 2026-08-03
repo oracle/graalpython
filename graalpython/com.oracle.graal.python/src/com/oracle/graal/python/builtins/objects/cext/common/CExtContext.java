@@ -65,6 +65,7 @@ public abstract class CExtContext {
     public static final int METH_O = 0x0008;
     public static final int METH_CLASS = 0x0010;
     public static final int METH_STATIC = 0x0020;
+    public static final int METH_COEXIST = 0x0040;
     public static final int METH_FASTCALL = 0x0080;
     public static final int METH_METHOD = 0x0200;
 

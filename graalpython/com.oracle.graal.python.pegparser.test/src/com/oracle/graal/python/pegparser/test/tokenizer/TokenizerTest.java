@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -126,12 +126,12 @@ public class TokenizerTest {
 
     @Test
     public void testAsync() {
-        assertToken("async", Token.Kind.ASYNC);
+        assertToken("async", Token.Kind.NAME);
     }
 
     @Test
     public void testAwait() {
-        assertToken("await", Token.Kind.AWAIT);
+        assertToken("await", Token.Kind.NAME);
     }
 
     @Test
@@ -215,6 +215,32 @@ public class TokenizerTest {
             }
             assertTrue("Expected ERRORTOKEN for input '" + code + "'", wasError);
         }
+    }
+
+    @Test
+    public void testSyntaxErrorRange() {
+        Tokenizer tokenizer = createTokenizer("1_");
+        Token token = tokenizer.next();
+        assertEquals(Token.Kind.ERRORTOKEN, token.type);
+        assertEquals(1, tokenizer.getErrorSourceRange().startLine);
+        assertEquals(1, tokenizer.getErrorSourceRange().startColumn);
+        assertEquals(1, tokenizer.getErrorSourceRange().endColumn);
+
+        tokenizer = createTokenizer("'abc");
+        token = tokenizer.next();
+        assertEquals(Token.Kind.ERRORTOKEN, token.type);
+        assertEquals(1, tokenizer.getErrorSourceRange().startLine);
+        assertEquals(0, tokenizer.getErrorSourceRange().startColumn);
+        assertEquals(0, tokenizer.getErrorSourceRange().endColumn);
+    }
+
+    @Test
+    public void testNullByteDiscardsInput() {
+        Tokenizer tokenizer = Tokenizer.fromReadline(new TestParserCallbacksImpl(),
+                        EnumSet.of(Tokenizer.Flag.TYPE_COMMENT), () -> "x\0name\n".codePoints().toArray());
+
+        assertEquals(Token.Kind.ERRORTOKEN, tokenizer.next().type);
+        assertEquals(Token.Kind.ERRORTOKEN, tokenizer.next().type);
     }
 
     @Test
@@ -391,7 +417,7 @@ public class TokenizerTest {
         do {
             token = tokenizer.next();
             tokens.add(token);
-        } while (token.type != Token.Kind.ENDMARKER);
+        } while (token.type != Token.Kind.ENDMARKER && token.type != Token.Kind.ERRORTOKEN);
         return tokens.toArray(new Token[tokens.size()]);
     }
 
@@ -544,10 +570,6 @@ public class TokenizerTest {
                 return 53;
             case Token.Kind.OP:
                 return 54;
-            case Token.Kind.AWAIT:
-                return 55;
-            case Token.Kind.ASYNC:
-                return 56;
             case Token.Kind.TYPE_IGNORE:
                 return 57;
             case Token.Kind.TYPE_COMMENT:

@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2021, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2021 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -108,6 +108,8 @@ public class Tokenizer {
     private int tokenStart = 0;
     /** {@code tok_state->done} */
     private StatusCode done = StatusCode.OK;
+    private String errorMessage;
+    private SourceRange errorSourceRange;
     /** {@code tok_state->tabsize} */
     private final int tabSize = TABSIZE;
     /** {@code tok_state->indent} */
@@ -201,6 +203,8 @@ public class Tokenizer {
         interactive = t.interactive;
         tokenStart = t.tokenStart;
         done = t.done;
+        errorMessage = t.errorMessage;
+        errorSourceRange = t.errorSourceRange;
         currentIndentIndex = t.currentIndentIndex;
         System.arraycopy(t.indentationStack, 0, indentationStack, 0, indentationStack.length);
         atBeginningOfLine = t.atBeginningOfLine;
@@ -489,8 +493,14 @@ public class Tokenizer {
                 }
                 return c;
             } else {
+                if (done != StatusCode.OK) {
+                    return EOF;
+                }
                 if (fillInput()) {
                     continue;
+                }
+                if (done != StatusCode.OK) {
+                    return EOF;
                 }
                 if (nextCharIndex == codePointsInputLength && execInput) {
                     // check if we need to report a missing newline before eof
@@ -533,6 +543,20 @@ public class Tokenizer {
         codePointsInputLength += line.length;
         lineStartIndex = nextCharIndex;
 
+        for (int c : line) {
+            if (c == 0) {
+                if (oldSize > 0) {
+                    currentLineNumber++;
+                    readNewline = false;
+                }
+                done = StatusCode.SYNTAX_ERROR;
+                errorMessage = "source code cannot contain null bytes";
+                errorSourceRange = new SourceRange(currentLineNumber, -1, currentLineNumber, -1);
+                nextCharIndex = codePointsInputLength;
+                return false;
+            }
+        }
+
         implicitNewline = false;
         if (codePointsInput[codePointsInputLength - 1] != '\n') {
             /* Last line does not end in \n, fake one */
@@ -549,7 +573,7 @@ public class Tokenizer {
      * tok_backup
      */
     void oneBack() {
-        if (nextCharIndex > 0 && done != StatusCode.EOF) {
+        if (nextCharIndex > 0 && done == StatusCode.OK) {
             nextCharIndex--;
             readNewline = false;
         }
@@ -558,9 +582,12 @@ public class Tokenizer {
     /**
      * syntaxerror_known_range, _syntaxerror_range
      */
-    @SuppressWarnings("unused")     // TODO use column offsets
     Token syntaxError(int colOffset, int endColOffset, String message) {
         done = StatusCode.SYNTAX_ERROR;
+        errorMessage = message;
+        int startColumn = colOffset >= 0 ? colOffset - 1 : nextCharIndex - lineStartIndex - 1;
+        int endColumn = endColOffset >= 0 ? endColOffset - 1 : startColumn;
+        errorSourceRange = new SourceRange(currentLineNumber, startColumn, currentLineNumber, endColumn);
         return createToken(Token.Kind.ERRORTOKEN, message);
     }
 
@@ -1037,21 +1064,6 @@ public class Tokenizer {
                                 return createToken(Token.Kind.ERRORTOKEN, errMsg);
                             }
                         }
-                        if (!asyncHacks || insideAsyncDef) {
-                            if (tokenString.equals("async")) {
-                                return createToken(Token.Kind.ASYNC);
-                            }
-                            if (tokenString.equals("await")) {
-                                return createToken(Token.Kind.AWAIT);
-                            }
-                        } else if (tokenString.equals("async")) {
-                            Token t = new Tokenizer(this).next();
-                            if (t.type == Token.Kind.NAME && getTokenCodePoints(t).toJavaString().equals("def")) {
-                                insideAsyncDef = true;
-                                indentationOfAsyncDef = currentIndentIndex;
-                                return createToken(Token.Kind.ASYNC);
-                            }
-                        }
                         return createToken(Token.Kind.NAME);
                     }
 
@@ -1373,6 +1385,7 @@ public class Tokenizer {
                         int quote = c;
                         int quote_size = 1;
                         int end_quote_size = 0;
+                        boolean hasEscapedQuote = false;
 
                         /*
                          * Nodes of type STRING, especially multi line strings must be handled
@@ -1425,6 +1438,9 @@ public class Tokenizer {
                                 if (quote_size == 3) {
                                     return syntaxError(String.format("unterminated triple-quoted string literal" +
                                                     " (detected at line %d)", start));
+                                } else if (hasEscapedQuote) {
+                                    return syntaxError(String.format("unterminated string literal" +
+                                                    " (detected at line %d); perhaps you escaped the end quote?", start));
                                 } else {
                                     return syntaxError(String.format("unterminated string literal" +
                                                     " (detected at line %d)", start));
@@ -1436,6 +1452,9 @@ public class Tokenizer {
                                 end_quote_size = 0;
                                 if (c == '\\') {
                                     c = nextChar(); /* skip escaped char */
+                                    if (c == quote) {
+                                        hasEscapedQuote = true;
+                                    }
                                     if (c == '\r') {
                                         nextChar();
                                     }
@@ -1638,10 +1657,7 @@ public class Tokenizer {
             boolean inFormatSpec = currentMode.inFormatSpec && currentMode.insideFstringExpr();
             if (c == EOF || (currentMode.quoteSize == 1 && c == '\n')) {
                 if (inFormatSpec && c == '\n') {
-                    oneBack();
-                    modeStack.getFirst().kind = Mode.Kind.REGULAR;
-                    currentMode.inFormatSpec = false;
-                    return createToken(Kind.FSTRING_MIDDLE, tokenStart, nextCharIndex);
+                    return syntaxError("f-string: newlines are not allowed in format specifiers for single quoted f-strings");
                 }
                 nextCharIndex = currentMode.tokenStart;
                 nextCharIndex++;
@@ -1892,6 +1908,14 @@ public class Tokenizer {
         return done;
     }
 
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public SourceRange getErrorSourceRange() {
+        return errorSourceRange;
+    }
+
     public int getParensNestingLevel() {
         return parensNestingLevel;
     }
@@ -1991,17 +2015,46 @@ public class Tokenizer {
         if (!tokMode.debug || tokenMetadata != null) {
             return;
         }
+        // Look for a '#' outside of string literals. A '#' inside a string is part of the
+        // debug expression and must not be treated as the start of a comment.
         boolean hashDetected = false;
+        boolean inString = false;
+        int quoteChar = 0;
         for (int i = tokMode.debugExprStart; i < tokMode.debugExprEnd; ++i) {
-            if (codePointsInput[i] == '#') {
+            int ch = codePointsInput[i];
+            if (ch == '\\') {
+                i++;
+                continue;
+            }
+            if (ch == '"' || ch == '\'') {
+                if (!inString) {
+                    inString = true;
+                    quoteChar = ch;
+                } else if (ch == quoteChar) {
+                    inString = false;
+                }
+                continue;
+            }
+            if (ch == '#' && !inString) {
                 hashDetected = true;
                 break;
             }
         }
         if (hashDetected) {
             CodePoints.Builder sb = new CodePoints.Builder(tokMode.debugExprEnd - tokMode.debugExprStart);
+            inString = false;
+            quoteChar = 0;
             for (int i = tokMode.debugExprStart; i < tokMode.debugExprEnd; ++i) {
-                if (codePointsInput[i] == '#') {
+                int ch = codePointsInput[i];
+                if (ch == '"' || ch == '\'') {
+                    if (!inString) {
+                        inString = true;
+                        quoteChar = ch;
+                    } else if (ch == quoteChar) {
+                        inString = false;
+                    }
+                    sb.appendCodePoint(ch);
+                } else if (ch == '#' && !inString) {
                     while (i < tokMode.debugExprEnd) {
                         if (codePointsInput[i] == '\n') {
                             sb.appendCodePoint('\n');
@@ -2010,7 +2063,7 @@ public class Tokenizer {
                         i++;
                     }
                 } else {
-                    sb.appendCodePoint(codePointsInput[i]);
+                    sb.appendCodePoint(ch);
                 }
             }
             tokenMetadata = sb.build();

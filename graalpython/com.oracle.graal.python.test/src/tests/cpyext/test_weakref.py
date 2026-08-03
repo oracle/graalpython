@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -63,20 +63,72 @@ TestWeakRefHelper = CPyExtType(
 )
 helper = TestWeakRefHelper()
 
+GetRefHelper = CPyExtType(
+    'GetRefHelper',
+    '''
+    static PyObject* getref(PyObject* unused, PyObject* ref) {
+        if (ref == Py_None) {
+            ref = NULL;
+        }
+        PyObject* obj = (PyObject*)0xDEADBEEF;
+        int rc = PyWeakref_GetRef(ref, &obj);
+        if (rc < 0) {
+            assert(obj == NULL);
+            return NULL;
+        }
+        if (obj == NULL) {
+            return PyLong_FromLong(rc);
+        }
+        return Py_BuildValue("iN", rc, obj);
+    }
+    ''',
+    tp_methods='{"getref", (PyCFunction)getref, METH_O | METH_STATIC, ""}'
+)
+getref_helper = GetRefHelper()
+
 class TestWeakRef(unittest.TestCase):
-    
+
     def test_simple(self):
         class Foo:
             pass
-        
+
         x = Foo()
         y = weakref.ref(x)
         assert type(y) == weakref.ReferenceType
-        
+
     def test_native(self):
         clazz = helper.create_type((object,))
         x = clazz()
         assert_raises(TypeError, weakref.ref, x)
+
+    def test_PyWeakref_GetRef(self):
+        class Foo:
+            pass
+
+        obj = Foo()
+        ref = weakref.ref(obj)
+        proxy = weakref.proxy(obj)
+        rc, referent = getref_helper.getref(ref)
+        self.assertEqual(rc, 1)
+        self.assertIs(referent, obj)
+        del referent
+        rc, referent = getref_helper.getref(proxy)
+        self.assertEqual(rc, 1)
+        self.assertIs(referent, obj)
+        del referent, obj
+
+        for _ in range(3):
+            gc.collect()
+            if ref() is None:
+                break
+        self.assertIsNone(ref())
+        self.assertEqual(getref_helper.getref(ref), 0)
+        self.assertEqual(getref_helper.getref(proxy), 0)
+
+        with self.assertRaisesRegex(TypeError, "^expected a weakref$"):
+            getref_helper.getref(42)
+        with self.assertRaises(SystemError):
+            getref_helper.getref(None)
 
     # sometimes fails on CPython
     def ignored_test_native_sub(self):

@@ -76,8 +76,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
-import com.oracle.graal.python.builtins.objects.ssl.CertUtils.BadBase64Exception;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
@@ -98,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.ssl.CertUtils.BadBase64Exception;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordException;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NoCertificateFoundException;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -387,6 +386,23 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 self.setVerifyMode(SSLModuleBuiltins.SSL_CERT_REQUIRED);
             }
             self.setCheckHostname(checkHostname);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_host_flags", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class HostFlagsNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static long get(PSSLContext self, @SuppressWarnings("unused") PNone value) {
+            return Integer.toUnsignedLong(self.getHostFlags());
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(VirtualFrame frame, PSSLContext self, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            self.setHostFlags(asSizeNode.executeLossy(frame, inliningTarget, value));
             return PNone.NONE;
         }
     }
@@ -693,22 +709,23 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             try {
-                int x509 = 0, crl = 0, ca = 0;
-                for (X509Certificate cert : self.getCACerts()) {
-                    boolean[] keyUsage = CertUtils.getKeyUsage(cert);
-                    if (CertUtils.isCrl(keyUsage)) {
-                        crl++;
-                    } else {
-                        x509++;
-                        if (CertUtils.isCA(cert, keyUsage)) {
-                            ca++;
-                        }
-                    }
-                }
-                return PFactory.createDict(language, new PKeyword[]{new PKeyword(T_X509, x509), new PKeyword(T_CRL, crl), new PKeyword(T_X509_CA, ca)});
+                return doStoreStats(self, language);
             } catch (Exception ex) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL, ex);
             }
+        }
+
+        @TruffleBoundary
+        private static PDict doStoreStats(PSSLContext self, PythonLanguage language) throws KeyStoreException, NoSuchAlgorithmException {
+            int x509 = 0, ca = 0;
+            for (X509Certificate cert : self.getCACerts()) {
+                boolean[] keyUsage = CertUtils.getKeyUsage(cert);
+                x509++;
+                if (CertUtils.isCA(cert, keyUsage)) {
+                    ca++;
+                }
+            }
+            return PFactory.createDict(language, new PKeyword[]{new PKeyword(T_X509, x509), new PKeyword(T_CRL, self.getCRLCount()), new PKeyword(T_X509_CA, ca)});
         }
     }
 

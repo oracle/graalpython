@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -362,6 +362,40 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return SSLSocketBuiltinsClinicProviders.GetPeerCertNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "get_unverified_chain", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetUnverifiedChainNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object getCertificateChain(PSSLSocket self,
+                        @Bind PythonLanguage language) {
+            try {
+                Certificate[] certificates = self.getEngine().getSession().getPeerCertificates();
+                Object[] result = new Object[certificates.length];
+                for (int i = 0; i < certificates.length; i++) {
+                    if (!(certificates[i] instanceof X509Certificate)) {
+                        return PNone.NONE;
+                    }
+                    result[i] = PFactory.createSSLCertificate(language, (X509Certificate) certificates[i]);
+                }
+                return PFactory.createList(language, result);
+            } catch (SSLPeerUnverifiedException e) {
+                return PNone.NONE;
+            }
+        }
+    }
+
+    @Builtin(name = "get_verified_chain", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetVerifiedChainNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object getVerifiedChain(@SuppressWarnings("unused") PSSLSocket self,
+                        @Bind Node inliningTarget) {
+            /* Doesn't seem possible to implement on JSSE */
+            throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
         }
     }
 

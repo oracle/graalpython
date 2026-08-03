@@ -40,6 +40,29 @@
 
 import types
 
+
+def test_incomplete_input_error():
+    flags = 0x4000 | 0x200  # PyCF_ALLOW_INCOMPLETE_INPUT | PyCF_DONT_IMPLY_DEDENT
+
+    assert issubclass(_IncompleteInputError, SyntaxError)
+    assert _IncompleteInputError.__module__ == "builtins"
+    for source in ("if True:", "(", "x ="):
+        try:
+            compile(source, "<input>", "single", flags)
+        except _IncompleteInputError as e:
+            assert e.msg == "incomplete input"
+        else:
+            assert False, "_IncompleteInputError was not raised"
+
+    for source in ("$ invalid", "(]"):
+        try:
+            compile(source, "<input>", "single", flags)
+        except SyntaxError as e:
+            assert type(e) is SyntaxError
+        else:
+            assert False, "SyntaxError was not raised"
+
+
 def test_lambdas_as_function_default_argument_values():
     globs = {}
     exec("""
@@ -153,7 +176,7 @@ def assert_raise_syntax_error(source, msg):
 
 def test_cannot_assign():
     if sys.implementation.version.minor >= 8:
-        def check(s, label1, label2=None):
+        def check(s, label1, label2=None, comprehension_msg=None):
             if label1:
                 msg1 = f'cannot assign to {label1}'
                 msg2 = f"'{label2 or label1}' is an illegal expression for augmented assignment"
@@ -169,7 +192,7 @@ def test_cannot_assign():
             # test for statement
             assert_raise_syntax_error("for %s in range(1,10):\n pass" % s, msg1)
             # test for comprehension statement
-            assert_raise_syntax_error("[1 for %s in range(1,10)]" % s, msg1)
+            assert_raise_syntax_error("[1 for %s in range(1,10)]" % s, comprehension_msg or msg1)
         check("1", "literal")
         check("1.1", "literal")
         check("{1}", "set display")
@@ -193,7 +216,7 @@ def test_cannot_assign():
         check("{letter for letter in 'ahoj'}", "set comprehension")
         check("[letter for letter in 'ahoj']", "list comprehension")
         check("(letter for letter in 'ahoj')", "generator expression")
-        check("obj.True", None)
+        check("obj.True", None, comprehension_msg="'in' expected after for-loop variables")
         check("(a, *True, b)", "True", "tuple")
         check("(a, *False, b)", "False", "tuple")
         check("(a, *None, b)", "None", "tuple")
@@ -872,4 +895,3 @@ def test_ComprehensionListExpr():
 
 def test_BYTE_ORDER_MARK():
     assert eval('u"\N{BYTE ORDER MARK}"') == '\ufeff'
-

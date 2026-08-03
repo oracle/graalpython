@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyTZInfoCheckNode;
-import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -222,27 +222,28 @@ public class TimeNodes {
 
         private static final TruffleString T_FOLD = tsLiteral("fold");
 
-        public abstract Object execute(Node inliningTarget, Object cls, Object hour, Object minute, Object second, Object microsecond, Object tzInfo, Object fold);
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object cls, Object hour, Object minute, Object second, Object microsecond, Object tzInfo, Object fold);
 
-        public static SubclassNewNode getUncached() {
-            return TimeNodesFactory.SubclassNewNodeGen.getUncached();
+        public static Object executeUncached(Object cls, Object hour, Object minute, Object second, Object microsecond, Object tzInfo, Object fold) {
+            return TimeNodesFactory.SubclassNewNodeGen.getUncached().execute(null, null, cls, hour, minute, second, microsecond, tzInfo, fold);
         }
 
         @Specialization(guards = {"isBuiltinClass(cls)"})
-        static Object newTimeBuiltinClass(Node inliningTarget, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject,
+        static Object newTimeBuiltinClass(VirtualFrame frame, Node inliningTarget, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject,
+                        Object tzInfoObject,
                         Object foldObject,
                         @Cached NewNode newNode) {
-            return newNode.execute(inliningTarget, cls, hourObject, minuteObject, secondObject, microsecondObject, tzInfoObject, foldObject);
+            return newNode.execute(frame, inliningTarget, cls, hourObject, minuteObject, secondObject, microsecondObject, tzInfoObject, foldObject);
         }
 
         @Fallback
-        @TruffleBoundary
-        static Object newTimeGeneric(Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject) {
+        static Object newTimeGeneric(VirtualFrame frame, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject,
+                        @Cached CallNode callNode) {
             Object[] arguments = new Object[]{hourObject, minuteObject, secondObject, microsecondObject, tzInfoObject};
             PKeyword foldKeyword = new PKeyword(T_FOLD, foldObject);
             PKeyword[] keywords = new PKeyword[]{foldKeyword};
 
-            return CallNode.executeUncached(cls, arguments, keywords);
+            return callNode.execute(frame, cls, arguments, keywords);
         }
 
         static boolean isBuiltinClass(Object cls) {

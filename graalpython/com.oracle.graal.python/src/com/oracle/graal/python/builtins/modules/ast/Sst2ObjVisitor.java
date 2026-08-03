@@ -888,6 +888,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
         PythonObject o = createPythonObject(state.clsTypeVar);
         o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
         o.setAttribute(AstState.T_F_BOUND, visitNullable(node.bound));
+        o.setAttribute(AstState.T_F_DEFAULT_VALUE, visitNullable(node.defaultValue));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -896,6 +897,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
     public Object visit(TypeParamTy.ParamSpec node) {
         PythonObject o = createPythonObject(state.clsParamSpec);
         o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
+        o.setAttribute(AstState.T_F_DEFAULT_VALUE, visitNullable(node.defaultValue));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }
@@ -904,6 +906,7 @@ final class Sst2ObjVisitor extends Sst2ObjVisitorBase {
     public Object visit(TypeParamTy.TypeVarTuple node) {
         PythonObject o = createPythonObject(state.clsTypeVarTuple);
         o.setAttribute(AstState.T_F_NAME, visitNonNull(node.name));
+        o.setAttribute(AstState.T_F_DEFAULT_VALUE, visitNullable(node.defaultValue));
         fillSourceRangeAttributes(o, node.getSourceRange());
         return o;
     }

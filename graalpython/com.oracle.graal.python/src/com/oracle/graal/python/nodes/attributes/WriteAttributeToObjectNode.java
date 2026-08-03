@@ -54,15 +54,18 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -240,7 +243,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @Cached CStructAccess.ReadObjectNode getNativeDict,
                     @Exclusive @Cached HashingStorageSetItem setHashingStorageItem,
                     @Exclusive @Cached InlinedBranchProfile updateStorage,
-                    @Cached IsTypeNode isTypeNode,
+                    @Exclusive @Cached IsTypeNode isTypeNode,
                     @Exclusive @Cached PRaiseNode raiseNode) {
         boolean isType = isTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, object));
         try {
@@ -279,9 +282,19 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
 
     @Specialization(guards = "isErrorCase(getDict, object)")
     static boolean doError(Object object, TruffleString key, Object value,
-                    @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Bind Node inliningTarget) {
-        throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
+                    @Bind Node inliningTarget,
+                    @Cached GetClassNode getClassNode,
+                    @Cached GetCachedTpSlotsNode getSlotsNode,
+                    @Exclusive @Cached IsTypeNode isTypeNode,
+                    @Exclusive @Cached PRaiseNode raiseNode) {
+        Object type = getClassNode.execute(inliningTarget, object);
+        TruffleString message = ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
+        if ((value != PNone.NO_VALUE || !isTypeNode.execute(inliningTarget, type)) &&
+                        getSlotsNode.execute(inliningTarget, type).tp_setattro() == ObjectBuiltins.SLOTS.tp_setattro()) {
+            message = ErrorMessages.OBJ_P_HAS_NO_ATTR_S_AND_NO_DICT;
+        }
+        throw raiseNode.raiseAttributeError(inliningTarget, message, object, key);
     }
 
     static boolean isErrorCase(GetDictIfExistsNode getDict, Object object) {

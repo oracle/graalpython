@@ -41,9 +41,11 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
@@ -59,9 +61,12 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
+import java.math.BigInteger;
+import java.nio.ByteOrder;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
@@ -80,16 +85,20 @@ import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
+import com.oracle.graal.python.lib.PyLongCheckNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.runtime.nativeaccess.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -271,44 +280,46 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
-    abstract static class _PyLong_AsByteArray extends CApi5BuiltinNode {
-        private static void checkSign(Node inliningTarget, boolean negative, int isSigned, PRaiseNode raiseNode) {
+    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int, Int}, call = Direct)
+    abstract static class _PyLong_AsByteArray extends CApi6BuiltinNode {
+        private static void checkSign(Node inliningTarget, boolean negative, int isSigned, int withExceptions, PRaiseNode raiseNode) {
             if (negative) {
                 if (isSigned == 0) {
-                    throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+                    if (withExceptions != 0) {
+                        throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.MESSAGE_CONVERT_NEGATIVE);
+                    }
                 }
             }
         }
 
         @Specialization
-        static Object get(int value, long bytes, long n, int littleEndian, int isSigned,
+        static Object get(int value, long bytes, long n, int littleEndian, int isSigned, int withExceptions,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            checkSign(inliningTarget, value < 0, isSigned, raiseNode);
+            checkSign(inliningTarget, value < 0, isSigned, withExceptions, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             NativeMemory.writeByteArrayElements(bytes, 0L, array, 0, array.length);
             return 0;
         }
 
         @Specialization
-        static Object get(long value, long bytes, long n, int littleEndian, int isSigned,
+        static Object get(long value, long bytes, long n, int littleEndian, int isSigned, int withExceptions,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            checkSign(inliningTarget, value < 0, isSigned, raiseNode);
+            checkSign(inliningTarget, value < 0, isSigned, withExceptions, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             NativeMemory.writeByteArrayElements(bytes, 0L, array, 0, array.length);
             return 0;
         }
 
         @Specialization
-        static Object get(PInt value, long bytes, long n, int littleEndian, int isSigned,
+        static Object get(PInt value, long bytes, long n, int littleEndian, int isSigned, int withExceptions,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
                         @Shared @Cached PRaiseNode raiseNode) {
-            checkSign(inliningTarget, value.isNegative(), isSigned, raiseNode);
+            checkSign(inliningTarget, value.isNegative(), isSigned, withExceptions, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromBigInteger(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
             NativeMemory.writeByteArrayElements(bytes, 0L, array, 0, array.length);
             return 0;
@@ -338,6 +349,115 @@ public final class PythonCextLongBuiltins {
             byte[] bytes = readByteArrayElements(charPtr, 0, (int) size);
             return fromByteArray.execute(inliningTarget, bytes, littleEndian != 0, signed != 0);
         }
+    }
+
+    private static final int LITTLE_ENDIAN = 1;
+    private static final int NATIVE_ENDIAN = 2;
+    private static final int UNSIGNED_BUFFER = 4;
+    private static final int REJECT_NEGATIVE = 8;
+    private static final int ALLOW_INDEX = 16;
+    private static final int PYLONG_BITS_IN_DIGIT = 30;
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, Pointer, Py_ssize_t, Int}, call = Direct)
+    static long PyLong_AsNativeBytes(long objectPtr, long buffer, long size, int flags) {
+        if (objectPtr == 0 || size < 0) {
+            throw PythonCextBuiltins.badInternalCall("PyLong_AsNativeBytes", objectPtr == 0 ? "object" : "size");
+        }
+
+        Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
+        Object integer = object;
+        if (!PyLongCheckNode.executeUncached(object)) {
+            if (flags != -1 && (flags & ALLOW_INDEX) != 0) {
+                integer = PyNumberIndexNode.executeUncached(object);
+            } else {
+                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, object);
+            }
+        }
+
+        BigInteger value = CastToJavaBigIntegerNode.executeUncached(integer);
+        if (flags != -1 && (flags & REJECT_NEGATIVE) != 0 && value.signum() < 0) {
+            throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_INT);
+        }
+
+        boolean littleEndian;
+        if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
+            littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+        } else {
+            littleEndian = (flags & LITTLE_ENDIAN) != 0;
+        }
+        if (size > 0) {
+            writeNativeBytes(buffer, size, value, littleEndian);
+        }
+        return requiredNativeBytesSize(value, size, flags);
+    }
+
+    @TruffleBoundary
+    private static void writeNativeBytes(long buffer, long size, BigInteger value, boolean littleEndian) {
+        byte[] source = value.toByteArray();
+        byte fill = value.signum() < 0 ? (byte) 0xff : 0;
+        NativeMemory.memset(buffer, fill, size);
+        int copyLength = (int) Math.min(size, source.length);
+        int sourceOffset = source.length - copyLength;
+        if (littleEndian) {
+            byte[] reversed = new byte[copyLength];
+            for (int i = 0; i < copyLength; i++) {
+                reversed[i] = source[source.length - i - 1];
+            }
+            NativeMemory.writeByteArrayElements(buffer, 0, reversed, 0, copyLength);
+        } else {
+            NativeMemory.writeByteArrayElements(buffer, size - copyLength, source, sourceOffset, copyLength);
+        }
+    }
+
+    @TruffleBoundary
+    private static long requiredNativeBytesSize(BigInteger value, long size, int flags) {
+        int magnitudeBits = value.abs().bitLength();
+        if (magnitudeBits <= PYLONG_BITS_IN_DIGIT) {
+            long result = Long.BYTES;
+            if (size > 0 && size <= Long.BYTES) {
+                int bits = (int) size * Byte.SIZE;
+                BigInteger signedLimit = BigInteger.ONE.shiftLeft(bits - 1);
+                if (value.compareTo(signedLimit.negate()) >= 0 && value.compareTo(signedLimit) < 0) {
+                    result = size;
+                } else if (value.signum() > 0 && value.compareTo(BigInteger.ONE.shiftLeft(bits)) < 0) {
+                    result = flags == -1 || (flags & UNSIGNED_BUFFER) != 0 ? size : size + 1;
+                }
+            }
+            return result;
+        }
+
+        long result = magnitudeBits / Byte.SIZE + 1L;
+        if (size > 0 && result == size + 1 && magnitudeBits % Byte.SIZE == 0) {
+            if (value.signum() < 0) {
+                BigInteger minimum = BigInteger.ONE.shiftLeft(magnitudeBits - 1).negate();
+                if (value.equals(minimum)) {
+                    result = size;
+                }
+            } else if (flags == -1 || (flags & UNSIGNED_BUFFER) != 0) {
+                result = size;
+            }
+        }
+        return result;
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct)
+    static long PyLong_FromNativeBytes(long buffer, long size, int flags) {
+        if (buffer == 0) {
+            throw PythonCextBuiltins.badInternalCall("PyLong_FromNativeBytes", "buffer");
+        }
+        if (size != (int) size) {
+            throw PRaiseNode.raiseStatic(null, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+        }
+        boolean littleEndian;
+        if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
+            littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+        } else {
+            littleEndian = (flags & LITTLE_ENDIAN) != 0;
+        }
+        boolean signed = flags == -1 || (flags & UNSIGNED_BUFFER) == 0;
+        byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
+        Object result = IntNodes.PyLongFromByteArray.executeUncached(bytes, littleEndian, signed);
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
 }

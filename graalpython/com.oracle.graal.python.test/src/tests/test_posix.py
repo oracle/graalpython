@@ -261,6 +261,13 @@ class PosixTests(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, r"expected C.__fspath__\(\) to return str or bytes, not bytearray"):
             os.open(C(), 0)
 
+    @unittest.skipIf(sys.platform == 'win32', 'Windows uses surrogatepass for filesystem paths')
+    def test_path_converter_surrogateescape(self):
+        with self.assertRaises(UnicodeEncodeError):
+            os.stat('invalid-\udc74')
+        with self.assertRaises(OSError):
+            os.stat('valid-\udc80')
+
     def test_open_bytes_path(self):
         try:
             with open(os.fsencode(TEST_FULL_PATH1), os.O_WRONLY | os.O_CREAT) as fd:
@@ -665,17 +672,27 @@ class WithTempFilesTests(unittest.TestCase):
         self.assertTrue(os.stat(TEST_FULL_PATH2, follow_symlinks=False).st_atime > 900000000)
 
     def test_utimensat(self):
-        if sys.platform == 'darwin':
-            with self.assertRaises(NotImplementedError):
-                os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=(952468575678901234, 1579569825123456789))
+        timestamps = (952468575678901234, 1579569825123456789)
+        os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=timestamps)
+        stat_result = os.stat(TEST_FULL_PATH2)
+        if __graalpython__.posix_module_backend() == 'java':
+            self.assertEqual(timestamps[0] // 1_000_000_000, stat_result.st_atime_ns // 1_000_000_000)
+            self.assertEqual(timestamps[1] // 1_000_000_000, stat_result.st_mtime_ns // 1_000_000_000)
         else:
-            os.utime(TEST_FILENAME2, dir_fd=self.tmp_fd, ns=(952468575678901234, 1579569825123456789))
-            self.assertTrue(os.stat(TEST_FULL_PATH2).st_atime > 900000000)
+            self.assertEqual(timestamps[0], stat_result.st_atime_ns)
+            self.assertEqual(timestamps[1], stat_result.st_mtime_ns)
 
     def test_futimes_and_futimens(self):
         with open(TEST_FULL_PATH2, os.O_RDWR) as fd:
-            os.utime(fd, times=(12345, 67890))
-            self.assertTrue(abs(os.stat(TEST_FULL_PATH1).st_atime_ns - 12345000000000) < 10000000000)
+            timestamps = (12345678901234, 67890123456789)
+            os.utime(fd, ns=timestamps)
+            stat_result = os.stat(TEST_FULL_PATH1)
+            if __graalpython__.posix_module_backend() == 'java':
+                self.assertEqual(timestamps[0] // 1_000_000_000, stat_result.st_atime_ns // 1_000_000_000)
+                self.assertEqual(timestamps[1] // 1_000_000_000, stat_result.st_mtime_ns // 1_000_000_000)
+            else:
+                self.assertEqual(timestamps[0], stat_result.st_atime_ns)
+                self.assertEqual(timestamps[1], stat_result.st_mtime_ns)
 
     @unittest.skipUnless(sys.platform != 'darwin', 'faccessat on MacOSX does not support follow_symlinks')
     def test_access(self):

@@ -1,4 +1,4 @@
-/* Copyright (c) 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2025, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2025 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #ifndef Py_BUILD_CORE
-#  error "Py_BUILD_CORE must be defined to include this header"
+#  error "this header requires Py_BUILD_CORE define"
 #endif
 
 #ifdef MS_WINDOWS

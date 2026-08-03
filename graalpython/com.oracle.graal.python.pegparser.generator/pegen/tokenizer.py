@@ -1,10 +1,13 @@
-# Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2022 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+# GraalPy change: restore 3.8 compatibility for CI
+from __future__ import annotations
+
 import token
 import tokenize
-from typing import Dict, Iterator, List
+from collections.abc import Iterator
 
 Mark = int  # NewType('Mark', int)
 
@@ -12,7 +15,11 @@ exact_token_types = token.EXACT_TOKEN_TYPES
 
 
 def shorttok(tok: tokenize.TokenInfo) -> str:
-    return "%-25.25s" % f"{tok.start[0]}.{tok.start[1]}: {token.tok_name[tok.type]}:{tok.string!r}"
+    formatted = (
+        f"{tok.start[0]}.{tok.start[1]}: "
+        f"{token.tok_name[tok.type]}:{tok.string!r}"
+    )
+    return f"{formatted:<25.25}"
 
 
 class Tokenizer:
@@ -21,7 +28,7 @@ class Tokenizer:
     This is pretty tied to Python's syntax.
     """
 
-    _tokens: List[tokenize.TokenInfo]
+    _tokens: list[tokenize.TokenInfo]
 
     def __init__(
         self, tokengen: Iterator[tokenize.TokenInfo], *, path: str = "", verbose: bool = False
@@ -30,7 +37,7 @@ class Tokenizer:
         self._tokens = []
         self._index = 0
         self._verbose = verbose
-        self._lines: Dict[int, str] = {}
+        self._lines: dict[int, str] = {}
         self._path = path
         if verbose:
             self.report(False, False)
@@ -76,7 +83,7 @@ class Tokenizer:
                 break
         return tok
 
-    def get_lines(self, line_numbers: List[int]) -> List[str]:
+    def get_lines(self, line_numbers: list[int]) -> list[str]:
         """Retrieve source lines corresponding to line numbers."""
         if self._lines:
             lines = self._lines

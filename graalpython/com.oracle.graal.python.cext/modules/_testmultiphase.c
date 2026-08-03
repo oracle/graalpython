@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -13,6 +13,7 @@
 #define WITH_DOC_STRINGS 1
 
 #include "Python.h"
+#include "pycore_modsupport.h"    // _PyArg_CheckPositional()
 #include "pycore_namespace.h"     // _PyNamespace_New()
 
 /* State for testing module state access from methods */
@@ -141,14 +142,14 @@ _testmultiphase.StateAccessType.get_defining_module
 
 Return the module of the defining class.
 
-Also tests that result of PyType_GetModuleByDef matches defining_class's
-module.
+Also tests that result of PyType_GetModuleByDef matches
+defining_class's module.
 [clinic start generated code]*/
 
 static PyObject *
 _testmultiphase_StateAccessType_get_defining_module_impl(StateAccessTypeObject *self,
                                                          PyTypeObject *cls)
-/*[clinic end generated code: output=ba2a14284a5d0921 input=d2c7245c8a9d06f8]*/
+/*[clinic end generated code: output=ba2a14284a5d0921 input=903e7f66555d65ae]*/
 {
     PyObject *retval;
     retval = PyType_GetModule(cls);
@@ -390,32 +391,20 @@ static int execfunc(PyObject *m)
 
     /* Add a custom type */
     temp = PyType_FromSpec(&Example_Type_spec);
-    if (temp == NULL) {
-        goto fail;
-    }
-    if (PyModule_AddObject(m, "Example", temp) != 0) {
-        Py_DECREF(temp);
+    if (PyModule_Add(m, "Example", temp) != 0) {
         goto fail;
     }
 
 
     /* Add an exception type */
     temp = PyErr_NewException("_testimportexec.error", NULL, NULL);
-    if (temp == NULL) {
-        goto fail;
-    }
-    if (PyModule_AddObject(m, "error", temp) != 0) {
-        Py_DECREF(temp);
+    if (PyModule_Add(m, "error", temp) != 0) {
         goto fail;
     }
 
     /* Add Str */
     temp = PyType_FromSpec(&Str_Type_spec);
-    if (temp == NULL) {
-        goto fail;
-    }
-    if (PyModule_AddObject(m, "Str", temp) != 0) {
-        Py_DECREF(temp);
+    if (PyModule_Add(m, "Str", temp) != 0) {
         goto fail;
     }
 
@@ -449,6 +438,7 @@ static int execfunc(PyObject *m)
 static PyModuleDef_Slot main_slots[] = {
     {Py_mod_exec, execfunc},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL},
 };
 
@@ -537,13 +527,18 @@ PyInit__testmultiphase_nonmodule_with_methods(void)
 
 /**** Non-ASCII-named modules ****/
 
+static PyModuleDef_Slot nonascii_slots[] = {
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+    {0, NULL},
+};
+
 static PyModuleDef def_nonascii_latin = { \
     PyModuleDef_HEAD_INIT,                      /* m_base */
     "_testmultiphase_nonascii_latin",           /* m_name */
     PyDoc_STR("Module named in Czech"),         /* m_doc */
     0,                                          /* m_size */
     NULL,                                       /* m_methods */
-    NULL,                                       /* m_slots */
+    nonascii_slots,                             /* m_slots */
     NULL,                                       /* m_traverse */
     NULL,                                       /* m_clear */
     NULL,                                       /* m_free */
@@ -561,7 +556,7 @@ static PyModuleDef def_nonascii_kana = { \
     PyDoc_STR("Module named in Japanese"),      /* m_doc */
     0,                                          /* m_size */
     NULL,                                       /* m_methods */
-    NULL,                                       /* m_slots */
+    nonascii_slots,                             /* m_slots */
     NULL,                                       /* m_traverse */
     NULL,                                       /* m_clear */
     NULL,                                       /* m_free */
@@ -775,6 +770,7 @@ static PyModuleDef_Slot slots_nonmodule_with_exec_slots[] = {
     {Py_mod_create, createfunc_nonmodule},
     {Py_mod_exec, execfunc},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL},
 };
 
@@ -796,6 +792,7 @@ execfunc_err(PyObject *mod)
 static PyModuleDef_Slot slots_exec_err[] = {
     {Py_mod_exec, execfunc_err},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL},
 };
 
@@ -818,6 +815,7 @@ execfunc_raise(PyObject *spec)
 static PyModuleDef_Slot slots_exec_raise[] = {
     {Py_mod_exec, execfunc_raise},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL},
 };
 
@@ -840,6 +838,7 @@ execfunc_unreported_exception(PyObject *mod)
 static PyModuleDef_Slot slots_exec_unreported_exception[] = {
     {Py_mod_exec, execfunc_unreported_exception},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL},
 };
 
@@ -864,11 +863,7 @@ meth_state_access_exec(PyObject *m)
     }
 
     temp = PyType_FromModuleAndSpec(m, &StateAccessType_spec, NULL);
-    if (temp == NULL) {
-        return -1;
-    }
-    if (PyModule_AddObject(m, "StateAccessType", temp) != 0) {
-        Py_DECREF(temp);
+    if (PyModule_Add(m, "StateAccessType", temp) != 0) {
         return -1;
     }
 
@@ -879,6 +874,7 @@ meth_state_access_exec(PyObject *m)
 static PyModuleDef_Slot meth_state_access_slots[] = {
     {Py_mod_exec, meth_state_access_exec},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL}
 };
 
@@ -911,6 +907,9 @@ PyInit__test_module_state_shared(void)
     if (module == NULL) {
         return NULL;
     }
+#ifdef Py_GIL_DISABLED
+    PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
+#endif
 
     if (PyModule_AddObjectRef(module, "Error", PyExc_Exception) < 0) {
         Py_DECREF(module);
@@ -925,6 +924,7 @@ PyInit__test_module_state_shared(void)
 static PyModuleDef_Slot slots_multiple_multiple_interpreters_slots[] = {
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
     {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL},
 };
 
@@ -942,6 +942,7 @@ PyInit__testmultiphase_multiple_multiple_interpreters_slots(void)
 static PyModuleDef_Slot non_isolated_slots[] = {
     {Py_mod_exec, execfunc},
     {Py_mod_multiple_interpreters, Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL},
 };
 
@@ -962,6 +963,7 @@ static PyModuleDef_Slot shared_gil_only_slots[] = {
        We put it here explicitly to draw attention to the contrast
        with Py_MOD_PER_INTERPRETER_GIL_SUPPORTED. */
     {Py_mod_multiple_interpreters, Py_MOD_MULTIPLE_INTERPRETERS_SUPPORTED},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
     {0, NULL},
 };
 
@@ -973,4 +975,22 @@ PyMODINIT_FUNC
 PyInit__test_shared_gil_only(void)
 {
     return PyModuleDef_Init(&shared_gil_only_def);
+}
+
+
+static PyModuleDef_Slot no_multiple_interpreter_slot_slots[] = {
+    {Py_mod_exec, execfunc},
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+    {0, NULL},
+};
+
+static PyModuleDef no_multiple_interpreter_slot_def = TEST_MODULE_DEF(
+    "_test_no_multiple_interpreter_slot",
+    no_multiple_interpreter_slot_slots,
+    testexport_methods);
+
+PyMODINIT_FUNC
+PyInit__test_no_multiple_interpreter_slot(void)
+{
+    return PyModuleDef_Init(&no_multiple_interpreter_slot_def);
 }

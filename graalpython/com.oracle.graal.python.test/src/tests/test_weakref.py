@@ -147,7 +147,7 @@ def test_proxy_does_not_keep_object_alive():
             break
 
     assert ref() is None
-    assert "NoneType" in repr(proxy)
+    assert "dead" in repr(proxy)
     try:
         getattr(proxy, "attr")
     except ReferenceError:

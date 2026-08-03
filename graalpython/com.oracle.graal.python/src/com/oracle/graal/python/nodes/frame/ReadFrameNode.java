@@ -59,7 +59,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -72,6 +71,7 @@ import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -83,6 +83,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -181,13 +182,13 @@ public abstract class ReadFrameNode extends Node {
     }
 
     public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags, Thread frameThread) {
-        return execute(frame, startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, selector, level, callerFlags | CallerFlags.NEEDS_PFRAME, frameThread);
+        return execute(frame, startFrameInfo, selector, level, callerFlags | CallerFlags.NEEDS_PFRAME, frameThread);
     }
 
-    protected abstract PFrame execute(Frame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags, Thread frameThread);
+    protected abstract PFrame execute(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags, Thread frameThread);
 
     @Specialization
-    PFrame read(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags, Thread frameThread,
+    PFrame read(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags, Thread frameThread,
                     @Bind Node inliningTarget,
                     @Cached MaterializeFrameNode materializeFrameNode,
                     @Cached InlinedBranchProfile stackWalkProfile1,
@@ -210,8 +211,13 @@ public abstract class ReadFrameNode extends Node {
                 if (i == level) {
                     // We found the right reference
                     // Maybe it's for the frame we're in?
-                    if (curFrameInfo == executingFrameInfo) {
-                        return materializeFrameNode.execute(this, false, CallerFlags.needsLocals(callerFlags), frame);
+                    if (curFrameInfo == executingFrameInfo && frame != null) {
+                        PFrame pFrame = materializeFrameNode.execute(this, false, CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsMaterializedLocals(callerFlags), frame);
+                        if (CallerFlags.needsMaterializedLocals(callerFlags) && !pFrame.hasMaterializedFrame()) {
+                            BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
+                            pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frame.materialize()), true);
+                        }
+                        return pFrame;
                     }
                     if (curFrameInfo.getPyFrame() != null && !curFrameInfo.getPyFrame().needsRefresh(null, callerFlags)) {
                         return curFrameInfo.getPyFrame();
@@ -243,13 +249,14 @@ public abstract class ReadFrameNode extends Node {
          * It is necessary to continue from where we stopped with the backref walk because the
          * original starting frame might not be on stack anymore
          */
-        return readSlowPath(curFrameInfo, frameAccess, selector, level - i, callerFlags, frameThread, materializeFrameNode);
+        return readSlowPath(curFrameInfo, selector, level - i, callerFlags, frameThread, materializeFrameNode);
     }
 
     @TruffleBoundary
     @SuppressWarnings("try")
-    private PFrame readSlowPath(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags, Thread frameThread,
+    private PFrame readSlowPath(PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags, Thread frameThread,
                     MaterializeFrameNode materializeFrameNode) {
+        FrameAccess frameAccess = CallerFlags.needsMaterializedLocals(callerFlags) ? FrameAccess.MATERIALIZE : FrameAccess.READ_ONLY;
         Thread thread = getFrameThread(startFrameInfo, frameThread);
         if (startFrameInfo != null && thread != null && thread != Thread.currentThread()) {
             // We have a frame reference on another thread. Resolve the requested level there.
@@ -305,7 +312,19 @@ public abstract class ReadFrameNode extends Node {
         }
         StackWalkResult result = ReadFrameNode.getFrame(location, startFrameInfo, frameAccess, selector, level, callerFlags);
         if (forceEscape && result != null) {
-            CalleeContext.forceEscapeFrame(result.frame, getMaterializationLocation(result), PArguments.getCurrentFrameInfo(result.frame), materializeFrameNode);
+            Reference info = PArguments.getCurrentFrameInfo(result.frame);
+            info.markAsEscaped();
+            Reference callerInfo = info.getCallerInfo();
+            if (callerInfo == null) {
+                Frame callerFrame = getCallerFrame(info, FrameAccess.READ_ONLY, AllFramesSelector.INSTANCE, 1, CallerFlags.NEEDS_FRAME_REFERENCE);
+                if (callerFrame != null) {
+                    callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
+                } else {
+                    callerInfo = Reference.EMPTY;
+                }
+            }
+            callerInfo.markAsEscaped();
+            info.setCallerInfo(callerInfo);
         }
         return processStackWalkResult(materializeFrameNode, callerFlags, result);
     }
@@ -320,7 +339,12 @@ public abstract class ReadFrameNode extends Node {
     private static PFrame processStackWalkResult(MaterializeFrameNode materializeFrameNode, int callerFlags, StackWalkResult callerFrameResult) {
         if (callerFrameResult != null) {
             Node location = getMaterializationLocation(callerFrameResult);
-            return materializeFrameNode.execute(location, false, CallerFlags.needsLocals(callerFlags), callerFrameResult.frame);
+            PFrame pFrame = materializeFrameNode.execute(location, false, CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsMaterializedLocals(callerFlags), callerFrameResult.frame);
+            if (CallerFlags.needsMaterializedLocals(callerFlags)) {
+                BytecodeNode bytecodeNode = pFrame.getBytecodeNode();
+                pFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, (MaterializedFrame) callerFrameResult.frame), true);
+            }
+            return pFrame;
         }
         return null;
     }

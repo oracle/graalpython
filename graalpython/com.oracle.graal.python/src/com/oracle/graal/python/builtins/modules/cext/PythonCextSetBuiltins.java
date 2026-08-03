@@ -42,15 +42,11 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_NOT_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
-import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -66,11 +62,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKeyHash;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltins.FrozenSetNode;
@@ -80,12 +71,8 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins.ClearNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.ConstructSetNode;
 import com.oracle.graal.python.builtins.objects.set.SetNodes.DiscardNode;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -93,7 +80,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 public final class PythonCextSetBuiltins {
 
@@ -140,81 +126,6 @@ public final class PythonCextSetBuiltins {
         @Fallback
         int fallback(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object item) {
             throw raiseFallback(anyset, PythonBuiltinClassType.PSet, PythonBuiltinClassType.PFrozenSet);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
-    abstract static class GraalPyPrivate_Set_NextEntry extends CApiBinaryBuiltinNode {
-        @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)")
-        static Object nextEntry(PSet set, long pos,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode,
-                        @Shared @Cached HashingStorageGetIterator getIterator,
-                        @Shared @Cached HashingStorageIteratorNext itNext,
-                        @Shared @Cached HashingStorageIteratorKey itKey,
-                        @Shared @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
-            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
-        }
-
-        @Specialization(guards = "pos < size(inliningTarget, set, sizeNode)")
-        static Object nextEntry(PFrozenSet set, long pos,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode,
-                        @Shared @Cached HashingStorageGetIterator getIterator,
-                        @Shared @Cached HashingStorageIteratorNext itNext,
-                        @Shared @Cached HashingStorageIteratorKey itKey,
-                        @Shared @Cached HashingStorageIteratorKeyHash itKeyHash,
-                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
-            return next(inliningTarget, (int) pos, set.getDictStorage(), getIterator, itNext, itKey, itKeyHash, loopProfile);
-        }
-
-        @Specialization(guards = {"isPSet(set) || isPFrozenSet(set)", "pos >= size(inliningTarget, set, sizeNode)"})
-        static Object nextEntry(@SuppressWarnings("unused") Object set, @SuppressWarnings("unused") long pos,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode) {
-            return NATIVE_NULL;
-        }
-
-        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
-        static Object nextNative(@SuppressWarnings("unused") Object anyset, @SuppressWarnings("unused") Object pos,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.NotImplementedError, NATIVE_S_SUBTYPES_NOT_IMPLEMENTED, "set");
-        }
-
-        @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "!isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
-        static Object nextEntry(Object anyset, @SuppressWarnings("unused") Object pos,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached StringBuiltins.StrNewNode strNode,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(anyset), anyset);
-        }
-
-        protected boolean isSetSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-            return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PSet) ||
-                            isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PFrozenSet);
-        }
-
-        protected int size(Node inliningTarget, Object set, PyObjectSizeNode sizeNode) {
-            return sizeNode.execute(null, inliningTarget, set);
-        }
-
-        private static Object next(Node inliningTarget, int pos, HashingStorage storage, HashingStorageGetIterator getIterator,
-                        HashingStorageIteratorNext itNext, HashingStorageIteratorKey itKey, HashingStorageIteratorKeyHash itKeyHash,
-                        InlinedLoopConditionProfile loopProfile) {
-            HashingStorageIterator it = getIterator.execute(inliningTarget, storage);
-            loopProfile.profileCounted(inliningTarget, pos);
-            for (int i = 0; loopProfile.inject(inliningTarget, i <= pos); i++) {
-                if (!itNext.execute(inliningTarget, storage, it)) {
-                    return NATIVE_NULL;
-                }
-            }
-            Object key = itKey.execute(inliningTarget, storage, it);
-            long hash = itKeyHash.execute(null, inliningTarget, storage, it);
-            return PFactory.createTuple(PythonLanguage.get(inliningTarget), new Object[]{key, hash});
         }
     }
 

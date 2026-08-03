@@ -6,9 +6,9 @@ import os
 import sys
 import tempfile
 import unittest
-import warnings
 
 from test.test_importlib import util
+from test.support.testcase import ExtraAssertions
 
 # needed tests:
 #
@@ -54,7 +54,7 @@ def namespace_tree_context(**kwargs):
     with import_context, sys_modules_context():
         yield
 
-class NamespacePackageTest(unittest.TestCase):
+class NamespacePackageTest(unittest.TestCase, ExtraAssertions):
     """
     Subclasses should define self.root and self.paths (under that root)
     to be added to sys.path.
@@ -81,7 +81,7 @@ class SingleNamespacePackage(NamespacePackageTest):
 
     def test_simple_repr(self):
         import foo.one
-        self.assertTrue(repr(foo).startswith("<module 'foo' (namespace) from ["))
+        self.assertStartsWith(repr(foo), "<module 'foo' (namespace) from [")
 
 
 class DynamicPathNamespacePackage(NamespacePackageTest):

@@ -4,7 +4,7 @@ from collections import namedtuple
 from test.support import import_helper
 
 _testcapi = import_helper.import_module('_testcapi')
-_testlimitedcapi = _testcapi
+_testlimitedcapi = import_helper.import_module('_testlimitedcapi')
 
 NULL = None
 PY_SSIZE_T_MIN = _testcapi.PY_SSIZE_T_MIN
@@ -256,6 +256,11 @@ class CAPITest(unittest.TestCase):
         # non-tuple
         self.assertRaises(SystemError, resize, [1, 2, 3], 0, False)
         self.assertRaises(SystemError, resize, NULL, 0, False)
+
+    def test_uninitialized_tuple_repr(self):
+        tup = _testlimitedcapi.tuple_new(3)
+        self.assertEqual(repr(tup), '(<NULL>, <NULL>, <NULL>)')
+
 
 if __name__ == "__main__":
     unittest.main()

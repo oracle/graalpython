@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -446,17 +446,6 @@ test_pymem_alloc0(PyObject *self, PyObject *Py_UNUSED(ignored))
 }
 
 static PyObject *
-test_pymem_getallocatorsname(PyObject *self, PyObject *args)
-{
-    const char *name = _PyMem_GetCurrentAllocatorName();
-    if (name == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "cannot get allocators name");
-        return NULL;
-    }
-    return PyUnicode_FromString(name);
-}
-
-static PyObject *
 test_pymem_setrawallocators(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
     return test_setallocators(PYMEM_DOMAIN_RAW);
@@ -531,75 +520,6 @@ pymem_malloc_without_gil(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
-static PyObject *
-test_pyobject_is_freed(const char *test_name, PyObject *op)
-{
-    if (!_PyObject_IsFreed(op)) {
-        PyErr_SetString(PyExc_AssertionError,
-                        "object is not seen as freed");
-        return NULL;
-    }
-    Py_RETURN_NONE;
-}
-
-static PyObject *
-check_pyobject_null_is_freed(PyObject *self, PyObject *Py_UNUSED(args))
-{
-    PyObject *op = NULL;
-    return test_pyobject_is_freed("check_pyobject_null_is_freed", op);
-}
-
-
-static PyObject *
-check_pyobject_uninitialized_is_freed(PyObject *self,
-                                      PyObject *Py_UNUSED(args))
-{
-    PyObject *op = (PyObject *)PyObject_Malloc(sizeof(PyObject));
-    if (op == NULL) {
-        return NULL;
-    }
-    /* Initialize reference count to avoid early crash in ceval or GC */
-    Py_SET_REFCNT(op, 1);
-    /* object fields like ob_type are uninitialized! */
-    return test_pyobject_is_freed("check_pyobject_uninitialized_is_freed", op);
-}
-
-
-static PyObject *
-check_pyobject_forbidden_bytes_is_freed(PyObject *self,
-                                        PyObject *Py_UNUSED(args))
-{
-    /* Allocate an incomplete PyObject structure: truncate 'ob_type' field */
-    PyObject *op = (PyObject *)PyObject_Malloc(offsetof(PyObject, ob_type));
-    if (op == NULL) {
-        return NULL;
-    }
-    /* Initialize reference count to avoid early crash in ceval or GC */
-    Py_SET_REFCNT(op, 1);
-    /* ob_type field is after the memory block: part of "forbidden bytes"
-       when using debug hooks on memory allocators! */
-    return test_pyobject_is_freed("check_pyobject_forbidden_bytes_is_freed", op);
-}
-
-
-static PyObject *
-check_pyobject_freed_is_freed(PyObject *self, PyObject *Py_UNUSED(args))
-{
-    /* ASan or TSan would report an use-after-free error */
-#if defined(_Py_ADDRESS_SANITIZER) || defined(_Py_THREAD_SANITIZER)
-    Py_RETURN_NONE;
-#else
-    PyObject *op = PyObject_CallNoArgs((PyObject *)&PyBaseObject_Type);
-    if (op == NULL) {
-        return NULL;
-    }
-    Py_TYPE(op)->tp_dealloc(op);
-    /* Reset reference count to avoid early crash in ceval or GC */
-    Py_SET_REFCNT(op, 1);
-    /* object memory is freed! */
-    return test_pyobject_is_freed("check_pyobject_freed_is_freed", op);
-#endif
-}
 
 // Tracemalloc tests
 static PyObject *
@@ -642,8 +562,9 @@ tracemalloc_untrack(PyObject *self, PyObject *args)
 {
     unsigned int domain;
     PyObject *ptr_obj;
+    int release_gil = 0;
 
-    if (!PyArg_ParseTuple(args, "IO", &domain, &ptr_obj)) {
+    if (!PyArg_ParseTuple(args, "IO|i", &domain, &ptr_obj, &release_gil)) {
         return NULL;
     }
     void *ptr = PyLong_AsVoidPtr(ptr_obj);
@@ -651,7 +572,15 @@ tracemalloc_untrack(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    int res = PyTraceMalloc_Untrack(domain, (uintptr_t)ptr);
+    int res;
+    if (release_gil) {
+        Py_BEGIN_ALLOW_THREADS
+        res = PyTraceMalloc_Untrack(domain, (uintptr_t)ptr);
+        Py_END_ALLOW_THREADS
+    }
+    else {
+        res = PyTraceMalloc_Untrack(domain, (uintptr_t)ptr);
+    }
     if (res < 0) {
         PyErr_SetString(PyExc_RuntimeError, "PyTraceMalloc_Untrack error");
         return NULL;
@@ -660,33 +589,9 @@ tracemalloc_untrack(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
-static PyObject *
-tracemalloc_get_traceback(PyObject *self, PyObject *args)
-{
-    unsigned int domain;
-    PyObject *ptr_obj;
-
-    if (!PyArg_ParseTuple(args, "IO", &domain, &ptr_obj)) {
-        return NULL;
-    }
-    void *ptr = PyLong_AsVoidPtr(ptr_obj);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-
-    return _PyTraceMalloc_GetTraceback(domain, (uintptr_t)ptr);
-}
-
 static PyMethodDef test_methods[] = {
-    {"check_pyobject_forbidden_bytes_is_freed",
-                            check_pyobject_forbidden_bytes_is_freed, METH_NOARGS},
-    {"check_pyobject_freed_is_freed", check_pyobject_freed_is_freed, METH_NOARGS},
-    {"check_pyobject_null_is_freed",  check_pyobject_null_is_freed,  METH_NOARGS},
-    {"check_pyobject_uninitialized_is_freed",
-                              check_pyobject_uninitialized_is_freed, METH_NOARGS},
     {"pymem_api_misuse",              pymem_api_misuse,              METH_NOARGS},
     {"pymem_buffer_overflow",         pymem_buffer_overflow,         METH_NOARGS},
-    {"pymem_getallocatorsname",       test_pymem_getallocatorsname,  METH_NOARGS},
     {"pymem_malloc_without_gil",      pymem_malloc_without_gil,      METH_NOARGS},
     {"pyobject_malloc_without_gil",   pyobject_malloc_without_gil,   METH_NOARGS},
     {"remove_mem_hooks",              remove_mem_hooks,              METH_NOARGS,
@@ -702,7 +607,6 @@ static PyMethodDef test_methods[] = {
     // Tracemalloc tests
     {"tracemalloc_track",             tracemalloc_track,             METH_VARARGS},
     {"tracemalloc_untrack",           tracemalloc_untrack,           METH_VARARGS},
-    {"tracemalloc_get_traceback",     tracemalloc_get_traceback,     METH_VARARGS},
     {NULL},
 };
 
@@ -715,13 +619,20 @@ _PyTestCapi_Init_Mem(PyObject *mod)
 
     PyObject *v;
 #ifdef WITH_PYMALLOC
-    v = Py_NewRef(Py_True);
+    v = Py_True;
 #else
-    v = Py_NewRef(Py_False);
+    v = Py_False;
 #endif
-    int rc = PyModule_AddObjectRef(mod, "WITH_PYMALLOC", v);
-    Py_DECREF(v);
-    if (rc < 0) {
+    if (PyModule_AddObjectRef(mod, "WITH_PYMALLOC", v) < 0) {
+        return -1;
+    }
+
+#ifdef WITH_MIMALLOC
+    v = Py_True;
+#else
+    v = Py_False;
+#endif
+    if (PyModule_AddObjectRef(mod, "WITH_MIMALLOC", v) < 0) {
         return -1;
     }
 

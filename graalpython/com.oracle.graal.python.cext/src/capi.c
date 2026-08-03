@@ -42,7 +42,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "pycore_crossinterp.h" // _PyCrossInterpreterData
 #include "pycore_gc.h" // _PyGC_InitState
+#include "pycore_object.h" // _Py_GetConstant_Init
+#include "pycore_time.h" // _PyTime_round_t, _Py_clock_info_t
 
 #define GRAALPY_ENABLE_TESTING_CAPI
 #include "graalpy/testcapi.h"
@@ -346,6 +349,7 @@ static void initialize_globals(PyThreadState *tstate) {
     _Py_TrueStructReference = (struct _longobject*)GraalPyPrivate_True();
     _Py_FalseStructReference = (struct _longobject*)GraalPyPrivate_False();
     graalpy_initialize_thread_state_singletons(tstate);
+    _Py_GetConstant_Init();
 }
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
@@ -640,6 +644,8 @@ static void unimplemented(const char* name) {
     printf("Function not implemented in GraalPy: %s\n", name);
     print_c_stacktrace();
 }
+
+extern PyObject* _PyObject_NextNotImplemented(PyObject *);
 
 #define FUNC_NOT_IMPLEMENTED unimplemented(__func__); GraalPyPrivate_PrintStacktrace(); exit(-1);
 

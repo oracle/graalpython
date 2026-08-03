@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassP
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
@@ -92,11 +94,15 @@ import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class TopLevelExceptionHandler extends RootNode {
+    private static final TruffleString T_LINECACHE = tsLiteral("linecache");
+    private static final TruffleString T_REGISTER_CODE = tsLiteral("_register_code");
+
     private final RootCallTarget innerCallTarget;
     private final PException exception;
     private final SourceSection sourceSection;
     private final Source source;
     private final boolean newGlobals;
+    private final boolean registerSource;
 
     @Child private GilNode gilNode = GilNode.create();
 
@@ -107,6 +113,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         this.exception = null;
         this.source = source;
         this.newGlobals = source.getOptions(language).get(PythonSourceOptions.NewGlobals);
+        this.registerSource = source.getOptions(language).get(PythonSourceOptions.RegisterSource);
     }
 
     public TopLevelExceptionHandler(PythonLanguage language, PException exception, Source source) {
@@ -116,6 +123,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         this.exception = exception;
         this.source = source;
         this.newGlobals = false;
+        this.registerSource = false;
     }
 
     private PythonLanguage getPythonLanguage() {
@@ -305,6 +313,10 @@ public final class TopLevelExceptionHandler extends RootNode {
         PythonModule mainModule = null;
         PythonLanguage language = getPythonLanguage();
         PCode code = PFactory.createCode(language, innerCallTarget, PythonUtils.internString(TruffleString.fromJavaStringUncached(source.getName(), TS_ENCODING)));
+        TruffleString originalFilename = code.getFilename();
+        if (source.isInteractive()) {
+            code.fixCoFilename(pythonContext.getNextInteractiveSourceFilename(originalFilename));
+        }
         PArguments.setCodeObject(arguments, code);
         if (source.isInternal()) {
             // internal sources are not run in the main module
@@ -325,6 +337,9 @@ public final class TopLevelExceptionHandler extends RootNode {
         // IndirectCalleeContext
         Object state = IndirectCalleeContext.enter(pythonContext.getThreadState(language), arguments);
         try {
+            if (registerSource) {
+                registerSource(code, originalFilename);
+            }
             Object result = innerCallTarget.call(arguments);
             if (mainModule != null && result == PNone.NONE && !source.isInteractive()) {
                 return mainModule;
@@ -334,6 +349,13 @@ public final class TopLevelExceptionHandler extends RootNode {
         } finally {
             IndirectCalleeContext.exit(language, pythonContext, state);
         }
+    }
+
+    @TruffleBoundary
+    private void registerSource(PCode code, TruffleString originalFilename) {
+        PythonModule linecache = AbstractImportNode.importModule(T_LINECACHE);
+        TruffleString sourceText = toTruffleStringUncached(source.getCharacters().toString());
+        PyObjectCallMethodObjArgs.executeUncached(linecache, T_REGISTER_CODE, code, sourceText, originalFilename);
     }
 
     @Override

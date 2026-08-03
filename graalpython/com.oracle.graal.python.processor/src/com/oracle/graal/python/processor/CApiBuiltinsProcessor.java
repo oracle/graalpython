@@ -1136,7 +1136,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         for (var builtin : allBuiltins) {
             lines.add("        hasMember = reallyHasMember(capiLibrary, \"" + builtin.name + "\");");
             if (builtin.call.equals("CImpl") || builtin.call.equals("NotImplemented") || (builtin.call.equals("Direct") && !builtin.name.startsWith("GraalPyPrivate_"))) {
-                lines.add("        if (!hasMember) messages.add(\"missing implementation: " + builtin.name + "\");");
+                lines.add("        if (!hasMember && !isExcludedOnCurrentPlatform(\"" + builtin.name + "\")) messages.add(\"missing implementation: " + builtin.name + "\");");
             }
         }
         lines.add("");
@@ -1150,10 +1150,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                             // Checkstyle: stop
                             package %s;
 
+                            import java.util.Set;
                             import java.util.TreeSet;
                             import com.oracle.graal.python.runtime.nativeaccess.NativeLibrary;
 
                             public final class PythonCApiAssertions {
+
+                                // CPython only exposes these APIs on platforms with fork().
+                                private static final Set<String> WINDOWS_EXCLUSIONS = Set.of(
+                                                "PyOS_BeforeFork",
+                                                "PyOS_AfterFork_Parent",
+                                                "PyOS_AfterFork_Child");
 
                                 private PythonCApiAssertions() {
                                     // no instances
@@ -1161,6 +1168,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
                                 private static boolean reallyHasMember(NativeLibrary capiLibrary, String name) {
                                     return capiLibrary.lookupOptionalSymbol(name) != 0L;
+                                }
+
+                                private static boolean isExcludedOnCurrentPlatform(String name) {
+                                    return System.getProperty("os.name").startsWith("Windows") && WINDOWS_EXCLUSIONS.contains(name);
                                 }
 
                                 /**
@@ -1206,10 +1217,15 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                      */
                     "PySlice_Start", "PySlice_Step", "PySlice_Stop",
                     "PyObject_GetDoc", "PyObject_SetDoc",
-                    // Only in include/internal/pycore_namespace.h, not public
-                    "_PyNamespace_New",
-                    // Only in include/internal/pycore_fileutils.h, not public
-                    "_Py_GetErrorHandler",
+                    /*
+                     * Internal CPython helpers declared in internal/pycore_*.h headers that are implemented as upcalls.
+                     */
+                    "_PyDict_HasOnlyStringKeys", "_PyDict_Next", "_PyDict_SetItem_KnownHash", "_Py_GetErrorHandler",
+                    "_PyErr_GetHandledException", "_PyErr_SetHandledException",
+                    "_PyList_Extend", "_PyNamespace_New", "_PyObject_MakeTpCall", "_PyTraceback_Add",
+                    "_PyUnicode_AsASCIIString", "_PyUnicode_AsLatin1String", "_PyUnicode_AsUTF8String", "_PyUnicode_Copy",
+                    "_PyUnicode_EqualToASCIIString", "_Py_HashBytes", "_Py_CalculateSuggestions", "_PyWeakref_IsDead",
+                    "_PyUnicode_FormatLong", "_PyUnicode_JoinArray",
                     // Not actually additional, only defined on Windows.
                     // TODO: fix generated CAPIFunctions.txt
                     "PyUnicode_AsMBCSString", "PyUnicode_EncodeCodePage", "PyUnicode_DecodeMBCS",

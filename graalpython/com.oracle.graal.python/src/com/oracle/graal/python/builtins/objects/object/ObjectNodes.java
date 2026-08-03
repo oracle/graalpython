@@ -67,6 +67,7 @@ import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_TUPLE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_UNICODE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NONE;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_NOTIMPLEMENTED;
+import static com.oracle.graal.python.runtime.object.IDUtils.ID_NO_DEFAULT;
 import static com.oracle.graal.python.runtime.object.IDUtils.getId;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -112,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSet.CallSlotDescrSet;
+import com.oracle.graal.python.builtins.objects.typing.PNoDefault;
 import com.oracle.graal.python.lib.PyDictCheckNode;
 import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -123,6 +125,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttrO;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -302,6 +305,11 @@ public abstract class ObjectNodes {
         @Specialization
         static Object id(@SuppressWarnings("unused") PNotImplemented self) {
             return ID_NOTIMPLEMENTED;
+        }
+
+        @Specialization
+        static Object id(@SuppressWarnings("unused") PNoDefault self) {
+            return ID_NO_DEFAULT;
         }
 
         @Specialization
@@ -735,10 +743,8 @@ public abstract class ObjectNodes {
     }
 
     /**
-     * Returns the fully qualified name of a class.
-     *
-     * The fully qualified name includes the name of the module (unless it is the
-     * {@link BuiltinNames#J_BUILTINS} module).
+     * Equivalent of CPython's {@code PyType_GetFullyQualifiedName}. The module is omitted for
+     * types from {@code builtins} and {@code __main__}.
      */
     @GenerateUncached
     @ImportStatic(SpecialAttributeNames.class)
@@ -746,10 +752,15 @@ public abstract class ObjectNodes {
     public abstract static class GetFullyQualifiedNameNode extends PNodeWithContext {
         public abstract TruffleString execute(Frame frame, Object cls);
 
+        public static TruffleString executeUncached(Object cls) {
+            return GetFullyQualifiedNameNodeGen.getUncached().execute(null, cls);
+        }
+
         @Specialization
         static TruffleString get(VirtualFrame frame, Object cls,
                         @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyUnicodeCheckNode stringCheck,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -760,11 +771,11 @@ public abstract class ObjectNodes {
                 return StringLiterals.T_VALUE_UNKNOWN;
             }
             TruffleString qualName = cast.execute(inliningTarget, qualNameObject);
-            if (moduleNameObject == PNone.NO_VALUE) {
+            if (moduleNameObject == PNone.NO_VALUE || !stringCheck.execute(inliningTarget, moduleNameObject)) {
                 return qualName;
             }
             TruffleString moduleName = cast.execute(inliningTarget, moduleNameObject);
-            if (equalNode.execute(moduleName, BuiltinNames.T_BUILTINS, TS_ENCODING)) {
+            if (equalNode.execute(moduleName, BuiltinNames.T_BUILTINS, TS_ENCODING) || equalNode.execute(moduleName, BuiltinNames.T___MAIN__, TS_ENCODING)) {
                 return qualName;
             }
             TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
@@ -781,10 +792,7 @@ public abstract class ObjectNodes {
     }
 
     /**
-     * Returns the fully qualified name of the class of an object.
-     *
-     * The fully qualified name includes the name of the module (unless it is the
-     * {@link BuiltinNames#T_BUILTINS} module).
+     * Equivalent of calling CPython's {@code PyType_GetFullyQualifiedName(Py_TYPE(self))}.
      */
     @GenerateUncached
     @GenerateInline
@@ -816,10 +824,38 @@ public abstract class ObjectNodes {
 
         @Specialization
         static TruffleString repr(VirtualFrame frame, Node inliningTarget, Object self,
-                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyUnicodeCheckNode stringCheck,
+                        @Cached CastToTruffleStringNode cast,
+                        @Cached TruffleString.EqualNode equalNode,
+                        @Cached TypeNodes.GetTpNameNode getTpNameNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached(inline = false) SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            TruffleString fqcn = getFullyQualifiedClassNameNode.execute(frame, inliningTarget, self);
-            return simpleTruffleStringFormatNode.format("<%s object at 0x%s>", fqcn, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
+            Object cls = getClassNode.execute(inliningTarget, self);
+            Object moduleNameObject = lookupAttr.execute(frame, inliningTarget, cls, T___MODULE__);
+            TruffleString typeName;
+            if (moduleNameObject == PNone.NO_VALUE || !stringCheck.execute(inliningTarget, moduleNameObject)) {
+                typeName = getTpNameNode.execute(inliningTarget, cls);
+            } else {
+                TruffleString moduleName = cast.execute(inliningTarget, moduleNameObject);
+                if (equalNode.execute(moduleName, BuiltinNames.T_BUILTINS, TS_ENCODING)) {
+                    typeName = getTpNameNode.execute(inliningTarget, cls);
+                } else {
+                    Object qualNameObject = lookupAttr.execute(frame, inliningTarget, cls, T___QUALNAME__);
+                    if (qualNameObject == PNone.NO_VALUE) {
+                        typeName = StringLiterals.T_VALUE_UNKNOWN;
+                    } else {
+                        TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
+                        appendStringNode.execute(sb, moduleName);
+                        appendStringNode.execute(sb, T_DOT);
+                        appendStringNode.execute(sb, cast.execute(inliningTarget, qualNameObject));
+                        typeName = toStringNode.execute(sb);
+                    }
+                }
+            }
+            return simpleTruffleStringFormatNode.format("<%s object at 0x%s>", typeName, PythonAbstractNativeObject.systemHashCodeAsHexString(self));
         }
 
         @NeverDefault
@@ -877,7 +913,7 @@ public abstract class ObjectNodes {
             if (descr != PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_READONLY, key);
             } else {
-                throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
+                throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
             }
         }
 

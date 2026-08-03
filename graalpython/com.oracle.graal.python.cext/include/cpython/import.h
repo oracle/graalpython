@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -8,23 +8,6 @@
 #endif
 
 PyMODINIT_FUNC PyInit__imp(void);
-
-PyAPI_FUNC(int) _PyImport_IsInitialized(PyInterpreterState *);
-
-PyAPI_FUNC(PyObject *) _PyImport_GetModuleId(_Py_Identifier *name);
-PyAPI_FUNC(int) _PyImport_SetModule(PyObject *name, PyObject *module);
-PyAPI_FUNC(int) _PyImport_SetModuleString(const char *name, PyObject* module);
-
-PyAPI_FUNC(void) _PyImport_AcquireLock(PyInterpreterState *interp);
-PyAPI_FUNC(int) _PyImport_ReleaseLock(PyInterpreterState *interp);
-
-PyAPI_FUNC(int) _PyImport_FixupBuiltin(
-    PyObject *mod,
-    const char *name,            /* UTF-8 encoded string */
-    PyObject *modules
-    );
-PyAPI_FUNC(int) _PyImport_FixupExtensionObject(PyObject*, PyObject *,
-                                               PyObject *, PyObject *);
 
 struct _inittab {
     const char *name;           /* ASCII encoded string */
@@ -39,13 +22,9 @@ struct _frozen {
     const unsigned char *code;
     int size;
     int is_package;
-    PyObject *(*get_code)(void);
 };
 
 /* Embedding apps may change this pointer to point to their favorite
    collection of frozen modules: */
 
 PyAPI_DATA(const struct _frozen *) PyImport_FrozenModules;
-
-PyAPI_DATA(PyObject *) _PyImport_GetModuleAttr(PyObject *, PyObject *);
-PyAPI_DATA(PyObject *) _PyImport_GetModuleAttrString(const char *, const char *);

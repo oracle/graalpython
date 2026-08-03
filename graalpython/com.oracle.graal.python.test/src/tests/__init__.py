@@ -264,6 +264,7 @@ def ccompile(self, name, check_duplicate_name=True):
                 filename,
                 sources=[source_file.name],
                 define_macros=[("GRAALPY_ENABLE_TESTING_CAPI", "1")],
+                extra_compile_args=[] if sys.platform.startswith('win32') else ["-Wno-deprecated-declarations"],
             )
             args = [
                 '--verbose' if sys.flags.verbose else '--quiet',

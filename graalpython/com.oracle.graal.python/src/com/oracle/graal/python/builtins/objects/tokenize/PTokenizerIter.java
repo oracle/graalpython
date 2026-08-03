@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -119,8 +119,11 @@ public final class PTokenizerIter extends PythonBuiltinObject {
 
     private void reportTokenizerError() {
         ParserCallbacks.ErrorType errorType = ParserCallbacks.ErrorType.Syntax;
-        String msg;
+        String msg = tokenizer.getErrorMessage();
         int colOffset = Math.max(0, tokenizer.getCodePointsInputLength() - tokenizer.getLineStartIndex() - 1);
+        if (msg != null) {
+            throw parserCallbacks.raiseSyntaxError(errorType, tokenizer.getErrorSourceRange(), msg);
+        }
         switch (tokenizer.getDone()) {
             case BAD_TOKEN:
                 msg = "invalid token";

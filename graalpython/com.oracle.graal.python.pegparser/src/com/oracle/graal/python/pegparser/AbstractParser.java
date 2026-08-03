@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -178,11 +178,11 @@ public abstract class AbstractParser {
     public SSTNode parse() {
         SSTNode res = runParser(startRule);
         if (res == null) {
-            if (flags.contains(Flags.ALLOW_INCOMPLETE_INPUT) &&
-                            (tokenizer.getDone() == StatusCode.EOF || tokenizer.getDone() == StatusCode.EOF_IN_SINGLE_QUOTED_STRING || tokenizer.getDone() == StatusCode.EOF_IN_TRIPLE_QUOTED_STRING)) {
-                throw raiseSyntaxError("incomplete input");
-            }
             Token lastToken = getFill() > 0 ? peekToken(getFill() - 1) : null;
+            if (flags.contains(Flags.ALLOW_INCOMPLETE_INPUT) && isEndOfSource()) {
+                Token errorToken = peekToken();
+                throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Incomplete, errorToken.sourceRange, "incomplete input");
+            }
             resetParserState();
             runParser(startRule);
             int fill = getFill();
@@ -191,6 +191,9 @@ public abstract class AbstractParser {
             }
             assert lastToken != null;
             if (lastToken.type == Token.Kind.ERRORTOKEN && tokenizer.getDone() == Tokenizer.StatusCode.EOF) {
+                if (flags.contains(Flags.ALLOW_INCOMPLETE_INPUT)) {
+                    throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Incomplete, lastToken.sourceRange, "incomplete input");
+                }
                 if (tokenizer.getParensNestingLevel() > 0) {
                     throw raiseUnclosedParenthesesError();
                 } else {
@@ -210,6 +213,11 @@ public abstract class AbstractParser {
         }
 
         return res;
+    }
+
+    private boolean isEndOfSource() {
+        StatusCode status = tokenizer.getDone();
+        return status == StatusCode.EOF || status == StatusCode.EOF_IN_SINGLE_QUOTED_STRING || status == StatusCode.EOF_IN_TRIPLE_QUOTED_STRING;
     }
 
     /**
@@ -640,46 +648,35 @@ public abstract class AbstractParser {
     }
 
     /**
-     * unpack_top_level_joined_strs
-     */
-    private static ExprTy[] unpackTopLevelJoinedStrs(ExprTy[] rawExpressions) {
-        int reqSize = 0;
-        for (ExprTy expr : rawExpressions) {
-            if (expr instanceof ExprTy.JoinedStr joinedStr) {
-                reqSize += joinedStr.values.length;
-            } else {
-                reqSize++;
-            }
-        }
-
-        ExprTy[] expressions = new ExprTy[reqSize];
-        int reqIndex = 0;
-        for (ExprTy expr : rawExpressions) {
-            if (expr instanceof ExprTy.JoinedStr joinedStr) {
-                ExprTy[] values = joinedStr.values;
-                System.arraycopy(values, 0, expressions, reqIndex, values.length);
-                reqIndex += values.length;
-            } else {
-                expressions[reqIndex++] = expr;
-            }
-        }
-        return expressions;
-    }
-
-    /**
      * _PyPegen_joined_str
      */
-    public ExprTy joinedStr(Token a, ExprTy[] rawExpressions, Token b) {
-        ExprTy[] expr = unpackTopLevelJoinedStrs(rawExpressions);
-        int nItems = expr.length;
+    public ExprTy joinedStr(Token a, ExprTy[] expressions, Token b) {
+        int nItems = expressions.length;
+        int totalItems = nItems;
+        for (ExprTy expression : expressions) {
+            if (expression instanceof ExprTy.JoinedStr joinedStr) {
+                totalItems += joinedStr.values.length - 1;
+            }
+        }
 
         CodePoints quoteStr = tokenizer.getTokenCodePoints(a);
         boolean isRaw = quoteStr.contains('r') || quoteStr.contains('R');
 
-        ExprTy[] seq = new ExprTy[nItems];
+        ExprTy[] seq = new ExprTy[totalItems];
 
         int index = 0;
-        for (ExprTy item : expr) {
+        for (ExprTy item : expressions) {
+            // A top-level JoinedStr is the pair created for a debug expression. Its first
+            // element is source text, which must remain raw rather than being decoded like
+            // an ordinary f-string constant.
+            if (item instanceof ExprTy.JoinedStr joinedStr) {
+                assert joinedStr.values.length == 2;
+                assert joinedStr.values[0] instanceof ExprTy.Constant;
+                assert joinedStr.values[1] instanceof ExprTy.FormattedValue;
+                seq[index++] = joinedStr.values[0];
+                seq[index++] = joinedStr.values[1];
+                continue;
+            }
             if (item instanceof ExprTy.Constant constant) {
                 item = constant = decodeFStringPart(isRaw, constant, b);
                 if (constant.value.kind == Kind.CODEPOINTS && constant.value.getCodePoints().isEmpty()) {
@@ -938,7 +935,7 @@ public abstract class AbstractParser {
     ResultTokenWithMetadata checkFstringConversion(Token convToken, ExprTy conv) {
         if (convToken.sourceRange.startLine != conv.getSourceRange().startLine ||
                         convToken.sourceRange.endColumn != conv.getSourceRange().startColumn) {
-            throw raiseSyntaxErrorKnownRange(convToken, conv, "f-string: conversion type must come right after the exclamanation mark");
+            throw raiseSyntaxErrorKnownRange(convToken, conv, "f-string: conversion type must come right after the exclamation mark");
         }
         return new ResultTokenWithMetadata(conv, convToken.metadata);
     }
@@ -1476,6 +1473,9 @@ public abstract class AbstractParser {
      * tokenizer_error
      */
     RuntimeException tokenizerError(Token token) {
+        if (flags.contains(Flags.ALLOW_INCOMPLETE_INPUT) && isEndOfSource()) {
+            throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Incomplete, token.getSourceRange(), "incomplete input");
+        }
         if (token.type == ERRORTOKEN && tokenizer.getDone() == Tokenizer.StatusCode.SYNTAX_ERROR) {
             throw raiseErrorKnownLocation(ParserCallbacks.ErrorType.Syntax, token.getSourceRange(), (String) token.extraData);
         }

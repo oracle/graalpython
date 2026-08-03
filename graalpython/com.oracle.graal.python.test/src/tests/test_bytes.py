@@ -454,6 +454,12 @@ def test_count():
     assert b"hellohello".count(b"ll", 5) == 1, "5"
 
 
+def test_hex_keyword_arguments():
+    for type2test in (bytes, bytearray):
+        value = type2test(b'\xb9\x01\xef')
+        assert value.hex(sep=':', bytes_per_sep=2) == 'b9:01ef'
+
+
 def test_rfind():
     assert b"".rfind(b"") == 0, "1"
     assert b"hello".rfind(b"") == 5, "2"
@@ -490,6 +496,20 @@ def test_extend():
     a = bytearray(b'')
     assert_raises(ValueError, a.extend, [0, 1, 2, 256])
     assert_raises(ValueError, a.extend, [0, 1, 2, -1])
+    assert len(a) == 0
+
+    class StrSubclass(str):
+        pass
+
+    for value in ('def', StrSubclass('def')):
+        try:
+            a.extend(value)
+        except TypeError as e:
+            assert str(e) == "expected iterable of integers; got: 'str'"
+        else:
+            assert False, "bytearray.extend() did not raise TypeError"
+
+    a.extend('')
     assert len(a) == 0
 
 
@@ -771,6 +791,21 @@ def test_bytes_mod():
     except TypeError:
         raised = True
     assert raised
+
+    for format_bytes in (b'%i', bytearray(b'%i')):
+        try:
+            format_bytes % 2j
+        except TypeError as e:
+            assert str(e) == '%d format: a real number is required, not complex'
+        else:
+            assert False, "bytes formatting did not raise TypeError"
+
+    try:
+        '%i' % 2j
+    except TypeError as e:
+        assert str(e) == '%i format: a real number is required, not complex'
+    else:
+        assert False, "string formatting did not raise TypeError"
 
 def test__bytes__():
     class C: pass

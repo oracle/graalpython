@@ -591,8 +591,8 @@ class DateTest(unittest.TestCase):
 
         # format errors
 
-        with self.assertRaisesRegex(ValueError, "'R' is a bad directive in format 'abc %R'"):
-            datetime.datetime.strptime("abc 0", "abc %R")
+        with self.assertRaisesRegex(ValueError, "'i' is a bad directive in format 'abc %i'"):
+            datetime.datetime.strptime("abc 0", "abc %i")
 
         with self.assertRaisesRegex(ValueError, "time data '2025-W04-0' does not match format '%Y/W%U/%w'"):
             datetime.datetime.strptime("2025-W04-0", "%Y/W%U/%w")

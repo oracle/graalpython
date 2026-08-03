@@ -86,7 +86,6 @@
             },
             amd64: {
                 MUSL_TOOLCHAIN: {name: "musl-toolchain", version: "1.0", platformspecific: true},
-                PYTHON3_HOME: {name: "python3", version: "3.12.8", platformspecific: true},
             },
             aarch64: {},
         },
@@ -104,21 +103,7 @@
         },
     },
 
-    // This is the diff to 'DOWNLOADS' and meant to be used on OL8 images.
-    // Use it as diff argument to function 'downloads'.
-    local DOWNLOADS_DIFF_OL8 = {
-        linux: {
-            amd64: {
-                // Remove Python3 download because this is built for OL7 and
-                // does not work on OL8.
-                PYTHON3_HOME: null,
-            },
-        },
-    },
-
-    local DOWNLOADS_DIFF = {
-        buildslave_ol8: DOWNLOADS_DIFF_OL8,
-    },
+    local DOWNLOADS_DIFF = {},
 
     //------------------------------------------------------------------------------------------------------------------
     // environment
@@ -130,7 +115,6 @@
             HOST_VM_CONFIG: "graal-core",
             BENCH_RESULTS_FILE_PATH: "bench-results.json",
             GRAALVM_CHECK_EXPERIMENTAL_OPTIONS: "true",
-            MX_PYTHON_VERSION: "3.8",
             MX_OUTPUT_ROOT_INCLUDES_CONFIG: "false", // this is important so we can build things on JDK-latest and run them on older JDKs
             CI: "true",
             BISECT_BENCHMARK_CONFIG: "bisect-benchmark.ini",
@@ -146,7 +130,7 @@
         darwin: {
             common: ENV_POSIX + {
                 LC_CTYPE: "en_US.UTF-8",
-                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$PATH:$MUSL_TOOLCHAIN/bin"),
+                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$MUSL_TOOLCHAIN/bin"),
             },
             amd64: {},
             aarch64: {},
@@ -164,21 +148,15 @@
 
     local ENV_POSIX = {
         CPPFLAGS: "-I$LIBGMP/include",
-        LD_LIBRARY_PATH: "$LIBGMP/lib:$LLVM/lib:$LD_LIBRARY_PATH",
+        LD_LIBRARY_PATH: "$LIBGMP/lib:$LD_LIBRARY_PATH",
         FORK_COUNTS_DIRECTORY: "$BUILD_DIR/benchmarking-config/fork-counts",
         RODINIA_DATASET_ZIP: $.overlay_imports.RODINIA_DATASET_ZIP,
-        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin"),
+        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$MUSL_TOOLCHAIN/bin"),
     },
 
     // This is the diff to 'ENVIRONMENT' and meant to be used on OL8 images.
     // Use it as diff argument to function 'downloads'.
     local ENVIRONMENT_DIFF_OL8 = {
-        linux: {
-            common: {
-                // On OL8, we don't use our own build of Python 3.10.8 because that is built on OL7
-                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$MUSL_TOOLCHAIN/bin"),
-            },
-        },
         darwin: {
             common: {
                 PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$MUSL_TOOLCHAIN/bin"),
@@ -427,7 +405,16 @@
         deploysArtifacts: true,
     }),
 
-    cpython_gate:: base_gate + test_reports + task_spec({
+    cpython_runtime:: task_spec(evaluate_late("_3_cpython", {
+        environment+: {
+            MX_PYTHON: "python3",
+        },
+        packages+: {
+            python3: "==" + const.CPYTHON_VERSION,
+        },
+    })),
+
+    cpython_gate:: base_gate + test_reports + $.cpython_runtime + task_spec({
         tags:: "python-unittest-cpython",
         guard: {
             "includes": [
@@ -435,6 +422,7 @@
                 "graalpython/com.oracle.graal.python.test/src/graalpytest.py",
                 "mx.graalpython/mx_graalpython.py",
                 "ci.jsonnet",
+                "ci/**",
             ],
         },
     }),

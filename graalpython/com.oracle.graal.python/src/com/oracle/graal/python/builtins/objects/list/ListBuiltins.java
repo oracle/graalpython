@@ -269,10 +269,14 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         // exclusive for truffle-interpreted-performance
                         @Exclusive @Cached ClearListStorageNode clearStorageNode,
+                        @Cached InlinedConditionProfile selfInitProfile,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached CreateStorageFromIteratorNode storageNode) {
             clearStorageNode.execute(inliningTarget, list);
+            if (selfInitProfile.profile(inliningTarget, list == iterable)) {
+                return PNone.NONE;
+            }
             int len = lenNode.execute(frame, inliningTarget, iterable);
             Object iterObj = getIter.execute(frame, inliningTarget, iterable);
             list.setSequenceStorage(storageNode.execute(frame, iterObj, len));
@@ -440,11 +444,18 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached GetListStorageNode getStorageNode,
                         @Cached ListNodes.UpdateListStorageNode updateStorageNode,
+                        @Cached InlinedConditionProfile selfExtendProfile,
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
             var sequenceStorage = getStorageNode.execute(inliningTarget, list);
-            int len = lenNode.execute(frame, inliningTarget, iterable);
-            var newStorage = extendNode.execute(frame, sequenceStorage, iterable, len);
+            SequenceStorage newStorage;
+            if (selfExtendProfile.profile(inliningTarget, list == iterable && list instanceof PList)) {
+                newStorage = repeatNode.execute(frame, sequenceStorage, 2);
+            } else {
+                int len = lenNode.execute(frame, inliningTarget, iterable);
+                newStorage = extendNode.execute(frame, sequenceStorage, iterable, len);
+            }
             updateStorageNode.execute(inliningTarget, list, sequenceStorage, newStorage);
             return PNone.NONE;
         }
@@ -636,7 +647,7 @@ public final class ListBuiltins extends PythonBuiltins {
     }
 
     // list.count(x)
-    @Builtin(name = "count", minNumOfPositionalArgs = 2)
+    @Builtin(name = "count", minNumOfPositionalArgs = 2, parameterNames = {"$self", "value"})
     @GenerateNodeFactory
     public abstract static class ListCountNode extends PythonBuiltinNode {
 
@@ -788,15 +799,22 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IAddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object extendSequence(VirtualFrame frame, Object list, Object iterable,
+        static Object extendSequence(VirtualFrame frame, Object list, Object iterable,
                         @Bind Node inliningTarget,
                         @Cached GetListStorageNode getStorageNode,
                         @Cached ListNodes.UpdateListStorageNode updateStorageNode,
+                        @Cached InlinedConditionProfile selfExtendProfile,
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
             var sequenceStorage = getStorageNode.execute(inliningTarget, list);
-            int len = lenNode.execute(frame, inliningTarget, iterable);
-            var newStorage = extendNode.execute(frame, sequenceStorage, iterable, len);
+            SequenceStorage newStorage;
+            if (selfExtendProfile.profile(inliningTarget, list == iterable && list instanceof PList)) {
+                newStorage = repeatNode.execute(frame, sequenceStorage, 2);
+            } else {
+                int len = lenNode.execute(frame, inliningTarget, iterable);
+                newStorage = extendNode.execute(frame, sequenceStorage, iterable, len);
+            }
             updateStorageNode.execute(inliningTarget, list, sequenceStorage, newStorage);
             return list;
         }

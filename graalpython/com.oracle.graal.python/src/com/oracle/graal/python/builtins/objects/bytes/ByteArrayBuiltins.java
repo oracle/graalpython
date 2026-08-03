@@ -81,6 +81,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetStateNode;
 import com.oracle.graal.python.lib.PySliceNew;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -610,6 +611,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached InlinedConditionProfile bufferProfile,
                         @Cached BytesNodes.IterableToByteNode iterableToByteNode,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached IsBuiltinObjectProfile errorProfile,
                         @Cached("createExtend()") @Shared SequenceStorageNodes.ExtendNode extendNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
@@ -628,6 +630,9 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                     b = iterableToByteNode.execute(frame, source);
                 } catch (PException e) {
                     e.expect(inliningTarget, TypeError, errorProfile);
+                    if (unicodeCheckNode.execute(inliningTarget, source)) {
+                        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXPECTED_ITERABLE_OF_INTEGERS_GOT_STR);
+                    }
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_EXTEND_BYTEARRAY_WITH_P, source);
                 }
             }

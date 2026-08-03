@@ -79,7 +79,7 @@ public final class GraalPyPlatformInfoProviderImpl implements GraalPyPlatformInf
                 throw new IllegalStateException("Missing GraalPy platform metadata resource: " + resource);
             }
             List<String> lines = new BufferedReader(new InputStreamReader(stream, StandardCharsets.US_ASCII)).lines().toList();
-            if (lines.size() < 4 || lines.get(0).length() < 7) {
+            if (lines.size() < 5 || lines.get(0).length() < 7) {
                 throw new IllegalStateException("Malformed GraalPy platform metadata resource: " + resource);
             }
             String versions = lines.get(0);
@@ -89,7 +89,7 @@ public final class GraalPyPlatformInfoProviderImpl implements GraalPyPlatformInf
                             versions.charAt(3) - VERSION_BASE,
                             versions.charAt(4) - VERSION_BASE,
                             lines.get(1).strip(),
-                            new PlatformInfo(lines.get(2).strip(), lines.get(3).strip()));
+                            new PlatformInfo(lines.get(2).strip(), lines.get(3).strip(), lines.get(4).strip()));
         } catch (IOException e) {
             throw new IllegalStateException("Cannot read GraalPy platform metadata resource: " + resource, e);
         }

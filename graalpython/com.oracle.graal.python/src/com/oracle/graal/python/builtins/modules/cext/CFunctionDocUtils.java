@@ -40,8 +40,14 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_COEXIST;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_NOARGS;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_O;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_STATIC;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TEXT_SIGNATURE__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -54,14 +60,20 @@ public final class CFunctionDocUtils {
 
     private static final String SIGNATURE_END_MARKER = ")\n--\n\n";
     private static final int SIGNATURE_END_MARKER_LENGTH = SIGNATURE_END_MARKER.length();
+    private static final TruffleString T_METH_NOARGS_SIGNATURE = tsLiteral("($self, /)");
+    private static final TruffleString T_METH_NOARGS_CLASS_SIGNATURE = tsLiteral("($type, /)");
+    private static final TruffleString T_METH_NOARGS_STATIC_SIGNATURE = tsLiteral("()");
+    private static final TruffleString T_METH_O_SIGNATURE = tsLiteral("($self, object, /)");
+    private static final TruffleString T_METH_O_CLASS_SIGNATURE = tsLiteral("($type, object, /)");
+    private static final TruffleString T_METH_O_STATIC_SIGNATURE = tsLiteral("(object, /)");
 
     private CFunctionDocUtils() {
     }
 
     @TruffleBoundary
-    public static void writeDocAndTextSignature(PBuiltinFunction function, TruffleString name, Object docObj) {
+    public static void writeDocAndTextSignature(PBuiltinFunction function, TruffleString name, Object docObj, int flags) {
         Object doc = PNone.NONE;
-        Object textSignature = PNone.NONE;
+        Object textSignature = signatureFromFlags(flags);
         if (docObj instanceof TruffleString) {
             TruffleString docTruffleString = (TruffleString) docObj;
             String docString = docTruffleString.toJavaStringUncached();
@@ -77,6 +89,19 @@ public final class CFunctionDocUtils {
         }
         WriteAttributeToPythonObjectNode.executeUncached(function, T___DOC__, doc);
         WriteAttributeToPythonObjectNode.executeUncached(function, T___TEXT_SIGNATURE__, textSignature);
+    }
+
+    /* Matches CPython's signature_from_flags in Objects/typeobject.c. */
+    private static Object signatureFromFlags(int flags) {
+        return switch (flags & ~METH_COEXIST) {
+            case METH_NOARGS -> T_METH_NOARGS_SIGNATURE;
+            case METH_NOARGS | METH_CLASS -> T_METH_NOARGS_CLASS_SIGNATURE;
+            case METH_NOARGS | METH_STATIC -> T_METH_NOARGS_STATIC_SIGNATURE;
+            case METH_O -> T_METH_O_SIGNATURE;
+            case METH_O | METH_CLASS -> T_METH_O_CLASS_SIGNATURE;
+            case METH_O | METH_STATIC -> T_METH_O_STATIC_SIGNATURE;
+            default -> PNone.NONE;
+        };
     }
 
     /*

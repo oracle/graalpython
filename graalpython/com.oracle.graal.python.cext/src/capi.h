@@ -291,10 +291,11 @@ Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
 PyAPI_FUNC(int) _PyArg_Parse_SizeT(PyObject *, const char *, ...);
 PyAPI_FUNC(int) _PyArg_ParseTuple_SizeT(PyObject *, const char *, ...);
 PyAPI_FUNC(int) _PyArg_ParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
-                                                  const char *, char **, ...);
+                                                  const char *, const char * const *, ...);
 PyAPI_FUNC(int) _PyArg_VaParse_SizeT(PyObject *, const char *, va_list);
 PyAPI_FUNC(int) _PyArg_VaParseTupleAndKeywords_SizeT(PyObject *, PyObject *,
-                                                  const char *, char **, va_list);
+                                                  const char *, const char * const *, va_list);
+PyAPI_FUNC(PyObject *) _Py_VaBuildValue_SizeT(const char *, va_list);
 
 
 /*
@@ -308,6 +309,8 @@ PY_TRUFFLE_TYPE(PyCFunction_Type,                "builtin_function_or_method", &
 PY_TRUFFLE_TYPE(_PyBytesIOBuffer_Type,           "_BytesIOBuffer",             &PyType_Type, 0) \
 PY_TRUFFLE_TYPE(_PyExc_BaseException,            "BaseException",              &PyType_Type, sizeof(PyBaseExceptionObject)) \
 PY_TRUFFLE_TYPE(_PyExc_Exception,                "Exception",                  &PyType_Type, sizeof(PyBaseExceptionObject)) \
+PY_TRUFFLE_TYPE(_PyExc_InterpreterError,         "InterpreterError",           &PyType_Type, sizeof(PyBaseExceptionObject)) \
+PY_TRUFFLE_TYPE(_PyExc_InterpreterNotFoundError, "InterpreterNotFoundError",   &_PyExc_InterpreterError, sizeof(PyBaseExceptionObject)) \
 PY_TRUFFLE_TYPE(_PyExc_StopIteration,            "StopIteration",              &PyType_Type, sizeof(PyStopIterationObject)) \
 PY_TRUFFLE_TYPE(_PyExc_SyntaxError,              "SyntaxError",                &PyType_Type, sizeof(PySyntaxErrorObject)) \
 PY_TRUFFLE_TYPE(_PyNamespace_Type,                "SimpleNamespace",           &PyType_Type, sizeof(_PyNamespaceObject)) \
@@ -455,6 +458,8 @@ EXCEPTION(ImportError) \
 EXCEPTION(ImportWarning) \
 EXCEPTION(IndentationError) \
 EXCEPTION(IndexError) \
+EXCEPTION(InterpreterError) \
+EXCEPTION(InterpreterNotFoundError) \
 EXCEPTION(InterruptedError) \
 EXCEPTION(IOError) \
 EXCEPTION(IsADirectoryError) \
@@ -466,11 +471,13 @@ EXCEPTION(ModuleNotFoundError) \
 EXCEPTION(NameError) \
 EXCEPTION(NotADirectoryError) \
 EXCEPTION(NotImplementedError) \
+EXCEPTION(NotShareableError) \
 EXCEPTION(OSError) \
 EXCEPTION(OverflowError) \
 EXCEPTION(PendingDeprecationWarning) \
 EXCEPTION(PermissionError) \
 EXCEPTION(ProcessLookupError) \
+EXCEPTION(PythonFinalizationError) \
 EXCEPTION(RecursionError) \
 EXCEPTION(ReferenceError) \
 EXCEPTION(ResourceWarning) \

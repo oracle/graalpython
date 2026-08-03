@@ -29,7 +29,7 @@ try:
 except ImportError:
     _testmultiphase = None
 try:
-    import _xxsubinterpreters as _interpreters
+    import _interpreters
 except ModuleNotFoundError:
     _interpreters = None
 
@@ -321,7 +321,7 @@ class MagicNumberTests:
 
     def test_incorporates_rn(self):
         # The magic number uses \r\n to come out wrong when splitting on lines.
-        self.assertTrue(self.util.MAGIC_NUMBER.endswith(b'\r\n'))
+        self.assertEndsWith(self.util.MAGIC_NUMBER, b'\r\n')
 
 
 (Frozen_MagicNumberTests,
@@ -583,6 +583,18 @@ class PEP3147Tests:
 
     @unittest.skipIf(sys.implementation.cache_tag is None,
                      'requires sys.implementation.cache_tag to not be None')
+    def test_cache_from_source_in_root_with_pycache_prefix(self):
+        # Regression test for gh-82916
+        pycache_prefix = os.path.join(os.path.sep, 'tmp', 'bytecode')
+        path = 'qux.py'
+        expect = os.path.join(os.path.sep, 'tmp', 'bytecode',
+                              f'qux.{self.tag}.pyc')
+        with util.temporary_pycache_prefix(pycache_prefix):
+            with os_helper.change_cwd('/'):
+                self.assertEqual(self.util.cache_from_source(path), expect)
+
+    @unittest.skipIf(sys.implementation.cache_tag is None,
+                     'requires sys.implementation.cache_tag to not be None')
     def test_source_from_cache_inside_pycache_prefix(self):
         # If pycache_prefix is set and the cache path we get is inside it,
         # we return an absolute path to the py file based on the remainder of
@@ -636,7 +648,7 @@ class MagicNumberTests(unittest.TestCase):
         # stakeholders such as OS package maintainers must be notified
         # in advance. Such exceptional releases will then require an
         # adjustment to this test case.
-        EXPECTED_MAGIC_NUMBER = 3531
+        EXPECTED_MAGIC_NUMBER = 3571
         actual = int.from_bytes(importlib.util.MAGIC_NUMBER[:2], 'little')
 
         msg = (
@@ -657,27 +669,36 @@ class MagicNumberTests(unittest.TestCase):
 @unittest.skipIf(_interpreters is None, 'subinterpreters required')
 class IncompatibleExtensionModuleRestrictionsTests(unittest.TestCase):
 
-    ERROR = re.compile("^<class 'ImportError'>: module (.*) does not support loading in subinterpreters")
-
     def run_with_own_gil(self, script):
-        interpid = _interpreters.create(isolated=True)
-        try:
-            _interpreters.run_string(interpid, script)
-        except _interpreters.RunFailedError as exc:
-            if m := self.ERROR.match(str(exc)):
-                modname, = m.groups()
-                raise ImportError(modname)
+        interpid = _interpreters.create('isolated')
+        def ensure_destroyed():
+            try:
+                _interpreters.destroy(interpid)
+            except _interpreters.InterpreterNotFoundError:
+                pass
+        self.addCleanup(ensure_destroyed)
+        excsnap = _interpreters.exec(interpid, script)
+        if excsnap is not None:
+            if excsnap.type.__name__ == 'ImportError':
+                raise ImportError(excsnap.msg)
 
     def run_with_shared_gil(self, script):
-        interpid = _interpreters.create(isolated=False)
-        try:
-            _interpreters.run_string(interpid, script)
-        except _interpreters.RunFailedError as exc:
-            if m := self.ERROR.match(str(exc)):
-                modname, = m.groups()
-                raise ImportError(modname)
+        interpid = _interpreters.create('legacy')
+        def ensure_destroyed():
+            try:
+                _interpreters.destroy(interpid)
+            except _interpreters.InterpreterNotFoundError:
+                pass
+        self.addCleanup(ensure_destroyed)
+        excsnap = _interpreters.exec(interpid, script)
+        if excsnap is not None:
+            if excsnap.type.__name__ == 'ImportError':
+                raise ImportError(excsnap.msg)
 
     @unittest.skipIf(_testsinglephase is None, "test requires _testsinglephase module")
+    # gh-117649: single-phase init modules are not currently supported in
+    # subinterpreters in the free-threaded build
+    @support.expected_failure_if_gil_disabled()
     def test_single_phase_init_module(self):
         script = textwrap.dedent('''
             from importlib.util import _incompatible_extension_module_restrictions
@@ -702,14 +723,22 @@ class IncompatibleExtensionModuleRestrictionsTests(unittest.TestCase):
                 self.run_with_own_gil(script)
 
     @unittest.skipIf(_testmultiphase is None, "test requires _testmultiphase module")
+    @support.requires_gil_enabled("gh-117649: not supported in free-threaded build")
     def test_incomplete_multi_phase_init_module(self):
+        # Apple extensions must be distributed as frameworks. This requires
+        # a specialist loader.
+        if support.is_apple_mobile:
+            loader = "AppleFrameworkLoader"
+        else:
+            loader = "ExtensionFileLoader"
+
         prescript = textwrap.dedent(f'''
             from importlib.util import spec_from_loader, module_from_spec
-            from importlib.machinery import ExtensionFileLoader
+            from importlib.machinery import {loader}
 
             name = '_test_shared_gil_only'
             filename = {_testmultiphase.__file__!r}
-            loader = ExtensionFileLoader(name, filename)
+            loader = {loader}(name, filename)
             spec = spec_from_loader(name, loader)
 
             ''')
@@ -760,31 +789,70 @@ class IncompatibleExtensionModuleRestrictionsTests(unittest.TestCase):
             self.run_with_own_gil(script)
 
 
-class MiscTests(unittest.TestCase):
-    def test_atomic_write_should_notice_incomplete_writes(self):
+class PatchAtomicWrites:
+    def __init__(self, truncate_at_length, never_complete=False):
+        self.truncate_at_length = truncate_at_length
+        self.never_complete = never_complete
+        self.seen_write = False
+        self._children = []
+
+    def __enter__(self):
         import _pyio
 
         oldwrite = os.write
-        seen_write = False
-
-        truncate_at_length = 100
 
         # Emulate an os.write that only writes partial data.
         def write(fd, data):
-            nonlocal seen_write
-            seen_write = True
-            return oldwrite(fd, data[:truncate_at_length])
+            if self.seen_write and self.never_complete:
+                return None
+            self.seen_write = True
+            return oldwrite(fd, data[:self.truncate_at_length])
 
         # Need to patch _io to be _pyio, so that io.FileIO is affected by the
         # os.write patch.
-        with (support.swap_attr(_bootstrap_external, '_io', _pyio),
-              support.swap_attr(os, 'write', write)):
-            with self.assertRaises(OSError):
-                # Make sure we write something longer than the point where we
-                # truncate.
-                content = b'x' * (truncate_at_length * 2)
-                _bootstrap_external._write_atomic(os_helper.TESTFN, content)
-        assert seen_write
+        self.children = [
+            support.swap_attr(_bootstrap_external, '_io', _pyio),
+            support.swap_attr(os, 'write', write)
+        ]
+        for child in self.children:
+            child.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for child in self.children:
+            child.__exit__(exc_type, exc_val, exc_tb)
+
+
+class MiscTests(unittest.TestCase):
+
+    def test_atomic_write_retries_incomplete_writes(self):
+        truncate_at_length = 100
+        length = truncate_at_length * 2
+
+        with PatchAtomicWrites(truncate_at_length=truncate_at_length) as cm:
+            # Make sure we write something longer than the point where we
+            # truncate.
+            content = b'x' * length
+            _bootstrap_external._write_atomic(os_helper.TESTFN, content)
+        self.assertTrue(cm.seen_write)
+
+        self.assertEqual(os.stat(support.os_helper.TESTFN).st_size, length)
+        os.unlink(support.os_helper.TESTFN)
+
+    def test_atomic_write_errors_if_unable_to_complete(self):
+        truncate_at_length = 100
+
+        with (
+            PatchAtomicWrites(
+                truncate_at_length=truncate_at_length, never_complete=True,
+            ) as cm,
+            self.assertRaises(OSError)
+        ):
+            # Make sure we write something longer than the point where we
+            # truncate.
+            content = b'x' * (truncate_at_length * 2)
+            _bootstrap_external._write_atomic(os_helper.TESTFN, content)
+        self.assertTrue(cm.seen_write)
 
         with self.assertRaises(OSError):
             os.stat(support.os_helper.TESTFN) # Check that the file did not get written.

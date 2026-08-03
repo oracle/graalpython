@@ -13,7 +13,8 @@ extern "C" {
 #  error "this header requires Py_BUILD_CORE define"
 #endif
 
-#include "pycore_global_objects.h"  // _PY_NSMALLNEGINTS
+#include "pycore_bytesobject.h"   // _PyBytesWriter
+#include "pycore_global_objects.h"// _PY_NSMALLNEGINTS
 
 #include <stdbool.h>              // bool
 
@@ -52,7 +53,6 @@ extern "C" {
 # error "_PY_LONG_DEFAULT_MAX_STR_DIGITS smaller than threshold."
 #endif
 
-
 /* runtime lifecycle */
 
 extern PyStatus _PyLong_InitTypes(PyInterpreterState *);
@@ -65,7 +65,18 @@ extern void _PyLong_FiniTypes(PyInterpreterState *interp);
 #define _PyLong_SMALL_INTS _Py_SINGLETON(small_ints)
 */
 
-// Return a borrowed reference to the zero singleton.
+/* GraalVM change
+// _PyLong_GetZero() and _PyLong_GetOne() must always be available
+// _PyLong_FromUnsignedChar must always be available
+#if _PY_NSMALLPOSINTS < 257
+#  error "_PY_NSMALLPOSINTS must be greater than or equal to 257"
+#endif
+*/
+
+#define _PY_IS_SMALL_INT(val) \
+    (-_PY_NSMALLNEGINTS <= (val) && (val) < _PY_NSMALLPOSINTS)
+
+// Return a reference to the immortal zero singleton.
 // The function cannot return NULL.
 static inline PyObject* _PyLong_GetZero(void)
 /* GraalVM change
@@ -73,7 +84,7 @@ static inline PyObject* _PyLong_GetZero(void)
 */
 { return int32_to_pointer(0); }
 
-// Return a borrowed reference to the one singleton.
+// Return a reference to the immortal one singleton.
 // The function cannot return NULL.
 static inline PyObject* _PyLong_GetOne(void)
 /* GraalVM change
@@ -86,35 +97,83 @@ static inline PyObject* _PyLong_FromUnsignedChar(unsigned char i)
     return PyLong_FromLong(i);
 }
 
-PyObject *_PyLong_Add(PyLongObject *left, PyLongObject *right);
-PyObject *_PyLong_Multiply(PyLongObject *left, PyLongObject *right);
-PyObject *_PyLong_Subtract(PyLongObject *left, PyLongObject *right);
+// _PyLong_Frexp returns a double x and an exponent e such that the
+// true value is approximately equal to x * 2**e.  e is >= 0.  x is
+// 0.0 if and only if the input is 0 (in which case, e and x are both
+// zeroes); otherwise, 0.5 <= abs(x) < 1.0.  On overflow, which is
+// possible if the number of bits doesn't fit into a Py_ssize_t, sets
+// OverflowError and returns -1.0 for x, 0 for e.
+//
+// Export for 'math' shared extension
+PyAPI_DATA(double) _PyLong_Frexp(PyLongObject *a, Py_ssize_t *e);
 
-/* Used by Python/mystrtoul.c, _PyBytes_FromHex(),
-   _PyBytes_DecodeEscape(), etc. */
+extern PyObject* _PyLong_FromBytes(const char *, Py_ssize_t, int);
+
+// _PyLong_DivmodNear.  Given integers a and b, compute the nearest
+// integer q to the exact quotient a / b, rounding to the nearest even integer
+// in the case of a tie.  Return (q, r), where r = a - q*b.  The remainder r
+// will satisfy abs(r) <= abs(b)/2, with equality possible only if q is
+// even.
+//
+// Export for '_datetime' shared extension.
+PyAPI_DATA(PyObject*) _PyLong_DivmodNear(PyObject *, PyObject *);
+
+// _PyLong_Format: Convert the long to a string object with given base,
+// appending a base prefix of 0[box] if base is 2, 8 or 16.
+// Export for '_tkinter' shared extension.
+PyAPI_DATA(PyObject*) _PyLong_Format(PyObject *obj, int base);
+
+// Export for 'math' shared extension
+PyAPI_DATA(PyObject*) _PyLong_Rshift(PyObject *, size_t);
+
+// Export for 'math' shared extension
+PyAPI_DATA(PyObject*) _PyLong_Lshift(PyObject *, size_t);
+
+PyAPI_FUNC(PyObject*) _PyLong_Add(PyLongObject *left, PyLongObject *right);
+PyAPI_FUNC(PyObject*) _PyLong_Multiply(PyLongObject *left, PyLongObject *right);
+PyAPI_FUNC(PyObject*) _PyLong_Subtract(PyLongObject *left, PyLongObject *right);
+
+// Export for 'binascii' shared extension.
 PyAPI_DATA(unsigned char) _PyLong_DigitValue[256];
 
 /* Format the object based on the format_spec, as defined in PEP 3101
    (Advanced String Formatting). */
-PyAPI_FUNC(int) _PyLong_FormatAdvancedWriter(
+extern int _PyLong_FormatAdvancedWriter(
     _PyUnicodeWriter *writer,
     PyObject *obj,
     PyObject *format_spec,
     Py_ssize_t start,
     Py_ssize_t end);
 
-PyAPI_FUNC(int) _PyLong_FormatWriter(
+extern int _PyLong_FormatWriter(
     _PyUnicodeWriter *writer,
     PyObject *obj,
     int base,
     int alternate);
 
-PyAPI_FUNC(char*) _PyLong_FormatBytesWriter(
+extern char* _PyLong_FormatBytesWriter(
     _PyBytesWriter *writer,
     char *str,
     PyObject *obj,
     int base,
     int alternate);
+
+// Argument converters used by Argument Clinic
+
+// Export for 'select' shared extension (Argument Clinic code)
+PyAPI_FUNC(int) _PyLong_UnsignedShort_Converter(PyObject *, void *);
+
+// Export for '_testclinic' shared extension (Argument Clinic code)
+PyAPI_FUNC(int) _PyLong_UnsignedInt_Converter(PyObject *, void *);
+
+// Export for '_blake2' shared extension (Argument Clinic code)
+PyAPI_FUNC(int) _PyLong_UnsignedLong_Converter(PyObject *, void *);
+
+// Export for '_blake2' shared extension (Argument Clinic code)
+PyAPI_FUNC(int) _PyLong_UnsignedLongLong_Converter(PyObject *, void *);
+
+// Export for '_testclinic' shared extension (Argument Clinic code)
+PyAPI_FUNC(int) _PyLong_Size_t_Converter(PyObject *, void *);
 
 /* Long value tag bits:
  * 0-1: Sign bits value = (1-sign), ie. negative=2, positive=0, zero=1.
@@ -139,8 +198,12 @@ Py_LOCAL_SYMBOL uintptr_t GraalPyPrivate_Long_lv_tag(const PyLongObject *op);
  * we define them to the numbers in both places and then assert that
  * they're the same.
  */
-static_assert(SIGN_MASK == _PyLong_SIGN_MASK, "SIGN_MASK does not match _PyLong_SIGN_MASK");
-static_assert(NON_SIZE_BITS == _PyLong_NON_SIZE_BITS, "NON_SIZE_BITS does not match _PyLong_NON_SIZE_BITS");
+#if SIGN_MASK != _PyLong_SIGN_MASK
+#  error "SIGN_MASK does not match _PyLong_SIGN_MASK"
+#endif
+#if NON_SIZE_BITS != _PyLong_NON_SIZE_BITS
+#  error "NON_SIZE_BITS does not match _PyLong_NON_SIZE_BITS"
+#endif
 
 /* All *compact" values are guaranteed to fit into
  * a Py_ssize_t with at least one bit to spare.
@@ -199,6 +262,29 @@ _PyLong_IsPositive(const PyLongObject *op)
 #else // GraalPy change
     return (GraalPyPrivate_Long_lv_tag(op) & SIGN_MASK) == 0;
 #endif // GraalPy change
+}
+
+/* Return true if the argument is a small int */
+static inline bool
+_PyLong_IsSmallInt(const PyLongObject *op)
+{
+    assert(PyLong_Check(op));
+    bool is_small_int = false;
+    if (_PyLong_IsCompact(op)) {
+        Py_ssize_t value = _PyLong_CompactValue(op);
+        if (_PY_IS_SMALL_INT(value)) {
+#if 0 // GraalPy change
+            PyLongObject *small_obj;
+            small_obj = &_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + value];
+            is_small_int = (op == small_obj);
+#else // GraalPy change
+            is_small_int = (op == (PyLongObject *)int32_to_pointer((int)value));
+#endif // GraalPy change
+        }
+    }
+    assert(PyLong_CheckExact(op) || (!is_small_int));
+    assert(_Py_IsImmortal(op) || (!is_small_int));
+    return is_small_int;
 }
 
 static inline Py_ssize_t
@@ -287,7 +373,9 @@ _PyLong_SetDigitCount(PyLongObject *op, Py_ssize_t size)
 #define NON_SIZE_MASK ~((1 << NON_SIZE_BITS) - 1)
 
 static inline void
-_PyLong_FlipSign(PyLongObject *op) {
+_PyLong_FlipSign(PyLongObject *op)
+{
+    assert(!_PyLong_IsSmallInt(op));
     unsigned int flipped_sign = 2 - (op->long_value.lv_tag & SIGN_MASK);
     op->long_value.lv_tag &= NON_SIZE_MASK;
     op->long_value.lv_tag |= flipped_sign;
@@ -295,7 +383,7 @@ _PyLong_FlipSign(PyLongObject *op) {
 
 #define _PyLong_DIGIT_INIT(val) \
     { \
-        .ob_base = _PyObject_HEAD_INIT(&PyLong_Type) \
+        .ob_base = _PyObject_HEAD_INIT(&PyLong_Type), \
         .long_value  = { \
             .lv_tag = TAG_FROM_SIGN_AND_SIZE( \
                 (val) == 0 ? 0 : ((val) < 0 ? -1 : 1), \

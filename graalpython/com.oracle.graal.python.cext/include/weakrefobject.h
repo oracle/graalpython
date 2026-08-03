@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2019, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2017 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -32,7 +32,11 @@ PyAPI_FUNC(PyObject *) PyWeakref_NewRef(PyObject *ob,
                                         PyObject *callback);
 PyAPI_FUNC(PyObject *) PyWeakref_NewProxy(PyObject *ob,
                                           PyObject *callback);
-PyAPI_FUNC(PyObject *) PyWeakref_GetObject(PyObject *ref);
+Py_DEPRECATED(3.13) PyAPI_FUNC(PyObject *) PyWeakref_GetObject(PyObject *ref);
+
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x030D0000
+PyAPI_FUNC(int) PyWeakref_GetRef(PyObject *ref, PyObject **pobj);
+#endif
 
 
 #ifndef Py_LIMITED_API

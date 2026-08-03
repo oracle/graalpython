@@ -24,6 +24,7 @@ import warnings
 import sys, array, io, os
 from decimal import Decimal
 from fractions import Fraction
+from test.support import warnings_helper
 
 try:
     from _testbuffer import *
@@ -3220,12 +3221,6 @@ class TestBufferProtocol(unittest.TestCase):
         nd[0] = (-1, float('nan'))
         self.assertNotEqual(memoryview(nd), nd)
 
-        # Depends on issue #15625: the struct module does not understand 'u'.
-        a = array.array('u', 'xyz')
-        v = memoryview(a)
-        self.assertNotEqual(a, v)
-        self.assertNotEqual(v, a)
-
         # Some ctypes format strings are unknown to the struct module.
         if ctypes:
             # format: "T{>l:x:>l:y:}"
@@ -3238,6 +3233,15 @@ class TestBufferProtocol(unittest.TestCase):
             self.assertNotEqual(a, point)
             self.assertNotEqual(point, a)
             self.assertRaises(NotImplementedError, a.tolist)
+
+    @warnings_helper.ignore_warnings(category=DeprecationWarning)  # gh-80480 array('u')
+    def test_memoryview_compare_special_cases_deprecated_u_type_code(self):
+
+        # Depends on issue #15625: the struct module does not understand 'u'.
+        a = array.array('u', 'xyz')
+        v = memoryview(a)
+        self.assertNotEqual(a, v)
+        self.assertNotEqual(v, a)
 
     def test_memoryview_compare_ndim_zero(self):
 
@@ -4436,6 +4440,14 @@ class TestBufferProtocol(unittest.TestCase):
         x = ndarray([1,2,3], shape=[3], flags=ND_GETBUF_FAIL)
         self.assertRaises(BufferError, memoryview, x)
 
+    def test_bytearray_release_buffer_read_flag(self):
+        # See https://github.com/python/cpython/issues/126980
+        obj = bytearray(b'abc')
+        with self.assertRaises(SystemError):
+            obj.__buffer__(inspect.BufferFlags.READ)
+        with self.assertRaises(SystemError):
+            obj.__buffer__(inspect.BufferFlags.WRITE)
+
     @support.cpython_only
     def test_pybuffer_size_from_format(self):
         # basic tests
@@ -4598,6 +4610,33 @@ class TestPythonBufferProtocol(unittest.TestCase):
         with self.assertRaises(ValueError):
             buf.__release_buffer__(mv)
         self.assertEqual(buf.references, 0)
+
+    @unittest.skipIf(_testcapi is None, "requires _testcapi")
+    def test_c_buffer_invalid_flags(self):
+        buf = _testcapi.testBuf()
+        self.assertRaises(SystemError, buf.__buffer__, PyBUF_READ)
+        self.assertRaises(SystemError, buf.__buffer__, PyBUF_WRITE)
+
+    @unittest.skipIf(_testcapi is None, "requires _testcapi")
+    def test_c_fill_buffer_invalid_flags(self):
+        # PyBuffer_FillInfo
+        source = b"abc"
+        self.assertRaises(SystemError, _testcapi.buffer_fill_info,
+                          source, 0, PyBUF_READ)
+        self.assertRaises(SystemError, _testcapi.buffer_fill_info,
+                          source, 0, PyBUF_WRITE)
+
+    @unittest.skipIf(_testcapi is None, "requires _testcapi")
+    def test_c_fill_buffer_readonly_and_writable(self):
+        source = b"abc"
+        with _testcapi.buffer_fill_info(source, 1, PyBUF_SIMPLE) as m:
+            self.assertEqual(bytes(m), b"abc")
+            self.assertTrue(m.readonly)
+        with _testcapi.buffer_fill_info(source, 0, PyBUF_WRITABLE) as m:
+            self.assertEqual(bytes(m), b"abc")
+            self.assertFalse(m.readonly)
+        self.assertRaises(BufferError, _testcapi.buffer_fill_info,
+                          source, 1, PyBUF_WRITABLE)
 
     def test_inheritance(self):
         class A(bytearray):

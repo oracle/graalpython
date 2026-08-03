@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,6 +92,8 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
 
     public static final TruffleLogger LOGGER = PythonLanguage.getLogger(ReadlineModuleBuiltins.class);
     public static final TruffleString T__CONSOLE_HANDLER = tsLiteral("_console_handler");
+    public static final TruffleString T_BACKEND = tsLiteral("backend");
+    public static final TruffleString T_JLINE = tsLiteral("jline");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -110,6 +112,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule module = core.lookupBuiltinModule(T_READLINE);
+        module.setAttribute(T_BACKEND, T_JLINE);
         LocalData moduleState = new LocalData();
         module.setModuleState(moduleState);
         Object consoleHandler = core.lookupBuiltinModule(T_SYS).getAttribute(T__CONSOLE_HANDLER);

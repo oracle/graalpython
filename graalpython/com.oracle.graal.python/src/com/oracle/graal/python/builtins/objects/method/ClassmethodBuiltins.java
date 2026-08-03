@@ -54,10 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.DescrGetBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -127,45 +124,26 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
     abstract static class GetNode extends DescrGetBuiltinNode {
         // If self.getCallable() is null, let the next @Specialization handle that
         @Specialization(guards = {"isSingleContext()", "isNoValue(type) == typeIsNoValue", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
-        static Object getCached(VirtualFrame frame, @SuppressWarnings("unused") PDecoratedMethod self, Object obj, Object type,
+        static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, Object obj, Object type,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached(value = "self", weak = true) PDecoratedMethod cachedSelf,
                         @Cached(value = "self.getCallable()", weak = true) Object cachedCallable,
                         @Cached("isNoValue(type)") boolean typeIsNoValue,
                         @Exclusive @Cached GetClassNode getClass,
-                        @Exclusive @Cached GetObjectSlotsNode getCallableSlots,
-                        @Exclusive @Cached CallSlotDescrGet callGet,
                         @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod) {
             Object actualType = typeIsNoValue ? getClass.execute(inliningTarget, obj) : type;
-            return doGet(frame, inliningTarget, actualType, cachedCallable, getCallableSlots, callGet, makeMethod);
+            return makeMethod.execute(inliningTarget, actualType, cachedCallable);
         }
 
         @InliningCutoff
         @Specialization(replaces = "getCached")
-        static Object get(VirtualFrame frame, PDecoratedMethod self, Object obj, Object type,
+        static Object get(PDecoratedMethod self, Object obj, Object type,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached GetClassNode getClass,
-                        @Exclusive @Cached GetObjectSlotsNode getCallableSlots,
-                        @Exclusive @Cached CallSlotDescrGet callGet,
                         @Exclusive @Cached ClassmethodCommonBuiltins.MakeMethodNode makeMethod,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object actualType = PGuards.isNoValue(type) ? getClass.execute(inliningTarget, obj) : type;
-            return doGet(frame, inliningTarget, actualType, ClassmethodCommonBuiltins.getCallable(inliningTarget, self, raiseNode),
-                            getCallableSlots, callGet, makeMethod);
-        }
-
-        private static Object doGet(VirtualFrame frame, Node inliningTarget, Object type, Object callable,
-                        GetObjectSlotsNode getCallableSlots, CallSlotDescrGet callGet, ClassmethodCommonBuiltins.MakeMethodNode makeMethod) {
-            TpSlot get = getCallableSlots.execute(inliningTarget, callable).tp_descr_get();
-            if (get != null) {
-                return callGet(frame, inliningTarget, type, callable, callGet, get);
-            }
-            return makeMethod.execute(inliningTarget, type, callable);
-        }
-
-        @InliningCutoff
-        private static Object callGet(VirtualFrame frame, Node inliningTarget, Object type, Object callable, CallSlotDescrGet callGet, TpSlot get) {
-            return callGet.execute(frame, inliningTarget, get, callable, type, type);
+            return makeMethod.execute(inliningTarget, actualType, ClassmethodCommonBuiltins.getCallable(inliningTarget, self, raiseNode));
         }
     }
 

@@ -96,7 +96,7 @@ def get_boolean_env(name, default=False):
 SUITE = cast(mx.SourceSuite, mx.suite('graalpython'))
 SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 
-GRAALPY_ABI_VERSION = 'graalpy250'
+GRAALPY_ABI_VERSION = 'graalpy253'
 GRAALPY_ABIFLAGS = os.environ.get('GRAALPY_ABIFLAGS', '')
 if not re.fullmatch(r'[A-Za-z0-9_]*', GRAALPY_ABIFLAGS):
     mx.abort('GRAALPY_ABIFLAGS may only contain ASCII letters, digits, and underscores')
@@ -1016,8 +1016,8 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     run_leak_launcher(["--code", "pass", ])
     run_leak_launcher(["--repeat-and-check-size", "250", "--null-stdout", "--code", "print('hello')"])
     c_api_leak_test = (
-        'import _testcapi; '
-        't = _testcapi.tuple_pack(2, "a", "b"); '
+        'import _testcapi, _testlimitedcapi; '
+        't = _testlimitedcapi.tuple_pack(2, "a", "b"); '
         'assert _testcapi.tuple_get_item(t, 1) == "b"'
     )
     # test leaks when some C module code is involved
@@ -2202,16 +2202,16 @@ def tox_example(args=None):
 
     mx.log("Setting up CPython venv to run tox itself")
     libs = [
-        "distlib==0.3.9",
-        "filelock==3.18.0",
-        "packaging==25.0",
-        "platformdirs==4.3.8",
-        "pluggy==1.5.0",
-        "pyparsing==3.2.3",
+        "distlib==0.4.3",
+        "filelock==3.32.2",
+        "packaging==26.2",
+        "platformdirs==4.11.0",
+        "pluggy==1.6.0",
+        "pyparsing==3.3.2",
         "six==1.17.0",
         "toml==0.10.2",
-        "tox==4.25.0",
-        "virtualenv==20.31.2",
+        "tox==4.58.0",
+        "virtualenv==21.7.1",
         os.path.join(os.path.dirname(graalpy), "..", "graalpy_virtualenv_seeder"),
     ]
 

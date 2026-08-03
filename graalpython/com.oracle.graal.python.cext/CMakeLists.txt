@@ -79,6 +79,7 @@ if (MSVC)
     /wd4820 # padding added after data member
     /wd4100 # unreferenced formal parameter
     /wd4200 # nonstandard extension used: zero-sized array in struct/union
+    /wd4210 # nonstandard extension used: function given file scope
     /wd4996 # This function or variable may be unsafe ... see _CRT_SECURE_NO_WARNINGS
     /wd4668 # ... is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
     /wd4115 # named type definition in parentheses
@@ -87,10 +88,13 @@ if (MSVC)
     /wd4047 # 'int64_t' differs in levels of indirection from 'char []' / 'void *'
     /wd4242 # conversion from 'int' to 'char', possible loss of data
     /wd4244 # conversion from 'long' to 'char', possible loss of data
+    /wd4245 # conversion from signed to unsigned type
     /wd4267 # conversion from 'size_t' to 'int', possible loss of data
     /wd4127 # conditional expression is constant
+    /wd4130 # logical operation on address of string constant
     /wd4702 # unreachable code
     /wd4101 # unreferenced local variable
+    /wd4189 # local variable is initialized but not referenced
     /wd4456 # declaration hides previous local declaration
     /wd4459 # declaration hides global declaration
     /wd4061 # enumerator X in switch of enum Y is not explicitly handled by a case label
@@ -123,12 +127,6 @@ else()
 endif()
 
 
-# preprocessor defines for all platforms
-add_compile_definitions(
-    WITH_FREELISTS=1
-)
-
-
 if(WIN32)
     add_compile_definitions(
         MS_WINDOWS
@@ -148,7 +146,7 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 set(CAPI_SRC "${SRC_DIR}/src")
 
 # using glob patterns is not recommended: https://cmake.org/cmake/help/latest/command/file.html#glob
-set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c ${CAPI_SRC}/thread.c
+set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/compile.c ${CAPI_SRC}/thread.c
               ${CAPI_SRC}/moduleobject.c ${CAPI_SRC}/preconfig.c ${CAPI_SRC}/getbuildinfo.c ${CAPI_SRC}/object.c
               ${CAPI_SRC}/dtoa.c ${CAPI_SRC}/pystrhex.c ${CAPI_SRC}/capi.c ${CAPI_SRC}/complexobject.c
               ${CAPI_SRC}/capsule.c ${CAPI_SRC}/typeobject.c ${CAPI_SRC}/obmalloc.c ${CAPI_SRC}/descrobject.c
@@ -159,7 +157,7 @@ set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c
               ${CAPI_SRC}/pystrtod.c ${CAPI_SRC}/tupleobject.c ${CAPI_SRC}/iterobject.c ${CAPI_SRC}/sliceobject.c
               ${CAPI_SRC}/classobject.c ${CAPI_SRC}/floatobject.c ${CAPI_SRC}/namespaceobject.c ${CAPI_SRC}/_warnings.c
               ${CAPI_SRC}/dictobject.c ${CAPI_SRC}/pystate.c ${CAPI_SRC}/mysnprintf.c ${CAPI_SRC}/ceval.c
-              ${CAPI_SRC}/getcompiler.c ${CAPI_SRC}/pyhash.c ${CAPI_SRC}/fileutils.c
+              ${CAPI_SRC}/getcompiler.c ${CAPI_SRC}/pyhash.c ${CAPI_SRC}/fileutils.c ${CAPI_SRC}/invalid_parameter_handler.c
               ${CAPI_SRC}/modsupport.c ${CAPI_SRC}/context.c ${CAPI_SRC}/abstract.c ${CAPI_SRC}/frameobject.c
               ${CAPI_SRC}/posixmodule.c ${CAPI_SRC}/exceptions.c ${CAPI_SRC}/pyctype.c
               ${CAPI_SRC}/mystrtoul.c ${CAPI_SRC}/weakrefobject.c ${CAPI_SRC}/gcmodule.c
@@ -167,6 +165,7 @@ set(SRC_FILES ${CAPI_SRC}/codecs.c ${CAPI_SRC}/setobject.c ${CAPI_SRC}/compile.c
               ${CAPI_SRC}/genobject.c ${CAPI_SRC}/methodobject.c ${CAPI_SRC}/boolobject.c ${CAPI_SRC}/pylifecycle.c
               ${CAPI_SRC}/errors.c ${CAPI_SRC}/signals.c ${CAPI_SRC}/datetime.c ${CAPI_SRC}/call.c
               ${CAPI_SRC}/getargs.c ${CAPI_SRC}/tracemalloc.c ${CAPI_SRC}/initconfig.c ${CAPI_SRC}/graalpy_stacktrace.c
+              ${CAPI_SRC}/lock.c ${CAPI_SRC}/parking_lot.c
 )
 
 file(GLOB_RECURSE ACTUAL_SRC_FILES
@@ -212,11 +211,13 @@ function(native_module name core src_files)
     if(APPLE)
         target_link_options(${name} PRIVATE -undefined dynamic_lookup)
     endif()
-    if(${core})
-        target_compile_definitions(${name} PRIVATE Py_BUILD_CORE)
-        target_include_directories(${name} PRIVATE "${SRC_DIR}/include/internal")
+    if(NOT "NO_CORE_DEFINES" IN_LIST ARGN)
+        if(${core})
+            target_compile_definitions(${name} PRIVATE Py_BUILD_CORE)
+            target_include_directories(${name} PRIVATE "${SRC_DIR}/include/internal")
+        endif()
+        target_compile_definitions(${name} PRIVATE Py_BUILD_CORE_MODULE)
     endif()
-    target_compile_definitions(${name} PRIVATE Py_BUILD_CORE_MODULE)
     set_target_properties(${name} PROPERTIES SUFFIX "${GRAALPY_EXT}"
                                              PREFIX "")
     target_sources(${name} PRIVATE ${src_files})
@@ -290,7 +291,6 @@ target_include_directories("_sha3" PUBLIC "${LIBHACL_HEADERS}")
 set(TESTCAPI_SRC
     "${SRC_DIR}/modules/_testcapi/abstract.c"
     "${SRC_DIR}/modules/_testcapi/buffer.c"
-    "${SRC_DIR}/modules/_testcapi/bytearray.c"
     "${SRC_DIR}/modules/_testcapi/bytes.c"
     # "${SRC_DIR}/modules/_testcapi/code.c"
     "${SRC_DIR}/modules/_testcapi/codec.c"
@@ -303,34 +303,62 @@ set(TESTCAPI_SRC
     "${SRC_DIR}/modules/_testcapi/float.c"
     "${SRC_DIR}/modules/_testcapi/gc.c"
     "${SRC_DIR}/modules/_testcapi/getargs.c"
+    "${SRC_DIR}/modules/_testcapi/hash.c"
     "${SRC_DIR}/modules/_testcapi/heaptype.c"
-    # "${SRC_DIR}/modules/_testcapi/heaptype_relative.c"
     "${SRC_DIR}/modules/_testcapi/immortal.c"
     "${SRC_DIR}/modules/_testcapi/list.c"
     "${SRC_DIR}/modules/_testcapi/long.c"
     "${SRC_DIR}/modules/_testcapi/mem.c"
+    # "${SRC_DIR}/modules/_testcapi/monitoring.c"
     "${SRC_DIR}/modules/_testcapi/numbers.c"
+    "${SRC_DIR}/modules/_testcapi/object.c"
     "${SRC_DIR}/modules/_testcapi/parts.h"
-    "${SRC_DIR}/modules/_testcapi/pyos.c"
-    "${SRC_DIR}/modules/_testcapi/pytime.c"
+    "${SRC_DIR}/modules/_testcapi/pyatomic.c"
     "${SRC_DIR}/modules/_testcapi/run.c"
     "${SRC_DIR}/modules/_testcapi/set.c"
     "${SRC_DIR}/modules/_testcapi/structmember.c"
-    "${SRC_DIR}/modules/_testcapi/sys.c"
-    "${SRC_DIR}/modules/_testcapi/testcapi_long.h"
+    "${SRC_DIR}/modules/_testcapi/time.c"
     "${SRC_DIR}/modules/_testcapi/tuple.c"
     "${SRC_DIR}/modules/_testcapi/unicode.c"
     "${SRC_DIR}/modules/_testcapi/util.h"
+    "${SRC_DIR}/modules/_testcapi/weakref.c"
     # "${SRC_DIR}/modules/_testcapi/vectorcall.c"
-    # "${SRC_DIR}/modules/_testcapi/vectorcall_limited.c"
     # "${SRC_DIR}/modules/_testcapi/watchers.c"
     "${SRC_DIR}/modules/_testcapi.c"
 )
 
 native_module("_testcapi" FALSE "${TESTCAPI_SRC}")
+target_include_directories("_testcapi" PRIVATE "${SRC_DIR}/include/internal")
 if(WIN32)
     target_compile_options("_testcapi" PRIVATE /wd4296 /wd4130)
 endif()
+
+set(TESTLIMITEDCAPI_SRC
+    "${SRC_DIR}/modules/_testlimitedcapi/abstract.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/bytearray.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/bytes.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/complex.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/dict.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/eval.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/file.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/float.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/heaptype_relative.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/import.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/list.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/long.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/object.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/pyos.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/set.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/sys.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/tuple.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/unicode.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/vectorcall_limited.c"
+    "${SRC_DIR}/modules/_testlimitedcapi/weakref.c"
+    "${SRC_DIR}/modules/_testlimitedcapi.c"
+)
+
+native_module("_testlimitedcapi" FALSE "${TESTLIMITEDCAPI_SRC}" NO_CORE_DEFINES)
+
 simple_native_module("_testbuffer")
 if(WIN32)
     target_compile_options("_testbuffer" PRIVATE /wd4090)
@@ -372,7 +400,7 @@ target_compile_definitions(${TARGET_PYEXPAT} PRIVATE
 )
 
 ###################### CTYPES ######################
-native_module("_ctypes_test" TRUE "${SRC_DIR}/modules/_ctypes/_ctypes_test.c")
+native_module("_ctypes_test" TRUE "${SRC_DIR}/modules/_ctypes/_ctypes_test.c" NO_CORE_DEFINES)
 if(WIN32)
     target_compile_definitions("_ctypes_test" PRIVATE MS_WIN32 MS_WINDOWS)
 endif()

@@ -44,7 +44,6 @@ import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_SERIAL;
 import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
 import static com.oracle.graal.python.PythonLanguage.getPythonOS;
-import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
@@ -198,7 +197,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
-import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -245,6 +243,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
@@ -290,7 +289,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_LICENSE = tsLiteral(
                     "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.");
     private static final String COMPILE_TIME;
-    public static final PNone FRAMEWORK = PNone.NONE;
     public static final int MAXSIZE = Integer.MAX_VALUE;
     public static final long HASH_MULTIPLIER = 1000003L;
     public static final int HASH_BITS = 61;
@@ -559,9 +557,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         PythonOS os = getPythonOS();
         TruffleString osName = toTruffleStringUncached(os.getName());
         addBuiltinConstant("platform", osName);
-        if (os == PLATFORM_DARWIN) {
-            addBuiltinConstant("_framework", FRAMEWORK);
-        }
+        addBuiltinConstant("_framework", T_EMPTY_STRING);
         final TruffleString gmultiarch = PythonLanguage.getPlatformInfo().multiarch();
         addBuiltinConstant("__gmultiarch", gmultiarch);
 
@@ -988,7 +984,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                          * without exitEscaped filling in callerInfo, and f_back would be unable to
                          * recover the caller by stack-walking from the already-unwound frame.
                          */
-                        PFrame pyFrame = ReadFrameNode.readFrameInThreadLocal(access, null, FrameAccess.READ_ONLY, AllPythonFramesSelector.INSTANCE, 0, CallerFlags.NEEDS_PFRAME,
+                        PFrame pyFrame = ReadFrameNode.readFrameInThreadLocal(access, null, FrameAccess.MATERIALIZE, AllPythonFramesSelector.INSTANCE, 0, CallerFlags.ALL_FRAME_FLAGS,
                                         MaterializeFrameNode.getUncached(), true);
                         frames.put(access.getThread(), escapedFrameOrPlaceholder(pyFrame));
                     }
@@ -1014,7 +1010,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
             EconomicMapStorage storage = EconomicMapStorage.create(targetThreads.size());
             for (Thread thread : targetThreads) {
-                long key = PThread.getThreadId(thread);
+                long key = thread.threadId();
                 long hash = PyObjectHashNode.hash(key);
                 ObjectHashMap.PutNode.putUncached(storage, key, hash, frames.getOrDefault(thread, PNone.NONE));
             }
@@ -1501,6 +1497,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     "Handle an exception by displaying it with a traceback on sys.stderr.")
     @GenerateNodeFactory
     abstract static class ExceptHookNode extends PythonBuiltinNode {
+        static final TruffleString T_TRACEBACK = tsLiteral("traceback");
+        static final TruffleString T_PRINT_EXCEPTION_BLTIN = tsLiteral("_print_exception_bltin");
         static final TruffleString T_CAUSE_MESSAGE = tsLiteral("\nThe above exception was the direct cause of the following exception:\n\n");
         static final TruffleString T_CONTEXT_MESSAGE = tsLiteral("\nDuring handling of the above exception, another exception occurred:\n\n");
         static final TruffleString T_ATTR_PRINT_FILE_AND_LINE = tsLiteral("print_file_and_line");
@@ -1960,6 +1958,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         private void doHookWithTbImpl(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
                         PythonModule sys, Object value, PTraceback traceBack, IteratorNodes.ToArrayNode toArrayNode) {
             setExceptionTraceback(value, traceBack);
+            if (printWithTracebackModule(value)) {
+                return;
+            }
             Object stdErr = objectLookupAttr(sys, T_STDERR);
             printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet(), toArrayNode);
             fileFlush(stdErr);
@@ -1984,9 +1985,32 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private void doHookWithoutTbImpl(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
                         PythonModule sys, Object value, IteratorNodes.ToArrayNode toArrayNode) {
+            if (printWithTracebackModule(value)) {
+                return;
+            }
             Object stdErr = objectLookupAttr(sys, T_STDERR);
             printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet(), toArrayNode);
             fileFlush(stdErr);
+        }
+
+        /**
+         * Keep this in sync with CPython's _PyErr_Display: the Python traceback formatter is the
+         * primary implementation, and the code above is the fallback for failures during import or
+         * formatting.
+         */
+        @TruffleBoundary
+        private static boolean printWithTracebackModule(Object value) {
+            try {
+                PythonModule tracebackModule = AbstractImportNode.importModule(T_TRACEBACK);
+                Object printException = objectLookupAttr(tracebackModule, T_PRINT_EXCEPTION_BLTIN);
+                if (printException == PNone.NO_VALUE) {
+                    return false;
+                }
+                CallNode.executeUncached(printException, value);
+                return true;
+            } catch (PException e) {
+                return false;
+            }
         }
     }
 

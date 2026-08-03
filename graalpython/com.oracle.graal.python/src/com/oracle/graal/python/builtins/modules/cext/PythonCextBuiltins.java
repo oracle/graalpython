@@ -65,28 +65,14 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.GraalPyGC_CycleNode__item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.GraalPyGC_CycleNode__next;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__closure;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__doc;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__get;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__name;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyGetSetDef__set;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__doc;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__flags;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__name;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__offset;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayLongField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
-import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_SLOTS;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readLongArrayElement;
 import static com.oracle.graal.python.runtime.nativeaccess.NativeMemory.readPtrArrayElement;
@@ -119,7 +105,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins.DebugNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.GetFileSystemEncodingNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -142,12 +127,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ToNativeTy
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -161,14 +144,12 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -191,7 +172,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.nativeaccess.NativeSignature;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
@@ -299,10 +279,6 @@ public final class PythonCextBuiltins {
 
         protected final CApiContext getCApiContext() {
             return getContext().getCApiContext();
-        }
-
-        protected static CApiContext getStaticCApiContext() {
-            return PythonContext.get(null).getCApiContext();
         }
 
         protected final PException badInternalCall(String argName) {
@@ -907,13 +883,6 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObjectRawPointer, Pointer, Pointer}, call = Ignored)
-    static int GraalPyPrivate_Set_Native_Slots(long pythonClassPtr, long nativeGetSets, long nativeMembers) {
-        PythonManagedClass pythonClass = (PythonManagedClass) NativeToPythonClassInternalNode.executeUncached(pythonClassPtr);
-        HiddenAttr.WriteNode.executeUncached(pythonClass, NATIVE_SLOTS, new long[]{nativeGetSets, nativeMembers});
-        return 0;
-    }
-
     @CApiBuiltin(ret = Void, args = {PyTypeObjectRawPointer}, call = Ignored)
     @TruffleBoundary
     static void GraalPyPrivate_AddInheritedSlots(long pythonClassPtr) {
@@ -929,68 +898,6 @@ public final class PythonCextBuiltins {
          */
         PythonAbstractNativeObject pythonClass = (PythonAbstractNativeObject) NativeToPythonClassInternalNode.executeUncached(pythonClassPtr);
         pythonClass.setTpSlots(TpSlots.fromNative(pythonClass, PythonContext.get(null)));
-
-        long[] getsets = collect(TypeNodes.GetMroStorageNode.executeUncached(pythonClass), INDEX_GETSETS);
-        long[] members = collect(TypeNodes.GetMroStorageNode.executeUncached(pythonClass), INDEX_MEMBERS);
-
-        PDict dict = (PDict) CStructAccess.ReadObjectNode.getUncached().readFromObj(pythonClass, CFields.PyTypeObject__tp_dict);
-
-        for (long getset : getsets) {
-            if (getset != NULLPTR) {
-                for (int i = 0;; i++) {
-                    long namePtr = readStructArrayPtrField(getset, i, PyGetSetDef__name);
-                    if (namePtr == NULLPTR) {
-                        break;
-                    }
-                    long getter = readStructArrayPtrField(getset, i, PyGetSetDef__get);
-                    long setter = readStructArrayPtrField(getset, i, PyGetSetDef__set);
-                    long docPtr = readStructArrayPtrField(getset, i, PyGetSetDef__doc);
-                    Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : FromCharPointerNode.executeUncached(docPtr);
-                    long closure = readStructArrayPtrField(getset, i, PyGetSetDef__closure);
-
-                    PythonCextTypeBuiltins.addGetSet(pythonClass, dict, FromCharPointerNode.executeUncached(namePtr), getter, setter, doc, closure);
-                }
-            }
-        }
-
-        for (long member : members) {
-            if (member != NULLPTR) {
-                for (int i = 0;; i++) {
-                    long namePtr = readStructArrayPtrField(member, i, PyMemberDef__name);
-                    if (namePtr == NULLPTR) {
-                        break;
-                    }
-                    int type = readStructArrayIntField(member, i, PyMemberDef__type);
-                    long offset = readStructArrayLongField(member, i, PyMemberDef__offset);
-                    int flags = readStructArrayIntField(member, i, PyMemberDef__flags);
-                    long docPtr = readStructArrayPtrField(member, i, PyMemberDef__doc);
-                    Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : FromCharPointerNode.executeUncached(docPtr);
-                    boolean canSet = (flags & CConstants.READONLY.intValue()) == 0;
-                    PythonCextTypeBuiltins.addMember(pythonClass, dict, FromCharPointerNode.executeUncached(namePtr), type, offset, canSet ? 1 : 0, doc);
-                }
-            }
-        }
-    }
-
-    private static final int INDEX_GETSETS = 0;
-    private static final int INDEX_MEMBERS = 1;
-
-    @TruffleBoundary
-    private static long[] collect(MroSequenceStorage mro, int idx) {
-        int mroLength = mro.length();
-        long[] result = new long[mroLength];
-        int resultCount = 0;
-        for (int i = 0; i < mroLength; i++) {
-            PythonAbstractClass kls = mro.getPythonClassItemNormalized(i);
-            Object value = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) kls, NATIVE_SLOTS, null);
-            if (value != null) {
-                long[] tuple = (long[]) value;
-                assert tuple.length == 2;
-                result[resultCount++] = tuple[idx];
-            }
-        }
-        // the array may be overallocated, but the caller ignores any NULLPTR elements anyway
-        return result;
     }
 
     @CApiBuiltin(ret = Void, args = {PyTypeObject}, call = Ignored)

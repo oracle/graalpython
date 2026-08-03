@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -106,6 +107,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
     private static final TruffleString T_POSITIVE_INFINITY = tsLiteral("Infinity");
     private static final TruffleString T_NEGATIVE_INFINITY = tsLiteral("-Infinity");
     private static final TruffleString T_NAN = tsLiteral("NaN");
+    private static final TruffleString T_NEWLINE = tsLiteral("\n");
 
     private static final byte STATE_INITIAL = 0;
     private static final byte STATE_BUILTIN_LIST = 1;
@@ -160,8 +162,16 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     }
                 }
             }
+            TruffleString indentString = null;
+            if (indent != PNone.NONE) {
+                try {
+                    indentString = CastToTruffleStringNode.executeUncached(indent);
+                } catch (CannotCastException e) {
+                    throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.INDENT_MUST_BE_STR_OR_NONE_NOT_P, indent);
+                }
+            }
             return PFactory.createJSONEncoder(cls, TypeNodes.GetInstanceShape.executeUncached(cls),
-                            markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
+                            markers, defaultFn, encoder, indentString, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
         }
     }
 
@@ -181,7 +191,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PTuple call(VirtualFrame frame, PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent,
+        PTuple call(VirtualFrame frame, PJSONEncoder self, Object obj, int indent,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached InlinedBranchProfile genericListProfile,
@@ -219,16 +229,26 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
             Object genericIterator = null;
             boolean checkCircles = self.markers != PNone.NONE;
             PJSONEncoder.FastEncode fastEncode = self.fastEncode;
+            boolean prettyPrint = self.indent != null;
+            int initialIndentLevel = Math.max(indent, 0);
             outer: while (true) {
                 boolean skip = false;
-                if ((state == STATE_BUILTIN_LIST || state == STATE_GENERIC_LIST) && !first) {
-                    appendStringNode.execute(builder, self.itemSeparator);
+                if (state == STATE_BUILTIN_LIST || state == STATE_GENERIC_LIST) {
+                    if (!first) {
+                        appendStringNode.execute(builder, self.itemSeparator);
+                    }
+                    if (prettyPrint) {
+                        appendNewlineIndent(builder, self.indent, initialIndentLevel + stack.size(), appendStringNode);
+                    }
                 }
                 if (state == STATE_BUILTIN_DICT || state == STATE_GENERIC_DICT) {
                     boolean isString = isString(key);
                     if (isString || isSimpleObj(key, inliningTarget, getClassNode, isSubtypeNode)) {
                         if (!first) {
                             appendStringNode.execute(builder, self.itemSeparator);
+                        }
+                        if (prettyPrint) {
+                            appendNewlineIndent(builder, self.indent, initialIndentLevel + stack.size(), appendStringNode);
                         }
                         if (!isString) {
                             appendCodePointNode.execute(builder, '"');
@@ -338,6 +358,9 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                                 value = getItemScalarNode.execute(inliningTarget, builtinListStorage, stack.peek().index++);
                                 continue outer;
                             }
+                            if (prettyPrint && !first) {
+                                appendNewlineIndent(builder, self.indent, initialIndentLevel + stack.size() - 1, appendStringNode);
+                            }
                             appendCodePointNode.execute(builder, ']');
                         }
                         case STATE_BUILTIN_DICT -> {
@@ -346,6 +369,9 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                                 value = hashingStorageIteratorValue.execute(inliningTarget, builtinDictStorage, builtinDictIterator);
                                 continue outer;
                             } else {
+                                if (prettyPrint && !first) {
+                                    appendNewlineIndent(builder, self.indent, initialIndentLevel + stack.size() - 1, appendStringNode);
+                                }
                                 appendCodePointNode.execute(builder, '}');
                             }
                         }
@@ -370,6 +396,9 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                                     value = item;
                                 }
                             } catch (IteratorExhausted e) {
+                                if (prettyPrint && !first) {
+                                    appendNewlineIndent(builder, self.indent, initialIndentLevel + stack.size() - 1, appendStringNode);
+                                }
                                 appendCodePointNode.execute(builder, state == STATE_GENERIC_LIST ? ']' : '}');
                                 break;
                             }
@@ -410,6 +439,13 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                 }
             }
             return PFactory.createTuple(language, new Object[]{toStringNode.execute(builder)});
+        }
+
+        private static void appendNewlineIndent(TruffleStringBuilderUTF32 builder, TruffleString indent, int level, TruffleStringBuilder.AppendStringNode appendStringNode) {
+            appendStringNode.execute(builder, T_NEWLINE);
+            for (int i = 0; i < level; i++) {
+                appendStringNode.execute(builder, indent);
+            }
         }
 
         private static final class StackEntry {

@@ -177,6 +177,7 @@ import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyEvalGetLocals;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
@@ -244,7 +245,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -725,23 +725,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // chr(i)
     @Builtin(name = J_CHR, minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"i"})
     @GenerateNodeFactory
-    @ArgumentClinic(name = "i", conversion = ArgumentClinic.ClinicConversion.Int)
-    public abstract static class ChrNode extends PythonUnaryClinicBuiltinNode {
+    public abstract static class ChrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static TruffleString charFromInt(int arg,
+        static TruffleString charFromInt(VirtualFrame frame, Object arg,
                         @Bind Node inliningTarget,
+                        @Cached PyLongAsLongAndOverflowNode asLongAndOverflowNode,
                         @Cached TruffleString.FromCodePointNode fromCodePointNode,
                         @Cached PRaiseNode raiseNode) {
-            if (arg >= 0 && arg <= Character.MAX_CODE_POINT) {
-                return fromCodePointNode.execute(arg, TS_ENCODING, true);
-            } else {
-                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ARG_NOT_IN_RANGE, "chr()", "0x110000");
+            try {
+                long value = asLongAndOverflowNode.execute(frame, inliningTarget, arg);
+                if (value >= 0 && value <= Character.MAX_CODE_POINT) {
+                    return fromCodePointNode.execute((int) value, TS_ENCODING, true);
+                }
+            } catch (OverflowException e) {
+                // Let the range error below take precedence over integer conversion overflow,
             }
-        }
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return BuiltinFunctionsClinicProviders.ChrNodeClinicProviderGen.INSTANCE;
+            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.ARG_NOT_IN_RANGE, "chr()", "0x110000");
         }
     }
 

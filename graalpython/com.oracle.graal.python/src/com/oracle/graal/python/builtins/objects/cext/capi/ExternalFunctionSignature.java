@@ -244,8 +244,8 @@ public enum ExternalFunctionSignature implements NativeCExtSymbol {
     GRAALPY_MEMORYVIEW_FROM_OBJECT(false, PyObjectReturn, PyObject, Int),
     // Py_hash_t PyObject_HashNotImplemented(PyObject *);
     PYOBJECT_HASH_NOT_IMPLEMENTED(false, Py_ssize_t, PyObject),
-    // Py_ssize_t _PyGC_CollectNoFail(PyThreadState *);
-    PY_GC_COLLECT_NO_FAIL(true, Py_ssize_t, PyThreadState),
+    // void _PyGC_CollectNoFail(PyThreadState *);
+    PY_GC_COLLECT_NO_FAIL(true, Void, PyThreadState),
     // PyObject *_PyObject_NextNotImplemented(PyObject *);
     PY_OBJECT_NEXT_NOT_IMPLEMENTED(false, PyObjectTransfer, PyObject),
     // int GraalPyPrivate_SubtypeTraverse(PyObject *, void *, void *);

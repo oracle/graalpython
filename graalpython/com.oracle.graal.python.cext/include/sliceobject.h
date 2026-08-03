@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -13,8 +13,12 @@ extern "C" {
 
 PyAPI_DATA(PyObject*) _Py_EllipsisObjectReference; /* Don't use this directly */
 
-#define _Py_EllipsisObject (*_Py_EllipsisObjectReference)
-#define Py_Ellipsis (_Py_EllipsisObjectReference)
+#if defined(Py_LIMITED_API) && Py_LIMITED_API+0 >= 0x030D0000
+#  define Py_Ellipsis Py_GetConstantBorrowed(Py_CONSTANT_ELLIPSIS)
+#else
+#  define _Py_EllipsisObject (*_Py_EllipsisObjectReference)
+#  define Py_Ellipsis (_Py_EllipsisObjectReference)
+#endif
 
 /* Slice object interface */
 
