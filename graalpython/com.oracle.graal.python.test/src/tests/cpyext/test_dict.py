@@ -90,6 +90,17 @@ def _reference_get_item_string_ref(args):
     return _reference_get_item_ref(args)
 
 
+def _reference_pydict_pop(args):
+    d, key, want_result = args
+    if not isinstance(d, dict):
+        raise SystemError
+    try:
+        value = d.pop(key)
+    except KeyError:
+        return 0, None, d
+    return 1, value if want_result else None, d
+
+
 def _reference_set_item(args):
     try:
         d = args[0]
@@ -193,13 +204,47 @@ class MappingObj:
 
 class TestPyDict(CPyExtTestCase):
 
-    # PyDict_Pop
+    # _PyDict_Pop
     test__PyDict_Pop = CPyExtFunction(
         _reference_pop,
         lambda: (({}, "a", "42"), ({'a': "hello"}, "a", "42"), ({'a': "hello"}, "b", "42"), ({BadEq('a'): "hello"}, "a", "42" )),
         resultspec="O",
         argspec='OOO',
         arguments=("PyObject* dict", "PyObject* key", "PyObject* deflt"),
+        cmpfunc=unhandled_error_compare
+    )
+
+    # PyDict_Pop
+    test_PyDict_Pop = CPyExtFunction(
+        _reference_pydict_pop,
+        lambda: (
+            ({}, "missing", True),
+            ({"key": "value"}, "key", True),
+            ({"key": "value"}, "key", False),
+            ({}, [], True),
+            ([], "key", True),
+            ({BadEq("key"): "value"}, "key", True),
+        ),
+        code='''PyObject* wrap_PyDict_Pop(PyObject* dict, PyObject* key, int want_result) {
+            PyObject* result = (PyObject*)0xdeadbeef;
+            int status = PyDict_Pop(dict, key, want_result ? &result : NULL);
+            if (status < 0) {
+                if (want_result) {
+                    assert(result == NULL);
+                }
+                return NULL;
+            }
+            assert(status == 0 || status == 1);
+            if (want_result) {
+                assert((status == 0) == (result == NULL));
+            }
+            PyObject* value = want_result && result != NULL ? result : Py_NewRef(Py_None);
+            return Py_BuildValue("iNN", status, value, Py_NewRef(dict));
+        }''',
+        resultspec="N",
+        argspec='OOp',
+        arguments=("PyObject* dict", "PyObject* key", "int want_result"),
+        callfunction="wrap_PyDict_Pop",
         cmpfunc=unhandled_error_compare
     )
 

@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode.checkNonNullArgUncached;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
@@ -53,6 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
@@ -84,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonStrictNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -163,6 +166,32 @@ public final class PythonCextDictBuiltins {
             return PythonToNativeInternalNode.executeUncached(dict, true);
         } finally {
             CApiTiming.exit(TIMING_PYDICT_NEW);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PyObjectRawPointer, PyObjectPtr}, call = Direct)
+    static int PyDict_Pop(long dictPtr, long keyPtr, long resultPtr) {
+        long result = NULLPTR;
+        try {
+            Object dictObj = NativeToPythonInternalNode.executeUncached(dictPtr, false);
+            Object key = NativeToPythonInternalNode.executeUncached(keyPtr, false);
+            checkNonNullArgUncached(dictObj);
+            checkNonNullArgUncached(key);
+            if (!(dictObj instanceof PDict dict)) {
+                throw PRaiseNode.raiseStatic(null, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+            }
+            Object value = HashingStorageDelItem.executePopUncached(dict.getDictStorage(), key, dict);
+            if (value == null) {
+                return 0;
+            }
+            if (resultPtr != NULLPTR) {
+                result = PythonToNativeInternalNode.executeNewRefUncached(value);
+            }
+            return 1;
+        } finally {
+            if (resultPtr != NULLPTR) {
+                NativeMemory.writePtr(resultPtr, result);
+            }
         }
     }
 
