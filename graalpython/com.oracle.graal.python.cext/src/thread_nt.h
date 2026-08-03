@@ -262,11 +262,13 @@ PyThread_get_thread_ident_ex(void)
     return GetCurrentThreadId();
 }
 
+#if 0 // GraalPy change: implemented in Java to match _thread.get_ident()
 unsigned long
 PyThread_get_thread_ident(void)
 {
     return (unsigned long) PyThread_get_thread_ident_ex();
 }
+#endif
 
 
 #ifdef PY_HAVE_THREAD_NATIVE_ID

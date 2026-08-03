@@ -870,7 +870,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyThread_start_new_thread", ret = UNSIGNED_LONG, args = {func_voidvoidptr, Pointer}, call = CImpl)
     @CApiBuiltin(name = "PyThread_acquire_lock", ret = PrimitiveResult32, args = {PY_THREAD_TYPE_LOCK, PrimitiveResult32}, call = CImpl)
     @CApiBuiltin(name = "PyThread_allocate_lock", ret = PY_THREAD_TYPE_LOCK, args = {}, call = CImpl)
-    @CApiBuiltin(name = "PyThread_get_thread_ident", ret = UNSIGNED_LONG, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyThread_release_lock", ret = Void, args = {PY_THREAD_TYPE_LOCK}, call = CImpl)
     @CApiBuiltin(name = "PyTraceBack_Print", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyType_ClearCache", ret = UNSIGNED_INT, args = {}, call = NotImplemented)

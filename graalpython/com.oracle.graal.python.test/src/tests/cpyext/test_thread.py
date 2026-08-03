@@ -45,6 +45,20 @@ from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, CPyExtTyp
 
 class TestPyThread(CPyExtTestCase):
 
+    test_PyThread_get_thread_ident = CPyExtFunction(
+        lambda args: threading.get_ident(),
+        lambda: (tuple(),),
+        code='''
+        unsigned long wrap_PyThread_get_thread_ident(PyObject *ignored) {
+            return PyThread_get_thread_ident();
+        }
+        ''',
+        resultspec="k",
+        argspec="",
+        arguments=["PyObject* ignored"],
+        callfunction="wrap_PyThread_get_thread_ident",
+    )
+
     # TODO test that it's really thread-local
     test_PyThread_tss = CPyExtFunction(
         lambda args: args[0],
