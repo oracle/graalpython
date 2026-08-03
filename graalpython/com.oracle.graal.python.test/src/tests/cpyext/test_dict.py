@@ -282,6 +282,23 @@ class TestPyDict(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyDict_GetItem_preserves_exception = CPyExtFunction(
+        lambda args: True,
+        lambda: (({}, "missing"), ({"key": "value"}, "key")),
+        code='''PyObject* wrap_PyDict_GetItem_preserves_exception(PyObject* dict, PyObject* key) {
+            PyErr_SetString(PyExc_ValueError, "preserved");
+            PyDict_GetItem(dict, key);
+            int preserved = PyErr_ExceptionMatches(PyExc_ValueError);
+            PyErr_Clear();
+            return PyBool_FromLong(preserved);
+        }''',
+        resultspec="O",
+        argspec='OO',
+        arguments=("PyObject* dict", "PyObject* key"),
+        callfunction="wrap_PyDict_GetItem_preserves_exception",
+        cmpfunc=unhandled_error_compare
+    )
+
     # PyDict_GetItemWithError
     test_PyDict_GetItemWithError = CPyExtFunction(
         _reference_get_item_with_error,
@@ -394,6 +411,23 @@ class TestPyDict(CPyExtTestCase):
         arguments=("PyObject* dict", "char* key"),
         resulttype="PyObject*",
         callfunction="wrap_PyDict_GetItemString",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyDict_GetItemString_preserves_exception = CPyExtFunction(
+        lambda args: True,
+        lambda: (({}, "missing"), ({"key": "value"}, "key")),
+        code='''PyObject* wrap_PyDict_GetItemString_preserves_exception(PyObject* dict, char* key) {
+            PyErr_SetString(PyExc_ValueError, "preserved");
+            PyDict_GetItemString(dict, key);
+            int preserved = PyErr_ExceptionMatches(PyExc_ValueError);
+            PyErr_Clear();
+            return PyBool_FromLong(preserved);
+        }''',
+        resultspec="O",
+        argspec='Os',
+        arguments=("PyObject* dict", "char* key"),
+        callfunction="wrap_PyDict_GetItemString_preserves_exception",
         cmpfunc=unhandled_error_compare
     )
 

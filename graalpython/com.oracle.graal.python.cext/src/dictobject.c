@@ -4864,13 +4864,14 @@ PyObject *
 PyDict_GetItemString(PyObject *v, const char *key)
 {
     // GraalPy change: different implementation
+    PyObject *exc = PyErr_GetRaisedException();
     PyObject *rv = _PyDict_GetItemStringWithError(v, key);
     if (rv == NULL && PyErr_Occurred()) {
         PyErr_FormatUnraisable(
             "Exception ignored in PyDict_GetItemString(); consider using "
             "PyDict_GetItemRefString()");
-        return NULL;
     }
+    PyErr_SetRaisedException(exc);
     return rv;  // borrowed reference
 }
 
