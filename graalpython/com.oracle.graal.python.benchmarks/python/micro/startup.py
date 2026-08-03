@@ -42,7 +42,7 @@ import sys
 import fast_subprocess
 
 def __setup__(*args):
-    fast_subprocess.setup()
+    fast_subprocess.setup("1")
 
 
 def __teardown__():
@@ -50,4 +50,4 @@ def __teardown__():
 
 
 def __benchmark__(num=1000000):
-    fast_subprocess.run(num, "1")
+    fast_subprocess.run(num)
