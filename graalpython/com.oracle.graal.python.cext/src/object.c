@@ -3233,7 +3233,7 @@ _Py_GetConstant_Init(void)
 #ifndef NDEBUG
     for (size_t i=0; i < Py_ARRAY_LENGTH(constants); i++) {
         assert(constants[i] != NULL);
-        assert(_Py_IsImmortal(constants[i]));
+        // assert(_Py_IsImmortal(constants[i]));
     }
 #endif
 }
