@@ -43,7 +43,6 @@ import os
 import shutil
 import sys
 from textwrap import dedent
-import glob
 
 import mx
 
@@ -55,7 +54,7 @@ class AbstractRule(abc.ABC):
         self.source_path = source_path
 
     @abc.abstractmethod
-    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides, tracked_files):
         pass
 
 
@@ -75,7 +74,7 @@ class Ignore(AbstractRule):
     def __init__(self):
         super().__init__(None)
 
-    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides, tracked_files):
         match_overrides(graalpy_path, overrides)
 
 
@@ -84,18 +83,23 @@ class CopyFrom(AbstractRule):
     A rule that copies a file or a whole directory recursively.
     """
 
-    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides, tracked_files):
         match_overrides(graalpy_path, overrides)
         src = os.path.join(source_dir, self.source_path)
         dst = os.path.join(graalpy_dir, graalpy_path)
         if os.path.isfile(src):
+            if self.source_path not in tracked_files:
+                sys.exit(f"Source path {src} is not tracked by git")
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy(src, dst)
         elif os.path.isdir(src):
-            shutil.copytree(src, dst, dirs_exist_ok=True)
-            files = glob.iglob(os.path.join(dst, '**', '__pycache__', '*'), recursive=True)
-            for f in files:
-                os.remove(f)
+            source_prefix = f"{self.source_path}/"
+            for source_file in tracked_files:
+                if source_file.startswith(source_prefix):
+                    relative_path = source_file.removeprefix(source_prefix)
+                    destination_file = os.path.join(dst, relative_path)
+                    os.makedirs(os.path.dirname(destination_file), exist_ok=True)
+                    shutil.copy(os.path.join(source_dir, source_file), destination_file)
         else:
             sys.exit(f"Source path {src} not found")
 
@@ -105,7 +109,7 @@ class CopyFromWithOverrides(AbstractRule):
     A rule that copies a directory using a list of files specified in the license header overrides list.
     """
 
-    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides):
+    def copy(self, source_dir, graalpy_dir, graalpy_path, overrides, tracked_files):
         src = os.path.join(source_dir, self.source_path)
         if os.path.isdir(src):
             graalpy_prefix = f"{graalpy_path}/"
@@ -118,6 +122,9 @@ class CopyFromWithOverrides(AbstractRule):
                     src = os.path.join(src, f.removeprefix(graalpy_prefix))
                 if not os.path.exists(src):
                     sys.exit(f"File {f} from license overrides not found in {self.source_path}")
+                source_file = os.path.relpath(src, source_dir).replace(os.sep, '/')
+                if source_file not in tracked_files:
+                    sys.exit(f"File {f} from license overrides is not tracked by git in {self.source_path}")
                 shutil.copy(src, dst)
         elif os.path.exists(src):
             sys.exit(f"{type(self)} rule should only be used with directories")
@@ -227,6 +234,10 @@ def import_python_sources(args):
                         help='Python version to be updated to (used for commit message)', required=True)
     args = parser.parse_args(args)
 
+    tracked_files = set(
+        SUITE.vc.git_command(args.cpython, ['ls-files', '--full-name', '-z'], abortOnError=True).split('\0')
+    )
+
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
         entries = [line.strip().split(',') for line in f if ',' in line]
         cpython_files = [file for file, license in entries if
@@ -245,7 +256,7 @@ def import_python_sources(args):
     def copy_inlined_files(mapping, source_directory, overrides):
         overrides = list(overrides)
         for path, rule in mapping.items():
-            rule.copy(source_directory, import_dir, path, overrides)
+            rule.copy(source_directory, import_dir, path, overrides, tracked_files)
         if overrides:
             lines = '\n'.join(overrides)
             sys.exit(f"ERROR: The following files were not matched by any rule:\n{lines}")
