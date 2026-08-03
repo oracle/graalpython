@@ -314,8 +314,8 @@
         "python-svm-unittest-sandboxed": gpgate_ee + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3 + provide(GPYEE_NATIVE_STANDALONE),
         }),
-        "tox-example": gpgate_ee + require(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier3,
+        "tox-example": gpgate_ee + $.cpython_runtime + require(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : tier3 + $.ol8,
         }),
         "python-svm-graalos-standalone-build": gpgate_ee + internet_access_env + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest": tier3 + $.ol8 + task_spec({
