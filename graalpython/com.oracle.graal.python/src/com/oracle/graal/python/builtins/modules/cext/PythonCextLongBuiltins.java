@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -352,129 +351,113 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, Pointer, Py_ssize_t, Int}, call = Direct)
-    abstract static class PyLong_AsNativeBytes extends CApiQuaternaryBuiltinNode {
-        private static final int LITTLE_ENDIAN = 1;
-        private static final int NATIVE_ENDIAN = 2;
-        private static final int UNSIGNED_BUFFER = 4;
-        private static final int REJECT_NEGATIVE = 8;
-        private static final int ALLOW_INDEX = 16;
-        private static final int PYLONG_BITS_IN_DIGIT = 30;
+    private static final int LITTLE_ENDIAN = 1;
+    private static final int NATIVE_ENDIAN = 2;
+    private static final int UNSIGNED_BUFFER = 4;
+    private static final int REJECT_NEGATIVE = 8;
+    private static final int ALLOW_INDEX = 16;
+    private static final int PYLONG_BITS_IN_DIGIT = 30;
 
-        @Specialization
-        long convert(Object object, long buffer, long size, int flags,
-                        @Bind Node inliningTarget,
-                        @Cached PyLongCheckNode longCheckNode,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Cached CastToJavaBigIntegerNode castToBigIntegerNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (object == PNone.NO_VALUE || size < 0) {
-                throw badInternalCall(object == PNone.NO_VALUE ? "object" : "size");
-            }
-
-            Object integer = object;
-            if (!longCheckNode.execute(inliningTarget, object)) {
-                if (flags != -1 && (flags & ALLOW_INDEX) != 0) {
-                    integer = indexNode.execute(null, inliningTarget, object);
-                } else {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, object);
-                }
-            }
-
-            BigInteger value = castToBigIntegerNode.execute(inliningTarget, integer);
-            if (flags != -1 && (flags & REJECT_NEGATIVE) != 0 && value.signum() < 0) {
-                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_INT);
-            }
-
-            boolean littleEndian;
-            if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
-                littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
-            } else {
-                littleEndian = (flags & LITTLE_ENDIAN) != 0;
-            }
-            if (size > 0) {
-                writeValue(buffer, size, value, littleEndian);
-            }
-            return requiredSize(value, size, flags);
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, Pointer, Py_ssize_t, Int}, call = Direct)
+    static long PyLong_AsNativeBytes(long objectPtr, long buffer, long size, int flags) {
+        if (objectPtr == 0 || size < 0) {
+            throw PythonCextBuiltins.badInternalCall("PyLong_AsNativeBytes", objectPtr == 0 ? "object" : "size");
         }
 
-        @TruffleBoundary
-        private static void writeValue(long buffer, long size, BigInteger value, boolean littleEndian) {
-            byte[] source = value.toByteArray();
-            byte fill = value.signum() < 0 ? (byte) 0xff : 0;
-            NativeMemory.memset(buffer, fill, size);
-            int copyLength = (int) Math.min(size, source.length);
-            int sourceOffset = source.length - copyLength;
-            if (littleEndian) {
-                byte[] reversed = new byte[copyLength];
-                for (int i = 0; i < copyLength; i++) {
-                    reversed[i] = source[source.length - i - 1];
-                }
-                NativeMemory.writeByteArrayElements(buffer, 0, reversed, 0, copyLength);
+        Object object = NativeToPythonInternalNode.executeUncached(objectPtr, false);
+        Object integer = object;
+        if (!PyLongCheckNode.executeUncached(object)) {
+            if (flags != -1 && (flags & ALLOW_INDEX) != 0) {
+                integer = PyNumberIndexNode.executeUncached(object);
             } else {
-                NativeMemory.writeByteArrayElements(buffer, size - copyLength, source, sourceOffset, copyLength);
+                throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, object);
             }
         }
 
-        @TruffleBoundary
-        private static long requiredSize(BigInteger value, long size, int flags) {
-            int magnitudeBits = value.abs().bitLength();
-            if (magnitudeBits <= PYLONG_BITS_IN_DIGIT) {
-                long result = Long.BYTES;
-                if (size > 0 && size <= Long.BYTES) {
-                    int bits = (int) size * Byte.SIZE;
-                    BigInteger signedLimit = BigInteger.ONE.shiftLeft(bits - 1);
-                    if (value.compareTo(signedLimit.negate()) >= 0 && value.compareTo(signedLimit) < 0) {
-                        result = size;
-                    } else if (value.signum() > 0 && value.compareTo(BigInteger.ONE.shiftLeft(bits)) < 0) {
-                        result = flags == -1 || (flags & UNSIGNED_BUFFER) != 0 ? size : size + 1;
-                    }
-                }
-                return result;
-            }
+        BigInteger value = CastToJavaBigIntegerNode.executeUncached(integer);
+        if (flags != -1 && (flags & REJECT_NEGATIVE) != 0 && value.signum() < 0) {
+            throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_INT);
+        }
 
-            long result = magnitudeBits / Byte.SIZE + 1L;
-            if (size > 0 && result == size + 1 && magnitudeBits % Byte.SIZE == 0) {
-                if (value.signum() < 0) {
-                    BigInteger minimum = BigInteger.ONE.shiftLeft(magnitudeBits - 1).negate();
-                    if (value.equals(minimum)) {
-                        result = size;
-                    }
-                } else if (flags == -1 || (flags & UNSIGNED_BUFFER) != 0) {
+        boolean littleEndian;
+        if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
+            littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+        } else {
+            littleEndian = (flags & LITTLE_ENDIAN) != 0;
+        }
+        if (size > 0) {
+            writeNativeBytes(buffer, size, value, littleEndian);
+        }
+        return requiredNativeBytesSize(value, size, flags);
+    }
+
+    @TruffleBoundary
+    private static void writeNativeBytes(long buffer, long size, BigInteger value, boolean littleEndian) {
+        byte[] source = value.toByteArray();
+        byte fill = value.signum() < 0 ? (byte) 0xff : 0;
+        NativeMemory.memset(buffer, fill, size);
+        int copyLength = (int) Math.min(size, source.length);
+        int sourceOffset = source.length - copyLength;
+        if (littleEndian) {
+            byte[] reversed = new byte[copyLength];
+            for (int i = 0; i < copyLength; i++) {
+                reversed[i] = source[source.length - i - 1];
+            }
+            NativeMemory.writeByteArrayElements(buffer, 0, reversed, 0, copyLength);
+        } else {
+            NativeMemory.writeByteArrayElements(buffer, size - copyLength, source, sourceOffset, copyLength);
+        }
+    }
+
+    @TruffleBoundary
+    private static long requiredNativeBytesSize(BigInteger value, long size, int flags) {
+        int magnitudeBits = value.abs().bitLength();
+        if (magnitudeBits <= PYLONG_BITS_IN_DIGIT) {
+            long result = Long.BYTES;
+            if (size > 0 && size <= Long.BYTES) {
+                int bits = (int) size * Byte.SIZE;
+                BigInteger signedLimit = BigInteger.ONE.shiftLeft(bits - 1);
+                if (value.compareTo(signedLimit.negate()) >= 0 && value.compareTo(signedLimit) < 0) {
                     result = size;
+                } else if (value.signum() > 0 && value.compareTo(BigInteger.ONE.shiftLeft(bits)) < 0) {
+                    result = flags == -1 || (flags & UNSIGNED_BUFFER) != 0 ? size : size + 1;
                 }
             }
             return result;
         }
+
+        long result = magnitudeBits / Byte.SIZE + 1L;
+        if (size > 0 && result == size + 1 && magnitudeBits % Byte.SIZE == 0) {
+            if (value.signum() < 0) {
+                BigInteger minimum = BigInteger.ONE.shiftLeft(magnitudeBits - 1).negate();
+                if (value.equals(minimum)) {
+                    result = size;
+                }
+            } else if (flags == -1 || (flags & UNSIGNED_BUFFER) != 0) {
+                result = size;
+            }
+        }
+        return result;
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_VOID_PTR, SIZE_T, Int}, call = Direct)
-    abstract static class PyLong_FromNativeBytes extends CApiTernaryBuiltinNode {
-        private static final int LITTLE_ENDIAN = 1;
-        private static final int NATIVE_ENDIAN = 2;
-        private static final int UNSIGNED_BUFFER = 4;
-
-        @Specialization
-        Object convert(long buffer, long size, int flags,
-                        @Bind Node inliningTarget,
-                        @Cached IntNodes.PyLongFromByteArray fromByteArray,
-                        @Cached PRaiseNode raiseNode) {
-            if (buffer == 0) {
-                throw badInternalCall("buffer");
-            }
-            if (size != (int) size) {
-                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
-            }
-            boolean littleEndian;
-            if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
-                littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
-            } else {
-                littleEndian = (flags & LITTLE_ENDIAN) != 0;
-            }
-            boolean signed = flags == -1 || (flags & UNSIGNED_BUFFER) == 0;
-            byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
-            return fromByteArray.execute(inliningTarget, bytes, littleEndian, signed);
+    static long PyLong_FromNativeBytes(long buffer, long size, int flags) {
+        if (buffer == 0) {
+            throw PythonCextBuiltins.badInternalCall("PyLong_FromNativeBytes", "buffer");
         }
+        if (size != (int) size) {
+            throw PRaiseNode.raiseStatic(null, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
+        }
+        boolean littleEndian;
+        if (flags == -1 || (flags & NATIVE_ENDIAN) != 0) {
+            littleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+        } else {
+            littleEndian = (flags & LITTLE_ENDIAN) != 0;
+        }
+        boolean signed = flags == -1 || (flags & UNSIGNED_BUFFER) == 0;
+        byte[] bytes = readByteArrayElements(buffer, 0, (int) size);
+        Object result = IntNodes.PyLongFromByteArray.executeUncached(bytes, littleEndian, signed);
+        return PythonToNativeInternalNode.executeNewRefUncached(result);
     }
 
 }
