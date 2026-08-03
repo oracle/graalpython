@@ -401,6 +401,12 @@ def test_f_locals_proxy_updates_executing_frames():
     assert caller_frame() == 2
 
 
+def test_locals_includes_f_locals_extras():
+    sys._getframe().f_locals['extra'] = 42
+    snapshot = locals()
+    assert snapshot['extra'] == 42
+
+
 def test_f_locals_proxy_cellvar_and_freevar():
     def update_cellvar():
         cellvar = 1

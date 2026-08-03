@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -88,14 +89,20 @@ public abstract class GetFrameLocalsNode extends Node {
     }
 
     @Specialization(guards = "pyFrame.getCustomLocals() == null")
-    static Object doLoop(VirtualFrame frame, PFrame pyFrame, boolean freshFrame,
+    static Object doLoop(VirtualFrame frame, Node inliningTarget, PFrame pyFrame, boolean freshFrame,
                     @Cached CopyDSLLocalsToDict copyLocalsToDict,
-                    @Cached ReadFrameNode readFrameNode) {
+                    @Cached ReadFrameNode readFrameNode,
+                    @Cached HashingStorageAddAllToOther addAllToOther) {
         if (!freshFrame && pyFrame.needsRefresh(frame, CallerFlags.NEEDS_LOCALS)) {
             pyFrame = readFrameNode.refreshFrame(frame, pyFrame.getRef(), CallerFlags.NEEDS_LOCALS);
         }
         assert !pyFrame.outdatedCallerFlags(CallerFlags.NEEDS_LOCALS);
-        return copyLocalsToDict.execute(pyFrame.getBytecodeFrame());
+        PDict locals = copyLocalsToDict.execute(pyFrame.getBytecodeFrame());
+        PDict extraLocals = pyFrame.getExtraLocals();
+        if (extraLocals != null) {
+            addAllToOther.execute(frame, inliningTarget, extraLocals.getDictStorage(), locals);
+        }
+        return locals;
     }
 
     @Specialization(guards = "pyFrame.getCustomLocals() != null")
