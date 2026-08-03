@@ -187,6 +187,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
@@ -655,6 +656,11 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    @SuppressWarnings("serial")
+    private static class InvalidStringException extends ControlFlowException {
+        static final InvalidStringException INSTANCE = new InvalidStringException();
+    }
+
     @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, ConstCharPtr, Py_ssize_t}, call = Direct)
     public static int PyUnicode_EqualToUTF8AndSize(long unicodePtr, long str, long size) {
         if (size < 0) {
@@ -665,8 +671,11 @@ public final class PythonCextUnicodeBuiltins {
             Object unicodeObj = NativeToPythonInternalNode.executeUncached(unicodePtr, false);
             TruffleString unicode = CastToTruffleStringNode.castKnownStringUncached(unicodeObj);
             TruffleString utf8 = TruffleString.fromNativePointerUncached(str, 0, intSize, UTF_8, true);
-            return unicode.equalsUncached(utf8.switchEncodingUncached(TS_ENCODING), TS_ENCODING) ? 1 : 0;
-        } catch (OverflowException e) {
+            TruffleString decodedStr = utf8.switchEncodingUncached(TS_ENCODING, (sourceString, byteIndex, estimatedByteLength, sourceEncoding, targetEncoding) -> {
+                throw InvalidStringException.INSTANCE;
+            });
+            return unicode.equalsUncached(decodedStr, TS_ENCODING) ? 1 : 0;
+        } catch (OverflowException | InvalidStringException e) {
             return 0;
         }
     }
