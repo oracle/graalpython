@@ -645,8 +645,23 @@ public final class MMapBuiltins extends PythonBuiltins {
     abstract static class SizeNode extends PythonBuiltinNode {
 
         @Specialization
-        static long size(PMMap self) {
-            return self.getLength();
+        static long size(VirtualFrame frame, PMMap self,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixSupport,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (self.isClosed()) {
+                throw raiseNode.raise(inliningTarget, ValueError, MMAP_CLOSED_OR_INVALID);
+            }
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && self.getFd() == -1) {
+                return self.getLength();
+            }
+            try {
+                return posixSupport.fstat(context.getPosixSupport(), self.getFd())[ST_SIZE];
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 
@@ -658,6 +673,15 @@ public final class MMapBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static long resize(PMMap self, Object n,
                         @Bind Node inliningTarget) {
+            if (self.isClosed()) {
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, MMAP_CLOSED_OR_INVALID);
+            }
+            if (!self.tracksFd()) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.MMAP_CANNOT_RESIZE_WITH_TRACKFD_FALSE);
+            }
+            if (!self.isWriteable() || self.getAccess() == ACCESS_COPY) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.MMAP_CANNOT_RESIZE_READONLY_OR_COPY_ON_WRITE);
+            }
             // TODO: implement resize
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.SystemError, ErrorMessages.RESIZING_NOT_AVAILABLE);
         }

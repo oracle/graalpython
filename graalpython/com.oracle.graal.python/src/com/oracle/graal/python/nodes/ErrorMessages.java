@@ -1081,6 +1081,8 @@ public abstract class ErrorMessages {
     public static final TruffleString MMAP_S_IS_GREATER_THAN_FILE_SIZE = tsLiteral("mmap %s is greater than file size");
     public static final TruffleString TOO_MANY_REMAINING_BYTES_TO_BE_STORED = tsLiteral("There are too many remaining bytes to be stored in a bytes object.");
     public static final TruffleString MMAP_CANNOT_MODIFY_READONLY_MEMORY = tsLiteral("mmap can't modify a readonly memory map.");
+    public static final TruffleString MMAP_CANNOT_RESIZE_READONLY_OR_COPY_ON_WRITE = tsLiteral("mmap can't resize a readonly or copy-on-write memory map.");
+    public static final TruffleString MMAP_CANNOT_RESIZE_WITH_TRACKFD_FALSE = tsLiteral("mmap can't resize with trackfd=False.");
     public static final TruffleString DATA_OUT_OF_RANGE = tsLiteral("data out of range");
     public static final TruffleString MMAP_CLOSED_OR_INVALID = tsLiteral("mmap closed or invalid");
     public static final TruffleString MMAP_OBJECT_DOESNT_SUPPORT_ITEM_DELETION = tsLiteral("mmap object doesn't support item deletion");
