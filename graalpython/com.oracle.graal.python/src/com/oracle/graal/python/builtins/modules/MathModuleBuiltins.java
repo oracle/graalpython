@@ -72,8 +72,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -332,6 +332,34 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return MathModuleBuiltinsClinicProviders.CopySignNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "fma", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 3, parameterNames = {"x", "y", "z"}, doc = "Fused multiply-add operation.\n\nCompute (x * y) + z with a single round.")
+    @ArgumentClinic(name = "x", conversion = ArgumentClinic.ClinicConversion.Double)
+    @ArgumentClinic(name = "y", conversion = ArgumentClinic.ClinicConversion.Double)
+    @ArgumentClinic(name = "z", conversion = ArgumentClinic.ClinicConversion.Double)
+    @GenerateNodeFactory
+    public abstract static class FmaNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MathModuleBuiltinsClinicProviders.FmaNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static double fma(double x, double y, double z,
+                        @Bind Node inliningTarget) {
+            double result = Math.fma(x, y, z);
+            if (Double.isNaN(result)) {
+                if (!Double.isNaN(x) && !Double.isNaN(y) && !Double.isNaN(z)) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_OPERATION_IN_FMA);
+                }
+            } else if (Double.isInfinite(result) && Double.isFinite(x) && Double.isFinite(y) && Double.isFinite(z)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.OVERFLOW_IN_FMA);
+            }
+            return result;
         }
     }
 
