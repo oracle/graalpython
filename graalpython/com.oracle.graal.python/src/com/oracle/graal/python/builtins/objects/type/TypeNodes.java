@@ -1946,7 +1946,6 @@ public abstract class TypeNodes {
         public abstract PythonClass execute(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds);
 
         @Child private ReadAttributeFromObjectNode readAttrNode;
-        @Child private CastToTruffleStringNode castToStringNode;
 
         private ReadAttributeFromObjectNode ensureReadAttrNode() {
             if (readAttrNode == null) {
@@ -1954,14 +1953,6 @@ public abstract class TypeNodes {
                 readAttrNode = insert(ReadAttributeFromObjectNode.create());
             }
             return readAttrNode;
-        }
-
-        private CastToTruffleStringNode ensureCastToStringNode() {
-            if (castToStringNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToStringNode = insert(CastToTruffleStringNode.create());
-            }
-            return castToStringNode;
         }
 
         @Specialization
@@ -1998,7 +1989,7 @@ public abstract class TypeNodes {
             if (moduleAttr == PNone.NO_VALUE) {
                 PythonObject globals = getGlobals.execute(frame, inliningTarget);
                 if (globals != null) {
-                    TruffleString moduleName = getModuleNameFromGlobals(inliningTarget, globals, getItemGlobals);
+                    Object moduleName = getModuleNameFromGlobals(inliningTarget, globals, getItemGlobals);
                     if (moduleName != null) {
                         newType.setAttribute(SpecialAttributeNames.T___MODULE__, moduleName);
                     }
@@ -2104,7 +2095,7 @@ public abstract class TypeNodes {
             return newType;
         }
 
-        private TruffleString getModuleNameFromGlobals(Node inliningTarget, PythonObject globals, HashingStorageGetItem getItem) {
+        private Object getModuleNameFromGlobals(Node inliningTarget, PythonObject globals, HashingStorageGetItem getItem) {
             Object nameAttr;
             if (globals instanceof PythonModule) {
                 nameAttr = ensureReadAttrNode().execute(globals, SpecialAttributeNames.T___NAME__);
@@ -2117,12 +2108,7 @@ public abstract class TypeNodes {
             if (nameAttr == null || nameAttr == PNone.NO_VALUE) {
                 return null;
             }
-            try {
-                return ensureCastToStringNode().executeCached(nameAttr);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException();
-            }
+            return nameAttr;
         }
     }
 
