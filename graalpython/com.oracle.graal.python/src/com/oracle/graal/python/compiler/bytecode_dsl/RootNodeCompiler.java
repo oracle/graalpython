@@ -3566,6 +3566,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 return null;
             }
 
+            @Override
+            public Void visit(ExprTy.Starred node) {
+                throw ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "starred assignment target must be in a list or tuple");
+            }
+
             /**
              * This method unpacks the rhs (a sequence/iterable) to the elements on the lhs
              * specified by {@code nodes}.
