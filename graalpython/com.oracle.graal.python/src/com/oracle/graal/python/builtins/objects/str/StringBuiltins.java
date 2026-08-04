@@ -1552,7 +1552,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.replace
-    @Builtin(name = "replace", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "replace", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "old", "new", "count"})
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends PythonQuaternaryBuiltinNode {
 
