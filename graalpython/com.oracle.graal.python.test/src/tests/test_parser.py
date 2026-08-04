@@ -259,6 +259,9 @@ def test_cannot_assign_other():
         assert_raise_syntax_error("def f(**kwargs:(lambda __debug__:0)): pass\n", "cannot assign to __debug__")
         assert_raise_syntax_error("def f(**__debug__): pass\n", "cannot assign to __debug__")
         assert_raise_syntax_error("def f(*xx, __debug__): pass\n", "cannot assign to __debug__")
+        assert_raise_syntax_error("def f[__debug__](): pass\n", "cannot assign to __debug__")
+        assert_raise_syntax_error("def f[*__debug__](): pass\n", "cannot assign to __debug__")
+        assert_raise_syntax_error("def f[**__debug__](): pass\n", "cannot assign to __debug__")
 
 def test_invalid_assignmetn_to_yield_expression():
     if sys.implementation.version.minor >= 8:

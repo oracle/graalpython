@@ -3508,6 +3508,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public void visitTypeParams(TypeParamTy[] typeParams) {
             b.beginMakeTuple();
             for (TypeParamTy typeParam : typeParams) {
+                currentLocation = typeParam.getSourceRange();
                 typeParam.accept(this);
             }
             b.endMakeTuple();
