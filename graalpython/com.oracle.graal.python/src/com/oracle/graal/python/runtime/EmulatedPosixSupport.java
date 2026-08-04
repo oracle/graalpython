@@ -3073,12 +3073,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public TruffleString crypt(TruffleString word, TruffleString salt) throws PosixException {
-        throw createUnsupportedFeature("crypt");
-    }
-
-    @ExportMessage
     @SuppressWarnings("unused")
     long semOpen(Object name, int openFlags, int mode, int value) throws PosixException {
         throw posixException(OSErrorEnum.EINVAL);

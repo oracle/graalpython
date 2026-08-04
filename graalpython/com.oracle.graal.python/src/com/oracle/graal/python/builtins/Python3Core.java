@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.CryptModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
@@ -566,7 +565,6 @@ public abstract class Python3Core {
                         new WinapiModuleBuiltins(),
                         new OverlappedModuleBuiltins(),
                         new WinregLegacyModuleBuiltins(),
-                        new CryptModuleBuiltins(),
                         new ScandirIteratorBuiltins(),
                         new DirEntryBuiltins(),
                         new StatResultBuiltins(),

@@ -1099,13 +1099,6 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final TruffleString crypt(TruffleString word, TruffleString salt,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
-        checkNotInPreInitialization();
-        return nativeLib.crypt(nativePosixSupport, word, salt);
-    }
-
-    @ExportMessage
     final long semOpen(Object name, int openFlags, int mode, int value,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary lib) throws PosixException {
         checkNotInPreInitialization();

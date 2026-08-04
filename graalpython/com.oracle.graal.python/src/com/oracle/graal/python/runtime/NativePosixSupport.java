@@ -95,9 +95,8 @@ import com.oracle.graal.python.annotations.DowncallSignature;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.PyUnicodeEncodeFSDefaultNode;
-import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
@@ -177,8 +176,6 @@ public final class NativePosixSupport extends PosixSupport {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativePosixSupport.class);
 
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
-
-    private static final Object CRYPT_LOCK = new Object();
 
     abstract static class PosixNativeFunctionInvoker {
         @DowncallSignature(returnType = VOID)
@@ -641,32 +638,9 @@ public final class NativePosixSupport extends PosixSupport {
         }
     }
 
-    abstract static class CryptNativeFunctionInvoker {
-        @DowncallSignature(captureCallState = true, returnType = POINTER, argumentTypes = {POINTER, POINTER})
-        abstract long crypt(long word, long salt);
-
-        @TruffleBoundary
-        static NativeLibrary loadNativeLibrary(PythonContext context) {
-            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_DARWIN) {
-                return context.ensureNativeContext().getDefaultLibrary();
-            }
-            /*
-             * We don't want to link the posix support library against libcrypt, because it might
-             * not be available on the target Linux system and would make the whole support library
-             * fail to load. Load it dynamically on demand instead.
-             */
-            try {
-                return context.ensureNativeContext().loadLibrary("libcrypt.so", PosixConstants.RTLD_LOCAL.value);
-            } catch (NativeLibraryLoadException e) {
-                throw new UnsupportedOperationException("Could not load crypt support library 'libcrypt.so'.", e);
-            }
-        }
-    }
-
     private final PythonContext context;
     private final TruffleString nativeBackend;
     private final PosixNativeFunctionInvoker posixNativeFunctionInvoker;
-    private final CryptNativeFunctionInvoker cryptNativeFunctionInvoker;
     @CompilationFinal(dimensions = 1) private long[] constantValues;
 
     public NativePosixSupport(PythonContext context, TruffleString nativeBackend) {
@@ -674,7 +648,6 @@ public final class NativePosixSupport extends PosixSupport {
         this.context = context;
         this.nativeBackend = nativeBackend;
         this.posixNativeFunctionInvoker = new PosixNativeFunctionInvokerGen(context);
-        this.cryptNativeFunctionInvoker = new CryptNativeFunctionInvokerGen(context);
         setEnv(context.getEnv());
     }
 
@@ -2642,54 +2615,6 @@ public final class NativePosixSupport extends PosixSupport {
             NativeMemory.free(nativePtr);
             NativeMemory.free(servicePtr);
             NativeMemory.free(nodePtr);
-        }
-    }
-
-    @ExportMessage
-    public TruffleString crypt(TruffleString word, TruffleString salt,
-                    @Bind Node raisingNode,
-                    @Exclusive @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
-                    @Exclusive @Cached TruffleString.IsValidNode isValidNode,
-                    @Exclusive @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                    @Exclusive @Cached NativeMemory.ZeroTerminatedUtf8ToTruffleStringNode zeroTerminatedUtf8ToTruffleStringNode) throws PosixException {
-        /*
-         * From the manpage: Upon successful completion, crypt returns a pointer to a string which
-         * encodes both the hashed passphrase, and the settings that were used to encode it. See
-         * crypt(5) for more detail on the format of hashed passphrases. crypt places its result in
-         * a static storage area, which will be overwritten by subsequent calls to crypt. It is not
-         * safe to call crypt from multiple threads simultaneously. Upon error, it may return a NULL
-         * pointer or a pointer to an invalid hash, depending on the implementation.
-         */
-        long wordPtr = NULLPTR;
-        long saltPtr = NULLPTR;
-        try {
-            wordPtr = stringToNativeUTF8CString(raisingNode, word, switchEncodingToUtf8Node, isValidNode, copyToByteArrayNode);
-            saltPtr = stringToNativeUTF8CString(raisingNode, salt, switchEncodingToUtf8Node, isValidNode, copyToByteArrayNode);
-            // Note GIL is not enough as crypt is using global memory, we need a really global lock
-            synchronized (CRYPT_LOCK) {
-                long resultPtr;
-                try {
-                    resultPtr = cryptNativeFunctionInvoker.crypt(wordPtr, saltPtr);
-                } catch (UnsupportedOperationException e) {
-                    // Thrown by the generated invoker when CryptNativeFunction.loadNativeLibrary
-                    // fails during its lazy library initialization path.
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw PRaiseNode.raiseStatic(raisingNode, PythonBuiltinClassType.SystemError, ErrorMessages.UNABLE_TO_LOAD_LIBCRYPT);
-                }
-                // CPython doesn't handle the case of "invalid hash" return specially and neither do
-                // we
-                if (resultPtr == 0) {
-                    throw newPosixException(context.ensureNativeContext().getErrno());
-                }
-                return zeroTerminatedUtf8ToTruffleStringNode.execute(raisingNode, resultPtr);
-            }
-        } finally {
-            if (wordPtr != NULLPTR) {
-                NativeMemory.free(wordPtr);
-            }
-            if (saltPtr != NULLPTR) {
-                NativeMemory.free(saltPtr);
-            }
         }
     }
 
