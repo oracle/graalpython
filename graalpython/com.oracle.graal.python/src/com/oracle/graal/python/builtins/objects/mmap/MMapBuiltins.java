@@ -114,6 +114,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -184,7 +185,7 @@ public final class MMapBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = "mmap", minNumOfPositionalArgs = 3, parameterNames = {"cls", "fd", "length", "flags", "prot", "access",
-                    "offset"}, keywordOnlyNames = {"tagname"})
+                    "offset"}, keywordOnlyNames = {"tagname", "trackfd"})
     @GenerateNodeFactory
     // Note: it really should not call fileno on fd as per Python spec
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
@@ -199,7 +200,7 @@ public final class MMapBuiltins extends PythonBuiltins {
 
         private static final int ANONYMOUS_FD = -1;
 
-        private record MMapArgs(int flags, Object tagname) {
+        private record MMapArgs(int flags, Object tagname, boolean trackFd) {
         }
 
         @Override
@@ -210,7 +211,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         // mmap(fileno, length, tagname=None, access=ACCESS_DEFAULT[, offset=0])
         @Specialization(guards = "!isIllegal(fd)")
         static PMMap doFile(VirtualFrame frame, Object clazz, int fd, long lengthIn, Object flagsIn, int protIn, @SuppressWarnings("unused") int accessIn, long offset,
-                        Object tagname,
+                        Object tagname, Object trackFdArg,
                         @Bind Node inliningTarget,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupport,
@@ -218,8 +219,9 @@ public final class MMapBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached CastToTruffleStringNode castTagnameNode,
                         @Exclusive @Cached PyLongAsIntNode flagsAsIntNode,
+                        @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            MMapArgs mmapArgs = parseFlagsAndTagname(frame, inliningTarget, flagsIn, tagname, castTagnameNode, flagsAsIntNode, raiseNode);
+            MMapArgs mmapArgs = parseConstructorArgs(frame, inliningTarget, flagsIn, tagname, trackFdArg, castTagnameNode, flagsAsIntNode, isTrueNode, raiseNode);
             Object mmapTagname = PNone.NONE;
             if (mmapArgs.tagname() != PNone.NO_VALUE && !isPNone(mmapArgs.tagname())) {
                 try {
@@ -291,28 +293,36 @@ public final class MMapBuiltins extends PythonBuiltins {
             }
 
             // Fixup the flags if we want to use anonymous map
-            int dupFd;
+            int trackedFd;
             if (fd == ANONYMOUS_FD) {
-                dupFd = ANONYMOUS_FD;
+                trackedFd = ANONYMOUS_FD;
                 flags |= MAP_ANONYMOUS.value;
                 // TODO: CPython uses mapping to "/dev/zero" on systems that do not support
                 // MAP_ANONYMOUS, maybe this can be detected and handled by the POSIX layer
-            } else {
+            } else if (mmapArgs.trackFd()) {
                 try {
-                    dupFd = posixSupport.dup(posixSupport1, fd);
+                    trackedFd = posixSupport.dup(posixSupport1, fd);
                 } catch (PosixException e) {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
+            } else {
+                trackedFd = ANONYMOUS_FD;
             }
 
             Object mmapHandle;
             try {
-                mmapHandle = posixSupport.mmap(posixSupport1, length, prot, flags, dupFd, offset, mmapTagname);
+                mmapHandle = posixSupport.mmap(posixSupport1, length, prot, flags, fd, offset, mmapTagname);
             } catch (PosixException e) {
+                if (trackedFd != ANONYMOUS_FD) {
+                    try {
+                        posixSupport.close(posixSupport1, trackedFd);
+                    } catch (PosixException ignored) {
+                    }
+                }
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             PythonContext context = PythonContext.get(inliningTarget);
-            PMMap mmap = PFactory.createMMap(context, clazz, getInstanceShape.execute(clazz), mmapHandle, dupFd, length, access);
+            PMMap mmap = PFactory.createMMap(context, clazz, getInstanceShape.execute(clazz), mmapHandle, trackedFd, length, access, mmapArgs.trackFd());
             if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && NativeAccessSupport.isAvailable()) {
                 NativeContext.setLastError(0);
             }
@@ -322,17 +332,18 @@ public final class MMapBuiltins extends PythonBuiltins {
         @Specialization(guards = "isIllegal(fd)")
         @SuppressWarnings("unused")
         static PMMap doIllegal(VirtualFrame frame, Object clazz, int fd, long lengthIn, Object flagsIn, int protIn, int accessIn, long offset,
-                        Object tagname,
+                        Object tagname, Object trackFdArg,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode castTagnameNode,
                         @Exclusive @Cached PyLongAsIntNode flagsAsIntNode,
+                        @Exclusive @Cached PyObjectIsTrueNode isTrueNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            parseFlagsAndTagname(frame, inliningTarget, flagsIn, tagname, castTagnameNode, flagsAsIntNode, raiseNode);
+            parseConstructorArgs(frame, inliningTarget, flagsIn, tagname, trackFdArg, castTagnameNode, flagsAsIntNode, isTrueNode, raiseNode);
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.OSError);
         }
 
-        private static MMapArgs parseFlagsAndTagname(VirtualFrame frame, Node inliningTarget, Object flagsArg, Object tagnameArg,
-                        CastToTruffleStringNode castTagnameNode, PyLongAsIntNode flagsAsIntNode, PRaiseNode raiseNode) {
+        private static MMapArgs parseConstructorArgs(VirtualFrame frame, Node inliningTarget, Object flagsArg, Object tagnameArg, Object trackFdArg,
+                        CastToTruffleStringNode castTagnameNode, PyLongAsIntNode flagsAsIntNode, PyObjectIsTrueNode isTrueNode, PRaiseNode raiseNode) {
             Object flags = flagsArg;
             Object tagname = tagnameArg;
             if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && tagname == PNone.NO_VALUE && flags != PNone.NO_VALUE) {
@@ -348,7 +359,11 @@ public final class MMapBuiltins extends PythonBuiltins {
             if (tagname != PNone.NO_VALUE && PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, "mmap", "tagname");
             }
-            return new MMapArgs(flags == PNone.NO_VALUE ? FLAGS_DEFAULT : flagsAsIntNode.execute(frame, inliningTarget, flags), tagname);
+            if (trackFdArg != PNone.NO_VALUE && PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, "mmap", "trackfd");
+            }
+            boolean trackFd = trackFdArg == PNone.NO_VALUE || isTrueNode.execute(frame, trackFdArg);
+            return new MMapArgs(flags == PNone.NO_VALUE ? FLAGS_DEFAULT : flagsAsIntNode.execute(frame, inliningTarget, flags), tagname, trackFd);
         }
 
         protected static boolean isIllegal(int fd) {
