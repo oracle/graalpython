@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 
+import ast
 import types
 
 
@@ -714,6 +715,52 @@ def gen():
     codestr2 = codestr + ' ';
     code2 = compile(codestr2, "<test2>", "exec", optimize=2)
     check(code2, 2)
+
+
+def test_optimized_ast():
+    raw = compile("a * (1 + 2)", "<test>", "exec", flags=ast.PyCF_ONLY_AST)
+    optimized = compile("a * (1 + 2)", "<test>", "exec", flags=ast.PyCF_OPTIMIZED_AST)
+    optimized_from_ast = compile(raw, "<test>", "exec", flags=ast.PyCF_OPTIMIZED_AST)
+
+    assert isinstance(raw.body[0].value.right, ast.BinOp)
+    for tree in (optimized, optimized_from_ast):
+        assert isinstance(tree.body[0].value.right, ast.Constant)
+        assert tree.body[0].value.right.value == 3
+
+    assert compile(raw, "<test>", "exec", flags=ast.PyCF_ONLY_AST) is raw
+    assert isinstance(ast.parse("__debug__", optimize=0).body[0].value, ast.Name)
+    assert ast.parse("__debug__", optimize=1).body[0].value.value is False
+    nested = ast.parse("lambda x=1 + 2: f(3 + 4)", optimize=1).body[0].value
+    assert nested.args.defaults[0].value == 3
+    assert nested.body.args[0].value == 7
+    future_tree = compile(
+        "from __future__ import annotations\nx: 1 + 2",
+        "<test>",
+        "exec",
+        flags=ast.PyCF_OPTIMIZED_AST,
+        optimize=1,
+    )
+    assert isinstance(future_tree.body[1].annotation, ast.BinOp)
+
+
+def test_ast_optimizer_code_generation():
+    code = compile("result = '%s' % (value,)", "<test>", "exec")
+    assert "%s" not in code.co_consts
+    namespace = {"value": "optimized"}
+    exec(code, namespace)
+    assert namespace["result"] == "optimized"
+    assert eval(compile("__debug__", "<test>", "eval", optimize=1)) is False
+
+
+def test_ast_optimizer_preserves_future_annotations():
+    namespace = {}
+    exec("""from __future__ import annotations
+x: 1 + 2
+def f(a: 1 + 2) -> 1 + 2: pass
+""", namespace)
+    assert namespace["__annotations__"] == {"x": "1 + 2"}
+    assert namespace["f"].__annotations__ == {"a": "1 + 2", "return": "1 + 2"}
+
 
 def test_optimize_doc():
 

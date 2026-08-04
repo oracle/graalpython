@@ -167,6 +167,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryNode;
+import com.oracle.graal.python.compiler.AstOptimizer;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -955,7 +956,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public static final int PyCF_TYPE_COMMENTS = 0x1000;
         public static final int PyCF_ALLOW_TOP_LEVEL_AWAIT = 0x2000;
         private static final int PyCF_ALLOW_INCOMPLETE_INPUT = 0x4000;
-        private static final int PyCF_COMPILE_MASK = PyCF_ONLY_AST | PyCF_ALLOW_TOP_LEVEL_AWAIT | PyCF_TYPE_COMMENTS | PyCF_DONT_IMPLY_DEDENT | PyCF_ALLOW_INCOMPLETE_INPUT;
+        public static final int PyCF_OPTIMIZED_AST = 0x8000 | PyCF_ONLY_AST;
+        private static final int PyCF_COMPILE_MASK = PyCF_ONLY_AST | PyCF_ALLOW_TOP_LEVEL_AWAIT | PyCF_TYPE_COMMENTS | PyCF_DONT_IMPLY_DEDENT | PyCF_ALLOW_INCOMPLETE_INPUT |
+                        PyCF_OPTIMIZED_AST;
 
         /**
          * Decides whether this node should attempt to map the filename to a URI for the benefit of
@@ -1045,6 +1048,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 Parser parser = BytecodeDSLCompiler.createParser(code.toJavaStringUncached(), parserCb, type, compilerFlags, featureVersion);
                 ModTy mod = (ModTy) parser.parse();
                 parserCb.triggerDeprecationWarnings();
+                int astOptimizationLevel = (flags & PyCF_OPTIMIZED_AST) == PyCF_OPTIMIZED_AST ? resolveOptimizeLevel(context, optimize) : -2;
+                if (astOptimizationLevel >= 0) {
+                    AstOptimizer.optimize(mod, astOptimizationLevel, (flags & FutureFeature.ANNOTATIONS.flagValue) != 0);
+                }
                 return AstModuleBuiltins.sst2Obj(getContext(), mod);
             }
             CallTarget ct;
@@ -1087,11 +1094,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (!dontInherit) {
                 flags = inheritFlags(frame, flags, readCallerFrame);
             }
+            checkFlags(flags);
+            checkOptimize(optimize, optimize);
 
             Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 if (AstModuleBuiltins.isAst(context, wSource)) {
                     ModTy mod = AstModuleBuiltins.obj2sst(inliningTarget, context, wSource, getParserInputType(mode, flags));
+                    if ((flags & PyCF_ONLY_AST) != 0) {
+                        if ((flags & PyCF_OPTIMIZED_AST) != PyCF_OPTIMIZED_AST) {
+                            return wSource;
+                        }
+                        AstOptimizer.optimize(mod, resolveOptimizeLevel(context, optimize), (flags & FutureFeature.ANNOTATIONS.flagValue) != 0);
+                        return AstModuleBuiltins.sst2Obj(context, mod);
+                    }
                     Source source = PythonUtils.createFakeSource(filename);
                     RootCallTarget rootCallTarget = context.getLanguage(inliningTarget).compileModule(context, mod, source, false, optimize, null, null, flags);
                     return wrapRootCallTarget(rootCallTarget, filename);
@@ -1110,6 +1126,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 bytecodeDSLRootNode.triggerDeferredDeprecationWarnings();
             }
             return PFactory.createCode(PythonLanguage.get(null), rootCallTarget, filename);
+        }
+
+        private static int resolveOptimizeLevel(PythonContext context, int optimize) {
+            if (optimize >= 0) {
+                return optimize;
+            }
+            return context.getOption(PythonOptions.PythonOptimizeFlag) ? 1 : 0;
         }
 
         @TruffleBoundary

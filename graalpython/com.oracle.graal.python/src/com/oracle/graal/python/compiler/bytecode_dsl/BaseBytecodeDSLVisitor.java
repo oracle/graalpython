@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -73,6 +73,25 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
         }
     }
 
+    default ExprTy visitExpr(ExprTy node) {
+        visitNode(node);
+        return node;
+    }
+
+    @Override
+    default <U> U visitSequence(SSTNode[] sequence) {
+        if (sequence != null) {
+            for (int i = 0; i < sequence.length; i++) {
+                if (sequence[i] instanceof ExprTy expression) {
+                    sequence[i] = visitExpr(expression);
+                } else if (sequence[i] != null) {
+                    sequence[i].accept(this);
+                }
+            }
+        }
+        return null;
+    }
+
     default T visit(AliasTy node) {
         return defaultValue(node);
     }
@@ -88,25 +107,25 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(ComprehensionTy node) {
-        visitNode(node.iter);
+        node.iter = visitExpr(node.iter);
         visitSequence(node.ifs);
-        visitNode(node.target);
+        node.target = visitExpr(node.target);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.Attribute node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.Await node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.BinOp node) {
-        visitNode(node.left);
-        visitNode(node.right);
+        node.left = visitExpr(node.left);
+        node.right = visitExpr(node.right);
         return defaultValue(node);
     }
 
@@ -116,14 +135,14 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(ExprTy.Call node) {
-        visitNode(node.func);
+        node.func = visitExpr(node.func);
         visitSequence(node.args);
         visitSequence(node.keywords);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.Compare node) {
-        visitNode(node.left);
+        node.left = visitExpr(node.left);
         visitSequence(node.comparators);
         return defaultValue(node);
     }
@@ -140,27 +159,27 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
 
     default T visit(ExprTy.DictComp node) {
         visitSequence(node.generators);
-        visitNode(node.key);
-        visitNode(node.value);
+        node.key = visitExpr(node.key);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.FormattedValue node) {
-        visitNode(node.formatSpec);
-        visitNode(node.value);
+        node.formatSpec = visitExpr(node.formatSpec);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.GeneratorExp node) {
-        visitNode(node.element);
+        node.element = visitExpr(node.element);
         visitSequence(node.generators);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.IfExp node) {
-        visitNode(node.test);
-        visitNode(node.body);
-        visitNode(node.orElse);
+        node.test = visitExpr(node.test);
+        node.body = visitExpr(node.body);
+        node.orElse = visitExpr(node.orElse);
         return defaultValue(node);
     }
 
@@ -170,7 +189,8 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(ExprTy.Lambda node) {
-        visitNode(node.body);
+        visitNode(node.args);
+        node.body = visitExpr(node.body);
         return defaultValue(node);
     }
 
@@ -181,7 +201,7 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
 
     default T visit(ExprTy.ListComp node) {
         visitSequence(node.generators);
-        visitNode(node.element);
+        node.element = visitExpr(node.element);
         return defaultValue(node);
     }
 
@@ -190,8 +210,8 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(ExprTy.NamedExpr node) {
-        visitNode(node.target);
-        visitNode(node.value);
+        node.target = visitExpr(node.target);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
@@ -202,25 +222,25 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
 
     default T visit(ExprTy.SetComp node) {
         visitSequence(node.generators);
-        visitNode(node.element);
+        node.element = visitExpr(node.element);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.Slice node) {
-        visitNode(node.lower);
-        visitNode(node.upper);
-        visitNode(node.step);
+        node.lower = visitExpr(node.lower);
+        node.upper = visitExpr(node.upper);
+        node.step = visitExpr(node.step);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.Starred node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.Subscript node) {
-        visitNode(node.value);
-        visitNode(node.slice);
+        node.value = visitExpr(node.value);
+        node.slice = visitExpr(node.slice);
         return defaultValue(node);
     }
 
@@ -230,32 +250,32 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(ExprTy.UnaryOp node) {
-        visitNode(node.operand);
+        node.operand = visitExpr(node.operand);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.Yield node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(ExprTy.YieldFrom node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(KeywordTy node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(ModTy.Expression node) {
-        visitNode(node.body);
+        node.body = visitExpr(node.body);
         return defaultValue(node);
     }
 
     default T visit(ModTy.FunctionType node) {
-        visitNode(node.returns);
+        node.returns = visitExpr(node.returns);
         return defaultValue(node);
     }
 
@@ -270,27 +290,27 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(StmtTy.AnnAssign node) {
-        visitNode(node.target);
-        visitNode(node.annotation);
-        visitNode(node.value);
+        node.target = visitExpr(node.target);
+        node.annotation = visitExpr(node.annotation);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(StmtTy.Assert node) {
-        visitNode(node.test);
-        visitNode(node.msg);
+        node.test = visitExpr(node.test);
+        node.msg = visitExpr(node.msg);
         return defaultValue(node);
     }
 
     default T visit(StmtTy.Assign node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         visitSequence(node.targets);
         return defaultValue(node);
     }
 
     default T visit(StmtTy.AsyncFor node) {
-        visitNode(node.target);
-        visitNode(node.iter);
+        node.target = visitExpr(node.target);
+        node.iter = visitExpr(node.iter);
         visitSequence(node.body);
         visitSequence(node.orElse);
         return defaultValue(node);
@@ -299,7 +319,7 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     default T visit(StmtTy.AsyncFunctionDef node) {
         visitSequence(node.decoratorList);
         visitNode(node.args);
-        visitNode(node.returns);
+        node.returns = visitExpr(node.returns);
         visitSequence(node.body);
         return defaultValue(node);
     }
@@ -311,8 +331,8 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(StmtTy.AugAssign node) {
-        visitNode(node.target);
-        visitNode(node.value);
+        node.target = visitExpr(node.target);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
@@ -330,13 +350,13 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(StmtTy.Expr node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
     default T visit(StmtTy.For node) {
-        visitNode(node.iter);
-        visitNode(node.target);
+        node.iter = visitExpr(node.iter);
+        node.target = visitExpr(node.target);
         visitSequence(node.body);
         visitSequence(node.orElse);
         return defaultValue(node);
@@ -345,7 +365,7 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     default T visit(StmtTy.FunctionDef node) {
         visitSequence(node.decoratorList);
         visitNode(node.args);
-        visitNode(node.returns);
+        node.returns = visitExpr(node.returns);
         visitSequence(node.body);
         return defaultValue(node);
     }
@@ -355,7 +375,7 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(StmtTy.If node) {
-        visitNode(node.test);
+        node.test = visitExpr(node.test);
         visitSequence(node.body);
         visitSequence(node.orElse);
         return defaultValue(node);
@@ -370,14 +390,14 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(StmtTy.Match node) {
-        visitNode(node.subject);
+        node.subject = visitExpr(node.subject);
         visitSequence(node.cases);
         return defaultValue(node);
     }
 
     default T visit(MatchCaseTy node) {
         visitNode(node.pattern);
-        visitNode(node.guard);
+        node.guard = visitExpr(node.guard);
         visitSequence(node.body);
         return defaultValue(node);
     }
@@ -390,7 +410,7 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     default T visit(PatternTy.MatchClass node) {
         visitSequence(node.patterns);
         visitSequence(node.kwdPatterns);
-        visitNode(node.cls);
+        node.cls = visitExpr(node.cls);
         return defaultValue(node);
     }
 
@@ -419,7 +439,7 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(PatternTy.MatchValue node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
@@ -428,13 +448,13 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(StmtTy.Raise node) {
-        visitNode(node.exc);
-        visitNode(node.cause);
+        node.exc = visitExpr(node.exc);
+        node.cause = visitExpr(node.cause);
         return defaultValue(node);
     }
 
     default T visit(StmtTy.Return node) {
-        visitNode(node.value);
+        node.value = visitExpr(node.value);
         return defaultValue(node);
     }
 
@@ -451,13 +471,13 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(ExceptHandlerTy.ExceptHandler node) {
-        visitNode(node.type);
+        node.type = visitExpr(node.type);
         visitSequence(node.body);
         return defaultValue(node);
     }
 
     default T visit(StmtTy.While node) {
-        visitNode(node.test);
+        node.test = visitExpr(node.test);
         visitSequence(node.body);
         visitSequence(node.orElse);
         return defaultValue(node);
@@ -470,8 +490,8 @@ public interface BaseBytecodeDSLVisitor<T> extends SSTreeVisitor<T> {
     }
 
     default T visit(WithItemTy node) {
-        visitNode(node.contextExpr);
-        visitNode(node.optionalVars);
+        node.contextExpr = visitExpr(node.contextExpr);
+        node.optionalVars = visitExpr(node.optionalVars);
         return defaultValue(node);
     }
 

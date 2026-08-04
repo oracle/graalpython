@@ -58,7 +58,7 @@ public abstract class StmtTy extends SSTNode {
         public final ArgumentsTy args;
         public final StmtTy[] body;   // nullable
         public final ExprTy[] decoratorList;   // nullable
-        public final ExprTy returns;   // nullable
+        public ExprTy returns;   // nullable
         public final Object typeComment;   // nullable
         public final TypeParamTy[] typeParams;   // nullable
 
@@ -90,7 +90,7 @@ public abstract class StmtTy extends SSTNode {
         public final ArgumentsTy args;
         public final StmtTy[] body;   // nullable
         public final ExprTy[] decoratorList;   // nullable
-        public final ExprTy returns;   // nullable
+        public ExprTy returns;   // nullable
         public final Object typeComment;   // nullable
         public final TypeParamTy[] typeParams;   // nullable
 
@@ -147,7 +147,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Return extends StmtTy {
-        public final ExprTy value;   // nullable
+        public ExprTy value;   // nullable
 
         public Return(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -176,7 +176,7 @@ public abstract class StmtTy extends SSTNode {
 
     public static final class Assign extends StmtTy {
         public final ExprTy[] targets;   // nullable
-        public final ExprTy value;
+        public ExprTy value;
         public final Object typeComment;   // nullable
 
         public Assign(ExprTy[] targets, ExprTy value, Object typeComment, SourceRange sourceRange) {
@@ -194,9 +194,9 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class TypeAlias extends StmtTy {
-        public final ExprTy name;
+        public ExprTy name;
         public final TypeParamTy[] typeParams;   // nullable
-        public final ExprTy value;
+        public ExprTy value;
 
         public TypeAlias(ExprTy name, TypeParamTy[] typeParams, ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -218,9 +218,9 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class AugAssign extends StmtTy {
-        public final ExprTy target;
+        public ExprTy target;
         public final OperatorTy op;
-        public final ExprTy value;
+        public ExprTy value;
 
         public AugAssign(ExprTy target, OperatorTy op, ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -239,9 +239,9 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class AnnAssign extends StmtTy {
-        public final ExprTy target;
-        public final ExprTy annotation;
-        public final ExprTy value;   // nullable
+        public ExprTy target;
+        public ExprTy annotation;
+        public ExprTy value;   // nullable
         public final boolean isSimple;
 
         public AnnAssign(ExprTy target, ExprTy annotation, ExprTy value, boolean isSimple, SourceRange sourceRange) {
@@ -261,8 +261,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class For extends StmtTy {
-        public final ExprTy target;
-        public final ExprTy iter;
+        public ExprTy target;
+        public ExprTy iter;
         public final StmtTy[] body;   // nullable
         public final StmtTy[] orElse;   // nullable
         public final Object typeComment;   // nullable
@@ -285,8 +285,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class AsyncFor extends StmtTy {
-        public final ExprTy target;
-        public final ExprTy iter;
+        public ExprTy target;
+        public ExprTy iter;
         public final StmtTy[] body;   // nullable
         public final StmtTy[] orElse;   // nullable
         public final Object typeComment;   // nullable
@@ -309,7 +309,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class While extends StmtTy {
-        public final ExprTy test;
+        public ExprTy test;
         public final StmtTy[] body;   // nullable
         public final StmtTy[] orElse;   // nullable
 
@@ -328,7 +328,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class If extends StmtTy {
-        public final ExprTy test;
+        public ExprTy test;
         public final StmtTy[] body;   // nullable
         public final StmtTy[] orElse;   // nullable
 
@@ -383,7 +383,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Match extends StmtTy {
-        public final ExprTy subject;
+        public ExprTy subject;
         public final MatchCaseTy[] cases;   // nullable
 
         public Match(ExprTy subject, MatchCaseTy[] cases, SourceRange sourceRange) {
@@ -400,8 +400,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Raise extends StmtTy {
-        public final ExprTy exc;   // nullable
-        public final ExprTy cause;   // nullable
+        public ExprTy exc;   // nullable
+        public ExprTy cause;   // nullable
 
         public Raise(ExprTy exc, ExprTy cause, SourceRange sourceRange) {
             super(sourceRange);
@@ -456,8 +456,8 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Assert extends StmtTy {
-        public final ExprTy test;
-        public final ExprTy msg;   // nullable
+        public ExprTy test;
+        public ExprTy msg;   // nullable
 
         public Assert(ExprTy test, ExprTy msg, SourceRange sourceRange) {
             super(sourceRange);
@@ -533,7 +533,7 @@ public abstract class StmtTy extends SSTNode {
     }
 
     public static final class Expr extends StmtTy {
-        public final ExprTy value;
+        public ExprTy value;
 
         public Expr(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);

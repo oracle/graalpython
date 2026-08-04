@@ -68,6 +68,9 @@ import org.graalvm.polyglot.io.ByteSequence;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -898,13 +901,21 @@ public final class PythonUtils {
                 return PFactory.createBytes(PythonLanguage.get(null), v.getBytes());
             case CODEPOINTS:
                 return codePointsToInternedTruffleString(v.getCodePoints());
-            case TUPLE:
-            case FROZENSET:
-                // These cases cannot happen:
-                // - when called from Sst2ObjVisitor, the SST comes from the parser which never
-                // emits tuples or frozensets
-                // - when called from the compiler of pattern matching, the SST has been checked by
-                // Validator#validatePatternMatchValue() which rejects tuples and frozensets
+            case TUPLE: {
+                ConstantValue[] elements = v.getTupleElements();
+                Object[] objects = new Object[elements.length];
+                for (int i = 0; i < objects.length; i++) {
+                    objects[i] = pythonObjectFromConstantValue(elements[i]);
+                }
+                return PFactory.createTuple(PythonLanguage.get(null), objects);
+            }
+            case FROZENSET: {
+                HashingStorage storage = EconomicMapStorage.create(v.getFrozensetElements().length);
+                for (ConstantValue element : v.getFrozensetElements()) {
+                    storage = HashingStorageSetItem.executeUncached(storage, pythonObjectFromConstantValue(element), PNone.NONE);
+                }
+                return PFactory.createFrozenSet(PythonLanguage.get(null), storage);
+            }
             default:
                 throw shouldNotReachHere();
         }

@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.ast;
 
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_ALLOW_TOP_LEVEL_AWAIT;
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_ONLY_AST;
+import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_OPTIMIZED_AST;
 import static com.oracle.graal.python.builtins.modules.BuiltinFunctions.CompileNode.PyCF_TYPE_COMMENTS;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_NODE_GOT_P;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MATCH_ARGS__;
@@ -89,6 +90,7 @@ public final class AstModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         addBuiltinConstant("PyCF_ONLY_AST", PyCF_ONLY_AST);
+        addBuiltinConstant("PyCF_OPTIMIZED_AST", PyCF_OPTIMIZED_AST);
         addBuiltinConstant("PyCF_TYPE_COMMENTS", PyCF_TYPE_COMMENTS);
         addBuiltinConstant("PyCF_ALLOW_TOP_LEVEL_AWAIT", PyCF_ALLOW_TOP_LEVEL_AWAIT);
 

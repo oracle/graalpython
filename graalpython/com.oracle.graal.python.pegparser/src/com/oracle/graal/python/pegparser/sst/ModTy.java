@@ -84,7 +84,7 @@ public abstract class ModTy extends SSTNode {
     }
 
     public static final class Expression extends ModTy {
-        public final ExprTy body;
+        public ExprTy body;
 
         public Expression(ExprTy body, SourceRange sourceRange) {
             super(sourceRange);
@@ -100,7 +100,7 @@ public abstract class ModTy extends SSTNode {
 
     public static final class FunctionType extends ModTy {
         public final ExprTy[] argTypes;   // nullable
-        public final ExprTy returns;
+        public ExprTy returns;
 
         public FunctionType(ExprTy[] argTypes, ExprTy returns, SourceRange sourceRange) {
             super(sourceRange);

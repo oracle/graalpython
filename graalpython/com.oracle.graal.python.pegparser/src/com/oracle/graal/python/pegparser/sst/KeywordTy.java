@@ -49,7 +49,7 @@ import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 
 public final class KeywordTy extends SSTNode {
     public final String arg;   // nullable
-    public final ExprTy value;
+    public ExprTy value;
 
     public KeywordTy(String arg, ExprTy value, SourceRange sourceRange) {
         super(sourceRange);

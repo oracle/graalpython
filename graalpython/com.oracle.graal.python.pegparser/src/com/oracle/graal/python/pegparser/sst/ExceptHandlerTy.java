@@ -54,7 +54,7 @@ public abstract class ExceptHandlerTy extends SSTNode {
     }
 
     public static final class ExceptHandler extends ExceptHandlerTy {
-        public final ExprTy type;   // nullable
+        public ExprTy type;   // nullable
         public final String name;   // nullable
         public final StmtTy[] body;   // nullable
 

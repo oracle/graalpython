@@ -71,8 +71,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class NamedExpr extends ExprTy {
-        public final ExprTy target;
-        public final ExprTy value;
+        public ExprTy target;
+        public ExprTy value;
 
         public NamedExpr(ExprTy target, ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -89,9 +89,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class BinOp extends ExprTy {
-        public final ExprTy left;
+        public ExprTy left;
         public final OperatorTy op;
-        public final ExprTy right;
+        public ExprTy right;
 
         public BinOp(ExprTy left, OperatorTy op, ExprTy right, SourceRange sourceRange) {
             super(sourceRange);
@@ -111,7 +111,7 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class UnaryOp extends ExprTy {
         public final UnaryOpTy op;
-        public final ExprTy operand;
+        public ExprTy operand;
 
         public UnaryOp(UnaryOpTy op, ExprTy operand, SourceRange sourceRange) {
             super(sourceRange);
@@ -129,7 +129,7 @@ public abstract class ExprTy extends SSTNode {
 
     public static final class Lambda extends ExprTy {
         public final ArgumentsTy args;
-        public final ExprTy body;
+        public ExprTy body;
 
         public Lambda(ArgumentsTy args, ExprTy body, SourceRange sourceRange) {
             super(sourceRange);
@@ -146,9 +146,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class IfExp extends ExprTy {
-        public final ExprTy test;
-        public final ExprTy body;
-        public final ExprTy orElse;
+        public ExprTy test;
+        public ExprTy body;
+        public ExprTy orElse;
 
         public IfExp(ExprTy test, ExprTy body, ExprTy orElse, SourceRange sourceRange) {
             super(sourceRange);
@@ -197,7 +197,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class ListComp extends ExprTy {
-        public final ExprTy element;
+        public ExprTy element;
         public final ComprehensionTy[] generators;   // nullable
 
         public ListComp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
@@ -214,7 +214,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class SetComp extends ExprTy {
-        public final ExprTy element;
+        public ExprTy element;
         public final ComprehensionTy[] generators;   // nullable
 
         public SetComp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
@@ -231,8 +231,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class DictComp extends ExprTy {
-        public final ExprTy key;
-        public final ExprTy value;
+        public ExprTy key;
+        public ExprTy value;
         public final ComprehensionTy[] generators;   // nullable
 
         public DictComp(ExprTy key, ExprTy value, ComprehensionTy[] generators, SourceRange sourceRange) {
@@ -251,7 +251,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class GeneratorExp extends ExprTy {
-        public final ExprTy element;
+        public ExprTy element;
         public final ComprehensionTy[] generators;   // nullable
 
         public GeneratorExp(ExprTy element, ComprehensionTy[] generators, SourceRange sourceRange) {
@@ -268,7 +268,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Await extends ExprTy {
-        public final ExprTy value;
+        public ExprTy value;
 
         public Await(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -283,7 +283,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Yield extends ExprTy {
-        public final ExprTy value;   // nullable
+        public ExprTy value;   // nullable
 
         public Yield(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -297,7 +297,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class YieldFrom extends ExprTy {
-        public final ExprTy value;
+        public ExprTy value;
 
         public YieldFrom(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -312,7 +312,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Compare extends ExprTy {
-        public final ExprTy left;
+        public ExprTy left;
         public final CmpOpTy[] ops;   // nullable
         public final ExprTy[] comparators;   // nullable
 
@@ -331,7 +331,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Call extends ExprTy {
-        public final ExprTy func;
+        public ExprTy func;
         public final ExprTy[] args;   // nullable
         public final KeywordTy[] keywords;   // nullable
 
@@ -350,9 +350,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class FormattedValue extends ExprTy {
-        public final ExprTy value;
+        public ExprTy value;
         public final int conversion;
-        public final ExprTy formatSpec;   // nullable
+        public ExprTy formatSpec;   // nullable
 
         public FormattedValue(ExprTy value, int conversion, ExprTy formatSpec, SourceRange sourceRange) {
             super(sourceRange);
@@ -400,7 +400,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Attribute extends ExprTy {
-        public final ExprTy value;
+        public ExprTy value;
         public final String attr;
         public final ExprContextTy context;
 
@@ -421,8 +421,8 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Subscript extends ExprTy {
-        public final ExprTy value;
-        public final ExprTy slice;
+        public ExprTy value;
+        public ExprTy slice;
         public final ExprContextTy context;
 
         public Subscript(ExprTy value, ExprTy slice, ExprContextTy context, SourceRange sourceRange) {
@@ -442,7 +442,7 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Starred extends ExprTy {
-        public final ExprTy value;
+        public ExprTy value;
         public final ExprContextTy context;
 
         public Starred(ExprTy value, ExprContextTy context, SourceRange sourceRange) {
@@ -512,9 +512,9 @@ public abstract class ExprTy extends SSTNode {
     }
 
     public static final class Slice extends ExprTy {
-        public final ExprTy lower;   // nullable
-        public final ExprTy upper;   // nullable
-        public final ExprTy step;   // nullable
+        public ExprTy lower;   // nullable
+        public ExprTy upper;   // nullable
+        public ExprTy step;   // nullable
 
         public Slice(ExprTy lower, ExprTy upper, ExprTy step, SourceRange sourceRange) {
             super(sourceRange);

@@ -99,7 +99,8 @@ class SSTNodeGenerator(Generator):
             # fields
             for f in c.fields:
                 comment = '   // nullable' if f.is_nullable else ''
-                emitter.println(f'public final {f.type.java} {f.name.java};{comment}')
+                final = '' if f.type.python == 'expr' and not f.is_sequence else 'final '
+                emitter.println(f'public {final}{f.type.java} {f.name.java};{comment}')
             # constructor
             ctor_args = ', '.join(f'{f.type.java} {f.name.java}' for f in c.fields)
             with emitter.define(f'public {c.name.java}({ctor_args}{", " if ctor_args else ""}SourceRange sourceRange)'):
