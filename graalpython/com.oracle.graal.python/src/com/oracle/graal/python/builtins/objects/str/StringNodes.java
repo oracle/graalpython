@@ -665,6 +665,11 @@ public abstract class StringNodes {
         static boolean doPString(PString string) {
             return isBuiltinPString(string) && string.isMaterialized() && PythonUtils.isInterned(string.getMaterialized());
         }
+
+        @Fallback
+        static boolean doOther(Object string) {
+            return false;
+        }
     }
 
     @GenerateUncached
