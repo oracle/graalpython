@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import java.util.List;
 
@@ -61,7 +61,7 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -86,17 +86,18 @@ public final class BatchedBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(name = "batched", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "n"})
+    @SlotSignature(name = "batched", minNumOfPositionalArgs = 3, parameterNames = {"cls", "iterable", "n"}, keywordOnlyNames = {"strict"})
     @ArgumentClinic(name = "n", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "strict", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
-    public abstract static class BatchedNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class BatchedNode extends PythonQuaternaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return BatchedBuiltinsClinicProviders.BatchedNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        static PBatched batched(VirtualFrame frame, Object cls, Object iterable, int n,
+        static PBatched batched(VirtualFrame frame, Object cls, Object iterable, int n, boolean strict,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
@@ -106,13 +107,14 @@ public final class BatchedBuiltins extends PythonBuiltins {
                  * We could define the n==0 case to return an empty iterator but that is at odds
                  * with the idea that batching should never throw-away input data.
                  */
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_MUST_BE_AT_LEAST_ONE);
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.N_MUST_BE_AT_LEAST_ONE);
             }
             Object it = getIter.execute(frame, inliningTarget, iterable);
             /* create batchedobject structure */
             PBatched bo = PFactory.createBatched(cls, getInstanceShape.execute(cls));
             bo.setBatchSize(n);
             bo.setIter(it);
+            bo.setStrict(strict);
             return bo;
         }
     }
@@ -151,6 +153,10 @@ public final class BatchedBuiltins extends PythonBuiltins {
                         if (i == 0) {
                             bo.it = null;
                             return TpIterNextBuiltin.iteratorExhausted();
+                        }
+                        if (bo.isStrict()) {
+                            bo.it = null;
+                            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BATCHED_INCOMPLETE_BATCH);
                         }
                         items = PythonUtils.arrayCopyOf(items, i);
                         break;

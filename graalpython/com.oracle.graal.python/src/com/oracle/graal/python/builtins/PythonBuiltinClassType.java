@@ -1171,7 +1171,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     are exhausted, the fillvalue is substituted in their place.  The fillvalue
                     defaults to None or can be specified by a keyword argument.""")),
     PBatched("batched", PythonObject, newBuilder().publishInModule("itertools").basetype().slots(BatchedBuiltins.SLOTS).doc("""
-                    batched(iterable, n)
+                    batched(iterable, n, *, strict=False)
                     --
 
                     Batch data into tuples of length n. The last batch may be shorter than n.
@@ -1186,7 +1186,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     \t...
                     \t('A', 'B', 'C')
                     \t('D', 'E', 'F')
-                    \t('G',)""")),
+                    \t('G',)
+
+                    If "strict" is True, raises a ValueError if the final batch is shorter
+                    than n.""")),
 
     // json
     JSONScanner(
