@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
 import subprocess
 import sys
 import unittest
@@ -45,6 +46,57 @@ IS_GRAALPY = sys.implementation.name == "graalpy"
 
 
 class CmdLineTest(unittest.TestCase):
+
+    CPU_COUNT_CODE = (
+        "import os, sys; "
+        "print(sys._get_cpu_count_config(), os.cpu_count(), os.process_cpu_count())"
+    )
+
+    def run_cpu_count(self, *args, cpu_count_env=None):
+        env = os.environ.copy()
+        env.pop('PYTHON_CPU_COUNT', None)
+        if cpu_count_env is not None:
+            env['PYTHON_CPU_COUNT'] = cpu_count_env
+        return subprocess.run(
+            [sys.executable, *args, '-c', self.CPU_COUNT_CODE],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+    def test_cpu_count_overrides(self):
+        result = self.run_cpu_count('-X', 'cpu_count=4321')
+        self.assertEqual(0, result.returncode, result)
+        self.assertEqual('4321 4321 4321', result.stdout.strip())
+
+        result = self.run_cpu_count(cpu_count_env='1234')
+        self.assertEqual(0, result.returncode, result)
+        self.assertEqual('1234 1234 1234', result.stdout.strip())
+
+        result = self.run_cpu_count('-X', 'cpu_count=5678', cpu_count_env='1234')
+        self.assertEqual(0, result.returncode, result)
+        self.assertEqual('5678 5678 5678', result.stdout.strip())
+
+    def test_cpu_count_default_and_ignore_environment(self):
+        for args in (('-X', 'cpu_count=default'), ('-E',)):
+            with self.subTest(args=args):
+                result = self.run_cpu_count(*args, cpu_count_env='1234')
+                self.assertEqual(0, result.returncode, result)
+                config, cpu_count, process_cpu_count = map(int, result.stdout.split())
+                self.assertEqual(-1, config)
+                self.assertGreater(cpu_count, 0)
+                self.assertEqual(cpu_count, process_cpu_count)
+
+    def test_cpu_count_invalid(self):
+        for value in ('cpu_count', 'cpu_count=', 'cpu_count=0', 'cpu_count=-1', 'cpu_count=invalid'):
+            with self.subTest(xoption=value):
+                result = self.run_cpu_count('-X', value)
+                self.assertNotEqual(0, result.returncode)
+
+        for value in ('0', '-1', 'invalid', 'cpu_count=1'):
+            with self.subTest(environment=value):
+                result = self.run_cpu_count(cpu_count_env=value)
+                self.assertNotEqual(0, result.returncode)
 
     def test_stdin_script_exit_code(self):
         code = "import sys\nsys.exit(42)\n"
@@ -70,4 +122,3 @@ class CmdLineTest(unittest.TestCase):
         )
         self.assertNotEqual(0, result.returncode)
         self.assertIn('expected jit=0, jit=1, or jit=2', result.stderr)
-

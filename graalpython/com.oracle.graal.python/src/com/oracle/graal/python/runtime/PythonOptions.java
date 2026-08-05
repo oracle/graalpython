@@ -166,6 +166,20 @@ public final class PythonOptions {
                         throw new IllegalArgumentException(String.format("IntMaxStrDigits: invalid limit; must be >= %d or 0 for unlimited.", INT_MAX_STR_DIGITS_THRESHOLD));
                     }));
 
+    @Option(category = OptionCategory.USER, help = "Override the return value of os.cpu_count(). Equivalent to the Python -X cpu_count option.", stability = OptionStability.STABLE) //
+    public static final OptionKey<Integer> CpuCount = new OptionKey<>(-1,
+                    new OptionType<>("CpuCount", (input) -> {
+                        try {
+                            int value = Integer.parseInt(input.stripLeading());
+                            if (value == -1 || value > 0) {
+                                return value;
+                            }
+                        } catch (NumberFormatException e) {
+                            // fallthrough
+                        }
+                        throw new IllegalArgumentException("CpuCount: invalid count; must be greater than 0, or -1 for the default.");
+                    }));
+
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -B flag. Don't write bytecode files.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> DontWriteBytecodeFlag = new OptionKey<>(true);
 

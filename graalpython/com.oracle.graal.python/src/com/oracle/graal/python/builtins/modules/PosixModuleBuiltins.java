@@ -2970,7 +2970,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class CpuCountNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        static int getCpuCount() {
+        static int getCpuCount(@Bind PythonContext context) {
+            int configuredCpuCount = context.getOption(PythonOptions.CpuCount);
+            if (configuredCpuCount > 0) {
+                return configuredCpuCount;
+            }
             return Runtime.getRuntime().availableProcessors();
         }
     }
