@@ -3508,6 +3508,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public void visitTypeParams(TypeParamTy[] typeParams) {
             b.beginMakeTuple();
             for (TypeParamTy typeParam : typeParams) {
+                currentLocation = typeParam.getSourceRange();
                 typeParam.accept(this);
             }
             b.endMakeTuple();
@@ -3563,6 +3564,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.endSetItem();
                 endSourceSection(b, newStatement);
                 return null;
+            }
+
+            @Override
+            public Void visit(ExprTy.Starred node) {
+                throw ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "starred assignment target must be in a list or tuple");
             }
 
             /**

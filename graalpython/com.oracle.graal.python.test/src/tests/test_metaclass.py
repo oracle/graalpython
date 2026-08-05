@@ -140,3 +140,10 @@ def test_nested_class():
     assert A.B.__name__ == "B"
     assert A.B.__qualname__ == "A.B"
     assert A.B.__module__ == __name__
+
+
+def test_type_new_with_non_string_module_name():
+    module_name = object()
+    namespace = {"__name__": module_name}
+    exec("class Meta(type): pass\ncreated = Meta('', (), {})", namespace)
+    assert namespace["created"].__module__ is module_name

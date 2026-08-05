@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -73,6 +73,10 @@ def test_complex_starred_expr():
 
 
 class TestStarredExprErrors(unittest.TestCase):
+    def test_standalone_starred_assignment_target(self):
+        with self.assertRaisesRegex(SyntaxError, "starred assignment target must be in a list or tuple"):
+            compile("*a = [1]", "<test>", "exec")
+
     def test_starred_expr_no_iterable(self):
         self.assertRaises(TypeError, lambda : [1, *None])
         self.assertRaises(TypeError, lambda : [1, *1])
