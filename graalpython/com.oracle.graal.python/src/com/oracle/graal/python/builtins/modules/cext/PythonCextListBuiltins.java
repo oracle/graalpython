@@ -262,6 +262,22 @@ public final class PythonCextListBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PyList_Extend extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static int extend(PList list, Object iterable,
+                        @Cached ListExtendNode extendNode) {
+            extendNode.execute(null, list, iterable);
+            return 0;
+        }
+
+        @Fallback
+        int fallback(Object list, @SuppressWarnings("unused") Object iterable) {
+            throw raiseFallback(list, PythonBuiltinClassType.PList);
+        }
+    }
+
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyListObject, PyObject}, call = Direct)
     abstract static class _PyList_Extend extends CApiBinaryBuiltinNode {
 

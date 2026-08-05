@@ -110,6 +110,12 @@ def _reference_append(args):
         return -1
 
 
+def _reference_extend(args):
+    listObj, iterable = args
+    listObj.extend(iterable)
+    return listObj
+
+
 def _wrap_list_fun(fun, since=0, default=None):
     def wrapped_fun(args):
         if not isinstance(args[0], list):
@@ -339,6 +345,27 @@ class TestPyList(CPyExtTestCase):
         arguments=["PyObject* op", "PyObject* newitem"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyList_Extend = CPyExtFunction(
+        _reference_extend,
+        lambda: (
+            ([], [1, 2]),
+            ([1], (2, 3)),
+            ([1, 2], []),
+        ),
+        code='''PyObject* wrap_PyList_Extend(PyObject* op, PyObject* iterable) {
+            if (PyList_Extend(op, iterable) < 0) {
+                return NULL;
+            }
+            return Py_NewRef(op);
+        }''',
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* op", "PyObject* iterable"],
+        callfunction="wrap_PyList_Extend",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyList_AsTuple = CPyExtFunction(
         _wrap_list_fun(lambda args: tuple(args[0])),
         lambda: (

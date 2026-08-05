@@ -1,20 +1,40 @@
-diff --git a/src/greenlet/TThreadStateDestroy.cpp b/src/greenlet/TThreadStateDestroy.cpp
-index 37fcc8c..8cf33ae 100644
---- a/src/greenlet/TThreadStateDestroy.cpp
-+++ b/src/greenlet/TThreadStateDestroy.cpp
-@@ -71,6 +71,7 @@ private:
-     static bool
-     MarkGreenletDeadIfNeeded(ThreadState* const state)
-     {
-+#if 0 // GraalPy change
-         if (state && state->has_main_greenlet()) {
-             // mark the thread as dead ASAP.
-             // this is racy! If we try to throw or switch to a
-@@ -83,6 +84,7 @@ private:
-            return true;
-         }
-         return false;
-+#endif // GraalPy change
-     }
+diff --git a/src/greenlet/TGreenlet.cpp b/src/greenlet/TGreenlet.cpp
+index 4698a17..d406954 100644
+--- a/src/greenlet/TGreenlet.cpp
++++ b/src/greenlet/TGreenlet.cpp
+@@ -610,7 +610,7 @@ bool Greenlet::is_currently_running_in_some_thread() const
+     return this->stack_state.active() && !this->python_state.top_frame();
+ }
  
-     static void
+-#if GREENLET_PY312
++#if GREENLET_PY312 && !GRAALVM_PYTHON
+ void GREENLET_NOINLINE(Greenlet::expose_frames)()
+ {
+     if (!this->python_state.top_frame()) {
+diff --git a/src/greenlet/greenlet.cpp b/src/greenlet/greenlet.cpp
+index e8d92a0..b104682 100644
+--- a/src/greenlet/greenlet.cpp
++++ b/src/greenlet/greenlet.cpp
+@@ -276,7 +276,9 @@ greenlet_internal_mod_init() noexcept
+                                                "greenlet._C_API",
+                                                NULL)));
+         m.PyAddObject("_C_API", c_api_object);
++#if !GRAALVM_PYTHON
+         assert(c_api_object.REFCNT() == 2);
++#endif
+ 
+         // cerr << "Sizes:"
+         //      << "\n\tGreenlet       : " << sizeof(Greenlet)
+diff --git a/src/greenlet/greenlet_compiler_compat.hpp b/src/greenlet/greenlet_compiler_compat.hpp
+index af24bd8..3add54f 100644
+--- a/src/greenlet/greenlet_compiler_compat.hpp
++++ b/src/greenlet/greenlet_compiler_compat.hpp
+@@ -83,7 +83,7 @@
+ #    define G_NOEXCEPT_WIN32
+ #endif
+ 
+-#if defined(__GNUC__) && defined(__POWERPC__) && defined(__APPLE__)
++#if GRAALVM_PYTHON || (defined(__GNUC__) && defined(__POWERPC__) && defined(__APPLE__))
+ // 32-bit PPC/MacOSX. Only known to be tested on unreleased versions
+ // of macOS 10.6 using a macports build gcc 14. It appears that
+ // running C++ destructors of thread-local variables is broken.

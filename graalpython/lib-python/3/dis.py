@@ -8,7 +8,11 @@ import io
 # GraalPy change: remove all the _opcode imports and dependent stuff
 
 # GraalPy change: add a dummy opmap to make coverage happy
-opmap = {}
+opmap = {
+    "RETURN_VALUE": -1,
+    "YIELD_VALUE": -1,
+    "YIELD_FROM": -1,
+}
 
 __all__ = ["code_info", "dis", "disassemble", "distb", "disco",
            "findlinestarts", "findlabels", "show_code",
