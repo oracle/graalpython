@@ -54,7 +54,7 @@ public final class PythonSourceOptions {
     }
 
     @Option(category = OptionCategory.USER, stability = OptionStability.STABLE, help = "Optimization level used when compiling this source") //
-    public static final OptionKey<Integer> Optimize = new OptionKey<>(0);
+    public static final OptionKey<Integer> Optimize = new OptionKey<>(-1);
 
     @Option(category = OptionCategory.EXPERT, stability = OptionStability.STABLE, help = "Compiler flags used when compiling this source") //
     public static final OptionKey<Integer> Flags = new OptionKey<>(0);

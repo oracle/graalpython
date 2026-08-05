@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.compiler.AstOptimizer;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
@@ -78,6 +79,7 @@ public class BytecodeDSLCompiler {
          * when __future__.annotations is imported.
          */
         int futureLineNumber = parseFuture(mod, futureFeatures, parserCallbacks);
+        AstOptimizer.optimize(mod, optimize, futureFeatures.contains(FutureFeature.ANNOTATIONS));
         ScopeEnvironment scopeEnvironment = ScopeEnvironment.analyze(mod, parserCallbacks, futureFeatures);
         BytecodeDSLCompilerContext ctx = new BytecodeDSLCompilerContext(language, mod, source, optimize, futureFeatures, futureLineNumber, parserCallbacks, scopeEnvironment);
         RootNodeCompiler compiler = new RootNodeCompiler(ctx, null, mod, futureFeatures);

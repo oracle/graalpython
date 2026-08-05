@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.compiler.CompilationScope;
 import com.oracle.graal.python.compiler.MakeTypeParamKind;
@@ -367,6 +368,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private Object addConstant(Object c) {
+        assert !(c instanceof PythonObject) : "context-specific object in constants: " + c;
         Integer v = constants.get(c);
         if (v == null) {
             v = constants.size();
@@ -397,35 +399,45 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         if (elements == null || elements.length == 0) {
             return null;
         }
+        ConstantValue[] values = new ConstantValue[elements.length];
+        for (int i = 0; i < elements.length; i++) {
+            if (!(elements[i] instanceof ExprTy.Constant constant)) {
+                return null;
+            }
+            values[i] = constant.value;
+        }
+        return tryCollectConstantCollection(values);
+    }
+
+    private static ConstantCollection tryCollectConstantCollection(ConstantValue[] values) {
+        if (values == null || values.length == 0) {
+            return null;
+        }
 
         CollectionType constantType = null;
         List<Object> constants = new ArrayList<>();
 
-        for (ExprTy e : elements) {
-            if (e instanceof ExprTy.Constant c) {
-                if (c.value.kind == ConstantValue.Kind.BOOLEAN) {
-                    constantType = determineConstantType(constantType, CollectionType.BOOLEAN);
-                    constants.add(c.value.getBoolean());
-                } else if (c.value.kind == ConstantValue.Kind.LONG) {
-                    long val = c.value.getLong();
-                    if (val == (int) val) {
-                        constantType = determineConstantType(constantType, CollectionType.INT);
-                    } else {
-                        constantType = determineConstantType(constantType, CollectionType.LONG);
-                    }
-                    constants.add(val);
-                } else if (c.value.kind == ConstantValue.Kind.DOUBLE) {
-                    constantType = determineConstantType(constantType, CollectionType.DOUBLE);
-                    constants.add(c.value.getDouble());
-                } else if (c.value.kind == ConstantValue.Kind.CODEPOINTS) {
-                    constantType = determineConstantType(constantType, CollectionType.OBJECT);
-                    constants.add(codePointsToInternedTruffleString(c.value.getCodePoints()));
-                } else if (c.value.kind == ConstantValue.Kind.NONE) {
-                    constantType = determineConstantType(constantType, CollectionType.OBJECT);
-                    constants.add(PNone.NONE);
+        for (ConstantValue value : values) {
+            if (value.kind == ConstantValue.Kind.BOOLEAN) {
+                constantType = determineConstantType(constantType, CollectionType.BOOLEAN);
+                constants.add(value.getBoolean());
+            } else if (value.kind == ConstantValue.Kind.LONG) {
+                long val = value.getLong();
+                if (val == (int) val) {
+                    constantType = determineConstantType(constantType, CollectionType.INT);
                 } else {
-                    return null;
+                    constantType = determineConstantType(constantType, CollectionType.LONG);
                 }
+                constants.add(val);
+            } else if (value.kind == ConstantValue.Kind.DOUBLE) {
+                constantType = determineConstantType(constantType, CollectionType.DOUBLE);
+                constants.add(value.getDouble());
+            } else if (value.kind == ConstantValue.Kind.CODEPOINTS) {
+                constantType = determineConstantType(constantType, CollectionType.OBJECT);
+                constants.add(codePointsToInternedTruffleString(value.getCodePoints()));
+            } else if (value.kind == ConstantValue.Kind.NONE) {
+                constantType = determineConstantType(constantType, CollectionType.OBJECT);
+                constants.add(PNone.NONE);
             } else {
                 return null;
             }
@@ -2657,13 +2669,19 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     addConstant(value.getBytes());
                     b.emitLoadBytes(value.getBytes());
                     break;
-                case TUPLE:
-                    b.beginMakeTuple();
-                    for (ConstantValue cv : value.getTupleElements()) {
-                        createConstant(cv);
+                case TUPLE: {
+                    ConstantCollection constantCollection = tryCollectConstantCollection(value.getTupleElements());
+                    if (constantCollection != null) {
+                        emitConstantTuple(constantCollection);
+                    } else {
+                        b.beginMakeTuple();
+                        for (ConstantValue cv : value.getTupleElements()) {
+                            createConstant(cv);
+                        }
+                        b.endMakeTuple();
                     }
-                    b.endMakeTuple();
                     break;
+                }
                 case FROZENSET:
                     b.beginMakeFrozenSet();
                     for (ConstantValue cv : value.getFrozensetElements()) {
@@ -3130,14 +3148,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             boolean newStatement = beginSourceSection(node, b);
             beginTraceLineChecked(b);
 
-            ConstantCollection constantCollection = tryCollectConstantCollection(node.elements);
-            if (constantCollection != null) {
-                emitConstantTuple(constantCollection);
-            } else {
-                b.beginMakeTuple();
-                emitUnstar(node.elements);
-                b.endMakeTuple();
-            }
+            b.beginMakeTuple();
+            emitUnstar(node.elements);
+            b.endMakeTuple();
 
             endTraceLineChecked(node, b);
             endSourceSection(b, newStatement);
@@ -3146,19 +3159,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.UnaryOp node) {
-            // Basic constant folding for unary negation
-            if (node.op == UnaryOpTy.USub && node.operand instanceof ExprTy.Constant c) {
-                if (c.value.kind == ConstantValue.Kind.BIGINTEGER || c.value.kind == ConstantValue.Kind.DOUBLE || c.value.kind == ConstantValue.Kind.LONG ||
-                                c.value.kind == ConstantValue.Kind.COMPLEX) {
-                    ConstantValue cv = c.value.negate();
-                    boolean newStatement = beginSourceSection(node, b);
-                    beginTraceLineChecked(b);
-                    visit(new ExprTy.Constant(cv, null, c.getSourceRange()));
-                    endTraceLineChecked(node, b);
-                    endSourceSection(b, newStatement);
-                    return null;
-                }
-            }
             boolean newStatement = beginSourceSection(node, b);
             beginTraceLineChecked(b);
             switch (node.op) {
@@ -3475,11 +3475,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.Assert node) {
+            boolean nonEmptyTuple = node.test instanceof ExprTy.Tuple tuple && tuple.elements.length > 0 ||
+                            node.test instanceof ExprTy.Constant constant && constant.value.kind == Kind.TUPLE && constant.value.getTupleElements().length > 0;
+            if (nonEmptyTuple) {
+                warn(node, "assertion is always true, perhaps remove parentheses?");
+            }
             if (ctx.optimizationLevel <= 0) {
                 boolean newStatement = beginSourceSection(node, b);
-                if (node.test instanceof ExprTy.Tuple && ((Tuple) node.test).elements.length > 0) {
-                    ctx.errorCallback.onWarning(WarningType.Syntax, currentLocation, "assertion is always true, perchance remove parentheses?");
-                }
                 b.beginIfThen();
 
                 b.beginNot();
@@ -5355,7 +5357,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         /**
-         * Will process pattern keys: Attributes evaluation and constant folding. Checks for
+         * Will process pattern keys: attribute evaluation and constant validation. Checks for
          * duplicate keys and that only literals and attributes lookups are being matched.
          * <p>
          * Generates array.
@@ -5372,16 +5374,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 if (key instanceof ExprTy.Attribute) {
                     key.accept(this);
                 } else {
-                    ConstantValue constantValue = null;
-                    if (key instanceof ExprTy.UnaryOp || key instanceof ExprTy.BinOp) {
-                        constantValue = foldConstantOp(key);
-                    } else if (key instanceof ExprTy.Constant) {
-                        constantValue = ((ExprTy.Constant) key).value;
-                    } else {
-                        ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "mapping pattern keys may only match literals and attribute lookups");
+                    if (!(key instanceof ExprTy.Constant constant)) {
+                        throw ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "mapping pattern keys may only match literals and attribute lookups");
                     }
-                    assert constantValue != null;
-                    Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constantValue);
+                    Object pythonValue = PythonUtils.pythonObjectFromConstantValue(constant.value);
                     for (Object o : seen) {
                         // need python like equal - e.g. 1 equals True
                         if (PyObjectRichCompareBool.executeEqUncached(o, pythonValue)) {
@@ -5389,7 +5385,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         }
                     }
                     seen.add(pythonValue);
-                    createConstant(constantValue);
+                    createConstant(constant.value);
                 }
             }
             b.endCollectToObjectArray();
@@ -5881,9 +5877,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.beginEq();
             b.emitLoadLocal(pc.subject);
 
-            if (node.value instanceof ExprTy.UnaryOp || node.value instanceof ExprTy.BinOp) {
-                createConstant(foldConstantOp(node.value));
-            } else if (node.value instanceof ExprTy.Constant || node.value instanceof ExprTy.Attribute) {
+            if (node.value instanceof ExprTy.Constant || node.value instanceof ExprTy.Attribute) {
                 node.value.accept(this);
             } else {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "patterns may only match literals and attribute lookups");
@@ -5897,53 +5891,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         private static boolean wildcardStarCheck(PatternTy pattern) {
             return pattern instanceof PatternTy.MatchStar && ((PatternTy.MatchStar) pattern).name == null;
-        }
-
-        /**
-         * handles only particular cases when a constant comes either as a unary or binary op
-         */
-        private ConstantValue foldConstantOp(ExprTy value) {
-            if (value instanceof ExprTy.UnaryOp unaryOp) {
-                return foldUnaryOpConstant(unaryOp);
-            } else if (value instanceof ExprTy.BinOp binOp) {
-                return foldBinOpComplexConstant(binOp);
-            }
-            throw new IllegalStateException("should not reach here");
-        }
-
-        /**
-         * handles only unary sub and a numeric constant
-         */
-        private ConstantValue foldUnaryOpConstant(ExprTy.UnaryOp unaryOp) {
-            assert unaryOp.op == UnaryOpTy.USub;
-            assert unaryOp.operand instanceof ExprTy.Constant : unaryOp.operand;
-            ExprTy.Constant c = (ExprTy.Constant) unaryOp.operand;
-            ConstantValue ret = c.value.negate();
-            assert ret != null;
-            return ret;
-        }
-
-        /**
-         * handles only complex which comes as a BinOp
-         */
-        private ConstantValue foldBinOpComplexConstant(ExprTy.BinOp binOp) {
-            assert (binOp.left instanceof ExprTy.UnaryOp || binOp.left instanceof ExprTy.Constant) && binOp.right instanceof ExprTy.Constant : binOp.left + " " + binOp.right;
-            assert binOp.op == OperatorTy.Sub || binOp.op == OperatorTy.Add;
-            ConstantValue left;
-            if (binOp.left instanceof ExprTy.UnaryOp) {
-                left = foldUnaryOpConstant((ExprTy.UnaryOp) binOp.left);
-            } else {
-                left = ((ExprTy.Constant) binOp.left).value;
-            }
-            ExprTy.Constant right = (ExprTy.Constant) binOp.right;
-            switch (binOp.op) {
-                case Add:
-                    return left.addComplex(right.value);
-                case Sub:
-                    return left.subComplex(right.value);
-                default:
-                    throw new IllegalStateException("wrong constant BinOp operator " + binOp.op);
-            }
         }
 
         @Override

@@ -54,7 +54,7 @@ public abstract class PatternTy extends SSTNode {
     }
 
     public static final class MatchValue extends PatternTy {
-        public final ExprTy value;
+        public ExprTy value;
 
         public MatchValue(ExprTy value, SourceRange sourceRange) {
             super(sourceRange);
@@ -116,7 +116,7 @@ public abstract class PatternTy extends SSTNode {
     }
 
     public static final class MatchClass extends PatternTy {
-        public final ExprTy cls;
+        public ExprTy cls;
         public final PatternTy[] patterns;   // nullable
         public final String[] kwdAttrs;   // nullable
         public final PatternTy[] kwdPatterns;   // nullable

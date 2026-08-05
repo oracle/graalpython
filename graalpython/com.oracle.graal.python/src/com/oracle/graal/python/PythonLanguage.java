@@ -628,7 +628,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 mod = modIn;
             }
 
-            RootNode rootNode = compileForBytecodeDSLInterpreter(mod, source, optimize, errorCb, futureFeatures);
+            int resolvedOptimize = optimize >= 0 ? optimize : getEngineOption(PythonOptions.PythonOptimizeFlag) ? 1 : 0;
+            RootNode rootNode = compileForBytecodeDSLInterpreter(mod, source, resolvedOptimize, errorCb, futureFeatures);
 
             if (topLevel) {
                 GilNode gil = GilNode.getUncached();
