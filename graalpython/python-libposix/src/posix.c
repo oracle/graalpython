@@ -1073,6 +1073,17 @@ GP_EXPORT int32_t call_open_osfhandle(int64_t handle, int32_t flags) {
     return open_osfhandle_noraise(handle, flags);
 }
 
+GP_EXPORT int32_t call_setmode(int32_t fd, int32_t mode) {
+    int previous_mode;
+    BEGIN_SUPPRESS_IPH
+    previous_mode = _setmode(fd, mode);
+    END_SUPPRESS_IPH
+    if (previous_mode < 0) {
+        capture_errno();
+    }
+    return previous_mode;
+}
+
 GP_EXPORT int32_t call_pipe2(int32_t *pipefd) {
     int result = _pipe(pipefd, 8192, _O_BINARY | _O_NOINHERIT);
     if (result < 0) {
@@ -2167,6 +2178,14 @@ int32_t call_open_osfhandle(int64_t handle, int32_t flags) {
     (void) handle;
     (void) flags;
     errno = ENOSYS;
+    return -1;
+}
+
+int32_t call_setmode(int32_t fd, int32_t mode) {
+    (void) fd;
+    (void) mode;
+    errno = ENOSYS;
+    capture_errno();
     return -1;
 }
 

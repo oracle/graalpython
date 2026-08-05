@@ -118,6 +118,29 @@ public final class MsvcrtModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "setmode", minNumOfPositionalArgs = 2, parameterNames = {"fd", "flags"})
+    @ArgumentClinic(name = "fd", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    public abstract static class SetModeNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        int setMode(VirtualFrame frame, int fd, int flags,
+                        @Bind Node inliningTarget,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            try {
+                return posixLib.setMode(getPosixSupport(), fd, flags);
+            } catch (PosixSupportLibrary.PosixException e) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MsvcrtModuleBuiltinsClinicProviders.SetModeNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
     @Builtin(name = "get_osfhandle", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
     @ArgumentClinic(name = "fd", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory

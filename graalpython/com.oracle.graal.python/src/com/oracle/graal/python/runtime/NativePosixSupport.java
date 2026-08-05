@@ -241,6 +241,9 @@ public final class NativePosixSupport extends PosixSupport {
         @DowncallSignature(returnType = SINT32, argumentTypes = {SINT64, SINT32})
         abstract int call_open_osfhandle(long handle, int flags);
 
+        @DowncallSignature(returnType = SINT32, argumentTypes = {SINT32, SINT32})
+        abstract int call_setmode(int fd, int mode);
+
         @DowncallSignature(returnType = SINT32, argumentTypes = {POINTER})
         abstract int call_pipe2(long pipefd);
 
@@ -862,6 +865,15 @@ public final class NativePosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException();
         }
         return fd;
+    }
+
+    @ExportMessage
+    public int setMode(int fd, int mode) throws PosixException {
+        int previousMode = posixNativeFunctionInvoker.call_setmode(fd, mode);
+        if (previousMode < 0) {
+            throw getErrnoAndThrowPosixException();
+        }
+        return previousMode;
     }
 
     @ExportMessage
