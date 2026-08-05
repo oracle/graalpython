@@ -1512,17 +1512,6 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final TruffleString crypt(TruffleString word, TruffleString salt,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("crypt", "%s, %s", word, salt);
-        try {
-            return logExit("crypt", "%s", lib.crypt(delegate, word, salt));
-        } catch (PosixException e) {
-            throw logException("crypt", e);
-        }
-    }
-
-    @ExportMessage
     final long semOpen(Object name, int openFlags, int mode, int value,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("semOpen", "%s %d %d %d", name, openFlags, mode, value);

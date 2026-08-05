@@ -879,17 +879,6 @@ public abstract class PosixSupportLibrary extends Library {
     public interface AddrInfoCursor {
     }
 
-    /**
-     * Corresponds to POSIX crypt function that hashes passwords with salt.
-     *
-     * @param word password to be hashed
-     * @param salt random salt, optionally prefixed with $DIGIT$ hash method indication
-     * @return hashed password
-     * @throws PosixException when an error occurs in the underlying crypt call
-     * @see "crypt(3) manpage"
-     */
-    public abstract TruffleString crypt(Object receiver, TruffleString word, TruffleString salt) throws PosixException;
-
     public abstract int ioctlBytes(Object receiver, int fd, long request, byte[] arg) throws PosixException;
 
     public abstract int ioctlInt(Object receiver, int fd, long request, int arg) throws PosixException;
