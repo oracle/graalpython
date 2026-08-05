@@ -2059,6 +2059,7 @@ def graalpython_gate_runner(_, tasks):
                 env['ENABLE_STANDALONE_UNITTESTS'] = 'true'
             env['JAVA_HOME'] = gvm_jdk
             env['PYTHON_STANDALONE_HOME'] = standalone_home
+            env['GRAAL_VERSION'] = version
 
             # setup maven downloader overrides
             env['MAVEN_REPO_OVERRIDE'] = ",".join([
