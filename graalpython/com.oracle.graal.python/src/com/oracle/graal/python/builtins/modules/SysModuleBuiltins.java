@@ -224,6 +224,7 @@ import com.oracle.graal.python.lib.PyTraceBackPrint;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyUnicodeAsEncodedString;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1068,6 +1069,34 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static Object doOthers(Object obj,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "intern()", "str", obj);
+        }
+    }
+
+    @Builtin(name = "_is_interned", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"string"})
+    @GenerateNodeFactory
+    public abstract static class IsInternedNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static boolean doString(Object string,
+                        @Bind Node inliningTarget,
+                        @Cached PyUnicodeCheckNode check,
+                        @Cached StringNodes.IsInternedStringNode isInternedNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (check.execute(inliningTarget, string)) {
+                return isInternedNode.execute(inliningTarget, string);
+            } else {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_ARG_MUST_BE_S_NOT_P, "_is_interned()", "str", string);
+            }
+        }
+    }
+
+    @Builtin(name = "_is_gil_enabled", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class IsGilEnabledNode extends PythonBuiltinNode {
+
+        @Specialization
+        static boolean isGilEnabled() {
+            return true;
         }
     }
 
