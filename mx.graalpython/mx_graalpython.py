@@ -1961,6 +1961,7 @@ def graalpython_gate_runner(_, tasks):
                     '-Dpolyglot.engine.AllowExperimentalOptions=true',
                     '-Dpolyglot.engine.SpawnIsolate=true',
                     '-Dpolyglot.engine.IsolateMode=external',
+                    '-Dpolyglot.engine.WarnMethodScoping=false',
                     'clean',
                     'test',
                 ], env=env)
