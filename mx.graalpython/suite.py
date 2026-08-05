@@ -108,32 +108,38 @@ suite = {
             "digest": "sha512:bd77164795b5cbfbe864f64021e67e37f39cb9aba9abdd894d53fbb6857abe074923808918d1dc3bb0706253e726b2b9704cd0c3bc744d70e220c7356fa4995e",
         },
         "BOUNCYCASTLE-PROVIDER": {
-            "digest": "sha512:4b7e5696830023bad1594d9f9766898f78018ec7d6ec34de23f2a6683b02803b92ffe8ab5d21f1a717eb4fafa8e22dcf3a4b6dd275bd86c7cb02609987fe92f5",
-            "sourceDigest": "sha512:2d266985014d38f701ac4c8e5482d767488e6fdd48d16973703ef2268138baf71b53ac283c969004bad709e1664b2f2446a1f56102af876d35ccceb03e44fbb9",
+            "digest": "sha512:33bbcbc3ad823898bda1fec8cea270fffa4688886b1c351afd93e713f41d29afd71aae9982cbe896d510aa98fece8b9a66c132536625801fe2c1af283a76e2b5",
+            "sourceDigest": "sha512:5b2a7ba8fd37595716b6892def4278f420cd713c235d125afde081856abd50c4012a8fc8f039713a53f60d171dfa4d85f658ea9f4fbf7724e4e6913c46065c6b",
             "maven": {
+<<<<<<< HEAD
                 "groupId": "org.bouncycastle",
                 "artifactId": "bcprov-jdk18on",
                 "version": "1.84",
+=======
+              "groupId": "org.bouncycastle",
+              "artifactId": "bcprov-jdk18on",
+              "version": "1.85",
+>>>>>>> f1b0fab09a ([GR-78216] Update Bouncy Castle artifacts to 1.85)
             },
             "moduleName": "org.bouncycastle.provider",
         },
         "BOUNCYCASTLE-PKIX": {
-            "digest": "sha512:01644d7e0c6041ea8c8629f6ad73f7206efa2797d954da1507dd43c5d262a161194ed84e960234cf5c53787033f1181aa4965e0d6ebfe82ca040de13ca307565",
-            "sourceDigest": "sha512:2c405cbefcd75b97b11df470025f3e51286bd11fd735607d8d512133ec49f9887dc282b4af0f434b49064fa1eab3e14d1f2c860187fb9fb8939330fc64602ba4",
+            "digest": "sha512:142ce817145f7348dc97f62872eac931280c578bc61ff4cfcff927d4247ab2bf15e858edf74f2549074c4685ebe8de1d815c42637eacdb65b344b741c2bf1415",
+            "sourceDigest": "sha512:1b6b394cee211d396f3272de18cb4456de9407f39d983c990023255bac461302edf1e38b7acab47a3fd13dc082bc12468963a32d9371ffa3bef8db5e7da443c4",
             "maven": {
                 "groupId": "org.bouncycastle",
                 "artifactId": "bcpkix-jdk18on",
-                "version": "1.84",
+                "version": "1.85",
             },
             "moduleName": "org.bouncycastle.pkix",
         },
         "BOUNCYCASTLE-UTIL": {
-            "digest": "sha512:e001b244723fb3c4d1e06862bb857512015a92d7e18650ae3447a3d258274ec8ed37b8cba958397b00f8dd73463943e9a9489dd5dbddbe24b24cd6fae5ca8a62",
-            "sourceDigest": "sha512:01ece60806f4ba9bc78509a4521eab164b37197d8d0ad647c46b77deff0aebdc5191875690edb513fd8266be41daaaf0ccca1b0c7a53df1d059950b79d0f4a26",
+            "digest": "sha512:1cf5011448dfaed7daea587807b9513961bdfd7b41ee5ce42444254dfa3677fdba78fe5191bca4ecf2a51eb3883be59f0374affc1efae3fd1728a64fa094027d",
+            "sourceDigest": "sha512:e64e623f14caf4c4480164b63ae292bf20cde0f282494377325427d1324ed23478cd968aec6dcdd1c7d8da83af19d4b13588b9b6005eedde78cadca7bb5cf14e",
             "maven": {
                 "groupId": "org.bouncycastle",
                 "artifactId": "bcutil-jdk18on",
-                "version": "1.84",
+                "version": "1.85",
             },
             "moduleName": "org.bouncycastle.util",
         },
