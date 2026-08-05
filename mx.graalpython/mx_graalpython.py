@@ -1701,6 +1701,11 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         if GITHUB_CI:
             parallel = 0
 
+    if mx_gate.get_jacoco_agent_args():
+        # JaCoCo execution data is appended to a shared file and cannot be
+        # safely written by multiple instrumented JVM test workers at once.
+        parallel = 1
+
     parallelism = str(min(os.cpu_count() or 1, parallel))
 
     args = args or []

@@ -25,6 +25,15 @@ def _crash(delay=None):
     faulthandler._sigsegv()
 
 
+# Self-signals are only supported in native standalones (GR-74243); skip these
+# tests on JVM coverage runs rather than re-tagging them (GR-77822).
+def _is_native():
+    try:
+        return __graalpython__.is_native
+    except NameError:
+        return True  # CPython
+
+
 def _crash_with_data(data):
     """Induces a segfault with dummy data in input."""
     _crash()
@@ -155,6 +164,7 @@ class ExecutorDeadlockTest:
         # Check problem occurring while unpickling a task on workers
         self._check_crash(BrokenProcessPool, id, CrashAtUnpickle())
 
+    @unittest.skipUnless(_is_native(), "self-signals are only supported in native standalone")
     def test_crash_during_func_exec_on_worker(self):
         # Check problem occurring during func execution on workers
         self._check_crash(BrokenProcessPool, _crash)
@@ -167,6 +177,7 @@ class ExecutorDeadlockTest:
         # Check problem occurring during func execution on workers
         self._check_crash(RuntimeError, _raise_error, RuntimeError)
 
+    @unittest.skipUnless(_is_native(), "self-signals are only supported in native standalone")
     def test_crash_during_result_pickle_on_worker(self):
         # Check problem occurring while pickling a task result
         # on workers
@@ -197,6 +208,7 @@ class ExecutorDeadlockTest:
         # the result_handler thread
         self._check_crash(BrokenProcessPool, _return_instance, ExitAtUnpickle)
 
+    @unittest.skipUnless(_is_native(), "self-signals are only supported in native standalone")
     def test_shutdown_deadlock(self):
         # Test that the pool calling shutdown do not cause deadlock
         # if a worker fails after the shutdown call.
@@ -235,6 +247,7 @@ class ExecutorDeadlockTest:
         # dangling threads
         executor_manager.join()
 
+    @unittest.skipUnless(_is_native(), "self-signals are only supported in native standalone")
     def test_crash_big_data(self):
         # Test that there is a clean exception instad of a deadlock when a
         # child process crashes while some data is being written into the
