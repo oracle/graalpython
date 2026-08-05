@@ -104,7 +104,9 @@ def test_access_copy_without_map_private_constant():
 @unittest.skipIf(sys.platform == "win32", "trackfd is Unix-only")
 def test_trackfd():
     test_case = unittest.TestCase()
-    with tempfile.TemporaryFile() as f:
+    # The emulated POSIX backend reopens the file by path when creating the mapping.
+    # TemporaryFile unlinks that path immediately on POSIX (GR-29159).
+    with tempfile.NamedTemporaryFile() as f:
         f.write(b"x" * 64)
         f.flush()
         with mmap.mmap(f.fileno(), 32) as m:
