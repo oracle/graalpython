@@ -134,7 +134,7 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.USER, help = "Equivalent to setting the PYTHONIOENCODING environment variable for the standard launcher.", usageSyntax = "<Encoding>[:<errors>]", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> StandardStreamEncoding = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
-    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
+    @EngineOption @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
 
     @Option(category = OptionCategory.USER, help = "Equivalent to the Python -v flag. Turn on verbose mode.", usageSyntax = "true|false", stability = OptionStability.STABLE) //
