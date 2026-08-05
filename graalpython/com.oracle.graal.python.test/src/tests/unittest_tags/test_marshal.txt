@@ -18,6 +18,7 @@ test.test_marshal.BugsTestCase.test_version_argument @ darwin-arm64,linux-aarch6
 !test.test_marshal.CodeTestCase.test_code
 test.test_marshal.CodeTestCase.test_different_filenames @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_marshal.CodeTestCase.test_many_codeobjects @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_marshal.CodeTestCase.test_no_allow_code @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_marshal.CompatibilityTestCase.test0To3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_marshal.CompatibilityTestCase.test1To3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_marshal.CompatibilityTestCase.test2To3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

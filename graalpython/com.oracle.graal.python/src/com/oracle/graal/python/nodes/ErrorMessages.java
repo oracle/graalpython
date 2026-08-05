@@ -140,6 +140,8 @@ public abstract class ErrorMessages {
     public static final TruffleString BAD_MARSHAL_DATA_S = tsLiteral("bad marshal data (%s)");
     public static final TruffleString BAD_MARSHAL_DATA_EOF = tsLiteral("marshal data too short");
     public static final TruffleString BAD_MARSHAL_DATA_NULL = tsLiteral("bad NULL object in marshal data");
+    public static final TruffleString MARSHALLING_CODE_OBJECTS_DISALLOWED = tsLiteral("marshalling code objects is disallowed");
+    public static final TruffleString UNMARSHALLING_CODE_OBJECTS_DISALLOWED = tsLiteral("unmarshalling code objects is disallowed");
     public static final TruffleString BAD_MEMBER_DESCR_TYPE_FOR_P = tsLiteral("bad memberdescr type for %p");
     public static final TruffleString BAD_OPERAND_FOR = tsLiteral("bad operand type for %s%s: '%p'");
     public static final TruffleString BAD_VALUES_IN_FDS_TO_KEEP = tsLiteral("bad value(s) in fds_to_keep");

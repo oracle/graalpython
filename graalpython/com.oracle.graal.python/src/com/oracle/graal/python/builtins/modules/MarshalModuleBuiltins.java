@@ -119,10 +119,9 @@ import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -174,17 +173,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant(T_VERSION, CURRENT_VERSION);
     }
 
-    @Builtin(name = "dump", minNumOfPositionalArgs = 2, parameterNames = {"value", "file", "version"})
+    @Builtin(name = "dump", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 3, parameterNames = {"value", "file", "version"}, keywordOnlyNames = "allow_code")
     @ArgumentClinic(name = "version", defaultValue = "CURRENT_VERSION", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "allow_code", defaultValue = "true", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
-    abstract static class DumpNode extends PythonTernaryClinicBuiltinNode {
+    abstract static class DumpNode extends PythonQuaternaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return DumpNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        static Object doit(VirtualFrame frame, Object value, Object file, int version,
+        static Object doit(VirtualFrame frame, Object value, Object file, int version, boolean allowCode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
@@ -195,7 +195,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             Object savedState = BoundaryCallContext.enter(frame, threadState, boundaryCallData);
             byte[] data;
             try {
-                data = Marshal.dump(language, value, version);
+                data = Marshal.dump(language, value, version, allowCode);
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
@@ -207,17 +207,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dumps", minNumOfPositionalArgs = 1, parameterNames = {"value", "version"})
+    @Builtin(name = "dumps", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"value", "version"}, keywordOnlyNames = "allow_code")
     @ArgumentClinic(name = "version", defaultValue = "CURRENT_VERSION", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "allow_code", defaultValue = "true", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
-    abstract static class DumpsNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class DumpsNode extends PythonTernaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return DumpsNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        static Object doit(VirtualFrame frame, Object value, int version,
+        static Object doit(VirtualFrame frame, Object value, int version, boolean allowCode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
@@ -226,7 +227,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
             Object savedState = BoundaryCallContext.enter(frame, threadState, boundaryCallData);
             try {
-                return PFactory.createBytes(language, Marshal.dump(language, value, version));
+                return PFactory.createBytes(language, Marshal.dump(language, value, version, allowCode));
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
@@ -237,16 +238,22 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "load", minNumOfPositionalArgs = 1)
+    @Builtin(name = "load", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = "file", keywordOnlyNames = "allow_code")
+    @ArgumentClinic(name = "allow_code", defaultValue = "true", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
-    abstract static class LoadNode extends PythonBuiltinNode {
+    abstract static class LoadNode extends PythonBinaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MarshalModuleBuiltinsClinicProviders.LoadNodeClinicProviderGen.INSTANCE;
+        }
+
         @NeverDefault
         protected static LookupAndCallBinaryNode createCallReadNode() {
             return LookupAndCallBinaryNode.create(T_READ);
         }
 
         @Specialization
-        static Object doit(VirtualFrame frame, Object file,
+        static Object doit(VirtualFrame frame, Object file, boolean allowCode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
@@ -258,7 +265,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.READ_RETURNED_NOT_BYTES, buffer);
             }
             try {
-                return Marshal.loadFile(language, file);
+                return Marshal.loadFile(language, file, allowCode);
             } catch (NumberFormatException e) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
@@ -267,13 +274,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "loads", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"bytes"})
+    @Builtin(name = "loads", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"bytes"}, keywordOnlyNames = "allow_code")
     @ArgumentClinic(name = "bytes", conversion = ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "allow_code", defaultValue = "true", conversion = ClinicConversion.Boolean)
     @GenerateNodeFactory
-    abstract static class LoadsNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class LoadsNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization
-        static Object doit(VirtualFrame frame, Object buffer,
+        static Object doit(VirtualFrame frame, Object buffer, boolean allowCode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
@@ -287,7 +295,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 if (!language.isSingleContext()) {
                     cacheKey = language.cacheKeyForBytecode(bytes, length);
                 }
-                return Marshal.load(language, bytes, length, cacheKey);
+                return Marshal.load(language, bytes, length, cacheKey, allowCode);
             } catch (NumberFormatException e) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
@@ -390,15 +398,20 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        static byte[] dump(PythonLanguage language, Object value, int version) throws IOException, MarshalError {
-            Marshal outMarshal = new Marshal(language, version);
+        static byte[] dump(PythonLanguage language, Object value, int version, boolean allowCode) throws IOException, MarshalError {
+            Marshal outMarshal = new Marshal(language, version, allowCode);
             outMarshal.writeObject(value);
             return outMarshal.outData.toByteArray();
         }
 
         @TruffleBoundary
         static Object load(PythonLanguage language, byte[] ary, int length, long cacheKey) throws NumberFormatException, MarshalError {
-            Marshal inMarshal = new Marshal(language, ary, length, cacheKey);
+            return load(language, ary, length, cacheKey, true);
+        }
+
+        @TruffleBoundary
+        static Object load(PythonLanguage language, byte[] ary, int length, long cacheKey, boolean allowCode) throws NumberFormatException, MarshalError {
+            Marshal inMarshal = new Marshal(language, ary, length, cacheKey, allowCode);
             Object result = inMarshal.readObject();
             if (result == null) {
                 throw new MarshalError(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_MARSHAL_DATA_NULL);
@@ -407,8 +420,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        static Object loadFile(PythonLanguage language, Object file) throws NumberFormatException, MarshalError {
-            Marshal inMarshal = new Marshal(language, file);
+        static Object loadFile(PythonLanguage language, Object file, boolean allowCode) throws NumberFormatException, MarshalError {
+            Marshal inMarshal = new Marshal(language, file, allowCode);
             Object result = inMarshal.readObject();
             if (result == null) {
                 throw new MarshalError(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_MARSHAL_DATA_NULL);
@@ -469,6 +482,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         final DataOutput out;
         final DataInput in;
         final int version;
+        final boolean allowCode;
         int depth = 0;
         long cacheKey;
         TruffleFile bytecodeFile;
@@ -484,8 +498,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         Source source = null;
 
         Marshal(PythonLanguage language, int version) {
+            this(language, version, true);
+        }
+
+        Marshal(PythonLanguage language, int version, boolean allowCode) {
             this.language = language;
             this.version = version;
+            this.allowCode = allowCode;
             this.outData = new ByteArrayOutputStream();
             this.out = new DataOutputStream(outData);
             this.refMap = new HashMap<>();
@@ -496,6 +515,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         Marshal(PythonLanguage language, int version, DataOutput out) {
             this.language = language;
             this.version = version;
+            this.allowCode = true;
             this.outData = null;
             this.out = out;
             this.refMap = new HashMap<>();
@@ -504,24 +524,37 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         Marshal(PythonLanguage language, byte[] in, int length, long cacheKey) {
-            this(language, SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(in, 0, length)), null, 0);
+            this(language, in, length, cacheKey, true);
+        }
+
+        Marshal(PythonLanguage language, byte[] in, int length, long cacheKey, boolean allowCode) {
+            this(language, SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(in, 0, length)), null, 0, allowCode);
             this.cacheKey = cacheKey;
         }
 
         Marshal(PythonLanguage language, byte[] in, int length, long cacheKey, TruffleFile bytecodeFile, int baseOffset) {
-            this(language, SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(in, 0, length)), bytecodeFile, baseOffset);
+            this(language, SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(in, 0, length)), bytecodeFile, baseOffset, true);
             this.cacheKey = cacheKey;
         }
 
         Marshal(PythonLanguage language, Object in) {
-            this(language, new DataInputStream(new FileLikeInputStream(in)), null, 0);
+            this(language, in, true);
+        }
+
+        Marshal(PythonLanguage language, Object in, boolean allowCode) {
+            this(language, new DataInputStream(new FileLikeInputStream(in)), null, 0, allowCode);
         }
 
         Marshal(PythonLanguage language, DataInput in, TruffleFile bytecodeFile, int baseOffset) {
+            this(language, in, bytecodeFile, baseOffset, true);
+        }
+
+        Marshal(PythonLanguage language, DataInput in, TruffleFile bytecodeFile, int baseOffset, boolean allowCode) {
             this.language = language;
             this.in = in;
             this.refList = new ArrayList<>();
             this.version = -1;
+            this.allowCode = allowCode;
             this.outData = null;
             this.out = null;
             this.refMap = null;
@@ -923,6 +956,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     writeByte(ARRAY_TYPE_OBJECT);
                     writeObjectArray((Object[]) v);
                 } else if (v instanceof PCode c) {
+                    if (!allowCode) {
+                        throw new MarshalError(ValueError, ErrorMessages.MARSHALLING_CODE_OBJECTS_DISALLOWED);
+                    }
                     // we always store code objects in our format, CPython will not read our
                     // marshalled data when that contains code objects
                     writeByte(TYPE_GRAALPYTHON_CODE | flag);
@@ -1151,10 +1187,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     set.setDictStorage(setStore);
                     return set;
                 case TYPE_GRAALPYTHON_CODE:
+                    if (!allowCode) {
+                        throw new MarshalError(ValueError, ErrorMessages.UNMARSHALLING_CODE_OBJECTS_DISALLOWED);
+                    }
                     return addRef.run(readCode());
                 case TYPE_GRAALPYTHON_CODE_UNIT:
+                    if (!allowCode) {
+                        throw new MarshalError(ValueError, ErrorMessages.UNMARSHALLING_CODE_OBJECTS_DISALLOWED);
+                    }
                     return addRef.run(readRemovedCodeUnitPayload());
                 case TYPE_GRAALPYTHON_DSL_CODE_UNIT:
+                    if (!allowCode) {
+                        throw new MarshalError(ValueError, ErrorMessages.UNMARSHALLING_CODE_OBJECTS_DISALLOWED);
+                    }
                     return addRef.run(readBytecodeDSLCodeUnit());
                 case TYPE_DSL_SOURCE:
                     return addRef.run(readSource());
