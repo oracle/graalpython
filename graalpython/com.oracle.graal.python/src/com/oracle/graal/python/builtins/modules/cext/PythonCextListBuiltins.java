@@ -66,9 +66,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuat
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
@@ -85,6 +83,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -360,31 +359,33 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
-    abstract static class GraalPyPrivate_List_ClearManagedOrGetItems extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = Int, args = {PyObject}, call = Direct)
+    abstract static class PyList_Clear extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static long doGeneric(PList self, long outItems,
-                        @Bind Node inliningTarget,
-                        @Cached XDecRefPointerNode xDecRefPointerNode) {
+        static int clear(PList self) {
+            self.setSequenceStorage(EmptySequenceStorage.INSTANCE);
+            return 0;
+        }
+
+        @Fallback
+        static int error(@SuppressWarnings("unused") Object self,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+        }
+    }
+
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
+    abstract static class GraalPyPrivate_List_TruncateNativeStorage extends CApiBinaryBuiltinNode {
+
+        @Specialization
+        static long doGeneric(PList self, long outItems) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
             if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
                 writePtr(outItems, nativeStorage.getPtr());
                 int length = nativeStorage.length();
                 nativeStorage.setNewLength(0);
                 return length;
-            } else {
-                assert sequenceStorage instanceof ObjectSequenceStorage;
-                ObjectSequenceStorage objectStorage = (ObjectSequenceStorage) sequenceStorage;
-
-                for (int i = objectStorage.length(); --i >= 0;) {
-                    Object item = objectStorage.getObjectItemNormalized(i);
-                    if (item instanceof PythonAbstractNativeObject nativeObject) {
-                        xDecRefPointerNode.execute(inliningTarget, nativeObject.getPtr());
-                        // replace the item to avoid re-visiting
-                        objectStorage.setObjectItemNormalized(i, PNone.NONE);
-                    }
-                }
             }
             return 0;
         }

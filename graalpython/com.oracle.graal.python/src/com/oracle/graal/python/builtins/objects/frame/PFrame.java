@@ -89,6 +89,7 @@ public final class PFrame extends PythonBuiltinObject {
     private int jumpDestLine = DISALLOW_JUMPS;
     private Object localTraceFun = null;
     private PDict extraLocals;
+    private PDict evalLocalsCache;
 
     private boolean traceLine = true;
 
@@ -132,6 +133,18 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void setExtraLocals(PDict extraLocals) {
         this.extraLocals = extraLocals;
+    }
+
+    /**
+     * A frame-owned dictionary used to provide the borrowed-reference semantics of
+     * {@code PyEval_GetLocals} for optimized frames.
+     */
+    public PDict getEvalLocalsCache() {
+        return evalLocalsCache;
+    }
+
+    public void setEvalLocalsCache(PDict evalLocalsCache) {
+        this.evalLocalsCache = evalLocalsCache;
     }
 
     // TODO: frames: this is a large object, think about how to make this

@@ -116,6 +116,14 @@ def _reference_extend(args):
     return listObj
 
 
+def _reference_clear(args):
+    listObj = args[0]
+    if not isinstance(listObj, list):
+        raise SystemError("expected list type")
+    listObj.clear()
+    return listObj
+
+
 def _wrap_list_fun(fun, since=0, default=None):
     def wrapped_fun(args):
         if not isinstance(args[0], list):
@@ -504,5 +512,28 @@ class TestPyList(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* list"],
         callfunction="wrap_PyList_Reverse",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyList_Clear = CPyExtFunction(
+        _reference_clear,
+        lambda: (
+            ([],),
+            ([1, 2, 3],),
+            (DummyListSubclass([1, 2, 3]),),
+            ((),),
+            (DummyClass(),),
+        ),
+        code='''PyObject* wrap_PyList_Clear(PyObject* list) {
+            if (PyList_Clear(list)) {
+                return NULL;
+            }
+            return Py_NewRef(list);
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* list"],
+        callfunction="wrap_PyList_Clear",
         cmpfunc=unhandled_error_compare
     )

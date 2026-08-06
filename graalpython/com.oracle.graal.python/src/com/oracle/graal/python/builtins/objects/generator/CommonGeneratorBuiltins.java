@@ -171,12 +171,17 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         generatorResult = callNode.call(callArguments);
                     } finally {
                         IndirectCalleeContext.exit(threadState, state);
+                        ref.setCallerInfo(PFrame.Reference.EMPTY);
                     }
                 } else {
                     callContext.executePrepareCall(frame, generatorArguments, rootNode.getCallerFlags());
                     PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorArguments);
                     ref.setCallerInfo(PArguments.getCallerFrameInfo(generatorArguments));
-                    generatorResult = callNode.call(callArguments);
+                    try {
+                        generatorResult = callNode.call(callArguments);
+                    } finally {
+                        ref.setCallerInfo(PFrame.Reference.EMPTY);
+                    }
                 }
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
@@ -219,12 +224,17 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         generatorResult = callNode.call(callTarget, callArguments);
                     } finally {
                         IndirectCalleeContext.exit(threadState, state);
+                        ref.setCallerInfo(PFrame.Reference.EMPTY);
                     }
                 } else {
                     callContext.executePrepareCall(frame, generatorArguments, rootNode.getCallerFlags());
                     PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorArguments);
                     ref.setCallerInfo(PArguments.getCallerFrameInfo(generatorArguments));
-                    generatorResult = callNode.call(callTarget, callArguments);
+                    try {
+                        generatorResult = callNode.call(callTarget, callArguments);
+                    } finally {
+                        ref.setCallerInfo(PFrame.Reference.EMPTY);
+                    }
                 }
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);

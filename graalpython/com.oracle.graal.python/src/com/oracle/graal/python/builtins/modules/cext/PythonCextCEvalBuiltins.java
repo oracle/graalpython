@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -183,6 +184,27 @@ public final class PythonCextCEvalBuiltins {
     static long PyEval_GetGlobals() {
         PythonObject globals = PyEvalGetGlobals.executeUncached(null);
         return globals != null ? ToNativeBorrowedNode.executeUncached(globals) : NULLPTR;
+    }
+
+    @CApiBuiltin(ret = PyObjectBorrowed, args = {}, call = Direct)
+    static long PyEval_GetLocals() {
+        PFrame frame = ReadFrameNode.getUncached().getCurrentPythonFrame(null, CallerFlags.NEEDS_LOCALS);
+        if (frame == null) {
+            throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.FRAME_DOES_NOT_EXIST);
+        }
+        Object locals = GetFrameLocalsNode.executeUncached(frame, true);
+        if (frame.getCustomLocals() != null) {
+            return ToNativeBorrowedNode.executeUncached(locals);
+        }
+        PDict localsSnapshot = (PDict) locals;
+        PDict localsCache = frame.getEvalLocalsCache();
+        if (localsCache == null) {
+            localsCache = localsSnapshot;
+            frame.setEvalLocalsCache(localsCache);
+        } else {
+            localsCache.update(localsSnapshot);
+        }
+        return ToNativeBorrowedNode.executeUncached(localsCache);
     }
 
     @CApiBuiltin(ret = PyObjectRawPointer, args = {}, call = Direct)

@@ -43,6 +43,7 @@
 #include <time.h>
 
 #include "pycore_crossinterp.h" // _PyCrossInterpreterData
+#include "pycore_dtoa.h" // _PyDtoa_Init
 #include "pycore_gc.h" // _PyGC_InitState
 #include "pycore_object.h" // _Py_GetConstant_Init
 #include "pycore_time.h" // _PyTime_round_t, _Py_clock_info_t
@@ -618,6 +619,7 @@ PyAPI_FUNC(PyThreadState **) initialize_graal_capi(void **builtin_closures, GCSt
     initialize_bufferprocs();
     initialize_gc_types_related_slots();
     _PyFloat_InitState(NULL);
+    _PyDtoa_Init(_PyInterpreterState_GET());
 
     // TODO: initialize during cext initialization doesn't work at the moment
     Py_FileSystemDefaultEncoding = "utf-8"; // strdup(PyUnicode_AsUTF8(GraalPyPrivate_FileSystemDefaultEncoding()));

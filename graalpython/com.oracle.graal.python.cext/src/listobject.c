@@ -48,7 +48,7 @@ _list_clear(PyListObject *a)
 
     /* Because XDECREF can recursively invoke operations on
        this list, we make it empty first. */
-    i = GraalPyPrivate_List_ClearManagedOrGetItems((PyObject *)a, &item);
+    i = GraalPyPrivate_List_TruncateNativeStorage((PyObject *)a, &item);
     if (i > 0) {
         assert(item != NULL);
         while (--i >= 0) {

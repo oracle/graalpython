@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -55,7 +56,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
+import com.oracle.graal.python.runtime.CallerFlags;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -94,8 +97,12 @@ public final class PythonCextFrameBuiltins {
         @Specialization
         static Object get(PFrame frame,
                         @Bind Node inliningTarget,
-                        @Cached GetFrameLocalsNode getFrameLocalsNode) {
-            return getFrameLocalsNode.execute(null, inliningTarget, frame, false);
+                        @Cached ReadFrameNode readFrameNode) {
+            frame = readFrameNode.ensureFresh(null, frame, CallerFlags.NEEDS_MATERIALIZED_LOCALS);
+            if (frame.getCustomLocals() != null) {
+                return frame.getCustomLocals();
+            }
+            return PFactory.createFrameLocalsProxy(PythonLanguage.get(inliningTarget), frame);
         }
     }
 

@@ -540,7 +540,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         2,                          // FLT_RADIX
                         1                           // FLT_ROUNDS
         ));
-        addBuiltinConstant("int_info", PFactory.createStructSeq(language, INT_INFO_DESC, 32, 4, INT_DEFAULT_MAX_STR_DIGITS, INT_MAX_STR_DIGITS_THRESHOLD));
+        addBuiltinConstant("int_info", createIntInfo(language));
         addBuiltinConstant("hash_info", PFactory.createStructSeq(language, HASH_INFO_DESC,
                         64,                         // width
                         HASH_MODULUS,               // modulus
@@ -598,6 +598,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         // we need these during core initialization, they are re-set in postInitialize
         postInitialize0(core);
+    }
+
+    public static PTuple createIntInfo(PythonLanguage language) {
+        return PFactory.createStructSeq(language, INT_INFO_DESC, 32, 4, INT_DEFAULT_MAX_STR_DIGITS, INT_MAX_STR_DIGITS_THRESHOLD);
     }
 
     public void postInitialize0(Python3Core core) {
