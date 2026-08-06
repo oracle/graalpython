@@ -89,6 +89,33 @@ class TestCeval(CPyExtTestCase):
         )
         assert Tester.get_globals() is globals()
 
+    def test_PyEval_GetLocals(self):
+        Tester = CPyExtType(
+            "GetLocalsTester",
+            code="""
+            static PyObject* get_locals(PyObject* unused) {
+                return Py_NewRef(PyEval_GetLocals());
+            }
+            """,
+            tp_methods='{"get_locals", (PyCFunction)get_locals, METH_NOARGS | METH_STATIC, NULL}',
+        )
+
+        value = 1
+        first = Tester.get_locals()
+        assert first["value"] == 1
+        first["value"] = 2
+        assert value == 1
+
+        marker = object()
+        second = Tester.get_locals()
+        assert second is first
+        assert second["value"] == 1
+        assert second["marker"] is marker
+
+        namespace = {"Tester": Tester}
+        exec("result = Tester.get_locals()", namespace)
+        assert namespace["result"] is namespace
+
     def test_PyEval_GetFrameObjects(self):
         Tester = CPyExtType(
             "GetFrameObjectsTester",
